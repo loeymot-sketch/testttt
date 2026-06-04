@@ -111,6 +111,15 @@ class OutboxConcurrentWorkerDedupeTest extends TestCase
 
     public function test_payload_contract_violation_releases_claim_and_writes_last_error(): void
     {
+        // [F-3 SYNC P1 V1.0.1 update — 2026-05-19]
+        // PayloadMismatchException behaviour changed from "rethrow" to
+        // "$this->fail($e) then return" — see commit 5452e556d and
+        // reports/audit/foundation-2026-05-18/round-1/F-3-SYNC/STATUS.md §P1.
+        // The DB invariants (claim released, last_error prefix, attempts=1)
+        // are unchanged — only the "must throw" implementation pin was
+        // dropped. Companion sentinel:
+        // tests/Feature/Sentinels/PayloadMismatchFailOnceSentinelTest.php
+
         // Payload missing the required `order_id` key for ORDER_CREATED.
         $event = $this->makeDomainEvent([
             'payload' => ['malformed' => true],
@@ -120,17 +129,25 @@ class OutboxConcurrentWorkerDedupeTest extends TestCase
         $broadcaster->shouldNotReceive('broadcast');
         $this->mockBroadcastManager($broadcaster);
 
-        $this->expectException(PayloadMismatchException::class);
-
+        $threw = false;
         try {
             (new DispatchDomainEventsJob($event->id))->handle();
-        } finally {
-            $event->refresh();
-            $this->assertNull($event->dispatched_at, 'Claim must be released on contract violation.');
-            $this->assertNotEmpty($event->last_error);
-            $this->assertStringContainsString('contract_violation', (string) $event->last_error);
-            $this->assertSame(1, (int) $event->attempts);
+        } catch (PayloadMismatchException $e) {
+            $threw = true;
         }
+
+        $this->assertFalse(
+            $threw,
+            'PayloadMismatchException MUST NOT be rethrown — $this->fail() short-circuits the retry curve. '
+                . 'See reports/audit/foundation-2026-05-18/round-1/F-3-SYNC/STATUS.md §P1.'
+        );
+
+        // DB invariants (unchanged from the original contract):
+        $event->refresh();
+        $this->assertNull($event->dispatched_at, 'Claim must be released on contract violation.');
+        $this->assertNotEmpty($event->last_error);
+        $this->assertStringContainsString('contract_violation', (string) $event->last_error);
+        $this->assertSame(1, (int) $event->attempts);
     }
 
     public function test_unrelated_domain_events_do_not_block_each_other(): void

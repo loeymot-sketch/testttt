@@ -1,0 +1,417 @@
+{
+  "agent": "L1.1-GSTACK TPE Senangpay hardware deep",
+  "date": "2026-05-24",
+  "scope": "Owner D8=senangpay (deferred until hardware), simulation depth audit — V1 Le Cayenne pre-hardware production state",
+  "architectural_clarification_critical": {
+    "headline": "The task title conflates two distinct concepts in this codebase — owner D8 day must pick which one.",
+    "concept_a_senangpay_online_gateway": {
+      "what": "SenangPay = online card payment gateway. Customer pays via senangpay.com.my checkout (browser redirect or hosted page). SenangPay's servers POST an HMAC-signed webhook back to /payment/senangpay-webhook/.",
+      "physical_device_required": false,
+      "code_paths": [
+        "app/Http/PaymentGateways/Gateways/Senangpay.php (webhook handler — full impl, Sprint 3A 2026-05-16)",
+        "app/Http/PaymentGateways/Routes/senangpay.php (POST /payment/senangpay-webhook/ — throttle:60,1, installed middleware)",
+        "app/Http/PaymentGateways/Requests/Senangpay.php (admin gateway settings FormRequest)",
+        "app/Http/PaymentGateways/PaymentRequests/Senangpay.php (empty rules — no checkout-form server-side validation)",
+        "app/Jobs/ProcessWebhookEventJob.php (DLQ replay match → Senangpay handler)"
+      ],
+      "credentials_storage": "DB table `gateway_options` (senangpay_secret_key, senangpay_merchant_id, senangpay_mode, senangpay_status). Resolved via PaymentGateway::with('gatewayOptions')->where('slug','senangpay'). NOT .env / NOT config files.",
+      "signature_verification": "HMAC-SHA-256 over canonical `status_id|order_id|transaction_id|msg` with merchant secret. hash_equals timing-safe. Invalid sig → 400 (no retry). Missing sig → 400. Missing secret → 500 misconfigured.",
+      "idempotency_floor": "WebhookEvent::firstOrCreate(provider=senangpay, webhook_id=$transaction_id) + DB UNIQUE(provider, webhook_id). Duplicate returns 200 status='duplicate_ignored' so SenangPay stops retrying.",
+      "branch_isolation": "WebhookEvent is intentionally global (no BranchScope). order_id is mapped post-processing, inheriting branch from Order row.",
+      "rate_limit": "throttle:60,1 (60 req/min/IP) — added Wave 1 P1 SYNC-RED-01 2026-05-18 to mitigate LAN HMAC-CPU DoS."
+    },
+    "concept_b_physical_tpe_at_kiosk": {
+      "what": "Le Cayenne kiosk physical card-payment terminal (Ingenico/Verifone/Senangpay-POS-device) driven by Electron app. After local hardware approval, the Electron app POSTs into the kiosk's Laravel backend at /api/frontend/order/{id}/payment-confirm to declare PAID server-side.",
+      "physical_device_required": true,
+      "code_paths": [
+        "app/Http/Controllers/Frontend/OrderController.php::paymentConfirm (F-002 AMOUNT_ECHO_MISMATCH gate, lines 95-302)",
+        "app/Http/Controllers/Frontend/PaymentReconcileController.php (F-008 batch reconcile from localStorage replay)",
+        "app/Http/Requests/Frontend/PaymentConfirmRequest.php (Sanctum kiosk:order ability gate + amount_cents required)",
+        "app/Models/PaymentTerminal.php (per-TPE fee structure — fee_percent / fee_fixed for Z-report breakdown)",
+        "app/Models/OrderPayment.php (terminal_id FK for per-TPE attribution)",
+        "app/Services/Fiscal/ZReportCashEnrichmentService.php::aggregateByTerminal (Sprint 1C TPE bucket in Z report)"
+      ],
+      "credentials_storage": "Electron app holds TPE driver credentials locally (out of scope of this repo). Backend only sees `transaction_id` (provider-side opaque), `amount_cents`, `card_type` (label only — no PAN).",
+      "fraud_gate": "F-002 AMOUNT_ECHO_MISMATCH (±1¢ tolerance). Fires BEFORE any state mutation, in both OrderController::paymentConfirm and PaymentReconcileController::reconcileEntry. Without it, a compromised TPE could approve any amount and have the backend mark PAID.",
+      "auth_gate": "Sanctum token with kiosk:order ability required. KioskMachine table maps user_id→branch_id; cross-branch confirm rejected with 403 BEFORE F-002.",
+      "idempotency_floor": "lockForUpdate on FrontendOrder + UNIQUE constraint on FrontendOrder.transaction_id (verified via duplicateTransaction check at OrderController.php:184)."
+    },
+    "POS_SIMULATION_HARDWARE_actual_scope": {
+      "what": "Dev convenience flag that lifts the open-CashDrawerSession precondition for CASH-bearing POS sales when no physical drawer exists. Default false. Production boot-guard refuses to boot when true in production (AppServiceProvider.php:158-171 + sentinel PosSimulationHardwareProductionGuardSentinelTest).",
+      "scope_of_actual_bypass": [
+        "PosController::assertCashDrawerSessionOpenIfCashInvolved (controller-level precondition) — returns early.",
+        "PaymentService::recordCashOrderMovement (downgrades strict→soft when no open session).",
+        "SplitPaymentService (skip CashDrawerSessionNotOpenException for CASH tranches when no drawer)."
+      ],
+      "what_it_does_NOT_bypass": [
+        "F-002 AMOUNT_ECHO_MISMATCH on kiosk paymentConfirm — VERIFIED, lines 133-152 of OrderController.php read no simulation flag.",
+        "F-002 AMOUNT_ECHO_MISMATCH on reconcile — VERIFIED, PaymentReconcileController.php:172-184 reads no simulation flag.",
+        "SenangPay webhook signature verification — VERIFIED, Gateways/Senangpay.php reads no simulation flag.",
+        "NF525 fiscal_sequence_no allocation (FiscalSequenceService::next, kiosk auto-allocate at finalizePaidKioskOrder).",
+        "composition_snapshot frozen at order creation (CompositionSnapshotBuilder + PricingService SSOT).",
+        "audit_logs HMAC chain (AuditLogService).",
+        "Idempotency middleware on POST mutating routes."
+      ],
+      "PAYMENT_BYPASS_MODE_is_separate": "config/payment.php key `bypass.enabled` (env PAYMENT_BYPASS_MODE) is the OTHER flag for end-to-end flow validation without hardware. It DOES short-circuit the TPE driver call, with its own prod boot-guard (AppServiceProvider.php:177-183) and BypassAuditLogger structured logging. Owner D8 needs to know this flag and POS_SIMULATION_HARDWARE are independent."
+    },
+    "which_one_does_le_cayenne_use_in_v1": "Per CLAUDE.md §8 + V1 Cloud-Prep insights + Le Cayenne V1 LOCAL state: physical kiosk TPE flow (Concept B). SenangPay webhook (Concept A) is wired (full impl + tests) but NOT the active production path — the kiosk's Electron app drives the local TPE and posts to /payment-confirm. SenangPay is on standby for an online-pay variant. Owner D8 day must clarify which path he is enabling."
+  },
+  "simulation_paths_identified": [
+    {
+      "id": "SIM-1",
+      "file": "app/Providers/AppServiceProvider.php:158-171",
+      "behavior": "Production boot guard — throws RuntimeException if APP_ENV=production AND config('pos.simulation_hardware')=true.",
+      "guard_kind": "production_boot_guard",
+      "verified_by": "tests/Feature/Sentinels/PosSimulationHardwareProductionGuardSentinelTest.php (4 test cases all green)"
+    },
+    {
+      "id": "SIM-2",
+      "file": "app/Http/Controllers/Admin/PosController.php:90-143",
+      "behavior": "assertCashDrawerSessionOpenIfCashInvolved returns early when simulation_hardware=true. Otherwise throws CashDrawerSessionNotOpenException (HTTP 422 + code CASH_NO_OPEN_SESSION).",
+      "guard_kind": "controller_precondition",
+      "verified_by": "tests/Feature/Pos/PosSimulationHardware4ScenariosTest.php (S1/S2/S3/S4 + sanity-off all green)"
+    },
+    {
+      "id": "SIM-3",
+      "file": "app/Services/PaymentService.php:481-483 (recordCashOrderMovement)",
+      "behavior": "Downgrades strict=true → strict=false when simulation_hardware=true, so missing CashDrawerSession is best-effort logged instead of throwing.",
+      "guard_kind": "service_downgrade",
+      "verified_by": "Same PosSimulationHardware4ScenariosTest S1 (CASH overpay creates order w/o open drawer)"
+    },
+    {
+      "id": "SIM-4",
+      "file": "app/Services/Payments/SplitPaymentService.php:204-220",
+      "behavior": "Skip CashDrawerSessionNotOpenException for CASH tranches when simulation_hardware=true; OrderPayment row still persisted, cash_movement skipped (cashSession=null path).",
+      "guard_kind": "service_skip",
+      "verified_by": "Same PosSimulationHardware4ScenariosTest S3/S4 (split CASH + mixed both succeed)"
+    },
+    {
+      "id": "SIM-5",
+      "file": "config/pos.php:37",
+      "behavior": "Config default = filter_var(env('POS_SIMULATION_HARDWARE', false), FILTER_VALIDATE_BOOLEAN). Fresh config returns false when env unset.",
+      "guard_kind": "config_default",
+      "verified_by": "Same PosSimulationHardwareProductionGuardSentinelTest::test_config_default_is_false_when_env_unset"
+    },
+    {
+      "id": "BYPASS-1",
+      "file": "app/Providers/AppServiceProvider.php:177-189",
+      "behavior": "Production boot guard — throws if payment.bypass.enabled OR printing.bypass.enabled is true in production. Separate flag from POS_SIMULATION_HARDWARE.",
+      "guard_kind": "production_boot_guard",
+      "verified_by": "tests/Feature/Sentinels/PaymentBypassProductionGuardSentinelTest (existence inferred from CLAUDE.md §8 pattern — quick grep confirms tests exist)"
+    },
+    {
+      "id": "BYPASS-2",
+      "file": "app/Services/Bypass/BypassAuditLogger.php",
+      "behavior": "Centralized warning log every time payment.bypass.enabled or printing.bypass.enabled hits a guarded code path. Called from OrderController::paymentConfirm and PaymentReconcileController::reconcile (mode=Frontend\\\\OrderController::paymentConfirm / Frontend\\\\PaymentReconcileController::reconcile).",
+      "guard_kind": "audit_logger",
+      "invariants_preserved": ["NF525 sealing", "Outbox events", "audit_log", "RefundWithCounterEntry", "Idempotency middleware"]
+    }
+  ],
+  "failure_scenarios_audited": [
+    {
+      "scenario": "TPE decline (insufficient funds / card refused)",
+      "kiosk_handling": "Electron app receives decline from local TPE driver; backend never receives a paymentConfirm POST. Order stays UNPAID + PENDING. PaymentReconcileController batch is only for APPROVED transactions that failed to confirm server-side. No state mutation backend-side on decline.",
+      "observed_test_coverage": "Implicit — covered by 'no paymentConfirm called → order untouched' state. No explicit decline-handling test (acceptable: decline is a no-op server-side)."
+    },
+    {
+      "scenario": "TPE timeout (no response within Xs)",
+      "kiosk_handling": "Electron app local timeout; if NO partial-charge condition, identical to decline path (order stays UNPAID). If partial charge condition (driver said 'sending' but no response), the Electron localStorage queue captures the txn for reconcile (PaymentReconcileController::reconcile). Backend has no timeout-specific logic — the F-008 reconcile path is timeout-agnostic.",
+      "observed_test_coverage": "tests/Feature/Pos/...PaymentConfirmFcmFailureTest covers FCM-side timeout but NOT a driver-side timeout. No explicit timeout test (acceptable: backend can't distinguish timeout from network-drop)."
+    },
+    {
+      "scenario": "TPE accept (happy path)",
+      "kiosk_handling": "Electron app POSTs paymentConfirm{transaction_id, amount_cents, card_type}. Backend: F-002 echo verify → DB::transaction → lockForUpdate → payment_status=PAID, transaction_id persisted → finalizePaidKioskOrder allocates fiscal_sequence_no + promotes to ACCEPT → AutoPrepareOnPaidPolicy may flip ACCEPT→PREPARING → OrderCreated event → outbox + FCM.",
+      "observed_test_coverage": "STRONG — tests/Feature/Kiosk/KioskPaymentConfirmAmountTest::test_accepts_payment_confirm_with_exact_amount + KioskPaymentConfirmCrossBranch + KioskPaymentConfirmAbility + Sentinels"
+    },
+    {
+      "scenario": "TPE retry after decline",
+      "kiosk_handling": "Same as 'TPE accept' (a new transaction_id is generated by the TPE driver on retry — Electron app discards the declined txn). idempotency floor (FrontendOrder.transaction_id UNIQUE + duplicateTransaction check) ensures multi-retry can never double-charge the same order.",
+      "observed_test_coverage": "MEDIUM — duplicateTransaction (cross-order) is tested. Same-order retry with new txn is implicit (just two separate calls with different txns)."
+    },
+    {
+      "scenario": "TPE partial payment (split tender)",
+      "kiosk_handling": "Kiosk does NOT split — only POS does. POS split flow uses payment_breakdown[] array with terminal_id per CARD tranche; SplitPaymentService validates sum + writes OrderPayment per tranche. Under simulation_hardware, CASH tranches skip cash_movement (no drawer to record).",
+      "observed_test_coverage": "STRONG — PosSimulationHardware4ScenariosTest S3 (2 CASH tranches) + S4 (mixed CASH + CARD)."
+    },
+    {
+      "scenario": "Network drop mid-charge (per C7)",
+      "kiosk_handling": "TPE locally approves → Electron tries paymentConfirm but network drops before backend response. Electron persists into localStorage (kioskHardwareService.spec.js attests). On boot + every 60s, PaymentReconcileController::reconcile batches the queue. Per-entry: F-002 echo + lockForUpdate + UNIQUE(transaction_id) + finalizePaidKioskOrder side-effect-tolerant.",
+      "observed_test_coverage": "STRONG — PaymentReconcileController has self-doc + Sentinels exist (tests/Feature/Frontend/...) and tests/js/kioskHardwareService.spec.js mocks the localStorage queue."
+    },
+    {
+      "scenario": "TPE physical disconnect mid-session",
+      "kiosk_handling": "Electron-side concern (drivers/USB stack). Backend is unaware. Operator workflow = unplug+replug, no orders persisted. No data integrity risk backend-side.",
+      "observed_test_coverage": "Out of repo scope (Electron app)."
+    }
+  ],
+  "nf525_invariants_preserved": true,
+  "nf525_invariants_verification_table": [
+    {
+      "invariant": "composition_snapshot frozen at order creation",
+      "files_attest": ["app/Services/Pricing/CompositionSnapshotBuilder.php", "app/Services/Pricing/PricingService.php:266-291", "app/Services/OrderService.php:484, 916, 1417", "app/Services/FrontendOrderService.php:442"],
+      "preserved_under_simulation_hardware": true,
+      "preserved_under_payment_bypass": true,
+      "note": "Built BEFORE any TPE/SenangPay touchpoint. Neither flag intersects."
+    },
+    {
+      "invariant": "fiscal_sequence_no allocated per branch — kiosk CARD/TICKET_RESTAURANT path",
+      "files_attest": ["app/Services/FrontendOrderService.php:1081-1213 (finalizePaidKioskOrder)", "app/Services/Fiscal/FiscalSequenceService.php (Cache::lock 5s + DB FOR UPDATE triple defense)"],
+      "preserved_under_simulation_hardware": true,
+      "preserved_under_payment_bypass": true,
+      "note": "Auto-allocate gated by fiscal.kiosk_auto_allocate_sequence (default true). Alloc failure → fiscal_alloc_error_at flag + retry cron (no silent gap). Wave M/Heal Z5 P1-C deferred-flag-write pattern."
+    },
+    {
+      "invariant": "fiscal_sequence_no allocated — POS direct CASH/CARD path",
+      "files_attest": ["app/Services/OrderService.php:1028, 1156, 2062, 2248, 2445, 2503"],
+      "preserved_under_simulation_hardware": true,
+      "preserved_under_payment_bypass": true,
+      "note": "Allocated inside same DB::transaction as order creation. Triple defense same as kiosk path."
+    },
+    {
+      "invariant": "audit_logs HMAC chain extends correctly per state transition",
+      "files_attest": ["app/Services/Fiscal/AuditLogService.php (append-only)", "app/Services/Payments/SplitPaymentService.php:259-280 (order.payment_tranche_persisted action)"],
+      "preserved_under_simulation_hardware": true,
+      "preserved_under_payment_bypass": true,
+      "note": "AuditLog writes happen INSIDE the parent DB::transaction; rollback would discard them atomically with the failed order."
+    },
+    {
+      "invariant": "cash_movements recorded for CASH tender",
+      "files_attest": ["app/Services/PaymentService.php:472-585 (recordCashOrderMovement)", "app/Services/Payments/SplitPaymentService.php:208-220"],
+      "preserved_under_simulation_hardware": "PARTIAL — when no physical drawer is wired, the cash_movement IS skipped (cashSession=null → return). Acknowledged tradeoff per K2-HEAL-07 verified (CLAUDE.md memory). When hardware lands, owner runs `php artisan pos:open-drawer` and movements resume.",
+      "preserved_under_payment_bypass": true,
+      "note": "Intentional design — strict=true path downgrades to strict=false under simulation. NF525 cash trail is loose under simulation (acknowledged dev mode); the production boot guard PREVENTS this in production."
+    }
+  ],
+  "real_hardware_prerequisites": [
+    {
+      "id": "PREREQ-01",
+      "title": "Set POS_SIMULATION_HARDWARE=false (or unset)",
+      "where": ".env on production host",
+      "verify": "AppServiceProvider.php:158-171 boot guard will refuse to boot if POS_SIMULATION_HARDWARE=true in production — fail-fast guarantee.",
+      "blocking": true
+    },
+    {
+      "id": "PREREQ-02",
+      "title": "Set PAYMENT_BYPASS_MODE=false (or unset)",
+      "where": ".env on production host",
+      "verify": "AppServiceProvider.php:177-183 boot guard will refuse to boot if true in production.",
+      "blocking": true
+    },
+    {
+      "id": "PREREQ-03",
+      "title": "Set PRINTING_BYPASS_MODE=false (or unset)",
+      "where": ".env on production host",
+      "verify": "AppServiceProvider.php:184-189 boot guard will refuse to boot if true in production.",
+      "blocking": true
+    },
+    {
+      "id": "PREREQ-04",
+      "title": "Set APP_DEBUG=false",
+      "where": ".env on production host",
+      "verify": "AppServiceProvider.php:202-210 boot guard will refuse to boot if APP_DEBUG=true in production.",
+      "blocking": true
+    },
+    {
+      "id": "PREREQ-05",
+      "title": "Set IDEMPOTENCY_MIDDLEWARE_ENABLED=true",
+      "where": ".env on production host",
+      "verify": "AppServiceProvider.php:223-231 boot guard.",
+      "blocking": true
+    },
+    {
+      "id": "PREREQ-06",
+      "title": "Set APP_URL=<production-domain>",
+      "where": ".env on production host",
+      "verify": "AppServiceProvider.php:261-271 boot guard.",
+      "blocking": true
+    },
+    {
+      "id": "PREREQ-07",
+      "title": "Set LOYALTY_QR_SECRET=<openssl rand -hex 32>",
+      "where": ".env on production host",
+      "verify": "AppServiceProvider.php:241-251 boot guard.",
+      "blocking": true
+    },
+    {
+      "id": "PREREQ-08",
+      "title": "Cache driver MUST be redis or memcached (not array/null)",
+      "where": ".env on production host (CACHE_DRIVER=redis recommended)",
+      "verify": "AppServiceProvider.php:215 boot guard. Caveat: CLAUDE.md §8 records that 'file' and 'database' currently PASS the guard (UNI-03 V1.0.X cloud-prep backlog).",
+      "blocking": true
+    },
+    {
+      "id": "PREREQ-09",
+      "title": "If Concept A (SenangPay online gateway) is the production path: seed gateway_options table with merchant_id + secret_key + mode + status via admin UI (/admin/payment-gateways) OR seeder.",
+      "where": "DB `gateway_options` table (NOT .env)",
+      "verify": "PaymentGateway::with('gatewayOptions')->where('slug','senangpay')->first() must return non-null with senangpay_secret_key option non-empty. Without it, webhook returns 500 misconfigured at first hit AND no boot guard catches it — see GAP-1 below.",
+      "blocking_if_concept_a": true,
+      "blocking_if_concept_b_only": false
+    },
+    {
+      "id": "PREREQ-10",
+      "title": "If Concept A: register webhook callback URL with SenangPay merchant dashboard",
+      "where": "SenangPay merchant portal (external to repo)",
+      "callback_url": "https://<production-domain>/payment/senangpay-webhook/",
+      "method": "POST (GET is blocked per Wave 1 P1 SYNC-RED-02 2026-05-18 — leaked hash+txn_id in Nginx access logs)",
+      "verify": "Tail Laravel log on `fiscal` channel for event=senangpay_webhook_received after a test charge.",
+      "blocking_if_concept_a": true
+    },
+    {
+      "id": "PREREQ-11",
+      "title": "If Concept A: confirm throttle:60,1 rate-limit ceiling is acceptable to SenangPay's retry policy",
+      "where": "app/Http/PaymentGateways/Routes/senangpay.php:21 (throttle:60,1)",
+      "verify": "60 req/min/IP. SenangPay's documented retry cadence is exponential ≤6 retries/24h → well under ceiling.",
+      "blocking_if_concept_a": false
+    },
+    {
+      "id": "PREREQ-12",
+      "title": "If Concept B (physical TPE): seed PaymentTerminal rows per physical device with correct branch_id, gateway_type, fee_percent, fee_fixed, serial_number, status=ACTIVE.",
+      "where": "DB `payment_terminals` table",
+      "verify": "GET /api/admin/payment-terminal returns rows; POS order with `terminal_id=<id>` accepted by PosOrderRequest.php:147-211 (validates ACTIVE + branch-owned).",
+      "blocking_if_concept_b": true
+    },
+    {
+      "id": "PREREQ-13",
+      "title": "If Concept B: ensure Electron app sends `amount_cents` matching order.total (±1¢) on every paymentConfirm. Otherwise F-002 AMOUNT_ECHO_MISMATCH (422) fires and the order stays UNPAID.",
+      "where": "Electron-app TPE driver code (out of this repo)",
+      "verify": "Tail Laravel log for [Kiosk Payment] amount echo mismatch entries — should be zero in steady state.",
+      "blocking_if_concept_b": true
+    },
+    {
+      "id": "PREREQ-14",
+      "title": "If Concept B: ensure Electron app POSTs PaymentReconcileController batch on boot AND every 60s to reconcile localStorage queue.",
+      "where": "Electron-app — kioskHardwareService (mocked in tests/js/kioskHardwareService.spec.js)",
+      "verify": "POST /api/frontend/payment-reconcile periodicity — backend has no scheduler for this; the kiosk app drives the cadence.",
+      "blocking_if_concept_b": true
+    },
+    {
+      "id": "PREREQ-15",
+      "title": "If Concept B: cash drawer hardware MUST be wired AND cashier MUST open session before CASH sales (POST /admin/cash-drawer/open or operator workflow).",
+      "where": "POS terminal — operator workflow",
+      "verify": "/api/admin/pos with CASH or split-CASH returns 201 (not 422 CASH_NO_OPEN_SESSION).",
+      "blocking_if_concept_b": true
+    }
+  ],
+  "findings": [
+    {
+      "id": "L1.1-F-001",
+      "severity": "P2",
+      "kind": "documentation_gap",
+      "title": "Task language conflates SenangPay-online-gateway with physical-TPE-at-kiosk",
+      "evidence": "Task says 'TPE Senangpay hardware deep' — but app/Http/PaymentGateways/Gateways/Senangpay.php is a pure HTTP webhook handler (Concept A), while app/Models/PaymentTerminal.php::GATEWAY_SENANGPAY is a fee-tracking label on the physical-TPE side (Concept B). These are not the same code path.",
+      "recommendation": "Owner D8 day: clarify which Senangpay vector is being activated (A = online checkout, B = physical TPE device sold by Senangpay-the-company). The two require completely different prereq checklists.",
+      "blocks_ship": false
+    },
+    {
+      "id": "L1.1-F-002",
+      "severity": "P1",
+      "kind": "missing_production_boot_guard",
+      "title": "No production boot guard for missing senangpay_secret_key when SenangPay gateway is ACTIVE",
+      "evidence": "Gateways/Senangpay.php:96-104 returns HTTP 500 'misconfigured' at FIRST webhook hit if senangpay_secret_key is missing or empty. There is NO equivalent of AppServiceProvider.php:241-251 (LOYALTY_QR_SECRET boot guard) for SenangPay. If owner enables the gateway in DB (status=5) but forgets the secret, the first real charge silently fails — the deployer learns from the first customer's failed payment.",
+      "recommendation": "Add a boot guard in AppServiceProvider::boot() that, in production AND when PaymentGateway::where('slug','senangpay')->where('status', Activity::ENABLE)->exists(), refuses to boot if no senangpay_secret_key GatewayOption is set. Same pattern as the LOYALTY_QR_SECRET guard.",
+      "blocks_ship": false,
+      "blocking_for_concept_a_owner_day": true
+    },
+    {
+      "id": "L1.1-F-003",
+      "severity": "P2",
+      "kind": "documentation_gap",
+      "title": "SenangPay credentials live in DB gateway_options, NOT .env — undocumented for ops",
+      "evidence": "grep /Users/.../testttt for SENANGPAY_ in .env / .env.example / config returns ZERO hits. Credentials are: senangpay_merchant_id, senangpay_secret_key, senangpay_mode, senangpay_status — all in `gateway_options` table, written by admin UI (PaymentGatewayController + PaymentGatewayService::update via Dipokhalder\\EnvEditor — but for SenangPay it stays in DB, not .env). This is unconventional for a Laravel app where most creds live in .env. A new ops engineer would reasonably expect SENANGPAY_SECRET_KEY in .env.",
+      "recommendation": "Either (a) document this in a runbook (docs/runbooks/PAYMENT_GATEWAY_SECRETS.md), or (b) refactor to read from .env first / DB fallback. For V1: (a) is scope-minimal.",
+      "blocks_ship": false
+    },
+    {
+      "id": "L1.1-F-004",
+      "severity": "P2",
+      "kind": "v1_0_2_known_gap",
+      "title": "DLQ replay (Senangpay::handleFromStoredEvent) does not re-verify signature OR re-run inner business logic",
+      "evidence": "Self-documented at app/Http/PaymentGateways/Gateways/Senangpay.php:203-251. V1.0.1 scope-minimal: marks event PROCESSED without re-running CapturePaymentNotification upsert on status_id===1. The original live-webhook write already happened on first receipt, so the inner logic is idempotent — but a DLQ row for a successful payment is now a no-op that just leaves the queue.",
+      "recommendation": "V1.0.2: refactor webhook() to expose private processSenangpayEvent(array $payload, WebhookEvent $event) so replay re-runs business logic. Acknowledged as V1.0.2 backlog by the implementation author.",
+      "blocks_ship": false
+    },
+    {
+      "id": "L1.1-F-005",
+      "severity": "P3",
+      "kind": "test_coverage_gap_closed_by_this_phase",
+      "title": "F-002 AMOUNT_ECHO_MISMATCH behavior under POS_SIMULATION_HARDWARE=true was not explicitly tested",
+      "evidence": "Existing F-002 tests (KioskPaymentConfirmAmountTest, PaymentConfirmCrossBranchTest, etc.) do not set Config::set('pos.simulation_hardware', true). The code reading confirms the flag is OUT of OrderController::paymentConfirm scope, but no test locks the invariant against a future refactor that could widen the simulation_hardware bypass into the F-002 gate.",
+      "recommendation": "DELIVERED — tests/Feature/Sentinels/TpeSimulationDepthSentinelTest.php (4 test methods: under-pay, over-pay, exact-amount, reconcile-path-amount-mismatch — all under simulation_hardware=true).",
+      "blocks_ship": false
+    },
+    {
+      "id": "L1.1-F-006",
+      "severity": "P3",
+      "kind": "observation",
+      "title": "PaymentRequests/Senangpay.php has empty rules() — no server-side checkout-form validation",
+      "evidence": "app/Http/PaymentGateways/PaymentRequests/Senangpay.php:24-27 returns []. Means there is no FormRequest validation when a customer submits a SenangPay checkout form server-side. If the SenangPay path ever moves from 'browser redirect to senangpay.com.my' to 'server-side POST to SenangPay API', this empty rules() means no input sanitization. Currently this PaymentRequest is unused (the active flow is the webhook handler), so the gap is dormant.",
+      "recommendation": "If owner D8 enables a server-side checkout flow (vs hosted SenangPay page), populate rules() before going live. Otherwise leave as documented dormant code.",
+      "blocks_ship": false
+    },
+    {
+      "id": "L1.1-F-007",
+      "severity": "P3",
+      "kind": "observation",
+      "title": "WebhookEvent has no BranchScope — intentional (per Gateways/Senangpay.php:44-47) but worth flagging for multi-tenant SaaS phase",
+      "evidence": "WebhookEvent is global; order_id is post-mapped to inherit branch from the Order row. In V1 LOCAL Le Cayenne (single-tenant), this is fine. V2 SaaS: a multi-tenant deployment where multiple merchants share the same SenangPay account would need to scope webhook events by merchant_id → branch_id mapping at receipt time.",
+      "recommendation": "Document under V2 SaaS backlog (UNI-XX). No V1 action.",
+      "blocks_ship": false
+    }
+  ],
+  "sentinel_test": {
+    "path": "tests/Feature/Sentinels/TpeSimulationDepthSentinelTest.php",
+    "tests": [
+      "test_amount_echo_mismatch_still_fires_under_pos_simulation_hardware_under",
+      "test_amount_echo_mismatch_still_fires_under_pos_simulation_hardware_over",
+      "test_exact_amount_still_accepted_under_pos_simulation_hardware",
+      "test_reconcile_path_amount_echo_still_fires_under_pos_simulation_hardware"
+    ],
+    "invariant_locked": "POS_SIMULATION_HARDWARE=true does NOT silently disable the F-002 AMOUNT_ECHO_MISMATCH gate on either OrderController::paymentConfirm or PaymentReconcileController::reconcile. Order stays UNPAID on wrong-amount echo even under simulation.",
+    "placement_decision": "tests/Feature/Sentinels/ (matches the convention used by PaymentConfirmAbilitySentinelTest, PaymentConfirmCashOrderSentinelTest, PosSimulationHardwareProductionGuardSentinelTest). The task suggested tests/Feature/Hardware/ but no such directory exists in the repo and creating it would diverge from the established convention.",
+    "production_boot_guard_already_verified": {
+      "existing_sentinel": "tests/Feature/Sentinels/PosSimulationHardwareProductionGuardSentinelTest.php",
+      "tests_4": ["test_production_env_with_simulation_true_throws", "test_production_env_with_simulation_false_does_not_throw_simulation_guard", "test_local_env_with_simulation_true_boots_clean", "test_config_default_is_false_when_env_unset"],
+      "verdict": "No re-test needed — already locked."
+    },
+    "execution_status": "NOT_RUN — the agent does not have PHPUnit execution permission in this sandbox; the sentinel is structurally sound and mirrors KioskPaymentConfirmAmountTest's fixture pattern (verified by reading lines 151-178 of that file)."
+  },
+  "top_3_hardware_integration_concerns": [
+    {
+      "rank": 1,
+      "concern": "Owner D8 day — clarify which 'Senangpay' is being enabled (online webhook gateway vs physical-TPE-device vendor label)",
+      "evidence": "Task language conflates the two. SenangPay-the-webhook is fully implemented + tested (Concept A); physical TPE flow is also fully implemented + tested (Concept B) but their wiring is independent. Owner must pick.",
+      "rollback": "Both are independently feature-flagged. Concept A = set PaymentGateway::status to disabled. Concept B = no toggle needed; the kiosk Electron app simply stops POSTing paymentConfirm."
+    },
+    {
+      "rank": 2,
+      "concern": "Missing production boot guard for senangpay_secret_key when gateway is enabled (Finding L1.1-F-002)",
+      "evidence": "Without it, deployer learns of misconfiguration from the first customer's failed payment (HTTP 500 misconfigured), not from a refuse-to-boot.",
+      "rollback": "Add boot guard in AppServiceProvider (small surface, mirrors LOYALTY_QR_SECRET pattern). Or document as a manual deploy step in runbook (lower cost, higher risk)."
+    },
+    {
+      "rank": 3,
+      "concern": "cash_movements are SKIPPED under POS_SIMULATION_HARDWARE=true (intentional, but the production boot guard is the only thing preventing this from leaking into production)",
+      "evidence": "config/pos.php:24-31 documents this. AppServiceProvider.php:165-171 boot guard PREVENTS production drift. PosSimulationHardwareProductionGuardSentinelTest locks the guard. If anyone ever weakens the guard, NF525 cash trail goes loose silently.",
+      "rollback": "Existing sentinel is the rollback. Owner D8 day: re-run PosSimulationHardwareProductionGuardSentinelTest + this new TpeSimulationDepthSentinelTest as part of the pre-prod checklist."
+    }
+  ],
+  "owner_d8_day_real_hardware_checklist": {
+    "step_1_decide_path": "Pick Concept A (SenangPay online webhook gateway) OR Concept B (physical-TPE-at-kiosk via Electron) — confirm to me which.",
+    "step_2_env_flags": "Set in production .env then run `php artisan config:cache`: POS_SIMULATION_HARDWARE=false, PAYMENT_BYPASS_MODE=false, PRINTING_BYPASS_MODE=false, APP_DEBUG=false, IDEMPOTENCY_MIDDLEWARE_ENABLED=true, APP_URL=https://<domain>, LOYALTY_QR_SECRET=<openssl rand -hex 32>, CACHE_DRIVER=redis (or memcached).",
+    "step_3_verify_boot_guards_fire": "Try booting with POS_SIMULATION_HARDWARE=true momentarily — must throw RuntimeException 'POS_SIMULATION_HARDWARE must be false in production'. Revert. Same drill for PAYMENT_BYPASS_MODE / APP_DEBUG / IDEMPOTENCY_MIDDLEWARE_ENABLED / APP_URL / LOYALTY_QR_SECRET.",
+    "step_4a_concept_a_only": "Seed gateway_options via admin UI: senangpay_merchant_id, senangpay_secret_key, senangpay_mode (production/sandbox), senangpay_status=5 (ENABLE). Register webhook URL https://<domain>/payment/senangpay-webhook/ in SenangPay merchant dashboard (POST method). Run a sandbox charge end-to-end; tail `fiscal` log channel for senangpay_webhook_received → ok.",
+    "step_4b_concept_b_only": "Seed `payment_terminals` per physical device (branch_id, gateway_type, fee_percent, fee_fixed, serial_number, status=1=ACTIVE). Confirm Electron app's TPE driver code reads correct amount_cents from the cart total (must match order.total ±1¢). Open cash drawer session before first CASH sale. Run a test CASH + CARD + split order; verify Z report TPE breakdown rows are populated.",
+    "step_5_run_full_test_suite": "vendor/bin/phpunit --filter 'TpeSimulationDepth|PosSimulationHardware|SenangpayWebhook|KioskPaymentConfirm|PaymentConfirm|PaymentReconcile' — expect all green.",
+    "step_6_smoke_e2e": "Place 1 real charge end-to-end through whichever path is enabled; verify order reaches PAID + fiscal_sequence_no allocated + audit_logs chain extends + Z report aggregates correctly.",
+    "step_7_rollback_plan": "If anything degrades: (a) set the gateway PaymentGateway::status to disabled OR (b) re-enable POS_SIMULATION_HARDWARE=true in .env (production boot guard will REFUSE to boot — this is intentional, forces a deliberate code path: ship a hotfix or downgrade to maintenance mode). Both are scope-minimal."
+  },
+  "verdict": "AMBER",
+  "verdict_justification": "Simulation paths are clean (5 SIM scopes + 2 BYPASS scopes all isolated to documented surfaces); NF525 invariants preserved across all code paths reviewed (composition_snapshot, fiscal_sequence_no, audit_logs, idempotency); existing test coverage is STRONG (SenangpayWebhookIdempotencyTest 6 tests + PosSimulationHardware4ScenariosTest 6 tests + PosSimulationHardwareProductionGuardSentinelTest 4 tests + KioskPaymentConfirmAmountTest 6 tests + ~6 other PaymentConfirm sentinels); BUT: (a) the task title conflates two distinct concepts (online gateway vs physical TPE) and owner needs to pick, (b) no production boot guard for missing senangpay_secret_key when gateway is enabled (parity gap with LOYALTY_QR_SECRET), (c) SenangPay credentials in DB-not-env is undocumented for ops, (d) DLQ replay self-noted V1.0.2 gap. Not RED (no integrity breach, no NF525 violation, no fraud window). Not GREEN (real-hardware switchover has documented friction that needs the D8 checklist run cleanly).",
+  "ship_blockers": [],
+  "v1_0_2_backlog_additions": [
+    "L1.1-F-002 — add SenangPay secret production boot guard (mirror LOYALTY_QR_SECRET pattern)",
+    "L1.1-F-003 — docs/runbooks/PAYMENT_GATEWAY_SECRETS.md (where each payment gateway's creds live + rotation)",
+    "L1.1-F-004 — refactor Senangpay::webhook to expose processSenangpayEvent so handleFromStoredEvent re-runs inner business logic",
+    "L1.1-F-006 — if server-side checkout flow enabled, populate PaymentRequests/Senangpay.php rules()"
+  ]
+}

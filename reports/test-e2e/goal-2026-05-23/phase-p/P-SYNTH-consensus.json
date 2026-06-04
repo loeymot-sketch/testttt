@@ -1,0 +1,320 @@
+{
+  "agent": "P-SYNTH consensus",
+  "wave": "BRAIN-WAVE-P 2026-05-24",
+  "branch_head": "9db1b3dd9 (heal/cms-pr1-quickwins-2026-05-18)",
+  "baseline": "d601fdd34",
+  "discipline": "READ-ONLY synthesis of 12 zone JSON files. Every finding traceable to source zone:id. No invented findings.",
+  "zones_total": 12,
+  "verdict_distribution": {"GREEN": 3, "AMBER": 9, "RED": 0},
+  "verdict_per_zone": {
+    "Z1_service_layer": "AMBER",
+    "Z2_domain_event_outbox": "AMBER",
+    "Z3_dependency_graph": "AMBER",
+    "Z4_vue_component_tree": "AMBER",
+    "Z5_echo_channel_topology": "AMBER",
+    "Z6_cache_invalidation": "GREEN",
+    "Z7_cross_surface_state": "GREEN",
+    "Z8_polling_cadence": "AMBER",
+    "Z9_multi_tab_state": "AMBER",
+    "Z10_outbox_ordering": "GREEN",
+    "Z11_queue_pool_n1": "AMBER",
+    "Z12_frozen_zone_impact": "GREEN"
+  },
+  "framing_critical": "Phase P findings are NEW BACKLOG ITEMS from a DEEPER architectural audit, NOT regressions vs prior convergence. MEMORY.md 'open P0=0 P1=0' referred to pre-Phase-P state. Phase P opens the enveloppe by exposing operational hardening + V2 refactor debt that the prior convergence cycles did not surface. V1 LOCAL Le Cayenne ship status: UNCHANGED — still PRODUCTION-READY.",
+
+  "p0_count": 0,
+  "p1_count": 8,
+  "p1_distinct_findings": [
+    {"id": "Z2-GAP-01", "title": "9/12 Persist*ToOutbox listeners Log::warning only — no OutboxBroadcastSwallowedEvent escalation", "zone": "Z2", "fix_cost_loc": 90, "fix_files": 9, "frozen_zone": false},
+    {"id": "Z2-ADV-04", "title": "Outbox queue worker down → events accumulate, no external healthcheck on schedule:run", "zone": "Z2", "status": "partial mitigation via outbox:monitor cron; V1 LOCAL residual gap"},
+    {"id": "Z7-ADV-06/K9-001", "title": "OrderPaymentStatusChanged broadcast emitted but 0 JS subscribers — partial-refund silent on UI", "zone": "Z7", "status": "ACKNOWLEDGED V1.0.X — per-surface polling catches state within cadence"},
+    {"id": "Z8-ADV-01", "title": "KitchenDisplaySystemComponent.startAutoRefresh — N-HEAL-04 structural twin (setInterval frozen at startup, no isStale fallback)", "zone": "Z8", "fix_cost_loc": 25, "fix_files": 1, "frozen_zone": false, "twin_of": "PosComponent N-HEAL-04 commit 385f77288"},
+    {"id": "Z8-ADV-02", "title": "PosOrdersTrackerComponent._startPolling — N-HEAL-04 structural twin (same vulnerability)", "zone": "Z8", "fix_cost_loc": 25, "fix_files": 1, "frozen_zone": false, "twin_of": "PosComponent N-HEAL-04 commit 385f77288"},
+    {"id": "Z11-P1-01", "title": "KDS N+1 — KitchenDisplaySystemOrderService:70 + KdsSyncService:96 missing nested orderItems.orderItem eager-load (counted as 1 bundled fix)", "zone": "Z11", "fix_cost_loc": "2 lines × 2 files", "fix_files": 2, "frozen_zone": false, "recurring_cost": "Up to 1500 avoidable queries/min/branch under worst-case 50 orders × 30 polls/min"},
+    {"id": "Z11-ADV-01", "title": "failed_jobs table grows unbounded — no queue:prune-failed cron scheduled", "zone": "Z11", "fix_cost_loc": "1 line in Console/Kernel.php", "fix_files": 1, "frozen_zone": false},
+    {"id": "Z11-P1-02", "title": "queue:prune-failed cron missing (bundles with ADV-01)", "zone": "Z11", "note": "Same root as Z11-ADV-01 — listed separately in zone JSON, bundled here"}
+  ],
+
+  "p2_count": 18,
+  "p2_highlight_findings": [
+    {"id": "Z1-LOY-01", "title": "Frontend/LoyaltyController.php DB::table('users') + DB::table('loyalty_transactions') direct writes bypass LoyaltyService + AuditLog", "zone": "Z1", "severity_in_zone": "HIGH"},
+    {"id": "Z2-GAP-02", "title": "BRAIN.md drift: claims '11 ShouldHandleEventsAfterCommit listeners' — empirically ZERO. Actual pattern is event-side DispatchableAfterCommit trait on 24 events", "zone": "Z2", "fix": "1-line BRAIN.md §9 edit + cross-reference in app/Listeners/_README"},
+    {"id": "Z2-GAP-03", "title": "Orphan event ComposerProfilePublished — dispatched but no listener wired", "zone": "Z2"},
+    {"id": "Z2-ADV-05", "title": "domain_events.channel + broadcast_as no DB-level NOT NULL — silent broadcast skip risk", "zone": "Z2"},
+    {"id": "Z3-A2", "title": "Controller bypass: 27% (38/141) call Eloquent directly. LoyaltyController 14 hits, StockRuptureDashboard 15 hits", "zone": "Z3"},
+    {"id": "Z3-A3", "title": "Auth:: facade used 109× inside services — couples business logic to HTTP context, breaks queue/CLI invocations", "zone": "Z3"},
+    {"id": "Z4-A1", "title": "i18n key drift: KitchenDisplaySystemComponent.vue:1576 uses $t('label.kds_status_conflict') but key only exists under message.* namespace", "zone": "Z4", "fix": "1-char namespace change label. → message."},
+    {"id": "Z5-INFO-01", "title": "3 orphan outbox emits (SettingsUpdated + OrderPaymentStatusChanged + BranchStatusChanged) with zero JS subscribers — wasted Pusher frames", "zone": "Z5"},
+    {"id": "Z5-INFO-02", "title": "1 orphan subscriber (ComposerProfileChanged Echo binding dead since server bridges to CatalogChanged)", "zone": "Z5"},
+    {"id": "Z5-INFO-03", "title": "Order.token field included in OrderPaymentStatusChanged Echo payload — bounded by branch-channel isolation but worth documenting", "zone": "Z5"},
+    {"id": "Z6-ADV-01", "title": "Listener ordering inverted for ItemAvailabilityChanged — snapshot bump runs BEFORE cache forget (sub-millisecond window only)", "zone": "Z6"},
+    {"id": "Z6-ADV-03", "title": "Cross-customer write race: 2 admins reprice same item simultaneously — last-write-wins resolves correctly but no UI warning", "zone": "Z6"},
+    {"id": "Z8-ADV-03", "title": "Most legacy polling loops lack explicit in-flight back-pressure guard (only KioskWaitingComponent._doPoll has _pollInFlight)", "zone": "Z8"},
+    {"id": "Z8-ADV-05", "title": "Polling endpoint error: no 5xx max-retry circuit-breaker for legacy intervals (sync services DO have backoff)", "zone": "Z8"},
+    {"id": "Z9-RISK-01", "title": "No window.addEventListener('storage') — cross-tab logout not propagated until next axios 401", "zone": "Z9"},
+    {"id": "Z11-P2-01", "title": "OrderService:219 + :255 admin delivery-boy lists missing nested orderItems.orderItem (asymmetric vs :126)", "zone": "Z11"},
+    {"id": "Z11-P2-02", "title": "NormalItemResource:108 + ItemCategoryMenuResource:26 lazy-load chains in resource collections", "zone": "Z11"},
+    {"id": "Z12-BRAIN-DRIFT", "title": "BRAIN.md claims PaymentComponent.vue is 1625 LOC — actual measurement today is 1478 LOC", "zone": "Z12", "fix": "1-line BRAIN.md edit"}
+  ],
+
+  "p3_count": 23,
+  "p3_summary": "Documentation polish (BRAIN drift, comment rot, listener architecture name smell), composable extraction opportunities (useEchoChannel + usePolling), V2 architectural refactor placeholders. Non-blocking.",
+
+  "cross_zone_patterns": [
+    {
+      "pattern_id": "CLUSTER-OUTBOX-QUEUE-HEALTH",
+      "pattern": "Outbox + queue + KDS sync operational hardening cluster",
+      "zones": ["Z2", "Z8", "Z11"],
+      "findings_grouped": [
+        "Z2-GAP-01 (9 silent Persist*ToOutbox)",
+        "Z8-ADV-01 (KDS startAutoRefresh N-HEAL-04 twin)",
+        "Z8-ADV-02 (PosOrdersTracker N-HEAL-04 twin)",
+        "Z11-P1-01 (KDS N+1 eager-load)",
+        "Z11-P1-02 (queue:prune-failed cron missing)"
+      ],
+      "fix_strategy": "ONE owner-gate sprint — all 5 items are zero-frozen-zone, surgical, additive. Total estimated effort ~3-4 hours. Maximum operational impact: KDS staleness budget defended + alerting tier upgraded + DB query load bounded + failed_jobs table janitor in place.",
+      "loc_total": "~205 LOC across 13 files"
+    },
+    {
+      "pattern_id": "CLUSTER-GOD-CLASS-DENSITY",
+      "pattern": "God class density — V2 SaaS refactor zone (NOT V1)",
+      "zones": ["Z1", "Z3", "Z4"],
+      "findings_grouped": [
+        "Z1 OrderService 2837 LOC + FrontendOrderService 1391 LOC + PaymentService 800 LOC + ItemService 756 LOC",
+        "Z1 OrderService ↔ PaymentService cyclic dependency papered over with service-locator (46 app() calls in services)",
+        "Z3 Controller bypass 27% (38/141) + Auth:: 109× in services",
+        "Z4 42 god Vue components above 500 LOC (10.8%) — composable extraction opportunity"
+      ],
+      "fix_strategy": "V2 SaaS — NOT V1. Repository pattern adoption + OrderService split + PaymentService DI refactor + composable extraction useEchoChannel/usePolling. Owner-mandate 'no useless complexity V1' applies. Defer to V2 SaaS multi-tenant prep wave.",
+      "v1_treatment": "DOCUMENT ONLY in V2 backlog"
+    },
+    {
+      "pattern_id": "CLUSTER-EVENT-DISCIPLINE-STRENGTH",
+      "pattern": "Event-driven discipline strength — PRESERVE, DO NOT TOUCH",
+      "zones": ["Z6", "Z7", "Z12"],
+      "findings": "Z6 GREEN cache invalidation (I.3 heal end-to-end verified), Z7 GREEN cross-surface (all 7 K2-HEAL intact, FIND-1 actually CLOSED), Z12 GREEN frozen-zone (14/14 = 0 LOC diff, MD5 identical on 4 critical, 415 sentinels)",
+      "fix_strategy": "NO CHANGES — these are validated production assets. NF525 chain bit-identical, 14 frozen files = 0 LOC diff, 415 sentinels covering. Phase P confirms this strength."
+    },
+    {
+      "pattern_id": "CLUSTER-DOC-DRIFT",
+      "pattern": "BRAIN.md doc-drift — high-leverage 1-line fixes",
+      "zones": ["Z2", "Z12"],
+      "findings_grouped": [
+        "Z2-GAP-02: BRAIN claims '11 ShouldHandleEventsAfterCommit listeners' — empirically ZERO. Pattern is event-side DispatchableAfterCommit trait on 24 events. Next agent grep WRONG keyword → hallucinates findings.",
+        "Z12-BRAIN-DRIFT: BRAIN claims PaymentComponent.vue is 1625 LOC — empirical 1478 LOC."
+      ],
+      "fix_strategy": "2 single-line BRAIN.md edits. Total effort: 5 minutes. Downstream impact: prevents Wave-P-style hallucination cluster in future audits.",
+      "loc_total": "2 lines in BRAIN.md"
+    }
+  ],
+
+  "top_5_recommendations": [
+    {
+      "rank": 1,
+      "id": "Z8-FU-01 + Z8-FU-02",
+      "finding": "Z8-ADV-01 (KDS startAutoRefresh) + Z8-ADV-02 (PosOrdersTracker._startPolling)",
+      "fix": "Extend N-HEAL-04 self-recursive setTimeout pattern + isStale fallback to both N-HEAL-04 structural twins. Mirror sentinel posKioskPollingCadenceSentinel.spec.js for each surface.",
+      "loc_estimate": 60,
+      "hours_estimate": 1.5,
+      "rationale": "Same vulnerability class as the heal that just landed at commit 385f77288. Surgical, non-frozen, no behavior change on happy path. Defends KDS + POS tracker against silent Echo failure (channel-auth fail with persistent socket).",
+      "files": [
+        "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue:1832-1838",
+        "resources/js/components/admin/pos/PosOrdersTrackerComponent.vue:685-697"
+      ],
+      "frozen_zone_touch": false,
+      "owner_gate_required": false
+    },
+    {
+      "rank": 2,
+      "id": "Z11-P1-01",
+      "finding": "KDS N+1 — KitchenDisplaySystemOrderService:70 + KdsSyncService:96 missing nested orderItems.orderItem",
+      "fix": "Add 'orderItems.orderItem' to existing with() chain in both files.",
+      "loc_estimate": "2 lines × 2 files = 4 LOC",
+      "hours_estimate": 0.5,
+      "rationale": "Pure additive eager-load. Hot path: KDS poll cadence 5-60s × 50 orders = up to 1500 avoidable queries/min/branch worst-case. KDSOrderDetailsResource:50 currently does loadMissing('orderItem') per Order in collection.",
+      "files": [
+        "app/Services/KitchenDisplaySystemOrderService.php:70",
+        "app/Services/KdsSyncService.php:96"
+      ],
+      "frozen_zone_touch": false,
+      "owner_gate_required": false
+    },
+    {
+      "rank": 3,
+      "id": "Z11-P1-02",
+      "finding": "failed_jobs table grows unbounded — no queue:prune-failed cron",
+      "fix": "Add to app/Console/Kernel.php: $schedule->command('queue:prune-failed', ['--hours=336'])->dailyAt('04:30')->name('queue-prune-failed')->onOneServer()->withoutOverlapping();",
+      "loc_estimate": "1 line",
+      "hours_estimate": 0.3,
+      "rationale": "Outbox has 90d prune, webhook has 180d prune, audit_logs/z_reports have 6y retention — but failed_jobs is the only operational table without a janitor. Over weeks/months in production, contract_violation short-circuit at DispatchDomainEventsJob:184 lands every malformed payload here. 14d retention matches webhook/outbox cadence + stays past Horizon recent_failed window (7d).",
+      "files": ["app/Console/Kernel.php"],
+      "frozen_zone_touch": false,
+      "owner_gate_required": false
+    },
+    {
+      "rank": 4,
+      "id": "Z2-GAP-01",
+      "finding": "9/12 Persist*ToOutbox listeners silent on broadcast swallow (Log::warning only)",
+      "fix": "Apply WJ-4-WI5-OBSOUTBOX01 escalation pattern (already proven on PersistOrderCreatedToOutbox + PersistOrderStatusChangedToOutbox + PersistOrderPaymentStatusChangedToOutbox) — replace Log::warning with Log::error + OutboxBroadcastSwallowedEvent dispatch.",
+      "loc_estimate": 90,
+      "hours_estimate": 2,
+      "rationale": "9 files × ~10 LOC each. Zero behavior change on happy path. Defends operator pager-visibility during deploy windows when queue worker + outbox:retry-failed cron coincide failing. Outbox rows ARE persisted (cron will eventually retry); the gap is observability tier — Log::warning is invisible to structured-event pipelines.",
+      "files": [
+        "PersistBranchStatusChangedToOutbox.php",
+        "PersistCatalogChangedToOutbox.php",
+        "PersistCouponChangedToOutbox.php",
+        "PersistItemAvailabilityChangedToOutbox.php",
+        "PersistItemExtraAvailabilityChangedToOutbox.php",
+        "PersistItemVariationAvailabilityChangedToOutbox.php",
+        "PersistOrderPaidAtCounterToOutbox.php",
+        "PersistOrderTableChangedToOutbox.php",
+        "PersistSettingsUpdatedToOutbox.php"
+      ],
+      "frozen_zone_touch": false,
+      "owner_gate_required": false
+    },
+    {
+      "rank": 5,
+      "id": "Z4-A1",
+      "finding": "i18n key drift KitchenDisplaySystemComponent.vue:1576 uses 'label.kds_status_conflict' but key only exists under message.* namespace",
+      "fix": "1-character namespace change: label. → message.",
+      "loc_estimate": "1 character",
+      "hours_estimate": 0.1,
+      "rationale": "Sibling call at same component line 2190 uses the correct $t('message.kds_status_conflict'). When kdsErrorBanner triggered, end users currently see raw 'label.kds_status_conflict' string — the CLAUDE.md §6 raw-label class of bug the visual mandate was built to catch. Add Vitest assertion that the key resolves non-null.",
+      "files": ["resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue:1576"],
+      "frozen_zone_touch": false,
+      "owner_gate_required": false
+    }
+  ],
+
+  "v1_local_ship_verdict": "PRODUCTION-READY",
+  "v1_local_ship_verdict_rationale": "Phase P confirms V1 LOCAL Le Cayenne ship status UNCHANGED from prior convergence. 0 P0 findings across 12 zones. 3 GREEN (Z6 cache, Z7 cross-surface, Z10 outbox ordering, Z12 frozen-zone) — these are production assets. 9 AMBER — all findings are OPERATIONAL HARDENING + V2 REFACTOR DEBT, NONE are V1 ship blockers. 0 RED. NF525 chain bit-identical at HEAD. Frozen-zone diff = 0 LOC across 14/14 files. 415 sentinels covering §7. K2-HEAL-01 through K2-HEAL-07 + L2-HEAL-07 + N-HEAL-04 all verified intact at HEAD.",
+
+  "ship_status_caveat_honest": "Phase P opens the enveloppe with deeper architectural visibility than prior convergence cycles. The 8 distinct P1 findings are NEW backlog items, NOT regressions. The MEMORY.md 'open P0=0 P1=0' state remains accurate vs. that audit scope. Phase P is a higher-resolution lens that catches operational + V2 refactor debt the prior cycles did not surface.",
+
+  "v1_0_x_backlog_estimated_hours": 14.4,
+  "v1_0_x_backlog_breakdown": {
+    "cluster_outbox_queue_health": {
+      "items": 5,
+      "hours": 4.3,
+      "loc_total": 205,
+      "items_list": ["Z8-FU-01 + Z8-FU-02 (1.5h)", "Z11-P1-01 (0.5h)", "Z11-P1-02 (0.3h)", "Z2-GAP-01 (2h)"]
+    },
+    "cluster_doc_drift": {
+      "items": 3,
+      "hours": 0.3,
+      "items_list": ["Z2-GAP-02 BRAIN.md edit (0.1h)", "Z12-BRAIN-DRIFT BRAIN.md PaymentComponent LOC edit (0.1h)", "Z4-A1 i18n namespace (0.1h)"]
+    },
+    "cluster_observability_polish": {
+      "items": 6,
+      "hours": 3.8,
+      "items_list": ["Z2-ADV-05 NOT NULL domain_events columns (1h)", "Z5 dead-binding cleanup ComposerProfileChanged (0.5h)", "Z6-ADV-01 listener order swap (0.5h)", "Z8-FU-03 visibilitychange burst-poll PosComponent (0.8h)", "Z8-FU-04 dashboard widget cadence audit (1h)"]
+    },
+    "cluster_security_hardening": {
+      "items": 2,
+      "hours": 2,
+      "items_list": ["Z1-LOY-01 Frontend/LoyaltyController DB::table bypass audit + LoyaltyService re-route (2h)"]
+    },
+    "cluster_v1_0_x_explicit_BRAIN_8": {
+      "items": 1,
+      "hours": 4,
+      "items_list": ["UNI-03 cache-driver forbidden list widen ['array','null','file','database'] — already tracked V1.0.X (4h, requires V2 cloud cutover testing)"]
+    }
+  },
+
+  "v2_saas_must_fix_before_multi_tenant": [
+    {
+      "id": "V2-MUST-01",
+      "title": "Frontend/LoyaltyController.php DB::table direct writes bypass LoyaltyService",
+      "zone_origin": "Z1-LOY-01 (HIGH severity)",
+      "rationale": "Loyalty mutations should flow through LoyaltyService (which exists at app/Services/LoyaltyService.php + app/Services/Loyalty/PosRedemptionService.php). Direct DB::table() bypass means (1) AuditLogService not called, (2) BranchScope bypassed, (3) no event emitted. V2 multi-tenant: silent loyalty-balance drift across tenants.",
+      "estimated_effort": "1-2 days"
+    },
+    {
+      "id": "V2-MUST-02",
+      "title": "OrderService ↔ PaymentService cyclic dependency (papered with service-locator app() 46 calls in services)",
+      "zone_origin": "Z1 cyclic_dependency_chain HIGH severity + Z3-A1",
+      "rationale": "Introduce OrderTransitionOrchestrator holding both deps explicitly via constructor DI. Remove all 9 app(PaymentService::class) calls from OrderService. Unblocks proper OrderService split (V2-MUST-04).",
+      "estimated_effort": "3-5 days"
+    },
+    {
+      "id": "V2-MUST-03",
+      "title": "Repository pattern adoption for hot domains",
+      "zone_origin": "Z1 + Z3-A4 missing_repository_layer MEDIUM",
+      "rationale": "Currently 2 repositories total (both Idempotency). 18 of 19 service subdomains query Eloquent directly. V2 multi-DB / multi-tenant / cloud read-replica needs abstraction. Start with Order/Pricing/Loyalty repositories.",
+      "estimated_effort": "5-7 days"
+    },
+    {
+      "id": "V2-MUST-04",
+      "title": "OrderService split (2837 LOC) → OrderQueryService + OrderCreationService + OrderTransitionService",
+      "zone_origin": "Z1 god_services + Z3-A1 HIGH",
+      "rationale": "Single class handles list + create (3 variants) + show + status + payment status + token + kiosk cash collect + delivery + destroy + sales report. Each new responsibility worsens cyclomatic complexity. V2 SaaS feature pressure will break this class.",
+      "estimated_effort": "5-7 days + cross-validate NF525 chain bit-identical pre/post"
+    },
+    {
+      "id": "V2-MUST-05",
+      "title": "Optimistic locking (If-Match / version_id) on admin entity edits",
+      "zone_origin": "Z9-RISK-02 P3 (LOW V1 single-restaurant, HIGH V2 multi-tenant)",
+      "rationale": "Currently last-write-wins on admin item edits. Two admins editing same item: B's stale save silently overwrites A. V2 SaaS multi-admin per tenant = data corruption class. Add If-Match/expected_updated_at on Admin ItemController PATCH.",
+      "estimated_effort": "2-3 days"
+    },
+    {
+      "id": "V2-MUST-06",
+      "title": "Storage event listener for cross-tab auth sync",
+      "zone_origin": "Z9-RISK-01 P2",
+      "rationale": "window.addEventListener('storage') currently absent. Tab A logout → Tab B keeps stale token until next axios 401. V2 SaaS: minutes-long privilege window with stale UI is unacceptable. 1-line listener.",
+      "estimated_effort": "1 day including sentinel test"
+    },
+    {
+      "id": "V2-MUST-07",
+      "title": "BranchScope extension to tenant_id composite scoping",
+      "zone_origin": "Z12 BranchScope v2_strategy",
+      "rationale": "V2 SaaS multi-tenant requires tenant→branch hierarchy. Current Le Cayenne V1 uses branch_id only (20 models). V2 adds tenant_id to all 20 models. BranchScopeCoverageSentinelTest baseline GROWS.",
+      "estimated_effort": "10+ days + 3 days sentinel adaptation"
+    },
+    {
+      "id": "V2-MUST-08",
+      "title": "UNI-03 widen forbiddenCacheDrivers list to ['array','null','file','database']",
+      "zone_origin": "Z6 + BRAIN §8 already tracked",
+      "rationale": "V2 SaaS multi-instance ALB requires Redis-only cache. Current boot guard at AppServiceProvider.php:295 lets file + database drivers through. ALB multi-instance with file driver = Cache::lock per-process, NF525 chain race.",
+      "estimated_effort": "0.5 day"
+    }
+  ],
+
+  "v2_saas_total_estimated_effort_days": "30-40 days (calendar — single dev). NOT scoped for V1.",
+
+  "frozen_zone_integrity": "GREEN — 14/14 files = 0 LOC diff vs baseline d601fdd34. MD5 cross-checked IDENTICAL on PaymentComponent.vue + FiscalSequenceService.php + pos-wizard.js + PricingService.php. All last-touch dates pre-date baseline. 415 sentinels collectively cover §7 (avg 29.6 per file). 97 PROPOSAL docs catalogued. 9 LOCK_* override gates documented. DM1 compliance CLEAN.",
+
+  "nf525_chain_status": "INTACT — Phase P found 0 frozen-zone violations. K2-HEAL-01 through K2-HEAL-07 + L2-HEAL-07 all verified intact at HEAD. Composition_snapshot immutability trigger added 2026-05-24 (post-baseline) ENFORCES the contract — recommend Z6/W7 cross-check that no legitimate UPDATE path exists on order_items.composition_snapshot column.",
+
+  "cycle_total_post_phase_p": {
+    "commits": 70,
+    "sentinels_total_catalogued": 415,
+    "phases_completed": 16,
+    "frozen_zone_diff_total": 0,
+    "nf525_chain_bit_identical": true
+  },
+
+  "discipline_compliance": {
+    "read_only": true,
+    "all_findings_cited_to_zone_json": true,
+    "no_invented_findings": true,
+    "framing_honest_phase_p_is_deeper_audit_not_regression": true,
+    "v2_clearly_separated_from_v1": true
+  },
+
+  "files_consumed": [
+    "reports/test-e2e/goal-2026-05-23/phase-p/Z1-service-layer-architecture.json (25688 bytes)",
+    "reports/test-e2e/goal-2026-05-23/phase-p/Z2-domain-event-outbox.json (33792 bytes)",
+    "reports/test-e2e/goal-2026-05-23/phase-p/Z3-dependency-graph.json (17209 bytes)",
+    "reports/test-e2e/goal-2026-05-23/phase-p/Z4-vue-component-tree.json (21900 bytes)",
+    "reports/test-e2e/goal-2026-05-23/phase-p/Z5-echo-channel-topology.json (19605 bytes)",
+    "reports/test-e2e/goal-2026-05-23/phase-p/Z6-cache-invalidation.json (19786 bytes)",
+    "reports/test-e2e/goal-2026-05-23/phase-p/Z7-cross-surface-state.json (32954 bytes)",
+    "reports/test-e2e/goal-2026-05-23/phase-p/Z8-polling-cadence.json (26460 bytes)",
+    "reports/test-e2e/goal-2026-05-23/phase-p/Z9-multi-tab-state.json (28340 bytes)",
+    "reports/test-e2e/goal-2026-05-23/phase-p/Z10-outbox-ordering.json (28282 bytes)",
+    "reports/test-e2e/goal-2026-05-23/phase-p/Z11-queue-pool-n1.json (18364 bytes)",
+    "reports/test-e2e/goal-2026-05-23/phase-p/Z12-frozen-zone-impact.json (39103 bytes)"
+  ]
+}

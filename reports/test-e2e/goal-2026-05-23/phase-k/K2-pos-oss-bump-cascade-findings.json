@@ -1,0 +1,298 @@
+{
+  "agent": "K.2 — POS → OSS + KDS bump cascade deep audit",
+  "phase": "K — Intersection matrix deep + UI screenshots (10 agents parallel)",
+  "mission": "Trace the KDS bump (PREPARING → PREPARED) and POS Livré (PREPARED → DELIVERED) cascade end-to-end. Verify OSS public wall removal, KDS historique appearance, multi-bump race safety, multi-cashier Livré race safety, Echo subscription health, polling fallback discipline.",
+  "date": "2026-05-24",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "scope": "Static cascade trace, code-only. No live boot (disk at 99% — Playwright skipped to mirror J-CASCADE precedent). 7 cascade hunts K2-H1..K2-H7 plus 5 scenario walks K2-S1..K2-S5.",
+  "method": "Walk-the-cascade left-to-right: (1) KDS UI bump button → kdsStatusPayload(order, status) → POST /api/admin/kds-order/change-status/{order} with X-Idempotency-Key + expected_status optimistic-lock token → KitchenDisplaySystemController::changeStatus → KitchenDisplaySystemOrderService::changeStatus DB::transaction lockForUpdate + KitchenReleaseRule canTransition + OrderStateMachine.allows + recordTransition → DispatchKdsTicket::dispatch → OrderStatusChanged DispatchableAfterCommit → PersistOrderStatusChangedToOutbox + Echo broadcast → POS Q10 + OSS subscribers. (2) POS Livré CTA on Prêt-à-livrer panel → markDelivered(o) → posOrder/changeStatus Vuex → POST /api/admin/pos-order/change-status/{order} with X-Idempotency-Key → PosOrderController::changeStatus → OrderService::changeStatus DB::transaction (NO lockForUpdate inside the staff !$auth branch) → OrderStatusChanged dispatch → OSS public wall purge (PREPARED-only filter). Per-hunt verdict: VERIFIED CITED OR GAP (cite file:line).",
+  "files_examined": [
+    "routes/api.php",
+    "app/Http/Controllers/Admin/KitchenDisplaySystemController.php",
+    "app/Http/Controllers/Admin/PosOrderController.php",
+    "app/Http/Controllers/Admin/OrderStatusScreenController.php",
+    "app/Http/Requests/Kds/KdsOrderStatusRequest.php",
+    "app/Services/KitchenDisplaySystemOrderService.php",
+    "app/Services/OrderService.php",
+    "app/Services/OrderStatusScreenOrderService.php",
+    "app/Domain/Kds/KitchenReleaseRule.php",
+    "app/Domain/Order/OrderStateMachine.php",
+    "app/Events/OrderStatusChanged.php",
+    "app/Events/Concerns/DispatchableAfterCommit.php",
+    "app/Listeners/DispatchKdsTicket.php",
+    "app/Listeners/PersistOrderStatusChangedToOutbox.php",
+    "app/Providers/RouteServiceProvider.php",
+    "app/Http/Middleware/IdempotencyKeyMiddleware.php",
+    "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue",
+    "resources/js/components/admin/pos/PosComponent.vue",
+    "resources/js/components/admin/orderStatusScreen/PreparingAndReadyComponent.vue",
+    "resources/js/store/modules/kds.js",
+    "resources/js/store/modules/posOrder.js",
+    "resources/js/services/OssSyncService.js",
+    "resources/js/services/WebSocketService.js"
+  ],
+
+  "scenario_K2_1_kds_bump_preparing_to_prepared": [
+    {
+      "step": 1,
+      "event": "Chef clicks Bump button (item-level kdsBump or order-level orderStatus)",
+      "code_path": "KitchenDisplaySystemComponent.vue:425 + :608 + :781 + :957 (per-channel bump buttons) → kdsBump(order, item) at :1776 → $store.dispatch('kds/bumpItem') accumulates per-item bumped timestamp in localStorage → $nextTick computes isReadyOrder via kds/isReadyOrder getter → when ALL items bumped, calls orderStatus(order, nextStatus) at :1784. Order-level bump (skip item-bump UX) goes directly via the dispatch-bound 'Prêt' CTAs at :460-462 + :632-634 + :805-807 + :981-983.",
+      "status": "OK"
+    },
+    {
+      "step": 2,
+      "event": "POST /api/admin/kds-order/change-status/{order} dispatch",
+      "code_path": "KitchenDisplaySystemComponent.vue:2169 $store.dispatch('kitchenDisplaySystemOrder/changeStatus', kdsStatusPayload(order, status)). Payload shape from store/modules/kds.js:3-9 = { id, status, expected_status: order.status }. expected_status is the optimistic-concurrency token used by the server lockForUpdate guard.",
+      "status": "OK"
+    },
+    {
+      "step": 3,
+      "event": "Route binding + middleware stack",
+      "code_path": "routes/api.php:1111-1113 Route::post('/change-status/{order}', [KitchenDisplaySystemController::class, 'changeStatus'])->middleware(['idempotency', 'throttle:kds-bump']). Idempotency = X-Idempotency-Key scoped (branchId, userId, sha256(key)) per IdempotencyKeyMiddleware.php:77-82 + H2-HEAL-01 user_id scope. Throttle = kds-bump named limiter at RouteServiceProvider.php:193-196 = 120/min per user (env-configurable via KDS_RATE_LIMIT_BUMP). Auth via FormRequest at KdsOrderStatusRequest.php:11-21 — requires hasAnyRole(['Admin', 'Branch Manager', 'Chef', 'POS Operator', 'Cashier']).",
+      "status": "OK"
+    },
+    {
+      "step": 4,
+      "event": "FormRequest validation — status + expected_status enforced from {ACCEPT, PREPARING, PREPARED}",
+      "code_path": "KdsOrderStatusRequest.php:23-29 + kdsStatuses() at :34-41. DELIVERED (11) / OUT_FOR_DELIVERY (10) / CANCELED (5) / RETURNED (12) are STRUCTURALLY refused at the FormRequest layer — KDS cannot drive an order past PREPARED. This is the architectural guarantee that the KDS path is the chef lane only; finalization (DELIVERED) must go through POS or OSS workflows.",
+      "status": "OK"
+    },
+    {
+      "step": 5,
+      "event": "Service-layer DB::transaction with lockForUpdate + double-guard",
+      "code_path": "KitchenDisplaySystemOrderService.php:257-309 DB::transaction wraps lockForUpdate firstOrFail → branch_id isolation abort(403) at :264-266 → expected_status optimistic-lock comparison at :270-283 (writes [KDS_409] structured log + abort(409) if mismatch) → idempotent early-return at :285-287 when $fromLocked === $newStatus → double guard at :289-292 KitchenReleaseRule.canTransition AND OrderStateMachine.allows → save → recordTransition. All atomic on commit.",
+      "status": "OK"
+    },
+    {
+      "step": 6,
+      "event": "DispatchKdsTicket fires OrderStatusChanged DispatchableAfterCommit",
+      "code_path": "KitchenDisplaySystemOrderService.php:322-326 wraps the dispatch in try/catch (broadcast best-effort, never blocks 202 response). DispatchKdsTicket.php:11-20 filters via KitchenReleaseRule.shouldDispatchStatusChanged so DELIVERED/CANCELED never enter the KDS broadcast lane. OrderStatusChanged.php:17 uses DispatchableAfterCommit — but the dispatch site at line 322 sits OUTSIDE the DB::transaction block (line 309 closes the closure). transactionLevel() == 0 at that point → event fires synchronously.",
+      "status": "OK"
+    },
+    {
+      "step": 7,
+      "event": "PersistOrderStatusChangedToOutbox writes domain_events + Echo broadcast",
+      "code_path": "PersistOrderStatusChangedToOutbox.php:35-58 firstOrCreate on idempotency_key sha1(EventType.ORDER_STATUS_CHANGED|order_id|old|new|correlation_id) → DB::afterCommit dispatches DispatchDomainEventsJob → broadcast on private-branch.{branch_id}. WJ-4 OBS-OUTBOX-01 hardening at :84-110 logs broadcast swallows + dispatches OutboxBroadcastSwallowedEvent.",
+      "status": "OK"
+    },
+    {
+      "step": 8,
+      "event": "POS Q10 panel receives OrderStatusChanged broadcast",
+      "code_path": "PosComponent.vue:2663-2674 subscribes broadcastAs:'OrderStatusChanged' → calls loadKioskCashOrders + loadActiveOrdersStats + loadReadyOrders. The freshly-PREPARED order surfaces in the Prêt-à-livrer shortcut at :256-308 within ~100-500ms of the OrderStatusChanged broadcast (LAN Pusher RTT). Polling fallback _kioskPollingInterval at :2602-2616 backs up Echo silent-fail.",
+      "status": "OK"
+    },
+    {
+      "step": 9,
+      "event": "OSS authenticated wall receives OrderStatusChanged broadcast",
+      "code_path": "PreparingAndReadyComponent.vue:257-289 subscribeEcho subscribes broadcastAs:'OrderStatusChanged' GUARDED BY branchId > 0 at :260 → handler at :266-279 detects new_status === PREPARED → _markNewReady(oid) at :276 (chime + .oss-ready-flash visual cue) + this.list() refresh.",
+      "status": "OK"
+    },
+    {
+      "step": 10,
+      "event": "OSS PUBLIC wall (branchId === 0 unauthenticated TV) refresh path",
+      "code_path": "PreparingAndReadyComponent.vue:260 subscribeEcho EARLY-RETURNS when branchId <= 0 (per CDS-prod design — wall has no Sanctum session). Only ossSyncService polling drives refresh. Cadence at OssSyncService.js:8-19 = 60000ms when WS connected, 2000ms when WS disconnected. Public wall MAY still bind to window._wsService and observe connected state via _bindWebSocketState at :138-189. WORST CASE: WS reports connected → 60s polling → chef bumps at t=0 → customer sees order on wall up to ~60s late.",
+      "status": "OK_BUT_LATENCY_DEGRADED_ON_PUBLIC_WALL"
+    },
+    {
+      "step": 11,
+      "event": "KDS local board removes the freshly-PREPARED order from the active list if it transitioned past PREPARED elsewhere; OR keeps it until next bump",
+      "code_path": "KitchenDisplaySystemOrderService.php:71 whereIn('status', KitchenReleaseRule.visibleStatuses()) = [ACCEPT, PREPARING, PREPARED]. So a PREPARED card STAYS visible on the active KDS board until POS marks Livré (transition to DELIVERED removes it). Wave X3 Historique du jour view at historyToday() :217-246 shows post-PREPARED states with whereIn [PREPARED, OUT_FOR_DELIVERY, DELIVERED] AND whereBetween updated_at [todayStart, tomorrowStart]. updated_at on the row IS the bump time (per Eloquent timestamps), so newly-bumped order surfaces in Historique within the next list() poll.",
+      "status": "OK"
+    }
+  ],
+
+  "scenario_K2_2_pos_livre_to_delivered": [
+    {
+      "step": 1,
+      "event": "Cashier clicks Livré on Prêt-à-livrer panel",
+      "code_path": "PosComponent.vue:296-308 button @click='markDelivered(o)' :disabled='o._delivering' :data-testid=`pos-shortcut-deliver-${o.id}`. markDelivered at :3107-3131 sets order._delivering=true guard (CLIENT-LOCAL per-row, NOT cross-cashier) → dispatch posOrder/changeStatus { id, status: DELIVERED } → loadReadyOrders + loadActiveOrdersStats → success toast 'pos_shortcut_delivered_toast'.",
+      "status": "OK"
+    },
+    {
+      "step": 2,
+      "event": "Vuex action issues POST with X-Idempotency-Key",
+      "code_path": "store/modules/posOrder.js:253-267 changeStatus dispatches axios.post('admin/pos-order/change-status/{id}', payload, { headers: buildIdempotencyHeaders(payload) }). buildIdempotencyHeaders derives key from (orderId, status payload hash, minute_bucket).",
+      "status": "OK"
+    },
+    {
+      "step": 3,
+      "event": "Route binding + middleware stack",
+      "code_path": "routes/api.php:924-926 Route::post('/change-status/{order}', [PosOrderController::class, 'changeStatus'])->middleware(['throttle:pos-order-update', 'idempotency']). Throttle pos-order-update at RouteServiceProvider.php:165-168 = 120/min env-configurable. AdminController auth = Sanctum + admin role checks at parent::__construct.",
+      "status": "OK"
+    },
+    {
+      "step": 4,
+      "event": "OrderStatusRequest validates status integer",
+      "code_path": "OrderStatusRequest validates status enum membership. ValidStatusTransition rule used by OrderService at line 1854 confirms the (currentStatus, targetStatus) edge against the legacy rule table. POS Livré path: PREPARED (8) → DELIVERED (11). OrderStateMachine.allows at :54-55 PREPARED branch returns true for DELIVERED.",
+      "status": "OK"
+    },
+    {
+      "step": 5,
+      "event": "OrderService::changeStatus DB::transaction (staff branch !$auth)",
+      "code_path": "OrderService.php:1927-2043 the !$auth branch. The transaction wraps: (a) Branch isolation abort(403) at :1933-1938, (b) idempotent early-return when current === target at :1941-1943, (c) RETURNED/CANCELED/REJECTED-only sealed-Z guard + cashback + loyalty refund at :1946-1992, (d) $order->status = $request->status; $order->save() at :1995-1996, (e) recordTransition + ActionLog::create. CRITICAL GAP: no Order::query()->whereKey()->lockForUpdate()->firstOrFail() inside the closure. The $order model was bound by the route at request-resolve time, OUTSIDE the transaction. The closure reads $order->status from the IN-MEMORY copy, not a lock-acquired DB row.",
+      "status": "GAP_NO_LOCKFORUPDATE_STAFF_PATH"
+    },
+    {
+      "step": 6,
+      "event": "OrderStatusChanged fires post-commit",
+      "code_path": "OrderService.php:2054-2058 dispatch outside the closure inside a try/catch (broadcast best-effort). PersistOrderStatusChangedToOutbox same flow as K.2.1 step 7.",
+      "status": "OK"
+    },
+    {
+      "step": 7,
+      "event": "OSS PUBLIC wall removes the order from PREPARING/PREPARED columns",
+      "code_path": "OrderStatusScreenOrderService.php:63 (list) + :224 (listForBranch) both filter whereIn('status', [PREPARING, PREPARED]). After DELIVERED commit, the order falls out of the wall on the next ossSyncService poll. Echo path on authenticated OSS at PreparingAndReadyComponent.vue:266-279 catches OrderStatusChanged → list() refresh → order vanishes from preparedItems within ~500ms. PUBLIC wall (branchId=0) waits up to 60s poll cadence.",
+      "status": "OK"
+    },
+    {
+      "step": 8,
+      "event": "KDS active board removes the DELIVERED order",
+      "code_path": "KitchenDisplaySystemOrderService.php:71 whereIn('status', visibleStatuses()) excludes DELIVERED → order vanishes from active board on next refresh triggered by KDS Echo handler at KitchenDisplaySystemComponent.vue:1497-1517 _statusChangeAffectsKds payload-aware filter (PREPARED → DELIVERED returns true because PREPARED ∈ KDS_VISIBLE).",
+      "status": "OK"
+    },
+    {
+      "step": 9,
+      "event": "KDS Historique du jour view shows the DELIVERED order",
+      "code_path": "historyToday() at :217-246 whereIn [PREPARED, OUT_FOR_DELIVERY, DELIVERED] + whereBetween updated_at [todayStart, tomorrowStart]. Newly-DELIVERED order surfaces in Historique drawer for the rest of the day. Read-only V1 — revert (DELIVERED → PREPARED) deferred V1.0.2 per LOCK_OrderStateMachine.",
+      "status": "OK"
+    }
+  ],
+
+  "cascade_hunts": [
+    {
+      "id": "K2-H1",
+      "title": "KDS bump cascade: PREPARING → PREPARED end-to-end (single chef, happy path)",
+      "verdict": "VERIFIED CITED",
+      "evidence": "All 11 steps in scenario_K2_1 verified. Triple defense: (1) X-Idempotency-Key (replay safe), (2) expected_status optimistic-lock token in the FormRequest (concurrent stale UI rejected with 409), (3) DB::transaction + lockForUpdate row-level serialization. The KDS endpoint is STRUCTURALLY incapable of driving past PREPARED (FormRequest enum + KitchenReleaseRule.canTransition both gate). OrderStatusChanged broadcast is DispatchableAfterCommit safe — fires synchronously here only because dispatch site sits OUTSIDE the transaction closure (line 322 vs closure closes at 309).",
+      "severity": "INFO"
+    },
+    {
+      "id": "K2-H2",
+      "title": "POS Livré cascade: PREPARED → DELIVERED end-to-end (single cashier, happy path)",
+      "verdict": "VERIFIED CITED — but uses different concurrency primitive than KDS path",
+      "evidence": "All 9 steps in scenario_K2_2 verified. OrderService::changeStatus wraps the work in DB::transaction but does NOT call lockForUpdate on the route-bound model. The idempotent early-return at line 1941-1943 reads the IN-MEMORY $order copy. This is acceptable for the SINGLE-cashier path (HTTP X-Idempotency-Key + minute_bucket collapse double-tap to a Phase-1 replay) but does not protect against TWO cashiers in two browser sessions (see K2-H5). Compare with the KDS service path which explicitly acquires lockForUpdate at line 258-261.",
+      "severity": "INFO"
+    },
+    {
+      "id": "K2-H3",
+      "title": "Multi-bump race — chef bumps 3 orders within 500ms",
+      "verdict": "VERIFIED CITED — SAFE",
+      "evidence": "Three orders bumped in rapid succession touch THREE DIFFERENT order rows. Each POST acquires its own row-level lockForUpdate in its own DB::transaction (KitchenDisplaySystemOrderService.php:258-261). No contention because no two writes target the same row. Throttle ceiling at kds-bump RateLimiter (RouteServiceProvider.php:193-196) = 120/min = 2/s — 3 bumps in 500ms (6/s instantaneous rate, but only 3 hits in the bucket window) ≪ 120/min ceiling. audit_logs HMAC chain extension for status transitions sits in OrderStatusTransition table writes (NOT audit_logs — that's NF525 cash-trail) so no chain bottleneck. KDS UI debounceRefresh at KitchenDisplaySystemComponent.vue:2182 collapses 3 burst refreshes into one (300ms). No UI freeze risk.",
+      "severity": "INFO"
+    },
+    {
+      "id": "K2-H4",
+      "title": "Bump-undo (recall) cascade — chef accidentally bumps wrong item",
+      "verdict": "VERIFIED CITED — CLIENT-LOCAL ONLY, NO BACKEND TRANSITION REVERSAL",
+      "evidence": "kdsRecall at KitchenDisplaySystemComponent.vue:1789-1797 dispatches kds/recallItem store action. Store action at kds.js:66-85 simply removes the per-item bumped timestamp from localStorage with a 60-second grace window (returns { ok: false, reason: 'grace_expired' } after 60s elapsed). NO BACKEND CALL. NO PATCH /api/admin/kds-order/change-status with status PREPARING (reverse transition). The recall ONLY un-marks the local item display state — if all items were previously bumped and triggered orderStatus(order, PREPARED), recalling one item does NOT trigger an inverse PREPARED→PREPARING server call (canTransition at KitchenReleaseRule:42-49 only allows forward edges + same-state idempotent, no reverse). So the recall UX gives the chef a 60s window to UN-MARK an item display flag but the order has ALREADY transitioned to PREPARED on the backend if all items were bumped; the recall does not un-deliver-PREPARED. This is intentional V1 behavior (revert is V1.0.2 backlog per Wave X3 LOCK_OrderStateMachine doc) but the UX could mislead a chef into thinking the recall reverses the server state when it does not.",
+      "severity": "P2",
+      "remediation_suggestion": "Either (a) DOCUMENT the V1 UX contract explicitly in the kds_bump_local_only_notice tooltip — already shown at line 121 + 1157 in KitchenDisplaySystemComponent.vue (so partial credit, but tooltip wording is generic 'local only' not 'cannot un-PREPARE') ; or (b) DISABLE the recall affordance entirely once isReadyOrder transitions the order to PREPARED so the affordance is consistent with what it can actually do; OR (c) V1.0.2 implement the reverse transition via a NEW dedicated endpoint with audit-trail + permission gate (per Wave X3 backlog). Owner-decision required."
+    },
+    {
+      "id": "K2-H5",
+      "title": "Multi-cashier Livré race — 2 cashiers see same PREPARED order, both click Livré simultaneously",
+      "verdict": "RED — AUDIT-TRAIL DUPLICATION + 2 BROADCASTS (data not corrupt but transition log polluted)",
+      "evidence": "Per-row _delivering guard at PosComponent.vue:3108-3109 is CLIENT-LOCAL — does NOT serialize across cashier sessions. Backend ordering: (1) Cashier A clicks → posOrder/changeStatus → X-Idempotency-Key = sha(orderId + status payload + minute_bucket + USER_A) → middleware acquires scoped key. (2) Cashier B clicks within seconds → DIFFERENT scoped idempotency key (different userId per H2-HEAL-01 user_id scope) → middleware passes through. (3) Both controllers enter OrderService::changeStatus !$auth branch. (4) Both DB::transactions begin SIMULTANEOUSLY. (5) NO lockForUpdate on the bound $order — both read from the in-memory $order->status copy fetched OUTSIDE the transaction at route-resolve time. (6) The idempotent early-return at line 1941 (`if ((int) $order->status === $toStatus) return;`) sees $order->status === PREPARED (8) ≠ DELIVERED (11) for BOTH closures → both pass through. (7) Both write $order->status = DELIVERED + $order->save(). (8) Both call recordTransition(PREPARED, DELIVERED) at line 1998-2005 → 2 rows in order_status_transitions table for the SAME edge. (9) Both write ActionLog::create at line 2007-2017 → 2 audit rows in action_logs. (10) Both dispatch OrderStatusChanged at line 2055 → 2 broadcasts → 2 outbox rows (BUT PersistOrderStatusChangedToOutbox at line 27-33 sha1 idempotency_key includes correlation_id from X-Correlation-ID header; if both requests carry different correlation_ids — typical — then BOTH outbox rows survive firstOrCreate → 2 broadcast jobs → POS Q10 + OSS double-refresh, harmless cosmetic flicker). NET: order.status correctly = DELIVERED (idempotent target), no fiscal_sequence_no advance (DELIVERED is not a NF525 trigger), no audit_logs HMAC chain entry duplication (line 2020 limits NF525 chain to CANCELED/REJECTED/RETURNED). BUT: 2 OrderStatusTransition rows + 2 ActionLog rows pollute the operational audit trail; the QUI a livré question now has two answers. Cashier B sees the same success toast as Cashier A → 'I delivered this order' (false claim, B did not actually push the row to a customer). Cash drawer is NOT opened by Livré (cash is collected at Encaisser, not Livré) so no till-count risk like the H9 J-CASCADE finding.",
+      "severity": "P1",
+      "remediation_suggestion": "Add Order::query()->whereKey($order->id)->lockForUpdate()->firstOrFail() at the head of the DB::transaction closure in OrderService::changeStatus !$auth branch (line 1930-2043). Then re-check $locked->status === $targetStatus inside the closure (true idempotent guard against concurrent transitions). Cashier B then short-circuits inside the lock with the post-state of cashier A and returns the same OrderDetailsResource (already-DELIVERED) WITHOUT writing a second transition/ActionLog row. Optionally surface a flag in the response payload (already_delivered_by_other: true, user_id: X) so cashier B's toast can read 'Déjà marqué livré par {name}' instead of the generic success toast — owner-decision on UX wording. Mirrors KitchenDisplaySystemOrderService.php:258-261 pattern + OrderStateMachine::apply() pattern already in place (lines 208-253 of OrderStateMachine.php). The PaymentService::confirmCounterPayment at PaymentService.php:220-223 also already uses this pattern. The OrderService::changeStatus !$auth branch is the OUTLIER."
+    },
+    {
+      "id": "K2-H6",
+      "title": "Echo subscription health — POS + KDS + OSS authenticated paths",
+      "verdict": "VERIFIED CITED — POS has polling fallback, KDS has interceptor heal, OSS authenticated has Echo + ossSyncService",
+      "evidence": "POS Echo at PosComponent.vue:2637-2696 wrapped in try/catch — silent fail logs nothing but polling fallback _kioskPollingInterval at :2602-2616 forces ≤5s cadence when readyOrders empty (per H-SYNC-001 / C2 from J-CASCADE H2). KDS Echo subscribeEcho() at KitchenDisplaySystemComponent.vue:1435 + axios response interceptor at :1448-1471 self-heals: any 2xx POST to admin/kds-order/change-status/* triggers immediate _refreshWithCurrentFilter + items() refresh regardless of Echo state. Plus kdsSyncService adaptive poller at :1478-1494 ticks on WS state change. OSS authenticated wall at PreparingAndReadyComponent.vue:257-289 wraps subscribeEcho in try/catch — silent fail console.warns but ossSyncService keeps polling. Triple-defense is sound on authenticated surfaces.",
+      "severity": "INFO"
+    },
+    {
+      "id": "K2-H7",
+      "title": "Long-poll vs WebSocket fallback — OSS public wall behavior when Soketi down",
+      "verdict": "AMBER — WORST-CASE 60s LAG ON PUBLIC WALL (no Echo, only polling, cadence stays at 60s when WS reports connected)",
+      "evidence": "OSS public TV wall (unauthenticated /admin/order-status-screen mounted with authBranchId=0) early-returns from subscribeEcho at PreparingAndReadyComponent.vue:260 — NO Echo subscription. Refresh is driven ENTIRELY by ossSyncService polling. ossSyncService cadence at OssSyncService.js:8-19: intervalMsWhenConnected=60000 (60s), intervalMsWhenDisconnected=2000 (2s), backoffStartMs=5000, backoffCapMs=30000. _wsState comes from window._wsService.on('connected'/'disconnected') at :138-189 — bound to the same Pusher socket but evaluated INDEPENDENTLY of OSS Echo subscription. So the public wall MAY report 'connected' (Soketi up, generic broadcasting auth open) → polls every 60s → chef bumps PREPARING→PREPARED at t=0 → customer wall sees the order in PRÊT column up to ~60s late. If Soketi is DOWN (or _wsService never reaches connected) → 2s polling → worst-case ~2s lag (acceptable). Burst-poll on visibilitychange at :214-226 collapses lag when operator brings tab forward, but the public wall NEVER receives visibility events (TV is always visible). NET: in the most common deployment (Soketi up + public wall) the customer-facing lag is the WORST it can be in this system (60s) — exact opposite of the operator-facing surfaces which get the BEST (Echo <1s).",
+      "severity": "P2",
+      "remediation_suggestion": "Either (a) wire a public broadcasting channel `public-branch.{id}` mounted via Echo with no auth (already explored for catalog availability — sister of `private-branch.{id}` for kiosk frontend) and have the OSS public wall subscribe to it; OR (b) tighten intervalMsWhenConnected for the PUBLIC wall surface only (e.g. detect authBranchId===0 in startOssSync and override to 5000ms) — owner-decision; tradeoff is HTTP load on the OSS endpoint (each wall = 12/min vs 1/min currently); OR (c) accept the 60s lag and document it in the operations runbook. Note: the current design assumes the kitchen calls out the order verbally to the customer when they bump, so the wall is reinforcement not primary signal — owner mandate."
+    }
+  ],
+
+  "data_integrity_attestation": {
+    "kds_bump_path": "INTACT — KitchenDisplaySystemOrderService uses lockForUpdate + expected_status optimistic-lock + idempotent early-return triple defense. Multi-bump race safe by design (different rows = no contention). FormRequest enum gate makes structurally impossible to drive past PREPARED via KDS.",
+    "pos_livre_path": "DEGRADED — OrderService::changeStatus !$auth branch lacks lockForUpdate inside its DB::transaction. Multi-cashier race produces duplicate OrderStatusTransition + ActionLog rows for the same PREPARED→DELIVERED edge. Order.status correctly converges to DELIVERED (idempotent target), but operational audit trail is polluted. No NF525 chain impact (DELIVERED is not a fiscal trigger).",
+    "oss_public_wall": "DEGRADED LATENCY — no Echo subscription on the unauthenticated wall surface; relies on 60s polling cadence when WS reports connected. Up to 60s lag between chef bump and customer-visible state on the TV.",
+    "broadcast_outbox": "INTACT — PersistOrderStatusChangedToOutbox idempotency_key includes correlation_id so duplicate listener fires within the same request collapse; cross-request duplicate transitions (K2-H5) get separate outbox rows (acceptable — both broadcast jobs are no-op on the receivers because order.status already DELIVERED). DB::afterCommit dispatch guarantees no broadcast on rollback. WJ-4 OBS-OUTBOX-01 hardening logs Pusher failures + dispatches OutboxBroadcastSwallowedEvent for alerting."
+  },
+
+  "race_conditions_identified": [
+    {
+      "scenario": "K2-H5 — Two cashiers see same PREPARED order in their Prêt-à-livrer panels, both click Livré simultaneously",
+      "outcome": "Both transactions commit DELIVERED. 2 order_status_transitions rows + 2 action_logs rows persisted for the same PREPARED→DELIVERED edge. 2 OrderStatusChanged broadcasts (one per correlation_id). Both cashiers see success toast → ambiguous 'who delivered' attribution. Order.status correctly = DELIVERED. NF525 chain untouched (DELIVERED is not a NF525 trigger).",
+      "data_corruption": false,
+      "audit_trail_polluted": true,
+      "ux_misleading": true,
+      "finding_id": "K2-H5"
+    },
+    {
+      "scenario": "K2-H3 — Chef bumps 3 orders within 500ms (different order rows)",
+      "outcome": "Safe by design. Each row acquires its own lockForUpdate in its own DB::transaction. Throttle ceiling 120/min not threatened. Debounced refresh on KDS UI collapses to one re-render.",
+      "data_corruption": false,
+      "audit_trail_polluted": false,
+      "ux_misleading": false,
+      "finding_id": "K2-H3"
+    }
+  ],
+
+  "ux_friction_points": [
+    {
+      "id": "UX-K2-1",
+      "where": "OSS public wall — chef bumps PREPARING→PREPARED → customer sees Prêt up to 60s late",
+      "issue": "Public wall has no Echo subscription (auth gate); ossSyncService polls every 60s when WS reports connected. Customer waiting at counter for their order number to light up may walk away or harass cashier asking 'is my order ready?'.",
+      "severity": "P2",
+      "fix_size": "~10 lines (override intervalMsWhenConnected when authBranchId===0)",
+      "finding_link": "K2-H7"
+    },
+    {
+      "id": "UX-K2-2",
+      "where": "POS Prêt-à-livrer panel — multi-cashier ambiguity",
+      "issue": "Two cashiers can independently click Livré on same order, both see success toast, audit trail says both delivered. No 'this was already delivered by {other_cashier}' feedback.",
+      "severity": "P1",
+      "fix_size": "~20 lines (lockForUpdate + post-state response flag + modal toast branch)",
+      "finding_link": "K2-H5"
+    },
+    {
+      "id": "UX-K2-3",
+      "where": "KDS recall affordance — visible AFTER order has transitioned to PREPARED",
+      "issue": "kdsRecall un-marks the local item bump display, but does NOT trigger backend PREPARED→PREPARING reverse transition (canTransition does not allow it). Chef may think recall un-prepares the order; downstream POS Q10 still sees order as PREPARED.",
+      "severity": "P2",
+      "fix_size": "~5 lines (template v-if guard hides recall when order.status === PREPARED) OR ~80 lines (V1.0.2 backend reverse-transition endpoint with audit + permission)",
+      "finding_link": "K2-H4"
+    }
+  ],
+
+  "verdict": "AMBER",
+  "verdict_rationale": "Cascade is functionally correct for the happy paths. KDS bump path is hardened (triple defense via FormRequest enum + lockForUpdate + expected_status token + KitchenReleaseRule structural gate). POS Livré path is correct for single-cashier use case but lacks lockForUpdate inside the closure → multi-cashier race produces duplicate operational audit rows (NOT data corruption, NOT NF525 chain pollution, NOT till-count risk — cash drawer is opened at Encaisser not at Livré). OSS public TV wall has a 60s worst-case lag between chef bump and customer-visible PREPARED state — acceptable per owner mandate (kitchen calls out orders verbally, wall is reinforcement) but worth documenting. Three discrete findings: K2-H5 multi-cashier Livré race (P1), K2-H7 public wall 60s lag (P2), K2-H4 KDS recall UX confusion (P2). No P0 findings. Ship-ready for V1 Le Cayenne single-cashier use case with owner-decision needed on K2-H5 for V1.0.1 hardening.",
+
+  "top_5_cascade_concerns": [
+    "K2-H5 (P1) — Multi-cashier Livré race: 2 cashiers can both click Livré on same PREPARED order; both succeed; 2 OrderStatusTransition + 2 ActionLog rows; ambiguous 'who delivered' attribution. Add lockForUpdate inside OrderService::changeStatus !$auth DB::transaction (OrderService.php:1930).",
+    "K2-H7 (P2) — OSS public TV wall worst-case 60s lag between chef bump and customer-visible PREPARED state. No Echo subscription on authBranchId=0 surface; ossSyncService polls every 60s when WS reports connected. Acceptable per owner mandate but worth wiring public-branch.{id} channel or tightening cadence to 5s for authBranchId=0.",
+    "K2-H4 (P2) — KDS recall affordance is local-only; UX may mislead chef into thinking reverse PREPARED→PREPARING transition fires. Either tighten tooltip wording or hide affordance when order.status === PREPARED.",
+    "K2-H6 (INFO) — Echo subscription health on operator-attended surfaces (POS + KDS + OSS authenticated) is well-defended (try/catch + polling fallback + KDS axios interceptor self-heal). No silent-fail risk.",
+    "K2-H3 (INFO) — Multi-bump race across DIFFERENT orders is safe by design: row-level lockForUpdate per transaction, throttle ceiling 120/min not threatened, debounced UI refresh."
+  ],
+
+  "delta_t_chain_measured": "STATIC AUDIT — empirical timing not measured this run (disk at 99%, Playwright skipped — mirrors J-CASCADE precedent). Static reasoning yields the following ΔT bounds: (chef bump click → KDS DB commit) typically <100ms (LAN + single-row tx); (DB commit → Echo broadcast delivery to POS/KDS/OSS-auth subscribers) 100-500ms LAN Pusher RTT; (Echo handler → loadKioskCashOrders/loadReadyOrders HTTP refresh → render) 100-300ms. EXPECTED end-to-end ΔT(chef bump → OSS-auth wall PRÊT visible) ≤1s normal, ≤5s degraded via _kioskPollingInterval fallback. EXPECTED end-to-end ΔT(chef bump → OSS-PUBLIC wall PRÊT visible) ≤1s if WS disconnected (2s polling) BUT up to ~60s if WS reports connected (intervalMsWhenConnected=60000). Cashier Livré click → POS Q10 row vanish ≤500ms (immediate local refresh after 2xx response + Echo broadcast). KDS Historique drawer reflects DELIVERED order within next list() poll (kdsSyncService cadence). Matches Wave Polish empirical claim (0-60s → ~1s) on the operator-facing path; the public-wall lag is the documented outlier.",
+
+  "frozen_zone_diff": "ZERO — no files modified. Read-only static audit. PaymentService.php, FiscalSequenceService.php, AuditLogService.php, IdempotencyKeyMiddleware.php, PaymentComponent.vue, BranchScope.php, OrderStateMachine.php, KioskWizardComponent.vue, KioskAppComponent.vue, KioskUpsellComponent.vue, pos-wizard.js all untouched.",
+
+  "nf525_integrity_attestation": "audit_logs HMAC chain extension is NOT triggered by KDS bump (status transitions on the chef path are not NF525 fiscal events) and NOT triggered by POS Livré PREPARED→DELIVERED (only CANCELED/REJECTED/RETURNED at OrderService.php:2020 invoke AuditLogService::write for NF525). The audit chain is therefore UNTOUCHED by this cascade. fiscal_sequence_no is also UNTOUCHED — allocated at PaymentService::confirmCounterPayment (line 241-243) or FrontendOrderService kiosk-paid path (per J-CASCADE step 11), not at the status-change cascade. order_status_transitions table writes (separate from audit_logs) are the chef-path audit lane — these CAN duplicate per K2-H5 race but are NOT NF525-protected. FrozenZone files unchanged. CLAUDE.md §8 NF525 invariants all upheld in static cascade trace.",
+
+  "prior_phase_anchors_validated": {
+    "F.5 multi-bump race (KDS)": "VERIFIED at KitchenDisplaySystemOrderService.php:258-309 — lockForUpdate per row, no cross-row contention",
+    "H.3 multi-bump race": "VERIFIED — same triple defense (lockForUpdate + expected_status + canTransition guard)",
+    "H-SYNC-001 (C2 polling cadence on POS)": "VERIFIED at PosComponent.vue:2602-2616 — ≤5s force when readyOrders empty or stale",
+    "Wave V pendingTimeoutId removal": "VERIFIED — no _bumpPendingTimeoutId references remain in KitchenDisplaySystemComponent.vue (grep returns 0 matches); kdsBump is immediate; kdsRecall is the 60s grace window for un-marking item display",
+    "Wave R-1 kds-bump throttle": "VERIFIED at RouteServiceProvider.php:193-196 — 120/min env-configurable",
+    "Wave X3 Historique du jour": "VERIFIED at KitchenDisplaySystemOrderService.php:217-246 — read-only, status [PREPARED, OUT_FOR_DELIVERY, DELIVERED], updated_at-bound, capped 50, branch-isolated",
+    "Wave S-1 auto-promote ACCEPT→PREPARING inside PaymentService TX": "VERIFIED at PaymentService.php:271-294 — chef sees second OrderStatusChanged broadcast at :343-347",
+    "GOAL-G2-HEAL-04 OSS TZ alignment": "VERIFIED at OrderStatusScreenOrderService.php:132 + 256 — now(config('app.timezone')) Paris-local literal bind, sentinel SisterServicesTzAwareV2Test inverts to assert",
+    "OSS RED R-3 fail-closed allowlist": "VERIFIED at OrderStatusScreenOrderService.php:59-62 + :220-223 — whereIn KIOSK + TAKEAWAY only; POS/DELIVERY/DINING_TABLE blocked",
+    "J-CASCADE H-SYNC + H2 + H6 anchors": "All re-verified — POS Q10 refresh dual-path (Echo + polling) and backend list filter on payment_status PENDING_COUNTER remain intact"
+  }
+}

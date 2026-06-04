@@ -1,0 +1,82 @@
+{
+  "role": "security",
+  "zone": "PS-2 POS Order Lifecycle — authz, branch isolation, idempotency, NF525 immutability",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head": "b0bc75987f0a117b150c829b6e34e9d6bd2ccf41",
+  "timestamp": "2026-05-18T22:22:29+0200",
+  "scope": "FormRequest::authorize, BranchScope global enforcement, sealed-Z guard, idempotency wiring, RBAC on POST/DELETE.",
+  "findings": [
+    {
+      "id": "SEC-PS2-01",
+      "severity": "P3",
+      "title": "OrderStatusRequest::authorize gates on Spatie roles + kiosk:order ability for self-cancel.",
+      "evidence": "app/Http/Requests/OrderStatusRequest.php:17-35 — staff/admin roles (Admin, Branch Manager, Chef, POS Operator, Cashier) pass; kiosk machine tokens (`tokenCan('kiosk:order')`) pass ONLY for CANCELED. Cancel/reject/return require non-empty `reason` per validator at lines 55-70. Kiosk-machine actors additionally constrained to OrderCancelReason whitelist (line 74). app/Http/Requests/PaymentStatusRequest.php:14-43 narrower (Admin / Branch Manager / POS Operator) and `Rule::in([PAID, UNPAID, PENDING_COUNTER, REFUNDED])`.",
+      "verdict": "KEEP"
+    },
+    {
+      "id": "SEC-PS2-02",
+      "severity": "P3",
+      "title": "PosOrderController constructor middleware enforces permission:pos-orders|pos on index/show + permission:pos-orders on mutations.",
+      "evidence": "app/Http/Controllers/Admin/PosOrderController.php:28-37 — `permission:pos-orders` on destroy, export, changeStatus, changePaymentStatus, selectDeliveryBoy, reorderItems, refundWithCounterEntry ; `permission:pos-orders|pos` on index, show. Additional inline `abort_unless(...->can('pos-orders') || ...->can('pos'))` at line 96 (index) — belt-and-braces redundancy.",
+      "verdict": "KEEP"
+    },
+    {
+      "id": "SEC-PS2-03",
+      "severity": "P3",
+      "title": "BranchScope global scope on Order + PosParkedOrder + 9 other models.",
+      "evidence": "app/Models/Order.php:89-92 + app/Models/PosParkedOrder.php:37-41 register BranchScope. Combined with the explicit `abort_unless($branchId > 0, 403)` in ParkedOrderController::resolveOperatorContext (line 94-98) the cross-branch leak surface is closed — confirmed by tests/Feature/Sentinels/ParkedOrderAdminBranchZeroSentinelTest.php (5 test methods).",
+      "verdict": "KEEP"
+    },
+    {
+      "id": "SEC-PS2-04",
+      "severity": "P3",
+      "title": "PosOrderController::show normalizes ModelNotFoundException + cross-branch into a single 403 to prevent existence enumeration.",
+      "evidence": "app/Http/Controllers/Admin/PosOrderController.php:104-128 — `Order::withoutGlobalScope(BranchScope::class)->findOrFail($order)` inside a try/catch that converts ModelNotFoundException to abort(403). Foreign-branch order id → 403, non-existent id → 403, same shape, no info leak. RED-team Wave 5I A.1 baseline.",
+      "verdict": "KEEP"
+    },
+    {
+      "id": "SEC-PS2-05",
+      "severity": "P3",
+      "title": "OrderService::destroy carries 4-layer guard: branch ownership + PAID + sealed-Z + actor-permission.",
+      "evidence": "app/Services/OrderService.php:2186-2227 — (1) `isGlobalAdmin($actor)` else branch_id parity, (2) PAID + `!can('pos-destroy-paid')` → abort 403, (3) sealed-Z window check on fiscal_sequence_no → abort 409 NF525, (4) HTTP guards outside try/catch so abort bubbles. Anti-pattern correctly avoided — generic catch does NOT swallow HttpException (line 2277 `throw $http`).",
+      "verdict": "KEEP"
+    },
+    {
+      "id": "SEC-PS2-06",
+      "severity": "P3",
+      "title": "Sealed-Z guard for RETURNED transition (NF525 counter-entry mandatory).",
+      "evidence": "app/Services/OrderService.php:1765-1788 inside changeStatus — `SealedOrderGuard::assertMutable($order, 'changeStatus → RETURNED')` throws OrderSealedException if order's created_at falls in a closed Z window. Caller is directed to use POST /api/admin/pos-order/{order}/refund-with-counter-entry (line 904 in routes/api.php). Audit-logs the block attempt to AuditLogService with payload `pos.refund.post_z_blocked` (line 1771) — best-effort + non-blocking on audit failure.",
+      "verdict": "KEEP"
+    },
+    {
+      "id": "SEC-PS2-07",
+      "severity": "P1",
+      "title": "Idempotency middleware is route-wired but Vue store omits X-Idempotency-Key on change-status / change-payment-status / selectDeliveryBoy / destroy — defense-in-depth bypassed on cashier double-click.",
+      "evidence": "routes/api.php:892-906 attaches `idempotency` middleware on change-status, change-payment-status, select-delivery-boy, refund-with-counter-entry. app/Http/Middleware/IdempotencyKeyMiddleware.php:49-58 — when header is absent and route is not in `idempotency.required_routes`, the middleware returns `$next($request)` with NO replay protection. resources/js/store/modules/posOrder.js: `save()` at line 187 sends a key (good), but `destroy()` line 227, `changeStatus()` line 237, `changePaymentStatus()` line 247, and `selectDeliveryBoy` (not shown but same pattern) do NOT inject X-Idempotency-Key. Server-side lockForUpdate + same-status early-return saves correctness on the actual mutation, but: (a) double-click can still cost 2 controller invocations (resource cost), (b) timing-window between PRE-lock read and lock acquisition could let a stale second click slip through before the early-return fires. Tests/Feature/Idempotency/ChangeStatusIdempotencyTest.php only asserts WIRING, not e2e replay — the route has the middleware but it sits idle without a client key. ",
+      "verdict": "HEAL — patch posOrder.js store actions to send `X-Idempotency-Key` (crypto.randomUUID-based) like the existing `save()` action. Scope-minimal: 4 method tweaks in one file. Server already has the cache scope (idempotency:v1:branch:user:sha256(key)) so the change is automatic."
+    },
+    {
+      "id": "SEC-PS2-08",
+      "severity": "P3",
+      "title": "ParkedOrderController hardens against Admin/branch_id=0 cross-branch leak.",
+      "evidence": "app/Http/Controllers/Admin/Pos/ParkedOrderController.php:80-98 — resolveOperatorContext aborts 403 with explicit French message when `$requestUser->branch_id <= 0`. Comment lines 80-92 document the pre-fix vector (Admin with branch_id=0 would query branch_id=0 in PosParkedOrderService::listForOperator and see every branch's parked orders) — closed by tests/Feature/Sentinels/ParkedOrderAdminBranchZeroSentinelTest.php (5 test methods covering GET index, POST store, recall, destroy, AND a positive case for real branch operator).",
+      "verdict": "KEEP"
+    },
+    {
+      "id": "SEC-PS2-09",
+      "severity": "P2",
+      "title": "PosParkedOrderService::recall delete-on-success has no per-order audit trail.",
+      "evidence": "app/Services/PosParkedOrderService.php:72-103 — recall returns the snapshot but deletes the underlying row inside the same DB::transaction. If the operator then loses session before submitting the new POS order, there is no audit anywhere of what was in that cart. PosParkedOrder.payload_json is gone. While the threat model is operator-error (not adversarial), this is a forensic gap for restaurants who later ask 'why does our drawer show €X but POS log shows €Y?'. AuditLogService::write would close the gap (action='pos.parked.recalled' with the payload_json + items_count + preview_total).",
+      "verdict": "HEAL deferred V1.0.2 — needs a low-risk insertion into the transaction. Out of scope-minimal for this round but a clear V1.0.2 win."
+    },
+    {
+      "id": "SEC-PS2-10",
+      "severity": "P3",
+      "title": "FormRequest::authorize for cross-branch refund — defense-in-depth check inside the controller method itself.",
+      "evidence": "app/Http/Controllers/Admin/PosOrderController.php:56-61 (refundWithCounterEntry) — even though `permission:pos-orders` middleware gates the route, the method re-checks: non-Admin role + branch_id mismatch → abort(403, 'Cross-branch refund denied.'). Belt-and-braces — appropriate for an NF525-fiscal mutation.",
+      "verdict": "KEEP"
+    }
+  ],
+  "summary": "Authorization layer is mature: Spatie permissions + role-based + FormRequest::authorize + inline can() + abort_unless + BranchScope global + ModelNotFoundException → 403 + sealed-Z guard for fiscal immutability + PAID-elevated-permission. Single P1 (SEC-PS2-07): Vue store actions omit X-Idempotency-Key on 4 mutation routes; server middleware is wired but the protection is effectively inert without a client key. HEAL recommendation: scope-minimal patch to posOrder.js store actions mirroring the existing `save()` pattern.",
+  "produced_by": "PS-2 security specialist, autonomous"
+}

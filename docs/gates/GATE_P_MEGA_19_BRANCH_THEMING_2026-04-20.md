@@ -86,7 +86,7 @@ Ces faits imposent que le **business** définisse les contours **AVANT** code (a
 - POS / KDS / kiosk utilisent **tous** le même theme branch ?
 - Receipt fiscal NF525 imprime logo branche ?
 
-**Important NF525** : `ReceiptDataService` actuel n'imprime pas de logo (juste texte). Ajouter logo = changement format ticket = potentiellement audit fiscal requis. **À confirmer avec comptable / expert fiscal.**
+**Important NF525** : `ReceiptDataService` (SSOT depuis le wire-in 2026-05-18 — voir `tests/Feature/Receipt/ReceiptDataServiceWireInTest.php`) n'imprime pas de logo (juste texte : SIRET, TVA intra, register_id, legal_footer, operator_name, fiscal_sequence_no). Ajouter logo = changement format ticket = potentiellement audit fiscal requis. **À confirmer avec comptable / expert fiscal.**
 
 ---
 

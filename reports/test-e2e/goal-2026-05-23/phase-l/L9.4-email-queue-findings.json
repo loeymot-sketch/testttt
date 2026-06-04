@@ -1,0 +1,333 @@
+{
+  "agent": "L9.4",
+  "phase": "L",
+  "title": "Email Queue + Retry Policy + Bounce Handling",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head": "d601fdd34",
+  "date": "2026-05-24",
+  "scope": "Audit email queue config, retry policy, bounce handling, rate-limit/per-recipient throttle, DoS exposure, monitoring, sentinel coverage for transactional email (order confirmation/status, delivery-boy, password reset, verification, subscriber broadcast).",
+
+  "verdict": "YELLOW",
+  "verdict_rationale": "Structural email-infrastructure gaps are real but currently LATENT for V1 LOCAL Le Cayenne. ALL 5 Mailables (OrderMail, OrderGotMail, ResetPassword, SubscriberMail, VerifyEmail) declare the `Queueable` trait but DO NOT implement `ShouldQueue` at the class signature level — they send SYNCHRONOUSLY via SMTP inside the originating request, blocking the FPM worker for the round-trip. VerifyEmail imports `Illuminate\\Contracts\\Queue\\ShouldQueue` at file level but the `class VerifyEmail extends Mailable` line does not carry `implements ShouldQueue` — same dead-import pattern as SendResetPasswordNotification listener (verified via dedicated sentinel test, second-pass correction of initial audit). All 5 listeners that wrap `Mail::to()->send()` swallow exceptions to `Log::info` (not Log::error, not Log::critical, not failed_jobs) — so SMTP outages are invisible to any pager grep, no retry occurs, no admin alert fires. Zero bounce-handling infrastructure (no Mailgun webhook route, no `users.bounced_at` column, no suppression list, no `Queue::failing()` handler in EventServiceProvider). Supervisor template only watches `--queue=high,default` — even if Mailables WERE made `ShouldQueue`, they would land on `default` and starve behind `DispatchDomainEventsJob` on `high`. No dedicated `mail` lane. NO per-recipient throttle exists (e.g. password-reset spam protection lives only in `ForgotPasswordController`-level rate limit, not at the mail-dispatch layer). BLAST RADIUS LIMITED BECAUSE: (a) `OrderMailNotificationBuilder::send()` early-returns for `source == 10` (Kiosk Machine) — kiosks dominate V1 traffic so customer-email path is rarely walked; (b) `.env` ships `MAIL_HOST=` empty and `MAIL_PORT=0` — Mail::send fails fast (TCP refused) before adding observable latency, and the silent Log::info catch makes that failure invisible to the request path. The structural risk MATERIALIZES when owner configures real MAIL_HOST (Mailgun/SES) AND web/mobile-app order volume grows past ~kiosk-dominated mix. Verdict matches J-ADV-5 D7 P1 vector pattern: V1 LOCAL deferable, V1 LIVE-PROD/V2 SaaS becomes critical.",
+
+  "queue_config": {
+    "queue_connection_env": "QUEUE_CONNECTION=redis",
+    "queue_connection_verified_by": "L12.1-boot-guards-findings.json (REDIS_QUEUE / REDIS_HOST inventoried) + .env.example line",
+    "default_redis_queue_name": "default (config/queue.php:68 — env('REDIS_QUEUE', 'default'))",
+    "supervisor_workers": {
+      "file": "deploy/ansible/templates/supervisor-foodking.conf.j2",
+      "program": "foodking-queue",
+      "command": "php{{ php_version }} {{ app_root }}/artisan queue:work redis --queue=high,default --tries=3 --timeout=120 --max-jobs=1000 --sleep=3",
+      "numprocs": 2,
+      "lanes_watched": ["high", "default"],
+      "lanes_NOT_watched": ["mail", "notifications", "low"],
+      "mail_lane_resolution_today": "ALL Mailables that ARE queueable would dispatch onto 'default' (no ->onQueue('mail') override anywhere in app/Mail or listeners). 'default' is shared with non-priority outbox tail + ad-hoc jobs."
+    },
+    "mailables_should_queue_status": [
+      {
+        "class": "app/Mail/VerifyEmail.php",
+        "implements_should_queue": false,
+        "uses_queueable_trait": true,
+        "imports_should_queue_dead": true,
+        "behavior": "SYNCHRONOUS — dead-import pattern. File imports `Illuminate\\Contracts\\Queue\\ShouldQueue` but the class signature `class VerifyEmail extends Mailable` does NOT carry `implements ShouldQueue`. Reads as queued, runs synchronously.",
+        "evidence": "VerifyEmail.php:6 imports ShouldQueue; VerifyEmail.php:10 class signature lacks implements ShouldQueue. Confirmed via dedicated EmailQueueResilienceSentinelTest::verify_email_dead_should_queue_import_is_documented (PASS — locks dead state)."
+      },
+      {
+        "class": "app/Mail/OrderMail.php",
+        "implements_should_queue": false,
+        "uses_queueable_trait": true,
+        "behavior": "SYNCHRONOUS — blocks request thread on SMTP I/O",
+        "evidence": "OrderMail.php:9 'class OrderMail extends Mailable' (no implements ShouldQueue)"
+      },
+      {
+        "class": "app/Mail/OrderGotMail.php",
+        "implements_should_queue": false,
+        "uses_queueable_trait": true,
+        "behavior": "SYNCHRONOUS — blocks request thread on SMTP I/O",
+        "evidence": "OrderGotMail.php:9 'class OrderGotMail extends Mailable' (no implements ShouldQueue)"
+      },
+      {
+        "class": "app/Mail/ResetPassword.php",
+        "implements_should_queue": false,
+        "uses_queueable_trait": true,
+        "behavior": "SYNCHRONOUS — blocks request thread on SMTP I/O",
+        "evidence": "ResetPassword.php:9 'class ResetPassword extends Mailable' (no implements ShouldQueue)"
+      },
+      {
+        "class": "app/Mail/SubscriberMail.php",
+        "implements_should_queue": false,
+        "uses_queueable_trait": true,
+        "behavior": "SYNCHRONOUS — blocks request thread on SMTP I/O per-recipient (BROADCAST DoS risk)",
+        "evidence": "SubscriberMail.php:9 'class SubscriberMail extends Mailable' (no implements ShouldQueue)"
+      }
+    ],
+    "listeners_should_queue_status": [
+      {
+        "listener": "app/Listeners/SendResetPasswordNotification.php",
+        "imports_should_queue": true,
+        "implements_should_queue": false,
+        "behavior": "DEAD IMPORT — class does NOT implement ShouldQueue. The `use Illuminate\\Contracts\\Queue\\ShouldQueue;` line at top is unused. Reads as if queued — runs SYNCHRONOUSLY in the originating request.",
+        "severity": "P2",
+        "fix_complexity": "trivial — add `implements ShouldQueue` to class line"
+      },
+      {
+        "listener": "app/Listeners/SendOrderMailNotification.php",
+        "imports_should_queue": false,
+        "implements_should_queue": false,
+        "behavior": "Synchronous — `new OrderMailNotificationBuilder(...)->send()` calls `Mail::to($email)->send(new OrderMail(...))` synchronously"
+      },
+      {
+        "listener": "app/Listeners/SendOrderDeliveryBoyMailNotification.php",
+        "imports_should_queue": false,
+        "implements_should_queue": false,
+        "behavior": "Synchronous — `OrderDeliveryBoyMailNotificationBuilder->send()` synchronous SMTP I/O"
+      }
+    ],
+    "synchronous_mail_call_sites": [
+      "app/Listeners/SendResetPasswordNotification.php:33 Mail::to($event->info['email'])->send(new ResetPassword(...))",
+      "app/Services/OrderMailNotificationBuilder.php:72 Mail::to($email)->send(new OrderMail(...))",
+      "app/Services/OrderDeliveryBoyMailNotificationBuilder.php:52 Mail::to($email)->send(new OrderMail(...))",
+      "app/Services/OrderGotMailNotificationBuilder.php:46 Mail::to($emailArray[0])->cc($emailArray)->send(new OrderGotMail(...))"
+    ]
+  },
+
+  "retry_policy": {
+    "worker_level": {
+      "tries": 3,
+      "source": "supervisor-foodking.conf.j2:9 --tries=3",
+      "applies_to": "Failed dispatch of QUEUED jobs (NONE today for Mailables — all 5 Mailables are synchronous via dead-import or missing implements). Applies to actually-queued non-mail jobs: DispatchDomainEventsJob, SendFcmNotificationJob, ProcessWebhookEventJob, SloEvaluatorJob.",
+      "backoff_strategy": "NONE — `--backoff` flag absent from queue:work invocation. Failed retries fire immediately (Laravel default 0s when no $backoff on job).",
+      "max_attempts_after_failure": 3,
+      "post_3_failures_destination": "failed_jobs table (migration 2019_08_19_000000_create_failed_jobs_table.php — driver 'database-uuids' per config/queue.php:88)"
+    },
+    "mailable_level_backoff": "No $backoff property defined on any Mailable in app/Mail/. Compare app/Jobs/DispatchDomainEventsJob.php which defines $backoff=[1,5,15,60,300] tries=6. Email retry curve is therefore linear-zero (3 attempts back-to-back) — bad shape against transient SMTP timeouts which need exponential decay.",
+    "synchronous_mail_failures": {
+      "behavior": "NO RETRY whatsoever. Try/catch in listener body → Log::info($e->getMessage()) → silent return.",
+      "examples": [
+        "SendResetPasswordNotification.php:34-36 catches Exception → Log::info (INFO level — invisible to ANY grep for warn/error/critical)",
+        "OrderMailNotificationBuilder.php:73-75 catches Exception → Log::info",
+        "OrderDeliveryBoyMailNotificationBuilder.php:53-55 (assumed pattern — same author template)"
+      ],
+      "impact": "SMTP outage → ZERO retry, ZERO failed_jobs entry, ZERO pager signal, ZERO admin notification. Customer never receives password reset / order confirmation. Operator never knows."
+    },
+    "permanent_failure_admin_notification": {
+      "exists": false,
+      "evidence_searched": "grep -rn 'Queue::failing|Bus::failing' app/Providers — zero matches. AppServiceProvider.php and EventServiceProvider.php both checked.",
+      "recommendation": "Add `Queue::failing(function (JobFailed $event) { ... })` in EventServiceProvider::boot or AppServiceProvider::boot. Pipe to `Log::channel('fiscal')->critical(...)` (re-use existing nightly grep pipeline established by EscalateOutboxBroadcastSwallowed pattern)."
+    }
+  },
+
+  "bounce_handling": {
+    "mailgun_webhook_route": null,
+    "ses_sns_webhook_route": null,
+    "postmark_webhook_route": null,
+    "evidence": "grep -rn 'MailgunWebhook|mail.*bounce|webhook.*mail' app/Http/Controllers routes — ONLY hit is config/services.php mailgun stanza (provider config only, no inbound webhook handler). routes/api.php + routes/web.php inspected: zero `/webhook/mailgun/*` or `/webhook/ses/*` routes.",
+    "users_table_bounce_columns": {
+      "bounced_at": "NOT PRESENT — grep migrations for `bounce` returned zero hits in users table schema",
+      "email_status": "NOT PRESENT",
+      "email_suppressed": "NOT PRESENT"
+    },
+    "suppression_list": "NONE. No `email_suppressions` table. No middleware-level skip-if-bounced check before Mail::to(). One bounced address would receive every subsequent email forever, accumulating provider-side reputation damage.",
+    "complaint_handling": "NONE (FBL spam complaints, Mailgun `complained` webhook, AWS SES `Complaint` SNS event — all unhandled).",
+    "impact": "If owner configures Mailgun in production and ships even one campaign via SubscriberMail to a stale list: hard-bounce rate >5% will rate-limit the sending domain on Mailgun side, soft-bounce loop will keep retrying forever (no retry cap at app layer because mail is synchronous and not queued). Sender-reputation degradation is permanent on shared Mailgun pools."
+  },
+
+  "rate_limiting": {
+    "mailgun_provider_caps": "Free tier: 5 messages/sec, 100/day post sandbox. Flex tier: 60k/month. Paid: per-plan throttling. App-level enforcement: ZERO.",
+    "per_recipient_throttle": {
+      "exists": false,
+      "evidence": "No `cache->throttle()` / `RateLimiter::attempt()` keyed by recipient email anywhere in app/Listeners or app/Services Mail builders. Compare app/Listeners/NotifyStockLowOnStockLevelChanged.php:29-56 which DOES throttle per-key (good template). Email path has nothing equivalent.",
+      "concrete_risk": "Order status state machine can flip a single order through PENDING→ACCEPT→PREPARING→PREPARED→OUT_FOR_DELIVERY→DELIVERED within minutes (KDS bump-board taps). OrderMailNotificationBuilder fires on EVERY transition WITHOUT dedup → 6 emails to one customer for one order. Multiply by 50 orders/day."
+    },
+    "global_send_rate_caps": "NONE. No Bus::batch chunking. No `dispatch()->delay()`. No throttle-per-minute around SubscriberMail broadcast.",
+    "password_reset_dispatch_throttle": {
+      "exists_at_request_layer": true,
+      "exists_at_mail_layer": false,
+      "evidence": "ForgotPasswordController.php:53 dispatches without per-email cache check. Request-layer throttle (Laravel's named `password-reset` throttle) caps HTTP requests per IP, NOT per email destination — an attacker rotating IPs can still spam mailbox of victim.",
+      "recommendation": "Add per-email cache::add('reset-mail:'.sha1($email), 1, 60) gate in SendResetPasswordNotification::handle before Mail::send."
+    }
+  },
+
+  "per_l9_1_audit": {
+    "order_confirmation_email_path": {
+      "trigger_sites": [
+        "app/Services/OrderService.php:592 (kiosk PENDING)",
+        "app/Services/FrontendOrderService.php:1338 (paid kiosk → ACCEPT)",
+        "app/Services/FrontendOrderService.php:616, 760 (other transitions)",
+        "app/Services/OrderService.php:1828, 1905, 2078 (status changes)",
+        "app/Services/KitchenDisplaySystemOrderService.php:318 (KDS bump → status change)",
+        "app/Jobs/CleanupStalePendingKioskOrders.php:76 (auto-reject cron)"
+      ],
+      "is_queued_today": "Event SendOrderMail::dispatch() routes to listener SendOrderMailNotification (NOT ShouldQueue) → OrderMailNotificationBuilder::send() → Mail::to()->send() — fully SYNCHRONOUS",
+      "kiosk_source_skip": "OrderMailNotificationBuilder.php:33 — `if ($this->order->source == 10) return;` — Kiosk orders SKIP mail entirely. This is the primary reason V1 latency exposure is low TODAY.",
+      "web_app_path": "Web app orders (source != 10) fall through to synchronous Mail::send. With empty MAIL_HOST in current .env, request fails fast (TCP refused) and Log::info swallows. Once MAIL_HOST is populated in production, customer-facing latency on web ORDER CREATE POST = SMTP round-trip (typ. 200ms-2s)."
+    },
+    "password_reset_email_path": {
+      "trigger_site": "app/Http/Controllers/Auth/ForgotPasswordController.php:53 SendResetPassword::dispatch(['email' => ..., 'pin' => ...])",
+      "is_queued_today": "Event → listener SendResetPasswordNotification (imports ShouldQueue but does NOT implement it) → Mail::to()->send(new ResetPassword(...)) — SYNCHRONOUS",
+      "customer_facing_latency_impact": "Once MAIL_HOST populated: ForgotPassword POST blocks for SMTP round-trip + retry-zero-on-failure. Slow Mailgun = slow forgot-password page."
+    },
+    "verification_email_path": {
+      "trigger_site": "Illuminate\\Auth\\Listeners\\SendEmailVerificationNotification (framework-provided)",
+      "is_queued_today": "Framework's SendEmailVerificationNotification listener implements ShouldQueue (Laravel default) — but the app-side VerifyEmail Mailable does NOT implement ShouldQueue (dead-import). The framework listener queues itself onto 'default'; when the worker picks it up it then calls `notify(new VerifyEmailNotification)` which sends via Mail::send synchronously WITHIN THE QUEUE WORKER PROCESS. Net effect: SMTP latency moves off the FPM thread but the worker thread blocks per-recipient. Better than fully-sync, worse than per-recipient queued mail. Per-job timeout is 120s (--timeout=120) so a hung SMTP would burn one worker slot for up to 2min before SIGTERM."
+    }
+  },
+
+  "email_queue_dos": {
+    "j_adv_5_reference": "phase-j/J-ADV-5-dos-findings.json — email queue not covered in D1-D15 (notification path = FCM SendFcmNotificationJob only, mail path absent)",
+    "unbounded_growth_vector": "If Mailables WERE made ShouldQueue (currently they're not), they would land on 'default' queue alongside outbox + ad-hoc jobs. Worker `--max-jobs=1000` cycles every 1000 jobs but does NOT cap queue DEPTH — only worker process recycling. A 50k-recipient SubscriberMail broadcast would queue 50k jobs onto Redis. With numprocs=2 and ~200ms/SMTP-job → drain rate ~10 mail/sec → 50k mail = ~83min drain (acceptable in isolation) BUT shares lane with kiosk/POS-critical outbox dispatches.",
+    "current_blast_radius_zero_because": "Mail is NOT queued today — DoS vector doesn't exist via redis queue. It exists via FPM worker pool starvation: a SubscriberMail::send loop over N recipients with synchronous Mail::send blocks the originating PHP-FPM worker for N × SMTP round-trip. With pm.max_children typical 8-16 on VPS-1 (4GB RAM), one operator clicking 'send to 1000 subscribers' wedges the admin request thread for ~3min.",
+    "redis_eviction_safety": "Redis maxmemory-policy=allkeys-lru does NOT touch list keys (Laravel queue uses LPUSH/RPOP) — queue jobs are safe under memory pressure (per J-ADV-5 D14)."
+  },
+
+  "production_monitoring": {
+    "current_state": "ZERO email-specific observability metrics exposed. SyncOverviewController inventoried via L12.1 covers domain_events + jobs/failed_jobs counts globally, not per-queue and not per-mailable.",
+    "recommended_additions": [
+      {
+        "id": "MAIL-MON-01",
+        "title": "Failed-jobs depth alert (queue=mail OR mailable_class LIKE '%Mail%')",
+        "tool": "Add column or filter to existing admin/observability/sync-overview or new admin/observability/mail-queue page",
+        "trigger": "failed_jobs WHERE payload LIKE '%App\\\\Mail\\\\%' COUNT > 10 in last 1h"
+      },
+      {
+        "id": "MAIL-MON-02",
+        "title": "Bounce rate alert (post Mailgun webhook wiring)",
+        "trigger": "bounce_count / sent_count > 5% rolling 1h window",
+        "blocked_by": "Mailgun webhook handler does not exist — prerequisite"
+      },
+      {
+        "id": "MAIL-MON-03",
+        "title": "Mailgun dashboard linkage in admin",
+        "implementation": "Add 'Email reputation' panel link in admin /admin/settings/mail to https://app.mailgun.com/app/dashboard with configured domain context"
+      },
+      {
+        "id": "MAIL-MON-04",
+        "title": "Queue::failing global handler → fiscal log channel",
+        "implementation": "EventServiceProvider::boot() registers Queue::failing(fn(JobFailed $e) => Log::channel('fiscal')->critical('[queue] permanent_failure', [...payload...])). Re-uses nightly grep pipeline established by EscalateOutboxBroadcastSwallowed pattern.",
+        "fixes_concerns": ["MAIL-MON-01 prerequisite", "All-queue observability (not mail-specific)"]
+      },
+      {
+        "id": "MAIL-MON-05",
+        "title": "Mail queue depth gauge",
+        "implementation": "Redis LLEN 'queues:mail' (post adding dedicated lane) exposed via Horizon dashboard OR custom artisan command `php artisan email:queue-depth` invoked by hourly cron with > N threshold alert"
+      }
+    ]
+  },
+
+  "sentinel": {
+    "path": "tests/Feature/Mail/EmailQueueResilienceSentinelTest.php",
+    "approach": "LOCK-IN current behavior — assert that ALL 5 Mailables are NOT ShouldQueue (so a future 'fix' is explicit + reviewed against the supervisor lane question). Plus assertion that supervisor template watches expected lanes + failed_jobs infrastructure intact + listener dead-import baseline + VerifyEmail dead-import baseline. Sentinel value: catch silent drift either direction.",
+    "assertions": [
+      "queued_mailables_remain_queued — QUEUED_MAILABLES baseline is empty today (none correctly queued)",
+      "verify_email_dead_should_queue_import_is_documented — VerifyEmail imports ShouldQueue but does NOT implement it (dead-import baseline lock)",
+      "synchronous_mailables_baseline_locked — OrderMail / OrderGotMail / ResetPassword / SubscriberMail / VerifyEmail ALL do NOT implement ShouldQueue (baseline lock — flips here must trigger explicit gate to ensure mail lane added to supervisor)",
+      "supervisor_template_watches_required_queue_lanes — supervisor-foodking.conf.j2 watches at least queues 'high' and 'default'",
+      "failed_jobs_migration_exists_and_uses_uuid_driver — migration exists + driver=database-uuids + table=failed_jobs",
+      "reset_password_listener_dead_should_queue_import_is_documented — SendResetPasswordNotification imports ShouldQueue but does NOT implement it (dead-import baseline)",
+      "all_audited_mailables_are_loadable_classes — sanity: all 5 Mailable classes exist + extend Illuminate\\Mail\\Mailable"
+    ],
+    "test_count": 7,
+    "assertion_count": 30,
+    "run_result": "PASS (7 tests, 30 assertions, 0.233s) — verified locally against HEAD d601fdd34",
+    "created": true
+  },
+
+  "fix_priorities_v1_0_x_backlog": [
+    {
+      "id": "MAIL-FIX-01",
+      "priority": "P2 (V1.0.X — defer until owner configures real MAIL_HOST)",
+      "title": "Add `implements ShouldQueue` to OrderMail + OrderGotMail + ResetPassword + SubscriberMail; add `mail` lane to supervisor (--queue=high,default,mail OR --queue=high,default + separate worker for mail)",
+      "rollback_complexity": "Low — 4 single-line class signature changes + 1 Ansible template line",
+      "frozen_zone_impact": "None — no fiscal/payment/pricing files touched"
+    },
+    {
+      "id": "MAIL-FIX-02",
+      "priority": "P2 (V1.0.X)",
+      "title": "Listener exception severity: change `Log::info` → `Log::channel('fiscal')->warning(...)` in 4 mail builder sites. Aligns with EscalateOutboxBroadcastSwallowed pattern + nightly grep pipeline.",
+      "files": [
+        "app/Services/OrderMailNotificationBuilder.php:73-75",
+        "app/Services/OrderDeliveryBoyMailNotificationBuilder.php:53-55",
+        "app/Services/OrderGotMailNotificationBuilder.php (similar pattern)",
+        "app/Listeners/SendResetPasswordNotification.php:35"
+      ]
+    },
+    {
+      "id": "MAIL-FIX-03",
+      "priority": "P2 (V1.0.X)",
+      "title": "Register Queue::failing global handler in EventServiceProvider::boot",
+      "implementation_sketch": "Queue::failing(function (JobFailed $event) { Log::channel('fiscal')->critical('[queue] permanent_failure', ['connection' => $event->connectionName, 'job' => $event->job->resolveName(), 'exception' => $event->exception->getMessage()]); });"
+    },
+    {
+      "id": "MAIL-FIX-04",
+      "priority": "P3 (V1.0.2 — only if owner ships SubscriberMail broadcast)",
+      "title": "Mailgun webhook handler + users.bounced_at column + suppression-list check before Mail::to()",
+      "scope_note": "Substantial work — new migration, new controller, new HMAC-verified webhook signature, suppression-list Eloquent scope. Defer until owner explicitly opts into email marketing."
+    },
+    {
+      "id": "MAIL-FIX-05",
+      "priority": "P3 (V1.0.X)",
+      "title": "Per-recipient throttle in SendResetPasswordNotification (60s cooldown per email)",
+      "files": "app/Listeners/SendResetPasswordNotification.php — add Cache::add('reset-mail:'.sha1($email), 1, 60) gate before Mail::send"
+    },
+    {
+      "id": "MAIL-FIX-06",
+      "priority": "P3 (V1.0.X)",
+      "title": "Per-order dedup in OrderMailNotificationBuilder (don't fire 6 emails on rapid KDS status flips)",
+      "files": "app/Services/OrderMailNotificationBuilder.php — Cache::has('order-mail:'.$orderId.':'.$status) gate, 10min TTL"
+    }
+  ],
+
+  "files_inspected": [
+    "config/mail.php",
+    "config/queue.php",
+    "config/services.php (mailgun stanza)",
+    "app/Mail/OrderMail.php",
+    "app/Mail/OrderGotMail.php",
+    "app/Mail/ResetPassword.php",
+    "app/Mail/SubscriberMail.php",
+    "app/Mail/VerifyEmail.php",
+    "app/Listeners/SendOrderMailNotification.php",
+    "app/Listeners/SendOrderDeliveryBoyMailNotification.php",
+    "app/Listeners/SendResetPasswordNotification.php",
+    "app/Listeners/EscalateOutboxBroadcastSwallowed.php (pattern reference)",
+    "app/Listeners/NotifyStockLowOnStockLevelChanged.php (throttle pattern reference)",
+    "app/Services/OrderMailNotificationBuilder.php",
+    "app/Services/OrderDeliveryBoyMailNotificationBuilder.php (referenced)",
+    "app/Services/OrderGotMailNotificationBuilder.php (referenced)",
+    "app/Events/SendOrderMail.php (Dispatchable event class)",
+    "app/Providers/EventServiceProvider.php",
+    "app/Providers/AppServiceProvider.php (boot guards inventory)",
+    "app/Jobs/DispatchDomainEventsJob.php (backoff curve reference)",
+    "app/Jobs/SendFcmNotificationJob.php (backoff curve reference)",
+    "app/Jobs/ProcessWebhookEventJob.php (backoff curve reference)",
+    "app/Jobs/Observability/SloEvaluatorJob.php (backoff reference)",
+    "app/Http/Controllers/Auth/ForgotPasswordController.php (password reset trigger)",
+    "deploy/ansible/templates/supervisor-foodking.conf.j2",
+    "database/migrations/2019_08_19_000000_create_failed_jobs_table.php",
+    ".env (production-like — MAIL_HOST empty / MAIL_PORT=0)",
+    ".env.example (mailpit dev defaults)",
+    "reports/test-e2e/goal-2026-05-23/phase-j/J-ADV-5-dos-findings.json (cross-reference D6 / D14 queue analysis)",
+    "reports/test-e2e/goal-2026-05-23/phase-l/L12.1-boot-guards-findings.json (boot guard pattern reference)",
+    "routes/api.php (grep for webhook routes — none for mail)",
+    "routes/web.php (grep for webhook routes — none for mail)"
+  ],
+
+  "alignment_with_phase_l_pattern": "Matches L12.1 (boot-guards) verdict shape — GREEN/YELLOW/RED + verdict_rationale + per-finding sections. Matches J-ADV-5 vector pattern of deferral assessment per environment (V1 LOCAL vs V1 LIVE vs V2 SaaS). Does NOT introduce frozen-zone modifications. Does NOT touch fiscal/payment/pricing. Sentinel uses tests/Feature/Mail/ which is new directory (created by sentinel write).",
+
+  "return": {
+    "path": "reports/test-e2e/goal-2026-05-23/phase-l/L9.4-email-queue-findings.json",
+    "sentinel_path": "tests/Feature/Mail/EmailQueueResilienceSentinelTest.php",
+    "verdict": "YELLOW",
+    "top_3_concerns": [
+      "Synchronous Mail::to()->send() in 4 of 5 listener paths + Log::info exception swallowing → SMTP outages invisible to pager, zero retry, zero failed_jobs trail. Currently latent because MAIL_HOST=empty and kiosk source=10 skips mail. Materializes immediately when owner configures real MAIL_HOST AND web-app order volume grows.",
+      "Zero bounce-handling infrastructure (no Mailgun/SES webhook route, no users.bounced_at column, no suppression list, no FBL complaint handling). One stale subscriber list shipped via SubscriberMail = permanent sender-reputation damage on shared Mailgun pools.",
+      "Supervisor template watches --queue=high,default ONLY — even if Mailables WERE made ShouldQueue, they would land on 'default' alongside DispatchDomainEventsJob outbox tail and ad-hoc jobs. No dedicated mail lane. Order-critical outbox dispatch could be starved by a 50k SubscriberMail broadcast."
+    ],
+    "production_monitoring_recommendations": [
+      "Queue::failing global handler in EventServiceProvider::boot piping to Log::channel('fiscal')->critical — re-uses nightly grep pipeline (no new infra). Fixes observability gap for ALL queued jobs, not just mail.",
+      "Mail queue depth alert (Redis LLEN 'queues:default' OR 'queues:mail' post lane split) via hourly artisan cron with threshold N=100 → admin email/dashboard alert.",
+      "Bounce rate dashboard panel in admin/observability/mail (blocked on Mailgun webhook handler — prerequisite work). Until then: link out to Mailgun dashboard for sender reputation monitoring.",
+      "failed_jobs admin observability page filtering by payload LIKE '%App\\\\Mail\\\\%' to surface mail-specific permanent failures distinct from outbox/FCM failures."
+    ]
+  }
+}

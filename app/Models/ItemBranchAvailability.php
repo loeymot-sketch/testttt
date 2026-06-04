@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Scopes\BranchScope;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -25,6 +26,20 @@ class ItemBranchAvailability extends Model
         'unavailable_since' => 'datetime',
         'daily_reset_at' => 'date',
     ];
+
+    /**
+     * [2026-05-18 PR-D T7 heal] Multi-tenant gap closure. Per ultra-review
+     * PR-D F-D2 split: ItemBranchAvailability has `branch_id` and is
+     * compatible with the standard `BranchScope` (strict equality on
+     * `branch_id` column). Admin (branch_id=0) bypasses. Staff sees only
+     * own-branch availability rows — prevents cross-tenant 86-rupture
+     * leakage between branches in a future multi-restaurant deploy.
+     * Sister test: tests/Feature/Multitenant/ItemBranchAvailabilityScopeTest.php
+     */
+    protected static function booted(): void
+    {
+        static::addGlobalScope(new BranchScope());
+    }
 
     public function item(): BelongsTo
     {

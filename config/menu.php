@@ -71,7 +71,13 @@ return [
     */
     'settings' => [
         'tax_rate'              => 10.00,
-        'default_tax_id'        => 1,
+        // [GOAL-GOLIVE-VAT10 2026-05-30] Was 1 (= "No-VAT 0%") → the root cause of
+        // the 0%-VAT menu. Le Cayenne charges 10% VAT included in the price.
+        // NOTE: MenuSeeder::defaultTaxId() resolves the VAT 10% row BY ATTRIBUTES
+        // (rate=10 + PERCENTAGE + name='VAT'), so this int is now a documented
+        // fallback only — the resolver is authoritative and id-agnostic. Set to 3
+        // (the seeded VAT 10% row) for consumers that read this value directly.
+        'default_tax_id'        => 3,
         'status_active'         => \App\Enums\Status::ACTIVE,
         'featured_default'      => true,
         'currency_decimals'     => 2,
@@ -92,37 +98,39 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Sauce Options (from Image 2)
+    | Sauce Options — Le Cayenne canonical 13 (owner mandate 2026-05-21)
     |--------------------------------------------------------------------------
+    | Owner-validated list: 12 sauces + Sans Sauce. Order matches kiosk wizard
+    | grid (most popular first). Image mapping in config/menu_images.php
+    | 'sauces' bucket — each name keys a sauce-<slug>.png in public/images/menu.
     */
     'sauces' => [
-        'Ketchup',
         'Mayonnaise',
-        'Algérienne',
-        'Curry',
-        'Andalouse',
-        'Burger',
-        'Samouraï',
-        'Barbecue',
-        'Cocktail',
-        'Américaine',
-        'Hannibal',
-        'Harissa',
+        'Ketchup',
         'Blanche',
-        'Poivre',
+        'Hannibal',
+        'Samouraï',
+        'Algérienne',
+        'Andalouse',
+        'Curry',
+        'Barbecue',
+        'Harissa',
+        'Sauce Fromagère Maison',
+        'Sauce Spicy Maison',
         'Sans Sauce',
     ],
 
     /*
     |--------------------------------------------------------------------------
-    | Crudité Options (Atomiques - Sprint 23 Fix)
-    | Chaque crudité est un élément individuel toggle-able (vert/rouge)
+    | Crudité Options (atomic toggle per item)
     |--------------------------------------------------------------------------
+    | Owner mandate 2026-05-21: added Cornichon as 4th canonical crudité.
     */
     'crudites' => [
         'Salade',
         'Tomate',
         'Oignon',
+        'Cornichon',
     ],
 
     /*
@@ -726,18 +734,26 @@ return [
     | Addons (Upsell Items)
     |--------------------------------------------------------------------------
     */
+    // [OWNER-FIX 2026-06-04] Chaque addon doit atterrir dans SA catégorie réelle
+    // (slug). Sans clé `category`, MenuSeeder::createAddons retombait sur la 1re
+    // catégorie (Sandwich Cayenne) car les clés legacy 'frites-accompagnements'
+    // / 'nos-boissons' n'existent pas dans le baseline 11 catégories → boisson,
+    // frites et menu apparaissaient à tort dans les sandwichs (borne + caisse).
     'addons' => [
         [
-            'name'  => 'Menu (Frites + Boisson)',
-            'price' => 3.00,
+            'name'     => 'Menu (Frites + Boisson)',
+            'price'    => 3.00,
+            'category' => 'supplements',
         ],
         [
-            'name'  => 'Frites Seules',
-            'price' => 2.00,
+            'name'     => 'Frites Seules',
+            'price'    => 2.00,
+            'category' => 'frites',
         ],
         [
-            'name'  => 'Boisson Seule',
-            'price' => 2.00,
+            'name'     => 'Boisson Seule',
+            'price'    => 2.00,
+            'category' => 'boissons',
         ],
     ],
 

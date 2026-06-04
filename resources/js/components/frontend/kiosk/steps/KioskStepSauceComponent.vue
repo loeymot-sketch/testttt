@@ -242,7 +242,11 @@ export default {
     },
     toggleSauce(sauce) {
       if (!this.sauceFilterAllowed(sauce)) return;
-      if (this.isSauceOos(sauce) && !this.localSelections[this.selectionKey(sauce)]) return;
+      // [D3 FIX 2026-05-21] Unconditional OOS guard — out-of-stock sauces must
+      // never be selectable/deselectable from the wizard UI (previous narrow
+      // guard allowed deselection only, but if F3 reproduces it means the
+      // narrow form has not been sufficient in practice).
+      if (this.isSauceOos(sauce)) return;
       const key = this.sauceKey(sauce);
       const selKey = String(key);
       const newSelections = { ...this.localSelections };

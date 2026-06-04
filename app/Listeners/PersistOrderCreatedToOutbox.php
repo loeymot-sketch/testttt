@@ -4,6 +4,7 @@ namespace App\Listeners;
 
 use App\Enums\EventType;
 use App\Events\OrderCreated;
+use App\Events\OutboxBroadcastSwallowedEvent;
 use App\Jobs\DispatchDomainEventsJob;
 use App\Models\DomainEvent;
 use Illuminate\Support\Facades\DB;
@@ -64,17 +65,42 @@ class PersistOrderCreatedToOutbox
             // do not fail HTTP on Pusher dispatch error (sibling defense — same
             // defect class as PersistItemAvailabilityChangedToOutbox patched
             // in cluster 6 / round 2).
+            // [WJ-4 WI-5 OBS-OUTBOX-01 2026-05-19] Escalate swallow log to
+            // Log::error tier + dispatch OutboxBroadcastSwallowedEvent typed
+            // hook so production alerting (Sentry / Datadog) can wire
+            // structured alarms. The DomainEvent row is already persisted —
+            // cron `outbox:retry-failed` will retry — but if worker + cron
+            // are simultaneously down the previous warning emit was silent.
             try {
                 DispatchDomainEventsJob::dispatch($domainEvent->id);
             } catch (\Throwable $broadcastException) {
-                Log::warning('[Outbox] DispatchDomainEventsJob inline dispatch failed (non-blocking)', [
-                    'gate'            => 'test-e2e-fix-E-001-round-3',
+                Log::error('[Outbox] DispatchDomainEventsJob inline dispatch failed (non-blocking, retries via cron)', [
+                    'gate'            => 'WJ-4-WI5-OBSOUTBOX01',
                     'domain_event_id' => $domainEvent->id,
                     'event_type'      => $domainEvent->event_type,
                     'aggregate_id'    => $domainEvent->aggregate_id,
                     'branch_id'       => $domainEvent->branch_id,
                     'error'           => $broadcastException->getMessage(),
                 ]);
+
+                // Defense-in-depth: observability event MUST NOT itself
+                // re-break the cascade. Mirror DecrementStockOnOrderCreated.
+                try {
+                    event(new OutboxBroadcastSwallowedEvent(
+                        domainEventId: (int) $domainEvent->id,
+                        eventType:     (string) $domainEvent->event_type,
+                        aggregateId:   (int) $domainEvent->aggregate_id,
+                        branchId:      (int) $domainEvent->branch_id,
+                        listener:      self::class,
+                        errorMessage:  $broadcastException->getMessage(),
+                        failedAt:      new \DateTimeImmutable(),
+                    ));
+                } catch (\Throwable $observabilityException) {
+                    Log::warning('[Outbox] OutboxBroadcastSwallowedEvent dispatch absorbed', [
+                        'domain_event_id' => $domainEvent->id,
+                        'error'           => $observabilityException->getMessage(),
+                    ]);
+                }
             }
         });
     }

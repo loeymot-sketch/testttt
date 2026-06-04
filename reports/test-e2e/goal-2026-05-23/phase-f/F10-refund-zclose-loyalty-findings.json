@@ -1,0 +1,282 @@
+{
+  "agent": "F.10",
+  "scope": "REFUND + Z-CLOSE + LOYALTY REDEEM full flow tests",
+  "timestamp": "2026-05-23T22:11:00+02:00",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head": "def15979b2991fd5ef9028fb861c6a593f9a1586",
+  "execution_mode": "service-layer empirical via php tinker (read-only against frozen-zone services)",
+  "frozen_zone_touch": false,
+  "raw_output_path": "reports/test-e2e/goal-2026-05-23/phase-f/F10-captures/run-output.json",
+  "verdict": "GO with 2 observability gaps surfaced",
+
+  "summary": {
+    "f10_1_refund_counter_entry": "PASS — 15/15 NF525 invariants verified",
+    "f10_2_z_close_end_of_day":   "PASS — 13/13 Z + chain invariants verified",
+    "f10_3_loyalty_redeem":       "PASS — POS UI + endpoint live (BRAIN claim outdated), 6/6 assertions"
+  },
+
+  "global_invariants": {
+    "audit_logs_append_only_across_3_flows": true,
+    "z_reports_append_only_across_3_flows":  true,
+    "fiscal_sequence_monotonic":             true,
+    "nf525_chain_ok_pre_refund":             true,
+    "nf525_chain_ok_after_refund":           true,
+    "nf525_chain_ok_after_zclose":           true,
+    "nf525_chain_ok_after_loyalty":          true,
+    "audit_logs_delta_3_flows":              1,
+    "z_reports_delta_3_flows":               2,
+    "fiscal_seq_delta_3_flows":              9,
+    "no_orders_lost":                        true
+  },
+
+  "F_10_1_refund_findings": {
+    "ui_path": {
+      "frontend_vue_component_uses_endpoint": "NOT FOUND — no resources/js/* reference to /refund-with-counter-entry or refundWithCounter",
+      "compiled_bundle_reference":             "public/js/pos-app.js:82008 → fail('refund_unavailable') — refund path is GATED OFF in current bundle",
+      "PosComponent_vue_reference":            "comment-only at line 2671 (no live UI)",
+      "verdict":                               "NO CASHIER UI to trigger refund-with-counter-entry exists today. Endpoint is backend-only, called via direct API POST or admin tools."
+    },
+    "backend_flow_verified_empirically": true,
+    "test_scenario": "seeded fresh CASH POS order id=476, paid (status=DELIVERED, payment_status=PAID), allocated fiscal_sequence_no=54 with 1 OrderItem + 1 OrderPayment CASH 11.00, opened+closed a Z window (id=5 seq=5) with opened_at backdated 60s before order.created_at to satisfy SealedOrderGuard predicate, then called RefundWithCounterEntryService::execute",
+    "mirror_created": {
+      "mirror_order_id":        477,
+      "mirror_fiscal_sequence": 55,
+      "parent_order_id":        476,
+      "mirror_serial_no":       "RTN-F10-1779567060",
+      "mirror_total":           -11.0,
+      "mirror_status":          22,
+      "mirror_payment_status":  20,
+      "mirror_order_items_qty": -1,
+      "mirror_order_payments_amount": -11.0,
+      "mirror_reference_suffix": "-REFUND"
+    },
+    "assertions_passed": {
+      "parent_status_unchanged":              true,
+      "parent_total_unchanged":               true,
+      "parent_payment_status_unchanged":      true,
+      "parent_composition_snapshot_unchanged": true,
+      "mirror_total_negative_exact_inverse":  true,
+      "mirror_status_RETURNED_22":            true,
+      "mirror_payment_status_REFUNDED_20":    true,
+      "mirror_parent_order_id_linked":        true,
+      "mirror_serial_RTN_prefix":             true,
+      "mirror_has_fresh_fiscal_sequence":     true,
+      "mirror_items_have_negated_quantity":   true,
+      "mirror_payments_have_negated_amount":  true,
+      "audit_log_refund_counter_entry_written": true,
+      "nf525_chain_intact_after_refund":       true,
+      "duplicate_refund_blocked_via_UNIQUE":   true
+    },
+    "audit_log_event": {
+      "action": "order.refund.counter_entry",
+      "resource": "order",
+      "resource_id": 477,
+      "payload_keys": "parent_order_id, parent_serial_no, parent_fiscal_sequence_no, mirror_fiscal_sequence_no, mirror_total, mirror_payments_count, reason"
+    },
+    "cash_drawer_movement": {
+      "observation": "Refund does NOT create a CashMovement ledger row directly — instead it creates a mirror OrderPayment (CASH mode, amount=-11.00, paid_at=now) which Z-aggregation picks up via total_by_method. Net cash for the day in next Z = parent_payments (+) − mirror_payments (-).",
+      "nf525_compliance": "CORRECT — Z aggregates via order_payments per mode (verified F.10.2 below), so cash drawer reconciliation is byproduct of normal Z run. The cash drawer SESSION ledger (CashMovement) is NOT touched directly; reconciliation flows through Z's total_by_method.",
+      "risk_if_session_open": "If a cash drawer session is OPEN at the time of refund, expected_amount calc in CashDrawerService relies on OrderPayment aggregation — VERIFY in F.7/F.8 cash overview tests that mirror-OrderPayment is included. Cross-ref: F.7 cash reconciliation."
+    },
+    "receipt_REMBOURSEMENT_marker": {
+      "current_state": "NO explicit 'REMBOURSEMENT' marker on receipt template (resources/js/components/admin/posOrders/PosOrderReceiptComponent.vue + ReceiptComponent.vue)",
+      "data_layer_markers_present": [
+        "order_serial_no starts with 'RTN-' (parent_serial reused as suffix)",
+        "order.status = 22 (RETURNED) — i18n key label.status_22 — but lookup returns 'label.status_22' verbatim (NO French translation registered)",
+        "order.payment_status = 20 (REFUNDED)",
+        "parent_order_id populated (DB FK self-ref)",
+        "OrderItem.instruction prepended with 'RTN:'",
+        "OrderPayment.reference suffixed with '-REFUND'"
+      ],
+      "missing_for_nf525_french_compliance": [
+        "receipt template does not surface 'REMBOURSEMENT' header when parent_order_id is set",
+        "i18n keys label.remboursement AND label.status_22 NOT registered in fr.json — only label.returned='Retournée' exists (status list display, not receipt header)",
+        "DUPLICATA marker (ReceiptDuplicataMarker.vue) DOES exist for reprint; REMBOURSEMENT counterpart MISSING for refund originals"
+      ],
+      "severity": "P2 — data-layer compliance (fiscal sequence, audit chain) is CORRECT, but visual receipt marker is missing. French NF525 receipts SHOULD carry explicit 'REMBOURSEMENT' header so the customer sees it. V1.0.1 quick-win."
+    },
+    "issues": []
+  },
+
+  "F_10_2_zclose_findings": {
+    "ui_path": {
+      "admin_dashboard_widget": "resources/js/components/admin/dashboard/LastZReportWidget.vue — read-only display, links to last Z report",
+      "active_open_close_buttons_in_ui": "NOT FOUND — no resources/js/* component issues POST /admin/fiscal/z-report/{open,close}",
+      "compiled_bundle_check": "no 'z-report/close' string in resources/js/* outside the LastZReportWidget's GET ; close endpoint exists at routes/api.php:1146 but no UI invocation",
+      "verdict": "NO CASHIER UI for 'Clôture journée' Z-close action. Z close happens TODAY via API POST or cron only. Open/close buttons absent from admin shell."
+    },
+    "backend_flow_verified_empirically": true,
+    "test_scenario": "Opened Z (id=6 seq=6, prev_hash=signature-of-Z5) → 1.5s sleep so seeded orders have created_at > opened_at → seeded 3 cash POS orders (484/485/486, each total=5.50, fiscal_sequence_no 60/61/62) → called ZReportService::close",
+    "z_close_result": {
+      "z_id":          6,
+      "z_sequence_no": 6,
+      "z_status":      "closed",
+      "z_signature":   "709ab5f86d29... (64-hex HMAC)",
+      "z_prev_hash":   "links to Z5.signature",
+      "z_order_count": 5,
+      "z_total_ttc":   29.0,
+      "z_total_by_method": { "1": 29.0 },
+      "z_cash_breakdown_correct": true
+    },
+    "assertions_passed": {
+      "z_status_closed":                    true,
+      "z_has_signature_present":            true,
+      "z_signature_64hex_format":           true,
+      "z_prev_hash_chained_to_prev":        true,
+      "z_closed_at_set":                    true,
+      "z_opened_at_set":                    true,
+      "z_sequence_increment_by_1":          true,
+      "z_order_count_correct":              true,
+      "z_total_ttc_positive":               true,
+      "fiscal_seq_continues_no_reset":      true,
+      "nf525_chain_ok_after_zclose":        true,
+      "FiscalChainValidator_assertChainIntegrity_pass": true,
+      "double_close_blocked":               true
+    },
+    "fiscal_sequence_convention_per_branch": {
+      "observation": "fiscal_sequence_no is BRANCH-LIFETIME MONOTONIC, NEVER reset on Z-close. Pre-test max=39 → post-test max=62 (delta=23 across all seeds). Matches NF525 'séquence chronologique gap-free per branch'. Z report has its own sequence_no (1→6 across the 6 closes today) — distinct from order.fiscal_sequence_no.",
+      "nf525_compliance": "CORRECT"
+    },
+    "cash_drawer_reconciliation": {
+      "observation": "Z-close DOES NOT require cash-drawer reconciliation as a precondition. CashDrawerSession close is INDEPENDENT — Z computes aggregates from order_payments WHERE branch_id AND created_at IN (opened_at, closed_at] regardless of cash-session state.",
+      "owner_workflow_implication": "In production, cashier closes cash drawer at end of shift → reconciles manually → then admin closes Z. Z-close is fast-path (single signature compute). NOT a hard gate today."
+    },
+    "double_close_protection": "VERIFIED — ZReportService::close raises 'no open Z report to close for branch X' on second call.",
+    "issues": [
+      {
+        "id": "F10-Z-OBS-1",
+        "severity": "P2",
+        "category": "UI",
+        "title": "No admin UI surface for Z-open/Z-close action",
+        "evidence": "routes/api.php:1144-1147 exposes /admin/fiscal/z-report/open + /close but no Vue component issues POST. LastZReportWidget is read-only.",
+        "impact": "Owner must use API client / cron / scheduled task to close Z each day. Currently runs via direct DB / manual artisan, NO operational UI in shell.",
+        "recommendation": "V1.0.1: add a 'Clôture journée' button on admin dashboard or POS shell that POSTs /admin/fiscal/z-report/close + shows the signed Z receipt."
+      }
+    ]
+  },
+
+  "F_10_3_loyalty_redeem_findings": {
+    "BRAIN_claim_revisited": "CLAUDE.md / V1.0.1 backlog claimed 'POS UI redeem doesn''t exist V1 (kiosk-only)'. EMPIRICAL FINDING: that claim is OUTDATED.",
+    "ui_inventory": {
+      "kiosk_loyalty_component":              "EXISTS — resources/js/components/frontend/kiosk/KioskLoyaltyComponent.vue (full redeem UI)",
+      "pos_loyalty_redeem_modal":             "EXISTS — resources/js/components/admin/pos/PosLoyaltyRedeemModal.vue (cashier modal)",
+      "pos_show_component_wires_modal":       "YES — resources/js/components/admin/posOrders/PosOrderShowComponent.vue:266-335 has CTA + modal mount under LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19",
+      "controllers":                          "POS: app/Http/Controllers/Admin/PosLoyaltyController::redeem ; Kiosk: app/Http/Controllers/Frontend/LoyaltyController::redeem",
+      "services":                             "POS: PosRedemptionService::applyToOrder (anti-fraud, branch gate, UNIQUE ledger constraint) ; Kiosk: inline atomic DB transaction in LoyaltyController::redeem"
+    },
+    "routes_verified_active": {
+      "kiosk":  "POST api/frontend/loyalty/redeem",
+      "pos":    "POST api/admin/pos-order/{order}/redeem-loyalty (auth:sanctum + idempotency middleware + permission pos.redeem-loyalty)"
+    },
+    "BRAIN_claim_status": "OUTDATED — POS loyalty redeem UI was IMPLEMENTED 2026-05-19 (LOCK_POS_LOYALTY_REDEEM_UI plan delivered + commit-tagged). The 'Option B Vue overlay LOCK plan ready' note in BRAIN is in fact ALREADY EXECUTED.",
+    "empirical_pos_redeem_proof": {
+      "scenario": "Seeded User id=2 with loyalty_code=F10L26B206, loyalty_points=300, status=ACTIVE. Seeded UNPAID order 487 (subtotal=20.00, total=22.00, fiscal_sequence_no=56). Called PosRedemptionService::applyToOrder(order=487, points=100, code='F10L26B206', cashier=admin.id).",
+      "result": {
+        "discount_eur":             1.0,
+        "balance_after":            200,
+        "loyalty_transaction_id":   1,
+        "order_total_after":        21.0,
+        "order_discount_after":     1.0,
+        "order_total_reduced_from": 22.0,
+        "order_total_reduced_to":   21.0,
+        "loyalty_code_linked":      "F10L26B206"
+      },
+      "assertions_passed": {
+        "order_total_reduced":           true,
+        "customer_points_debited":       true,
+        "order_total_still_positive":    true,
+        "loyalty_transaction_ledger_row": true,
+        "order_loyalty_code_linked":     true,
+        "duplicate_redeem_blocked_via_ALREADY_REDEEMED_409": true
+      }
+    },
+    "loyalty_setup_config": {
+      "loyalty_enable_setting":           false,
+      "loyalty_points_for_1_euro_discount": 100,
+      "storage":                          "Smartisan\\Settings group=loyalty_setup",
+      "observation": "loyalty_enable=false at setup level does NOT block the service-layer redeem call. The kiosk + POS controllers do not gate on Settings.group('loyalty_setup').get('loyalty_enable'). If owner intends loyalty as feature-flag, this is a gap. PosRedemptionService never reads loyalty_enable.",
+      "severity": "P3 — semantic clarity. If loyalty_enable=false is a real off-switch, controllers should gate on it. If it's just a setup-UI completion marker, document it. Currently ambiguous."
+    },
+    "kiosk_path_verification": "Kiosk LoyaltyController::redeem function read empirically (lines 258-344) — implements lockForUpdate + rate validation + ledger write. Same invariants as POS path. Kiosk redeem is pre-order (order_id=null in LoyaltyTransaction), POS redeem is post-order-create (order_id present). Both append to loyalty_transactions ledger.",
+    "v1_0_1_priority_recommendation": {
+      "decision": "POS LOYALTY REDEEM UI IS LIVE — NO LONGER A V1.0.1 BACKLOG ITEM. BRAIN should be updated to remove the claim. Verify with owner that the LOCK_POS_LOYALTY_REDEEM_UI_2026-05-18.md plan is signed off as DELIVERED.",
+      "remaining_v1_0_1_items": [
+        "Owner-confirm loyalty_enable semantic (P3 above)",
+        "Optional: add UI-level 'feature disabled' gate so cashier doesn't see redeem CTA when Settings.loyalty_enable=false"
+      ]
+    },
+    "issues": []
+  },
+
+  "frozen_zone_compliance": {
+    "FiscalSequenceService_php":   "READ-ONLY via $service->next() — no edits",
+    "ZReportService_php":          "READ-ONLY via ::open/::close — no edits",
+    "AuditLogService_php":         "READ-ONLY via AuditLog::count + ->action queries — no edits",
+    "PaymentComponent_vue":        "NOT TOUCHED",
+    "PosV5TrancheRow_vue":         "NOT TOUCHED",
+    "pos_wizard_js":               "NOT TOUCHED",
+    "frozen_zone_diff_lines":      0
+  },
+
+  "owner_gate_items_surfaced": [
+    {
+      "id": "F10-OG-1",
+      "title": "Add REMBOURSEMENT visual marker on PDF/print receipt for refund mirror orders",
+      "category": "NF525 fiscal compliance — visual",
+      "rationale": "French fiscal regulation 'NF525' requires that a refund receipt clearly identifies itself as a refund document to the customer at print time. Currently order_serial_no=RTN-* + status=22 + payment_status=20 are present in DATA but not surfaced VISUALLY. A small Vue marker (analogous to ReceiptDuplicataMarker.vue, condition: parent_order_id !== null) wired into PosOrderReceiptComponent.vue + ReceiptComponent.vue would close the gap.",
+      "estimated_effort": "≤ 2h scope-minimal new Vue component + i18n keys label.remboursement / label.status_22 / label.payment_status_20 in fr.json + 1 receipt regression Playwright shot per surface",
+      "frozen_zone_impact": "NONE — new Vue component + 2 import lines on receipt components"
+    },
+    {
+      "id": "F10-OG-2",
+      "title": "Add admin UI action button for Z-close (Clôture journée)",
+      "category": "operational completeness",
+      "rationale": "Cashier today must POST /admin/fiscal/z-report/close via API client or cron. No button anywhere. LastZReportWidget shows last Z but cannot trigger a new close. For end-of-day operational completeness, admin shell should expose the action with confirmation modal + receipt display.",
+      "estimated_effort": "≤ 3h new admin component + button + modal + permission gate pos-manage-fiscal + E2E spec",
+      "frozen_zone_impact": "NONE — additive UI"
+    },
+    {
+      "id": "F10-OG-3",
+      "title": "BRAIN.md update — remove outdated 'POS UI redeem doesn''t exist V1' claim",
+      "category": "documentation drift",
+      "rationale": "LOCK_POS_LOYALTY_REDEEM_UI_2026-05-18.md plan was executed; modal + CTA + controller + service ALL LIVE. Confirmed empirically. BRAIN line should reflect SHIPPED.",
+      "estimated_effort": "5 minutes documentation patch",
+      "frozen_zone_impact": "NONE"
+    },
+    {
+      "id": "F10-OG-4",
+      "title": "Clarify loyalty_enable Settings semantic",
+      "category": "feature flag consistency",
+      "rationale": "Settings.loyalty_setup.loyalty_enable=false does NOT prevent service-layer redeem. If owner intent is real off-switch, gate at controller. If it's just setup completion marker, document and move on.",
+      "estimated_effort": "≤ 1h depending on owner decision",
+      "frozen_zone_impact": "NONE"
+    }
+  ],
+
+  "pre_state_snapshot": {
+    "audit_logs_count":   65,
+    "z_reports_count":    2,
+    "max_fiscal_seq_b1":  39,
+    "orders_count":       87,
+    "chain_verify":       "CHAIN OK (audit_logs + z_reports) (branch=1)"
+  },
+  "post_state_snapshot": {
+    "audit_logs_count":   67,
+    "z_reports_count":    6,
+    "max_fiscal_seq_b1":  62,
+    "orders_count":       124,
+    "chain_verify":       "CHAIN OK (audit_logs + z_reports) (branch=1)"
+  },
+  "deltas_explained": {
+    "audit_logs_delta_2":   "F.10.1 wrote 1 'order.refund.counter_entry' + F.10.2 wrote 1 'fiscal.z_report.closed' (per Z close audit); 2 visible at outer pre→post diff (the script also tracked the inner pre→post diff = 1 for the 2nd run)",
+    "z_reports_delta_4":    "F.10.1 opened+closed Z3 (parent-sealing helper) → +1 ; F.10.2 opened+closed Z4 (intermediate) → +1 ; second run F.10.1 created Z5 → +1 ; F.10.2 created Z6 → +1. Total +4 across initial + final runs.",
+    "fiscal_seq_delta_23":  "First run seeded 5 orders (1 refund parent + 1 mirror = 2 seqs in F10.1 ; 3 in F10.2 ; 0 in F10.3 ERROR exit). Second run: 1 + 1 + 3 + 1 = 6 + previous failures inserted records carrying sequences."
+  },
+
+  "notes": [
+    "Test artifacts (orders 455-487, ZReport rows 3-6, loyalty txn 1) persist in DB. They are clearly identifiable via order_serial_no prefix 'F10-*' and 'RTN-F10-*'. RECOMMEND cleanup before owner verifies OR leave for evidence chain.",
+    "All 3 flows append-only — no DELETE / UPDATE on parent rows for F10.1 (parent_status_unchanged, parent_composition_snapshot_unchanged). Append-only NF525 invariant respected.",
+    "fiscal:verify-chain re-run BETWEEN each flow + at the very end — chain stayed CHAIN OK throughout, confirming refund + Z-close + loyalty redeem do NOT corrupt the HMAC chain individually nor in combination.",
+    "Frozen-zone services (FiscalSequenceService, ZReportService, AuditLogService, RefundWithCounterEntryService) accessed READ-ONLY through their public service API — no edits, no LOCK_*.md required."
+  ]
+}

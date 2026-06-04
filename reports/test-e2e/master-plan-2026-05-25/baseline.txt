@@ -1,0 +1,27 @@
+=== MASTER PLAN BASELINE 2026-05-25 ===
+Server: 200
+Healthz: 200
+Queue workers: 1
+Branch: heal/cms-pr1-quickwins-2026-05-18 HEAD a6ed32807
+
+=== Spatie ===
+Admin: 2 / Branch Manager: 1 / POS Operator: 1 / Chef: 1
+Total: 9
+
+=== Payment gateways ===
+cash-on-delivery (status 5) / credit (status 5) / stripe (status 10)
+
+=== NF525 baseline ===
+audit_logs: 67
+z_reports: 1
+last_hash: a59e47cbe474f799
+TAMPER known: id=34 (E2E-13 dev incident, expected, sentinel works)
+Decision: Option B (live with tamper, production = fresh DB)
+
+=== Frozen-zone diff ===
+0 LOC sur 14 §7 files ✓
+
+=== Other-session V1.0.2 work integrated ===
+8/8 findings closed (Wave A 3 + B 2 + C 4 + D 2)
+13 commits afc094091..a6ed32807
+30 files +3306 -157 LOC

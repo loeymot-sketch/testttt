@@ -1,0 +1,350 @@
+{
+  "agent": "K.8 Stripe webhook → Order → POS cascade deep",
+  "phase": "K — Intersection matrix deep + UI screenshots",
+  "mission": "Trace every Stripe webhook event type from POST /payment/stripe-webhook/ through signature verification, webhook_events idempotency ledger, cascade to Order.payment_status / OrderPaymentStatusChanged / outbox / POS Q10 panel / KDS. Verify boot guard, replay tolerance, DLQ, PII retention, slow-webhook deferral, and silent-fail safety.",
+  "date": "2026-05-24",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "scope": "Static cascade trace, read-only. Zero DB writes, zero file modifications outside this findings JSON. No live HTTP probe (Stripe webhook routing into local dev requires Stripe CLI tunnel + valid whsec_ test secret — out of K.8 read-only scope; existing PHPUnit Feature + Sentinel suites already validate the same invariants).",
+  "method": "Code-static walk-the-cascade: route registration → CSRF except list → middleware chain (throttle:60,1, installed) → handler signature verify (StripeClient\\Webhook::constructEvent with explicit 300s tolerance) → webhook_events firstOrCreate idempotency → DB::transaction inner switch by event_type → CapturePaymentNotification bridge (charge.succeeded ONLY) → markProcessed | markFailed → response 200 ok | 200 duplicate_ignored | 400 invalid_signature | 400 invalid_payload | 500 misconfigured | 500 processing_failed. Compared with Senangpay sibling handler for parity. Cross-referenced J-ADV-1/4/5 prior findings, I.1 silent-fail audit, F-3 SYNC P1 replay tolerance, Sprint 3A idempotency, Sprint H3 P1-Z8-02 DLQ. Confirmed via existing PHPUnit suites (StripeWebhookIdempotencyTest 6 cases + StripeWebhookReplayToleranceSentinelTest source-pin + WebhookRouteHardeningTest throttle + WebhookCsrfBareRouteExceptionTest bare+wildcard).",
+  "files_examined": [
+    "app/Http/PaymentGateways/Gateways/Stripe.php:165-389 (handleWebhook + handleFromStoredEvent DLQ replay)",
+    "app/Http/PaymentGateways/Routes/stripe.php:1-29 (route registration, throttle:60,1)",
+    "app/Http/Middleware/VerifyCsrfToken.php:14-37 (bare + wildcard except entries for stripe-webhook)",
+    "app/Models/WebhookEvent.php:1-121 (idempotency ledger model + markProcessed/markFailed/isPending API)",
+    "database/migrations/2026_05_09_120000_create_webhook_events_table.php (UNIQUE(provider,webhook_id) + indexes)",
+    "database/migrations/2026_05_18_120000_add_webhook_events_order_id_fk.php (FK heal + scrub garbage order_id)",
+    "app/Models/CapturePaymentNotification.php (legacy bridge table for Stripe charge token)",
+    "app/Services/PaymentService.php:29-90 (payment() — gateway-context assertion + Transaction create + Order.payment_status=PAID)",
+    "app/Services/PaymentService.php:670-720 (assertGatewayContext — backtrace walk for PaymentAbstract subclass)",
+    "app/Http/PaymentGateways/Gateways/Stripe.php:115-150 (success() — pop CapturePaymentNotification + call PaymentService::payment)",
+    "app/Events/OrderPaymentStatusChanged.php (DispatchableAfterCommit, BroadcastableOrder + old/new int)",
+    "app/Listeners/PersistOrderPaymentStatusChangedToOutbox.php:21-118 (outbox + DispatchDomainEventsJob)",
+    "app/Listeners/PersistOrderPaymentStatusChangedOnRefundCreated.php:58-148 (WG-1-WF6-P1-1 refund bridge — RefundCreated → REFUNDED persist + broadcast)",
+    "app/Events/RefundCreated.php (refund cascade entry event)",
+    "app/Services/Order/RefundWithCounterEntryService.php (admin POS refund path — dispatches RefundCreated)",
+    "app/Jobs/ProcessWebhookEventJob.php:27-95 (DLQ re-dispatch, $tries=3 $backoff=[10,60,300])",
+    "app/Console/Commands/OutboxWebhookRetryFailedCommand.php:38-197 (hourly DLQ re-drive, Cache::lock 300s TTL, BATCH_CAP=500)",
+    "app/Console/Commands/PruneWebhookEventsCommand.php:41-109 (180d retention safe-set processed+duplicate only, NEVER pending/failed)",
+    "app/Console/Kernel.php:71-141 (schedule: webhook:retry-failed hourly + webhook:prune dailyAt 04:15)",
+    "app/Providers/AppServiceProvider.php:78-223 (production boot guards — verified STRIPE_WEBHOOK_SECRET is NOT in the list)",
+    "config/services.php:60-71 (stripe.webhook_secret env wiring, default '')",
+    "app/Http/PaymentGateways/Gateways/Senangpay.php:48-145 (sibling parity reference)",
+    "tests/Feature/Webhooks/StripeWebhookIdempotencyTest.php (6 cases: first/duplicate/distinct/invalid-sig/missing-secret/non-capture)",
+    "tests/Feature/Webhooks/WebhookRouteHardeningTest.php (60/min throttle + POST-only)",
+    "tests/Feature/Webhooks/WebhookCsrfBareRouteExceptionTest.php (T-6.3.1 bare+wildcard except)",
+    "tests/Feature/Sentinels/StripeWebhookReplayToleranceSentinelTest.php (source-pin 60s ≤ tolerance ≤ 600s)",
+    "tests/Feature/Sync/WebhookDLQRetryFailedTest.php (Sprint H3 DLQ behavior)"
+  ],
+  "cascades_traced": [
+    {
+      "id": "K.8.1",
+      "name": "Stripe webhook delivery — signature verification (per J-ADV-1 verified)",
+      "happy_path": [
+        "1. Stripe POSTs to /payment/stripe-webhook (bare) or /payment/stripe-webhook/{anything} (wildcard) per CsrfBareRouteException heal. Both paths excepted in VerifyCsrfToken::$except :32-35.",
+        "2. Route::post('/stripe-webhook/', [Stripe::class, 'handleWebhook']) registered in app/Http/PaymentGateways/Routes/stripe.php:26-28 with middleware chain ['installed', 'throttle:60,1'].",
+        "3. throttle:60,1 (60 req/min/IP) mitigates LAN HMAC-CPU DoS — verified by WebhookRouteHardeningTest:84-103 (61st hit = 429).",
+        "4. Stripe.php:199-208: config('services.stripe.webhook_secret') pulled, empty → response 500 misconfigured + Log::channel('fiscal')->error. No silent bypass.",
+        "5. Stripe.php:210-222: payload = $request->getContent() raw, $sigHeader = (string)$request->header('Stripe-Signature', ''). StripeClient\\Webhook::constructEvent($payload, $sigHeader, $secret, 300) — explicit 300s replay tolerance (F-3 SYNC P1 V1.0.1 heal 2026-05-19, sentinel-locked by StripeWebhookReplayToleranceSentinelTest).",
+        "6. SignatureVerificationException → response 400 invalid_signature + Log::warning with IP. Stripe will not retry signature errors (per Stripe docs).",
+        "7. Throwable (payload parse) → response 400 invalid_payload + Log::error parse_error."
+      ],
+      "verdict": "VERIFIED — signature verify present, explicit 300s tolerance sentinel-locked, 400 on invalid sig + 500 on missing secret. J-ADV-1 attestation preserved."
+    },
+    {
+      "id": "K.8.2",
+      "name": "Webhook idempotency — webhook_events UNIQUE (provider, webhook_id) replay defense",
+      "happy_path": [
+        "1. Stripe.php:255-267 WebhookEvent::firstOrCreate(['provider'=>'stripe','webhook_id'=>$event.id], [...]) — application-level guard.",
+        "2. DB-level guard: webhook_events migration :81-83 UNIQUE(provider, webhook_id) name='uk_webhook_provider_id' — atomicity floor under concurrent INSERT race.",
+        "3. !$event->wasRecentlyCreated → response 200 duplicate_ignored + Log::info. Stripe stops retrying.",
+        "4. StripeWebhookIdempotencyTest:103-115 test_duplicate_event_id_returns_200_duplicate_ignored_and_no_new_row VERIFIED.",
+        "5. StripeWebhookIdempotencyTest:117-128 test_different_event_ids_create_independent_rows VERIFIED."
+      ],
+      "verdict": "VERIFIED — dual-layer (firstOrCreate + DB UNIQUE) replay defense, 200 duplicate_ignored test-locked."
+    },
+    {
+      "id": "K.8.3",
+      "name": "Cascade: payment.succeeded → Order update (PARTIAL — webhook does NOT mutate Order)",
+      "happy_path": [
+        "1. Stripe.php:284-310 inside DB::transaction: if ($eventType === 'charge.succeeded') extract charge.balance_transaction + charge.metadata.order_id (P0-POS-01 GOAL round-2 2026-05-18 — order_id injected into charges->create metadata at line 73).",
+        "2. CapturePaymentNotification::create(['order_id'=>$orderId, 'token'=>$balance_transaction, 'created_at'=>now()]) AFTER deleting any prior row for same order. Token bridges async webhook receipt to in-band success() controller.",
+        "3. $event->markProcessed($orderId) — WebhookEvent row flipped to STATUS_PROCESSED with order_id link.",
+        "4. Response 200 ok.",
+        "5. **HOWEVER** the webhook handler DOES NOT call PaymentService::payment(), DOES NOT mutate Order.payment_status, DOES NOT dispatch OrderPaymentStatusChanged. Cascade to POS Q10 / KDS is GATED on the user's browser hitting payment.success route (Stripe::success at :115-150) which then pops the CapturePaymentNotification token and calls PaymentService::payment() to flip Order.payment_status=PAID + create Transaction + (via OrderService changeStatus elsewhere) dispatch OrderPaymentStatusChanged.",
+        "6. There is NO cron/queue that drains stranded CapturePaymentNotification rows — they sit indefinitely until the user re-visits the success URL or admin/cashier manually intervenes."
+      ],
+      "browser_death_scenario": "User completes Stripe payment, Stripe charges card successfully, Stripe POSTs charge.succeeded webhook to backend → handler stages CapturePaymentNotification row + marks WebhookEvent processed. Browser dies / closes / loses network BEFORE Stripe redirect back to our payment.success route. Result: order stays in PaymentStatus::UNPAID (or its initial state). POS Q10 'à encaisser' panel never sees the order flip to PAID. KDS card never refreshes. Customer's card was charged but our system shows the order as unpaid. Cashier must reconcile manually.",
+      "verdict": "AMBER — webhook idempotency + staging correct, but cascade to Order.payment_status is browser-dependent. Webhook arrival alone does NOT complete the cascade. See K8-F-01 for full finding."
+    },
+    {
+      "id": "K.8.4",
+      "name": "Cascade: payment.failed / charge.failed → Order update (NOT HANDLED)",
+      "happy_path": [
+        "1. Stripe.php:284 handler ONLY branches on $eventType === 'charge.succeeded'. ALL other event types fall to the else branch at :313-317 which just calls $event->markProcessed() WITHOUT $orderId, leaving a forensic-only WebhookEvent row.",
+        "2. No charge.failed-specific handling. No Order.payment_status mutation to FAILED. No cashier toast / POS notification / email.",
+        "3. Practically benign for the POS flow because in-band Stripe::payment() at :91-95 already routes 'payment.fail' redirect when charges->create returns non-succeeded synchronously — the in-band user gets a fail page.",
+        "4. The webhook charge.failed event is purely forensic — recorded for audit but no downstream cascade.",
+        "5. NF525 cash-trail: no risk — order stays UNPAID (initial state) so no fiscal_sequence_no allocated, no audit_logs PAID row appended."
+      ],
+      "verdict": "AMBER (info-only) — no cascade for charge.failed but in-band fail page covers the happy/sad customer path. Webhook receipt of charge.failed is logged but unactionable. See K8-F-02."
+    },
+    {
+      "id": "K.8.5",
+      "name": "Cascade: refund.created / charge.refunded (Stripe dashboard manual refund) — NOT HANDLED",
+      "happy_path": [
+        "1. Owner manually refunds via Stripe dashboard. Stripe fires charge.refunded (or charge.refund.updated) webhook to backend.",
+        "2. Stripe.php:284 charge.succeeded branch does not match — falls to else markProcessed() only.",
+        "3. **NO** counter-entry Order created on our side. **NO** Order.payment_status flip to REFUNDED. **NO** RefundCreated event dispatched. **NO** PersistOrderPaymentStatusChangedOnRefundCreated listener fires (WG-1-WF6-P1-1 broadcast bridge is wired but never triggered from this path). **NO** stock release. **NO** loyalty clawback. **NO** OrderPaymentStatusChanged broadcast → POS / admin / OSS show stale PAID state until manual page refresh.",
+        "4. Contrast with the in-app refund path (admin POS UI calls RefundWithCounterEntryService::execute → RefundCreated → PersistOrderPaymentStatusChangedOnRefundCreated → OrderPaymentStatusChanged → outbox → broadcast → POS/KDS realtime update + stock release + loyalty clawback). The Stripe-dashboard-initiated refund SKIPS this entire cascade.",
+        "5. NF525 invariant: Order.payment_status stays PAID in our DB but Stripe shows refunded. Z-report total no longer matches Stripe payout. Auditor reconciliation fails on next close-of-day."
+      ],
+      "verdict": "AMBER → RED — divergence risk between our Order ledger and Stripe ledger when refunds are issued from the Stripe dashboard. See K8-F-03 (P1)."
+    },
+    {
+      "id": "K.8.6",
+      "name": "Cascade: charge.dispute.created / chargeback — NOT HANDLED",
+      "happy_path": [
+        "1. Customer disputes via their bank. Stripe fires charge.dispute.created webhook to backend (and subsequent .closed, .funds_withdrawn, .funds_reinstated).",
+        "2. Stripe.php:284 charge.succeeded branch does not match — falls to else markProcessed() only.",
+        "3. **NO** Order marked as disputed (no payment_status DISPUTED value exists — PaymentStatus enum is UNPAID/PAID/REFUNDED/PENDING_COUNTER per app/Enums/PaymentStatus.php).",
+        "4. **NO** owner email notification. **NO** push to admin dashboard. **NO** audit_logs row tagged 'order.dispute_created'.",
+        "5. Forensic webhook_events row IS retained 180d per PruneWebhookEventsCommand defaults — this matches the PCI dispute lookback window (verified P1 V1 Cloud-Prep insights 2026-05-18 docblock).",
+        "6. Owner discovers the dispute via Stripe dashboard email only. Manual reconciliation needed."
+      ],
+      "verdict": "AMBER (V1 acceptable for single-restaurant Le Cayenne — owner sees Stripe email + dashboard; 180d retention preserves forensic) → V1.0.2 cascade hardening needed for SaaS multi-tenant. See K8-F-04."
+    },
+    {
+      "id": "K.8.7",
+      "name": "Webhook event types audited — only charge.succeeded bridged, all others forensic-only",
+      "evidence": [
+        "Stripe.php:280-317 single branch: $eventType === 'charge.succeeded' triggers CapturePaymentNotification staging + order_id link. All other event types (charge.failed, charge.refunded, charge.refund.updated, charge.dispute.*, payment_intent.*, customer.*, invoice.*, payout.*) fall through to markProcessed() with NO domain cascade.",
+        "StripeWebhookIdempotencyTest:180-195 test_non_capture_event_records_row_but_skips_payment_bridge VERIFIES this contract for payment_intent.created — row created, no CapturePaymentNotification side-effect.",
+        "Comment Stripe.php:280-283 explicit: 'Only bridge charge.succeeded into the legacy CapturePaymentNotification table (mirrors payment()). Other event types are still recorded for forensic audit but do not trigger a payment capture row.'",
+        "Per V1 owner mandate (CLAUDE.md §1 + memory feedback 2026-05-18 'no useless complexity V1'), the minimal handler is intentional — Le Cayenne single-restaurant uses online card (Stripe) for a small slice of orders, the dominant payment is cash at POS or kiosk-cash counter-collect. Stripe webhook is a safety net, not the primary cascade trigger."
+      ],
+      "verdict": "VERIFIED — single-branch handler by design. V1 acceptable, V1.0.2 should broaden for SaaS or higher Stripe volume."
+    },
+    {
+      "id": "K.8.8",
+      "name": "Slow webhook — synchronous DB::transaction inside handler",
+      "evidence": [
+        "Stripe.php:278-333 entire processing wrapped in DB::transaction() block + Throwable catch. Inner work: 1× DELETE on capture_payment_notifications + 1× INSERT capture_payment_notifications + 1× UPDATE webhook_events (markProcessed). On a healthy DB, p99 < 50ms.",
+        "NO heavy lifting (no broadcast dispatch, no FCM push, no audit_log HMAC chain write) inside the handler — those are deferred to the in-band success() controller path via the CapturePaymentNotification token (see K.8.3).",
+        "Stripe webhook timeout is documented at 30s (https://stripe.com/docs/webhooks#best-practices). Our handler comfortably fits in <100ms under normal load.",
+        "Risk window: if DB has lock contention (e.g. another worker holding row lock on webhook_events for a different stripe event_id — extremely unlikely with UNIQUE(provider, webhook_id) partitioned access pattern), or audit_log Cache::lock contention bleeds through (does NOT apply here, audit_log not written), or InnoDB innodb_lock_wait_timeout (capped at 5s per AppServiceProvider.php:233 GOAL-F2-HEAL-02) trips — handler returns 500 processing_failed → Stripe retries → DLQ row marked failed → hourly cron re-drives."
+      ],
+      "verdict": "MITIGATED — handler is fast by design (no heavy work inline). 5s DB lock timeout + 30s Stripe timeout = no retry-storm risk under realistic load. SAFE for V1 Le Cayenne traffic envelope."
+    },
+    {
+      "id": "K.8.9",
+      "name": "Large webhook payload — DoS vector per J-ADV-5",
+      "evidence": [
+        "Stripe.php:210 $payload = $request->getContent() reads entire raw body into memory. NO application-level body-size cap (verified by grep on app/ and config/).",
+        "Defense layers OUTSIDE Laravel: nginx client_max_body_size (typically 1M default), PHP-FPM post_max_size (typically 8M default). Stripe's max event payload is ~64KB so realistic webhooks fit comfortably.",
+        "throttle:60,1 caps request rate per IP — combined with body-size caps at infra tier, multi-MB POST flood is bounded.",
+        "Signature verification happens AFTER full body read — a giant unsigned payload still consumes upload bandwidth + memory before being rejected at constructEvent. Stripe's HMAC scheme verifies the canonical 't={ts}.{payload}' so the full body is necessarily read.",
+        "Per J-ADV-5 prior finding: this is correctly classed as infra-tier risk, not application defect. V1.0.2 backlog: explicit Laravel max body filter (e.g. RouteServiceProvider middleware) if Le Cayenne nginx config is uncertain."
+      ],
+      "verdict": "INFRA-TIER (out of Laravel scope) — bounded by nginx + PHP-FPM body size + throttle:60,1. V1.0.2 backlog for explicit application-tier cap. See K8-F-05 (INFO)."
+    },
+    {
+      "id": "K.8.10",
+      "name": "webhook_events PII retention — J-ADV-4 LEAK-04 P2 GDPR concern",
+      "evidence": [
+        "Stripe.php:262 'payload' => $stripeEvent->toArray() stores the FULL provider event JSON for forensic audit. Stripe charge objects routinely embed billing_details: { name, email, phone, address: { line1, postal_code, city, country } } when the customer fills the Stripe Element with full billing.",
+        "PruneWebhookEventsCommand:31-38 retention bumped to 180d (PCI dispute window) for processed/duplicate rows. Failed rows are NEVER pruned (DLQ retry lane owns them) — could sit indefinitely.",
+        "GDPR Article 5(1)(c) data minimization: storing full billing_details for 180d (or indefinitely for failed events) when only the event metadata (id, type, amount, currency) is operationally needed is a defensible-but-suboptimal posture.",
+        "Grep on app/ for 'billing_details', 'redact', 'scrub' returns ZERO redaction logic on webhook_events.payload. PII protections elsewhere (KioskEventController, LoyaltyController, KDSOrderDetailsResource etc.) do NOT apply here.",
+        "No customer subject-access-request (SAR) tooling to surface webhook_events.payload rows when erasure is requested. Stripe webhooks are an under-the-radar PII reservoir."
+      ],
+      "verdict": "AMBER (V1 acceptable single-restaurant — owner risk-owns), V1.0.2 P2 backlog. See K8-F-06."
+    },
+    {
+      "id": "K.8.11",
+      "name": "Webhook listener silent-fail risk per I.1 — MITIGATED",
+      "evidence": [
+        "Stripe.php:319-333: inner DB::transaction wrapped in try/catch (Throwable). On error: Log::channel('fiscal')->error('stripe.webhook.processing_failed', [...]); $event->markFailed($e->getMessage()); response 500.",
+        "Stripe retries on 500 (per their docs). Failed WebhookEvent row stays in webhook_events with status=failed for hourly DLQ re-drive.",
+        "OutboxWebhookRetryFailedCommand.php:97-153 re-fetches failed rows within --since=24h window, ordered by id (deterministic tail on overflow), BATCH_CAP=500 per run. Writes audit_log 'outbox.replay' BEFORE dispatch (Wave 3 SYNC-ADV3-04 write-then-dispatch ordering), continues on individual event failure (preserves batch continuity).",
+        "Per CLAUDE.md outbox pattern: webhook → idempotency ledger persisted FIRST (firstOrCreate), then inner processing. Failure recovery via DLQ retry is guaranteed.",
+        "WebhookDLQRetryFailedTest validates the DLQ lane.",
+        "I.1 silent-fail concern: there is NO swallowed exception in the Stripe handler path. Every Throwable surfaces as 500 → Stripe retry → DLQ. The only swallow point is at the FAR DOWNSTREAM listener level (PersistOrderPaymentStatusChangedToOutbox catches DispatchDomainEventsJob::dispatch Throwable to avoid HTTP 5xx on broadcaster hiccup), but that listener is NEVER invoked from the Stripe webhook path because the webhook does NOT dispatch OrderPaymentStatusChanged (see K.8.3). So I.1 risk is materially zero for this surface."
+      ],
+      "verdict": "MITIGATED — try/catch + markFailed + 500 + Stripe retry + DLQ hourly. No silent-fail path exists. I.1 concern VERIFIED CLOSED for K.8 surface."
+    },
+    {
+      "id": "K.8.12",
+      "name": "Stripe webhook secret in env — boot guard verification",
+      "evidence": [
+        "config/services.php:68 'webhook_secret' => env('STRIPE_WEBHOOK_SECRET', '') — empty default.",
+        "AppServiceProvider.php:78-223 production boot guards LIST (verified by direct read):",
+        "  - POS_SIMULATION_HARDWARE != false (NF525 cash-trail bypass)",
+        "  - payment.bypass.enabled (TPE validation bypass)",
+        "  - printing.bypass.enabled (TCP/IP printer spool bypass)",
+        "  - APP_DEBUG (stack/SQL/secret leak)",
+        "  - idempotency.enabled (duplicate POST protection)",
+        "  - LOYALTY_QR_SECRET (cross-surface fraud heal)",
+        "  - APP_URL (CORS allowed_origins)",
+        "  - broadcasting.default not in [null, 'null'] (realtime)",
+        "  - queue.default != 'sync'",
+        "  - cache.default not in ['array', 'null'] (audit chain Cache::lock cross-worker)",
+        "STRIPE_WEBHOOK_SECRET is **NOT** in the boot guard list. App boots cleanly in production with empty STRIPE_WEBHOOK_SECRET.",
+        "Runtime soft-guard EXISTS: Stripe.php:199-208 checks empty secret on every webhook POST and returns 500 misconfigured + Log::channel('fiscal')->error('stripe.webhook.misconfigured'). Stripe then retries indefinitely (10× over ~3 days per Stripe retry curve), filling the fiscal log channel with noise but never silently bypassing signature verification.",
+        "Risk delta vs CLAUDE.md §8 expectation: the task spec states 'Per AppServiceProvider: if production + missing, app refuses to boot. Verify guard active.' — this assumption is **FALSE**. There is NO boot-time refusal. There IS a runtime soft-refusal (per-request 500) that prevents silent bypass but allows the app to start unconfigured.",
+        "Severity assessment: P2 (V1 Le Cayenne LOCAL uses .env with STRIPE_WEBHOOK_SECRET present per the production runbook; the runtime soft-guard catches the 'forgot to set after rotation' deploy mistake at first webhook receipt rather than first boot — operational delta = seconds, not silent data corruption). Aligns with same defensive pattern as the LOYALTY_QR_SECRET guard but applied at a different layer."
+      ],
+      "verdict": "AMBER — boot guard ABSENT (contradicts spec assumption), runtime soft-guard PRESENT (500 + Log::error on every miss). No silent NF525 violation possible. Promotion to boot-time guard recommended for parity with other secret-required configs. See K8-F-07."
+    }
+  ],
+  "listeners_in_order_per_event": [
+    {
+      "event": "Stripe charge.succeeded webhook receipt",
+      "listeners_in_order": [
+        "(1) HTTP middleware: installed gate + throttle:60,1",
+        "(2) VerifyCsrfToken (excepted — pass-through)",
+        "(3) Stripe::handleWebhook controller — secret check / signature constructEvent(300s tol) / firstOrCreate WebhookEvent / DB::transaction { CapturePaymentNotification create + markProcessed }",
+        "(4) (parallel in-band path triggered separately by user browser visiting payment.success) → Stripe::success → PaymentService::payment → Transaction create + Order.payment_status=PAID",
+        "(5) (eventually triggered by OrderService::changeStatus or similar) → OrderPaymentStatusChanged::dispatch → PersistOrderPaymentStatusChangedToOutbox → DispatchDomainEventsJob → BroadcastManager private-branch.{id}"
+      ],
+      "isolation_policy": "Webhook handler is COMPLETELY decoupled from the in-band cascade. The CapturePaymentNotification table is the ONLY shared state. Failure in webhook DOES NOT affect in-band; failure in in-band DOES NOT affect webhook. This is by design for resilience but breaks the cascade when one side dies (see K.8.3 browser-death scenario)."
+    },
+    {
+      "event": "Stripe non-charge.succeeded webhook receipt (charge.failed, charge.refunded, charge.dispute.*, payment_intent.*, etc)",
+      "listeners_in_order": [
+        "(1-3) same as above",
+        "(4) Stripe::handleWebhook else-branch: $event->markProcessed() — forensic-only row, no further cascade"
+      ],
+      "isolation_policy": "Forensic preservation only. No downstream side-effects. See K8-F-02/F-03/F-04 for the gaps this creates for failed/refund/dispute event types."
+    },
+    {
+      "event": "Stripe webhook DLQ re-drive (failed rows)",
+      "listeners_in_order": [
+        "(1) Console: foodking:webhook:retry-failed --since=24h hourly schedule",
+        "(2) OutboxWebhookRetryFailedCommand::runHandle — Cache::lock 300s + BATCH_CAP=500 + ordered by id",
+        "(3) per-event: AuditLogService::write outbox.replay (NF525 audit trail FIRST) — on throw, continue (skip dispatch)",
+        "(4) per-event: WebhookEvent::forceFill status=pending + ProcessWebhookEventJob::dispatch",
+        "(5) ProcessWebhookEventJob::handle — find row, idempotent short-circuit if processed, dispatch to provider via Stripe::handleFromStoredEvent",
+        "(6) Stripe::handleFromStoredEvent — V1.0.1 scope-minimal: validates stored payload has id, marks processed with retained order_id. V1.0.2 TODO: refactor handleWebhook into thin parser + private processStripeEvent so replay re-runs CapturePaymentNotification staging end-to-end."
+      ],
+      "isolation_policy": "DLQ is the safety net. Write-then-dispatch ordering ensures audit row exists IFF dispatch was attempted. Per-event continue prevents batch poison. V1.0.1 DLQ does NOT re-stage CapturePaymentNotification — TODO documented."
+    }
+  ],
+  "delta_t_measured_or_static": "Stripe webhook → handler response: p50 < 50ms, p99 < 200ms static estimate (3 DB statements + HMAC verify). Stripe webhook → POS Q10 panel realtime update: GATED on user browser visiting payment.success (not the webhook itself). DLQ retry cadence: hourly. webhook_events prune: 180d. Per CLAUDE.md cross-surface sync target ≤5s — N/A here since webhook is not the cascade trigger. Q9-S1 cross-surface sync mesuré ~1s applies to OrderPaymentStatusChanged broadcast path which the webhook does NOT enter directly (see K.8.3 + K8-F-01).",
+  "composition_snapshot_integrity": "N/A for webhook surface — handler does not touch OrderItem.composition_snapshot. NF525 invariant preserved by virtue of zero mutation.",
+  "allergens_propagation_verified": "N/A for webhook surface — same rationale as composition_snapshot.",
+  "ui_screenshots": [
+    {
+      "path": "N/A",
+      "observations": [
+        "K.8 is a webhook surface (no UI) — no screenshots applicable. Visual cascade evidence for OrderPaymentStatusChanged broadcast lives in K.1 (KDS card refresh on payment) + H7 fullflow captures. POS Q10 panel updates on OrderPaymentStatusChanged path covered by Wave X1 SSOT encaisser modal validation (project_wave_x_test_e2e_convergence_2026-05-21) — out of K.8 read-only scope."
+      ],
+      "verdict_visual": "N/A — webhook surface has no UI render path."
+    }
+  ],
+  "race_conditions": [
+    {
+      "id": "K8-RC-01",
+      "scenario": "Stripe sends same event.id twice within 1s (provider retry under storm)",
+      "outcome": "Application-level firstOrCreate races on uk_webhook_provider_id UNIQUE constraint. First INSERT wins, second hits the UNIQUE collision → firstOrCreate returns existing row → !wasRecentlyCreated → 200 duplicate_ignored. Verified by StripeWebhookIdempotencyTest::test_duplicate_event_id_returns_200_duplicate_ignored_and_no_new_row.",
+      "verdict": "MITIGATED (dual-layer DB UNIQUE + firstOrCreate)"
+    },
+    {
+      "id": "K8-RC-02",
+      "scenario": "Two distinct Stripe events for the same order_id arrive simultaneously (e.g. charge.succeeded + charge.refunded back-to-back from a refund-during-capture scenario)",
+      "outcome": "Each event has distinct event.id → distinct webhook_events rows. charge.succeeded stages CapturePaymentNotification. charge.refunded falls to else markProcessed() — does NOT counter-stage. Result: stale CapturePaymentNotification token may be consumed by user's later success page visit, marking Order PAID even though Stripe has already refunded. NF525 ledger divergence risk.",
+      "verdict": "AMBER → RED — see K8-F-03. Mitigations: very rare in practice (refund during capture requires deliberate dashboard action mid-flight), but the lack of cascade for charge.refunded leaves the door open."
+    },
+    {
+      "id": "K8-RC-03",
+      "scenario": "User browser dies between Stripe redirect-back and payment.success controller invocation; webhook fires; CapturePaymentNotification staged but never consumed",
+      "outcome": "Order stays UNPAID in our DB while Stripe shows captured charge. POS Q10 'à encaisser' panel does not refresh. Customer's card was charged. Cashier reconciles manually only when noticed.",
+      "verdict": "AMBER → RED — see K8-F-01. Mitigation gap: no cron drain of stranded CPN rows; no auto-flip via webhook itself."
+    },
+    {
+      "id": "K8-RC-04",
+      "scenario": "DLQ worker crashes mid-batch (300s Cache::lock TTL, BATCH_CAP=500)",
+      "outcome": "LOCK_TTL_SECONDS=300s release. Next hourly cron picks up where left off — ordered by id ensures deterministic tail. audit_log 'outbox.replay' row already exists for processed-in-this-run events, so re-attempt re-writes a NEW audit row (idempotency lives on the inner WebhookEvent.id markProcessed call, not the audit trail). Batch continuity preserved.",
+      "verdict": "MITIGATED (Wave 3b/3c hardening)"
+    }
+  ],
+  "findings": [
+    {
+      "id": "K8-F-01",
+      "severity": "P1",
+      "type": "cascade_gap",
+      "title": "Webhook charge.succeeded does NOT flip Order.payment_status — stranded CapturePaymentNotification if user browser dies",
+      "evidence": "Stripe.php:284-310 only stages CapturePaymentNotification row + marks WebhookEvent processed. Order.payment_status flip to PAID happens in Stripe::success at :115-150 which is invoked ONLY when user's browser hits the payment.success route after Stripe's redirect. If browser dies (closed tab, dead phone, lost network) between Stripe charge capture and our redirect handler, the webhook fires successfully, CPN is staged, but no controller pops it. There is NO cron/queue that drains stranded CPN rows. NO fallback handler invokes PaymentService::payment from the webhook path.",
+      "rationale": "Webhook cascade is correctly idempotent + signature-verified but is structurally a stager, not a primary mutator. Real-world incidence: low (most browsers complete the redirect) but non-zero (mobile carrier latency / app backgrounding / tab close). When it happens: Stripe payout reconciliation diverges from our Z-report total. Customer charged but order shown unpaid. Cashier must reconcile manually after noticing.",
+      "v102_backlog_suggestion": "Promote the webhook handler to flip Order.payment_status=PAID directly when charge.succeeded arrives with valid metadata.order_id (already injected since P0-POS-01 GOAL round-2 2026-05-18). Must wrap in DB::transaction with assertGatewayContext bypass (webhook IS a gateway context — extend PaymentAbstract or add a runtime allow flag). Must dispatch OrderPaymentStatusChanged to trigger the existing realtime cascade (PersistOrderPaymentStatusChangedToOutbox → DispatchDomainEventsJob → broadcast). Must use Order::whereKey + lockForUpdate to coexist safely with the in-band success() path (which also lockForUpdate). Plus: hourly cron to scan capture_payment_notifications older than 5min and consume them by calling success() programmatically."
+    },
+    {
+      "id": "K8-F-02",
+      "severity": "INFO",
+      "type": "cascade_missing",
+      "title": "Webhook charge.failed has no cashier-facing notification",
+      "evidence": "Stripe.php:284 else-branch markProcessed() only. NO toast/email/push to cashier when a Stripe webhook says charge failed. The in-band Stripe::payment() :91-95 routes user to payment.fail when charges->create returns non-succeeded synchronously — so the live user gets a fail page. But webhook charge.failed arriving asynchronously (e.g. fraud check delayed) is silent on our side.",
+      "rationale": "In-band coverage is adequate for V1 single-restaurant + low Stripe volume. No NF525 risk (order stays UNPAID, no fiscal_sequence allocation). Webhook arrival is forensic-only.",
+      "v102_backlog_suggestion": "If Stripe async failures become operationally relevant, add an Order.payment_status FAILED state (or a dedicated payment_failed_at timestamp) + cashier toast via OrderPaymentStatusChanged broadcast. V1 acceptable as-is."
+    },
+    {
+      "id": "K8-F-03",
+      "severity": "P1",
+      "type": "cascade_missing",
+      "title": "Webhook charge.refunded / refund.created (Stripe dashboard manual refund) does NOT flip Order.payment_status=REFUNDED",
+      "evidence": "Stripe.php:284 else-branch markProcessed() only — no RefundCreated::dispatch, no Order mutation. The full refund cascade (PersistOrderPaymentStatusChangedOnRefundCreated → OrderPaymentStatusChanged outbox broadcast + stock release + loyalty clawback) is wired ONLY for in-app refunds (admin POS UI → RefundWithCounterEntryService::execute or PaymentService::cashBack).",
+      "rationale": "When owner refunds from Stripe dashboard (out-of-band), our Order.payment_status stays PAID. Stripe shows refunded. Z-report total no longer matches Stripe payout. NF525 fiscal sequence not invalidated (correctly) but ledger divergence breaks reconciliation. Stock not released, loyalty points not clawed back, POS/admin/OSS show stale PAID until manual fix.",
+      "v102_backlog_suggestion": "Handle charge.refunded (and charge.refund.updated for partial refunds) by extracting metadata.order_id, locking the Order, and dispatching RefundCreated via a thin gateway-context wrapper. Since RefundCreated already exists with the full downstream cascade hardened (WG-1-WF6-P1-1 + GOAL-J2-HEAL-07 loyalty isolation), the lift is minimal. For partial refunds, need to extend PaymentStateMachine + Order schema (payment_status enum currently REFUNDED is all-or-nothing). Recommend: V1 operations doc instructs owner to refund FROM POS UI only, never Stripe dashboard, until V1.0.2 cascade lands."
+    },
+    {
+      "id": "K8-F-04",
+      "severity": "P2",
+      "type": "cascade_missing",
+      "title": "Webhook charge.dispute.created / chargeback has no owner notification or Order tagging",
+      "evidence": "Stripe.php:284 else-branch markProcessed() only. No PaymentStatus::DISPUTED enum value. No email/push to owner. No audit_logs row 'order.dispute_created'. Owner relies on Stripe dashboard email alone.",
+      "rationale": "V1 Le Cayenne single-restaurant + owner sees Stripe email + dashboard daily → operationally acceptable. 180d webhook_events retention preserves forensic for the PCI dispute window. NF525 chain unaffected (order was correctly PAID at the time; dispute is a downstream banking event).",
+      "v102_backlog_suggestion": "For SaaS multi-tenant or owner-staff separation: add PaymentStatus::DISPUTED + audit_logs entry + push notification + admin dashboard dispute pill. Schema for dispute amounts, win/lose outcome, evidence-due-date. Out of V1 scope per CLAUDE.md §15 V1 focus directive."
+    },
+    {
+      "id": "K8-F-05",
+      "severity": "INFO",
+      "type": "infra_tier",
+      "title": "Large webhook payload — no Laravel-level body cap, mitigated at nginx/PHP-FPM tier",
+      "evidence": "Stripe.php:210 $request->getContent() reads full body. Grep on app/ + config/ returns no application-tier max body filter. Defense at infra: nginx client_max_body_size + PHP-FPM post_max_size + Stripe events realistically <64KB + throttle:60,1.",
+      "rationale": "Per J-ADV-5: infra-tier classification, not application defect. V1 Le Cayenne nginx config likely default 1M cap — Stripe webhooks fit comfortably. Multi-MB POST flood bounded by rate-limit + body cap. Signature verification reads full body before reject (required by Stripe HMAC scheme), so attacker can burn 1M × 60 RPM upload bandwidth per IP — acceptable.",
+      "v102_backlog_suggestion": "Document explicit nginx + PHP-FPM body caps in CRONTAB_PROD.md / runbooks. Optionally add Laravel middleware enforcing ≤128KB on /payment/*-webhook/* paths for application-tier defense-in-depth."
+    },
+    {
+      "id": "K8-F-06",
+      "severity": "P2",
+      "type": "gdpr_pii_retention",
+      "title": "webhook_events.payload stores Stripe billing_details (name, email, phone, address) for 180d unredacted — GDPR Article 5(1)(c) data minimization gap",
+      "evidence": "Stripe.php:262 'payload' => $stripeEvent->toArray() captures full provider payload. Stripe charge objects routinely embed billing_details: { name, email, phone, address }. PruneWebhookEventsCommand:31-38 retains processed/duplicate 180d (PCI dispute window). Failed rows NEVER pruned (DLQ retry lane). No redaction logic exists (grep on app/ for billing_details/redact/scrub).",
+      "rationale": "GDPR data minimization principle: operational need is event metadata (id, type, amount, currency, order_id) — billing_details exceeds the minimum. Subject access request (SAR) tooling does not currently surface webhook_events rows. 180d is defensible for PCI dispute lookback but not necessarily for PII.",
+      "v102_backlog_suggestion": "Add a scrubBillingDetails($payload) helper invoked at firstOrCreate insert time. Whitelist allowed keys (id, type, amount, currency, balance_transaction, metadata, status, livemode, created). For partial payments / failed events, scrub at write-time to remove name/email/phone/address.line1-2/postal_code. Add SAR query helper that scans webhook_events.payload->>'$.billing_details.email' for erasure-request matches. Backfill migration to scrub existing rows beyond N days (defaulting 30d for tighter retention)."
+    },
+    {
+      "id": "K8-F-07",
+      "severity": "P2",
+      "type": "boot_guard_missing",
+      "title": "STRIPE_WEBHOOK_SECRET not in AppServiceProvider production boot guard list — runtime soft-guard only",
+      "evidence": "AppServiceProvider.php:78-223 verified guard list: POS_SIMULATION_HARDWARE / payment.bypass / printing.bypass / APP_DEBUG / idempotency.enabled / LOYALTY_QR_SECRET / APP_URL / broadcasting.default / queue.default / cache.default. STRIPE_WEBHOOK_SECRET is absent. App boots cleanly in production even with empty STRIPE_WEBHOOK_SECRET. Runtime soft-guard present at Stripe.php:199-208 (per-request 500 misconfigured + Log::error).",
+      "rationale": "Task spec asserted 'app refuses to boot if missing in production' — this assumption is FALSE. There is NO boot refusal. There IS a per-webhook-receipt runtime refusal which prevents silent signature-verify bypass (handler never proceeds to constructEvent without a secret). Operational delta: deploy-with-missing-secret discovered at first webhook receipt (seconds) vs boot (instant) — not a silent corruption. Stripe will retry 500 ~10× over ~3 days, filling fiscal log with 'stripe_webhook_secret_missing' until secret is set + config:cache run.",
+      "v102_backlog_suggestion": "Promote STRIPE_WEBHOOK_SECRET to boot-time guard in AppServiceProvider.php at line ~190 (between APP_URL and broadcasting.default — same defensive band). Pattern: if (empty(config('services.stripe.webhook_secret', ''))) throw new RuntimeException('STRIPE_WEBHOOK_SECRET must be set in production. ...'). Optional: scope to only-when-Stripe-gateway-enabled (PaymentGateway::where(slug=stripe, status=ENABLE)->exists()) to avoid hard-failing deployments that don't use Stripe at all. Mirror LOYALTY_QR_SECRET pattern at line 161-171."
+    }
+  ],
+  "top_3_cascade_concerns": [
+    "1. P1 K8-F-01: Webhook charge.succeeded does NOT flip Order.payment_status — full cascade gated on user browser visiting payment.success. Browser-death window leaves stranded CapturePaymentNotification + Stripe-charged-but-order-UNPAID state. No drain cron. POS Q10 panel never refreshes. Mitigation: V1.0.2 promote webhook to direct PAID flip + dispatch OrderPaymentStatusChanged.",
+    "2. P1 K8-F-03: Webhook charge.refunded (Stripe dashboard manual refund) does NOT trigger RefundCreated cascade — Order ledger diverges from Stripe ledger, Z-report total mismatch, stock not released, loyalty not clawed back, no realtime broadcast. V1 operational mitigation: instruct owner to refund FROM POS UI only. V1.0.2 wire charge.refunded → RefundCreated bridge.",
+    "3. P2 K8-F-06 (GDPR) + K8-F-07 (boot guard) + K8-F-04 (dispute UX): three independent V1.0.2 backlog items. None block V1 ship. Boot-guard promotion is the cheapest fix (~10 lines). PII scrub requires schema/audit thinking. Dispute UX requires PaymentStatus enum extension."
+  ],
+  "nf525_chain_attestation": {
+    "audit_logs_row_count": "not_re-measured_by_k8 (K.8 is pure read-only static cascade — zero DB writes by this agent)",
+    "last_hash": "not_re-measured_by_k8",
+    "captured_at": "2026-05-24",
+    "method": "K.8 read-only audit performed no DB-mutation operations. Audit chain attestation deferred to phase-k convergence report aggregating across K.1-K.10. Reference: MEMORY START HERE bullet 2 confirms NF525 chain bit-identical post Wave Polish Final.",
+    "note": "Stripe webhook handler does NOT write audit_logs rows (only webhook_events ledger). Audit chain is touched ONLY indirectly via PaymentService::payment when the user's browser completes the in-band success path (which writes audit_logs 'order.payment_status_changed' at OrderService:2208-2221). Webhook itself is NF525-neutral by design — it stages, the in-band path commits the fiscal trail."
+  },
+  "frozen_zone_diff": "0 lines (read-only audit, no patches applied). Stripe.php is NOT in the CLAUDE.md §7 frozen list (PaymentComponent.vue is frozen — Vue UI POS payment; PHP gateway class is hardenable per Sprint 3A + F-3 SYNC P1 + Sprint H3 etc — all prior heals show the file actively maintained outside the frozen zone).",
+  "verdict": "AMBER",
+  "verdict_rationale": "AMBER not GREEN because K8-F-01 + K8-F-03 are real P1 cascade gaps where the webhook does NOT actually drive Order.payment_status transitions for either the success (browser-death window) or the dashboard-refund path. Both have V1 operational mitigations (dominant Stripe flow completes the redirect; owner refunds via POS UI not dashboard) so V1 SHIP is not blocked — Le Cayenne single-restaurant pattern is tolerant. But for SaaS V2 or higher Stripe volume, these MUST be hardened. K8-F-02/04/05/06/07 are all backlog-appropriate (INFO/P2). Signature verify + idempotency + DLQ + replay tolerance + throttle + CSRF + body-size mitigation are ALL VERIFIED GREEN. NF525 chain UNTOUCHED by webhook surface. No silent-fail risk (I.1 closed for this surface). No boot guard for STRIPE_WEBHOOK_SECRET but runtime soft-guard prevents silent signature bypass — V1.0.2 P2."
+}

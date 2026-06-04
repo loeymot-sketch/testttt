@@ -195,23 +195,23 @@ function ModalCardLink({ onClose, onScan }) {
 }
 
 // ---------- Order detail ----------
+// [MOBILE FINAL V1 HEAL 2026-05-19] Z6-DEF-01 P2: remove fictional fallback
+// (Box Nashville / Bowl Gratiné / Frite XXL) when LC.orders.findById returns
+// null. Anti-fiction discipline (CLAUDE.md §13). Items=null branch renders a
+// role="status" empty-state UI instead of canonical-catalogue-violating mock.
 function ScreenOrderDetail({ go, orderId = 'C-1234' }) {
   // Pull real order from data layer (window.LC.orders.findById) when available.
   const real = window.LC && window.LC.orders ? window.LC.orders.findById(orderId) : null;
   const items = real
     ? real.items.map(i => ({ name: i.name, sups: i.extras_summary || '', qty: i.qty, price: i.line_total / Math.max(1, i.qty) }))
-    : [
-        { name: 'Box Nashville', sups: 'Oignon caramélisé, Cheddar', qty: 1, price: 17 },
-        { name: 'Bowl Gratiné',  sups: 'Sauce maison',                qty: 1, price: 12 },
-        { name: 'Frite XXL',     sups: '',                            qty: 1, price: 4  },
-      ];
-  const total = real ? real.total : items.reduce((s, i) => s + i.price * i.qty, 0);
+    : null;
+  const total = real ? real.total : 0;
   const dateLabel = real
     ? new Date(real.created_at).toLocaleString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }).replace(',', ' ·')
-    : '8 mai 2025 · 19h47';
-  const branch = real ? real.branch_city : 'Hénin-Beaumont';
-  const status = real ? real.status_label : 'Récupérée';
-  const isDelivered = !real || real.status === 'delivered';
+    : '';
+  const branch = real ? real.branch_city : '';
+  const status = real ? real.status_label : '';
+  const isDelivered = !!real && real.status === 'delivered';
 
   return (
     <div data-screen-label="12b Order detail" style={{ position: 'absolute', inset: 0, background: '#fff' }}>
@@ -221,39 +221,52 @@ function ScreenOrderDetail({ go, orderId = 'C-1234' }) {
           <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--ink)' }}>Détail</div>
           <div style={{ width: 36 }}/>
         </div>
-        <div style={{ padding: '6px 20px 0' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', background: isDelivered ? 'var(--green)' : 'var(--orange)', color: '#fff', borderRadius: 999, fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase' }}>{isDelivered ? '✓' : '●'} {status}</div>
-          <h1 className="lc-display" style={{ margin: '8px 0 2px', fontSize: 38, lineHeight: 0.9, color: 'var(--ink)' }}>#{orderId}</h1>
-          <div style={{ fontSize: 12, color: 'var(--gray-3)' }}>{dateLabel} · {branch}</div>
-        </div>
-        <div style={{ margin: '20px 20px 0', background: 'var(--cream)', borderRadius: 18, padding: 16 }}>
-          {items.map((it, i) => (
-            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '12px 0', borderBottom: i < items.length-1 ? '1px solid var(--gray-2)' : 'none' }}>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--ink)' }}>{it.qty} × {it.name}</div>
-                {it.sups && <div style={{ fontSize: 11, color: 'var(--gray-3)', marginTop: 2 }}>+ {it.sups}</div>}
-              </div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--ink)' }}>{(it.price*it.qty).toFixed(2).replace('.', ',')} €</div>
+        {items ? (
+          <>
+            <div style={{ padding: '6px 20px 0' }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', background: isDelivered ? 'var(--green)' : 'var(--orange)', color: '#fff', borderRadius: 999, fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase' }}>{isDelivered ? '✓' : '●'} {status}</div>
+              <h1 className="lc-display" style={{ margin: '8px 0 2px', fontSize: 38, lineHeight: 0.9, color: 'var(--ink)' }}>#{orderId}</h1>
+              <div style={{ fontSize: 12, color: 'var(--gray-3)' }}>{dateLabel} · {branch}</div>
             </div>
-          ))}
-          <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 14, marginTop: 6, borderTop: '2px solid var(--ink)' }}>
-            <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--gray-3)' }}>Total</span>
-            <span className="lc-display" style={{ fontSize: 24, color: 'var(--orange)' }}>{total.toFixed(2).replace('.', ',')} €</span>
+            <div style={{ margin: '20px 20px 0', background: 'var(--cream)', borderRadius: 18, padding: 16 }}>
+              {items.map((it, i) => (
+                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '12px 0', borderBottom: i < items.length-1 ? '1px solid var(--gray-2)' : 'none' }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--ink)' }}>{it.qty} × {it.name}</div>
+                    {it.sups && <div style={{ fontSize: 11, color: 'var(--gray-3)', marginTop: 2 }}>+ {it.sups}</div>}
+                  </div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--ink)' }}>{(it.price*it.qty).toFixed(2).replace('.', ',')} €</div>
+                </div>
+              ))}
+              <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 14, marginTop: 6, borderTop: '2px solid var(--ink)' }}>
+                <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--gray-3)' }}>Total</span>
+                <span className="lc-display" style={{ fontSize: 24, color: 'var(--orange)' }}>{total.toFixed(2).replace('.', ',')} €</span>
+              </div>
+            </div>
+            <div style={{ margin: '14px 20px 0', background: 'var(--ink)', color: '#fff', borderRadius: 18, padding: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--orange)' }}>+ Loyalty</div>
+                <div style={{ fontSize: 14, fontWeight: 700, marginTop: 4 }}>+{Math.round(total)} pts crédités</div>
+              </div>
+              <div className="lc-display" style={{ fontSize: 26, color: 'var(--yellow)' }}>+{Math.round(total)}</div>
+            </div>
+            <div style={{ margin: '14px 20px 0', fontSize: 12, color: 'var(--gray-3)', textAlign: 'center' }}>
+              Payé en caisse · Reçu fiscal NF525 #{orderId}-R
+            </div>
+          </>
+        ) : (
+          <div role="status" data-testid="order-detail-empty" style={{ padding: 32, textAlign: 'center', color: 'var(--gray-4)', marginTop: 40 }}>
+            <div style={{ fontSize: 36, marginBottom: 12 }} aria-hidden="true">🧾</div>
+            <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--ink)', marginBottom: 8 }}>Commande introuvable</div>
+            <div style={{ fontSize: 13, lineHeight: 1.5, marginBottom: 16 }}>
+              Le détail de cette commande n'est pas disponible.
+            </div>
+            <button onClick={() => go('orders')} style={{ background: 'transparent', border: 0, color: 'var(--orange)', fontSize: 13, fontWeight: 700, cursor: 'pointer', textDecoration: 'underline' }}>Retour à mes commandes</button>
           </div>
-        </div>
-        <div style={{ margin: '14px 20px 0', background: 'var(--ink)', color: '#fff', borderRadius: 18, padding: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div>
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--orange)' }}>+ Loyalty</div>
-            <div style={{ fontSize: 14, fontWeight: 700, marginTop: 4 }}>+{Math.round(total)} pts crédités</div>
-          </div>
-          <div className="lc-display" style={{ fontSize: 26, color: 'var(--yellow)' }}>+{Math.round(total)}</div>
-        </div>
-        <div style={{ margin: '14px 20px 0', fontSize: 12, color: 'var(--gray-3)', textAlign: 'center' }}>
-          Payé en caisse · Reçu fiscal NF525 #{orderId}-R
-        </div>
+        )}
       </div>
       <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, background: '#fff', padding: '14px 20px 30px', borderTop: '1px solid var(--gray-1)' }}>
-        <button onClick={() => go('menu')} className="lc-btn" style={{ background: 'var(--orange)', color: '#fff', width: '100%', height: 56 }}>↻ Recommander</button>
+        <button onClick={() => go(items ? 'menu' : 'orders')} className="lc-btn" style={{ background: 'var(--orange)', color: '#fff', width: '100%', height: 56 }}>{items ? '↻ Recommander' : '← Retour'}</button>
       </div>
     </div>
   );

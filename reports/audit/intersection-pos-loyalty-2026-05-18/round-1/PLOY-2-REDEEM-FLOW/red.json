@@ -1,0 +1,94 @@
+{
+  "zone": "PLOY-2-REDEEM-FLOW",
+  "role": "RED-team adversarial",
+  "scope": "Attack scenarios on redeem flow — double-tap race, browser-back, localStorage tamper, screenshot OCR, clipboard replay, cashier collusion",
+  "attack_scenarios": [
+    {
+      "id": "PLOY-2-R-01",
+      "name": "Double-tap redeem race (mobile-e2e/loyalty-adv-A4 analog)",
+      "severity": "P1",
+      "scenario": "Customer (or attacker) clicks 'Redeem 100 points' twice in rapid succession from mobile app or kiosk UI. Both requests reach /api/loyalty/redeem before the first transaction commits. lockForUpdate serializes them sequentially. First: balance 500→400, ledger row A inserted with order_id=NULL. Second: balance 400→300, ledger row B inserted with order_id=NULL. Customer goes to kiosk, places order with €1 discount (100 pts expected). FrontendOrderService attaches row A to the order — done. Row B is now ORPHAN (order_id NULL, 10-min countdown). Customer has lost 100 points to thin air.",
+      "outcome": "VULNERABLE. Confirmed by reading LoyaltyController::redeem — balance check is recomputed per transaction inside lockForUpdate but UNIQUE-NULL gap allows multiple successful inserts. App-layer 'one pending per user' guard not present.",
+      "verdict": "FAIL",
+      "remediation": "PLOY-2-S-03 + PLOY-2-DBA-01: add pending-redeem-exists check in controller + dedup_key UNIQUE index in DB."
+    },
+    {
+      "id": "PLOY-2-R-02",
+      "name": "Browser-back mid-redeem (mobile-e2e/loyalty-adv-A5 analog)",
+      "severity": "P2",
+      "scenario": "Customer completes redeem → balance 500→400 → kiosk shows 'Discount applied'. Customer hits browser-back (or device back gesture) → kiosk router returns to cart step. Customer adds more items → re-checks out. FrontendOrderService at order creation looks for pending redeem (order_id=NULL, age<10min) → finds the previous row → ATTACHES IT to the new order. Discount applied as intended. Customer sees correct flow.",
+      "outcome": "DEFENDED. The 10-min attach window covers this scenario. Verified by FrontendOrderService line 818-840 logic.",
+      "verdict": "PASS"
+    },
+    {
+      "id": "PLOY-2-R-03",
+      "name": "localStorage tamper to fake redeem state client-side (mobile-e2e/loyalty-adv-A3 analog)",
+      "severity": "P2",
+      "scenario": "Attacker (in browser DevTools or via XSS) sets localStorage.loyalty_balance = 99999 and localStorage.loyalty_code = 'STOLEN1234'. Kiosk Vue UI displays inflated balance. Customer (the attacker) clicks 'Redeem 50000 pts'. POST /api/loyalty/redeem with stolen code. Server-side LoyaltyController::redeem reads ACTUAL balance from DB (line 274 lockForUpdate read), compares against pointsToRedeem at line 298 → if actual balance < 50000 → returns 'Points insuffisants' 400.",
+      "outcome": "DEFENDED. Server is source of truth — localStorage is display-only.",
+      "verdict": "PASS",
+      "caveat": "Display drift between client and server is annoying UX but not exploitable. CSRF token required for POST is also a layer."
+    },
+    {
+      "id": "PLOY-2-R-04",
+      "name": "Screenshot OCR loyalty QR code (mobile-e2e/loyalty-adv-A2 analog)",
+      "severity": "P2",
+      "scenario": "Customer shares screenshot of mobile-app loyalty QR (which encodes loyalty_code). Friend scans the screenshot at a kiosk → kiosk POST /api/frontend/loyalty/scan with the code → server resolves the User by loyalty_code → friend sees customer's name + balance. Friend can then proceed to redeem at this kiosk (POST /api/loyalty/redeem with same code, kiosk:order token).",
+      "outcome": "VULNERABLE. No verification that the customer is physically present. loyalty_code is the SOLE credential.",
+      "verdict": "FAIL",
+      "remediation": "Two factors required: (a) loyalty_code (something they have) + (b) something they know (PIN, last-4-of-phone) or something they are (mobile-app push confirmation). Refresh QR codes regularly (rotating 60-second TOTP-style). This is a design-level concern."
+    },
+    {
+      "id": "PLOY-2-R-05",
+      "name": "Clipboard replay of one-time redeem code (mobile-e2e/loyalty-adv-A1 analog)",
+      "severity": "P3",
+      "scenario": "Mobile-app generates a one-time-redeem token (per loyalty-04-redeem-wizard.spec). User copies token, opens kiosk, pastes into 'Enter code' field. Kiosk POST → server validates → redeem applied. Attacker pastes same token later → ?",
+      "outcome": "DEPENDS on whether tokens are nonce-tracked server-side. Current LoyaltyController accepts the loyalty_code itself (not a separate redeem token) for /api/loyalty/redeem. So 'clipboard replay' = 'replay of loyalty_code' = customer's own code = no attack vector beyond PLOY-2-R-04.",
+      "verdict": "PASS-IF-NO-TOKEN-FLOW. If/when mobile-app introduces one-time tokens for kiosk redemption, server MUST mark tokens as consumed atomically (UNIQUE constraint on token + once-consumed delete or mark_used).",
+      "note": "No one-time-token table found in current schema. Mobile e2e spec loyalty-adv-A1 is forward-looking."
+    },
+    {
+      "id": "PLOY-2-R-06",
+      "name": "Redeem-after-cancel race",
+      "severity": "P2",
+      "scenario": "Order N: customer redeems 100 pts (balance 500→400), order placed, status=PENDING. Cashier cancels order N → LoyaltyService::refundPoints credits +100 (balance 400→500) + writes manual_add row. Customer immediately re-checks out for same items → re-redeem 100 (balance 500→400) → places order N+1.",
+      "outcome": "DEFENDED. Each cycle is its own (order_id, type) tuple — UNIQUE allows. Ledger preserves the full history (redeem N, refund N as manual_add, redeem N+1). No double-redeem.",
+      "verdict": "PASS",
+      "ledger_pollution_concern": "PLOY-2-S-02 still applies — ledger 'manual_add' overloaded with 'refund'."
+    },
+    {
+      "id": "PLOY-2-R-07",
+      "name": "Cashier-driven redeem on customer's points without consent",
+      "severity": "P1",
+      "scenario": "Cashier knows customer's loyalty_code (from past receipts or POS history view). Customer is not present. Cashier logged in as 'POS Operator' → POST /api/loyalty/redeem with that code + arbitrary points → isStaff branch (line 259) bypasses ownership check → points deducted, ledger row written. Cashier creates a fake POS order with a discount equal to the deducted points + cash-payment-method = CASH → cashier pockets the cash differential. Customer doesn't notice until they check their balance days later.",
+      "outcome": "VULNERABLE. Confirmed via code reading.",
+      "verdict": "FAIL",
+      "remediation": "PLOY-2-S-01 — disable isStaff redeem in V1; require customer-presence verification."
+    },
+    {
+      "id": "PLOY-2-R-08",
+      "name": "Negative-points race via rounding-down",
+      "severity": "P3",
+      "scenario": "loyalty_points is INT; redeem deducts integer N. If N=0 → controller refuses at line 285 (pointsToRedeem<=0). Negative N → same refusal. Float bypass via JSON int=1.5? PHP int cast at line 284 floors to 1. Safe.",
+      "outcome": "DEFENDED.",
+      "verdict": "PASS"
+    }
+  ],
+  "summary": {
+    "p1_count": 2,
+    "p2_count": 3,
+    "p3_count": 1,
+    "primary_concerns": [
+      "PLOY-2-R-01 double-tap race — customer money loss",
+      "PLOY-2-R-04 screenshot OCR — identity-theft-grade attack on loyalty_code-only credential",
+      "PLOY-2-R-07 cashier-driven redeem — fraud surface"
+    ],
+    "defended": [
+      "Browser-back (10-min attach window)",
+      "localStorage tamper (server-side balance check)",
+      "Re-cancel cycle (UNIQUE per (order_id, type) holds for post-order rows)"
+    ]
+  },
+  "verdict": "FAIL",
+  "blocker_for_v1": "Yes for chain-restaurant rollout. PASS-WITH-RISK for single-resto LeCayenne under heavy owner-supervision."
+}

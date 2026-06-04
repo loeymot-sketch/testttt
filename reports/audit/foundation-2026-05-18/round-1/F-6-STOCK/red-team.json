@@ -1,0 +1,92 @@
+{
+  "role": "RED-team",
+  "zone": "F-6 Stock + Availability",
+  "specialist": "adversarial — race conditions, double-refund release, idempotency bypass, decrement-without-release on cancel race",
+  "audit_window": "2026-05-18 (Round 1 read-only)",
+  "files_examined": [
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Services/Stock/StockService.php",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/Feature/Stock/StockConcurrentDecrementTest.php",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/Feature/Stock/StockReleaseOnCancelTest.php",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/Feature/Stock/StockReleaseOnRefundTest.php",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/Feature/Stock/AvailabilityDecrementConcurrencyTest.php",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/scripts/prodlike-concurrency-worker.php (referenced)"
+  ],
+  "verdict": "OK-with-tests-not-covering-cross-process",
+  "summary": "Hostile assumption: an attacker (or just nature) wants to (a) decrement past 0, (b) double-claim refund stock, (c) bypass UNIQUE on idempotency_key, (d) cancel while decrementing. Findings: race tests use sequential loops in a single PHP process → they verify single-threaded determinism but do NOT prove pessimistic locking holds under TRUE multi-process. The lockForUpdate() + UNIQUE constraint combo is theoretically sound; what's missing is a parallel-worker test reproducing the multi-process scenario. Three concrete attack paths identified — all currently mitigated but worth attention.",
+  "findings": [
+    {
+      "id": "F6-RED-01",
+      "severity": "P1",
+      "title": "Concurrent decrement tests do NOT exercise real cross-process locking",
+      "evidence_paths": [
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/Feature/Stock/StockConcurrentDecrementTest.php:60-102",
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/tests/Feature/Stock/AvailabilityDecrementConcurrencyTest.php:75-95"
+      ],
+      "primary_source": "test_stress_guard_allows_only_20_successes_across_50_attempts L73-101 runs a sequential for-loop on a single PHP process. Each call independently acquires lockForUpdate then commits then releases. No two transactions ever hold the lock simultaneously — the 'stress' is a fast serial loop, not concurrency. The actual race condition (Worker A holding ROW LOCK while Worker B requests it) is never exercised. Similar pattern in AvailabilityDecrementConcurrencyTest L75-95 — sequential dispatch.",
+      "impact": "If lockForUpdate or the UNIQUE idempotency constraint were silently broken (e.g. SQLite test runner ignoring FOR UPDATE which is a known quirk), the test would still pass because there's no actual concurrency. Production race protection is therefore not really tested. The prodlike-concurrency-worker.php script exists in repo, presumably for manual probing, but is not part of CI. A real attack: two kiosk machines submit the same last-unit order in the same millisecond; if locking is broken, both succeed and on_hand goes negative — which the CHECK constraint catches (MySQL only, not SQLite tests), but that surfaces as a 500 to one user.",
+      "user_friendly_question": "Owner — les tests 'concurrent' utilisent une boucle séquentielle, pas vraiment du multi-process. Le lockForUpdate + UNIQUE est correct sur le papier, mais non prouvé sous vraie concurrence. Veux-tu (1) écrire un test parallel-worker (fork via Process ou pcntl, ~50 LOC) ajoutant un vrai garde, (2) accepter le risque V1 Le Cayenne (faible trafic), ou (3) reporter en V1.0.2?",
+      "remediation_proposal": "Add tests/Feature/Stock/StockTrueConcurrencyTest.php using Symfony\\Component\\Process to fork N=20 PHP workers each calling Artisan command 'stock:test-decrement-race'. Run on MySQL fixture (not SQLite). Assert exactly N=stock_capacity successes + (N-cap) failures + on_hand=0 + no negative + no duplicate movements. Add CI matrix entry for MySQL.",
+      "keep_current_working": "Single-resto Le Cayenne with kiosk traffic ~10 orders/min — race risk low. Multi-resto / peak hours raise the bar."
+    },
+    {
+      "id": "F6-RED-02",
+      "severity": "P1",
+      "title": "Release-without-decrement race window: cancel fires before decrement listener completes",
+      "evidence_paths": [
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Services/Stock/StockService.php:106-108 requireOriginalDecrement guard",
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Services/Stock/StockService.php:401-404 release skip if no original",
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Services/OrderService.php:1722-1727 OrderCanceled dispatch"
+      ],
+      "primary_source": "releaseForOrderInTransaction L401-404 skips a line if the original decrement movement (idempotency_key='stock:'.sha1(...order_created...)) is missing. requireOriginalDecrement defends the symmetric case. Both guards prevent a release from adding phantom stock when the decrement never happened — correct. BUT: if OrderCanceled is dispatched within the SAME transaction as OrderCreated (rare, but OrderService self-cancel branch can do this), the listener may run BEFORE OrderCreated listeners committed → release sees no original movement → silent skip. Order is canceled but stock NEVER decremented because the create-side decrement was rolled back AND the release listener noop'd.",
+      "impact": "Acceptable behavior IF the outer transaction also rolled back (no order persists → no stock owed). Risky IF the OrderCreated commits but the cancel transaction commits later with stale state. The provided StockReleaseOnCancelTest L18-29 dispatches OrderCanceled TWICE after a confirmed decrement — verifies idempotency, not the missing-original race. No test exercises 'cancel during decrement transaction'.",
+      "user_friendly_question": "Owner — il y a un cas tordu où OrderCanceled peut arriver avant que le décrement OrderCreated soit committé (self-cancel dans la même transaction). Le code skip silencieusement, ce qui est correct si tout rollback ensemble. Veux-tu (1) ajouter un test qui force ce scénario, (2) ajouter un Log::warning si requireOriginalDecrement noop, ou (3) accepter (probabilité faible en pratique)?",
+      "remediation_proposal": "Add Log::warning when releaseForOrderInTransaction skips a line because original decrement is missing — gives observability for forensic if it ever surfaces in prod. Add test using afterCommit hooks to simulate cancel-then-create race.",
+      "keep_current_working": "Behavior is safe (no phantom inventory). Lack of observability is the gap."
+    },
+    {
+      "id": "F6-RED-03",
+      "severity": "P2",
+      "title": "Refund-stock-release: requestedByOrderItemId.isEmpty() falls back to full quantity — operator-error path",
+      "evidence_paths": [
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Services/Stock/StockService.php:373-378"
+      ],
+      "primary_source": "L373: `$requestedQty = $requestedByOrderItemId->isEmpty() ? (int) $orderItem->quantity : max(0, ...);` — if RefundCreated event dispatches with an EMPTY refundedItems array, the service releases the ENTIRE order quantity. Compare to L377: `if ($requestedByOrderItemId->isNotEmpty() && ! ->has(id)) continue;` — partial-refund mode correctly skips items not requested.",
+      "impact": "An operator (or a future bug) firing RefundCreated::dispatch($order, []) — with no refundedItems — releases the full original quantity in one shot. Today only ReleaseStockOnRefundCreated listener and OrderService self-cancel-refund call this; both pass $event->refundedItems explicitly. But the API contract 'empty array = full release' is the OPPOSITE of 'empty array = nothing to release', which is what most engineers would assume. Surprise pattern.",
+      "user_friendly_question": "Owner — la sémantique 'tableau vide = libérer tout l'order' est non-intuitive (la plupart des devs attendent 'vide = rien à faire'). Aujourd'hui pas exploité (callers passent toujours un array). Veux-tu (1) inverser la sémantique (empty = noop) + caller adapté, (2) renommer en releaseFullOrder() vs releaseForRefundedItems(array) pour distinguer les deux APIs, ou (3) laisser tel quel + commentaire défensif?",
+      "remediation_proposal": "Option (2) preferred: split into 2 named methods. releaseForOrder() = full, releaseForRefundedItems(array $items) = partial. Update listeners to call the right one. ~15 LOC + tests.",
+      "keep_current_working": "Today no caller passes empty array, so no active bug. Heal is API hygiene."
+    },
+    {
+      "id": "F6-RED-04",
+      "severity": "info",
+      "title": "Idempotency-bypass attack: pre-claim a movement key with crafted payload",
+      "evidence_paths": [
+        "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Services/Stock/StockService.php:327-344 movementKey"
+      ],
+      "primary_source": "movementKey is deterministic sha1(reason | class | order.id | line_uid | type | id [| seed]). All inputs are observable. An attacker with privileged DB write access could insert a stock_movements row with a predicted key BEFORE the legitimate decrement fires → legit decrement L102 existsCheck noop's → real on_hand never decremented → over-sale.",
+      "impact": "Requires DB write access (admin compromise or DBA error). Not an external attack surface. Internal threat model only. Mitigation: the same security gap as F6-SEC-01 (no DB-level append-only trigger on stock_movements). If insert-only constraint added at DB level (DEFERRED INSERT BEFORE TRIGGER checking absence of duplicate via business logic), pre-claim is partly blockable.",
+      "user_friendly_question": "Pas d'action V1. Tracker dans le V2 SaaS threat-model si pertinent.",
+      "remediation_proposal": "Aucune V1. V2: HMAC chain (couples F6-SEC-01 P1 escalation) would defeat the pre-claim attack by requiring the prev_hash to be known at insert time.",
+      "keep_current_working": "Aucun changement."
+    }
+  ],
+  "concurrency_assumptions_verified": [
+    "lockForUpdate is honored under MySQL InnoDB (assumed, not tested cross-process)",
+    "UNIQUE idempotency_key prevents duplicate movements (verified by single-process test)",
+    "CHECK on_hand >= 0 prevents negative inventory (MySQL only — SQLite tests pass via model::saving guard)",
+    "DB::transaction rollback releases the row lock automatically"
+  ],
+  "concurrency_assumptions_unverified": [
+    "True cross-process race (multi-worker, multi-PHP-FPM) — see F6-RED-01",
+    "Behavior under deadlock retry (Laravel's DB::transaction $attempts=1 by default — no auto-retry)",
+    "Outer transaction rollback inside StockService::releaseForOrder when listener throws Throwable not StockUnavailable"
+  ],
+  "double_refund_check": {
+    "test_present": "StockReleaseOnRefundTest L19-47 dispatches RefundCreated twice, asserts on_hand restored exactly once",
+    "verdict": "OK — composite movement_key (released_qty + delta) prevents double-release at the same released_qty checkpoint. Partial-refund tests also pass (L49-121)."
+  },
+  "negative_inventory_check": {
+    "guard_path": "StockService L111-113 throws StockUnavailableException if (on_hand < qty) BEFORE save; model::saving guard L66-74 throws InvalidArgumentException if final on_hand < 0; MySQL CHECK constraint at DB level (non-sqlite)",
+    "verdict": "Triple-layered defense. Cannot drift negative even under partial transaction failure."
+  }
+}

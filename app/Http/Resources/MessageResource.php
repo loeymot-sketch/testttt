@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use App\Libraries\AppLibrary;
 use App\Models\MessageHistory;
+use App\Support\PhoneDisplay;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class MessageResource extends JsonResource
@@ -21,7 +22,7 @@ class MessageResource extends JsonResource
             "branch_id"  => $this->branch_id,
             "user_id"    => $this->user_id,
             "user_name"  => optional($this->user)->name,
-            "user_phone" => optional($this->user)->phone,
+            "user_phone" => PhoneDisplay::safe(optional($this->user)->phone),
             "user_image" => optional($this->user)->image,
             "message"    => $this->messageHistory($this->messageHistory->load('user', 'user.media')),
         ];
@@ -39,7 +40,7 @@ class MessageResource extends JsonResource
                     "message_id" => $history->message_id,
                     "user_id"    => $history->user_id,
                     'user_name'  => $history->user->name,
-                    'user_phone' => $history->user->phone,
+                    'user_phone' => PhoneDisplay::safe($history->user->phone),
                     'user_image' => $history->user->image,
                     "text"       => $history->text,
                     "image"      => $history->image,

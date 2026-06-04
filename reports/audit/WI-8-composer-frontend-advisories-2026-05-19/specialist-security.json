@@ -1,0 +1,173 @@
+{
+  "specialist": "Security",
+  "discipline": "AUDIT-ONLY",
+  "scope": "Per-CVE exploit-surface analysis in V1 LeCayenne single-resto context",
+  "session_id": "WI-8-composer-frontend-advisories-2026-05-19",
+  "context": "Single-resto deployment (Le Cayenne) — surfaces = POS (admin staff intranet) + Kiosk (customer touchscreen, in-store LAN) + Customer Mobile/Web (public internet) + Kitchen Display + OSS. No multi-tenant SaaS exposure.",
+  "composer_per_cve": [
+    {
+      "id": "CVE-2025-27515",
+      "package": "laravel/framework v9.52.21",
+      "severity": "medium",
+      "title": "File Validation Bypass",
+      "reachability": "REACHABLE",
+      "surface": "Admin file/image uploads: ItemCategoryImportRequest (Excel xls/xlsx admin import), ItemCategoryRequest+CouponRequest+ItemPhotoUploadRequest+ChangeImageRequest+ThemeRequest+MessageRequest+PushNotificationRequest+NotificationRequest+OfferRequest (image jpg/png) — 10+ FormRequests use 'image' / 'mimes:' validators. Admin-authenticated only.",
+      "exploit_difficulty": "Medium — requires authenticated admin to craft polyglot/malicious file passing image mime check but containing executable payload. Mitigation depends on downstream sanitization (Intervention\\Image re-encode) and storage location (public vs. private).",
+      "v1_lecayenne_impact": "LIMITED — admin-only surface, single-resto staff trusted. Not exploitable by kiosk users or public web/mobile customers. Storage on local filesystem inside admin upload directory.",
+      "fix_path": "BLOCKED on Laravel 9 EOL — no 9.x backport. Requires Laravel 10.48.29+ migration. V1.1 track."
+    },
+    {
+      "id": "PKSA-4t1p-xpk2-nsss",
+      "package": "aws/aws-sdk-php 3.359.13",
+      "severity": "high",
+      "title": "CloudFront Policy Document Injection",
+      "reachability": "NOT-REACHABLE",
+      "surface": "Grep app/ + config/ for CloudFront / getSignedUrl / signedCookie / UrlSigner = ZERO matches. FoodKing uses AWS SDK only for S3 (file storage) and SES (email — currently disabled). No CloudFront usage.",
+      "v1_lecayenne_impact": "NONE",
+      "fix_path": "DEFER V1.0.X — upgrade aws-sdk to 3.371.4+ when next routine bump."
+    },
+    {
+      "id": "CVE-2025-14761",
+      "package": "aws/aws-sdk-php 3.359.13",
+      "severity": "medium",
+      "title": "S3 Encryption Clients Key Commitment Issues",
+      "reachability": "NOT-REACHABLE",
+      "surface": "Requires use of S3EncryptionClient/S3EncryptionMultipartUploader. FoodKing uses standard S3 Storage adapter (Filesystem facade). No client-side encryption.",
+      "v1_lecayenne_impact": "NONE",
+      "fix_path": "DEFER V1.0.X."
+    },
+    {
+      "id": "CVE-2025-45769",
+      "package": "firebase/php-jwt v6.11.1",
+      "severity": "low",
+      "title": "Weak Encryption",
+      "reachability": "NOT-REACHABLE",
+      "surface": "Grep app/ for Firebase\\JWT / JWT::decode / JWT::encode = ZERO matches. firebase/php-jwt is a transitive dep (likely via google/apiclient or laravel-fcm) — no direct callsites in app code. FoodKing JWT-equivalent = Laravel Sanctum personal access tokens (NOT JWT).",
+      "v1_lecayenne_impact": "NONE in app surface. Could affect FCM push notification token verification IF used internally by a transitive package — verify in V1.0.X.",
+      "fix_path": "DEFER V1.0.X."
+    },
+    {
+      "id": "CVE-2026-33347 + CVE-2026-30838",
+      "package": "league/commonmark 2.7.1",
+      "severity": "medium",
+      "title": "Embed extension allowed_domains bypass + DisallowedRawHtml extension bypass via whitespace",
+      "reachability": "NOT-REACHABLE",
+      "surface": "Grep app/ + resources/ for CommonMark / convertToHtml / MarkdownConverter / Str::markdown = ZERO matches. League/commonmark is a transitive dep (likely via Laravel itself for mail rendering) — no FoodKing markdown rendering of user content.",
+      "v1_lecayenne_impact": "NONE",
+      "fix_path": "DEFER V1.0.X — bump to 2.8.2+ at next routine update."
+    },
+    {
+      "id": "CVE-2026-44167 + CVE-2026-40194 + CVE-2026-32935",
+      "package": "phpseclib/phpseclib 3.0.47",
+      "severity": "high + low + high",
+      "title": "ASN1::decodeOID DoS + variable-time HMAC SSH + AES-CBC padding oracle",
+      "reachability": "NOT-REACHABLE-PROD",
+      "surface": "Grep app/ + config/ for phpseclib / SSH2 / SFTP / RSA / Crypt\\\\AES = ZERO matches. phpseclib is transitive dep (likely via aws/aws-sdk-php for signing). FoodKing has no SSH/SFTP/SSH-key-auth functionality. No client-controlled OID parsing surface.",
+      "v1_lecayenne_impact": "NONE",
+      "fix_path": "DEFER V1.0.X — bump to 3.0.52+ at next routine update (transitively pulled by aws-sdk update)."
+    },
+    {
+      "id": "CVE-2026-24765",
+      "package": "phpunit/phpunit 9.6.29",
+      "severity": "high",
+      "title": "Unsafe Deserialization in PHPT Code Coverage",
+      "reachability": "NOT-APPLICABLE",
+      "surface": "require-dev only — phpunit ships with composer install --dev. Production deployment uses composer install --no-dev → phpunit NOT installed in /vendor on prod server. CVE requires running phpunit with attacker-controlled .phpt files (CI only).",
+      "v1_lecayenne_impact": "NONE",
+      "fix_path": "NOT-APPLICABLE — blocked by Laravel 9 (phpunit ^9 pinned). Move to phpunit 9.6.33+ when CI Composer.lock refreshes within ^9.5.10 constraint, OR defer to Laravel 10+ migration (phpunit 10/11)."
+    },
+    {
+      "id": "CVE-2026-25129",
+      "package": "psy/psysh v0.12.14",
+      "severity": "medium",
+      "title": "Local Privilege Escalation via CWD .psysh.php auto-load",
+      "reachability": "NOT-APPLICABLE",
+      "surface": "Requires running `php artisan tinker` (psysh interactive shell) in a directory where attacker can write `.psysh.php`. Production servers do not run tinker; dev-only.",
+      "v1_lecayenne_impact": "NONE",
+      "fix_path": "NOT-APPLICABLE — bump on next routine."
+    },
+    {
+      "id": "CVE-2026-24739",
+      "package": "symfony/process v6.4.26",
+      "severity": "medium",
+      "title": "Incorrect argument escaping under MSYS2/Git Bash (Windows)",
+      "reachability": "NOT-APPLICABLE",
+      "surface": "Platform precondition: Windows + MSYS2/Git Bash environment. FoodKing prod runs on Linux (per Ansible/OVH VPS-1 plan). Windows is dev-environment only.",
+      "v1_lecayenne_impact": "NONE",
+      "fix_path": "NOT-APPLICABLE."
+    }
+  ],
+  "npm_per_cve_priority": [
+    {
+      "package": "axios 1.x (in 1.0.0-1.15.1 range)",
+      "severity": "high (15+ advisories cumulative)",
+      "title": "Prototype pollution + SSRF + Header injection + DoS + JSON tampering + CRLF injection + null byte",
+      "reachability": "REACHABLE",
+      "surface": "133 callsites resources/js across kiosk/POS/admin/mobile/customer-web. Backend (Laravel) controls Origin so SSRF/header-injection gadgets need attacker-controlled config object — limited in FoodKing's strict backend-validated payloads. Prototype-pollution gadgets need both __proto__ pollution source AND target merge — FoodKing payloads are server-formed JSON. Real exposure: customer-facing surfaces (mobile + web ordering) where third-party content (CDN images, social, etc.) could enter URL params.",
+      "exploit_difficulty": "Medium — chained exploit requires polluted config + reachable merge. Most FoodKing axios calls use static config; risk concentrated in dynamic-URL flows.",
+      "fix_path": "FIX-PRE-PROD — `npm audit fix` available (non-breaking 1.15.2). DO NOT execute in audit-only scope; recommend for V1.0.X heal."
+    },
+    {
+      "package": "lodash <=4.17.23",
+      "severity": "high",
+      "title": "Prototype pollution + code injection via _.template",
+      "reachability": "REACHABLE",
+      "surface": "Wide admin/POS/kiosk usage. _.template is the dangerous gadget (code injection via attacker-controlled template string + imports key). FoodKing usage: verify if any _.template() with user-controlled strings — likely .debounce/.throttle/.merge/.cloneDeep instead.",
+      "exploit_difficulty": "Low IF _.template used with attacker input; otherwise High.",
+      "fix_path": "FIX-PRE-PROD — `npm audit fix` to 4.17.21+. Non-breaking."
+    },
+    {
+      "package": "sweetalert2 8.19.1",
+      "severity": "high",
+      "title": "Hidden functionality (GHSA-8jh9-wqpf-q52c — version 8.19.1 specifically supply-chain compromise / malicious)",
+      "reachability": "REACHABLE",
+      "surface": "Bundled in public/js/vendor.js — exposed in every page that loads vendor.js (all admin + kiosk + frontend).",
+      "exploit_difficulty": "ALREADY compromised — supply chain CVE, not user-triggered. Anyone visiting affected page is exposed.",
+      "fix_path": "FIX-PRE-PROD URGENT — `npm audit fix` to 8.19.2+. Non-breaking patch."
+    },
+    {
+      "package": "swiper 6.5.1-12.1.1 (current ^11.0.5)",
+      "severity": "critical",
+      "title": "Prototype pollution",
+      "reachability": "PARTIALLY-REACHABLE",
+      "surface": "Used in 9+ Vue components: SliderComponent (frontend home), CheckoutComponent, CategoryComponent, ItemComponent (admin+table), KitchenDisplaySystem, ChatComponent, TableMenuComponent, admin POS ItemComponent. Exploit requires user-controlled swiper config — FoodKing usage is hardcoded options (no user-driven config merge).",
+      "exploit_difficulty": "High — needs attacker-controlled config merge path; not naturally present in carousel-only usage.",
+      "fix_path": "FIX-PRE-PROD via `npm audit fix --force` is BREAKING (swiper 12, major version). Verify breaking-change scope before commit. DEFER V1.0.X-EARLY if breaking-change validation needed (8 visual+technical Vue components to re-verify), OR accept risk DEFER V1.0.X."
+    },
+    {
+      "package": "firebase 9.18.0 + transitives (@firebase/firestore + @grpc/grpc-js + @grpc/proto-loader)",
+      "severity": "high (multiple)",
+      "title": "gRPC memory allocation + protobufjs UTF-8 decoding",
+      "reachability": "PARTIALLY-REACHABLE",
+      "surface": "Firebase JS SDK used for FCM messaging (push notifications) in FrontendNavBar + BackendNavbar. Firestore NOT used (FoodKing uses Pusher + Laravel Echo). gRPC + Firestore advisories may not apply if Firestore module unused at runtime.",
+      "exploit_difficulty": "Low IF Firestore used; Inert IF only Messaging used. Verify with bundle analysis.",
+      "fix_path": "DEFER V1.0.X — firebase@12.13.0 is BREAKING (3 major versions). Audit which Firebase modules are actually shipped before forcing upgrade. Likely candidate for V1.1 alongside Laravel migration."
+    },
+    {
+      "package": "happy-dom <20.8.9",
+      "severity": "high",
+      "title": "fetch credentials leak page-origin cookies instead of target-origin",
+      "reachability": "NOT-APPLICABLE",
+      "surface": "Test environment only (Vitest DOM emulation). Not in browser runtime.",
+      "fix_path": "NOT-APPLICABLE (dev-only) — `npm audit fix` at convenience."
+    }
+  ],
+  "build_time_only_dev_dependencies": {
+    "count": "~40 of 49 npm advisories",
+    "packages": [
+      "@babel/plugin-transform-modules-systemjs (webpack compile path)",
+      "ajv (multiple loader transitives)",
+      "bn.js / elliptic / browserify-sign / node-forge / create-ecdh (laravel-mix node-libs-browser polyfills)",
+      "esbuild / vite / vite-node / vitest (test runner)",
+      "fast-uri / glob / minimatch / path-to-regexp (build tooling)",
+      "node-libs-browser / crypto-browserify / webpack / webpack-dev-server (build server)",
+      "ws / engine.io-client / socket.io-client (vitest fake-indexeddb test only)",
+      "yaml (postcss + tailwind config parse)",
+      "immutable (sass dependency)",
+      "follow-redirects (axios http adapter test)",
+      "brace-expansion (sucrase build tooling)",
+      "@grpc/grpc-js + @grpc/proto-loader + @protobufjs/utf8 (firebase transitive — runtime IF Firestore used)"
+    ],
+    "verdict": "NOT-APPLICABLE for prod browser runtime. CVEs only fire when running build/test. Heal at convenience."
+  }
+}

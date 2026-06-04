@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use App\Enums\Ask;
 use App\Libraries\AppLibrary;
+use App\Services\Receipt\ReceiptDataService;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class OrderDetailsResource extends JsonResource
@@ -15,16 +16,42 @@ class OrderDetailsResource extends JsonResource
      */
     public function toArray($request): array
     {
+        // [NF525 RECEIPT WIRE-IN 2026-05-18] ReceiptDataService is the
+        // SSOT for the six fiscal/operator header fields used on the
+        // printed POS ticket. Delegating here keeps the HTTP resource
+        // and the JS-side receipt builder converged on a single source
+        // of truth — see ReceiptDataServiceWireInTest for the contract.
+        $receipt = app(ReceiptDataService::class)->buildForOrderModel($this->resource);
+
         return [
             'id' => $this->id,
             'order_serial_no' => $this->order_serial_no,
             'queue_number' => $this->queue_number,
             'token' => $this->token,
+            // [G5-F-001 / G2-HEAL-01 2026-05-23] Expose refund counter-entry
+            // parent FK so ReceiptRemboursementMarker.vue (F2-HEAL-03 /
+            // commit 8ebbd057a) can render the REMBOURSEMENT badge on
+            // refund tickets (NF525 visual distinction requirement,
+            // Loi de Finance France). Marker keys on this exact field.
+            'parent_order_id' => $this->parent_order_id,
+            // [N-HEAL-02 K.5 NEW-1 2026-05-24] Trace-back line on refund
+            // receipt — ReceiptRemboursementMarker.vue:53 falls back to
+            // bare parent_order_id when this is null. Order model has no
+            // `parent` relation defined (verified 2026-05-24), so lookup
+            // via direct value(); withoutGlobalScopes deliberately omitted
+            // since parent always lives in same branch as counter-entry.
+            'parent_order_serial_no' => $this->parent_order_id
+                ? \App\Models\Order::query()->where('id', $this->parent_order_id)->value('order_serial_no')
+                : null,
             // Montants numériques (SSOT) pour kiosk / TPE / intégrations — complément des *_currency_price.
             'subtotal' => round((float) ($this->subtotal ?? 0), 2),
             'discount' => round((float) ($this->discount ?? 0), 2),
             'total_tax' => round((float) ($this->total_tax ?? 0), 2),
             'total' => round((float) ($this->total ?? 0), 2),
+            // [WT-D-R1-F4 2026-05-20] Raw numeric `delivery_charge` to feed
+            // the canonical `formatPrice()` admin renderer (mirrors the
+            // sibling subtotal/discount/total_tax/total raw projections).
+            'delivery_charge' => round((float) ($this->delivery_charge ?? 0), 2),
             'subtotal_currency_price' => AppLibrary::currencyAmountFormat($this->subtotal),
             'subtotal_without_tax_currency_price' => AppLibrary::currencyAmountFormat($this->subtotal - $this->total_tax),
             'discount_currency_price' => AppLibrary::currencyAmountFormat($this->discount),
@@ -41,6 +68,19 @@ class OrderDetailsResource extends JsonResource
             'payment_method' => $this->payment_method,
             'payment_status' => $this->payment_status,
             'payment_pending_counter' => (int) $this->payment_status === \App\Enums\PaymentStatus::PENDING_COUNTER,
+            // [TRAP-3 2026-06-04] Cash-trail gap surfacing. When a counter-collect
+            // CASH payment succeeds but NO open drawer session existed, the order
+            // is PAID + fiscal-seq allocated yet NO cash_movement row was written
+            // → end-of-day reconciliation silently under-counts. PaymentService
+            // sets the TRANSIENT (never-persisted) `cash_movement_skipped` flag on
+            // the in-memory order so the encaissement modal can warn the cashier
+            // instead of toasting a plain success, and the gap is no longer
+            // confined to a cron log. Default false (flag absent on every other
+            // path: CARD, session-OPEN cash, kiosk-paid finalize, etc.).
+            'cash_movement_skipped' => (bool) ($this->resource->cash_movement_skipped ?? false),
+            'cash_movement_skipped_message' => ($this->resource->cash_movement_skipped ?? false)
+                ? 'Aucune session caisse ouverte — mouvement non enregistré'
+                : null,
             'is_advance_order' => $this->is_advance_order,
             'preparation_time' => $this->preparation_time,
             'status' => $this->status,
@@ -57,6 +97,10 @@ class OrderDetailsResource extends JsonResource
             'pos_payment_method' => $this->pos_payment_method,
             'pos_payment_note' => $this->pos_payment_note,
             'source' => $this->source,
+            // [GOAL-CAISSE-UNIFIED W-ENC 2026-05-30] Origin signal for the
+            // unified /admin/encaissement queue badge (Borne='kiosk',
+            // Caisse='pos'). Pure projection of an existing nullable column.
+            'source_surface' => $this->source_surface,
             'pos_received_amount' => $this->pos_received_amount,
             'pos_received_currency_amount' => AppLibrary::currencyAmountFormat($this->pos_received_amount),
             'cash_back_amount' => $this->pos_received_amount - $this->total,
@@ -65,14 +109,17 @@ class OrderDetailsResource extends JsonResource
             // (CGI art. 242 nonies A — every receipt must list HT base
             // and tax per rate). POS-GA-F-20.
             'tax_lines' => $this->buildTaxLines(),
-            // [T21] NF525 receipt exposure — read-only, no fiscal mutation.
-            'fiscal_sequence_no' => $this->fiscal_sequence_no ?? null,
+            // [T21 → NF525 RECEIPT WIRE-IN 2026-05-18] Six NF525 fields
+            // delegated to ReceiptDataService (SSOT). audit_chain_fingerprint
+            // and payments_breakdown stay owned by this resource — they're
+            // resource-shaped, not part of the printed-ticket payload.
+            'fiscal_sequence_no' => $receipt['fiscal_sequence_no'],
             'audit_chain_fingerprint' => $this->buildAuditFingerprint(),
-            'pos_register_id' => optional($this->branch)->register_id,
-            'pos_siret' => optional($this->branch)->siret,
-            'pos_vat_intra' => optional($this->branch)->vat_intra,
-            'pos_legal_footer' => optional($this->branch)->legal_footer,
-            'operator_name' => optional($this->user)->name ?? null,
+            'pos_register_id' => $receipt['pos_register_id'],
+            'pos_siret' => $receipt['pos_siret'],
+            'pos_vat_intra' => $receipt['pos_vat_intra'],
+            'pos_legal_footer' => $receipt['pos_legal_footer'],
+            'operator_name' => $receipt['operator_name'],
             'payments_breakdown' => $this->buildPaymentsBreakdown(),
         ];
     }

@@ -46,8 +46,38 @@ class MonitorOutboxStaleness extends Command
             ->whereNull('dispatched_at')
             ->count();
 
-        if ($staleCount <= $threshold) {
-            $this->info("[OK] {$staleCount} stale outbox events (threshold: {$threshold}, stale_after: {$staleAfter}s).");
+        // [GOAL-sync-ordertaking 2026-05-29 H3] Crash-claimed orphan class.
+        // A worker that died between Phase-1 claim (dispatched_at set) and a
+        // successful Phase-2 broadcast leaves dispatched_at != NULL WITH
+        // last_error set (from a prior attempt). `scopePending` (dispatched_at
+        // IS NULL) excludes these, so the staleness count above is blind to
+        // them — AND so is `outbox:retry-failed` (scopeFailed -> pending ->
+        // whereNull), while `outbox:rescue` lane-B only re-queues attempts<5.
+        // A row with attempts>=5 + last_error set therefore falls through EVERY
+        // re-queue lane and the operator is never paged. Count it as a distinct
+        // alarm dimension.
+        //
+        // [RED-team A.2 fix 2026-05-29] The age gate MUST be longer than
+        // stale-after (30s) — otherwise a LIVE worker re-driven by
+        // outbox:retry-failed (which nulls dispatched_at then re-claims,
+        // carrying the prior last_error since Phase 1 does NOT clear it) that
+        // hangs >30s on a slow Pusher broadcast would be falsely paged as an
+        // orphan. Reuse rescue lane-B's 10-min threshold: it exceeds the worst
+        // backoff curve (1+5+15+60+300 ≈ 6.4 min) + a broadcast hang, so a row
+        // still claimed past 10 min cannot belong to a healthy in-flight worker.
+        // Precision: DispatchDomainEventsJob Phase-3a clears last_error on
+        // success, so a healthy dispatched row never matches regardless of age.
+        $orphanCutoff = now()->subSeconds(max($staleAfter, 600));
+
+        $crashClaimedCount = (int) DB::table('domain_events')
+            ->whereNotNull('dispatched_at')
+            ->whereNotNull('last_error')
+            ->where('attempts', '>=', 5)
+            ->where('dispatched_at', '<', $orphanCutoff)
+            ->count();
+
+        if ($staleCount <= $threshold && $crashClaimedCount === 0) {
+            $this->info("[OK] {$staleCount} stale outbox events (threshold: {$threshold}, stale_after: {$staleAfter}s). 0 crash-claimed orphans.");
 
             return self::SUCCESS;
         }
@@ -61,9 +91,20 @@ class MonitorOutboxStaleness extends Command
             ->orderBy('created_at')
             ->first(['id', 'event_type', 'created_at', 'attempts', 'last_error']);
 
+        // [H3] Oldest crash-claimed orphan — surfaced so ops can re-drive it
+        // manually (it cannot be reached by any automatic re-queue lane).
+        $oldestOrphan = DB::table('domain_events')
+            ->whereNotNull('dispatched_at')
+            ->whereNotNull('last_error')
+            ->where('attempts', '>=', 5)
+            ->where('dispatched_at', '<', $orphanCutoff)
+            ->orderBy('dispatched_at')
+            ->first(['id', 'event_type', 'dispatched_at', 'attempts', 'last_error']);
+
         $context = [
             'event' => 'outbox.staleness.alert',
             'stale_count' => $staleCount,
+            'crash_claimed_count' => $crashClaimedCount,
             'threshold' => $threshold,
             'stale_after_seconds' => $staleAfter,
             'oldest_id' => $oldest->id ?? null,
@@ -71,11 +112,19 @@ class MonitorOutboxStaleness extends Command
             'oldest_created_at' => $oldest->created_at ?? null,
             'oldest_attempts' => $oldest->attempts ?? null,
             'oldest_last_error' => $oldest->last_error ?? null,
+            'oldest_orphan_id' => $oldestOrphan->id ?? null,
+            'oldest_orphan_event_type' => $oldestOrphan->event_type ?? null,
+            'oldest_orphan_dispatched_at' => $oldestOrphan->dispatched_at ?? null,
+            'oldest_orphan_attempts' => $oldestOrphan->attempts ?? null,
         ];
 
         $message = "[OUTBOX STALE] {$staleCount} undispatched events older than {$staleAfter}s "
-            . "(threshold: {$threshold}). Queue worker may be down. "
-            . 'Verify `php artisan queue:work --queue=high` is running and check docs/REALTIME_SETUP.md.';
+            . "(threshold: {$threshold}) + {$crashClaimedCount} crash-claimed orphans. "
+            . 'If stale_count is high: queue worker may be down — verify '
+            . '`php artisan queue:work --queue=high` is running (docs/REALTIME_SETUP.md). '
+            . 'If crash_claimed_count is high: those rows are claimed-but-never-broadcast '
+            . 'and are UNREACHABLE by retry-failed/rescue — re-drive them MANUALLY '
+            . '(e.g. `DispatchDomainEventsJob::dispatch($id)` after nulling dispatched_at).';
 
         Log::error($message, $context);
         $this->error($message);

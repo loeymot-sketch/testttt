@@ -90,7 +90,10 @@ class FiscalAllocOrphanRetryTest extends TestCase
         $this->assertTrue($promoted);
 
         $persisted = Order::withoutGlobalScopes()->findOrFail($kioskOrder->id);
-        $this->assertSame(OrderStatus::ACCEPT, (int) $persisted->status);
+        // [Wave S-1 — 2026-05-20] Owner P-OWNER Wave S-1: kiosk paid TPE
+        // auto-promotes to PREPARING after finalize. The retry path goes
+        // through finalizePaidKioskOrder, so it inherits the new behaviour.
+        $this->assertSame(OrderStatus::PREPARING, (int) $persisted->status);
         $this->assertNotNull($persisted->fiscal_sequence_no, 'retry must allocate fiscal_sequence_no.');
         $this->assertNull($persisted->fiscal_alloc_error_at, 'flag must be cleared on successful retry.');
     }
@@ -116,7 +119,10 @@ class FiscalAllocOrphanRetryTest extends TestCase
         $this->assertSame(0, $exitCode);
 
         $persisted = Order::withoutGlobalScopes()->findOrFail($kioskOrder->id);
-        $this->assertSame(OrderStatus::ACCEPT, (int) $persisted->status);
+        // [Wave S-1 — 2026-05-20] Owner P-OWNER Wave S-1: kiosk paid TPE
+        // auto-promotes to PREPARING after finalize. The retry path goes
+        // through finalizePaidKioskOrder, so it inherits the new behaviour.
+        $this->assertSame(OrderStatus::PREPARING, (int) $persisted->status);
         $this->assertNotNull($persisted->fiscal_sequence_no);
         $this->assertNull($persisted->fiscal_alloc_error_at);
     }

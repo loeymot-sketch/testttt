@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  fr.lecayenne.queue — FoodKing V1 LOCAL · DEFAULT queue worker (Redis).
+  Mirrors the live manually-launched worker:
+    php artisan queue:work redis --tries=1 --sleep=1   (PID 59232 @ 2026-06-04)
+
+  NOTE — two workers run live on this box: this DEFAULT lane + a separate HIGH lane
+  (fr.lecayenne.queue-high.plist). The Hetzner supervisor template consolidates them
+  into one `--queue=high,default` numprocs=2 program. We deliberately keep TWO plists
+  to mirror the live process layout (lower surprise, exact parity with what the owner
+  already runs). If you prefer the consolidated single-worker model, load only
+  queue-high.plist with --queue=high,default and skip this one.
+
+  launchd absolute-path discipline: php = /opt/homebrew/opt/php@8.2/bin/php.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>fr.lecayenne.queue</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/opt/homebrew/opt/php@8.2/bin/php</string>
+        <string>artisan</string>
+        <string>queue:work</string>
+        <string>redis</string>
+        <string>--tries=1</string>
+        <string>--sleep=1</string>
+        <!-- Recycle the worker periodically so long-lived PHP state can't leak.
+             KeepAlive relaunches it automatically. -->
+        <string>--max-time=3600</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/opt/php@8.2/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
+
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>ThrottleInterval</key>
+    <integer>10</integer>
+
+    <key>StandardOutPath</key>
+    <string>/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/storage/logs/launchd-queue.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/storage/logs/launchd-queue.log</string>
+</dict>
+</plist>

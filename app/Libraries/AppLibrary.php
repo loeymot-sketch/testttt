@@ -270,10 +270,37 @@ class AppLibrary
 
     public static function currencyAmountFormat($amount): string
     {
-        if (env('CURRENCY_POSITION') == CurrencyPosition::LEFT) {
-            return env('CURRENCY_SYMBOL') . number_format($amount, env('CURRENCY_DECIMAL_POINT'), '.', '');
+        // [GOAL-G2-HEAL-02 2026-05-23] FR-canonical currency format per NF525
+        // receipt compliance + ISO 4217. Previous implementation hardcoded
+        // "." decimal separator and concatenated the symbol with no nbsp →
+        // produced "12.50€" on receipts/emails/reports, while PaymentComponent
+        // (D3 LOCK_PAY) + formatPrice.js (WT-D-R1-F4) emit canonical "12,50 €"
+        // (Intl fr-FR EUR with NBSP). Same caisse, divergent format ≠
+        // ISO 4217 + FR locale convention. Surfaced by Phase G.5 finding
+        // G5-F-003 P1.
+        //
+        // Resolution: use NumberFormatter::CURRENCY with fr_FR locale (matches
+        // frontend Intl output bit-for-bit) and fall back to manual FR layout
+        // (virgule decimal + NBSP + symbol) when ext-intl is unavailable. The
+        // env CURRENCY_SYMBOL / CURRENCY_POSITION / CURRENCY_DECIMAL_POINT
+        // contract is preserved for the fallback branch — admins keep control
+        // if they want a non-EUR display in some downstream surface.
+        $amount = (float) $amount;
+        $decimal = (int) (env('CURRENCY_DECIMAL_POINT') ?? 2);
+
+        if (class_exists('NumberFormatter')) {
+            $fmt = new \NumberFormatter('fr_FR', \NumberFormatter::CURRENCY);
+            $fmt->setAttribute(\NumberFormatter::FRACTION_DIGITS, $decimal);
+            return $fmt->formatCurrency($amount, 'EUR');
         }
-        return number_format($amount, env('CURRENCY_DECIMAL_POINT'), '.', '') . env('CURRENCY_SYMBOL');
+
+        // Fallback: manual FR layout (virgule + nbsp + symbol).
+        $symbol    = env('CURRENCY_SYMBOL', '€');
+        $position  = env('CURRENCY_POSITION');
+        $formatted = number_format($amount, $decimal, ',', "\xC2\xA0");
+        return $position == CurrencyPosition::LEFT
+            ? $symbol . "\xC2\xA0" . $formatted
+            : $formatted . "\xC2\xA0" . $symbol;
     }
 
     public static function flatAmountFormat($amount): string

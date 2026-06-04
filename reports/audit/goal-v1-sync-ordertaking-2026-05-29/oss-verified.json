@@ -1,0 +1,89 @@
+{
+  "system": "OSS Order Status Screen (customer waiting wall, read-only)",
+  "head": "962d9d15479a4be3642a2355be63807c538ba34b",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "verified_at": "2026-05-29",
+  "confirmed_count": 5,
+  "dropped_count": 1,
+  "disk_path": "reports/audit/goal-v1-sync-ordertaking-2026-05-29/oss-verified.json",
+  "summary": "OSS is a mature, well-abstracted read-only subsystem with NO P0/P1 defects. All confirmed findings are P2/P3 test-vs-production gaps or V2-latent issues. The two lenses (architect + security) both flagged OSSReadOnlyTest probing a nonexistent subpath; deduped to the security finding (better-evidenced, P2). Highest-value confirmed finding: the read-only sentinel POSTs to /api/admin/oss-order/fake-action which matches no route under any verb (SPA catch-all at routes/web.php:62 is GET-only) -> resolves to 404, while the test asserts 405. The test is blind to a future POST added to the real routed root. Note: the third raw input lens block was truncated in the task input; only architect + security findings were available to verify.",
+  "verified_findings": [
+    {
+      "severity": "P2",
+      "file": "tests/Feature/OSSReadOnlyTest.php",
+      "line": "21-24",
+      "title": "OSSReadOnlyTest probes a nonexistent subpath (/api/admin/oss-order/fake-action) and asserts 405 -- the SPA catch-all is GET-only so a non-GET to an unmatched URI yields 404; the sentinel is blind to a POST added to the real routed root",
+      "confirmed": true,
+      "grep_evidence": "OSSReadOnlyTest.php:22 ->postJson('/api/admin/oss-order/fake-action', ['status'=>'DELIVERED']); :24 $this->assertEquals(405, $responsePost->status());  | routes/api.php:1183-1186 oss-order prefix registers ONLY Route::get('/') [index] + Route::get('/popular-items') [mostPopularItems] -- no POST/PUT/DELETE under the prefix. | routes/api.php:1255-1260 public siblings are GET-only too. | Only catch-all in routes/ is routes/web.php:62 Route::get('/{any}', [RootController::class,'index'])->where(['any'=>'.*']) -- GET-only, so it does NOT match a POST. grep for Route::fallback / Route::any / non-GET {any} in routes/ returns none. A POST to fake-action matches no URI under any verb => Laravel returns 404 (NotFoundHttpException), not 405 (405 requires a matched URI with a wrong verb). The asserted 405 therefore does not exercise the GET-only registration of the real endpoint, and would still 'pass'/be-irrelevant if a dev added Route::post('/') to the real oss-order group.",
+      "is_new": true,
+      "recommendation": "Test-only, no frozen-zone touch. Retarget the mutating verb at the REAL routed root: postJson('/api/admin/oss-order') and postJson('/api/frontend/oss-order'), asserting 405 (matched URI + wrong verb). Add a positive guard asserting the count of non-GET routes under the oss-order / frontend/oss-order prefixes is exactly 0 (route:list introspection), turning the sentinel into a real regression catch. SECONDARY: the current assertEquals(405) against the 404-yielding fake-action path is suspicious -- if OSS tests are green at HEAD then either the suite is not run or this assertion is red; reconcile by running `php artisan test --filter=OSSReadOnly` (I am read-only and could not run it). Architect lens P3 #3 reported the same file:line and is deduped into this finding.",
+      "drop_reason": ""
+    },
+    {
+      "severity": "P2",
+      "file": "tests/Feature/OSS/OssCustomerScreenFilterTest.php",
+      "line": "59, 83, 107, 140, 161, 165, 183, 205, 232 (all invoke the service directly)",
+      "title": "No integration test hits the publicIndex() HTTP controller -- branch-resolution fallback + throttle:oss-public are unverified (test-vs-production gap)",
+      "confirmed": true,
+      "grep_evidence": "grep for getJson/postJson/publicIndex/withHeaders across tests/Feature/OSS/ returns ZERO hits -- every assertion calls $service->listForBranch($branch->id) or $service->list() directly (OssCustomerScreenFilterTest.php:59,83,107,140,161,165,183,205,232 ; OssPolishClusterTest.php:91,121). The controller branch-resolution logic OrderStatusScreenController.php:83-89 ($branchId=(int)query('branch_id',0); if(<=0){ Branch::where('status',Status::ACTIVE)->orderBy('id')->first(); $branchId=$default?->id ?? 0; }) and throttle:oss-public (routes/api.php:1256) have NO controller-path coverage. The zero-ACTIVE-branch edge (branchId stays 0 -> listForBranch:258 skips the where -> returns ALL branches) is untested.",
+      "is_new": true,
+      "recommendation": "Test-only. Add a Feature test: GET /api/frontend/oss-order with x-api-key asserting (a) ?branch_id=N scopes, (b) no param resolves first-ACTIVE branch, (c) zero-ACTIVE-branch edge returns scoped/empty NOT all-branches, (d) >60 req/min -> 429. No frozen-zone touch.",
+      "drop_reason": ""
+    },
+    {
+      "severity": "P2",
+      "file": "app/Services/OrderStatusScreenOrderService.php",
+      "line": "144 and 264",
+      "title": "FIFO determinism unverified against the production 'A0001' zero-padded queue_number string format -- fixtures seed bare numeric strings, leaving the lexicographic==numeric sort invariant unguarded",
+      "confirmed": true,
+      "grep_evidence": "Production allocation is a string: FrontendOrderService.php:1002 return 'A' . str_pad($maxQueueNum + 1, 4, '0', STR_PAD_LEFT) (A0001..A9999); column type migration 2026_03_06_170846_add_queue_number_to_orders_table.php:16 $table->string('queue_number', 20). OSS sorts on this STRING: OrderStatusScreenOrderService.php:144 (list) and :264 (listForBranch) orderBy('queue_number','asc')->orderBy('id','asc'). Every OSS fixture seeds BARE numeric strings ('200'..'208' in OssCustomerScreenFilterTest.php; '100','101','200' in OssPolishClusterTest.php) -- never A-prefixed/padded -- so the lexicographic-vs-numeric divergence and the >9999/day rollover (A9999 -> A10000 reshuffles lexicographically) are untested. Zero-padding makes lexicographic==numeric only within a fixed digit-width.",
+      "is_new": true,
+      "recommendation": "Test-only. Add a test seeding A0008/A0009/A0010 (padded) plus a rollover case (A9999/A10000) asserting numeric FIFO order; optionally document the zero-pad invariant in the orderBy comment. No frozen-zone touch.",
+      "drop_reason": ""
+    },
+    {
+      "severity": "P3",
+      "file": "app/Services/OrderStatusScreenOrderService.php",
+      "line": "258 (with controller resolution at OrderStatusScreenController.php:83-88)",
+      "title": "Public path: listForBranch() returns UNSCOPED (all branches) when branchId<=0, and ?branch_id is trusted unvalidated -- both inert in single-branch V1, latent cross-tenant leak in V2",
+      "confirmed": true,
+      "grep_evidence": "OrderStatusScreenController.php:83 $branchId=(int)$request->query('branch_id',0); :84-88 only the <=0 path resolves a default ACTIVE branch, falling to $branchId = $defaultBranch?->id ?? 0 (stays 0 if no ACTIVE branch). >0 is passed straight to listForBranch. OrderStatusScreenOrderService.php:258 `if ($branchId > 0) { $query->where('branch_id', $branchId); }` -> branchId=0 SKIPS the where -> returns orders for ALL branches. BranchScope does not save it: BranchScope.php:27 apply() is gated on `... && Auth::check()` which is FALSE on the unauthenticated public wall, so the global scope adds no branch filter. In V1 LOCAL Le Cayenne branch_id=1 is always ACTIVE so the fallback always yields a positive id; unreachable today. Mitigated solely by throttle:oss-public (RouteServiceProvider.php:238). Data exposed is PII-free (CDSOrderDetailsResource).",
+      "is_new": false,
+      "recommendation": "V1: no action (single-branch; KNOWN cloud-prep backlog, do NOT surface as a V1 blocker per personal-Le-Cayenne mandate). V2 cloud cutover: validate ?branch_id resolves to an existing ACTIVE branch before scoping, and treat branchId=0 fallthrough as fail-closed (empty) rather than all-branches. No frozen-zone touch. NOTE: security lens reported this at line 258 (is_new=true) and architect at controller 83-98 (is_new=false); merged here -- the unscoped-fallthrough at 258 is the same underlying issue as the unvalidated ?branch_id, kept as one P3.",
+      "drop_reason": ""
+    },
+    {
+      "severity": "P3",
+      "file": "resources/js/store/modules/orderStatusScreenOrder.js",
+      "line": "7, 13-14, 54, 66-67",
+      "title": "Vuex getter reads state.mostPopularItems which is never declared in state{} -> returns undefined until the first mostPopularItems dispatch; harmless uninitialized-state, NOT dead code (PopularItemComponent + PosComponent still import the module)",
+      "confirmed": true,
+      "grep_evidence": "orderStatusScreenOrder.js:7 `state: { lists: [] }` -- no mostPopularItems key declared. :13-14 getter `mostPopularItems: function(state){ return state.mostPopularItems; }` reads the undeclared key -> undefined until the action commits via mutation :66-67 `mostPopularItems: function(state,payload){ state.mostPopularItems = payload }`. OSS wall no longer mounts PopularItemComponent: OrderStatusScreenComponent.vue:11-21 [Wave Q-3 P-OWNER 2026-05-20] comment confirms PopularItemComponent removed from OSS layout; the template (line 22-28) mounts ONLY <PreparingAndReadyComponent />. BUT the module is NOT globally dead: grep shows the store is still imported by PreparingAndReadyComponent.vue, PopularItemComponent.vue (file kept), AND admin/pos/PosComponent.vue dashboard widget. The architect's 'remove the triplet' recommendation is therefore REJECTED -- only the uninitialized-state defect is real.",
+      "is_new": true,
+      "recommendation": "Scope-minimal: initialize `mostPopularItems: []` in state{} for correctness (the getter returns undefined on first read otherwise). Do NOT remove the action/getter/mutation triplet -- PosComponent dashboard + PopularItemComponent still consume it. Non-frozen, low priority.",
+      "drop_reason": ""
+    },
+    {
+      "severity": "P3",
+      "file": "resources/js/components/admin/orderStatusScreen/PreparingAndReadyComponent.vue",
+      "line": "274-278, 376-383",
+      "title": "Echo+poll interleaving: the one-shot _echoMarkedReady dedup Set can be cleared by a concurrent poll-list() between the Echo handler's .add() and its own list(), but prevPreparedIds prevents the double flash/chime in practice -- very narrow, self-healing",
+      "confirmed": true,
+      "grep_evidence": "PreparingAndReadyComponent.vue:274-276 Echo handler does `_echoMarkedReady.add(oid); this._markNewReady(oid);` then :278 `this.list()`. _hydrateFromRows :376-383 reads `echoMarked = this._echoMarkedReady` and at :383 `this._echoMarkedReady = new Set()` clears it one-shot after EVERY list(). Race: a concurrent poll-driven list() resolving between .add() (274) and the Echo-triggered list() (278) consumes+clears the guard, so the Echo's own subsequent _hydrateFromRows lacks it. HOWEVER _markNewReady was already fired directly at 276, AND by then the order is in preparedItems so prevPreparedIds (370) contains its id, and the guard at :378 `if(!prevPreparedIds.has(item.id) && !echoMarked.has(item.id))` still suppresses the re-fire via the prevPreparedIds half. The double flash/chime window is real but extremely narrow and self-healing.",
+      "is_new": true,
+      "recommendation": "V1: no action needed (self-healing via prevPreparedIds; operator-surface cosmetic at worst). If hardened later: clear _echoMarkedReady per-id after consumption (ids.delete(item.id)) instead of replacing the whole Set, so a concurrent list() cannot wipe a not-yet-consumed Echo mark. No frozen-zone touch.",
+      "drop_reason": ""
+    },
+    {
+      "severity": "P3",
+      "file": "tests/Feature/OSSReadOnlyTest.php",
+      "line": "21-24",
+      "title": "[DROPPED -- duplicate] Architect lens reported the same read-only-test weakness already captured by the security lens P2 finding",
+      "confirmed": false,
+      "grep_evidence": "Same file:line as the confirmed P2 security finding above (OSSReadOnlyTest.php:21-24). Architect framed it as 'POSTs to non-existent subpath, weak read-only assertion'; security framed it with the precise 404-vs-405 mechanics and the positive-guard recommendation. Identical underlying defect.",
+      "is_new": true,
+      "recommendation": "Deduped -- see the confirmed P2 OSSReadOnlyTest finding which carries the better evidence and the positive-guard recommendation.",
+      "drop_reason": "Duplicate of the security lens read-only-test finding (same file:line tests/Feature/OSSReadOnlyTest.php:21-24); kept the better-evidenced P2 version."
+    }
+  ]
+}

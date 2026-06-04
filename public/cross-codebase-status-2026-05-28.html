@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Le Cayenne — Cross-codebase status 2026-05-28</title>
+<style>
+  :root {
+    --orange: #FF5A1F;
+    --orange-light: #FFE6DA;
+    --yellow: #FFD93D;
+    --yellow-light: #FFF6CC;
+    --ink: #0A0A0A;
+    --ink-soft: #2A2A2A;
+    --cream: #FAF7F2;
+    --cream-deep: #F2EDE4;
+    --gray: #6E6E6E;
+    --gray-light: #D8D4CC;
+    --red: #D6213A;
+    --green: #1F8A3B;
+    --shadow: 0 1px 2px rgba(10,10,10,0.04), 0 4px 12px rgba(10,10,10,0.06);
+    --shadow-hover: 0 4px 8px rgba(10,10,10,0.06), 0 12px 24px rgba(10,10,10,0.08);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: var(--cream);
+    color: var(--ink);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    padding: 32px 20px 80px;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; }
+
+  /* Header */
+  header.page-head {
+    margin-bottom: 36px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid var(--ink);
+  }
+  header.page-head h1 {
+    font-size: 32px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+  }
+  header.page-head h1 .accent { color: var(--orange); }
+  header.page-head p {
+    margin-top: 8px;
+    font-size: 14px;
+    color: var(--gray);
+  }
+  header.page-head .tag {
+    display: inline-block;
+    background: var(--yellow);
+    color: var(--ink);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 999px;
+    margin-left: 8px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  /* Section titles */
+  section { margin-bottom: 40px; }
+  section h2 {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--ink);
+    margin-bottom: 16px;
+    letter-spacing: -0.01em;
+  }
+
+  /* Codebases grid */
+  .codebases-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+  .codebase-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: var(--shadow);
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    border-left: 4px solid var(--gray-light);
+    position: relative;
+  }
+  .codebase-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-hover);
+  }
+  .codebase-card.backend { border-left-color: var(--orange); }
+  .codebase-card.mobile  { border-left-color: var(--yellow); }
+  .codebase-card.web     { border-left-color: var(--ink); }
+  .codebase-card h2 {
+    font-size: 17px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    color: var(--ink);
+  }
+  .codebase-card .quick-stats {
+    list-style: none;
+    font-size: 13px;
+    color: var(--ink-soft);
+  }
+  .codebase-card .quick-stats li {
+    padding: 6px 0;
+    border-bottom: 1px dashed var(--gray-light);
+  }
+  .codebase-card .quick-stats li:last-child { border-bottom: none; }
+  .codebase-card .quick-stats li strong { color: var(--ink); }
+  .codebase-card .expand-hint {
+    margin-top: 12px;
+    font-size: 11px;
+    color: var(--gray);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .codebase-card .expand-hint::after { content: " ▾"; }
+  .codebase-card.open .expand-hint::after { content: " ▴"; }
+
+  .details {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--gray-light);
+    font-size: 13px;
+    color: var(--ink-soft);
+  }
+  .details.hidden { display: none; }
+  .details h3 {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--ink);
+    margin: 10px 0 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .details ul { padding-left: 18px; }
+  .details li { padding: 3px 0; }
+  .details code {
+    background: var(--cream-deep);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-family: "SF Mono", ui-monospace, monospace;
+    font-size: 11.5px;
+    color: var(--ink-soft);
+  }
+
+  /* Decisions table */
+  .decisions table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+    font-size: 13px;
+  }
+  .decisions th {
+    background: var(--ink);
+    color: #fff;
+    text-align: left;
+    padding: 12px 14px;
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .decisions td {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--gray-light);
+    vertical-align: top;
+    color: var(--ink-soft);
+  }
+  .decisions tr:last-child td { border-bottom: none; }
+  .decisions td:first-child {
+    font-weight: 700;
+    color: var(--ink);
+    width: 60px;
+    white-space: nowrap;
+  }
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .badge.cleared { background: var(--green); color: #fff; }
+  .badge.defer { background: var(--yellow); color: var(--ink); }
+  .badge.standalone { background: var(--orange); color: #fff; }
+
+  /* Owner top-3 actions */
+  .owner-actions ol {
+    list-style: none;
+    counter-reset: action;
+  }
+  .owner-actions li {
+    counter-increment: action;
+    padding: 16px 20px 16px 56px;
+    margin-bottom: 12px;
+    border-radius: 12px;
+    position: relative;
+    box-shadow: var(--shadow);
+    font-size: 14px;
+    color: var(--ink-soft);
+  }
+  .owner-actions li::before {
+    content: counter(action);
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--ink);
+    color: #fff;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+  }
+  .owner-actions li.priority-1 {
+    background: var(--orange-light);
+    border-left: 4px solid var(--orange);
+  }
+  .owner-actions li.priority-1::before { background: var(--red); }
+  .owner-actions li.priority-2 {
+    background: var(--yellow-light);
+    border-left: 4px solid var(--yellow);
+  }
+  .owner-actions li.priority-3 {
+    background: var(--cream-deep);
+    border-left: 4px solid var(--gray-light);
+  }
+  .owner-actions li strong { color: var(--ink); }
+  .owner-actions li .eta {
+    display: block;
+    font-size: 12px;
+    color: var(--gray);
+    margin-top: 4px;
+  }
+
+  /* Invariants */
+  .invariants ul {
+    list-style: none;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 10px;
+  }
+  .invariants li {
+    background: #fff;
+    padding: 12px 16px 12px 40px;
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+    font-size: 13px;
+    color: var(--ink-soft);
+    position: relative;
+    border-left: 3px solid var(--green);
+  }
+  .invariants li::before {
+    content: "✓";
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--green);
+    font-weight: 700;
+    font-size: 16px;
+  }
+  .invariants li strong { color: var(--ink); }
+
+  /* Links */
+  .links ul {
+    list-style: none;
+    columns: 2;
+    column-gap: 20px;
+  }
+  .links li {
+    padding: 6px 0;
+    font-size: 13px;
+    color: var(--ink-soft);
+    break-inside: avoid;
+  }
+  .links code {
+    background: var(--cream-deep);
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-family: "SF Mono", ui-monospace, monospace;
+    font-size: 12px;
+    color: var(--ink);
+  }
+
+  /* Footer */
+  footer {
+    margin-top: 60px;
+    padding-top: 20px;
+    border-top: 1px solid var(--gray-light);
+    text-align: center;
+    font-size: 12px;
+    color: var(--gray);
+  }
+  footer code {
+    background: var(--cream-deep);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: "SF Mono", ui-monospace, monospace;
+    color: var(--ink-soft);
+  }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .codebases-grid { grid-template-columns: 1fr; }
+    .links ul { columns: 1; }
+    header.page-head h1 { font-size: 26px; }
+  }
+  @media (max-width: 600px) {
+    body { padding: 20px 14px 60px; }
+    .decisions table { font-size: 12px; }
+    .decisions th, .decisions td { padding: 8px 10px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="page-head">
+  <h1>Le Cayenne <span class="accent">— Cross-codebase status</span></h1>
+  <p>Snapshot <strong>2026-05-28</strong> · Post ultraplan Phase 1+3+4
+    <span class="tag">EXEC-FINALIZE-C</span>
+  </p>
+</header>
+
+<main>
+
+  <!-- 3 BIG CARDS clickables -->
+  <section>
+    <h2>Les 3 codebases</h2>
+    <div class="codebases-grid">
+
+      <article class="codebase-card backend" onclick="toggleDetails(this, 'backend')">
+        <h2>Backend POS / Kiosk / KDS</h2>
+        <ul class="quick-stats">
+          <li><strong>Branche</strong> heal/cms-pr1-quickwins-2026-05-18</li>
+          <li><strong>HEAD</strong> <code>7aa0f07df</code> · +50 commits depuis briefing</li>
+          <li><strong>V1 LOCAL</strong> PRODUCTION-READY (envelope explicite)</li>
+          <li><strong>Owner gates</strong> 12 pending (3 Tier-1, 4 Tier-2, 5 Tier-3)</li>
+          <li><strong>V1.0.X backlog</strong> ~50 items cumulatifs</li>
+          <li><strong>Gap-Hunt</strong> 71 unique (P0=14 · P1=31 · P2=21 · P3=5)</li>
+        </ul>
+        <div class="expand-hint">Détails</div>
+        <div id="backend-details" class="details hidden">
+          <h3>Top-3 owner gates</h3>
+          <ul>
+            <li><strong>pos-wizard.js XSS LOCK countersign</strong> — P0 SECURITY, holding 10+ jours, 11→13 sinks à fixer (frozen §7)</li>
+            <li><strong>PricingService LOCK F1+F2</strong> — P0 NF525, <code>$calculatedDiscount</code> unclamped + multi-rate tax-breakdown drift</li>
+            <li><strong>KDS layout Option A/B/C</strong> — P0 chef-rush ≥6 orders, +N chip safety net livré, décision archi owner-gate</li>
+          </ul>
+          <h3>Tier 2</h3>
+          <ul>
+            <li>P11 Refund UI button ~6h dev (Proposal Option B)</li>
+            <li>KDS Archive Undo Path B ~3.5j (MASTER-GAP-002)</li>
+            <li>D3 LOCK_PAY PaymentComponent FR currency countersign</li>
+            <li>PosV5TrancheRow multi-TPE (latent V1 mono-TPE)</li>
+          </ul>
+          <h3>Caveat honnêteté</h3>
+          <ul>
+            <li>2 AllergenCoverageSentinel methods rouges CI (Owner Q2=SKIP 2026-05-21), V1.0.X jusqu'à mapping chef-confirmé</li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="codebase-card mobile" onclick="toggleDetails(this, 'mobile')">
+        <h2>Mobile app</h2>
+        <ul class="quick-stats">
+          <li><strong>Branche</strong> feature/mobile-app-le-cayenne-2026-05-10</li>
+          <li><strong>Commits</strong> 34 touchant <code>mobile/</code> · ~16 V0+wizard+loyalty</li>
+          <li><strong>Catalog</strong> 41 items / 11 cat / 13 sauces (bit-identical backend)</li>
+          <li><strong>Loyalty V0</strong> FSM 7-state + 10 EARN_METHODS + Wallet V0</li>
+          <li><strong>E2E baseline</strong> 20 specs + 16 PNG screenshots</li>
+          <li><strong>Phase 6.B</strong> 8 backend backlog items B-01..B-08</li>
+        </ul>
+        <div class="expand-hint">Détails</div>
+        <div id="mobile-details" class="details hidden">
+          <h3>Architecture Loyalty V0</h3>
+          <ul>
+            <li>FSM 7-state : LOCKED → UNLOCKED → SELECTED → APPLIED_NEXT_ORDER → CONSUMED / REVERSED + EXPIRED</li>
+            <li>Source : <code>mobile/data/loyaltyRewardState.js</code> 188 LOC</li>
+            <li>10 EARN_METHODS Object.freeze à <code>mobile/data/loyalty.js:82</code></li>
+            <li>WizardRedeem 3-step + idempotency 10-min + ModalOptOutConfirm RGPD</li>
+            <li>WALLET_PLAN.md 277 LOC + CONNECTION_PLAN.md Supabase roadmap</li>
+          </ul>
+          <h3>Backend backlog Phase 6.B</h3>
+          <ul>
+            <li><strong>B-01</strong> table <code>loyalty_rewards</code> + route GET (mock REWARDS array)</li>
+            <li><strong>B-02</strong> server idempotency <code>POST /loyalty/redeem</code></li>
+            <li><strong>B-09</strong> QR HMAC sign endpoint (LOYALTY_QR_SECRET env Wave J)</li>
+            <li><strong>B-11</strong> lifetime columns derived <code>/loyalty/history</code></li>
+            <li><strong>B-XX</strong> welcome_bonus listener <code>User::created</code> + birthday cron</li>
+            <li><strong>B-XX</strong> reward state machine atomique <code>lockForUpdate</code></li>
+          </ul>
+          <h3>Effort estimé Phase 6.B</h3>
+          <ul><li>~8-15 dev-days (ordre grandeur historique, à valider planning Phase 6)</li></ul>
+        </div>
+      </article>
+
+      <article class="codebase-card web" onclick="toggleDetails(this, 'web')">
+        <h2>Web site</h2>
+        <ul class="quick-stats">
+          <li><strong>Sous git</strong> 2026-05-28 (commit <code>a7eeea1</code>, standalone, no remote)</li>
+          <li><strong>17 fichiers actifs</strong> racine + 5 légal + 6 CSS modulaires</li>
+          <li><strong>LOC mesuré</strong> 7994 (drift +141 vs briefing 7853)</li>
+          <li><strong>Catalog</strong> 41 items bit-identical mobile (mirror SSOT backend)</li>
+          <li><strong>WizardFlow v4</strong> aligned post cascade_frites_sauce heal</li>
+          <li><strong>Loyalty</strong> Pepper Club hardcoded 347 pts, ZERO Wallet/QR/RGPD</li>
+        </ul>
+        <div class="expand-hint">Détails</div>
+        <div id="web-details" class="details hidden">
+          <h3>Fichiers racine (17)</h3>
+          <ul>
+            <li><code>account-v2.jsx</code> · <code>components.jsx</code> · <code>data/menu.js</code> · <code>flows.jsx</code> · <code>funnel.jsx</code></li>
+            <li><code>index.html</code> · <code>loyalty-v2.jsx</code> · <code>orders.jsx</code> · <code>screens-v3.jsx</code> · <code>screens.jsx</code></li>
+            <li><code>wizard-v2.jsx</code> 528 LOC + <code>screens-v3.jsx</code> 249 LOC</li>
+            <li>CSS : styles-mobile, styles-v2, styles-v3, styles-v4, styles-v5, styles</li>
+          </ul>
+          <h3>Légal (5 pages)</h3>
+          <ul>
+            <li>allergens.html · cgv.html · cookies.html · mentions.html · privacy.html + legal.css</li>
+          </ul>
+          <h3>Loyalty mismatch (OG-2 hybride)</h3>
+          <ul>
+            <li>Mobile parle backend aligné (V0 + plomberie B-01..B-08 manquante)</li>
+            <li>Web 100% client-side fake (347 pts hardcoded), pas de wire backend</li>
+            <li>Backend complet sauf <code>loyalty_rewards</code> table + HMAC QR + lifetime columns</li>
+            <li>Décision : préserver 2 surfaces standalone (carte blanche owner 2026-05-16)</li>
+          </ul>
+          <h3>Mirror Wallet V0 web (si OG-4 acceptée)</h3>
+          <ul><li>Effort 4-8h : boutons Apple/Google + ModalWalletV0Notice identiques mobile</li></ul>
+        </div>
+      </article>
+
+    </div>
+  </section>
+
+  <!-- DECISION MATRIX -->
+  <section class="decisions">
+    <h2>Phase 0 owner decisions (auto-décidées 2026-05-28)</h2>
+    <table>
+      <thead>
+        <tr><th>ID</th><th>Question</th><th>Décision</th><th>Justification</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>OG-1</td>
+          <td>Git init <code>/Users/1millnonstop/Downloads/web</code></td>
+          <td><span class="badge cleared">(a) Cleared</span></td>
+          <td>Safety net : déjà fait Phase 1.1 (commit <code>a7eeea1</code>). Standalone, no remote. Aligné avec discipline backup branch backend.</td>
+        </tr>
+        <tr>
+          <td>OG-2</td>
+          <td>Loyalty SSOT (mobile FSM vs web Pepper vs backend)</td>
+          <td><span class="badge defer">(c) Hybride / V1.0.2</span></td>
+          <td>Adversarial CONT-017 : préserve standalone (carte blanche owner 2026-05-16). Convergence via Phase 6.B backend + projection commune. Pas de forçage rétro web→FSM.</td>
+        </tr>
+        <tr>
+          <td>OG-3</td>
+          <td>Catalog SSOT (single source 41 items)</td>
+          <td><span class="badge standalone">(b) Standalone</span></td>
+          <td>Carte blanche owner 2026-05-16 maintenue. Mobile + web standalone avec data SSOT mirror backend <code>config/menu.php</code>. Sentinel inverse à introduire backlog.</td>
+        </tr>
+        <tr>
+          <td>OG-4</td>
+          <td>Wallet web (Apple/Google passes)</td>
+          <td><span class="badge defer">(↺) Defer V1.0.2</span></td>
+          <td>Adversarial CONT-021 : mirror d'un mirror. Mobile V0 a Wallet V0 + ModalWalletV0Notice + WALLET_PLAN.md Phase 6 roadmap. Pas de promesse backend tant que Phase 6.B pas livrée.</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- OWNER TOP-3 ACTIONS -->
+  <section class="owner-actions">
+    <h2>Owner top-3 actions</h2>
+    <ol>
+      <li class="priority-1">
+        <strong>Countersign pos-wizard.js XSS LOCK</strong> — backend, P0 SECURITY, 10+ jours holding. Plan <code>plans/LOCK_POS_WIZARD_XSS_ESCAPE_2026-05-17.md</code> + ADDENDUM 2026-05-23. 11→13 sinks dans wizard POS Vanilla JS (frozen §7).
+        <span class="eta">~30 min owner · 0h dev post-gate (LOCK déjà rédigé)</span>
+      </li>
+      <li class="priority-2">
+        <strong>Décision P11 Refund UI button</strong> — V1 ship vs V1.0.X. Proposal <code>proposals/PROPOSAL_POS_REFUND_UI_2026-05-25.md</code> Option B <code>PosRefundModal.vue</code> + permission <code>pos-refund</code>.
+        <span class="eta">~1h owner · ~6h dev post-gate</span>
+      </li>
+      <li class="priority-3">
+        <strong>Validation a-posteriori OG-1 git init web</strong> — Phase 1.1 déjà exécutée (commit <code>a7eeea1</code> 2026-05-28). Standalone, no remote, faible risque.
+        <span class="eta">~5 min owner · 0h dev (déjà fait)</span>
+      </li>
+    </ol>
+  </section>
+
+  <!-- INVARIANTS PRESERVED -->
+  <section class="invariants">
+    <h2>Invariants préservés ce cycle</h2>
+    <ul>
+      <li><strong>NF525 chain intact</strong> — count + last_hash inchangés</li>
+      <li><strong>Frozen-zones diff = 0 LOC</strong> sur 14 fichiers protégés</li>
+      <li><strong>V1 LOCAL Le Cayenne</strong> PRODUCTION-READY UNCHANGED</li>
+      <li><strong>20/20 specs E2E mobile</strong> + 16/16 PNG baselines</li>
+      <li><strong>41 items canonical IDs</strong> cross-codebase bit-identical</li>
+      <li><strong>13 sauces canonical</strong> SAUCE COUNT DOM-validated (Wave Y)</li>
+      <li><strong>9 sentinels parity actifs</strong> (PHPUnit + Vitest, status GREEN)</li>
+    </ul>
+  </section>
+
+  <!-- LINKS -->
+  <section class="links">
+    <h2>Documents sources</h2>
+    <ul>
+      <li><code>docs/CROSS_CODEBASE_STATE.md</code> (298 LOC synthèse)</li>
+      <li><code>reports/wizard-parity-2026-05-28.md</code> (audit kiosk×mobile×web)</li>
+      <li><code>tools/sentinel-codebase-parity.mjs</code> (drift watch)</li>
+      <li><code>tools/check-codebase-drift.sh</code> (cron daily)</li>
+      <li><code>PROJECT_BRAIN.md</code> §2 §3 (auto-managed state)</li>
+      <li><code>mobile/HOW_TO_RESUME.md</code> (resume guide)</li>
+      <li><code>mobile/WALLET_PLAN.md</code> (277 LOC Phase 6 roadmap)</li>
+      <li><code>plans/LOCK_POS_WIZARD_XSS_ESCAPE_2026-05-17.md</code> (LOCK plan)</li>
+      <li><code>proposals/PROPOSAL_POS_REFUND_UI_2026-05-25.md</code> (Refund Option B)</li>
+      <li><code>public/architecture-diagram.html</code> (live architecture)</li>
+    </ul>
+  </section>
+
+</main>
+
+<footer>
+  <p>Généré 2026-05-28 par ultraplan EXEC-FINALIZE-C · Accessible <code>http://127.0.0.1:8000/cross-codebase-status-2026-05-28.html</code></p>
+</footer>
+
+</div>
+
+<script>
+  function toggleDetails(card, id) {
+    const el = document.getElementById(id + '-details');
+    if (!el) return;
+    el.classList.toggle('hidden');
+    card.classList.toggle('open');
+  }
+</script>
+</body>
+</html>

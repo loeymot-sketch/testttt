@@ -49,6 +49,11 @@ class DatabaseSeeder extends Seeder
         $this->call(RolePermissionTableSeeder::class);
         $this->call(ComposerPermissionsMinimalSeeder::class);
         $this->call(IngredientPermissionSeeder::class);
+        // [HEAL 2026-05-27] Sync sanctum→web perms — fixes admin SPA 403/401 cluster
+        // discovered owner-side via /admin/ingredients "Impossible de charger" bug.
+        // Vue admin pages use browser session cookie = web guard, but most seeders
+        // grant sanctum only. This seeder mirrors all 82 sanctum perms to Admin web.
+        $this->call(AdminWebGuardPermissionsSyncSeeder::class);
         $this->call(LeCayenneRoleLandingUrlSeeder::class);
         $this->call(MailTableSeeder::class);
         $this->call(OrderSetupTableSeeder::class);

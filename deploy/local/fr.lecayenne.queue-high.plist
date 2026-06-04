@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  fr.lecayenne.queue-high — FoodKing V1 LOCAL · HIGH-priority queue worker (Redis).
+  Mirrors the live manually-launched worker:
+    php artisan queue:work redis --queue=high --tries=1 --timeout=120   (PID 21046 @ 2026-06-04)
+
+  Companion of fr.lecayenne.queue.plist (default lane). See that file's header for
+  the two-workers-vs-consolidated rationale.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>fr.lecayenne.queue-high</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/opt/homebrew/opt/php@8.2/bin/php</string>
+        <string>artisan</string>
+        <string>queue:work</string>
+        <string>redis</string>
+        <string>--queue=high</string>
+        <string>--tries=1</string>
+        <string>--timeout=120</string>
+        <string>--max-time=3600</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/opt/php@8.2/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
+
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>ThrottleInterval</key>
+    <integer>10</integer>
+
+    <key>StandardOutPath</key>
+    <string>/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/storage/logs/launchd-queue-high.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/storage/logs/launchd-queue-high.log</string>
+</dict>
+</plist>

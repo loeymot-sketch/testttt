@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Rules\NoDangerousFileExtension;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -34,8 +35,23 @@ class PushNotificationRequest extends FormRequest
             'role_id'     => ['nullable', 'numeric'],
             'user_id'     => ['nullable', 'numeric'],
             'branch_id'   => ['required', 'numeric'],
-            'image'       => ['image', 'mimes:jpeg,png,jpg|max:5098']
-
+            // [GOAL-L2-HEAL-02 2026-05-24] Phase L7.1-V3 P1 fix:
+            // OLD: ['image', 'mimes:jpeg,png,jpg|max:5098'] — Laravel's
+            // explodeExplicitRule (ValidationRuleParser.php:86-101) only
+            // splits the `|` separator on STRING rules; inside an array
+            // element each item is treated as a single rule token. The
+            // `|max:5098` suffix was therefore parsed as a phantom MIME
+            // entry (`jpg|max:5098`) and silently dropped — 10 MB PNG
+            // was empirically accepted.
+            // NEW: proper array shape with each rule as its own element,
+            // plus NoDangerousFileExtension to close the .pht gap.
+            'image'       => [
+                'nullable',
+                'image',
+                'mimes:jpeg,png,jpg',
+                'max:5098',
+                new NoDangerousFileExtension(),
+            ],
         ];
     }
 }

@@ -24,6 +24,9 @@ describe('KdsSyncService reaction to reconnect_storm (NEW-02)', () => {
     beforeEach(() => {
         vi.useFakeTimers();
         vi.setSystemTime(new Date('2026-04-23T00:00:00.000Z'));
+        // [GOAL-2026-05-29] Seed Sanctum token so the storm-triggered forceSync()
+        // passes the auth-guard (a46ec7df7) and actually invokes fetchFn. See kdsVersionGate test-1.
+        localStorage.setItem('vuex', JSON.stringify({ auth: { authToken: 'staff-token' } }));
         // [NEW-02 audit G10] Force jitter to 0 so forceSync() runs synchronously
         // and these unit tests stay deterministic. Production keeps the 0–500ms
         // jitter to spread the storm-triggered request burst across the fleet.
@@ -53,6 +56,7 @@ describe('KdsSyncService reaction to reconnect_storm (NEW-02)', () => {
         randomSpy.mockRestore();
         vi.clearAllTimers();
         vi.useRealTimers();
+        localStorage.clear();
     });
 
     const emitStorm = (payload) => {

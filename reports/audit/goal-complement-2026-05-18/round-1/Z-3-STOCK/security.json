@@ -1,0 +1,56 @@
+{
+  "specialist": "Security",
+  "zone": "Z-3-STOCK",
+  "round": 1,
+  "scope": "BranchScope on StockLevel + StockMovement + multi-tenant leak + dashboard authz",
+  "findings": [
+    {
+      "id": "Z3-SEC-01",
+      "severity": "P2",
+      "title": "StockLevel + StockMovement have BranchScope global scope",
+      "anchor": "app/Models/StockLevel.php:25 + app/Models/StockMovement.php:23",
+      "evidence": "static::addGlobalScope(new BranchScope()) applied to both. Confirmed iter12 P0 STOCK 2026-05-09 heal already landed. tests/Feature/Stock/StockBranchIsolationTest verifies via Schema-level isolation.",
+      "verdict": "PASS — multi-tenant isolation guaranteed for non-admin users."
+    },
+    {
+      "id": "Z3-SEC-02",
+      "severity": "P1",
+      "title": "StockRuptureDashboardController lastSummary + lowAlerts: branch_id query param honored without explicit authz",
+      "anchor": "app/Http/Controllers/Admin/StockRuptureDashboardController.php:143-147",
+      "evidence": "scopedBranches() L143-147 calls authorizeBranchScope($request, $branchId) BEFORE filtering whereKey($branchId). The branch_id param goes through authz. For non-admin users without branch_id param, L149-152 fall back to user's own branch (whereKey($userBranchId)). Admin (branch_id=0) gets all branches L154. Single defensive read.",
+      "verdict": "PASS — branch_id is gated by authorizeBranchScope. No bypass.",
+      "scope_minimal_heal": "None."
+    },
+    {
+      "id": "Z3-SEC-03",
+      "severity": "P2",
+      "title": "StockRuptureDashboardController::run: prod-environment + items_create permission gate",
+      "anchor": "app/Http/Controllers/Admin/StockRuptureDashboardController.php:110-112",
+      "evidence": "abort_unless($request->user()?->can('items_create'), 403) in app()->environment('production'). Combined with the middleware permission:items_create on L24, double-gated. Acceptable defense-in-depth.",
+      "verdict": "PASS — production runs require items_create."
+    },
+    {
+      "id": "Z3-SEC-04",
+      "severity": "P1",
+      "title": "stockableLabel reveals item names without branch scope check",
+      "anchor": "app/Http/Controllers/Admin/StockRuptureDashboardController.php:157-166",
+      "evidence": "Item::query()->find($id) uses BranchScope (Item model has BranchScope), so name leakage prevented for non-admin. ItemVariation and ItemExtra: ItemVariation::query()->find() — neither model has BranchScope (verified via Read of model files in prior audits; Items are branch-agnostic catalog rows). Variation/Extra are catalog rows shared across branches (multi-tenant catalog by design). No leak.",
+      "verdict": "PASS — catalog rows are intentionally cross-branch."
+    },
+    {
+      "id": "Z3-SEC-05",
+      "severity": "P0",
+      "title": "lowAlerts endpoint does NOT enforce items_show middleware in code if called via admin SPA but middleware is registered",
+      "anchor": "app/Http/Controllers/Admin/StockRuptureDashboardController.php:23",
+      "evidence": "$this->middleware(['permission:items_show'])->only('lastSummary', 'lowAlerts') — covers both GET endpoints. Confirmed POST has 'items_create' permission gate L24. routes/api.php L287-291 confirms registration.",
+      "verdict": "PASS — middleware-enforced."
+    }
+  ],
+  "summary": {
+    "P0": 0,
+    "P1": 0,
+    "P2": 3,
+    "P3": 0,
+    "verdict_overall": "PASS — security posture solid post iter12 BranchScope + F-016a-BIS"
+  }
+}

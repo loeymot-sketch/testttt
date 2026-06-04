@@ -1,0 +1,108 @@
+{
+  "specialist": "RED",
+  "zone": "PS-4 POS Client management + Receipts",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head": "d3dc4c2c6",
+  "scope": ["adversarial probe — walk-in spam vector", "adversarial probe — duplicata bypass", "adversarial probe — fiscal_sequence_no omission on reissue"],
+  "verdict": "FINDINGS_CONFIRMED",
+  "summary": "I attempted three attacks. (A) Spam-create users via walk-in: BLOCKED by the firstOrCreate-on-stable-email pattern — only one User row in the entire DB carries walkingcustomer@example.com. (B) Print a duplicata WITHOUT the duplicata marker: REPRODUCIBLE via the /admin/posOrders re-print surface (PosOrderReceiptComponent) which does NOT mount ReceiptDuplicataMarker — confirms ARCH-PS4-002 / UX-PS4-003. (C) Print a receipt that legitimately should carry a fiscal_sequence_no but does not: REPRODUCIBLE for legacy orders predating NF525 allocation AND for the re-print surface. (D) NEW finding: the increment endpoint allows print_count to be inflated by a hostile insider with a curl loop — no per-minute throttle on the route. Plus a SIEM-blind finding: when audit_emitted=false, the UI does not alert (UX-PS4-002).",
+  "findings": [
+    {
+      "id": "RED-PS4-001",
+      "title": "ATTACK BLOCKED — walk-in spam create is impossible by construction",
+      "severity": "INFO",
+      "attack_vector": "Send 1000 GETs to /api/admin/pos/walk-in-customer hoping each creates a new User",
+      "result": "Mitigated. WalkInCustomerResolver::resolve always firstOrCreate by a single constant email. After N calls, the User table holds exactly 1 walkingcustomer@example.com row. The resolver also assigns the Customer role idempotently (hasRole check).",
+      "files": [
+        "app/Services/Pos/WalkInCustomerResolver.php"
+      ],
+      "evidence": "L16-37 firstOrCreate(['email' => self::EMAIL], [...defaults...]). No input from $request reaches the resolver. The /api/admin/pos/walk-in-customer route is also throttled at 120/min via pos-quote limiter (routes/api.php L754).",
+      "recommendation": "No-action. Add a Feature assertion as belt-and-braces (already noted in Architect ARCH-PS4-004)."
+    },
+    {
+      "id": "RED-PS4-002",
+      "title": "ATTACK REPRODUCED — print a fiscal-relevant duplicata WITHOUT the legally-required DUPLICATA marker",
+      "severity": "P2",
+      "attack_vector": "Manager opens an order from /admin/posOrders history, clicks print → ticket reaches customer without `DUPLICATA #N`",
+      "result": "REPRODUCIBLE. PosOrderReceiptComponent.vue lines 1-153 (paper-print zone) do not import or mount <receipt-duplicata-marker>. The ticket also does NOT POST to /admin/pos/orders/{order}/print-receipt — so receipt_print_count stays unchanged AND no audit_logs row is emitted for this reprint. From the customer's hand, the paper looks identical to the first print: legally non-compliant duplicata.",
+      "files": [
+        "resources/js/components/admin/posOrders/PosOrderReceiptComponent.vue"
+      ],
+      "evidence": "Diff against ReceiptComponent.vue: missing imports of ReceiptDuplicataMarker (L332) + buildNf525Footer (L335) + handlePrintClientClick + axios.post('admin/pos/orders/${id}/print-receipt'). No effectiveOrder computed (L421-431). The component is wired in admin/posOrders surface — confirm with `grep -rn PosOrderReceiptComponent resources/js`. Risk depends on owner usage: if managers occasionally use this surface, NF525 has a hole.",
+      "recommendation": "P2 V1.0.2 — port the duplicata marker + NF525 footer + print-receipt POST call. Or owner-gate decision: deprecate this component and force re-print through PosOrdersTrackerComponent → ReceiptComponent."
+    },
+    {
+      "id": "RED-PS4-003",
+      "title": "ATTACK REPRODUCED — legacy orders predating NF525 allocation print without fiscal_sequence_no",
+      "severity": "INFO",
+      "attack_vector": "Print an order where fiscal_sequence_no is NULL",
+      "result": "By design. ReceiptDataService::buildForOrderModel L65 returns `$order->fiscal_sequence_no ?? null`. ReceiptComponent.vue L241 wraps the NF525 footer in `v-if=\"nf525FooterLines.length\"` and posReceiptBuilder.buildNf525Footer L115 skips the fiscal_ticket_no line when null. ReceiptDataServiceWireInTest::test_receipt_data_service_handles_null_fiscal_sequence asserts this behaviour. Not a defect — these orders predate NF525 obligation and have no fiscal counter assigned; the chain integrity is unaffected.",
+      "files": [
+        "app/Services/Receipt/ReceiptDataService.php",
+        "resources/js/helpers/posReceiptBuilder.js",
+        "tests/Feature/Receipt/ReceiptDataServiceWireInTest.php"
+      ],
+      "evidence": "buildForOrderModel returns null for missing field. Footer helper skips. UI omits line. Test L163-177 locks the contract.",
+      "recommendation": "Accepted. Document in NF525 doc that pre-2026-XX-XX orders carry no fiscal_sequence_no by design."
+    },
+    {
+      "id": "RED-PS4-004",
+      "title": "ATTACK PLAUSIBLE — hostile insider can inflate receipt_print_count via curl-loop",
+      "severity": "P2",
+      "attack_vector": "Authenticated operator with pos perm sends 1000 POSTs to /admin/pos/orders/{order}/print-receipt for a single order",
+      "result": "REPRODUCIBLE (mitigated). The route has `idempotency` middleware which prevents replay-of-same-key, but the operator can vary the X-Idempotency-Key on each call and bypass that. The bucket `api/admin/pos/*` throttle caps at 120/min per-user (RouteServiceProvider.php L86-88) → ~7200 inflations per hour per operator. Each call writes an audit_logs row → fiscal chain noise (not corruption, but high-volume noise that may impede legitimate SIEM rules).",
+      "files": [
+        "routes/api.php",
+        "app/Providers/RouteServiceProvider.php",
+        "app/Http/Controllers/Admin/Pos/PosReceiptPrintController.php"
+      ],
+      "evidence": "Line 831 routes/api.php: `middleware('idempotency')` only. No per-route throttle. Each call appends 1 audit_logs row with action `pos.receipt.reprint`. No upper cap on print_count (DB column is int, no CHECK constraint).",
+      "recommendation": "P2 V1.0.1 quick-win: add `throttle:pos-quote` to the print-receipt route (consistent with walk-in-customer + quote). Even better: a dedicated `pos-receipt-print` limiter at 10-30/min per (user, order_id) tuple. The per-(user,order) granularity needs a custom Limiter::by(user_id.'|'.order_id) — small addition to RouteServiceProvider."
+    },
+    {
+      "id": "RED-PS4-005",
+      "title": "ATTACK CONFIRMED — audit chain failure is INVISIBLE to the operator and the customer",
+      "severity": "P2",
+      "attack_vector": "Inject a transient AuditLogService::write failure (DB lock contention) → operator prints the duplicata, customer leaves, no human is aware the chain is broken",
+      "result": "REPRODUCIBLE. PosReceiptPrintController L77-104 wraps the audit emission in try/catch + report() — best-effort by design. The HTTP response carries `audit_emitted: false`, but ReceiptComponent.vue handlePrintClientClick (L490-531) DOES NOT read this field. The print succeeds, the operator sees no warning, the customer takes the paper, nobody knows the chain skipped a link.",
+      "files": [
+        "resources/js/components/admin/pos/ReceiptComponent.vue",
+        "app/Http/Controllers/Admin/Pos/PosReceiptPrintController.php"
+      ],
+      "evidence": "Mirror of UX-PS4-002. The backend docblock at L21-28 explicitly says `audit_emitted=false in the response so the UI can warn the manager` — the JS side never implements that warning.",
+      "recommendation": "P2 heal-allowed: 3-line patch in handlePrintClientClick to surface alertService.warning when audit_emitted===false. Add i18n key `pos.receipt_audit_chain_warning`. Safe (no frozen file). Recommend healing in this audit (small surface, high SIEM value)."
+    },
+    {
+      "id": "RED-PS4-006",
+      "title": "ATTACK BLOCKED — cross-tenant receipt-print attempt returns 404, no oracle",
+      "severity": "INFO",
+      "attack_vector": "Operator A (branch 1) hits POST /admin/pos/orders/{order_from_branch_2}/print-receipt",
+      "result": "Blocked. PosReceiptPrintController L43-48 filters update by branch_id. Zero rows updated → L50 returns abort(404). No information leaked about whether the order exists in branch 2.",
+      "files": [
+        "app/Http/Controllers/Admin/Pos/PosReceiptPrintController.php"
+      ],
+      "evidence": "Defense in depth on top of BranchScope (which would also block the firstOrFail in the standard model resolution path).",
+      "recommendation": "Solid. Add Feature test to lock it (Architect ARCH-PS4-005 also suggests this)."
+    },
+    {
+      "id": "RED-PS4-007",
+      "title": "ATTACK PLAUSIBLE — walk-in user could be edited/deleted by a hostile admin, breaking POS flow",
+      "severity": "P3",
+      "attack_vector": "An admin with user.delete perm deletes the walk-in user → next POS quote tries to resolve, recreates the user (recoverable), but any prior orders point to a different user_id depending on resolver state",
+      "result": "Self-healing. firstOrCreate re-creates after deletion, but the AUTO_INCREMENT id will differ from the deleted row. Past orders with the old user_id are now FK-broken (or NULL if ON DELETE SET NULL). For the kiosk persistence and historical reporting, walk-in orders are now mixed across user_id values.",
+      "files": [
+        "app/Services/Pos/WalkInCustomerResolver.php"
+      ],
+      "evidence": "No DB-level protection against deleting the walk-in user. The resolver assumes the row exists or will be created.",
+      "recommendation": "P3 V1.0.2: add a DB trigger or User model boot deleting hook preventing delete when email=walkingcustomer@example.com. Or add a Spatie permission gate on user.delete that rejects the walk-in user. Low priority — needs hostile admin or honest mistake to occur."
+    }
+  ],
+  "metrics": {
+    "files_probed": 9,
+    "attacks_attempted": 7,
+    "attacks_blocked": 3,
+    "attacks_reproduced": 4,
+    "new_findings_vs_other_specialists": 2
+  },
+  "wall_clock_min": 9
+}

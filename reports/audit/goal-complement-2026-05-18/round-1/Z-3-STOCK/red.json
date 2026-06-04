@@ -1,0 +1,83 @@
+{
+  "specialist": "RED-team",
+  "zone": "Z-3-STOCK",
+  "round": 1,
+  "stance": "hostile — assume the other 4 specialists missed P0",
+  "evidence_method": "Adversarial dispute, Read-verified",
+  "disputes": [
+    {
+      "id": "Z3-RED-01",
+      "severity": "P2",
+      "title": "Refund-twice race: lockForUpdate on OrderItem prevents collision but DOES the seed actually re-read released_qty after lock acquired?",
+      "anchor": "app/Services/Stock/StockService.php:364-411",
+      "evidence_dispute": "L364-366 query: $orderItem = OrderItem::query()->where('id',$line->id)->lockForUpdate()->first(). This refetches the row inside the lock, so released_qty read at L375 and used at L410 is post-lock fresh. Two concurrent refund requests: request A acquires lock, reads released_qty=0, computes seed 'released:0:delta:1', writes movement, increments released_qty to 1, commits. Request B then acquires lock, refetches released_qty=1, computes seed 'released:1:delta:1', writes movement (different key). NO COLLISION.",
+      "verdict": "Architect was right. PASS."
+    },
+    {
+      "id": "Z3-RED-02",
+      "severity": "P1",
+      "title": "What if refund is dispatched WITHOUT prior decrement? requireOriginalDecrement guard L106-108 — does the release path L380-440 also enforce?",
+      "anchor": "app/Services/Stock/StockService.php:401-404",
+      "evidence_dispute": "Inside releaseForOrderInTransaction: L401-404 — $orderKey = $this->movementKey('order_created', $order, $row, null); if (! StockMovement::query()->where('idempotency_key', $orderKey)->exists()) { continue; }. This IS the original-decrement guard for the partial-refund release path. Without prior decrement, no release row written. SAFE.",
+      "verdict": "PASS — guard in both paths."
+    },
+    {
+      "id": "Z3-RED-03",
+      "severity": "P0",
+      "title": "Composition snapshot mutation: if composition_snapshot is overwritten POST-decrement, release uses NEW snapshot to recompute requirements → wrong addon released",
+      "anchor": "app/Services/Stock/StockService.php:387 + 280-292",
+      "evidence_dispute": "requirementsForOrderItem(at line 387 inside release) uses current $orderItem->composition_snapshot — but composition_snapshot is JSON snapshot frozen at order creation (CLAUDE.md §8 NF525 invariant: 'composition_snapshot JSON frozen à création d'order — NEVER overwritten'). If overwritten by malicious admin OR migration, release would use wrong addon list. RELIANT on NF525 invariant.",
+      "verdict": "CONDITIONAL PASS — depends on NF525 invariant. PricingService is frozen-zone. This is defense-in-depth: NF525 invariant is the moat.",
+      "scope_minimal_heal": "Sentinel test that composition_snapshot is immutable post-create (likely already covered in tests/Feature/Order/CompositionSnapshotImmutabilityTest if exists). Out of Z-3 scope; defer to Z-5 Pricing SSOT audit."
+    },
+    {
+      "id": "Z3-RED-04",
+      "severity": "P1",
+      "title": "scopedBranches L139-141: status filter '[Status::ACTIVE, 1]' bug — what if a branch has status=2 (legacy)?",
+      "anchor": "app/Http/Controllers/Admin/StockRuptureDashboardController.php:139-141",
+      "evidence_dispute": "Comment at L134-138 explains this was a P0 heal for GOAL-PAGEBY-STOCK-2026-05-18 SCAN-422. Status::ACTIVE=5 + legacy 1 covered. If a branch has any other status, it's intentionally excluded. Acceptable scope.",
+      "verdict": "PASS."
+    },
+    {
+      "id": "Z3-RED-05",
+      "severity": "P1",
+      "title": "Vue dashboard polling: if document.hidden returns true at mount, loadAll() L219 early-exits but state stays empty, no fallback fetch when visibility returns",
+      "anchor": "resources/js/components/admin/stock/StockRuptureDashboardComponent.vue:218-223",
+      "evidence_dispute": "L219 'if (document.hidden) return;' early exit. L206-209 visibilityHandler is registered: when visibility flips back, _visibilityHandler fires loadAll(). Coverage OK.",
+      "verdict": "PASS — visibility handler covers it."
+    },
+    {
+      "id": "Z3-RED-06",
+      "severity": "P0",
+      "title": "AR locale dashboard mount: confirmed missing admin.stock_rupture block. Visual proof: user mounting /admin/stock/rupture in AR sees 'admin.stock_rupture.title' literal headings",
+      "anchor": "resources/js/languages/ar.json:41-77",
+      "evidence_dispute": "Confirmed UX-A11y finding Z3-UX-01. Additionally en.json:77-94 has FR strings (locale leak). HEAL TARGET.",
+      "verdict": "FAIL — confirms UX/A11y P0.",
+      "scope_minimal_heal": "Add ar.json admin.stock_rupture block. Fix en.json L78-93 FR→EN."
+    },
+    {
+      "id": "Z3-RED-07",
+      "severity": "P2",
+      "title": "Dashboard runScanNow L240-251: no error handler — if POST 422 the runningManually flag clears but no user feedback",
+      "anchor": "resources/js/components/admin/stock/StockRuptureDashboardComponent.vue:240-251",
+      "evidence_dispute": "try { await axios.post(...) } finally { runningManually=false }. No catch. Axios interceptor presumably global toast on error. Minor — admin observability UX.",
+      "verdict": "P3 — defer V1.0.2."
+    },
+    {
+      "id": "Z3-RED-08",
+      "severity": "P1",
+      "title": "Reason raw text 'stock_rupture' shown to admin — not localized — confirms UX-06 finding",
+      "anchor": "resources/js/components/admin/stock/StockRuptureDashboardComponent.vue:107",
+      "evidence_dispute": "{{ row.reason }} bare. Admins reading the dashboard see 'stock_rupture' (a raw key) inside a red chip. Confusing for non-technical admins.",
+      "verdict": "FAIL — minor raw label hygiene.",
+      "scope_minimal_heal": "Wrap in $t with fallback. Include in heal."
+    }
+  ],
+  "summary": {
+    "new_P0_not_in_synth": 0,
+    "confirmed_P0": 2,
+    "new_P1": 1,
+    "new_P2": 0,
+    "verdict": "Audit-fan-out's P0s confirmed. No NEW P0. Two existing P1s elevated: AR/EN i18n + raw reason chip."
+  }
+}

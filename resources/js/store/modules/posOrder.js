@@ -1,5 +1,6 @@
 import axios from 'axios'
 import appService from "../../services/appService";
+import { buildIdempotencyHeaders } from "../../helpers/idempotencyHeaders";
 
 const DEFAULT_REALTIME_POLLING_INTERVAL_MS = 30000;
 const POS_SELF_ORDER_TYPES = [15, 20];
@@ -55,6 +56,11 @@ export function resolveRealtimeFallbackConfig(runtime = {}) {
         runtime.hintWhenOff ?? realtimeConfig.hintWhenOff,
         true
     );
+    // [HEAL B.3 2026-05-19] POS polling cadence reads MIX_BROADCAST_POLLING_FALLBACK_MS
+    // (webpack build-time env, baked at `npm run prod`) — NOT the PHP config
+    // (broadcasting.polling_fallback.interval_ms was deleted as dead-weight).
+    // Per-surface SoT: this constant is the POS-specific value; KDS and Kiosk
+    // own their own constants (see config/broadcasting.php note). RED-Z3 §B-6 closed.
     const pollingIntervalMs = normalizePositiveInteger(
         runtime.pollingIntervalMs
         ?? realtimeConfig.pollingFallbackMs
@@ -87,6 +93,11 @@ export function normalizeRealtimeOrderEvent(event = {}) {
         payload,
     };
 }
+
+// [PS-2 audit 2026-05-18 / PK-2 propagation 2026-05-18]
+// Idempotency-Key helper extracted to resources/js/helpers/idempotencyHeaders.js
+// so all 6+ Vue stores (POS + KDS + online + table + frontend) share the same
+// generator. See that file for behaviour rationale.
 
 export function shouldNotifyPosRealtimeOrder(event = {}) {
     const normalized = normalizeRealtimeOrderEvent(event);
@@ -226,7 +237,12 @@ export const posOrder = {
         },
         destroy: function (context, payload) {
             return new Promise((resolve, reject) => {
-                axios.delete(`admin/pos-order/${payload.id}`).then((res) => {
+                // [PS-2 audit 2026-05-18] Idempotency-Key on DELETE — pairs with
+                // server-side `idempotency` middleware on admin/pos-order/{order}
+                // (routes/api.php:885). Defense-in-depth against double-tap.
+                axios.delete(`admin/pos-order/${payload.id}`, {
+                    headers: buildIdempotencyHeaders(payload),
+                }).then((res) => {
                     context.dispatch('lists', payload.search).then().catch();
                     resolve(res);
                 }).catch((err) => {
@@ -236,7 +252,12 @@ export const posOrder = {
         },
         changeStatus: function (context, payload) {
             return new Promise((resolve, reject) => {
-                axios.post(`admin/pos-order/change-status/${payload.id}`, payload).then((res) => {
+                // [PS-2 audit 2026-05-18] Idempotency-Key on POST change-status
+                // (routes/api.php:892 has the middleware — wired but client did
+                // not supply a key so replay protection was inert).
+                axios.post(`admin/pos-order/change-status/${payload.id}`, payload, {
+                    headers: buildIdempotencyHeaders(payload),
+                }).then((res) => {
                     context.commit('show', res.data.data);
                     resolve(res);
                 }).catch((err) => {
@@ -246,7 +267,11 @@ export const posOrder = {
         },
         changePaymentStatus: function (context, payload) {
             return new Promise((resolve, reject) => {
-                axios.post(`admin/pos-order/change-payment-status/${payload.id}`, payload).then((res) => {
+                // [PS-2 audit 2026-05-18] Idempotency-Key on POST change-payment-status
+                // (routes/api.php:895).
+                axios.post(`admin/pos-order/change-payment-status/${payload.id}`, payload, {
+                    headers: buildIdempotencyHeaders(payload),
+                }).then((res) => {
                     context.commit('show', res.data.data);
                     resolve(res);
                 }).catch((err) => {
@@ -256,7 +281,11 @@ export const posOrder = {
         },
         selectDeliveryBoy: function (context, payload) {
             return new Promise((resolve, reject) => {
-                axios.post(`admin/pos-order/select-delivery-boy/${payload.id}`,payload).then((res) => {
+                // [PS-2 audit 2026-05-18] Idempotency-Key on POST select-delivery-boy
+                // (routes/api.php:897).
+                axios.post(`admin/pos-order/select-delivery-boy/${payload.id}`, payload, {
+                    headers: buildIdempotencyHeaders(payload),
+                }).then((res) => {
                     context.commit('show', res.data.data);
                     resolve(res);
                 }).catch((err) => {

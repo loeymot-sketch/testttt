@@ -35,6 +35,19 @@ describe('eventContract — correlation dedupe (SYNC-002)', () => {
         expect(isDuplicateCorrelation('corr-1', 'catalog.changed', 8)).toBe(true);
     });
 
+    it('[F4] dedupes by aggregate id so multi-item auto-86 of one request all run', () => {
+        // One request/correlation toggles availability for items 101, 102, 103:
+        // each emits ItemAvailabilityChanged with the SAME correlationId+type+branch
+        // but a DIFFERENT aggregate id. They must NOT collapse (else items 102/103
+        // stay sellable). A re-delivery of item 101 (same aggregate) still dedups.
+        expect(isDuplicateCorrelation('corr-86', 'menu.item_availability_changed', 1, 101)).toBe(false);
+        expect(isDuplicateCorrelation('corr-86', 'menu.item_availability_changed', 1, 102)).toBe(false);
+        expect(isDuplicateCorrelation('corr-86', 'menu.item_availability_changed', 1, 103)).toBe(false);
+        // Re-delivery (WS + poll) of the SAME aggregate IS a duplicate:
+        expect(isDuplicateCorrelation('corr-86', 'menu.item_availability_changed', 1, 101)).toBe(true);
+        expect(isDuplicateCorrelation('corr-86', 'menu.item_availability_changed', 1, 102)).toBe(true);
+    });
+
     it('treats null/undefined correlation ids as never-duplicate (defensive)', () => {
         expect(isDuplicateCorrelation(null)).toBe(false);
         expect(isDuplicateCorrelation(undefined)).toBe(false);

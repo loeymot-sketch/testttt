@@ -96,9 +96,14 @@ class OutboxProductionLikeSimulationTest extends TestCase
         $oldFailed->refresh();
         $notTerminal->refresh();
 
-        $this->assertSame(0, (int) $recentFailed->attempts);
-        $this->assertNull($recentFailed->last_error);
-        $this->assertNull($recentFailed->dispatched_at);
+        // [Heal B.1 Z3 B-2 P0 — 2026-05-19] Post-heal contract: command
+        // PRESERVES attempts + last_error monotonically; only re-nulls
+        // dispatched_at so DispatchDomainEventsJob can re-claim the row.
+        // Pre-heal asserted attempts=0 + last_error=null, encoding the
+        // chronic-fail flap defect RED-Z3 B-2 caught.
+        $this->assertSame(5, (int) $recentFailed->attempts, 'recentFailed: attempts PRESERVED post-heal.');
+        $this->assertSame('pusher down', (string) $recentFailed->last_error, 'recentFailed: last_error PRESERVED.');
+        $this->assertNull($recentFailed->dispatched_at, 'recentFailed: dispatched_at re-nulled for re-claim.');
 
         $this->assertSame(5, (int) $oldFailed->attempts);
         $this->assertSame('old pusher down', $oldFailed->last_error);
@@ -207,6 +212,19 @@ class OutboxProductionLikeSimulationTest extends TestCase
 
     public function test_contract_violation_never_reaches_broadcaster_and_remains_retriable(): void
     {
+        // [F-3 SYNC P1 V1.0.1 update — 2026-05-19]
+        // PayloadMismatchException behaviour changed from "rethrow" to
+        // "$this->fail($e) then return". The "remains retriable" wording in
+        // this test name is now misleading: contract violations are NOT
+        // retry-recoverable and are routed directly to failed_jobs via
+        // $this->fail(). DB invariants (claim released, last_error prefix,
+        // broadcaster bypassed) are unchanged. Test renamed conceptually
+        // but kept name for git-blame continuity; the docblock and
+        // assertions reflect the new semantics.
+        //
+        // Source: reports/audit/foundation-2026-05-18/round-1/F-3-SYNC/STATUS.md §P1
+        // Companion sentinel: tests/Feature/Sentinels/PayloadMismatchFailOnceSentinelTest.php
+
         $event = $this->domainEvent([
             'aggregate_id' => 401,
             'payload' => ['missing_required_keys' => true],
@@ -216,16 +234,23 @@ class OutboxProductionLikeSimulationTest extends TestCase
         $broadcaster->shouldNotReceive('broadcast');
         $this->mockBroadcastManager($broadcaster);
 
-        $this->expectException(PayloadMismatchException::class);
-
+        $threw = false;
         try {
             (new DispatchDomainEventsJob($event->id))->handle();
-        } finally {
-            $event->refresh();
-            $this->assertNull($event->dispatched_at);
-            $this->assertSame(1, (int) $event->attempts);
-            $this->assertStringStartsWith('contract_violation:', (string) $event->last_error);
+        } catch (PayloadMismatchException $e) {
+            $threw = true;
         }
+
+        $this->assertFalse(
+            $threw,
+            'PayloadMismatchException MUST NOT be rethrown — $this->fail() short-circuits the retry curve. '
+                . 'See reports/audit/foundation-2026-05-18/round-1/F-3-SYNC/STATUS.md §P1.'
+        );
+
+        $event->refresh();
+        $this->assertNull($event->dispatched_at);
+        $this->assertSame(1, (int) $event->attempts);
+        $this->assertStringStartsWith('contract_violation:', (string) $event->last_error);
     }
 
     private function domainEvent(array $overrides = []): DomainEvent

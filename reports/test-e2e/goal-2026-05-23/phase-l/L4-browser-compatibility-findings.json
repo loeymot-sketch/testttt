@@ -1,0 +1,380 @@
+{
+  "agent": "L.4 — BROWSER CSS COMPATIBILITY (Safari + Firefox) static audit",
+  "phase": "L — Ultra-final pre-cloud Wave L-A (16 agents parallel)",
+  "mission": "Audit FoodKing Le Cayenne V1 source for Safari (iPad + desktop) + Firefox compatibility risks. Only Chromium tested empirically — this is a code-static audit + deployment-context reconciliation. Identify CSS prefixes, viewport-unit hazards, PWA/iOS meta-tag gaps, and JS feature-detection patterns. Determine actual deployment wrapper (Electron / iPad Safari / Chrome desktop) to grade severity correctly.",
+  "date": "2026-05-24",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head_sha": "041c98b2a696017a66805fb1b1b18ae40b11b093",
+  "scope": "Static read-only audit. Files examined: 13 CSS files in resources/css/**, 30+ Vue SFC <style> blocks under resources/js/components/**, 2 helpers (kioskMenuCache.js, posOfflineQueueDb.js), 1 composable (useKioskTheme.js), 4 master Blade views, 3 playwright configs. No empirical Safari/Firefox run.",
+  "method": "(1) grep -webkit- / -moz- / line-clamp / position:sticky / aspect-ratio / scroll-snap / focus-visible / backdrop-filter / 100vh / scrollbar / appearance / user-select / safe-area / @media / @supports / @layer / scrollbar-color / -webkit-tap-highlight / -webkit-overflow-scrolling across resources/. (2) Inspect master.blade.php + admin-pos-v4.blade.php for PWA / apple-meta / viewport-fit. (3) Read kiosk + POS / KDS / OSS Vue components' <style scoped> for vendor-prefix discipline. (4) Verify JS feature-detection patterns for navigator.wakeLock, navigator.serviceWorker, AudioContext, matchMedia, IndexedDB, localStorage, navigator.share. (5) Cross-reference docs/PROJECT_CONTINUITY_AND_VISION.md + docs/DESIGN_BRIEF_KIOSK_2026.md + L1.1 finding to confirm the kiosk runtime wrapper (Electron vs iPad Safari vs Chrome) — this is the severity discriminator.",
+
+  "deployment_context_discriminator": {
+    "headline": "The task spec assumes iPad Safari kiosk. Repo docs say otherwise — V1 kiosk runs in Windows + Electron full-screen. This downgrades most Safari findings to FUTURE-FACING only.",
+    "evidence": [
+      {
+        "source": "docs/PROJECT_CONTINUITY_AND_VISION.md:14",
+        "quote": "borne **Windows + Electron** avec **imprimante ESC/POS**, **TPE** (adaptateurs) et **tiroir caisse** sur espèces."
+      },
+      {
+        "source": "docs/PROJECT_CONTINUITY_AND_VISION.md:51-53",
+        "quote": "### 3.4 Borne / Kiosk (Windows + Electron) — Contexte : passage d'une cible **Android** vers **Windows** ; application **Electron** en **plein écran / démarrage auto**."
+      },
+      {
+        "source": "docs/DESIGN_BRIEF_KIOSK_2026.md:39",
+        "quote": "Wrapper d'exécution | Electron sur borne physique (la SPA est en full-screen)"
+      },
+      {
+        "source": "reports/test-e2e/goal-2026-05-23/phase-l/L1.1-tpe-senangpay-findings.json (concept_b_physical_tpe_at_kiosk)",
+        "quote": "Le Cayenne kiosk physical card-payment terminal driven by Electron app. ... CLAUDE.md §8 + V1 Cloud-Prep insights + Le Cayenne V1 LOCAL state: physical kiosk TPE flow ... the kiosk's Electron app drives the local TPE and posts to /payment-confirm."
+      }
+    ],
+    "consequence_for_severity": "Electron 28+ on Windows = Chromium V8 ≥120 + Blink rendering. All -webkit- properties work. All modern features (aspect-ratio, gap, focus-visible, @layer, scrollbar-color, line-clamp) work. iPad Safari URL-bar 100vh problem DOES NOT apply (Electron has no URL bar in --kiosk mode). iOS-specific quirks (Web Share API, ITP, FCM push) DO NOT apply. So most CSS findings drop from P0/P1 to INFO/P3. The Safari portion of the task becomes 'future-facing if owner ever deploys to iPad Safari', which is a CLOUD-PREP backlog item, not V1.",
+    "remaining_runtime_targets_v1": {
+      "kiosk_borne": "Windows + Electron (Chromium ≥120 in practice). Single browser engine, controlled.",
+      "pos_caisse": "Chromium desktop (Chrome confirmed primary per task spec + V5 design tokens). May also run in any modern browser per CLAUDE.md §6 surfaces list.",
+      "kds_screen": "Desktop browser (any) — operator chooses. Per CLAUDE.md §6 'KDS: desktop browser (any)'. In practice Chromium.",
+      "oss_customer_wall": "Public TV wall — any browser. WakeLock guard in PreparingAndReadyComponent.vue:198 already feature-detects Safari iOS <16.4 gap.",
+      "admin": "Desktop browser + mobile responsive. Multi-browser exposure higher here than at kiosk/POS — Firefox + Safari users plausible."
+    },
+    "what_DOES_warrant_safari_audit_in_v1": "Admin surfaces (manager/staff backoffice). Per CLAUDE.md §6, /admin/* + Vuex admin store + management dashboards must work on Safari macOS + Firefox desktop. POS_SIMULATION_HARDWARE production-boot-guard ensures POS itself is Chromium-primary, but admin BO is opened from random staff devices. Specifically the apexcharts in `app.css:656-660` and the `db-card-filter-select appearance-none` in `app.css:175` are admin-surface concerns."
+  },
+
+  "edge_cases_audited": [
+    {
+      "id": "L4-Q1",
+      "name": "line-clamp Firefox compatibility (task spec claims Firefox needs -moz-line-clamp)",
+      "verdict": "FALSE POSITIVE — task spec wrong",
+      "evidence": "Task spec claims 'Firefox needs -moz-line-clamp'. Reality: `-moz-line-clamp` does not exist as a CSS property. Firefox 68+ (July 2019) implemented `-webkit-line-clamp` under the WebKit alias for cross-browser compat (MDN compat data + Bugzilla #1232992). All shipping Firefox versions render the 11 grep hits correctly: resources/css/pos-v5.css:477, resources/css/foundations/pos-v5-tokens.css:245, KioskUpsellComponent.vue:414, KioskCategoriesComponent.vue:1035/1094/1227, ItemComponent.vue:1599, StockRuptureDashboardComponent.vue:642, KdsOrderLine.vue:164/202. The standard CSS `line-clamp` shorthand (no prefix) exists in CSS Overflow Module L3 but Browser Support is partial — Chrome 113+, Safari 17.4+, Firefox 124+. RECOMMENDATION (P3/INFO): add `line-clamp: 2;` alongside `-webkit-line-clamp: 2;` for future-proofing when CSS Overflow L3 ships universally; current code works everywhere shipping today.",
+      "severity": "INFO",
+      "files": [
+        "resources/css/pos-v5.css:476-480",
+        "resources/css/foundations/pos-v5-tokens.css:244-249",
+        "resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue:163-167 + 201-205",
+        "resources/js/components/admin/pos/ItemComponent.vue:1598-1601",
+        "resources/js/components/admin/stock/StockRuptureDashboardComponent.vue:641-645",
+        "resources/js/components/frontend/kiosk/KioskCategoriesComponent.vue:1034-1039 + 1093-1099 + 1226-1232",
+        "resources/js/components/frontend/kiosk/KioskUpsellComponent.vue:413-417"
+      ],
+      "ship_blocker": false
+    },
+    {
+      "id": "L4-Q2",
+      "name": "position: sticky Safari -webkit- prefix",
+      "verdict": "FALSE POSITIVE — task spec wrong",
+      "evidence": "Task spec says 'Safari needs -webkit-prefix' for `position: sticky`. Reality: Safari dropped the `-webkit-sticky` requirement in version 13 (Sept 2019). All current Safari + iOS Safari accept unprefixed `position: sticky`. The 8 grep hits — app.css:541, pos-v5.css:557, PosComponent.vue:4806, ItemComponent.vue:1690, ComposerVersionConflictBanner.vue:44, KdsOrderCard.vue:662, KitchenDisplaySystemComponent.vue:2485 — all render correctly on Safari 13+. Modern caniuse: 99.7% global support unprefixed.",
+      "severity": "INFO",
+      "ship_blocker": false
+    },
+    {
+      "id": "L4-Q3",
+      "name": "backdrop-filter -webkit- prefix discipline (Safari 9+ requires -webkit-)",
+      "verdict": "PARTIAL — kiosk components clean; POS V5 missing -webkit- pair",
+      "evidence": "Kiosk components consistently apply BOTH unprefixed + -webkit- (verified at KioskIdleScreenComponent.vue:572-573, 747-748, 798-799 / KioskInactivityOverlayComponent.vue:182-183 / KioskAppComponent.vue:1215-1216, 1499-1500 / ds/KsModal.vue:308-309 — 9 sites, all paired). POS V5 components are unpaired: pos-v5.css:456 / 835 / 938 / 1068 all have `backdrop-filter: blur(...)` without `-webkit-backdrop-filter` companion. Safari ≤17 (and current iOS Safari) silently drop the blur — falls back to solid `rgba()` overlay (visually flatter but functional). Impact: on Electron Chromium V1 wrapper this is invisible (Chromium supports unprefixed). On macOS Safari admin sessions opening POS this loses blur effect on PaymentComponent modal scrim + 3 other surfaces. Cosmetic only — NO interaction blocker.",
+      "severity": "P3",
+      "files": [
+        "resources/css/pos-v5.css:456 (.pos-v5-cart__backdrop or modal scrim — verify class)",
+        "resources/css/pos-v5.css:835 (.pos-v5-modal__overlay scope)",
+        "resources/css/pos-v5.css:938 (.pos-v5-payment-overlay scope)",
+        "resources/css/pos-v5.css:1068 (.pos-v5-z-overlay with !important — Z-report modal scrim)"
+      ],
+      "remediation_recommended": "Add `-webkit-backdrop-filter: blur(2px);` line before each existing `backdrop-filter:` line. ~5 LOC. Not in frozen-zone (pos-v5.css is design tokens, not PaymentComponent.vue). Owner-gate not required.",
+      "ship_blocker": false
+    },
+    {
+      "id": "L4-Q4",
+      "name": "aspect-ratio Safari 15+ adoption",
+      "verdict": "VERIFIED CITED — safe on V1 targets",
+      "evidence": "5 grep hits: pos-v5.css:390 (4/3 product thumb), SkeletonGrid.vue:22 (4/3.4 skeleton), FloorplanComponent.vue:404 (1/1.1 table tile — DISABLED in V1 per V1 Dine-in feature flag), ItemComponent.vue:1556 (4/3). Safari 15+ (Sept 2021) supports unprefixed. iOS 15+ same. Electron 13+ supports. ALL V1 target browsers support. Fallback for Safari ≤14: image collapses to natural width × 0 — visual glitch — but Le Cayenne V1 Electron Chromium ≥120 is not Safari ≤14. No deployed risk. Admin BO macOS Safari users on Safari ≤14 would see broken thumbs — Safari ≤14 share is now <0.3% globally and effectively zero on macOS auto-update. Acceptable.",
+      "severity": "INFO",
+      "ship_blocker": false
+    },
+    {
+      "id": "L4-Q5",
+      "name": "scroll-snap Safari 11+ + scroll-snap-type x mandatory",
+      "verdict": "VERIFIED CITED",
+      "evidence": "2 grep hits: ds/KsCartBottomSheet.vue:290 (scroll-snap-type: x mandatory) + 317 (scroll-snap-align: start). Safari 11+ supports unprefixed (Sept 2017). iOS 11+ same. All V1 targets safe. Companion `-webkit-overflow-scrolling: touch` correctly applied at line 291 for iOS momentum scrolling.",
+      "severity": "INFO",
+      "ship_blocker": false
+    },
+    {
+      "id": "L4-Q6",
+      "name": ":focus-visible Firefox 85+ + Safari 15.4+",
+      "verdict": "VERIFIED CITED",
+      "evidence": "19+ grep hits across pos-a11y.css:26-28, foundations/pos-v5-tokens.css:229, foundations/cv1-tokens.css:154, kiosk-wizard.css:470-472, kiosk/tokens-aaa.css:76-81, KioskIdleScreenComponent.vue:583/591/601/622/779/814. Safari ≥15.4 (Mar 2022), Firefox ≥85 (Jan 2021) both ship :focus-visible unprefixed. Electron ≥18 same. ALL V1 targets safe. Fallback for Safari ≤15.3: `:focus-visible` selector simply does not match → no focus ring shown — keyboard-nav users on old Safari lose the visible focus indicator. Risk: a11y regression for owners on Safari ≤15.3 (≤2% global share). Acceptable. NOTE: codebase already applies belt-and-braces — some sites have `:focus` + `:focus-visible` paired so old browsers still get a ring (verify KioskIdleScreenComponent.vue:583 actually has both — line 591 has the visible variant only).",
+      "severity": "INFO",
+      "ship_blocker": false
+    },
+    {
+      "id": "L4-Q7",
+      "name": "gap in flexbox — Safari 14.1+ / Firefox 63+",
+      "verdict": "VERIFIED CITED",
+      "evidence": "15+ grep hits in pos-v5.css alone (lines 70, 84, 128, 137, 143, 158, 244, 264, 348, 428, 465, 487, 587, 657, 706). Safari 14.1 (Apr 2021) added flex gap; Firefox 63 (Oct 2018) ditto. ALL V1 targets safe. Safari ≤14.0 would render adjacent flex children touching (cosmetic loss only — no layout break). <1% global Safari share is ≤14.0.",
+      "severity": "INFO",
+      "ship_blocker": false
+    },
+    {
+      "id": "L4-Q8",
+      "name": "subgrid — Firefox only stable",
+      "verdict": "NOT USED — zero hits",
+      "evidence": "grep `subgrid` returns 0 hits in resources/. No risk.",
+      "severity": "INFO",
+      "ship_blocker": false
+    },
+    {
+      "id": "L4-Q9",
+      "name": "iOS 100vh problem (URL bar consumes viewport) — 15 kiosk components use 100vh, ZERO use dvh/svh/lvh",
+      "verdict": "FUTURE-FACING ONLY — not a V1 ship blocker (Electron full-screen has no URL bar)",
+      "evidence": "Grep `100vh|height: 100vh` in resources/js/components/frontend/kiosk/ returns 15 occurrences: KioskIdleScreenComponent.vue:323, KioskCartComponent.vue:704, KioskWizardComponent.vue:2391, KioskWaitingComponent.vue:529, KioskLoginComponent.vue:149 (min-height), KioskPaymentComponent.vue:903, KioskUpsellComponent.vue:290, KioskCashInstructionComponent.vue:143 (min-height), KioskConfirmationComponent.vue:455 (min-height), KioskCategoriesComponent.vue:770, KioskErrorLayoutComponent.vue:71 (min-height), KioskAppComponent.vue:1263, KioskLoyaltyComponent.vue:648 (min-height), ds/KsModal.vue:217+231. Grep `100dvh|100svh|100lvh` in same scope returns ZERO. CSS dynamic-viewport units (dvh = dynamic, svh = small, lvh = large) shipped Safari 15.4 (Mar 2022) + Chrome 108 + Firefox 101. If kiosk EVER deployed to iPad Safari mobile tab (not Electron, not Guided Access PWA-standalone, not WebView), the URL bar collapse/expand would cause 50-100px content cropping or scroll-jank. RECONCILIATION: per `docs/PROJECT_CONTINUITY_AND_VISION.md:51` + `docs/DESIGN_BRIEF_KIOSK_2026.md:39` + L1.1 evidence, V1 kiosk = Electron Windows full-screen. Electron `--kiosk` mode has no URL bar → 100vh = full window height → no problem. NF525 critical: no business-logic breakage either way (cosmetic only). RECOMMENDATION (V1.0.X cloud-prep backlog): if owner ever exposes /kiosk/idle to iPad Safari (e.g. trial mode at trade show), convert 15 sites to `min(100dvh, 100vh)` or pure `100dvh` (graceful Safari ≤15.3 fallback). ~30 LOC across 15 files. NOT a V1 ship blocker. Note: POS V5 already uses `100dvh` at pos-v5.css:29/540/562/944 + PosOrdersTrackerComponent.vue:979 — pattern exists, just not propagated to kiosk.",
+      "severity": "P3 (was P0 in task spec assumption — DOWNGRADED per deployment-context discriminator)",
+      "files": [
+        "resources/js/components/frontend/kiosk/KioskIdleScreenComponent.vue:323",
+        "resources/js/components/frontend/kiosk/KioskCartComponent.vue:704",
+        "resources/js/components/frontend/kiosk/KioskWizardComponent.vue:2391",
+        "resources/js/components/frontend/kiosk/KioskWaitingComponent.vue:529",
+        "resources/js/components/frontend/kiosk/KioskLoginComponent.vue:149",
+        "resources/js/components/frontend/kiosk/KioskPaymentComponent.vue:903",
+        "resources/js/components/frontend/kiosk/KioskUpsellComponent.vue:290",
+        "resources/js/components/frontend/kiosk/KioskCashInstructionComponent.vue:143",
+        "resources/js/components/frontend/kiosk/KioskConfirmationComponent.vue:455",
+        "resources/js/components/frontend/kiosk/KioskCategoriesComponent.vue:770",
+        "resources/js/components/frontend/kiosk/KioskErrorLayoutComponent.vue:71",
+        "resources/js/components/frontend/kiosk/KioskAppComponent.vue:1263",
+        "resources/js/components/frontend/kiosk/KioskLoyaltyComponent.vue:648",
+        "resources/js/components/frontend/kiosk/ds/KsModal.vue:217",
+        "resources/js/components/frontend/kiosk/ds/KsModal.vue:231"
+      ],
+      "ship_blocker": false,
+      "deployment_context_dependency": "P0 if owner ever ships kiosk to iPad Safari mobile tab. P3 if Electron Windows / iPad Guided-Access standalone / WebView wrapper. Currently P3 per V1 Electron contract."
+    },
+    {
+      "id": "L4-Q10",
+      "name": "PWA / apple-mobile-web-app-capable / viewport-fit=cover missing in master.blade.php",
+      "verdict": "CONFIRMED MISSING — V1 risk only if owner pivots to iPad-standalone",
+      "evidence": "resources/views/master.blade.php:8 has only `<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">`. NO `apple-mobile-web-app-capable=yes`, NO `apple-touch-icon`, NO `theme-color`, NO `viewport-fit=cover`, NO `<link rel=\"manifest\">`. Same gap in resources/views/admin-pos-v4.blade.php:23. Zero PWA manifest file in repo (verified via `find public -name manifest*` returns only `public/js/manifest.js` which is the Laravel Mix asset manifest, NOT a PWA manifest). Consequence: iPad Safari 'Add to Home Screen' for /kiosk/idle would launch in mobile-tab mode (URL bar visible → triggers Q9 issue), not full-screen standalone. iPad Pro 11\"/12.9\" with notch loses safe-area-inset handling without `viewport-fit=cover` → notch may overlap top content. For V1 Electron Windows kiosk: ZERO impact (no iPad). For future iPad pivot: cluster of fixes needed together (manifest + apple-meta + viewport-fit + safe-area-inset + dvh conversion).",
+      "severity": "P3 V1 / P1 V2 (cloud + iPad)",
+      "files": [
+        "resources/views/master.blade.php:8",
+        "resources/views/admin-pos-v4.blade.php:23",
+        "(missing) public/manifest.json",
+        "(missing) apple-touch-icon assets"
+      ],
+      "remediation_recommended": "Defer to V1.0.X cloud-prep backlog. If owner enables iPad Safari standalone mode: (a) add public/manifest.json with display=fullscreen + start_url=/kiosk/idle + theme_color, (b) add apple-mobile-web-app-capable=yes + apple-mobile-web-app-status-bar-style=black-translucent + apple-touch-icon, (c) change viewport meta to include viewport-fit=cover, (d) wrap all 100vh in 100dvh per Q9, (e) add env(safe-area-inset-*) padding to KioskAppComponent.vue root.",
+      "ship_blocker": false
+    },
+    {
+      "id": "L4-Q11",
+      "name": "navigator.serviceWorker.getRegistrations() unguarded in NotificationComponent.vue",
+      "verdict": "CONFIRMED — feature-detect gap in admin notification settings save flow",
+      "evidence": "resources/js/components/admin/settings/Notification/NotificationComponent.vue:200 calls `navigator.serviceWorker.getRegistrations()` directly inside the `.then` of the save flow. No `if ('serviceWorker' in navigator)` guard. Failure modes: (a) HTTP context (not localhost) → `navigator.serviceWorker` is undefined → `.getRegistrations()` throws TypeError → admin form save silently breaks (unhandled in .catch). (b) Firefox private mode → ServiceWorker disabled → same TypeError. (c) Safari iOS pre-11.3 → ServiceWorker absent → same TypeError. Used in admin notification settings (FCM provisioning page) which is a one-time admin-only action — low impact frequency. But the error surface = silent JS console error, no user feedback. Pattern is inconsistent with rest of codebase which uses defensive guards (e.g. PreparingAndReadyComponent.vue:198-202 wraps `navigator.wakeLock` correctly, useKioskTheme.js:134 wraps `matchMedia` correctly).",
+      "severity": "P2",
+      "files": [
+        "resources/js/components/admin/settings/Notification/NotificationComponent.vue:200"
+      ],
+      "remediation_recommended": "Replace `navigator.serviceWorker.getRegistrations().then(...)` with `if ('serviceWorker' in navigator && typeof navigator.serviceWorker.getRegistrations === 'function') { navigator.serviceWorker.getRegistrations().then(...).catch(() => {}); }`. ~3 LOC. Frozen-zone-safe (admin Notification settings is not in CLAUDE.md §7).",
+      "ship_blocker": false
+    },
+    {
+      "id": "L4-Q12",
+      "name": "navigator.share Web Share API usage (Safari iOS only)",
+      "verdict": "NOT USED — zero risk",
+      "evidence": "grep `navigator.share` in resources/ returns 0 hits. No code paths invoke the Web Share API. No Safari-iOS-only feature dependency.",
+      "severity": "INFO",
+      "ship_blocker": false
+    },
+    {
+      "id": "L4-Q13",
+      "name": "IndexedDB Safari iOS limits + private browsing fallback",
+      "verdict": "VERIFIED CITED — defensive fallback chain in place",
+      "evidence": "resources/js/helpers/kioskMenuCache.js:17-67 (idb-keyval) catches IndexedDB unavailable → falls back to localStorage → falls back to no-op. Code comment line 24: 'Falls back to localStorage if IndexedDB is unavailable (e.g. private mode iOS)'. resources/js/helpers/posOfflineQueueDb.js:5,17-37 (idb-keyval) same pattern — comment explicitly says 'private browsing, Safari ITP'. resources/js/helpers/kioskReceiptPersistence.js:33 mentions 'incognito Safari'. All 3 IndexedDB helpers handle Safari ITP + iOS private mode gracefully. ZERO risk from Safari IndexedDB quirks.",
+      "severity": "INFO",
+      "ship_blocker": false
+    },
+    {
+      "id": "L4-Q14",
+      "name": "AudioContext webkit-prefix fallback for OSS chime",
+      "verdict": "VERIFIED CITED — feature-detected correctly",
+      "evidence": "resources/js/components/admin/orderStatusScreen/PreparingAndReadyComponent.vue:122 `const Ctor = window.AudioContext || window.webkitAudioContext;`. Correctly falls back to webkit alias for Safari ≤14. Line 349 handles `ctx.state === 'suspended'` (Safari behavior after screen-saver wake). Solid pattern.",
+      "severity": "INFO",
+      "ship_blocker": false
+    },
+    {
+      "id": "L4-Q15",
+      "name": "navigator.wakeLock feature-detect for OSS TV wall",
+      "verdict": "VERIFIED CITED — feature-detected correctly",
+      "evidence": "resources/js/components/admin/orderStatusScreen/PreparingAndReadyComponent.vue:200-202 `if (!('wakeLock' in navigator) || typeof navigator.wakeLock?.request !== 'function') return;`. Graceful degrade on Safari iOS <16.4 + Firefox <126. Comment line 73 documents this gap. Solid pattern.",
+      "severity": "INFO",
+      "ship_blocker": false
+    },
+    {
+      "id": "L4-Q16",
+      "name": "matchMedia listener dual-binding for old Safari",
+      "verdict": "VERIFIED CITED — addEventListener + addListener fallback",
+      "evidence": "resources/js/composables/useKioskTheme.js:142-146 `if (typeof mediaQueryList.addEventListener === 'function') { ... } else if (typeof mediaQueryList.addListener === 'function') { mediaQueryList.addListener(mediaListener); }`. Comment line 141 explicit: 'addEventListener sur Chrome/Firefox modernes ; addListener pour Safari ancien'. Defensive against Safari <14 prefers-color-scheme listener API drift. Solid pattern.",
+      "severity": "INFO",
+      "ship_blocker": false
+    },
+    {
+      "id": "L4-Q17",
+      "name": "appearance: none without -webkit-appearance: none pair (pos-v5.css)",
+      "verdict": "PARTIAL — pos-v5.css uses unprefixed only",
+      "evidence": "pos-v5.css:197, 272, 363, 675 use `appearance: none;` unprefixed only. Standard `appearance` shipped Safari 15.4 (Mar 2022) + Firefox 80+. Safari ≤15.3 falls back to native control rendering. For input[type=number] + button native styling reset, this means old Safari users see default chrome (rounded corners, inset shadow). For V1 Electron Chromium ≥120 wrapper: no risk. For admin BO macOS Safari ≤15.3: cosmetic regression. App.css:643 + 648 correctly pair `-webkit-appearance: none` + `-moz-appearance: textfield` for number inputs globally — pattern exists, just not propagated to pos-v5.css. RECOMMENDATION (P3): add `-webkit-appearance: none;` before each `appearance: none;` in pos-v5.css. ~4 LOC.",
+      "severity": "P3",
+      "files": [
+        "resources/css/pos-v5.css:197",
+        "resources/css/pos-v5.css:272",
+        "resources/css/pos-v5.css:363",
+        "resources/css/pos-v5.css:675"
+      ],
+      "ship_blocker": false
+    },
+    {
+      "id": "L4-Q18",
+      "name": "scrollbar-color Firefox-specific + Safari 18.2 only",
+      "verdict": "VERIFIED CITED — cosmetic-only on Safari",
+      "evidence": "5 hits: pos-v5.css:251, app.css:305, KioskCategoriesComponent.vue:968, ds/KsCartBottomSheet.vue:293, KdsOrderCard.vue:584. Firefox 64+ supports (Dec 2018). Safari only since 18.2 (Dec 2024). On iPad Safari ≤17 + macOS Safari ≤17: scrollbar reverts to default chrome (gray native scrollbar instead of branded color). Cosmetic-only — no interaction blocker. The companion `scrollbar-width: thin` at pos-v5.css:250 also Firefox-only / Safari 18.2+. For V1 Electron Chromium wrapper: works perfectly. For admin BO Safari users: native scrollbars instead of branded — acceptable cosmetic fallback.",
+      "severity": "INFO",
+      "ship_blocker": false
+    },
+    {
+      "id": "L4-Q19",
+      "name": "@layer CSS Cascade Layers — Safari 15.4+ / Firefox 97+",
+      "verdict": "VERIFIED CITED",
+      "evidence": "3 hits in app.css:6 (@layer base), 87 (@layer components), 624 (@layer utilities). Safari ≥15.4 (Mar 2022) + Firefox ≥97 (Feb 2022) + Chrome ≥99 all support. ALL V1 targets safe. Tailwind CSS uses this pattern by default — universal modern adoption.",
+      "severity": "INFO",
+      "ship_blocker": false
+    },
+    {
+      "id": "L4-Q20",
+      "name": "Pointer events vs touch events (mobile differences)",
+      "verdict": "VERIFIED — both patterns used safely",
+      "evidence": "Touch: KioskIdleScreenComponent.vue:128/146 (@touchstart.stop), KioskAppComponent.vue:6 + 337 (touchstart listener with {passive:true} for idle timer reset). Pointer: PreparingAndReadyComponent.vue:141 (pointerdown one-shot for AudioContext unlock — covers mouse+touch+pen). Touch events fire on iOS Safari + Android. Pointer events fire on all modern browsers (Safari 13+). Codebase uses each in correct context. No browser-specific fallback gap.",
+      "severity": "INFO",
+      "ship_blocker": false
+    },
+    {
+      "id": "L4-Q21",
+      "name": "Playwright config only Chromium — zero empirical Safari/Firefox coverage",
+      "verdict": "CONFIRMED EMPIRICAL GAP — code-static audit only",
+      "evidence": "playwright.config.js:71-76 has single `name: 'chromium'` project. tests/mobile-e2e/playwright.config.js comment explicit: 'WebKit not installed locally — Chromium suffices for visual + data parity'. tests/web-e2e/playwright.config.js + .claude/worktrees/* same Chromium-only pattern. Zero browser-compat sentinel tests (verified `find tests -name *Browser* -o -name *Safari* -o -name *Firefox*` returns 0). CSS findings in this audit are STATIC ONLY — no runtime verification on Safari (iPad or macOS) nor on Firefox exists in this repo. RECOMMENDATION: BrowserStack subscription V1.0.X (per task spec) for one cross-browser CI run pre-cloud-cutover.",
+      "severity": "INFO with gap-note",
+      "files": [
+        "playwright.config.js:71-76",
+        "tests/mobile-e2e/playwright.config.js (Chromium-only with explicit comment)",
+        "tests/web-e2e/playwright.config.js"
+      ],
+      "remediation_recommended": "(a) Add `name: 'webkit'` + `name: 'firefox'` projects to playwright.config.js + `npx playwright install webkit firefox` in CI. (b) Wire one cross-browser sentinel spec that loads /kiosk/idle + /admin/pos + /kds + /admin/order-status-screen, captures screenshots, asserts no DOM error. (c) Run on V1.0.X pre-cloud + at owner gate. Mid-effort: ~1 day install + write + green. ZERO source-code change needed.",
+      "ship_blocker": false
+    }
+  ],
+
+  "passing_patterns_attested": [
+    "AudioContext webkit-prefix fallback for OSS chime (Safari ≤14 + screen-saver wake) — PreparingAndReadyComponent.vue:122/349",
+    "navigator.wakeLock feature-detection + Safari iOS <16.4 graceful degrade — PreparingAndReadyComponent.vue:198-202 + comment block 67-74",
+    "matchMedia addEventListener + addListener dual-binding for Safari <14 — useKioskTheme.js:142-146",
+    "IndexedDB → localStorage → no-op fallback chain for Safari ITP + iOS private mode — kioskMenuCache.js:17-67 + posOfflineQueueDb.js:8-37 + kioskReceiptPersistence.js:33",
+    "-webkit-tap-highlight-color: transparent consistently applied to kiosk touch surfaces — 9 sites verified (KioskCart, KioskApp, KsButton, KsChip, KsCartBottomSheet, KsThemeToggle, KioskStepFritesStyle, KsCard)",
+    "-webkit-overflow-scrolling: touch for iOS momentum scrolling — pos-v5.css:249 + kiosk-fallback.css:101 + KioskWizardComponent.vue:2752 + KioskConfirmationComponent.vue:680 + KsCartBottomSheet.vue:291",
+    "-webkit-appearance: none + -moz-appearance: textfield pair on number inputs globally — app.css:641-649",
+    "backdrop-filter / -webkit-backdrop-filter consistently paired in kiosk components — 9 sites verified (KioskIdleScreen, KioskInactivityOverlay, KioskApp, KsModal)",
+    "Defensive try/catch around all localStorage accesses (handles iOS private mode QuotaExceededError + null storage) — KioskAppComponent.vue:445/464 + KioskConfirmationComponent.vue:331 + KioskPaymentComponent.vue:818/830/887"
+  ],
+
+  "browser_targets_actual_v1": {
+    "kiosk_borne": {
+      "wrapper": "Electron on Windows (full-screen --kiosk mode)",
+      "rendering_engine": "Chromium ≥120 (Blink + V8)",
+      "url_bar": "absent",
+      "browser_specific_risks": "NONE — single controlled engine",
+      "source": "docs/PROJECT_CONTINUITY_AND_VISION.md:14,51-53 + docs/DESIGN_BRIEF_KIOSK_2026.md:39 + L1.1 finding"
+    },
+    "pos_caisse": {
+      "wrapper": "Browser tab (primarily Chrome desktop per V5 design)",
+      "rendering_engine": "Blink (Chrome/Edge) primary; Firefox/Safari possible but not primary",
+      "browser_specific_risks": "LOW — POS_SIMULATION_HARDWARE prod-boot-guard limits experiment surface; PaymentComponent is frozen-zone (CLAUDE.md §7); backdrop-filter cosmetic fallback in pos-v5.css (Q3)",
+      "source": "CLAUDE.md §6 surfaces list + task spec"
+    },
+    "kds_screen": {
+      "wrapper": "Browser tab on operator-chosen device",
+      "rendering_engine": "Chromium primary in practice; cross-browser exposure possible",
+      "browser_specific_risks": "LOW — line-clamp Q1 false-positive cleared; sticky banners Q2 false-positive cleared",
+      "source": "CLAUDE.md §6 + KdsOrderLine.vue + KitchenDisplaySystemComponent.vue"
+    },
+    "oss_customer_wall": {
+      "wrapper": "Public TV wall — browser tab",
+      "rendering_engine": "Any modern browser",
+      "browser_specific_risks": "LOW — wakeLock + AudioContext both feature-detected; visible flash + chime gracefully degrades to flash-only on Safari iOS <16.4",
+      "source": "PreparingAndReadyComponent.vue:67-74 + 197-202"
+    },
+    "admin_bo": {
+      "wrapper": "Desktop browser + mobile responsive",
+      "rendering_engine": "ANY (Firefox, Safari, Chrome, Edge — staff devices)",
+      "browser_specific_risks": "MEDIUM — broadest cross-browser exposure of any surface. Notification settings serviceWorker gap (Q11) lives here. apexcharts third-party tooltip override in app.css:656-660 may render differently across engines. db-card-filter-select appearance-none in app.css:175 acceptable per global app.css pair (app.css:643).",
+      "source": "CLAUDE.md §6 + NotificationComponent.vue"
+    }
+  },
+
+  "verdict": {
+    "headline": "AMBER-CLEAR for V1 Le Cayenne (Electron Windows kiosk + Chromium-primary POS/KDS/OSS); FUTURE-FACING gaps for V2/cloud iPad Safari pivot. ZERO ship blockers. ONE P2 (NotificationComponent.vue:200 unguarded serviceWorker) recommended for V1.0.X chip-away. Code-static audit only — zero empirical Safari/Firefox runtime evidence exists in this repo (Q21).",
+    "p0_count": 0,
+    "p1_count": 0,
+    "p2_count": 1,
+    "p3_count": 4,
+    "info_count": 16,
+    "false_positive_count_in_task_spec": 2,
+    "ship_blocker_count": 0,
+    "v1_ship_recommendation": "GO — current Electron Windows + Chromium contract makes Safari/Firefox compat secondary. Recommend (a) fix Q11 P2 inline (3 LOC), (b) add Q3 + Q17 P3 -webkit- pairs to pos-v5.css (~9 LOC, frozen-zone-safe), (c) defer Q9 + Q10 dvh/PWA cluster to V1.0.X cloud-prep backlog under owner gate.",
+    "cloud_prep_v1_0_x_backlog": [
+      "Q9 — convert 15 kiosk 100vh sites to 100dvh fallback (only if iPad Safari deployment becomes plan)",
+      "Q10 — PWA manifest + apple-mobile-web-app-capable + viewport-fit=cover + apple-touch-icon (only if iPad Safari deployment)",
+      "Q21 — add WebKit + Firefox Playwright projects + cross-browser sentinel spec (PRE-cloud-cutover regardless)"
+    ]
+  },
+
+  "top_3_browser_compat_concerns": [
+    {
+      "rank": 1,
+      "concern": "Zero empirical Safari/Firefox testing exists in repo (Q21). All findings here are static-only. BrowserStack run before V1.0.X cloud cutover is the single highest-leverage gap-closer.",
+      "owner_action": "Approve BrowserStack subscription OR install playwright webkit + firefox locally + add 1 cross-browser sentinel spec."
+    },
+    {
+      "rank": 2,
+      "concern": "15 kiosk components hard-code 100vh, zero use dynamic viewport units. Safe under V1 Electron Windows contract. Becomes P0 immediately if owner ever ships kiosk to iPad Safari (cloud / trade-show demo / pilot). PWA meta-tags (Q10) needed in same cluster.",
+      "owner_action": "Confirm 'V1 kiosk = Electron Windows only, no iPad pivot for 6+ months' OR fund Q9+Q10 dvh+PWA conversion sprint (~80 LOC, 1 day)."
+    },
+    {
+      "rank": 3,
+      "concern": "NotificationComponent.vue:200 navigator.serviceWorker.getRegistrations() unguarded — silently breaks admin notification settings save on HTTP context, Firefox private mode, Safari iOS pre-11.3. Low frequency (admin-only, one-time provisioning) but inconsistent with codebase's otherwise-solid feature-detection discipline.",
+      "owner_action": "Approve 3-LOC inline fix (wrap in `if ('serviceWorker' in navigator)` guard + .catch handler). Frozen-zone-safe."
+    }
+  ],
+
+  "ipad_safari_priority_risks": {
+    "headline": "Hypothetical risks only — Le Cayenne V1 deployment is Electron Windows, NOT iPad Safari. These materialize only if owner pivots target device.",
+    "risk_cluster": [
+      {
+        "rank": 1,
+        "risk": "URL bar 100vh cropping (Q9) — 15 kiosk surfaces lose 50-100px of visible content on landscape→portrait + URL-bar-show transitions. UI looks broken under thumb zone on iPad portrait 1024×1366.",
+        "mitigation_cost": "~30 LOC viewport-unit conversion + 1 PWA manifest + 4 apple-meta tags + 5 safe-area-inset padding sites = ~80 LOC total, 1 day."
+      },
+      {
+        "rank": 2,
+        "risk": "Notch / Dynamic Island overlap on iPad Pro 11\"/12.9\" without viewport-fit=cover (Q10). Top brand header may overlap notch zone.",
+        "mitigation_cost": "Bundled with Q9 mitigation cluster."
+      },
+      {
+        "rank": 3,
+        "risk": "Web Share API (Q12) NOT used — no Safari iOS social-share regression risk. PWA install prompt (Q10) NOT wired — Safari iOS shows generic 'Add to Home Screen' Help UI instead of branded install flow. Low priority cosmetic gap.",
+        "mitigation_cost": "Bundled with Q10 PWA cluster."
+      }
+    ]
+  },
+
+  "evidence_chain_freshness": {
+    "head_sha": "041c98b2a696017a66805fb1b1b18ae40b11b093",
+    "branch": "heal/cms-pr1-quickwins-2026-05-18",
+    "audit_method": "code-static grep + read",
+    "audit_runtime_evidence": "NONE — Chromium-only Playwright per Q21. Owner should NOT interpret AMBER-CLEAR verdict as 'tested on Safari/Firefox' — it is 'no obvious source-code anti-pattern found that would break on Safari/Firefox per current source state'.",
+    "frozen_zone_diff": "ZERO modifications proposed in frozen zones (CLAUDE.md §7). All P2/P3 recommendations target pos-v5.css + NotificationComponent.vue, both auditable.",
+    "nf525_chain_impact": "NONE — CSS + JS feature-detection changes do not touch fiscal_sequence_no, audit_logs HMAC chain, composition_snapshot, pricing SSOT, or any NF525 invariant per CLAUDE.md §8."
+  }
+}

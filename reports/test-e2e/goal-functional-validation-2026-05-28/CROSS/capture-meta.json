@@ -1,0 +1,319 @@
+{
+  "start_ts": "2026-05-28T17:12:28.494Z",
+  "spec": "goal-functional-cross-2026-05-28.spec.js",
+  "captures": [
+    {
+      "slug": "S1-01-pos-loaded",
+      "file": "S1-01-pos-loaded.png",
+      "ts": "2026-05-28T17:12:50.183Z",
+      "url": "http://localhost:8000/admin/pos"
+    },
+    {
+      "slug": "S1-02-kds-initial",
+      "file": "S1-02-kds-initial.png",
+      "ts": "2026-05-28T17:12:57.141Z",
+      "url": "http://localhost:8000/admin/kitchen-display-system"
+    },
+    {
+      "slug": "S1-03-kds-order-visible",
+      "file": "S1-03-kds-order-visible.png",
+      "ts": "2026-05-28T17:13:12.217Z",
+      "url": "http://localhost:8000/admin/kitchen-display-system"
+    },
+    {
+      "slug": "S1-04-kds-after-preparing",
+      "file": "S1-04-kds-after-preparing.png",
+      "ts": "2026-05-28T17:13:17.235Z",
+      "url": "http://localhost:8000/admin/kitchen-display-system"
+    },
+    {
+      "slug": "S1-05-kds-after-prepared",
+      "file": "S1-05-kds-after-prepared.png",
+      "ts": "2026-05-28T17:13:20.123Z",
+      "url": "http://localhost:8000/admin/kitchen-display-system"
+    },
+    {
+      "slug": "S1-06-oss-screen",
+      "file": "S1-06-oss-screen.png",
+      "ts": "2026-05-28T17:13:27.944Z",
+      "url": "http://localhost:8000/login"
+    },
+    {
+      "slug": "S2-01-kiosk-idle",
+      "file": "S2-01-kiosk-idle.png",
+      "ts": "2026-05-28T17:13:48.506Z",
+      "url": "http://localhost:8000/kiosk/idle"
+    },
+    {
+      "slug": "S2-02-kds-initial",
+      "file": "S2-02-kds-initial.png",
+      "ts": "2026-05-28T17:13:55.782Z",
+      "url": "http://localhost:8000/admin/kitchen-display-system"
+    },
+    {
+      "slug": "S2-03-kds-delivery-visible",
+      "file": "S2-03-kds-delivery-visible.png",
+      "ts": "2026-05-28T17:14:10.874Z",
+      "url": "http://localhost:8000/admin/kitchen-display-system"
+    },
+    {
+      "slug": "S2-04-oss-delivery",
+      "file": "S2-04-oss-delivery.png",
+      "ts": "2026-05-28T17:14:18.160Z",
+      "url": "http://localhost:8000/admin/order-status-screen"
+    },
+    {
+      "slug": "S2-05-livreur-dashboard",
+      "file": "S2-05-livreur-dashboard.png",
+      "ts": "2026-05-28T17:14:24.462Z",
+      "url": "http://localhost:8000/admin/delivery-boys"
+    }
+  ],
+  "latencies": {
+    "s1_seed_to_db_ms": 798,
+    "s1_pos_to_kds_visible_ms": -1,
+    "s1_kds_bump_accept_to_preparing_ms": 957,
+    "s1_kds_bump_preparing_to_prepared_ms": 814,
+    "s1_oss_total_ms": 7839,
+    "s1_oss_pret_locate_ms": 17,
+    "s2_seed_to_db_ms": 1011,
+    "s2_kiosk_to_kds_visible_ms": -1,
+    "s2_kiosk_to_oss_visible_ms": 7286,
+    "s2_livreur_load_ms": 6299
+  },
+  "scenario1": {
+    "steps": [
+      {
+        "slug": "S1-01-pos-loaded",
+        "file": "S1-01-pos-loaded.png",
+        "ts": "2026-05-28T17:12:50.183Z",
+        "url": "http://localhost:8000/admin/pos"
+      },
+      {
+        "slug": "S1-02-kds-initial",
+        "file": "S1-02-kds-initial.png",
+        "ts": "2026-05-28T17:12:57.141Z",
+        "url": "http://localhost:8000/admin/kitchen-display-system"
+      },
+      {
+        "slug": "S1-03-kds-order-visible",
+        "file": "S1-03-kds-order-visible.png",
+        "ts": "2026-05-28T17:13:12.217Z",
+        "url": "http://localhost:8000/admin/kitchen-display-system"
+      },
+      {
+        "slug": "S1-04-kds-after-preparing",
+        "file": "S1-04-kds-after-preparing.png",
+        "ts": "2026-05-28T17:13:17.235Z",
+        "url": "http://localhost:8000/admin/kitchen-display-system"
+      },
+      {
+        "slug": "S1-05-kds-after-prepared",
+        "file": "S1-05-kds-after-prepared.png",
+        "ts": "2026-05-28T17:13:20.123Z",
+        "url": "http://localhost:8000/admin/kitchen-display-system"
+      },
+      {
+        "slug": "S1-06-oss-screen",
+        "file": "S1-06-oss-screen.png",
+        "ts": "2026-05-28T17:13:27.944Z",
+        "url": "http://localhost:8000/login"
+      }
+    ],
+    "consoleErrors": [
+      {
+        "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "ts": "2026-05-28T17:13:23.647Z"
+      },
+      {
+        "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "ts": "2026-05-28T17:13:23.703Z"
+      },
+      {
+        "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "ts": "2026-05-28T17:13:23.894Z"
+      },
+      {
+        "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "ts": "2026-05-28T17:13:23.918Z"
+      },
+      {
+        "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "ts": "2026-05-28T17:13:23.948Z"
+      },
+      {
+        "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "ts": "2026-05-28T17:13:23.977Z"
+      },
+      {
+        "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "ts": "2026-05-28T17:13:24.003Z"
+      },
+      {
+        "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "ts": "2026-05-28T17:13:24.034Z"
+      },
+      {
+        "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "ts": "2026-05-28T17:13:24.071Z"
+      },
+      {
+        "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "ts": "2026-05-28T17:13:24.097Z"
+      },
+      {
+        "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "ts": "2026-05-28T17:13:24.123Z"
+      },
+      {
+        "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "ts": "2026-05-28T17:13:24.147Z"
+      },
+      {
+        "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "ts": "2026-05-28T17:13:24.176Z"
+      },
+      {
+        "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "ts": "2026-05-28T17:13:24.227Z"
+      },
+      {
+        "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "ts": "2026-05-28T17:13:24.247Z"
+      },
+      {
+        "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "ts": "2026-05-28T17:13:24.284Z"
+      },
+      {
+        "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "ts": "2026-05-28T17:13:24.308Z"
+      },
+      {
+        "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "ts": "2026-05-28T17:13:24.343Z"
+      },
+      {
+        "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "ts": "2026-05-28T17:13:24.477Z"
+      },
+      {
+        "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "ts": "2026-05-28T17:13:24.496Z"
+      },
+      {
+        "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "ts": "2026-05-28T17:13:24.589Z"
+      }
+    ],
+    "networkFails": [],
+    "asserts": {
+      "kds_visible": false,
+      "oss_in_pret": false,
+      "listener_guards": {
+        "order_status_transitions": 2,
+        "domain_events": 2,
+        "guard_fired": true
+      }
+    },
+    "orderId": 123,
+    "queueNumber": "PA5B8",
+    "orderSerial": "GFCROSS-S1-2026-05-28-A-62FC",
+    "compositionSummaryPos": "Menu Frites+Boisson + Frites Seules + Boisson Seule",
+    "bump1": {
+      "ok": true,
+      "order_id": 123,
+      "status": 7,
+      "expected_was": 4
+    },
+    "bump2": {
+      "ok": true,
+      "order_id": 123,
+      "status": 8,
+      "expected_was": 7
+    },
+    "attestation": {
+      "ok": true,
+      "order_id": 123,
+      "order_type": 10,
+      "status": 8,
+      "queue_number": "PA5B8",
+      "order_serial_no": "GFCROSS-S1-2026-05-28-A-62FC",
+      "item_names": [
+        "Menu (Frites + Boisson)",
+        "Frites Seules",
+        "Boisson Seule"
+      ],
+      "order_status_transitions_count": 2,
+      "domain_events_count": 2
+    },
+    "complete": true
+  },
+  "scenario2": {
+    "steps": [
+      {
+        "slug": "S2-01-kiosk-idle",
+        "file": "S2-01-kiosk-idle.png",
+        "ts": "2026-05-28T17:13:48.506Z",
+        "url": "http://localhost:8000/kiosk/idle"
+      },
+      {
+        "slug": "S2-02-kds-initial",
+        "file": "S2-02-kds-initial.png",
+        "ts": "2026-05-28T17:13:55.782Z",
+        "url": "http://localhost:8000/admin/kitchen-display-system"
+      },
+      {
+        "slug": "S2-03-kds-delivery-visible",
+        "file": "S2-03-kds-delivery-visible.png",
+        "ts": "2026-05-28T17:14:10.874Z",
+        "url": "http://localhost:8000/admin/kitchen-display-system"
+      },
+      {
+        "slug": "S2-04-oss-delivery",
+        "file": "S2-04-oss-delivery.png",
+        "ts": "2026-05-28T17:14:18.160Z",
+        "url": "http://localhost:8000/admin/order-status-screen"
+      },
+      {
+        "slug": "S2-05-livreur-dashboard",
+        "file": "S2-05-livreur-dashboard.png",
+        "ts": "2026-05-28T17:14:24.462Z",
+        "url": "http://localhost:8000/admin/delivery-boys"
+      }
+    ],
+    "consoleErrors": [],
+    "networkFails": [],
+    "asserts": {
+      "kds_visible": false,
+      "kds_phone_visible_delivery": false,
+      "oss_visible": false,
+      "oss_phone_leaked": false,
+      "livreur_dashboard_loaded": true
+    },
+    "orderId": 125,
+    "queueNumber": "D156F",
+    "orderSerial": "GFCROSS-S2-2026-05-28-A-3379",
+    "compositionSummaryDelivery": "Menu Frites+Boisson + Frites Seules (DELIVERY)",
+    "phoneColumnsUsed": [],
+    "attestation": {
+      "ok": true,
+      "order_id": 125,
+      "order_type": 5,
+      "status": 4,
+      "queue_number": "D156F",
+      "order_serial_no": "GFCROSS-S2-2026-05-28-A-3379",
+      "item_names": [
+        "Menu (Frites + Boisson)",
+        "Frites Seules"
+      ],
+      "order_status_transitions_count": 0,
+      "domain_events_count": 0
+    },
+    "complete": true
+  },
+  "attestations": {
+    "s1_composition_summary": "Menu (Frites + Boisson) + Frites Seules + Boisson Seule",
+    "s2_composition_summary": "Menu (Frites + Boisson) + Frites Seules"
+  }
+}

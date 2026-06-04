@@ -1,9 +1,27 @@
 # CLAUDE.md
-— FoodKing Master Operating Memory (Claude Code edition, 2026-05-09)
+— FoodKing Master Operating Memory (Claude Code edition, 2026-05-19 post WI-7)
 
 > Cette mémoire opère en **Claude Code natif**. Tout agent Claude qui ouvre une
 > session sur ce projet la lit automatiquement. Elle remplace la version
 > Cursor obsolète.
+
+---
+
+## 0. PREMIERS FICHIERS À LIRE CHAQUE SESSION (cold-start canonique)
+
+> Ajouté 2026-06-03 (/goal Constitution parallèle-safe). Chaîne de lecture
+> déterministe pour que chaque session/agent démarre avec EXACTEMENT la même
+> vision et des voies disjointes :
+
+1. **`CONSTITUTION.md`** (racine) — READ FIRST : vision V1 LOCAL Le Cayenne, statut TPE simulé, règles dures (frozen/NF525/no-cloud/FR), les 5 systèmes + zones partagées.
+2. **`PROJECT_BRAIN.md §2`** — état courant daté (dernier HEAD, dernière convergence).
+3. **`SYSTEM_MAP.md`** — voie d'ownership de chaque système (file:line, disjointes).
+4. **`SYNC_CONTRACT.md`** — contrat synchro temps-réel (canaux/events/payload/dégradation) — si la voie touche la synchro.
+5. **`PARALLEL_PROTOCOL.md`** — règles multi-agents + 5 gabarits d'assignation par système (avant tout lancement parallèle).
+
+CLAUDE.md (ce fichier) reste le règlement opératoire détaillé ; la CONSTITUTION
+en est le résumé d'1 page toujours-lu-en-premier. En cas de doute, CONSTITUTION
++ SYSTEM_MAP priment pour « quelle est ma voie et qu'est-ce que je ne touche pas ».
 
 ---
 
@@ -62,6 +80,113 @@ correctness, coherence, reliability, and quality**.
     que l'UI est correcte. Toujours capturer + analyser.
 12. **No return with broken state** — si un fix échoue, Claude loop pour
     corriger, pas n'est pas livré tant que ce n'est pas vert.
+
+---
+
+## 3bis. Project Context — SSOT + Design + Codebases (anti-drift 2026-05-29)
+
+> Ajouté post `/insights` 2026-05-29 pour prévenir les dérives récurrentes
+> identifiées dans 51 sessions : produits inventés, mauvaise palette,
+> mauvais codebase wirings, mauvaise version POS restaurée.
+
+### Single Source of Truth (SSOT) — menu data
+- **DB items table** = source officielle des produits (45 items V1 Le Cayenne)
+- **`config/menu.php`** = config menu structure si modifié post-reset
+- **`mobile/data/menu.js`** = mirror canonical mobile standalone
+- **`/Users/1millnonstop/Downloads/web/data/menu.js`** = mirror canonical web standalone
+- ⛔ **JAMAIS** inventer de produits (« Box Familiale », « Nashville », « Solo »...). Si un produit n'apparaît PAS dans la DB items table, il n'existe pas.
+- ⛔ JAMAIS deviner les noms catégorie — toujours `grep "Sandwich\|Tacos\|Bols"` la source
+
+### Codebases (3 séparés, mandats distincts owner)
+- **Backend testttt** (ici) = V1 LOCAL Le Cayenne, single restaurant FR
+- **Mobile RN** (`mobile/`) = STANDALONE separated, NO API wireup V1 (owner mandate)
+- **Web standalone** (`/Users/1millnonstop/Downloads/web/`) = STANDALONE separated, NO API wireup V1
+
+⛔ **JAMAIS wire mobile/web aux APIs du backend testttt** sauf demande explicite owner. Composer_profile hardcoded mirror = pattern accepté pour future wireup mécanique.
+
+### Design palette mandate
+- **Kiosk + POS + Admin (backend testttt)** : palette Cayenne brand
+  - Primary `#F4501E` (orange brand)
+  - Accent `#FFB800` (jaune)
+  - Dark `#1A1A1A`
+  - Light mode 100% on kiosk (owner mandate dark mode désactivé)
+- **Mobile standalone** : palette **NOIR / ORANGE / JAUNE / BLANC** — owner mandate. Differs from Cayenne red. NE PAS appliquer `#F4501E` au mobile.
+
+### V1 LOCAL Le Cayenne envelope (immuable owner mandate)
+- 1 machine seule (single box)
+- FR locale (ADR-007 immutable)
+- `POS_SIMULATION_HARDWARE=true` ACCEPTABLE en dev, INTERDIT en prod (boot guard AppServiceProvider)
+- 1 TPE physique simulation
+- 1 branche `branch_id=1`
+- 0 cloud, 0 SaaS, 0 multi-tenant
+- 0 frozen-zone violations
+- SumUp provider current (terminals pas câblés bank Plan A)
+- Plan B kiosk payment routing → caisse encashment (config `kiosk.payment_route_all_to_counter=true`)
+
+### Restore discipline (anti drift POS version)
+Si owner demande « restore POS » ou « rollback » :
+1. **TOUJOURS vérifier QUELLE version** est la canonical (git tag / backup branch)
+2. Lister les 3 derniers backups `storage/backups/db-daily/` + git tags `pre-*`
+3. Demander confirmation explicite avant restore
+
+---
+
+## 3ter. Audit & Verification Discipline (anti-hallucination)
+
+> Ajouté post `/insights` 2026-05-29 — sub-agents ont halluciné des P0
+> contre fichiers inexistants. Discipline anti-hallucination requise.
+
+### Verify before report (mandatory pour sub-agents)
+Tout sub-agent qui retourne un P0/P1 finding DOIT inclure :
+- `file:line` exact + `grep` ou `Read` confirmant l'existence
+- Reproduction step (curl trace / DB query result / DOM extract)
+- Sinon → finding REJECTED, NE PAS le surfacer au owner
+
+### Modern reference research
+Pour audits de design / UX :
+- Recherche références modernes 2024-2026 (McDonald's Kiosk v2, BK Reclaim, Toast 2.0 line-item, Olo Rails)
+- ⛔ JAMAIS citer Toast/Square/Otter génériquement « il y a 10 ans »
+
+### Post-fix convergence reporting
+Après chaque fix appliqué :
+1. Re-run tests (PHPUnit filter + Vitest filter + Playwright affected)
+2. Frozen-zone diff `git diff --stat -- <13 §7 files>`
+3. NF525 chain `php artisan fiscal:verify-chain --all`
+4. Status report : GREEN | YELLOW | RED + counts exact
+
+### Anti-pattern : composer dump-autoload on live dev
+- ⛔ JAMAIS `composer dump-autoload` sur dev server en cours d'exécution (casse autoload stale state)
+- ✅ Alternative : `php artisan cache:clear` + `php artisan config:clear` + static analysis
+
+---
+
+## 3quater. Security & Git Hygiene (anti-incident)
+
+> Ajouté post `/insights` 2026-05-29 — un incident `.env` avec clés AWS
+> live committed accidentellement. Prevention discipline.
+
+### Pre-commit secret check (mandatory)
+Avant CHAQUE `git add` :
+- ⛔ JAMAIS `git add .` ou `git add -A` (peut accidentellement inclure secrets)
+- ✅ TOUJOURS `git add <specific-files>` listés explicitement
+- ✅ Si commit doit inclure beaucoup de files : `git status` + revue ligne par ligne
+
+### Files to NEVER commit
+- `.env*` (sauf `.env.example` template)
+- `*.key`, `*.pem`, `credentials.json`, `secrets.json`
+- `storage/backups/db-daily/*.sql.gz` (backups locaux)
+- Fichiers contenant patterns regex `AWS_SECRET|aws_secret_access_key|stripe_secret_key|sk_live_|sk_test_`
+
+### Autonomous execution mandate
+Si l'owner dit « continue » / « autonome » / « test-e2e » / « go » :
+- ⛔ NE PAS demander de clarifying questions
+- ✅ EXECUTE immédiatement
+- ✅ Report progress + final summary
+
+### Push discipline (CLAUDE.md §10 reinforced)
+- JAMAIS auto-push to remote sans owner explicit
+- JAMAIS `git push --force` sans owner explicit
+- JAMAIS `--no-verify` sur commit (skip hooks dangereux)
 
 ---
 
@@ -204,7 +329,7 @@ Un test technique vert ne prouve PAS que l'UI est OK.
 - `http://127.0.0.1:8000/admin/items` — Catalogue
 - `http://127.0.0.1:8000/admin/stock-rupture-dashboard` — Stock dashboard
 - `http://127.0.0.1:8000/kds` — Kitchen Display System
-- `http://127.0.0.1:8000/order-status-screen` — OSS
+- `http://127.0.0.1:8000/admin/order-status-screen` — OSS
 
 ---
 
@@ -217,6 +342,10 @@ nécessite gate explicite owner ou test régression triple-vert.
 - `resources/js/components/frontend/kiosk/KioskWizardComponent.vue`
 - `resources/js/components/frontend/kiosk/KioskAppComponent.vue`
 - `resources/js/components/frontend/kiosk/KioskUpsellComponent.vue`
+- `resources/js/components/admin/pos/PaymentComponent.vue` — POS payment
+  component, frozen per BRAIN §2 (V1 untouched protected file)
+- `resources/js/components/admin/pos/v5/PosV5TrancheRow.vue` — POS V5
+  tranche row, frozen per BRAIN §2 (V1 untouched protected file)
 - **POS Vanilla JS wizard** (popup caisse) — design parfait selon owner.
   Fichiers exacts (verified iter15 ultra-review 2026-05-09) :
   - `public/js/pos-wizard.js` (Vanilla JS hand-written, ~296 KB,
@@ -252,6 +381,27 @@ Loi de Finance France — non-négociable, prison time si violé.
 - Frontend envoie `item_id, quantity, option_ids` UNIQUEMENT
 - Aucun env flag pour bypass — toujours actif
 
+### Production boot guards (concrete enforcement)
+- `app/Providers/AppServiceProvider.php:78-145` REFUSE TO BOOT en
+  production si :
+  - `POS_SIMULATION_HARDWARE != false` (NF525 cash-trail bypass)
+  - `IDEMPOTENCY_MIDDLEWARE_ENABLED != true` (duplicate POST protection)
+  - `APP_DEBUG = true` (leaks stack/SQL/secrets)
+  - `APP_URL` vide (Sanctum + webhook signing dépendent)
+  - `CACHE_DRIVER in ['array', 'null']` (NF525 audit-chain `Cache::lock`
+    needs cross-worker coherence)
+- Added by commits `2477a2d05`, `dafb6b3c4`, `1e7c65ecc`, `2949e92ed`.
+- L'abstract invariant ("forbidden") est doublé par une `RuntimeException`
+  au boot — pas de silent override possible.
+- **Note (verified 2026-05-21)**: the cache-driver forbidden list at
+  `AppServiceProvider.php:215` covers `array`/`null` only — `file` and
+  `database` PASS the guard. Block comment says "redis or memcached"
+  but the implementation is narrower than the stated intent. Tracked
+  as **V1.0.X cloud-prep backlog item UNI-03** (defer to cloud cutover
+  prep — V1 LOCAL Le Cayenne single-box file driver is safe; ALB
+  multi-instance requires widening the list). Source :
+  `reports/audit-verify-other-session-2026-05-21.md` Claim 1.
+
 ### Fiscal Sequence
 - `fiscal_sequence_no` monotonic per branch, gap-free
 - Cache::lock 5s + DB FOR UPDATE = triple défense concurrent
@@ -263,7 +413,8 @@ Loi de Finance France — non-négociable, prison time si violé.
 - `audit_logs` HMAC SHA-256 chain-signed (prev_hash → current_hash)
 - `z_reports` HMAC chain-signed daily clôture
 - DB trigger `BEFORE DELETE` SIGNAL SQLSTATE '45000' (MySQL prod only)
-- TRUNCATE bypass mitigé via GRANT level (deploy doc)
+- TRUNCATE bypass mitigé via GRANT-level REVOKE on `audit_logs` +
+  `z_reports` (Ansible task CVP0-1, commit `f840c3ef5`)
 - 6 ans rétention obligatoire post-close
 
 ---
@@ -271,24 +422,46 @@ Loi de Finance France — non-négociable, prison time si violé.
 ## 9. Multi-Tenant + Auth Invariants
 
 ### Branch Isolation
-- `BranchScope` global appliqué sur 11 models post iter11+12 :
-  Order, FrontendOrder, OrderItem, OrderPayment, KioskMachine,
-  StockLevel, StockMovement, CashDrawerSession, CashMovement,
-  PendingPaymentConfirmation, PushNotification, DiningTable, Printer
-- Admin (branch_id=0) bypass ; staff (branch_id>0) scoped
-- User model exempté pour éviter Sanctum recursion
+- `BranchScope` global appliqué sur **20 models** (baseline locked par
+  `tests/Feature/Branch/BranchScopeCoverageSentinelTest.php`) :
+  Order, FrontendOrder, OrderItem, OrderPayment, OrderQuote,
+  PosParkedOrder, KioskMachine, StockLevel, StockMovement,
+  ItemBranchAvailability, CashDrawerSession, CashMovement,
+  DeliveryBoyCashSession, DeliveryBoyCashMovement,
+  PendingPaymentConfirmation, PaymentTerminal, PushNotification,
+  DiningTable, Printer, **User**.
+- Admin (branch_id=0) bypass ; staff (branch_id>0) scoped.
+- **Exemptions documentées** (sentinel `EXEMPTED_MODELS`) :
+  - `Branch` — self-reference (BranchScope sur Branch serait circulaire)
+  - `Customer` — Sanctum customer-token recursion risk
+  - V1.0.2 BACKLOG baseline (10 models — single-tenant low-risk, V2 SaaS
+    hard-fail) : FrontendDiningTable, ZReport, AuditLog, OrderDiscountLog,
+    Message, DiningTableAuditLog, KioskPromo, UpsellRule, ActionLog,
+    DomainEvent
+- `ItemWizardProfile` utilise la variante nullable
+  `WizardProfileBranchScope` (global-or-branch published).
 
 ### Sanctum kiosk:order
 - Token créé avec `['kiosk:order']` ability UNIQUEMENT
 - TTL 480 minutes (config sanctum.expiration)
 - Old tokens revoked à chaque relogin (prevent token sprawl)
-- `tokenCan('kiosk:order')` checks dans 6+ controllers
+- `tokenCan('kiosk:order')` checks dans 8 controllers (verified WI-7)
 - Pre-auth lookups : `withoutGlobalScope(BranchScope::class)` explicit
+- V1.0.1 roadmap (BRAIN §1) : TTL 8h → 1h sensitive ops
 
 ### Spatie Permissions (RBAC)
 - `permission:settings` gate les routes admin sensibles
 - Roles : Admin, Branch Manager, POS Operator, Chef, etc.
-- FormRequest authz scattered → roadmap V1.0.1 refactor 88 endpoints
+- FormRequest authz unifié sur sentinel `FormRequestAuthzDriftSentinelTest`
+  (baseline-lock — count GROWS = CI fails). **Verified actual count
+  2026-05-21 = 66 FormRequests avec `return true;`** ; sentinel
+  baseline still set to **69** (ceiling, count<baseline passes).
+  Historique : 77 initial Wave 8 → 74 post Wave 5H → 69 post BUILD-6
+  (8 critical refactored vers `$this->user()?->can('xxx')`) → **66
+  observed today (a further -3 chipped away in subsequent waves
+  without lowering the sentinel constant)**. V1.0.2 BACKLOG : continue
+  chip-away par vague de commits AND lower sentinel `RETURN_TRUE_BASELINE`
+  to 66 to ratchet the ceiling tight.
 
 ### Idempotency
 - HTTP `X-Idempotency-Key` header sur POST mutating
@@ -422,7 +595,10 @@ clear, rigorous, responsible.
 
 Quand pertinent, consulter :
 - `PROJECT_BRAIN.md` — état actuel (toujours)
-- `plans/MASTER_ITER14_V1_HARDENING_DELIVERY_2026-05-09.md` — last delivery
+- Active plan : voir `PROJECT_BRAIN.md` §2 pour pointer GOAL en cours
+  (rotating). À l'heure du WI-7 (2026-05-19) :
+  `plans/GOAL_V1_PRODUCTION_PERFECT_PHASE2_2026-05-18.md` + Wave E
+  follow-ons.
 - `plans/MASTER_ULTRA_PLAN_V1_INTERNAL_AUDIT_2026-05-09.md` — full audit
 - `docs/PROJECT_CONTINUITY_AND_VISION.md`
 - `docs/ARCHITECTURE.md`
@@ -433,7 +609,7 @@ Quand pertinent, consulter :
 - `docs/GATES_DOCTRINE.md`
 - `reports/planning/` (latest)
 - `reports/execution/` (latest)
-- `reports/antigravity/` (Playwright cycle reports)
+- `reports/test-e2e/` (Playwright cycle reports)
 - `reports/review/` (latest)
 
 ---

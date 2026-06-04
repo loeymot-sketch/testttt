@@ -1,0 +1,176 @@
+{
+  "task": "WAVE-E / OBS-HEALTH",
+  "scope": "Observability + Health endpoint read+test only",
+  "agent": "supervisor-wave-e-2026-05-29",
+  "executed_at": "2026-05-29T01:00:00+02:00",
+  "branch": "feature/mobile-app-le-cayenne-2026-05-10",
+  "head": "369d2504b",
+  "verdict": "GAPS",
+  "verdict_summary": "Observability LAYER is GREEN: /api/healthz works, outbox dashboard renders + buttons present, structured logs flowing across 4 channels (fiscal/observability/security/laravel), audit_trail wired end-to-end, all 5 boot guards present in AppServiceProvider. However the SYSTEM being observed has live alerts: 378 stale outbox events + 152 failed jobs + queue:work + websockets:serve marked DOWN — which is exactly what an observability layer is supposed to surface. Verdict GAPS attributed to upstream queue infrastructure not the obs layer itself.",
+  "tests": {
+    "test_1_healthz": {
+      "status": "GREEN",
+      "documented_contract": "/api/healthz per scripts/deploy/UPTIMEROBOT_SETUP.md",
+      "result": "HTTP 200 application/json",
+      "payload": {
+        "status": "ok",
+        "checks": {
+          "db": "ok",
+          "redis": "ok",
+          "websocket": "ok",
+          "fiscal_chain": "ok",
+          "queue_pending": 0
+        },
+        "timestamp": "2026-05-29T00:53:56+02:00"
+      },
+      "note_on_bare_healthz": "GET /healthz (no /api prefix) returns 200 text/html (Laravel SPA catchall) — NOT a defect. Task description abbreviated; canonical contract = /api/healthz per UPTIMEROBOT_SETUP.md.",
+      "controller_file": "app/Http/Controllers/HealthzController.php",
+      "route_file": "routes/api.php:148"
+    },
+    "test_2_outbox_observability": {
+      "status": "GREEN (UI) + GAPS (system)",
+      "ui_url": "http://127.0.0.1:8000/admin/observability/outbox",
+      "ui_render": "Pipeline outbox & événements dashboard renders with all panels",
+      "vue_component": "resources/js/components/admin/observability/OutboxOverviewComponent.vue",
+      "controller": "app/Http/Controllers/Admin/Observability/SyncOverviewController.php",
+      "routes": [
+        "GET /api/admin/observability/outbox (outboxOverview)",
+        "POST /api/admin/observability/outbox/retry-failed (throttle:10,1)",
+        "POST /api/admin/observability/outbox/drain-failed (throttle:5,1)"
+      ],
+      "buttons_visible": ["Rafraichir", "Rejouer Les Echecs", "Purger Echecs > 24h"],
+      "ui_extracted_values": {
+        "queue_work_status": "DOWN — Dernier signal il y a 3m",
+        "websockets_serve_status": "DOWN — Aucun signal",
+        "events_pending": 0,
+        "events_dispatched_24h": 412,
+        "p50_ms": 1784,
+        "p95_ms": 23661641,
+        "p99_ms": 35493352,
+        "samples": 795,
+        "high_queue_file_size": 0,
+        "failed_jobs_count": 152
+      },
+      "live_finding_sample_failed_job": "ID 152 default 2026-05-29 00:31:58 Stripe\\Exception\\InvalidArgumentException: api_key cannot be the empty string",
+      "stale_alert_in_log": "[OUTBOX STALE] 378 undispatched events older than 30s (threshold:10) — surfaced in laravel-2026-05-29.log 00:36:51 as event=outbox.staleness.alert, oldest_id=1, oldest_event_type=catalog.changed, oldest_created_at=2026-05-28 12:56:51",
+      "screenshots": [
+        "/tmp/foodking-wave-e-2026-05-29/obs-health/04-obs-outbox.png",
+        "/tmp/foodking-wave-e-2026-05-29/obs-health/04b-obs-outbox-big.png"
+      ]
+    },
+    "test_3_structured_logs": {
+      "status": "GREEN",
+      "format": "[timestamp] env.LEVEL: message {json_context}",
+      "channels_verified": ["laravel", "fiscal", "observability", "security", "hardware"],
+      "sample_correlation_id": "a674367a-e6a7-4992-9d0f-d437cd6f4738",
+      "sample_lines": [
+        "[2026-05-29 00:31:51] local.ERROR: Header X-Idempotency-Key requis pour cette operation. {\"correlation_id\":\"b7088a37...\",\"user_id\":1,\"branch_id\":0}",
+        "[2026-05-29 00:35:00] local.WARNING: [BYPASS-PAYMENT] TPE call short-circuited {\"correlation_id\":\"...\",\"order_id\":267,\"mode\":10}",
+        "[2026-05-29 00:36:51] local.ERROR: [OUTBOX STALE] 378 undispatched events older than 30s {\"event\":\"outbox.staleness.alert\",\"stale_count\":378,\"threshold\":10}",
+        "[2026-05-29 00:31:26] fiscal: z_report.close {\"z_report_id\":5,\"branch_id\":1,\"sequence_no\":5,\"signature_prefix\":\"b4141d8c8396\"}",
+        "{\"timestamp\":\"2026-05-29T00:53:00+02:00\",\"level\":\"WARNING\",\"message\":\"csp_violation.malformed\",\"context\":{\"category\":\"csp_violation\",\"ip\":\"127.0.0.1\"},\"channel\":\"local\"} (observability channel = JSON-formatter)"
+      ],
+      "observation": "Two formatter styles: laravel.log + fiscal.log use Monolog default '[ts] env.LEVEL: msg {ctx}' ; observability.log uses pure JSON {timestamp,level,message,context,extra,channel}. Both structured, parseable, include correlation_id where applicable.",
+      "minor_finding": "observability channel logs csp_violation.malformed 7x in 5 min — suggests POST /api/csp-report has a shape-validation gap (probably P2 ingestion-level not surfaced to UI)."
+    },
+    "test_4_production_boot_guards": {
+      "status": "GREEN",
+      "file": "app/Providers/AppServiceProvider.php",
+      "guards_present": [
+        {"name": "POS_SIMULATION_HARDWARE", "lines": "165-171", "throws_when_true": true},
+        {"name": "PAYMENT_BYPASS_MODE",   "lines": "177-183", "throws_when_true": true},
+        {"name": "PRINTING_BYPASS_MODE",  "lines": "184-190", "throws_when_true": true},
+        {"name": "APP_DEBUG",             "lines": "202-210", "throws_when_true": true},
+        {"name": "IDEMPOTENCY_MIDDLEWARE_ENABLED", "lines": "223-230", "throws_when_false": true},
+        {"name": "LOYALTY_QR_SECRET",     "lines": "241-251", "throws_when_empty": true},
+        {"name": "APP_URL",               "lines": "261-271", "throws_when_empty": true},
+        {"name": "BROADCAST_DRIVER",      "lines": "273-278", "throws_when_null": true},
+        {"name": "QUEUE_CONNECTION",      "lines": "279-284", "throws_when_sync": true},
+        {"name": "CACHE_DRIVER",          "lines": "294-302", "throws_when_in": ["array", "null"]},
+        {"name": "STRIPE_WEBHOOK_SECRET", "lines": "304-328+", "throws_when_stripe_enabled_and_missing": true}
+      ],
+      "task_5_subjects_coverage": {
+        "POS_SIMULATION_HARDWARE": "present",
+        "IDEMPOTENCY_MIDDLEWARE_ENABLED": "present",
+        "APP_DEBUG": "present",
+        "APP_URL": "present",
+        "CACHE_DRIVER": "present (narrow — see UNI-03)"
+      },
+      "noted_v1_0_x_backlog_uni_03": "CACHE_DRIVER forbidden list = ['array','null'] only — file/database PASS the guard despite block comment stating 'redis or memcached'. Per CLAUDE.md §8 and Master Plan Ultimate, this is already tracked as V1.0.X cloud-prep backlog UNI-03 (V1 LOCAL Le Cayenne file driver safe; ALB multi-instance widening required). NOT a P0 here — re-attesting existing backlog."
+    },
+    "test_5_audit_trail_visibility": {
+      "status": "GREEN",
+      "controller_method": "App\\Http\\Controllers\\Admin\\DashboardController::auditTrail (line 193)",
+      "route": "GET /api/admin/dashboard/audit-trail (routes/api.php:1052)",
+      "ui_consumer_chain": {
+        "vue_component": "resources/js/components/admin/dashboard/AuditTrailComponent.vue:69 dispatches dashboard/auditTrail",
+        "vuex_action": "resources/js/store/modules/dashboard.js:249 GETs admin/dashboard/audit-trail",
+        "vuex_mutation_state": "resources/js/store/modules/dashboard.js:22,68-69,302-303"
+      },
+      "live_call_observed": "Playwright captured XHR GET /api/admin/dashboard/audit-trail -> 200 (auth cookie path) on /admin/dashboard visit",
+      "ui_render": "Tableau de Bord renders KPIs (Total ventes 870 EUR, Total commandes 2, Articles 45, CA Jour 6.50 EUR, Commandes Jour 3, Ticket Moyen 2.17 EUR) + Alertes SLA widget with Ticket A0001 in attente 632 minutes + Repartition par Canal — full SPA dashboard healthy",
+      "permission_gate": "permission:dashboard middleware in DashboardController:__construct"
+    }
+  },
+  "live_system_signals_caught_by_observability": {
+    "p0_owner_attention": [
+      {
+        "code": "OBS-OWNER-P0-01",
+        "signal": "queue:work DOWN (dernier signal il y a 3m)",
+        "consequence": "378 stale outbox events backlogged since 2026-05-28 12:56:51 (12h+ uptime gap)",
+        "owner_action_local": "php artisan queue:work --queue=high in screen/tmux (or systemd unit)",
+        "obs_layer_attestation": "Layer DETECTS and SURFACES correctly via outbox.staleness.alert + UI DOWN banner — working as designed"
+      },
+      {
+        "code": "OBS-OWNER-P0-02",
+        "signal": "websockets:serve DOWN (Aucun signal)",
+        "consequence": "Realtime push dead — Pusher channels broadcasting unavailable. Polling fallback 30s masks it for kiosks per CLAUDE.md §9",
+        "owner_action_local": "Soketi up + heartbeat probe",
+        "obs_layer_attestation": "Layer DETECTS"
+      }
+    ],
+    "p1_for_v102_backlog": [
+      {
+        "code": "OBS-V102-P1-01",
+        "signal": "152 failed jobs in queue (sample id=152: Stripe api_key empty)",
+        "consequence": "Stripe webhook dispatch retries failing — accumulating",
+        "comment": "Already covered by V1.0.X PENDING_COUNTER + Stripe guard backlog (Task #211)"
+      },
+      {
+        "code": "OBS-V102-P1-02",
+        "signal": "outbox p99 = 35 493 352 ms (~9.85 hours) — astronomical tail latency",
+        "consequence": "Indicates events created hours before dispatch — direct symptom of queue worker downtime",
+        "comment": "Will resolve when OBS-OWNER-P0-01 fixed"
+      },
+      {
+        "code": "OBS-V102-P1-03",
+        "signal": "csp_violation.malformed repeated 7x in 5min (observability channel)",
+        "consequence": "POST /api/csp-report ingestion has shape gap — silent log noise, not breach",
+        "comment": "Lightweight ingestion validator hardening V1.0.2"
+      }
+    ]
+  },
+  "frozen_zone_diff": 0,
+  "nf525_chain_status": "Not perturbed (read+test only — no fiscal writes from this task)",
+  "screenshots": {
+    "directory": "/tmp/foodking-wave-e-2026-05-29/obs-health/",
+    "key": [
+      "01-login-form.png — admin login Vue SPA rendered",
+      "02-form-filled.png — credentials filled",
+      "03-post-login.png — landed on /admin/dashboard",
+      "04-obs-outbox.png — outbox dashboard 1366x900",
+      "04b-obs-outbox-big.png — outbox dashboard 1920x1200 fullPage (all rows visible)",
+      "05-admin-dashboard.png — admin dashboard KPIs + SLA alerts",
+      "05b-admin-dashboard-bottom.png — dashboard bottom (audit trail area)",
+      "05c-admin-dashboard-full.png — full page",
+      "06-sync-overview.png — sync-overview UI"
+    ]
+  },
+  "scope_compliance": {
+    "read_only": true,
+    "no_files_edited": true,
+    "no_commits": true,
+    "no_heal_applied": true,
+    "deliverable_durable": true
+  }
+}

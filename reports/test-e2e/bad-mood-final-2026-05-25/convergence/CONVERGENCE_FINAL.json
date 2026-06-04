@@ -1,0 +1,134 @@
+{
+  "cycle": "bad-mood-final-2026-05-25",
+  "date": "2026-05-25",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head": "bf1cc0382",
+  "synthesizer": "E2E-SYNTH FINAL SYNTHESIS",
+  "wave_state": {
+    "expected_agents": 19,
+    "agents_with_full_json": 1,
+    "agents_with_screenshots_only": 2,
+    "agents_silent": 16,
+    "convergence": "PARTIAL_NOT_CONVERGED"
+  },
+  "per_agent": [
+    {"agent": "E2E-01", "surface": "Kiosk idle", "persona": "Client anonymous", "verdict": "RED", "top_finding": "1 P0 state3 no item after category click — script DOM-discovery failure, not product defect; 1 P1 state2 no category card; UI render OK (logo, hero, CTA, lang=fr, 0 raw labels)"},
+    {"agent": "E2E-02", "surface": "Kiosk happy path", "persona": "Client", "verdict": "NOT_RUN", "top_finding": "no JSON, no screenshots"},
+    {"agent": "E2E-03", "surface": "POS caisse vente directe + refund-UI", "persona": "Caissier", "verdict": "NOT_RUN", "top_finding": "task #107 still in_progress; empty screenshot folder"},
+    {"agent": "E2E-04", "surface": "POS encaisser borne", "persona": "Caissier", "verdict": "NOT_RUN", "top_finding": "empty screenshot folder"},
+    {"agent": "E2E-05", "surface": "KDS chef bumping + undo-gap", "persona": "Chef", "verdict": "NOT_RUN", "top_finding": "empty screenshot folder"},
+    {"agent": "E2E-06", "surface": "OSS public display", "persona": "Customer waiting", "verdict": "NOT_RUN", "top_finding": "empty screenshot folder"},
+    {"agent": "E2E-07", "surface": "Admin dashboard", "persona": "Admin", "verdict": "NOT_RUN", "top_finding": "empty screenshot folder"},
+    {"agent": "E2E-08", "surface": "Catalog + stock CRUD", "persona": "Manager", "verdict": "NOT_RUN", "top_finding": "no artifacts"},
+    {"agent": "E2E-09", "surface": "Cross-flow sync latency", "persona": "Multi", "verdict": "NOT_RUN", "top_finding": "tasks #102-#106 still pending; empty agents/E2E-09-screenshots/"},
+    {"agent": "E2E-10", "surface": "Livreur cash session", "persona": "Delivery", "verdict": "NOT_RUN", "top_finding": "no artifacts"},
+    {"agent": "E2E-11", "surface": "Admin login + tableau de bord", "persona": "Admin", "verdict": "PARTIAL", "top_finding": "1 PNG post-login KDS empty-state w/ correct branding + sync warning banner; no JSON, no scores"},
+    {"agent": "E2E-12", "surface": "NF525 Z-close UI walk", "persona": "Admin", "verdict": "NOT_RUN", "top_finding": "no artifacts"},
+    {"agent": "E2E-13", "surface": "Loyalty/promo/fidelity", "persona": "Customer", "verdict": "NOT_RUN", "top_finding": "no artifacts"},
+    {"agent": "E2E-14", "surface": "Stock-rupture dashboard", "persona": "Manager", "verdict": "NOT_RUN", "top_finding": "no artifacts"},
+    {"agent": "E2E-15", "surface": "Stress 50/3", "persona": "Synthetic", "verdict": "NOT_RUN", "top_finding": "no artifacts; prior Wave-Polish-Final 50/3/7s PASS still applies"},
+    {"agent": "E2E-16", "surface": "A11y keyboard cross-surface", "persona": "Audit", "verdict": "NOT_RUN", "top_finding": "no artifacts"},
+    {"agent": "E2E-17", "surface": "Multi-tab sync", "persona": "Multi-window", "verdict": "NOT_RUN", "top_finding": "no artifacts; prior Q9-S1 ~1s still applies"},
+    {"agent": "E2E-18", "surface": "Mobile + web standalone", "persona": "Marketing", "verdict": "NOT_RUN", "top_finding": "no artifacts"},
+    {"agent": "E2E-19", "surface": "Final visual polish", "persona": "Auditor", "verdict": "NOT_RUN", "top_finding": "no artifacts"}
+  ],
+  "aggregate_scoring": {
+    "total_planned": 19,
+    "green": 0,
+    "amber": 1,
+    "red": 1,
+    "not_run": 17,
+    "findings": {
+      "p0": 1,
+      "p1": 1,
+      "p2": 0
+    },
+    "raw_labels_found": 0,
+    "console_errors_total": 1,
+    "network_errors_total": 1,
+    "polish_average": {
+      "ux": 3,
+      "perf": 4,
+      "a11y": 6,
+      "i18n": 7,
+      "polish": 5,
+      "note": "E2E-01 only — single data point, RED journey"
+    }
+  },
+  "cross_agent_patterns": {
+    "five_owner_mandate_gaps_still_pending_unconfirmed_this_wave": [
+      "KDS undo (bumped -> un-bump)",
+      "POS refund UI exposed",
+      "Chef-cashier signal (PRET click -> cashier ping)",
+      "Stock alert 3-portions threshold",
+      "SMS PRET to customer"
+    ],
+    "heals_visually_unconfirmed_this_wave": [
+      "HEAL-01",
+      "HEAL-02",
+      "HEAL-03",
+      "HEAL-07"
+    ],
+    "high_leverage_finding": "E2E harness selector map drifted relative to current kiosk DOM — even the single agent that ran could not advance past idle screen; visual capture confirms UI is correct, harness is the problem"
+  },
+  "nf525_state": {
+    "chain": "OK",
+    "audit_logs_count": 31,
+    "z_reports_count": 1,
+    "cross_chain_anchor_K2_HEAL_06": "VERIFIED_LIVE_via_FIX_5",
+    "frozen_zone_loc_diff_vs_head": 0,
+    "boot_guards_AppServiceProvider_78_145": "in_place",
+    "delete_triggers": "active_MySQL_prod"
+  },
+  "stress_sync": {
+    "e2e_15_stress": "NOT_RUN_inherits_wave_polish_final_50_3_7s_PASS",
+    "e2e_09_cross_flow_latency": "NOT_RUN_inherits_Q9_S1_1s_PASS",
+    "e2e_17_multi_tab": "NOT_RUN_no_regression_evidence"
+  },
+  "ui_visual": {
+    "e2e_01_kiosk_idle": "CLEAN",
+    "e2e_11_admin_post_login": "CLEAN",
+    "raw_labels_across_captures": 0,
+    "console_errors_count": 1,
+    "console_errors_description": "single 401 /api/login pre-token probe, non-product",
+    "surfaces_unverified_this_wave": 17
+  },
+  "go_live_verdict_update": {
+    "prior": "GO-LIVE-CONDITIONAL per reports/audits/BAD-MOOD-GO-LIVE-FINAL-VERDICT.md HEAD a34a6255c",
+    "new_evidence_this_wave": [
+      "No new RED introduced by code",
+      "No new commits since bf1cc0382",
+      "No multi-agent confirmation of 5 owner-mandate gaps",
+      "No multi-agent confirmation of HEAL-01/02/03/07"
+    ],
+    "updated_verdict": "GO-LIVE-CONDITIONAL_STAYS_VALID_but_bad_mood_e2e_wave_did_not_strengthen_it",
+    "owner_decision_required": "rerun_19_agent_wave_with_refreshed_selector_map_OR_accept_prior_attestations",
+    "owner_physical_actions_pending": 3
+  },
+  "cycle_total": {
+    "commits_total_on_branch_since_baseline_d601fdd34": 87,
+    "commits_in_bad_mood_fix_wave": 5,
+    "sub_agents_planned_this_wave": 19,
+    "sub_agents_effective_this_wave": 1,
+    "sub_agents_partial_this_wave": 2,
+    "sub_agents_silent_this_wave": 16,
+    "hostile_audits_prior_bad_mood": 7,
+    "sentinels_green_cumulative": "504/4563 PHPUnit + 3/3 Vitest kdsBundleFreshness",
+    "nf525_chain_integrity": "CHAIN_OK",
+    "frozen_zone_diff_cumulative_loc": 0,
+    "owner_physical_actions_pending": 3
+  },
+  "top_5_critical_findings_cycle_total": [
+    "E2E-harness selector drift — DOM probes stale, refresh required before next re-run (NEW)",
+    "Bad-mood-final wave did not converge — 16/19 silent, 2 partial, 1 RED-by-harness-drift (NEW)",
+    "GO-LIVE-CONDITIONAL inherited unchanged — no new RED in code (CARRY-OVER)",
+    "3 owner-physical actions still pending — .env flip + disk cleanup + Monday physical walk + first real Z close (CARRY-OVER)",
+    "5 V1.0.1 owner-mandate gaps NOT verified this wave (KDS undo / POS refund UI / chef-cashier signal / stock alert / SMS PRET) — non-blockers V1 PROPOSAL-queued (CARRY-OVER)"
+  ],
+  "honest_caveats": [
+    "Wave converged at 5% of planned agent coverage — not enough to claim multi-agent attestation",
+    "The 1 RED is harness selector drift, not product defect (visual capture shows correct UI)",
+    "Prior wave attestations (Wave-Polish-Final + GOAL-2026-05-23 + post-restore-deep) remain the live-verification baseline for go-live decision",
+    "Boot guard AppServiceProvider:78-145 is the safety net if owner forgets .env flip"
+  ]
+}

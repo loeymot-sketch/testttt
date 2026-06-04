@@ -1,0 +1,74 @@
+[
+  {
+    "id": "F-1",
+    "priority": "INFO",
+    "title": "POS category Vuex flow confirmed: posCategory/lists → GET /api/admin/pos-category → PosCategoryController@index",
+    "file": "resources/js/store/modules/posCategory.js:31-48 + routes/api.php:993-994 + app/Http/Controllers/Admin/PosCategoryController.php:36-150",
+    "evidence": "posCategory.js:33 `let url = 'admin/pos-category'`; routes/api.php:993-994 `Route::prefix('pos-category')->name('pos-category.')->group(function () { Route::get('/', [PosCategoryController::class, 'index']); });`; controller index() returns `['data' => $newObj]` where $newObj is array_merge(['all-items' sentinel], $itemCategories) with fields id/name/slug/description/status/thumb/cover (lines 114-131).",
+    "recommendation": "Anchor verified — plan §1.1 file:line correct. Implementer can extend the response shape (add `featured` bool per item) at PosCategoryController.php:122-130 without breaking existing consumers (additive field)."
+  },
+  {
+    "id": "F-2",
+    "priority": "INFO",
+    "title": "item_categories schema: NO `is_featured` / `is_visible_on_pos` column exists — but `channels` JSON + `pos_sort` already gate POS surface filtering",
+    "file": "DESCRIBE item_categories (mysql -uroot foodking) + app/Http/Controllers/Admin/PosCategoryController.php:71-78",
+    "evidence": "DESCRIBE output columns: id, parent_id, name, kiosk_label, slug, description, status (default 5), channels (json nullable), sort, kiosk_sort, pos_sort (uint nullable), wizard_template, wizard_profile_id, has_menu, default_menu_kiosk, sauce_included_menu, kiosk_upsell_include, kiosk_upsell_skip_after_cart, deleted_at. NO featured/is_visible_on_pos column. Controller already filters: `whereNull('channels').orWhereJsonContains('channels','pos')` (lines 71-78). Sample data: only id=350 has channels=['pos','admin','mobile']; rest are NULL (so all default-show).",
+    "recommendation": "No DDL needed. The cleanest source-of-truth IS a config-driven allowlist (plan §1.1 already chose this). `pos_sort` is currently NULL for all 13 sampled categories — using it as an allowlist signal would require seeding all 21 categories first, more invasive than `config/pos.php`."
+  },
+  {
+    "id": "F-3",
+    "priority": "INFO",
+    "title": "items.is_featured is `Ask::YES` (=5), a Yes/No flag — brief's `defaults to 5 - misnamed Status` mischaracterization corrected",
+    "file": "app/Enums/Ask.php:7 + database/migrations/2022_11_17_110514_create_items_table.php:31 + DESCRIBE items",
+    "evidence": "Ask.php:7 `const YES = 5;`. items migration line 31 `$table->tinyInteger('is_featured')->default(Ask::YES);`. DESCRIBE items: `is_featured tinyint NO 5`. The other column is items.status (default 5 = Status::ACTIVE). 2026_03_25_002927_add_is_upsell_to_items_table.php:10 docstring: 'Separate from is_featured (homepage) and is_popular (trending).'",
+    "recommendation": "Plan's directive `DO NOT propose repurposing items.is_featured` still STANDS — but for the correct reason: it's an item-level homepage Yes/No flag, not a category-level mechanism. G1 needs a CATEGORY allowlist, so `is_featured` is the wrong layer regardless of its semantics. Confirm config-driven approach in §1.1."
+  },
+  {
+    "id": "F-4",
+    "priority": "P1",
+    "title": "Insertion point recommendation: BACKEND (PosCategoryController response shape) — single source of truth, no client knowledge duplication",
+    "file": "app/Http/Controllers/Admin/PosCategoryController.php:121-131 + resources/js/components/admin/pos/PosComponent.vue:1415-1419",
+    "evidence": "Controller currently shapes the array per-category: `$itemCategoryArray[] = ['id' => $itemCategory->id, 'name' => ..., 'thumb' => ..., 'cover' => ...];` (lines 122-130). Adding a `'featured' => in_array((int)$itemCategory->id, (array) config('pos.featured_category_ids', []), true)` field is ~1 LOC + a stable `usort` on `[featured DESC, sort ASC]` before array_merge with the 'all-items' sentinel is ~3 LOC. PosComponent.vue:1415-1419 `categories` getter just reads `$store.getters['posCategory/lists']` — frontend stays dumb, only renders `featured===true` ones by default + a 'Toutes' toggle.",
+    "recommendation": "Backend filter. Rationale: (a) config knowledge lives once, server-side, ready for the admin UI G1 anticipates; (b) future mobile/kiosk consumers of /admin/pos-category get the same allowlist for free; (c) additive `featured` field on the JSON response is non-breaking. Alternative (frontend computed filter) duplicates the allowlist into Vue and means PosComponent.vue is the only enforcement point."
+  },
+  {
+    "id": "F-5",
+    "priority": "P0",
+    "title": "OSS service does NOT explicitly exclude DELIVERY — a delivery order WITH token would surface on the customer wall today",
+    "file": "app/Services/OrderStatusScreenOrderService.php:45-52 + :150-156",
+    "evidence": "Both list() (lines 45-52) and listForBranch() (lines 150-156) gate via `whereNotNull('token').orWhere(order_type, KIOSK=25).orWhere(order_type=TAKEAWAY=10 AND queue_number NOT NULL)`. A DELIVERY order (order_type=5) with a non-null `token` matches the first OR-branch and would appear on the wall. OrderType.php:7 `const DELIVERY = 5;`. No `where('order_type','!=',DELIVERY)` exists anywhere in this service.",
+    "recommendation": "Per plan T-2.1.1, add `->where('order_type', '!=', \\App\\Enums\\OrderType::DELIVERY)` to BOTH list() (after line 52, inside the same query chain) and listForBranch() (after line 156). Keep query bodies byte-identical per the service's own docstring line 144. Use the existing `OssPolishClusterTest::setUp` pattern (seedSpatieRoles + seedMinimalSettings) for the new feature test."
+  },
+  {
+    "id": "F-6",
+    "priority": "INFO",
+    "title": "G2 gate GO — DELIVERY orders ARE visible to staff via PosOrdersTracker → posOrder/lists → admin/pos-order endpoint (OrderService::list excludes only POS, not DELIVERY)",
+    "file": "resources/js/components/admin/pos/PosOrdersTrackerComponent.vue:595-612 + resources/js/store/modules/posOrder.js:168 + app/Http/Controllers/Admin/PosOrderController.php:93-102 + app/Services/OrderService.php:198",
+    "evidence": "PosOrdersTracker fetchOrders() → `$store.dispatch('posOrder/lists', ...)` (line 599); posOrder.js:168 hits `admin/pos-order`; PosOrderController::index calls `$this->orderService->list($request)` (line 98); OrderService::list (and userOrder line 198) excludes ONLY `order_type != OrderType::POS` — DELIVERY orders pass through. Tracker sourceTabs (line 400-407) routes them into the 'online' tab via source_surface heuristic at line 738-750. Cashier can act (mark delivered, etc.) at lines 620-632.",
+    "recommendation": "G2 resolved: GO. DELIVERY orders remain visible+actionable in PosOrdersTrackerComponent after removing them from OSS wall. No additional surface work needed. Memory project-v1-0-1-hardening-2026-05-17 confirms `DEL-9 doc-deferred V1.0.2 (auto-dispatch)` — auto-dispatch is V1.0.2 backlog (docs/decisions/DEFERRED_AUTO_DISPATCH_V1_0_2.md), manual staff workflow is V1.0.1 baseline."
+  },
+  {
+    "id": "F-7",
+    "priority": "INFO",
+    "title": "DBA: existing indexes adequate for the new `order_type != 5` clause — no schema change needed",
+    "file": "SHOW INDEX FROM orders (mysql -uroot foodking)",
+    "evidence": "Existing indexes on orders: PRIMARY(id), unique (branch_id,idempotency_key), unique (branch_id,fiscal_sequence_no), unique (branch_id,business_date,queue_number), idx_orders_branch_status (branch_id,status), idx_orders_user_id, idx_orders_datetime (order_datetime), idx_orders_status (status), orders_parent_order_id_index. The OSS query already narrows via idx_orders_branch_status (branch_id+status IN [7,8]) and idx_orders_datetime (today range). order_type filter applied to that already-small row-set is cheap; no new composite needed.",
+    "recommendation": "No DDL. Document in implementer notes that `order_type != 5` is a post-filter on the already-tight (branch_id, status, today) result set. If a future profile shows the filter dominating, consider extending idx_orders_branch_status → (branch_id, status, order_type) — but defer until measured."
+  },
+  {
+    "id": "F-8",
+    "priority": "INFO",
+    "title": "Test map: POS category existing tests (5 files) + OSS existing test (OssPolishClusterTest) — reuse harness, don't reinvent",
+    "file": "tests/Feature/Menu/PosCategoryBranchScopeTest.php + tests/Feature/Menu/PosKioskProjectionParityTest.php + tests/Feature/Menu/FrontendSurfaceFilteringTest.php + tests/Feature/Pos/PosMenuRuntimeAccessTest.php + tests/Feature/Services/Menu/MenuProjectionServiceTest.php + tests/Feature/OSS/OssPolishClusterTest.php",
+    "evidence": "grep -rEn 'PosCategory|pos.*category' tests/ -l → 5 Feature files above (POS side). grep -rEn 'OrderStatus|orderStatusScreen|publicIndex|CDSOrder' tests/Feature/ -l → tests/Feature/OSS/OssPolishClusterTest.php (real OSS coverage). OssPolishClusterTest setUp pattern (lines 28-33): seedSpatieRoles + seedMinimalSettings + RefreshDatabase. Existing tests cover branch scope + channel filter + projection parity — they do NOT cover featured allowlist (new) or delivery exclusion (new).",
+    "recommendation": "Create new files per plan (`tests/Feature/Pos/PosFeaturedCategoriesConfigTest.php`, `PosFeaturedCategoriesEndpointTest.php`, `tests/Feature/OSS/OssCustomerScreenFilterTest.php`) using OssPolishClusterTest setUp + factory patterns. Do NOT extend existing files — keeps new test surface clearly delimited for the convergence filter `php artisan test --filter='PosFeaturedCategories|OssCustomerScreenFilter'`."
+  },
+  {
+    "id": "F-9",
+    "priority": "INFO",
+    "title": "Frozen-zone scan: 0 hits — no in-scope file touches the 13-file frozen list",
+    "file": "memory/reference_frozen_zones.md (13 files) vs. plan scope",
+    "evidence": "Frozen list: KioskWizardComponent.vue, KioskAppComponent.vue, KioskUpsellComponent.vue, public/js/pos-wizard.js, public/css/pos-wizard.css, admin-pos-v4.blade.php, FiscalSequenceService.php, ZReportService.php, AuditLogService.php, audit_logs+z_reports triggers, BranchScope.php, IdempotencyKeyMiddleware.php, PricingService.php, OrderStateMachine.php. Plan scope touches: config/pos.php (NOT frozen — see frozen-zones doc line 50 'config/pos.php — NOT frozen'), PosCategoryController.php, PosComponent.vue, OrderStatusScreenOrderService.php, PreparingAndReadyComponent.vue. None in frozen list.",
+    "recommendation": "Zero frozen-zone risk for this plan. Proceed with normal commit discipline; the post-implement frozen-zone diff sentinel will assert 0 LOC across the 13 files."
+  }
+]

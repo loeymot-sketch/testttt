@@ -26,6 +26,14 @@ const DEFAULTS = Object.freeze({
     devWarnAfterDisconnectMs: 10_000,
 });
 
+// [Wave 3c KDS-ADV3C-08 P1 2026-05-18] Cadence upper cap symmetric with
+// Wave 2c KDS heal (9ff26e12b) and sibling PosSyncService heal. Without
+// it, owner-misconfig like FK_CATALOG_OSS_FALLBACK_CONNECTED_INTERVAL_MS=
+// 999999999 would freeze the customer wall, blowing the SYNC-2 8s budget
+// (POS pay → OSS visible). 60s = 1 poll/min minimum.
+const CADENCE_CEILING_MS = 60_000;
+const CADENCE_FLOOR_MS = 250;
+
 class OssSyncService {
     constructor() {
         this._state = STATE.IDLE;
@@ -113,11 +121,14 @@ class OssSyncService {
 
         return {
             enabled: cfg.enabled !== false && cfg.enabled !== 0 && cfg.enabled !== '0',
-            intervalMsWhenConnected: this._positiveInt(
+            // [Wave 3c KDS-ADV3C-08 P1 2026-05-18] Was `_positiveInt` —
+            // accepted any positive int incl. 999999999 (freeze 11.5 days).
+            // Now clamped to [250ms, 60_000ms] symmetric with KDS+POS.
+            intervalMsWhenConnected: this._clampCadence(
                 cfg.intervalMsWhenConnected,
                 DEFAULTS.intervalMsWhenConnected
             ),
-            intervalMsWhenDisconnected: this._positiveInt(
+            intervalMsWhenDisconnected: this._clampCadence(
                 cfg.intervalMsWhenDisconnected,
                 DEFAULTS.intervalMsWhenDisconnected
             ),
@@ -410,6 +421,19 @@ class OssSyncService {
         return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
     }
 
+    /**
+     * [Wave 3c KDS-ADV3C-08 P1 2026-05-18] Clamp a cadence value to
+     * [CADENCE_FLOOR_MS, CADENCE_CEILING_MS]. Non-numeric → fallback.
+     * Protects against silent-blind misconfig (e.g. CDN-pushed config
+     * with intervalMsWhenConnected=999999999 freezing the customer wall).
+     */
+    _clampCadence(value, fallback) {
+        const parsed = parseInt(value, 10);
+        const candidate = Number.isFinite(parsed) ? parsed : fallback;
+        const floored = candidate >= CADENCE_FLOOR_MS ? candidate : CADENCE_FLOOR_MS;
+        return floored <= CADENCE_CEILING_MS ? floored : CADENCE_CEILING_MS;
+    }
+
     _jitter() {
         return Math.floor(Math.random() * this._opts.jitterMaxMs);
     }
@@ -424,4 +448,4 @@ class OssSyncService {
 }
 
 export default new OssSyncService();
-export { OssSyncService, STATE, DEFAULTS };
+export { OssSyncService, STATE, DEFAULTS, CADENCE_CEILING_MS, CADENCE_FLOOR_MS };

@@ -1,0 +1,53 @@
+{
+  "wave": "N",
+  "round": 2,
+  "states_reviewed": 10,
+  "states_present": ["01-rupture-dashboard", "02-pos-grid-before", "03-kiosk-menu-before", "04-rupture-dashboard-after-toggle-oos", "05-pos-grid-after-oos", "06-kiosk-menu-after-oos", "07-dashboard-empty-search", "09-rupture-dashboard-re-enabled", "10-pos-grid-re-enabled", "11-kiosk-menu-re-enabled"],
+  "target_item": { "id": 22, "name": "Sandwich Cayenne" },
+  "silent_oversell_verdict": "CLEARED — OOS item is GENUINELY non-orderable on BOTH surfaces, verified at DOM + source level (not merely dimmed). No false-pass on the OR-clause.",
+  "silent_oversell_evidence": {
+    "pos": "05-pos-grid-after-oos.dom.html: tile id=22 = '<button ... class=\"pos-v5-tile pos-item-tile is-unavailable\" aria-disabled=\"true\" aria-label=\"Indisponible : Sandwich Cayenne\" data-pos-item-id=\"22\" disabled=\"\">'. Native button disabled attr + is-unavailable + aria-disabled — true disable, not dim. PNG shows live banner 'Article indisponible : Sandwich Cayenne'.",
+    "kiosk": "06-kiosk-menu-after-oos.dom.html: card id=22 = class 'kiosk-product-card--filtered-out' aria-disabled='true' title='Épuisé'; renders visible <span class=kiosk-product-badge data-testid=kiosk-product-badge-22>Épuisé</span>; inner <button class=kiosk-product-add disabled=''>. Source KioskCategoriesComponent.vue:465-471 onProductCardActivate() calls isProductCatalogAllowed()→preventDefault()+return when unavailable (openProduct NEVER reached). Defense-in-depth: aria-disabled + click guard + disabled add button + visible Épuisé badge.",
+    "reversal": "10-pos-grid-re-enabled.dom.html tile 22 back to aria-disabled=false / no disabled / no is-unavailable. 11-kiosk-menu-re-enabled.dom.html card 22 back to aria-disabled=false / no --filtered-out / title=''. DB confirms Item(22).is_available=AVAILABLE, 0 OOS ItemBranchAvailability rows after run."
+  },
+  "findings": [
+    {
+      "id": "N-001",
+      "state_artifact": "tests/e2e/test-e2e-abuse-N-stock-cascade.spec.js (whole spec)",
+      "category": "coverage_gap_vs_plan",
+      "severity": "P2",
+      "evidence": "AUDIT_PLAN.md:170 mandates cascade to FOUR surfaces ('kiosk item hidden / POS grayed / KDS no new cards / OSS upsell removed') and KEY ASSERTION (:171) = 'item hidden on ALL surfaces ≤2s of toggle'. The spec only opens admin+POS+kiosk contexts (spec:14-20) and only hard-asserts cascade on POS (spec:355-358) and kiosk (spec:386-389). grep of the spec for 'oss|kds|order-status|upsell' = ZERO matches. KDS-side ('no new cards for an 86'd item') and OSS-side ('upsell removed') cascade are NEVER exercised — so the plan's 'ALL surfaces' claim is proven only for 2 of the 4 named surfaces. A KDS/OSS oversell regression would pass this spec green.",
+      "fix_hint": "Add a KDS context (chef@lecayenne.fr, private-branch.1) asserting an 86'd item produces no new KDS card / shows as unavailable, and an OSS/upsell context asserting the 86'd item is dropped from upsell. Or explicitly de-scope KDS/OSS in AUDIT_PLAN.md Wave N and downgrade its KEY ASSERTION from 'ALL surfaces' to 'POS+kiosk'.",
+      "why_p2_not_p1": "Coverage gap, not a demonstrated defect (REVIEWER_PROTOCOL P1 = proven user-visible defect; P1-objectivity rule AUDIT_PLAN:33-41 forbids blocking on an unmeasured surface). Crucially, the oversell vector is the ORDERING surfaces (kiosk+POS), both proven non-orderable. KDS/OSS are downstream DISPLAY surfaces: KDS shows only PLACED orders, so 'no new card for an 86'd item' is a structural CONSEQUENCE of the proven source-block (no order containing the item can be placed → no card can arrive) — not an independent oversell vector; an OSS upsell tap still routes back through the proven-disabled add-path. So the task's core 'truly non-orderable on BOTH kiosk AND POS' paranoia is fully discharged."
+    },
+    {
+      "id": "N-002",
+      "state_artifact": "tests/e2e/test-e2e-abuse-N-stock-cascade.spec.js:354-363 and :385-394",
+      "category": "audit_integrity_soft_pass_path",
+      "severity": "P3",
+      "evidence": "Both cascade hard-asserts are GATED behind posTilePresentBefore / kioskCardPresentBefore. If the target item's tile/card is not located before the toggle (first-page featured filter, category walk miss, or a future seed change), the branch falls to recordDefect() — a non-fatal console.error — and the spec STILL PASSES with the cascade UNVERIFIED. For THIS run both flags were true (DOM confirms tile 22 in 02 + card 22 in 03), so the hard asserts genuinely executed; the soft-pass path is latent, not active. Reviewer must re-confirm presence each round rather than trust a green run.",
+      "fix_hint": "Promote posTilePresentBefore / kioskCardPresentBefore to HARD expects (the spec already requires an in-stock item exists; it should require that SAME item is visible on each observer surface before toggle), so a 'not found' becomes a loud failure instead of a silent skip."
+    },
+    {
+      "id": "N-003",
+      "state_artifact": "tests/e2e/__screenshots__/test-e2e-N/ (missing empty states)",
+      "category": "empty_state_coverage_gap",
+      "severity": "P3",
+      "evidence": "AUDIT_PLAN.md:170 lists 5 empty states (empty kiosk category fallback, empty kiosk menu, empty POS category, empty KDS pile 'ready', empty OSS). Only 07-dashboard-empty-search was captured (admin dashboard search no-match — not even one of the 5 named) and state 08-kiosk-empty-category is conditional (spec:414-417) and was NOT emitted (no genuinely-empty category in the live menu). The empty-state-never-crashes assertion is therefore proven only for the admin dashboard search pane, not for the kiosk/POS/KDS/OSS empty surfaces the plan calls out.",
+      "fix_hint": "Either force an empty category (86 every item in one category) to exercise [data-testid=kiosk-categories-empty] + empty POS category, or de-scope these from the plan. The conditional snap at spec:415 should be made deterministic."
+    }
+  ],
+  "non_findings_verified": [
+    "i18n leak: scanned all 10 .dom.html for visible ^[a-z]+(\\.[a-z_]+){1,4}$ — ZERO leaks. Empty-state copy = real FR 'Aucun produit ne correspond à votre recherche.' Badge = 'Épuisé', banner = 'Article indisponible : Sandwich Cayenne'.",
+    "console errors: only allowlisted noise — CSP report-only (info), [PosSyncService] fallback polling disabled (info), and the KNOWN kiosk broadcasting/auth 302→/api/login 401 signal (AUDIT_PLAN:107-117 classifies ≤P2 since core ordering works without WS). No non-vendor application error.",
+    "network 4xx/5xx: 06-kiosk-menu-after-oos.network.json has broadcasting/auth 302 + /api/login GET 401 — both explicitly allowlisted (AUDIT_PLAN:108-114). csp-report 204 allowlisted. Toggle POST=200, re-toggle POST=200.",
+    "cascade assertions ARE HARD: toggle status<300 (spec:323), aria-checked=false after (spec:329-332), POS flipped toBeTruthy (spec:355), kiosk flipped toBeTruthy (spec:386), re-enable status<300 (spec:429), aria-checked=true (spec:430-433), POS reversal toBeTruthy (spec:448), kiosk reversal toBeTruthy (spec:465). No silent .catch swallows a cascade verdict.",
+    "afterAll cleanup TRULY re-enables: spec:170-185 iterates disabledItemIds and apiToggle(id,true). DB post-run check: Item(22).is_available=AVAILABLE, ItemBranchAvailability OOS rows=0 → menu NOT left corrupted for serial sibling waves.",
+    "dashboard self-state: 04 PNG shows RUPTURE red badge on Sandwich Cayenne, EN STOCK green on all others; 09/re-enabled reverts."
+  ],
+  "summary": {
+    "P0": 0, "P1": 0, "P2": 1, "P3": 2,
+    "open_P0": 0, "open_P1": 0, "open_P2": 1, "open_P3": 2
+  },
+  "verdict": "GREEN (blocking) — open_P0=0, open_P1=0. Silent-oversell risk CLEARED on both tested surfaces (genuine disable + click-guard + disabled add button, DOM+source verified). Non-blocking: N-001 P2 (KDS/OSS cascade un-asserted vs plan's 'ALL surfaces'), N-002/N-003 P3 (latent soft-pass on present-before gate; planned empty states uncaptured)."
+}

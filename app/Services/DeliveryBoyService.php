@@ -6,6 +6,7 @@ use Exception;
 use App\Enums\Ask;
 use App\Models\User;
 use App\Enums\Role as EnumRole;
+use App\Services\Concerns\EnforcesOwnBranchScope;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Hash;
@@ -18,6 +19,8 @@ use App\Http\Requests\UserChangePasswordRequest;
 
 class DeliveryBoyService
 {
+    use EnforcesOwnBranchScope;
+
     public $user;
     public $phoneFilter = ['phone'];
     public $roleFilter = ['role_id'];
@@ -37,7 +40,12 @@ class DeliveryBoyService
             $orderColumn = $request->get('order_column') ?? 'id';
             $orderType   = $request->get('order_type') ?? 'desc';
 
-            return User::with('media', 'addresses')->role(EnumRole::DELIVERY_BOY)->where(
+            // [GOAL-PAGEBY-STOCK-2026-05-18 P0 LIVREUR-422 heal]
+            // Spatie's ->role($int) calls findById($int) (HasRoles trait L84). Passing
+            // EnumRole::DELIVERY_BOY (=3) breaks whenever the roles table AUTO_INCREMENT
+            // skipped past 3 (fresh seed often lands at id=73-76). The stable identity is
+            // the role NAME — see SpatieRoleLookup docblock for the same rationale.
+            return User::with('media', 'addresses')->role('Delivery Boy', 'sanctum')->where(
                 function ($query) use ($requests) {
                     foreach ($requests as $key => $request) {
                         if (in_array($key, $this->userFilter)) {
@@ -64,7 +72,7 @@ class DeliveryBoyService
                     'phone'             => $request->phone,
                     'username'          => $this->username($request->email),
                     'password'          => bcrypt($request->password),
-                    'branch_id'         => $request->branch_id,
+                    'branch_id'         => $this->effectiveBranchId(auth()->user(), $request->branch_id),
                     'status'            => $request->status,
                     'email_verified_at' => now(),
                     'country_code'      => $request->country_code,
@@ -98,7 +106,7 @@ class DeliveryBoyService
                     $this->user->name         = $request->name;
                     $this->user->email        = $request->email;
                     $this->user->phone        = $request->phone;
-                    $this->user->branch_id    = $request->branch_id;
+                    $this->user->branch_id    = $this->effectiveBranchId(auth()->user(), $request->branch_id);
                     $this->user->status       = $request->status;
                     $this->user->country_code = $request->country_code;
                     if ($request->password) {

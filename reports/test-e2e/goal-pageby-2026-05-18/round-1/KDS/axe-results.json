@@ -1,0 +1,252 @@
+{
+  "url": "http://localhost:8000/admin/kitchen-display-system",
+  "violations": [
+    {
+      "id": "color-contrast",
+      "impact": "serious",
+      "tags": [
+        "cat.color",
+        "wcag2aa",
+        "wcag143",
+        "TTv5",
+        "TT13.c",
+        "EN-301-549",
+        "EN-9.1.4.3",
+        "ACT",
+        "RGAAv4",
+        "RGAA-3.2.1"
+      ],
+      "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+      "help": "Elements must meet minimum color contrast ratio thresholds",
+      "helpUrl": "https://dequeuniversity.com/rules/axe/4.11/color-contrast?application=playwright",
+      "nodes": [
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "fgColor": "#9ca3af",
+                "bgColor": "#f9fafb",
+                "contrastRatio": 2.42,
+                "fontSize": "12.0pt (16px)",
+                "fontWeight": "normal",
+                "messageKey": null,
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [
+                {
+                  "html": "<div data-v-3992cfe5=\"\" data-v-66aac04e=\"\" class=\"kds-v2\" dir=\"ltr\">",
+                  "target": [
+                    ".kds-v2"
+                  ]
+                }
+              ],
+              "impact": "serious",
+              "message": "Element has insufficient color contrast of 2.42 (foreground color: #9ca3af, background color: #f9fafb, font size: 12.0pt (16px), font weight: normal). Expected contrast ratio of 4.5:1"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<div data-v-3992cfe5=\"\" class=\"kds-v2__empty-sub\">Les nouvelles commandes apparaîtront ici</div>",
+          "target": [
+            ".kds-v2__empty-sub"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element has insufficient color contrast of 2.42 (foreground color: #9ca3af, background color: #f9fafb, font size: 12.0pt (16px), font weight: normal). Expected contrast ratio of 4.5:1"
+        }
+      ]
+    }
+  ],
+  "incomplete": [
+    {
+      "id": "color-contrast",
+      "impact": "serious",
+      "tags": [
+        "cat.color",
+        "wcag2aa",
+        "wcag143",
+        "TTv5",
+        "TT13.c",
+        "EN-301-549",
+        "EN-9.1.4.3",
+        "ACT",
+        "RGAAv4",
+        "RGAA-3.2.1"
+      ],
+      "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+      "help": "Elements must meet minimum color contrast ratio thresholds",
+      "helpUrl": "https://dequeuniversity.com/rules/axe/4.11/color-contrast?application=playwright",
+      "nodes": [
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.5pt (14px)",
+                "fontWeight": "normal",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Unable to determine contrast ratio"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<label for=\"branch_id_1\" class=\"capitalize leading-8 text-sm min-w-[150px] cursor-pointer text-heading\">Le Cayenne (principal)</label>",
+          "target": [
+            ".leading-8"
+          ],
+          "failureSummary": "Fix any of the following:\n  Unable to determine contrast ratio"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "9.0pt (12px)",
+                "fontWeight": "normal",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Unable to determine contrast ratio"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<p class=\"text-xs mb-0.5\">admin@lecayenne.fr</p>",
+          "target": [
+            "p:nth-child(4)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Unable to determine contrast ratio"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "9.0pt (12px)",
+                "fontWeight": "normal",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Unable to determine contrast ratio"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<p dir=\"ltr\" class=\"text-xs\">+330600000000</p>",
+          "target": [
+            "p:nth-child(5)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Unable to determine contrast ratio"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.5pt (14px)",
+                "fontWeight": "normal",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Unable to determine contrast ratio"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<h3 class=\"font-medium text-sm leading-6 capitalize mb-0.5\">0.00€</h3>",
+          "target": [
+            "h3:nth-child(6)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Unable to determine contrast ratio"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.5pt (14px)",
+                "fontWeight": "normal",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Unable to determine contrast ratio"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"text-sm leading-6 capitalize\">Modifier le profil</span>",
+          "target": [
+            "a[href$=\"edit-profile\"] > .leading-6.capitalize.text-sm"
+          ],
+          "failureSummary": "Fix any of the following:\n  Unable to determine contrast ratio"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.5pt (14px)",
+                "fontWeight": "normal",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Unable to determine contrast ratio"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"text-sm leading-6 capitalize\">Changer le mot de passe</span>",
+          "target": [
+            "a[href$=\"change-password\"] > .leading-6.capitalize.text-sm"
+          ],
+          "failureSummary": "Fix any of the following:\n  Unable to determine contrast ratio"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "10.5pt (14px)",
+                "fontWeight": "normal",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "Unable to determine contrast ratio"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"text-sm leading-6 capitalize\">Déconnexion</span>",
+          "target": [
+            ".paper-link.gap-3\\.5.py-3:nth-child(3) > .leading-6.capitalize.text-sm"
+          ],
+          "failureSummary": "Fix any of the following:\n  Unable to determine contrast ratio"
+        }
+      ]
+    }
+  ],
+  "ts": "2026-05-20T00:14:40.729Z"
+}

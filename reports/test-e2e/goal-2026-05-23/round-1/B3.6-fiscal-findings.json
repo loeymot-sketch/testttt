@@ -1,0 +1,231 @@
+{
+  "role": "Fiscal/NF525 Auditeur",
+  "agent": "B3.6",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head": "f28688675",
+  "audited_at": "2026-05-23T00:00:00Z",
+  "mode": "READ-ONLY",
+
+  "chain_verify_pre": "CHAIN OK count=64 last_hash=8daed68a65b8c8e75a7143f305967047ee1bb0b664a95afb5d9d2e0657777592 (audit_logs+z_reports branch=1)",
+  "chain_verify_post": "CHAIN OK count=64 last_hash=8daed68a65b8c8e75a7143f305967047ee1bb0b664a95afb5d9d2e0657777592 (bit-identical — no writes during read-only audit)",
+  "chain_bit_identical_or_extended_legit": true,
+  "chain_linkage_sampled": {
+    "method": "manual prev_hash[i] == current_hash[i-1] validation",
+    "sample_window_1": "ids 1..20 — 0 breaks",
+    "sample_window_2": "ids 57..64 (last 8) — 0 breaks",
+    "genesis_row": "id=1 prev_hash='' (correct empty genesis)"
+  },
+
+  "triggers_active": {
+    "audit_logs_before_delete": true,
+    "audit_logs_before_update": true,
+    "z_reports_before_delete": true,
+    "trigger_names": ["audit_logs_no_update", "audit_logs_no_delete", "z_reports_no_delete"],
+    "db_driver": "mysql",
+    "note": "BONUS INVARIANT — BEFORE UPDATE trigger on audit_logs goes BEYOND CLAUDE.md §8 mandate (which requires BEFORE DELETE only). Append-only-and-immutable invariant enforced at storage layer."
+  },
+
+  "composition_snapshot_update_count": 0,
+  "composition_snapshot_audit": {
+    "INSERT_sites": [
+      "app/Services/OrderService.php:475",
+      "app/Services/OrderService.php:894",
+      "app/Services/OrderService.php:1358",
+      "app/Services/FrontendOrderService.php:442",
+      "app/Services/Pricing/PricingService.php:291",
+      "app/Services/Order/RefundWithCounterEntryService.php:146 (refund-with-counter — INSERT of new OrderItem row with copied snapshot, not UPDATE)"
+    ],
+    "READ_sites": "20+ resource/controller sites — all read-only",
+    "UPDATE_sites": "0 (zero) UPDATE statements touching composition_snapshot column anywhere in app/ + database/",
+    "verdict": "IMMUTABILITY ENFORCED"
+  },
+
+  "production_boot_guards_count": 10,
+  "production_boot_guards": [
+    {"line": 86,  "config": "pos.simulation_hardware",       "env": "POS_SIMULATION_HARDWARE",         "matches_claude_md_section_8": true},
+    {"line": 98,  "config": "payment.bypass.enabled",        "env": "PAYMENT_BYPASS_MODE",             "matches_claude_md_section_8": false, "note": "BONUS guard — not enumerated in CLAUDE.md §8"},
+    {"line": 105, "config": "printing.bypass.enabled",       "env": "PRINTING_BYPASS_MODE",            "matches_claude_md_section_8": false, "note": "BONUS guard"},
+    {"line": 123, "config": "app.debug",                     "env": "APP_DEBUG",                       "matches_claude_md_section_8": true},
+    {"line": 144, "config": "idempotency.enabled",           "env": "IDEMPOTENCY_MIDDLEWARE_ENABLED",  "matches_claude_md_section_8": true},
+    {"line": 163, "config": "loyalty.qr.secret",             "env": "LOYALTY_QR_SECRET",               "matches_claude_md_section_8": false, "note": "BONUS guard — post-13-zone P0 finding"},
+    {"line": 182, "config": "app.url",                       "env": "APP_URL",                         "matches_claude_md_section_8": true},
+    {"line": 194, "config": "broadcasting.default",          "env": "BROADCAST_DRIVER",                "matches_claude_md_section_8": false, "note": "BONUS guard"},
+    {"line": 200, "config": "queue.default",                 "env": "QUEUE_CONNECTION",                "matches_claude_md_section_8": false, "note": "BONUS guard — F-015 fix"},
+    {"line": 217, "config": "cache.default",                 "env": "CACHE_DRIVER",                    "matches_claude_md_section_8": true,  "note": "narrower than stated — forbids array+null only, file+database PASS (V1 OK single-box, V1.0.X cloud-prep UNI-03)"}
+  ],
+
+  "fiscal_sequence_gap_count": 2,
+  "fiscal_sequence_audit": {
+    "branch_id": 1,
+    "rows_with_fsn": 33,
+    "fsn_range": "1..38",
+    "gaps_observed": [
+      {"after_fsn": 28, "before_fsn": 33, "missing": [29, 30, 31, 32], "orders_referenced_in_audit_logs": [128, 129, 130, 134], "orders_still_in_db": false},
+      {"after_fsn": 34, "before_fsn": 36, "missing": [35],             "orders_referenced_in_audit_logs": "TBC (likely 280-282)", "orders_still_in_db": false}
+    ],
+    "root_cause": "DEV-ONLY artifact — orders TRUNCATED via app/Console/Commands/FreshOrderSeed.php (line 28) during local dev iterations. orders.id has 10 gap ranges totaling 74 missing IDs between current_min=69 and current_max=425.",
+    "production_safe": true,
+    "production_guard": "FreshOrderSeed.php:21-24 refuses to run when APP_ENV=production (returns self::FAILURE).",
+    "runtime_allocation_pattern": "Cache::lock(5s) + DB transaction + Order::lockForUpdate() + Order::withTrashed() + Order::withoutGlobalScope(BranchScope) — triple defense intact at FiscalSequenceService.php:66-104",
+    "lock_exception": "LOCK_FISCAL_WGS_Z6_P1_2026-05-19 (line 88 withTrashed() per RED-Z6 Q#17)",
+    "fiscal_alloc_error_at_count": 0,
+    "verdict": "RUNTIME INVARIANT INTACT — observed gaps are pre-existing dev TRUNCATE residue, not allocation bugs"
+  },
+
+  "append_only_enforcement": {
+    "code_grep_audit_logs_delete_truncate": {
+      "matches_in_app": 0,
+      "matches_in_database": 0,
+      "verdict": "PASS — zero forbidden patterns"
+    },
+    "code_grep_orders_truncate": {
+      "matches_in_app": 1,
+      "file": "app/Console/Commands/FreshOrderSeed.php:28",
+      "guarded": true,
+      "guard_pattern": "if (app()->environment('production')) { return self::FAILURE; }",
+      "verdict": "DEV-ONLY — production guard active"
+    },
+    "db_trigger_layer": "audit_logs BEFORE DELETE + BEFORE UPDATE + z_reports BEFORE DELETE all active in mysql instance"
+  },
+
+  "ansible_grant_revoke": {
+    "file": "deploy/ansible/site.yml:59-75",
+    "revokes": ["DROP", "ALTER"],
+    "tables_protected": ["audit_logs", "z_reports", "cash_movements", "cash_drawer_sessions", "order_payments", "domain_events", "webhook_events"],
+    "truncate_blocked": true,
+    "truncate_block_reasoning": "MySQL semantics — TRUNCATE requires DROP privilege. Revoking DROP also blocks TRUNCATE. Confirmed at site.yml lines 64-71.",
+    "delete_blocked": false,
+    "delete_block_reasoning": "DELETE is NOT revoked. App needs row-level delete for soft-delete + GDPR retraction flows. Defense-in-depth: BEFORE DELETE trigger fires and rejects.",
+    "documentation_mismatch": {
+      "claude_md_section_8_says": "GRANT-level REVOKE on audit_logs + z_reports mitigates TRUNCATE bypass",
+      "actual_implementation": "REVOKE DROP, ALTER (which transitively blocks TRUNCATE) — narrower than stated 'fiscal-table privilege REVOKE'",
+      "severity": "INFO — implementation correct, documentation slightly imprecise. CLAUDE.md says 'GRANT-level REVOKE'; actual is 'DROP+ALTER REVOKE' which still blocks TRUNCATE."
+    }
+  },
+
+  "allergens_snapshot_state": {
+    "column_location": "order_items.allergens_snapshot (json nullable)",
+    "wave_q4_status": "post-NOOP — column exists, hydration helper exists (app/Services/Orders/OrderItemAllergenSnapshot.php), backfill command exists (app/Console/Commands/BackfillAllergensSnapshotCommand.php), KDS resource exposes it (KDSOrderItemsResource.php:39)",
+    "kds_resource_exposes": true,
+    "note": "Per task brief F5, Wave Q-4 NOOP means no chef-confirmed mapping yet — column may be NULL for new orders. KDS doesn't fabricate allergens. Verified resource only reads safeJsonDecodeArray($this->allergens_snapshot) — no synthetic values."
+  },
+
+  "sanctum_kiosk_order": {
+    "ttl_minutes_config": 480,
+    "config_path": "config/sanctum.php:51",
+    "env_var": "SANCTUM_TOKEN_EXPIRATION (default 480)",
+    "matches_claude_md_section_9": true,
+    "old_token_revoke_at_relogin": {
+      "kiosk_path": "app/Http/Controllers/Auth/KioskMachineLoginController.php:96 — $user->tokens()->where('name','kiosk-token')->delete()",
+      "admin_path": "app/Http/Controllers/Auth/LoginController.php:109 — $user->tokens()->where('name','auth_token')->delete()",
+      "verdict": "TOKEN SPRAWL PREVENTED"
+    },
+    "v1_0_1_backlog_note": "TTL 8h → 1h sensitive ops (per CLAUDE.md §9 V1.0.1 roadmap) — backlog item, not blocking V1 LOCAL"
+  },
+
+  "idempotency_middleware": {
+    "registered_alias": "idempotency",
+    "class": "App\\Http\\Middleware\\IdempotencyKeyMiddleware",
+    "kernel_line": "app/Http/Kernel.php:140",
+    "enabled_config": "config/idempotency.php:20 (env IDEMPOTENCY_MIDDLEWARE_ENABLED default false → must be true in prod via boot guard at line 144)",
+    "runtime_local": "ENABLED (env=true)",
+    "scope": "(branch_id, user_id, hash(key)) dual-layer cache + DB UNIQUE"
+  },
+
+  "z_report_daily_close": {
+    "z_reports_count": 0,
+    "schema_intact": true,
+    "schema_columns": "id, branch_id, sequence_no, opened_at, closed_at, opened_by, closed_by, total_ht, total_ttc, total_tva, total_by_method (json), total_by_tax_rate (json), order_count, cancel_count, refund_count, cash_opening_amount, cash_closing_amount, cash_variance, cash_movements_count, prev_hash, signature, status, archived_at",
+    "service": "app/Services/Fiscal/ZReportService.php",
+    "note": "Zero closed days in current dev DB — schema + service present, no actual close events recorded yet."
+  },
+
+  "retention_math": {
+    "today": "2026-05-23",
+    "retention_deadline": "2032-05-23 (6 years per NF525 art.286 quinquies)",
+    "audit_logs_current_count": 64,
+    "z_reports_current_count": 0,
+    "projected_audit_rows_6yr_at_1000_orders_per_day_5_audit_events": 10950000,
+    "sustainable_storage_estimate": "10.95M rows × ~500 bytes/row (json payload + hash + ip + user_agent) ≈ 5.5 GB raw + ~3 GB indexes. EASILY sustainable on single-box MySQL with proper partitioning (PARTITION BY RANGE(created_at) suggested for V1.0.X).",
+    "backup_retention_coverage": "Per project memory (Wave Polish Final 2026-05-21 Q14), Laravel backup automation + restore drill PASS. Backup retention covers V1 cycle. 6-year coverage requires explicit backup-rotation policy doc — not verified here.",
+    "verdict_v1_local": "OK for V1 single-box. V1.0.X partitioning + cold-storage policy for 6-year horizon recommended."
+  },
+
+  "findings": [
+    {
+      "id": "B3.6-F1",
+      "severity": "INFO",
+      "title": "audit_logs BEFORE UPDATE trigger — invariant stronger than CLAUDE.md §8 mandate",
+      "description": "CLAUDE.md §8 mandates BEFORE DELETE trigger on audit_logs. Actual DB has BOTH BEFORE DELETE (audit_logs_no_delete) AND BEFORE UPDATE (audit_logs_no_update). UPDATE protection enforces full append-only-and-immutable (not just append-only).",
+      "action": "Update CLAUDE.md §8 to document BEFORE UPDATE trigger as part of NF525 invariant arsenal.",
+      "fiscal_risk": "NONE — bonus enforcement"
+    },
+    {
+      "id": "B3.6-F2",
+      "severity": "INFO",
+      "title": "10 production boot guards, not 5",
+      "description": "CLAUDE.md §8 enumerates 5 forbidden conditions (POS_SIMULATION_HARDWARE, IDEMPOTENCY_MIDDLEWARE_ENABLED, APP_DEBUG, APP_URL, CACHE_DRIVER). AppServiceProvider.php has 10 throw new \\RuntimeException blocks for: those 5 + PAYMENT_BYPASS_MODE + PRINTING_BYPASS_MODE + LOYALTY_QR_SECRET + BROADCAST_DRIVER + QUEUE_CONNECTION.",
+      "action": "Update CLAUDE.md §8 to enumerate all 10 boot guards.",
+      "fiscal_risk": "NONE — bonus enforcement"
+    },
+    {
+      "id": "B3.6-F3",
+      "severity": "INFO",
+      "title": "fiscal_sequence_no gaps in dev DB (29-32, 35) are TRUNCATE residue, not allocation bugs",
+      "description": "branch=1 has 2 gaps in fiscal_sequence_no (28→33 missing 29-32; 34→36 missing 35). audit_logs retains counter_payment_confirmed events for the underlying orders (128, 129, 130, 134), but the orders rows themselves were TRUNCATEd via FreshOrderSeed dev command. The triple-defense allocation pattern at FiscalSequenceService:66-104 (Cache::lock + transaction + lockForUpdate + withTrashed) is intact for runtime.",
+      "action": "Document this dev-data shape in PROJECT_BRAIN — current dev DB has gap-bearing fsn series due to dev seeds. Production NEVER reaches this state (FreshOrderSeed.php:21-24 environment guard).",
+      "fiscal_risk": "NONE in production — DEV-ONLY"
+    },
+    {
+      "id": "B3.6-F4",
+      "severity": "AMBER",
+      "title": "Ansible REVOKE list documentation imprecision",
+      "description": "CLAUDE.md §8 states 'GRANT-level REVOKE on audit_logs + z_reports' mitigates TRUNCATE bypass. Actual implementation at deploy/ansible/site.yml:59-75 only revokes DROP and ALTER (which transitively blocks TRUNCATE per MySQL semantics — TRUNCATE requires DROP). DELETE remains GRANTed for normal app operation; defense-in-depth provided by BEFORE DELETE trigger.",
+      "action": "Either (a) update CLAUDE.md §8 to specify 'REVOKE DROP, ALTER' (current implementation) OR (b) explicitly REVOKE TRUNCATE on supported MySQL versions. (a) is sufficient — TRUNCATE is blocked transitively.",
+      "fiscal_risk": "LOW — runtime invariant holds; documentation drift only"
+    },
+    {
+      "id": "B3.6-F5",
+      "severity": "INFO",
+      "title": "z_reports table empty in dev — close path untested in this DB",
+      "description": "Zero rows in z_reports despite 38 fiscal_sequence_no allocations. Schema + service present, no close events triggered. This is expected for dev — production requires daily close to populate.",
+      "action": "Ensure operator playbook includes 'php artisan z-report:close' (or equivalent) at end-of-day. Document in deploy/ runbooks.",
+      "fiscal_risk": "PROCESS GAP — not technical"
+    },
+    {
+      "id": "B3.6-F6",
+      "severity": "INFO",
+      "title": "6-year retention partitioning + archive policy not yet codified",
+      "description": "At 1000 orders/day projected (peak Le Cayenne ~150 orders/day per memory), audit_logs grows to ~10.95M rows / 5.5 GB over 6 years. MySQL handles this fine on single-box with proper indexes, but partition pruning would dramatically improve query performance. No PARTITION BY RANGE(created_at) defined on audit_logs/z_reports migrations.",
+      "action": "V1.0.X backlog — add monthly partition migration + cold-archive policy for rows >2 years.",
+      "fiscal_risk": "FUTURE OPERATIONAL — not blocking V1 LOCAL"
+    },
+    {
+      "id": "B3.6-F7",
+      "severity": "INFO",
+      "title": "CACHE_DRIVER guard narrower than stated intent",
+      "description": "CLAUDE.md §8 block comment says 'redis or memcached' required. AppServiceProvider.php:215 forbidden list is only ['array', 'null'] — file and database drivers PASS the guard. Already documented as UNI-03 V1.0.X cloud-prep backlog per CLAUDE.md verified note 2026-05-21.",
+      "action": "Already tracked as UNI-03. No new action.",
+      "fiscal_risk": "NONE for V1 LOCAL — file driver safe on single-box Le Cayenne. ALB multi-instance prep required for cloud."
+    }
+  ],
+
+  "verdict": "GREEN",
+
+  "legal_risk_assessment": "ZERO active NF525 violations detected. Chain bit-identical pre/post audit at count=64 last_hash=8daed68a65b8c8e75a7143f305967047ee1bb0b664a95afb5d9d2e0657777592. Both DB triggers active (BEFORE DELETE on audit_logs + z_reports; BONUS BEFORE UPDATE on audit_logs). Zero UPDATE statements on composition_snapshot column. fiscal_sequence_no gaps are dev TRUNCATE residue with production guard intact — production allocation pattern is triple-defended (cache lock + transaction + row lock + withTrashed). 10 production boot guards exceed CLAUDE.md §8 mandate of 5. Sanctum kiosk:order TTL 480min config + old-token revoke at relogin verified. Idempotency middleware registered + boot-guarded. Ansible REVOKE DROP+ALTER blocks TRUNCATE transitively. AMBER finding F4 is documentation precision only — runtime invariant holds. No legal exposure for V1 LOCAL Le Cayenne single-box deployment. V1.0.X backlog items (UNI-03 cache driver list widening, partitioning for 6-year retention, close-day operator playbook) are forward-looking, not current violations.",
+
+  "verified_invariants_checklist": {
+    "F1_chain_integrity": "PASS — CHAIN OK count=64, manual linkage verified on 2 sample windows (rows 1-20 + 57-64), zero breaks",
+    "F2_append_only_enforcement": "PASS — 3 DB triggers active (no_delete + no_update on audit_logs, no_delete on z_reports), zero forbidden code patterns in app/",
+    "F3_fiscal_sequence_no_invariant": "PASS — runtime triple-defense intact; gaps observed are dev TRUNCATE residue not allocation bugs; fiscal_alloc_error_at=0",
+    "F4_composition_snapshot_immutability": "PASS — 0 UPDATE statements, INSERT-only at 6 well-known sites",
+    "F5_allergens_snapshot": "PASS — column exists, helper + backfill cmd present, KDS reads honest value (no fabrication)",
+    "F6_production_boot_guards": "PASS — 10 guards (5 mandated + 5 bonus) in AppServiceProvider.php",
+    "F7_retention_policy": "PARTIAL — backup automation present (Wave Polish Final Q14), 6-year partitioning policy NOT codified (F6 backlog)",
+    "F8_sanctum_kiosk_order": "PASS — TTL 480min, old tokens revoked at relogin (kiosk + admin)",
+    "F9_idempotency_middleware": "PASS — registered + boot-guarded",
+    "F10_z_report_daily_close": "PASS structurally — schema + service intact; zero rows in dev (expected)",
+    "F11_pre_post_chain_bit_identical": "PASS — count=64 last_hash bit-identical pre + post audit (read-only confirmed)",
+    "F12_6yr_retention_math": "PASS sustainable — ~10.95M rows / 5.5GB projected, single-box handles, partitioning recommended for V1.0.X"
+  }
+}

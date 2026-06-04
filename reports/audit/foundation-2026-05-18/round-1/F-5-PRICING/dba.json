@@ -1,0 +1,83 @@
+{
+  "specialist": "DBA",
+  "zone": "F-5 Pricing SSOT",
+  "scope": "order_items table — composition_snapshot column type + immutability invariants + 6 INSERT/copy-forward sites. READ-ONLY.",
+  "date": "2026-05-18",
+  "findings": [
+    {
+      "id": "F5-DBA-01",
+      "severity": "P2",
+      "title": "composition_snapshot column is plain JSON nullable — no DB-level immutability guard",
+      "evidence": {
+        "migration": "database/migrations/2026_04_22_000020_add_composition_snapshot_to_order_items.php:12 — `$table->json('composition_snapshot')->nullable()->after('item_extras');`",
+        "down_migration": "Same file:21 — `$table->dropColumn('composition_snapshot');` (no trigger to drop = no trigger was created)",
+        "model_cast": "app/Models/OrderItem.php:71 — `'composition_snapshot' => 'array'`",
+        "fillable": "OrderItem.php:31-56 fillable array contains 'composition_snapshot' on line 44 → mass-assignment allowed"
+      },
+      "comparison_with_NF525_protected_tables": "audit_logs and z_reports tables have BEFORE DELETE triggers (`SIGNAL SQLSTATE '45000'`) per CLAUDE.md §8. order_items.composition_snapshot has NO equivalent BEFORE UPDATE trigger to enforce NF525 §V immutability.",
+      "actual_state": "Immutability enforced by call-graph convention only — see Security F5-SEC-03.",
+      "v1_1_recommendation": "Add migration creating MySQL trigger `BEFORE UPDATE ON order_items FOR EACH ROW IF OLD.composition_snapshot IS NOT NULL AND NEW.composition_snapshot <> OLD.composition_snapshot THEN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'order_items.composition_snapshot is NF525-immutable'; END IF;`. SQLite test envs can use a generated-column constraint or skip the trigger entirely with the model-level mutator guard."
+    },
+    {
+      "id": "F5-DBA-02",
+      "severity": "INFO",
+      "title": "Six composition_snapshot write sites reconciled — 5 INSERT (builder-driven) + 1 COPY-FORWARD (refund)",
+      "type": "topology-verification",
+      "evidence": {
+        "insert_sites_ssot_branch": [
+          {
+            "file": "app/Services/Pricing/PricingService.php:291",
+            "wrapped_by": "OrderService::myOrderStore (web), OrderService::posOrderStore (POS), OrderService::tableOrderStore (table), FrontendOrderService::myOrderStore (kiosk)",
+            "snapshot_source": "$this->snapshotBuilder->build(...) → CompositionSnapshotBuilder::build",
+            "insert_call": "All wrappers call OrderItem::insert($itemsArray) where $itemsArray = $pricingResult->orderItemInsertRows"
+          }
+        ],
+        "insert_sites_legacy_branch": [
+          {"file": "app/Services/OrderService.php:466", "snapshot_source": "(new \\App\\Services\\Pricing\\CompositionSnapshotBuilder())->build($item, $dbVariations, $dbExtras)"},
+          {"file": "app/Services/OrderService.php:821", "snapshot_source": "(new CompositionSnapshotBuilder())->build($item, $dbVariations, $dbExtras)"},
+          {"file": "app/Services/OrderService.php:1277", "snapshot_source": "(new CompositionSnapshotBuilder())->build($item, $dbVariations, $dbExtras)"},
+          {"file": "app/Services/FrontendOrderService.php:441", "snapshot_source": "(new CompositionSnapshotBuilder())->build($item, $dbVariations, $dbExtras)"}
+        ],
+        "copy_forward_site": {
+          "file": "app/Services/Order/RefundWithCounterEntryService.php:136",
+          "snapshot_source": "$item->composition_snapshot (parent OrderItem read-through)",
+          "operation": "OrderItem::create([...'composition_snapshot' => $item->composition_snapshot, ...]) creates a -qty mirror row with snapshot bytes IDENTICAL to parent → NF525 §V invariant preserved (chain reads same composition for refund)"
+        }
+      },
+      "consequence": "Reconciliation matches the Z-5 attest (5 builder-driven INSERT + 1 refund copy-forward). The 4 legacy INSERT sites are dead code today (pinned-off flag) but still pass NF525 invariants because they delegate snapshot construction to the same CompositionSnapshotBuilder.",
+      "v1_1_recommendation": "Post-C.5, only PricingService.php:291 + RefundWithCounterEntryService.php:136 remain as snapshot write sites. Add a unit test asserting `grep 'composition_snapshot' app/` returns ≤2 write contexts (sentinel against drift)."
+    },
+    {
+      "id": "F5-DBA-03",
+      "severity": "P3",
+      "title": "OrderItem cast 'composition_snapshot' => 'array' silently auto-decodes — masks json_encode/decode discipline",
+      "evidence": {
+        "cast": "OrderItem.php:71",
+        "explicit_decodes": [
+          "app/Http/Resources/OrderItemResource.php:36, :67, :79, :91 — `$this->safeJsonDecode($this->composition_snapshot)` despite the array cast",
+          "app/Http/Resources/KDSOrderItemsResource.php:35 — `$this->safeJsonDecodeArray($this->composition_snapshot)` despite cast",
+          "app/Http/Controllers/Admin/PosOrderController.php:230, :262 — `$this->decodedOrderItemArray($orderItem->composition_snapshot)`",
+          "app/Services/KitchenDisplaySystemOrderService.php:301 — `data_get($item, 'composition_snapshot.addons', [])` (relies on cast)",
+          "app/Services/Stock/StockService.php:280 — `$this->decodeSnapshotAddons($orderItem->composition_snapshot)`"
+        ],
+        "explicit_encodes": [
+          "PricingService.php:291, OrderService.php:466/821/1277, FrontendOrderService.php:441 — all `'composition_snapshot' => json_encode($compositionSnapshot)` for OrderItem::insert() (raw mass-insert bypasses Eloquent cast)"
+        ]
+      },
+      "consequence": "Eloquent's 'array' cast applies to model instances (`OrderItem::create()` + `->save()` paths) but NOT to mass-insert (`OrderItem::insert([...rows])`). Hence the 5 INSERT sites all wrap the snapshot in `json_encode()` manually. The 1 COPY-FORWARD site at RefundWithCounterEntryService.php:136 uses `OrderItem::create([...])` → Eloquent cast applies → it passes `$item->composition_snapshot` which is ALREADY the decoded array (read via cast). End result is correct (cast re-encodes on save), but the asymmetry is fragile: a future maintainer might switch the 5 INSERT sites to `OrderItem::create()` and forget to remove `json_encode()` → double-encoded snapshot (invisible until NF525 reprint).",
+      "v1_1_recommendation": "Document this convention in CompositionSnapshotBuilder docblock + add a unit test asserting all snapshot writes produce a single-level JSON (parse `composition_snapshot`, assert `is_array($decoded) && !is_string($decoded)`)."
+    },
+    {
+      "id": "F5-DBA-04",
+      "severity": "INFO",
+      "title": "OrderItem soft-delete + BranchScope global scope are CONSISTENT with NF525 retention",
+      "evidence": {
+        "soft_delete": "OrderItem.php:8 + use SoftDeletes on :13 — orders/items soft-deleted preserve composition_snapshot in deleted_at-marked rows",
+        "branch_scope": "OrderItem.php:15-28 — `static::addGlobalScope(new BranchScope())` post-iter12 P0-FIX-2 prevents cross-tenant composition_snapshot leak via ItemService::destroy count query"
+      },
+      "consequence": "NF525 6-year retention is preserved by soft-delete pattern + branch scope ensures fiscal data stays within the issuing branch boundary."
+    }
+  ],
+  "p0_in_frozen_file": 0,
+  "owner_gate_g3_trigger": false
+}

@@ -42,6 +42,10 @@ class PaymentMethodAttemptAuditTest extends TestCase
         ]);
 
         try {
+            // [P0-POS-02 GOAL round-2] gateway-context opt-in: this test
+            // exercises the pilot-restrict block, so we let the call reach
+            // the pilot check (the gateway-context guard runs first).
+            app()->instance('payment.service.allow_direct_call', true);
             app(PaymentService::class)->payment($order, 'stripe', 'tx-blocked-audit');
             $this->fail('Blocked payment method should throw a validation exception.');
         } catch (ValidationException) {

@@ -1,0 +1,16 @@
+[
+  {
+    "url": "http://127.0.0.1:8000/api/auth/login",
+    "method": "POST",
+    "status": 201,
+    "duration_ms": null,
+    "ts": 1780488473137
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/auth/authcheck",
+    "method": "POST",
+    "status": 200,
+    "duration_ms": null,
+    "ts": 1780488478558
+  }
+]

@@ -126,7 +126,12 @@
         "kiosk_machines": "কিয়স্ক মেশিন",
         "ingredients": "উপকরণ",
         "advanced_tools": "উন্নত টুল",
-        "demo_wizard_advanced": "উন্নত উইজার্ড ডেমো"
+        "demo_wizard_advanced": "উন্নত উইজার্ড ডেমো",
+        "communications": "যোগাযোগ",
+        "users": "ব্যবহারকারী",
+        "accounts": "অ্যাকাউন্ট",
+        "reports": "রিপোর্ট",
+        "setup": "সেটআপ"
     },
     "label": {
         "previous": "আগের",
@@ -268,6 +273,7 @@
         "catalog_metric_categories": "বিভাগ",
         "catalog_metric_active": "সক্রিয়",
         "catalog_metric_unavailable": "অনুপলব্ধ",
+        "rupture": "স্টক শেষ",
         "catalog_action_products": "পণ্য",
         "catalog_action_categories": "বিভাগ",
         "catalog_action_offers": "অফার",

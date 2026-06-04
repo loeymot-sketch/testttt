@@ -72,6 +72,7 @@
                             <p v-if="order.operator_name">{{ $t('label.operator') }}: {{ order.operator_name }}</p>
                         </div>
                         <receipt-duplicata-marker :order="effectiveOrder" />
+                        <receipt-remboursement-marker :order="order" />
                         <div class="text-center pb-3.5 border-b border-dashed border-gray-400">
                             <h3 class="text-2xl font-bold mb-1">{{ company.company_name }}</h3>
                             <h4 class="text-sm font-normal">{{ receiptBranch.address }}</h4>
@@ -133,6 +134,17 @@
                                                 <template v-if="extra.quantity > 1">{{ extra.quantity }}× </template>{{ extra.name }}
                                                 <span v-if="index + 1 < receiptExtrasFor(item).length">, </span>
                                             </span>
+                                        </p>
+                                        <!-- [G2-HEAL-03 / G.5 G5-F-002 P1] Composer addons (menu_formule bundled drinks/sides).
+                                             NF525: line_total is the ratio-adjusted price; catalog_price is NOT rendered. -->
+                                        <p v-for="(addon, index) in receiptAddonsFor(item)"
+                                            :key="'addon-' + idx + '-' + index"
+                                            class="text-xs leading-5 font-normal text-heading max-w-[200px] flex items-center justify-between gap-1"
+                                            data-testid="receipt-addon-line">
+                                            <span>
+                                                + <template v-if="addon.quantity > 1">{{ addon.quantity }}× </template>{{ addon.name }}
+                                            </span>
+                                            <span v-if="addon.line_total > 0">+{{ formatReceiptAddonPrice(addon.line_total) }}</span>
                                         </p>
 
                                         <div class="flex items-center justify-between" v-if="item.tax_rate > 0">
@@ -303,6 +315,15 @@
                                                 <span v-if="index + 1 < receiptExtrasFor(item).length"> · </span>
                                             </span>
                                         </p>
+                                        <!-- [G2-HEAL-03 / G.5 G5-F-002 P1] Kitchen ticket — name + qty only (no price). -->
+                                        <p v-if="receiptAddonsFor(item).length > 0" class="text-[11px] leading-snug mt-0.5"
+                                            data-testid="receipt-addon-line-kitchen">
+                                            {{ $t('label.addons') }}:
+                                            <span v-for="(addon, index) in receiptAddonsFor(item)" :key="'ka-' + idx + '-' + index">
+                                                <template v-if="addon.quantity > 1">{{ addon.quantity }}× </template>{{ addon.name }}
+                                                <span v-if="index + 1 < receiptAddonsFor(item).length"> · </span>
+                                            </span>
+                                        </p>
                                         <p v-if="kitchenInstructionText(item)"
                                             class="text-[11px] leading-snug mt-1 whitespace-pre-wrap border-l-2 border-gray-400 pl-2">
                                             <span class="font-semibold">{{ $t('label.instruction') }}:</span>
@@ -330,18 +351,20 @@ import displayModeEnum from "../../../enums/modules/displayModeEnum";
 import posPaymentMethodEnum from "../../../enums/modules/posPaymentMethodEnum";
 import orderTypeEnum from "../../../enums/modules/orderTypeEnum";
 import ReceiptDuplicataMarker from "./ReceiptDuplicataMarker.vue";
+import ReceiptRemboursementMarker from "./ReceiptRemboursementMarker.vue";
 import {
     formatPaymentsBreakdown as buildPaymentLines,
     buildNf525Footer,
     receiptWidthClass as receiptPaperClass,
     normalizeReceiptVariations,
     normalizeReceiptExtras,
+    normalizeReceiptAddons,
     receiptBranchHeader,
 } from "../../../helpers/posReceiptBuilder";
 
 export default {
     name: "ReceiptComponent",
-    components: { ReceiptDuplicataMarker },
+    components: { ReceiptDuplicataMarker, ReceiptRemboursementMarker },
     props: {
         order: Object,
         // [iter15-mega-fix B-009 round-7 2026-05-10 — addendum]
@@ -475,6 +498,25 @@ export default {
         receiptExtrasFor: function (item) {
             return normalizeReceiptExtras(item ? item.item_extras : []);
         },
+        // [G2-HEAL-03 / G.5 G5-F-002 P1 2026-05-23] Composer addons (kiosk
+        // menu_formule bundled drinks/sides) rendered alongside variations
+        // + extras on the customer ticket. NF525: line_total is the
+        // ratio-adjusted price (NEVER catalog_price).
+        receiptAddonsFor: function (item) {
+            return normalizeReceiptAddons(item ? item.item_addons : []);
+        },
+        formatReceiptAddonPrice: function (amount) {
+            const n = Number(amount) || 0;
+            if (n <= 0) {
+                return '';
+            }
+            const decimal = Number(this.$store?.getters?.['setting/lists']?.site_digit_after_decimal_point ?? 2);
+            const symbol = String(this.$store?.getters?.['setting/lists']?.site_default_currency_symbol ?? '€');
+            const position = Number(this.$store?.getters?.['setting/lists']?.site_currency_position ?? 0);
+            const formatted = n.toFixed(Number.isFinite(decimal) ? decimal : 2);
+            // 0 = LEFT (per currencyPositionEnum), 1 = RIGHT
+            return position === 0 ? `${symbol}${formatted}` : `${formatted}${symbol}`;
+        },
         kitchenInstructionText: function (item) {
             return item && item.instruction ? String(item.instruction).trim() : '';
         },
@@ -495,13 +537,33 @@ export default {
             try {
                 if (this.order?.id) {
                     try {
+                        // [K-001 abuse-e2e] print-receipt is in idempotency.required_routes
+                        // (config/idempotency.php); the middleware (enabled in prod per the §8
+                        // AppServiceProvider boot guard) returns 422 MISSING_IDEMPOTENCY_KEY
+                        // without this header → reprint/print was BROKEN in production (the UI
+                        // route predated the 2026-05-18 required_routes addition). Fresh key per
+                        // click so each intentional (re)print increments the counter; a same-click
+                        // network-retry dedupes on the identical key.
+                        const idempotencyKey = `pos-print-receipt-${this.order.id}-${Date.now()}`;
                         const { data } = await axios.post(
-                            `admin/pos/orders/${this.order.id}/print-receipt`
+                            `admin/pos/orders/${this.order.id}/print-receipt`,
+                            {},
+                            { headers: { 'X-Idempotency-Key': idempotencyKey } }
                         );
                         this.localPrintCount = Number(
                             data?.receipt_print_count
                             ?? (Number(this.localPrintCount ?? 0) + 1)
                         );
+                        // [PS-4 audit heal 2026-05-18] NF525 audit-chain write
+                        // is best-effort server-side (PosReceiptPrintController
+                        // returns audit_emitted=false on chain failure). The
+                        // print itself succeeds so the cashier can deliver the
+                        // paper, but the manager MUST be alerted so SIEM /
+                        // fiscal ops can investigate the gap. Pre-heal the UI
+                        // silently swallowed this signal — see RED-PS4-005.
+                        if (data?.audit_emitted === false) {
+                            alertService.warning(this.$t('pos.receipt_audit_chain_warning'));
+                        }
                     } catch (apiError) {
                         const status = apiError?.response?.status;
                         if (status === 403) {

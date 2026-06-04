@@ -1,0 +1,256 @@
+{
+  "agent": "A3 echo topology",
+  "audit_date": "2026-05-27",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "discipline": "DM6 NF525 RO / READ-ONLY",
+  "scope": "Echo/Pusher broadcast mesh: routes/channels.php + Persist*ToOutbox listeners + frontend onEvents subscribers + Heal-5 KdsOrderRecalled wiring + branch isolation + payload PII/auth-token scan.",
+  "channels_count": 2,
+  "channels_inventory": [
+    {
+      "channel": "App.Models.User.{id}",
+      "callback": "(int) $user->id === (int) $id",
+      "file": "routes/channels.php:16-18",
+      "emit_observed": false,
+      "subscriber_observed": false,
+      "note": "Laravel default user-self channel; no observed emit/subscribe in app/. Effectively dormant. 1 effective channel = branch.{id}."
+    },
+    {
+      "channel": "branch.{branchId}",
+      "callback": "kiosk-token clause + Admin/Tenant-Admin role clause + own-branch fallback",
+      "file": "routes/channels.php:41-62",
+      "emit_observed": true,
+      "subscriber_observed": true,
+      "note": "Only Echo channel actually used. All 13 outbox broadcast_as values funnel here via private-branch.{branchId}."
+    }
+  ],
+  "emitters_count": 13,
+  "emitters_inventory": [
+    {
+      "broadcast_as": "OrderCreated",
+      "listener": "app/Listeners/PersistOrderCreatedToOutbox.php:45",
+      "channel_expr": "private-branch.{order.branch_id}",
+      "fan_out": "single-branch"
+    },
+    {
+      "broadcast_as": "OrderStatusChanged",
+      "listener": "app/Listeners/PersistOrderStatusChangedToOutbox.php:54",
+      "channel_expr": "private-branch.{order.branch_id}",
+      "fan_out": "single-branch"
+    },
+    {
+      "broadcast_as": "OrderPaidAtCounter",
+      "listener": "app/Listeners/PersistOrderPaidAtCounterToOutbox.php:41",
+      "channel_expr": "private-branch.{order.branch_id}",
+      "fan_out": "single-branch"
+    },
+    {
+      "broadcast_as": "OrderTableChanged",
+      "listener": "app/Listeners/PersistOrderTableChangedToOutbox.php:76",
+      "channel_expr": "private-branch.{order.branch_id}",
+      "fan_out": "single-branch"
+    },
+    {
+      "broadcast_as": "OrderPaymentStatusChanged",
+      "listener": "app/Listeners/PersistOrderPaymentStatusChangedToOutbox.php:61",
+      "channel_expr": "private-branch.{order.branch_id}",
+      "fan_out": "single-branch"
+    },
+    {
+      "broadcast_as": "CatalogChanged",
+      "listener": "app/Listeners/PersistCatalogChangedToOutbox.php:84",
+      "channel_expr": "private-branch.{branchId} per active branch",
+      "fan_out": "per-branch fan-out (loop over active branches)"
+    },
+    {
+      "broadcast_as": "ItemAvailabilityChanged",
+      "listener": "app/Listeners/PersistItemAvailabilityChangedToOutbox.php:80",
+      "channel_expr": "private-branch.{branchId} (single if branchId set, else per-active-branch fan-out)",
+      "fan_out": "conditional"
+    },
+    {
+      "broadcast_as": "ItemVariationAvailabilityChanged",
+      "listener": "app/Listeners/PersistItemVariationAvailabilityChangedToOutbox.php:56",
+      "channel_expr": "private-branch.{event.branchId}",
+      "fan_out": "single-branch"
+    },
+    {
+      "broadcast_as": "ItemExtraAvailabilityChanged",
+      "listener": "app/Listeners/PersistItemExtraAvailabilityChangedToOutbox.php:57",
+      "channel_expr": "private-branch.{event.branchId}",
+      "fan_out": "single-branch"
+    },
+    {
+      "broadcast_as": "CouponChanged",
+      "listener": "app/Listeners/PersistCouponChangedToOutbox.php:74",
+      "channel_expr": "private-branch.{branchId} per scoped branch",
+      "fan_out": "per-branch fan-out"
+    },
+    {
+      "broadcast_as": "BranchStatusChanged",
+      "listener": "app/Listeners/PersistBranchStatusChangedToOutbox.php:74",
+      "channel_expr": "private-branch.{branchId}",
+      "fan_out": "single-branch"
+    },
+    {
+      "broadcast_as": "SettingsUpdated",
+      "listener": "app/Listeners/PersistSettingsUpdatedToOutbox.php:69",
+      "channel_expr": "private-branch.{branchId} per active branch",
+      "fan_out": "per-branch fan-out"
+    },
+    {
+      "broadcast_as": "KdsOrderRecalled",
+      "listener": "app/Listeners/PersistKdsOrderRecalledToOutbox.php:59",
+      "channel_expr": "private-branch.{event.branchId}",
+      "fan_out": "single-branch",
+      "note": "Heal-5 addition."
+    }
+  ],
+  "emitters_pattern_note": "All emits go through the outbox pattern: domain event -> Persist*ToOutbox listener -> DomainEvent row -> DispatchDomainEventsJob -> BroadcastManager::connection()->broadcast(channels, broadcast_as, envelope). No direct broadcast() calls anywhere in app/. No ShouldBroadcast classes (only OrderCreated.php mentions ShouldBroadcastNow in a doc comment referencing the legacy direct pattern that was replaced).",
+  "subscribers_count": 11,
+  "subscribers_unique_broadcast_names": [
+    "OrderCreated",
+    "OrderStatusChanged",
+    "OrderPaidAtCounter",
+    "OrderTableChanged",
+    "ItemAvailabilityChanged",
+    "ItemVariationAvailabilityChanged",
+    "ItemExtraAvailabilityChanged",
+    "CatalogChanged",
+    "ComposerProfileChanged",
+    "CouponChanged",
+    "KdsOrderRecalled"
+  ],
+  "subscribers_bindings_count": 27,
+  "subscribers_inventory": [
+    {
+      "file": "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue",
+      "method": "subscribeEcho",
+      "lines": "1893-1953",
+      "bindings": ["OrderStatusChanged", "OrderCreated", "OrderPaidAtCounter", "ItemAvailabilityChanged", "OrderTableChanged", "KdsOrderRecalled"],
+      "branch_gate": "branchId <= 0 -> return (admin polling fallback)"
+    },
+    {
+      "file": "resources/js/components/admin/pos/PosComponent.vue",
+      "method": "_subscribeBranchEvents",
+      "lines": "2775-2825",
+      "bindings": ["OrderCreated", "OrderStatusChanged", "OrderPaidAtCounter", "ItemAvailabilityChanged", "CatalogChanged"]
+    },
+    {
+      "file": "resources/js/components/admin/pos/PosOrdersTrackerComponent.vue",
+      "lines": "661-676",
+      "bindings": ["OrderCreated", "OrderStatusChanged", "OrderPaidAtCounter"]
+    },
+    {
+      "file": "resources/js/components/admin/orderStatusScreen/PreparingAndReadyComponent.vue",
+      "lines": "264-285",
+      "bindings": ["OrderStatusChanged", "OrderCreated"]
+    },
+    {
+      "file": "resources/js/components/admin/stock/StockRuptureDashboardComponent.vue",
+      "lines": "478-482",
+      "bindings": ["ItemAvailabilityChanged", "ItemVariationAvailabilityChanged", "ItemExtraAvailabilityChanged"]
+    },
+    {
+      "file": "resources/js/components/frontend/kiosk/KioskAppComponent.vue",
+      "method": "_subscribeEchoChannel",
+      "lines": "542-580",
+      "bindings": ["ItemAvailabilityChanged", "CatalogChanged", "ComposerProfileChanged", "CouponChanged"]
+    },
+    {
+      "file": "resources/js/components/frontend/kiosk/KioskWaitingComponent.vue",
+      "lines": "272-285",
+      "bindings": ["OrderCreated", "OrderStatusChanged"]
+    },
+    {
+      "file": "resources/js/composables/useCatalogChangeNotifier.js",
+      "lines": "421-424",
+      "bindings": ["CatalogChanged", "ComposerProfileChanged"]
+    }
+  ],
+  "subscribers_pattern_note": "All subscribers route through resources/js/services/eventContract.js::onEvents -> window.Echo.private(`branch.${branchId}`).listen(`.${broadcastAs}`, handler). No raw .listen() calls outside the helper. Bootstrap (resources/js/bootstrap.js) wraps Echo.private/encryptedPrivate/join with subscription-error binders.",
+  "heal_5_kds_recalled_broadcast_wired": true,
+  "heal_5_kds_recalled_subscriber_wired": true,
+  "heal_5_evidence": {
+    "event_class": "app/Events/KdsOrderRecalled.php (uses DispatchableAfterCommit; ctor: orderId, branchId, queueNumber, actorId, recalledAt, correlationId)",
+    "dispatch_site": "app/Services/KitchenDisplaySystemOrderService.php:371 (KdsOrderRecalled::dispatch(...))",
+    "esp_mapping": "app/Providers/EventServiceProvider.php:165-167 (KdsOrderRecalled::class => [PersistKdsOrderRecalledToOutbox::class])",
+    "outbox_listener": "app/Listeners/PersistKdsOrderRecalledToOutbox.php:33-99",
+    "channel_persisted": "json_encode(['private-branch.' . $event->branchId]) -- app/Listeners/PersistKdsOrderRecalledToOutbox.php:58",
+    "broadcast_as_persisted": "'KdsOrderRecalled' -- app/Listeners/PersistKdsOrderRecalledToOutbox.php:59",
+    "event_type_enum": "EventType::KDS_ORDER_RECALLED = 'kds.order_recalled' -- app/Enums/EventType.php:48",
+    "frontend_subscriber": "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue:1933-1946 (onEvents binding { broadcastAs: 'KdsOrderRecalled', handler: -> onKdsOrderRecalled({orderId, queueNumber, recalledAt, payload}) })",
+    "broadcast_map_js": "resources/js/services/eventContract.js:28 (KdsOrderRecalled: EVENT_TYPES.KDS_ORDER_RECALLED -> 'kds.order_recalled')",
+    "deliberate_omissions_note": "Listener does NOT chain SendOrderMail/SendOrderSms/FCM (recall is internal kitchen only; customer-facing OSS already notified on initial PREPARING->PREPARED). Idempotency key sha1(event_type|order_id|recalled_at|correlation_id) collapses listener replays while allowing genuine second recall in distinct request.",
+    "contract_map_php_omission_note": "EventContract::BROADCAST_MAP (app/Domain/Events/EventContract.php:34-49) does NOT enumerate 'KdsOrderRecalled' -> 'kds.order_recalled'. EventContract::typeForBroadcastAs() falls back to the raw broadcast_as name if the map does not cover it, but DispatchDomainEventsJob actually uses domain_event.event_type (read directly from the row) for envelope.type, so the omission is currently HARMLESS. EventContract::REQUIRED_PAYLOAD_KEYS (lines 55-76) also has no entry for KDS_ORDER_RECALLED, so assertPayloadValid() short-circuits (line 159 'Unknown types pass') and the recall payload is broadcast unvalidated. Same omission applies to SETTINGS_UPDATED, BRANCH_STATUS_CHANGED, MENU_EXTRA_AVAILABILITY_CHANGED, MENU_VARIATION_AVAILABILITY_CHANGED. P2 backlog: add entries so future drift is caught at boundary."
+  },
+  "branch_isolation_clean": true,
+  "branch_isolation_evidence": {
+    "kiosk_token_restriction": "routes/channels.php:44-50 - tokenName === 'kiosk-token' triggers KioskMachine lookup with withoutGlobalScope(BranchScope) and asserts (int) $machine->branch_id === (int) $branchId. Comment cites F-SEC-W6-01 fix away from $user->tokenCan('kiosk:order') (which was satisfied by admin '*' wildcard tokens) to token-name string match (un-spoofable).",
+    "guest_echo_bypass_closed": "routes/channels.php:56-58 - Admin/Tenant-Admin branch_id=0 path now uses $user->hasRole('Admin') || hasRole('Tenant Admin'), NOT a bare branch_id===0 sentinel. Closes F-SEC-W6-02 latent path where customers/guests seeded with branch_id=0 could subscribe to any branch.",
+    "staff_fallback": "routes/channels.php:60-61 - non-admin/non-kiosk-token must have (int) $user->branch_id === (int) $branchId. Hard equality, no string coercion edge.",
+    "channel_payload_scoping": "Every Persist*ToOutbox listener encodes channel as private-branch.{branchId} via json_encode(['private-branch.' . X]). DispatchDomainEventsJob:101-105 parses the JSON array and fans each channel; no path lets a row leak to a different branch.",
+    "fan_out_safety": "Fan-out listeners (PersistCatalogChanged, PersistSettingsUpdated, PersistItemAvailability when branchId is null) build the channel list by querying active branches and produce private-branch.{id} per branch -- not a wildcard or broad pattern."
+  },
+  "channel_auth_bypasses": [],
+  "channel_auth_bypasses_note": "routes/channels.php has ONE 'return true;' at line 57, inside the Admin/Tenant-Admin role gate (lines 56-58). It is gated by an explicit role check, NOT a bare return-true bypass. No other unconditional returns in channels.php. The user-self channel (App.Models.User.{id}) returns a strict integer comparison.",
+  "orphan_emits": [
+    {
+      "broadcast_as": "OrderPaymentStatusChanged",
+      "listener": "app/Listeners/PersistOrderPaymentStatusChangedToOutbox.php",
+      "channel": "private-branch.{order.branch_id}",
+      "rationale": "Backend emits OrderPaymentStatusChanged broadcasts on every payment_status transition (PHASE 1 / P13 audit), but zero frontend subscriber binds broadcastAs: 'OrderPaymentStatusChanged'. Wasted broadcast traffic + EventContract enforces REQUIRED_PAYLOAD_KEYS so each emit goes through validation cost. Recommended: either wire a POS/KDS subscriber (and reuse the payload's old_status/new_status/total/fiscal_sequence_no fields) or downgrade the listener to a non-broadcast DB-only outbox row.",
+      "severity": "P2 (waste, not a leak)"
+    },
+    {
+      "broadcast_as": "BranchStatusChanged",
+      "listener": "app/Listeners/PersistBranchStatusChangedToOutbox.php",
+      "channel": "private-branch.{branchId}",
+      "rationale": "Wave 5G R10 / T-6.4 listener persists + fans out a branch ACTIVE->INACTIVE transition to private-branch.{id}, but no frontend subscriber (KioskApp, POS, KDS) listens for it. The companion RevokeTokensOnBranchDeactivated listener does the security-critical Sanctum revoke synchronously, so the broadcast is purely informational and currently lands in the void.",
+      "severity": "P2 (waste, not a leak)"
+    },
+    {
+      "broadcast_as": "SettingsUpdated",
+      "listener": "app/Listeners/PersistSettingsUpdatedToOutbox.php",
+      "channel": "private-branch.{branchId} per active branch",
+      "rationale": "Wave 5G R9 heal explicitly designed this to be consumed by POS/Kiosk to refresh frontend/setting payload live, but grep shows zero JS subscriber on broadcastAs: 'SettingsUpdated'. The promised live refresh is not actually wired -- surfaces still pick up settings via their normal fetch on remount/login. Worse, the listener fans out one outbox row per active branch, so the waste is multiplied N times per admin save.",
+      "severity": "P2 (waste + unfulfilled design intent)"
+    }
+  ],
+  "orphan_subscribers": [
+    {
+      "broadcast_as": "ComposerProfileChanged",
+      "subscriber_files": [
+        "resources/js/components/frontend/kiosk/KioskAppComponent.vue:560-565",
+        "resources/js/composables/useCatalogChangeNotifier.js:421-424"
+      ],
+      "rationale": "Frontend listens for broadcastAs: 'ComposerProfileChanged', but ComposerProfileChanged::class is mapped in EventServiceProvider.php:284-287 to [InvalidateKioskMenuCacheOnCatalogChange, PersistCatalogChangedToOutbox] -- both of which broadcast as 'CatalogChanged' (see PersistCatalogChangedToOutbox.php:84). There is NO Persist*ComposerProfileChanged listener anywhere in app/Listeners/. The Pusher channel will never carry an event with broadcast_as='ComposerProfileChanged' -> dead handler. Belt-and-suspenders fallback only: CatalogChanged is also bound on the same channel and DOES fire.",
+      "severity": "P2 (dead code, but cart/menu still refresh via CatalogChanged sibling binding)"
+    }
+  ],
+  "payload_integrity_findings": [
+    {
+      "broadcast_as": "OrderStatusChanged",
+      "payload_field": "token",
+      "file": "app/Listeners/PersistOrderStatusChangedToOutbox.php:51",
+      "rationale": "Payload includes 'token' => $order->token. Order::token is a fillable column (app/Models/Order.php:24,72) used by online payment integrations (Stripe/PayPal payment intent reference; OrderService.php:2286,2293 sets it from request->token; legacy 'TXN-'.Str::random(12) for sim). It is NOT a Sanctum auth token and is NOT used for guest order tracking lookup (grep of OrderTrackController found no usage). It IS a payment-provider reference. Risk profile: low (payment refs are not directly exploitable, channel is private-branch.{id} branch-gated, branch staff already see order detail), but it is a payload field whose business purpose downstream is unclear -- no JS handler reads parsed.payload.token in the inventoried subscribers. Recommendation: drop the field from the payload unless an explicit consumer is wired, to keep envelope minimal and avoid widening attack surface if Stripe/PayPal references ever change shape.",
+      "severity": "P3 (info-level; not an active leak)"
+    }
+  ],
+  "payload_integrity_clean_findings": [
+    "OrderCreated payload: order_id, queue_number, _origin, payment_method, payment_status, payment_pending_counter, status, order_type, total, created_at -- NO PII (no customer name/email/phone/address), no tokens.",
+    "OrderPaidAtCounter payload: order_id, queue_number, _origin, payment_method, payment_status, fiscal_sequence_no -- clean.",
+    "KdsOrderRecalled payload: order_id, branch_id, queue_number, actor_id, recalled_at -- clean (actor_id is staff user id, which is a branch-scoped non-secret).",
+    "ItemAvailabilityChanged payload: item_id, status, price, type, is_available, branch_id, reason -- catalog data, no PII.",
+    "CatalogChanged payload: entity_type, entity_id, change_type, branch_id, snapshot_version, payload_diff -- catalog data, no PII."
+  ],
+  "additional_observations": [
+    "EventContract PHP BROADCAST_MAP (app/Domain/Events/EventContract.php:34-49) is stale relative to the active broadcast set. Missing entries: KdsOrderRecalled, BranchStatusChanged, SettingsUpdated, ItemExtraAvailabilityChanged, ItemVariationAvailabilityChanged, ComposerProfileChanged. Today this is harmless because typeForBroadcastAs() falls back to the raw name AND DispatchDomainEventsJob reads event_type from the DomainEvent row (not via BROADCAST_MAP), but it is a drift that defeats the contract's stated SoT purpose. Same drift in REQUIRED_PAYLOAD_KEYS (lines 55-76).",
+    "Frontend EVENT_TYPES (resources/js/services/eventContract.js:1-16) and BROADCAST_MAP (lines 18-29) are similarly stale. Missing entries: BranchStatusChanged, SettingsUpdated, ItemExtraAvailabilityChanged, ItemVariationAvailabilityChanged, ComposerProfileChanged, OrderPaymentStatusChanged. onEvents() warns on mismatch (line 356) but does NOT block -- handler still fires. Stale map = lost warning fidelity.",
+    "ComposerProfilePublished event class exists (app/Events/ComposerProfilePublished.php) but no dispatch site found in app/. Stale class candidate for removal (separate audit).",
+    "The Laravel-default 'App.Models.User.{id}' channel callback is intact but appears dormant -- no observed emit on this channel pattern and no .private('App.Models.User.X') subscriber in the JS. Either retain as scaffolding or remove for clarity.",
+    "Bootstrap pipeline (resources/js/bootstrap.js:383-393) correctly wraps Echo.private + encryptedPrivate + join with subscription-error binders. WebSocketService (resources/js/services/WebSocketService.js) provides heartbeat + degraded-state UX. ws:heartbeat cache is stamped by DispatchDomainEventsJob:129 on every successful broadcast (Pusher liveness probe).",
+    "Per-subscriber polling fallback discipline is consistent: KDS branch_id<=0 -> return (admin polling); Kiosk silently swallows Echo failures; eventContract.onEvents returns no-op subscription if window.Echo absent or branchId 0/null. Surfaces are NOT broken by a Pusher outage."
+  ],
+  "verdict": "AMBER",
+  "verdict_rationale": "GREEN gates met: (1) channel auth callbacks have no bare 'return true' bypass; (2) branch isolation is hardened by the kiosk-token name check + Admin/Tenant-Admin role gate; (3) every emitter funnels onto private-branch.{id} -- no cross-branch broadcast paths; (4) Heal-5 KdsOrderRecalled is fully wired emit-side (PersistKdsOrderRecalledToOutbox -> outbox -> DispatchDomainEventsJob) AND subscribe-side (KitchenDisplaySystemComponent.subscribeEcho binding lines 1933-1946); (5) payloads contain no PII and no Sanctum/auth tokens. AMBER drivers: 3 orphan emits (OrderPaymentStatusChanged, BranchStatusChanged, SettingsUpdated -- two of them explicitly designed to be consumed but never wired in JS), 1 orphan subscriber (ComposerProfileChanged on the kiosk -- handler will never fire because the event is rebroadcast as CatalogChanged), 1 P3 payload concern (OrderStatusChanged.token is a payment-provider ref of unclear consumer), and stale EventContract maps both PHP-side and JS-side. None are P0/P1 -- broadcast mesh is functionally safe -- but they violate the 'GREEN = zero waste/drift' bar. P2/P3 backlog before GREEN."
+}

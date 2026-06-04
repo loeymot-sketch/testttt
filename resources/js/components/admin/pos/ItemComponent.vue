@@ -33,6 +33,9 @@
             <!-- Body -->
             <div class="pos-v5-tile__body">
                 <h3 class="pos-v5-tile__name text-sm font-bold capitalize leading-snug line-clamp-2">{{ item.name }}</h3>
+                <!-- [CAISSE-INGREDIENTS 2026-06-04] Ingrédients lisibles sur la tuile (sans clic) :
+                     le caissier répond "qu'y a-t-il dedans ?" d'un coup d'œil. Texte muté, 2 lignes max. -->
+                <p v-if="item.description" class="pos-v5-tile__desc" :title="item.description">{{ item.description }}</p>
                 <div class="pos-v5-tile__foot">
                     <h4 class="pos-v5-tile__price">
                         {{ item.offer.length > 0 ? item.offer[0].currency_price : item.currency_price }}
@@ -1593,13 +1596,26 @@ export default {
     font-size: var(--pos-v5-text-body) !important;
     font-weight: var(--pos-v5-weight-bold) !important;
     line-height: var(--pos-v5-leading-snug) !important;
-    flex: 1;
+    /* [CAISSE-INGREDIENTS 2026-06-04] flex:1 retiré : le nom + la description
+       s'empilent en haut, le pied (prix) reste collé en bas via margin-top:auto. */
     text-transform: capitalize;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
     text-align: left;
+}
+/* [CAISSE-INGREDIENTS 2026-06-04] Ingrédients sous le nom, muté, 2 lignes max. */
+.pos-v5-tile__desc {
+    margin: calc(-1 * var(--pos-v5-space-1)) 0 0 0;
+    color: var(--pos-v5-ink-soft);
+    font-size: var(--pos-v5-text-caption);
+    line-height: var(--pos-v5-leading-snug);
+    text-align: left;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 .pos-v5-tile__foot {
     display: flex;

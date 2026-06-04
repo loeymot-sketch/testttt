@@ -34,6 +34,16 @@ class SyncOverviewController extends AdminController
      */
     private const SELECT_LIMIT = 50000;
 
+    /**
+     * [GOAL-2026-05-29 F5 / v2] Manual "Retry failed" AGE cap — bounds infinite
+     * resurrection of a chronically-failing outbox row WITHOUT blocking the
+     * legitimate use (an admin retrying an event that exhausted its auto-retries
+     * after fixing the root infra). Rows older than the window age out of manual
+     * retry and are left to the prune/escalation lane. No attempts ceiling: that
+     * over-corrected and broke retry-of-exhausted (OutboxOverviewControllerTest).
+     */
+    private const RETRY_FAILED_MAX_AGE_DAYS = 7;
+
     public function __construct()
     {
         parent::__construct();
@@ -381,9 +391,19 @@ class SyncOverviewController extends AdminController
             $batch = 50;
         }
 
+        // [GOAL-2026-05-29 F5 / v2 — corrected after OutboxOverviewControllerTest]
+        // AGE cap (not an attempts cap) so manual "Retry failed" cannot INFINITELY
+        // resurrect a row. Each retry resets attempts->0 + last_error->NULL; with no
+        // bound a row that keeps failing is reset on every click and never ages out
+        // of the prune/escalation lane. An AGE window bounds resurrection: rows older
+        // than the window age out of manual retry and are left to escalate/prune.
+        // We deliberately do NOT cap on attempts — manually retrying an event that
+        // EXHAUSTED its auto-retries (attempts=5) after fixing the root infra is the
+        // PRIMARY legitimate use of this button (locked by OutboxOverviewControllerTest).
         $events = DomainEvent::query()
             ->whereNull('dispatched_at')
             ->whereNotNull('last_error')
+            ->where('created_at', '>=', now()->subDays(self::RETRY_FAILED_MAX_AGE_DAYS))
             ->orderBy('id')
             ->limit($batch)
             ->get();

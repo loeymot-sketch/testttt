@@ -1,0 +1,234 @@
+{
+  "agent": "INTEGRATION",
+  "mission": "Pre-PR baseline GREEN snapshot for incoming cloud-session PR (catalog seed + SIRET + TVA + Valina + printer + A4 procedures)",
+  "discipline": "DM6 RO + DM3 + DM5 + DM8",
+  "timestamp_utc": "2026-05-28T18:05:00Z",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+
+  "baseline_snapshot": {
+    "head_commit": "cfb266cdf",
+    "head_subject": "docs(ultraplan): wave-2 finalize — sentinel + cron + BRAIN §3 + HTML status + HOW_TO_RESUME pointer",
+    "last_5_commits": [
+      "cfb266cdf docs(ultraplan): wave-2 finalize — sentinel + cron + BRAIN §3 + HTML status + HOW_TO_RESUME pointer",
+      "c01062f2a docs(verdict-v1-personnel): recadrage vision owner — V1 perso Le Cayenne (pas SaaS)",
+      "d2a18bf31 docs(ultraplan): cross-codebase state + wizard parity audit + BRAIN pointer (Phase 1+3+4 done)",
+      "7aa0f07df docs(master-ultimate): 14 agents + cloud-ready verdict GO V1 / AMBER cloud",
+      "e361686e6 docs(per-system-e2e): 5 system agents + browser race documented + GREEN"
+    ],
+    "nf525_chain": {
+      "audit_logs_count": 58,
+      "last_id": 58,
+      "last_hash": "f0df3b5ac050cd4517217fb966823b27318f07dff1a22d80e7ec0c19dfe55280",
+      "z_reports_count": 1,
+      "last_z_no": 1,
+      "status": "GREEN"
+    },
+    "frozen_zone_diff_loc": 0,
+    "frozen_zone_files_checked": [
+      "resources/js/components/admin/pos/PaymentComponent.vue",
+      "resources/js/components/admin/pos/v5/PosV5TrancheRow.vue",
+      "resources/js/components/frontend/kiosk/KioskWizardComponent.vue",
+      "resources/js/components/frontend/kiosk/KioskAppComponent.vue",
+      "resources/js/components/frontend/kiosk/KioskUpsellComponent.vue",
+      "public/js/pos-wizard.js",
+      "public/css/pos-wizard.css",
+      "app/Services/Fiscal/FiscalSequenceService.php",
+      "app/Services/Fiscal/ZReportService.php",
+      "app/Services/Fiscal/AuditLogService.php",
+      "app/Models/Scopes/BranchScope.php",
+      "app/Http/Middleware/IdempotencyKeyMiddleware.php",
+      "app/Services/Pricing/PricingService.php",
+      "app/Domain/Order/OrderStateMachine.php"
+    ],
+    "uncommitted_tracked_changes": [
+      ".claude/worktrees/blissful-mclean-c915c2 (submodule pointer)",
+      ".claude/worktrees/clever-hypatia-1e4f84 (submodule pointer)",
+      ".playwright-mcp/cloture-jour-2026-05-26.pdf (binary 1-byte regen)"
+    ],
+    "server_smoke_5_urls": {
+      "http://127.0.0.1:8000/login": 200,
+      "http://127.0.0.1:8000/admin/pos": 200,
+      "http://127.0.0.1:8000/kiosk/idle": 200,
+      "http://127.0.0.1:8000/kds": 200,
+      "http://127.0.0.1:8000/admin/order-status-screen": 200,
+      "bonus_admin_dashboard": 200,
+      "bonus_healthz": 200,
+      "verdict": "GREEN"
+    }
+  },
+
+  "critical_heals_verify": {
+    "HEAL-1_PosComponent_confirm_cancel": {
+      "file": "resources/js/components/admin/pos/PosComponent.vue",
+      "evidence_line": 3272,
+      "evidence_text": "// [HEAL B2-P6-F01 2026-05-26] Open confirm-before-cancel dialog",
+      "commit": "e51d1b7f2 feat(heal-1): confirm modal before destructive cancelKioskCashOrder (B2-P6-F01)",
+      "status": "PRESENT"
+    },
+    "HEAL-3_EOD_PDF_endpoint": {
+      "file": "routes/api.php",
+      "evidence_line": 1056,
+      "evidence_text": "Route::post('/eod-pdf', [DashboardController::class, 'eodPdf']);",
+      "commits": [
+        "9a56a649a feat(heal-3): one-click EOD PDF recap button for comptable (V102-08)",
+        "31aa51240 fix(heal-3-i18n-drift): add eod_pdf_button/error/downloading to JSON langs"
+      ],
+      "status": "PRESENT"
+    },
+    "HEAL-4_PosRefundModal": {
+      "file": "resources/js/components/admin/pos/PosRefundModal.vue",
+      "size_bytes": 19908,
+      "mtime": "2026-05-26 18:20",
+      "status": "PRESENT"
+    },
+    "HEAL-5_KdsOrderRecalled_event_endpoint": {
+      "event_file": "app/Events/KdsOrderRecalled.php",
+      "endpoint_file": "routes/api.php",
+      "endpoint_line": 1159,
+      "endpoint_route": "Route::post('/recall/{order}', [KitchenDisplaySystemController::class, 'recall'])",
+      "status": "PRESENT"
+    },
+    "HEAL-02_AuditTrail_hash_prefix": {
+      "file": "app/Services/DashboardService.php",
+      "method_line": 740,
+      "hash_prefix_line": 794,
+      "hash_prefix_code": "'hash_prefix' => substr((string) $log->current_hash, 0, 8),",
+      "status": "PRESENT"
+    },
+    "web_guard_fix_df0da680d": {
+      "seeder_file": "database/seeders/AdminWebGuardPermissionsSyncSeeder.php",
+      "seeder_size_bytes": 2698,
+      "seeder_mtime": "2026-05-27 12:27",
+      "commits": [
+        "df0da680d fix(ingredients-403): grant ingredients_manage on BOTH guards (sanctum + web)",
+        "df8d06a67 fix(perms-web-guard): mirror 82 sanctum perms to web for Admin (massive 403/401 fix)"
+      ],
+      "status": "PRESENT_BUT_NOT_RUN",
+      "blocker_for_run": "Admin role only exists on sanctum guard (8 roles all guard_name=sanctum). Seeder bails at line 52-54 because no Admin@web role exists. Need upstream RolePermissionTableSeeder addition to create Admin@web role BEFORE this sync seeder, OR seeder needs to firstOrCreate the role itself."
+    }
+  },
+
+  "production_readiness_verify": {
+    "AppServiceProvider_boot_guards": {
+      "file": "app/Providers/AppServiceProvider.php",
+      "size_bytes": 27483,
+      "guards_detected": [
+        "POS_SIMULATION_HARDWARE must be false in production (line 167)",
+        "IDEMPOTENCY_MIDDLEWARE_ENABLED must be true in production (line 225)",
+        "APP_DEBUG / APP_URL / BROADCAST_DRIVER / FISCAL_*_SECRET / CACHE_DRIVER pattern (line 428 summary)"
+      ],
+      "status": "PRESENT"
+    },
+    "ansible_CVP0-1_task": {
+      "file": "deploy/ansible/site.yml",
+      "evidence_line": 47,
+      "evidence_text": "[GOAL-CMS-2026-05-18 CVP0-1 heal — Round 1 Sec S-1 + Fiscal F-FISC-002]",
+      "task_name": "NF525 fiscal-table privilege REVOKE (CVP0-1 GOAL-CMS-2026-05-18)",
+      "revoke_examples": [
+        "REVOKE DROP, ALTER ON `{{ db_name }}`.`audit_logs` FROM `{{ db_user }}`@`%`"
+      ],
+      "status": "PRESENT"
+    },
+    "backup_daily_cron": {
+      "schedule_line": "0    3  * * *  php artisan foodking:backup-daily",
+      "next_due": "dans 8 heures",
+      "status": "PRESENT"
+    },
+    "PRODUCTION_GO_LIVE_CHECKLIST": {
+      "path": "scripts/deploy/PRODUCTION_GO_LIVE_CHECKLIST.md",
+      "size_bytes": 4211,
+      "mtime": "2026-05-28 11:17",
+      "alternate_path": "reports/playbooks/GO_LIVE_CHECKLIST_OWNER_2026-05-26.md",
+      "status": "PRESENT",
+      "note": "Spec asked for root-level PRODUCTION_GO_LIVE_CHECKLIST.md; actual location is scripts/deploy/. Both exist (deploy + owner playbook variant)."
+    }
+  },
+
+  "data_integrity": {
+    "items_count": 11,
+    "items_match_spec_placeholder": true,
+    "ingredients_count": null,
+    "ingredients_status": "TABLE_MISSING (SQLSTATE[42S02] Base table or view not found: ingredients). Only stock_levels + stock_movements present. Ingredient model uses different storage, OR PR will create ingredients table. NEEDS_CLARIFICATION.",
+    "branches_count": 1,
+    "users_count": 6,
+    "admin_user": {
+      "email": "admin@lecayenne.fr",
+      "exists": true,
+      "id": 1,
+      "branch_id": 0,
+      "roles_all": ["Admin"],
+      "role_on_web_guard": null,
+      "role_on_sanctum_guard": "Admin",
+      "web_perms_total": 0,
+      "web_perms_direct": 0,
+      "web_perms_via_roles": 0,
+      "sanctum_perms_via_role": 82,
+      "permissions_table_web_count": 1,
+      "permissions_table_sanctum_count": 82,
+      "spec_compliance_82_web_perms": false,
+      "anomaly": "Spec asks for 'Admin user exists + has 82 web perms'. Reality: Admin has 82 SANCTUM perms (correct for app design) and 0 WEB perms. df8d06a67 seeder exists but cannot execute because no Admin@web role exists. All 8 roles in DB are sanctum-only (Admin@sanctum, Branch Manager@sanctum, Chef@sanctum, Customer@sanctum, Delivery Boy@sanctum, POS Operator@sanctum, Stuff@sanctum, Waiter@sanctum). The incoming PR may need to create the Admin@web role and then run the sync seeder, OR confirm this is V1 LOCAL-acceptable (admin Vue SPA uses session cookie + web guard, so 403s expected on web-protected endpoints)."
+    }
+  },
+
+  "anomalies_for_PR_attention": [
+    {
+      "id": "A-01",
+      "severity": "AMBER",
+      "category": "permissions",
+      "title": "Admin@web role missing — df8d06a67 seeder cannot execute",
+      "evidence": "All 8 roles in DB are guard_name=sanctum. AdminWebGuardPermissionsSyncSeeder.php line 47-54 returns early with warning 'Admin (web guard) role not found — Admin sync skipped.'",
+      "impact": "Admin Vue SPA pages using web guard return 403 unless every route is sanctum-protected. Owner-side bug reported (/admin/ingredients 'Impossible de charger') confirms this is a live issue.",
+      "fix_options": [
+        "1. Add Admin@web role creation to RolePermissionTableSeeder before AdminWebGuardPermissionsSyncSeeder runs",
+        "2. Modify AdminWebGuardPermissionsSyncSeeder to firstOrCreate the Admin@web role itself (currently only looks it up)",
+        "3. Re-run database seeders and assign Admin@web to user 1"
+      ]
+    },
+    {
+      "id": "A-02",
+      "severity": "AMBER",
+      "category": "schema",
+      "title": "ingredients table does not exist",
+      "evidence": "DB query failed: SQLSTATE[42S02] Base table or view not found: 'foodking.ingredients'. Only stock_levels + stock_movements tables present matching pattern.",
+      "impact": "Mission task 17 'ingredients count' returns null. /admin/ingredients page references ingredient model — likely uses ItemAddon/ItemExtra/Ingredient stored elsewhere, OR PR will add ingredients table migration.",
+      "fix_options": [
+        "1. Confirm with PR author whether catalog seed adds ingredients table",
+        "2. Check Ingredient model __construct/table property for actual storage"
+      ]
+    },
+    {
+      "id": "A-03",
+      "severity": "INFO",
+      "category": "data",
+      "title": "items count = 11 placeholder (matches spec expectation)",
+      "evidence": "11 items in items table — spec confirms this is the placeholder before catalog seed PR lands.",
+      "impact": "Expected — incoming PR catalog seed will populate.",
+      "fix_options": ["No action — PR catalog seed will fix"]
+    },
+    {
+      "id": "A-04",
+      "severity": "INFO",
+      "category": "docs",
+      "title": "PRODUCTION_GO_LIVE_CHECKLIST.md not at repo root",
+      "evidence": "Spec implied root-level. Actual: scripts/deploy/PRODUCTION_GO_LIVE_CHECKLIST.md (4211 bytes) + reports/playbooks/GO_LIVE_CHECKLIST_OWNER_2026-05-26.md.",
+      "impact": "None — checklist exists in canonical deploy location.",
+      "fix_options": ["No action — location is conventional"]
+    }
+  ],
+
+  "verdict": {
+    "decision": "AMBER",
+    "rationale": "Baseline is structurally GREEN: NF525 chain intact (58 logs, last_hash anchored), frozen-zone diff = 0 LOC, all 5 spec URLs return 200, all 6 critical heals code-present, all 4 production-readiness artifacts present. However 2 AMBER items must be acknowledged before PR lands: (A-01) Admin@web role missing means df8d06a67 seeder is committed-but-inert and admin Vue pages still 403; (A-02) ingredients table missing means task 17 cannot be measured. Recommend the cloud PR author confirms catalog seed creates ingredients table + adds Admin@web role bootstrap, OR mark these as backlog for V1.0.X. Mission task discipline (DM6 read-only) preserved — zero edits to code or DB performed by this agent.",
+    "ship_baseline_for_PR_comparison": "YES — record this snapshot; when PR lands, re-run all 20 checks and compare delta (especially NF525 chain APPENDED-ONLY, frozen-zone diff still 0, items count grew, ingredients populated, Admin@web=82).",
+    "open_p0_blockers": 0,
+    "open_amber_items": 2,
+    "open_info_items": 2
+  },
+
+  "discipline_check": {
+    "DM6_read_only": "ENFORCED — zero file edits, zero DB mutations, zero php artisan migrate/seed calls",
+    "DM3": "Reasoned through each anomaly with evidence before conclusion",
+    "DM5": "All findings backed by file paths + line numbers + commit hashes",
+    "DM8": "Captured baseline durably to JSON before declaring done"
+  }
+}

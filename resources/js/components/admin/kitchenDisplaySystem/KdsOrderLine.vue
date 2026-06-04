@@ -20,7 +20,7 @@
     <template v-if="line.type === 'header'">
       <div class="kds-line__header">
         <span class="kds-line__qty">{{ line.qty }}<span class="kds-line__qty-x">×</span></span>
-        <span v-if="line.hasAllergen" class="kds-line__allergen-icon" aria-label="allergen">⚠</span>
+        <span v-if="line.hasAllergen" class="kds-line__allergen-icon" :aria-label="$t('label.kds_line_allergen_icon_aria')">⚠</span>
         <span class="kds-line__name">{{ line.label }}</span>
       </div>
     </template>
@@ -102,7 +102,7 @@ export default {
       return translated === key ? this.line.group : translated;
     },
     allergenLabel() {
-      return this.$t('label.kds_allergen_warning_prefix') || 'Allergènes :';
+      return this.$t('label.kds_allergen_warning_prefix');
     },
     joinedCodes() {
       const codes = Array.isArray(this.line.codes) ? this.line.codes : [];

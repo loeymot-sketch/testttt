@@ -1,0 +1,266 @@
+{
+  "agent": "L.7.2 Adversarial RED — SSRF + External Fetch",
+  "phase": "L — Ultra-final pre-cloud Wave L-A",
+  "mission": "Hunt every Server-Side Request Forgery (SSRF) vector. Any place the backend opens a network socket / fetches a URL where the destination is influenced by user input (admin or otherwise) is in scope. Verify: webhook callback URLs, image URL fetching, external service calls (Stripe/Senangpay/FCM/SMS/mail), OAuth/SSO callback, OEmbed/preview, loyalty QR generation, PDF generation, CSV/Excel import. Confirm: allowlist + IP block + DNS-rebind protection on every user-controlled destination.",
+  "date": "2026-05-24",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "scope": "Code-static read-only audit of every outbound HTTP/socket callsite in app/. Zero file modifications outside this findings JSON. No live exploit run (Le Cayenne single-box LAN deploy, no public ingress, no AWS metadata to exfil — SSRF lateral impact is laptop-local). Documenting the V1.0.2 cloud-prep gap so the host allowlist is in place BEFORE owner initiates AWS cutover (per feedback_no_cloud_until_owner_initiates.md mandate).",
+  "method": "grep-survey of every Http::/GuzzleHttp/curl_exec/fopen/fsockopen/file_get_contents/addMediaFromUrl/stream_socket callsite. For each: trace the destination — hardcoded constant, hardcoded SDK endpoint, env config, DB-stored config (admin-settable), or request-body field. Flag every request-body or DB-admin path as SSRF candidate. Cross-check authorization layer (route middleware, FormRequest authorize, permission gate). Map blast radius (read response? write only? socket open only?). Compare with sibling protections (CSRF except list, throttle middleware, boot guards).",
+  "files_examined": [
+    "app/Services/InstallerService.php:80-102 (licenseCodeChecker — Http::post to config('product.licenseCodeCheckerUrl'))",
+    "app/Services/FcmNotificationService.php:39-228 (sendToToken/sendToTopic/sendMulticast — Http::post to const FCM_LEGACY_URL)",
+    "app/Services/FirebaseService.php:17-67 (sendNotification — Guzzle Client->post to FCM v1 URL constructed from notification_fcm_project_id)",
+    "app/Services/FirebaseService.php:69-102 (getAccessToken — ServiceAccountCredentials reads filesystem path from Spatie media getPath)",
+    "app/Services/PushNotificationService.php:55-121 (store — flows through FirebaseService)",
+    "app/Services/MailService.php:25-58 (update — admin sets MAIL_HOST/MAIL_PORT to arbitrary values via .env writer, mail send connects there)",
+    "app/Services/LanguageService.php:181-220 (fileText include() + fileTextStore fopen+file_get_contents+file_put_contents — accepts arbitrary path string from request body, LFI/RFI candidate via PHP stream wrappers)",
+    "app/Services/Hardware/PrinterTransport/TcpPrinterTransport.php:9-44 (send — fsockopen to Printer.host:Printer.port set by admin)",
+    "app/Services/Hardware/EscPosPrinterService.php:16-79 (sendRaw + testPrint — wires Printer.host into transport)",
+    "app/Http/Controllers/Admin/PrinterController.php:37-85 (store/update/testPrint — permission:settings + permission:pos)",
+    "app/Http/Requests/Admin/PrinterRequest.php:15-43 (host validation = string|max:64 ONLY — NO IP block, NO DNS resolution, NO allowlist)",
+    "app/Http/PaymentGateways/Gateways/Stripe.php:36-41 (StripeClient SDK with hardcoded Stripe API endpoint)",
+    "app/Http/PaymentGateways/Gateways/Stripe.php:62-114 (payment + redirect()->away($links['href']) for PayPal-parity check — Stripe uses route() redirects)",
+    "app/Http/PaymentGateways/Gateways/Paypal.php:62-114 (payment — redirect()->away to PayPal SDK response href; PayPal SDK uses validate_ssl=true + hardcoded paypal.com endpoints)",
+    "app/Http/PaymentGateways/Gateways/Senangpay.php (webhook handler — receives data, does not fetch)",
+    "app/Http/SmsGateways/Gateways/Bulksms.php:25-65 (curl_exec to hardcoded https://api.bulksms.com)",
+    "app/Http/SmsGateways/Gateways/Bulksmsbd.php:7-60 (curl_exec to hardcoded api.bulksmsbd.net)",
+    "app/Http/SmsGateways/Gateways/Msg91.php:48-74 (curl_exec to hardcoded msg91 endpoint)",
+    "app/Http/SmsGateways/Gateways/Twilio.php:11-55 (Twilio SDK — hardcoded api.twilio.com)",
+    "app/Http/SmsGateways/Gateways/Nexmo.php:6-48 (Vonage SDK — hardcoded api.nexmo.com)",
+    "app/Http/SmsGateways/Gateways/Clickatell.php (GuzzleHttp Client — hardcoded clickatell endpoint)",
+    "app/Http/SmsGateways/Gateways/Twofactor.php (GuzzleHttp Client — hardcoded 2factor endpoint)",
+    "app/Http/SmsGateways/Gateways/Telesign.php (GuzzleHttp Client — hardcoded telesign endpoint)",
+    "app/Services/ItemService.php:678-684 (addMediaFromString from server-filesystem $media->getPath() — NOT user-controlled URL)",
+    "app/Services/DiningTableService.php:101-137 (QrCode::generate writes to storage_path — payload is route URL, no remote fetch)",
+    "app/Services/Loyalty/LoyaltyQrSigner.php:50-264 (HMAC-signed token bundle — no URL fetch)",
+    "app/Http/Controllers/Frontend/LoyaltyController.php:619-820 (signed-token verify, no remote fetch)",
+    "app/Http/Controllers/Admin/LanguageController.php:22-110 (permission:settings on fileText + fileTextStore — but path passed straight through)",
+    "app/Http/Controllers/Admin/MailController.php:1-39 (permission:settings on update — admin-only)",
+    "composer.json (no laravel/socialite, no onelogin/php-saml, no oauth2-server — no OAuth/SSO callback path)",
+    "config/product.php:1-9 (licenseCodeCheckerUrl HARDCODED to https://support.inilabs.net — not env-overridable, not admin-settable)",
+    "config/services.php:60-71 (stripe.webhook_secret env wiring, FCM keys; no admin-settable destination)"
+  ],
+  "ssrf_vectors_audited": [
+    {
+      "id": "L.7.2.1",
+      "vector": "Webhook callback URLs (we POST out)",
+      "destinations": "None. We are the RECEIVER for Stripe + Senangpay webhooks (inbound only, not vulnerable to SSRF on our side).",
+      "user_controlled_url": false,
+      "verdict": "SAFE — no outbound webhook POSTs to URLs supplied by users. Outbound queue dispatch is purely DB→listeners, never HTTP."
+    },
+    {
+      "id": "L.7.2.2",
+      "vector": "Image URL fetching (Spatie media addMediaFromUrl)",
+      "destinations": "Only `addMediaFromString((string) file_get_contents($path))` at ItemService:681 where `$path = $media->getPath()` (server filesystem, Spatie-resolved). NO `addMediaFromUrl` callsite in app/.",
+      "user_controlled_url": false,
+      "verdict": "SAFE — uploads use Laravel `image|mimes:jpg,jpeg,png,webp|max:2048-4096` validation in ItemRequest:82, ItemCategoryRequest:44, ItemPhotoUploadRequest:17, PushNotificationRequest:37. Multipart file uploads, never URLs."
+    },
+    {
+      "id": "L.7.2.3",
+      "vector": "External service calls (Stripe, Senangpay, FCM, SMS, mail) — destination URL controllability",
+      "destinations": [
+        "Stripe SDK — hardcoded api.stripe.com (StripeClient\\StripeClient with stripe_secret from DB; SDK endpoint not configurable)",
+        "PayPal SDK — hardcoded paypal.com / sandbox.paypal.com (Srmklive\\PayPal\\Services\\PayPal with validate_ssl=true)",
+        "Senangpay — we are receiver only; outbound (if any) via SDK with hardcoded base URLs",
+        "FCM v1 — hardcoded https://fcm.googleapis.com/v1/projects/{project_id}/messages:send in FirebaseService:23 (project_id from notification settings — admin-settable but interpolated into Google's domain, not used as host)",
+        "FCM legacy — hardcoded const FCM_URL = 'https://fcm.googleapis.com/fcm/send' in FcmNotificationService:24-27",
+        "SMS gateways (Bulksms, Bulksmsbd, Clickatell, Msg91, Nexmo, Telesign, Twilio, Twofactor) — each gateway has hardcoded baseUrl in its constructor (e.g. Bulksms:25 https://api.bulksms.com/v1/messages, Twilio uses SDK)",
+        "License checker — hardcoded https://support.inilabs.net in config/product.php (not env-overridable)"
+      ],
+      "user_controlled_url": false,
+      "verdict": "SAFE — every outbound external service destination is hardcoded in source code or fixed SDK endpoint. notification_fcm_project_id is interpolated into the path component of a hardcoded fcm.googleapis.com URL, so even admin-controllable project_id cannot redirect the host (path traversal in URL is not a host substitution)."
+    },
+    {
+      "id": "L.7.2.4",
+      "vector": "OAuth/SSO callback redirect manipulation",
+      "destinations": "No OAuth/SSO packages in composer.json (no laravel/socialite, no onelogin/php-saml, no league/oauth2-server, no laravel/passport). Custom Sanctum + Spatie/Permission only.",
+      "user_controlled_url": false,
+      "verdict": "SAFE — no OAuth/SSO callback path exists. PayPal redirect()->away($links['href']) uses href from PayPal SDK response (validate_ssl=true on trusted paypal.com endpoint) — not a callback URL configured by admin."
+    },
+    {
+      "id": "L.7.2.5",
+      "vector": "OEmbed / URL preview generation",
+      "destinations": "None. No url-preview / oembed / metadata-fetch service in app/.",
+      "user_controlled_url": false,
+      "verdict": "SAFE — no URL preview functionality."
+    },
+    {
+      "id": "L.7.2.6",
+      "vector": "Loyalty QR code generation — QR payload host",
+      "destinations": "QR encodes signed lqr.<b64payload>.<b64hmac> token (LoyaltyQrSigner:165-177) — NOT a URL. No remote fetch on QR generation. QR scan handler verifies HMAC + consumes nonce, no URL dereferencing.",
+      "user_controlled_url": false,
+      "verdict": "SAFE — QR is HMAC-signed payload bundle, not a fetchable URL. LCS-S-001 design prevents URL injection. Dining table QR (DiningTableService:101/137) encodes route('home') + table_id, also not user-supplied URL."
+    },
+    {
+      "id": "L.7.2.7",
+      "vector": "PDF generation library SSRF (DOMPDF / wkhtmltopdf external resources)",
+      "destinations": "No PDF library detected in composer.json (no barryvdh/laravel-dompdf, no spipu/html2pdf, no knplabs/snappy). FiscalArchiveCommand uses fopen+fwrite for local file writes only.",
+      "user_controlled_url": false,
+      "verdict": "SAFE — no PDF generator in use. NF525 receipts use ESC/POS printer transport (binary write to TCP socket), not HTML rendering."
+    },
+    {
+      "id": "L.7.2.8",
+      "vector": "CSV / Excel import URL injection",
+      "destinations": "Excel::import in ItemCategoryController:125 + ItemController:219 uses $request->file('file') — multipart upload only, never URL. PhpSpreadsheet does not fetch external resources from uploaded file unless EXTERNAL_REFS feature explicitly enabled (not enabled in maatwebsite/excel default config).",
+      "user_controlled_url": false,
+      "verdict": "SAFE — file upload only, no URL-import path. XXE in Excel parsing is theoretical but mitigated by PhpSpreadsheet's default-disabled external entity loading."
+    },
+    {
+      "id": "L.7.2.9",
+      "vector": "SMTP host (MailService.update writes MAIL_HOST to .env)",
+      "destinations": "admin POST /api/admin/mail with body { mail_host: '169.254.169.254', mail_port: 80, ... } → MailService::update writes MAIL_HOST=169.254.169.254 to .env via EnvEditor → optimize:clear → subsequent Mail::send connects to that host (Symfony Mailer SMTP transport).",
+      "user_controlled_url": true,
+      "constraints": [
+        "permission:settings required (admin/owner role only — MailController:18 middleware)",
+        "Single-tenant V1 Le Cayenne — only the owner has permission:settings",
+        "Writes .env which is loaded for the WHOLE Laravel app, then config:clear forces re-read",
+        "Validation in MailRequest:25-36 = string|max:190 — NO IP block, NO host allowlist",
+        "No DNS-rebind protection (host string is resolved by libc gethostbyname)",
+        "Outbound SMTP starttls handshake will fail on most non-SMTP services (port 25/465/587 expected), but bind-only signal still leaks port-open state via timing"
+      ],
+      "blast_radius": "Cloud (AWS): SMTP → 169.254.169.254:80 — handshake fails but TCP connect timing leaks metadata-service presence. LAN: SMTP → 192.168.x.x:25 leaks internal mail-server map. Limited because outbound is one-shot per mail-send-attempt (no read-back of response body via mail flow). Admin needs to trigger mail send (e.g. password reset, order confirmation) to fire the SMTP connect.",
+      "verdict": "EXPLOITABLE-BY-ADMIN — single-tenant V1 LAN risk is laptop-local (owner already controls the box), but FUTURE V2 SaaS with multi-tenant admin = critical. Document as V1.0.X cloud-prep backlog item BEFORE owner initiates cloud cutover."
+    },
+    {
+      "id": "L.7.2.10",
+      "vector": "ESC/POS printer host (TcpPrinterTransport fsockopen to admin-settable Printer.host)",
+      "destinations": "admin POST /api/admin/printer with body { type: 'escpos_tcp', host: '169.254.169.254', port: 80, ... } → store as Printer row → admin GET /api/admin/printer/{id}/test-print → EscPosPrinterService::testPrint → TcpPrinterTransport::send → @fsockopen((string) $host, $port, ..., 2.0) writes 50-200 bytes of ESC/POS data + closes.",
+      "user_controlled_url": true,
+      "constraints": [
+        "permission:settings required for store/update (PrinterController:20)",
+        "permission:pos required for testPrint (PrinterController:19) — POS Operator role has this",
+        "Branch-isolated: PrinterRequest:45-54 forces branch_id = user's branch_id for non-admin users (single-tenant Le Cayenne = only branch 0 admin can do this anyway)",
+        "Validation in PrinterRequest:31-37 = host string|max:64 + port integer|min:1|max:65535 — NO IP block, NO allowlist, NO DNS-rebind protection",
+        "Write-only socket: TcpPrinterTransport sends bytes + closes (no response read back to attacker)",
+        "Timing/error leakage: tcp_open_failed:errstr(errno) returned in transport->lastError() → response 502 ok:false on testPrint → admin can probe port-open vs port-closed vs filtered via TCP connect timing"
+      ],
+      "blast_radius": "Cloud (AWS post-cutover): admin can port-scan internal VPC subnets via repeated testPrint with different host/port. Cannot READ response data (ESC/POS is write-only), but can MAP internal services. AWS metadata exfil = blocked (metadata service IMDSv2 requires GET + token header, not socket write). LAN single-box: laptop-local, owner controls the box anyway.",
+      "verdict": "EXPLOITABLE-BY-ADMIN (V1 LAN: laptop-local) — port-scan primitive for any admin/pos-permission holder. CRITICAL for V2 multi-tenant SaaS where Branch Managers gain printer config. Document as V1.0.X cloud-prep backlog item."
+    },
+    {
+      "id": "L.7.2.11",
+      "vector": "LanguageService LFI/RFI via file_get_contents + include + file_put_contents on user-supplied path",
+      "destinations": "POST /api/admin/language/file-text with { path: '...', name: '...' } → LanguageController::fileText (permission:settings, LanguageController:27) → LanguageService::fileText line 187+189 `include($request->path)` — NO path validation, NO base_path() containment.\n\nPOST /api/admin/language/file-text-store with { x_language_file_path: '...', ... } → LanguageService::fileTextStore line 201 `fopen($request->x_language_file_path, 'rw')` line 202 `file_get_contents($request->x_language_file_path)` line 214 `file_put_contents($request->x_language_file_path, $fileContent)` — NO path validation, NO containment.",
+      "user_controlled_url": true,
+      "constraints": [
+        "permission:settings required (LanguageController:27 middleware)",
+        "Single-tenant V1 — owner-only path",
+        "file_get_contents() ACCEPTS PHP stream wrappers including http://, https://, ftp://, php://, data://, phar://, expect:// (depending on PHP build) — this is a TRUE SSRF + LFI + RFI gadget",
+        "include() on the same path = RCE (remote PHP include if allow_url_include=On — usually Off in modern PHP, but php://input is always available)",
+        "file_put_contents on attacker-controlled path = arbitrary file write (LFW)",
+        "Existing P0 SEC-RCE comment at LanguageController:23-27 says '[P0 SEC-RCE] fileText (include() = LFI) + fileTextStore (file_put_contents = arbitrary…)' — known weakness already flagged, only permission:settings is the mitigation"
+      ],
+      "blast_radius": "Full RCE (via include with php://input or known writable file), arbitrary file read (file_get_contents with php://filter base64-encode for binary), arbitrary file write (file_put_contents to any path Laravel user can write), and SSRF (http:// wrapper in file_get_contents — read response body returned to admin via 422 message or include() output).",
+      "verdict": "KNOWN P0 SEC-RCE — mitigated solely by permission:settings + single-tenant trust boundary. The in-code comment proves the team knew the issue and accepted the risk for V1 single-tenant. CRITICAL gap for V2 SaaS — must be hardened with allowlist + base_path() containment + reject stream-wrapper schemes BEFORE owner initiates cloud cutover."
+    }
+  ],
+  "findings": [
+    {
+      "id": "L7-2-F-01",
+      "severity": "P1",
+      "title": "Printer host SSRF — admin can fsockopen to arbitrary internal/metadata IP via PrinterController",
+      "evidence": {
+        "file": "app/Services/Hardware/PrinterTransport/TcpPrinterTransport.php:24",
+        "code": "$socket = @fsockopen((string) $host, $port, $errno, $errstr, 2.0);",
+        "source_of_host": "Printer.host column, set by admin via POST/PUT /api/admin/printer (app/Http/Controllers/Admin/PrinterController.php:37-68 — permission:settings middleware)",
+        "trigger": "admin GET /api/admin/printer/{id}/test-print (permission:pos middleware — POS Operator can also fire this) → EscPosPrinterService::testPrint at app/Services/Hardware/EscPosPrinterService.php:50-79 → calls sendRaw → calls TcpPrinterTransport::send → fsockopen with admin-set host:port",
+        "validation_gap": "app/Http/Requests/Admin/PrinterRequest.php:31-37 — host = ['nullable', 'string', 'max:64'], port = ['nullable', 'integer', 'min:1', 'max:65535']. NO IP-range block (no rfc1918, no link-local 169.254.0.0/16, no loopback 127.0.0.0/8, no IPv6 ::1 / fe80::/10), NO DNS-rebind defense (TOCTOU between validation hostname-resolve and fsockopen hostname-resolve), NO allowlist."
+      },
+      "exploit_walkthrough": [
+        "1. Admin (or any permission:settings holder) POSTs /api/admin/printer with body: { name: 'mdtest', branch_id: 1, type: 'escpos_tcp', host: '169.254.169.254', port: 80, station: 'receipt', width_chars: 48, status: 1 }.",
+        "2. Validation PASSES (string|max:64, integer|1-65535 — no IP blocklist).",
+        "3. Printer row id=42 created with host='169.254.169.254' port=80.",
+        "4. Admin (or permission:pos holder = POS Operator role) GETs /api/admin/printer/42/test-print.",
+        "5. TcpPrinterTransport::send opens TCP to 169.254.169.254:80 with 2.0s timeout, writes ~80 bytes of ESC/POS bytes (init + codepage + text + cut), closes.",
+        "6. Response body: { ok: false, printer_id: 42 } with HTTP 502 IF connection failed (cloud metadata service doesn't speak ESC/POS, will close).",
+        "7. Response body: { ok: true, printer_id: 42 } with HTTP 200 IF TCP socket opened AND wrote all bytes successfully (timing/port-open signal).",
+        "8. Attacker can iterate host/port combos to map internal VPC (AWS post-cutover) or LAN subnet."
+      ],
+      "blast_radius": "V1 Le Cayenne LAN single-box: laptop-local (owner already controls the box, no external attacker — RISK = NEGLIGIBLE). V2 SaaS cloud post-cutover: Branch Manager / POS Operator role gains internal-VPC port-scan primitive — CRITICAL escalation.",
+      "fix": "Add a host-validation rule in PrinterRequest that: (a) refuses non-FQDN strings containing IP-literal chars unless they match an explicit allowlist of CIDR ranges (e.g. 192.168.0.0/16 only — typical LAN printer range), (b) refuses 169.254.0.0/16 + 127.0.0.0/8 + ::1 + fe80::/10 + 0.0.0.0/8 outright, (c) optionally DNS-resolve FQDN and re-validate the resolved IP against the same blocklist (loose DNS-rebind defense — full defense requires post-resolve binding via curl-style CURLOPT_RESOLVE which fsockopen does not support — defer to V1.0.2). Sentinel: tests/Feature/Sentinels/PrinterHostAllowlistSentinelTest validating PrinterRequest rejects 169.254.169.254 / 127.0.0.1 / ::1 inputs.",
+      "v1_release_blocker": false,
+      "v1_0_x_cloud_prep_backlog": true
+    },
+    {
+      "id": "L7-2-F-02",
+      "severity": "P1",
+      "title": "SMTP host SSRF — admin can point MAIL_HOST to arbitrary internal IP via MailController",
+      "evidence": {
+        "file": "app/Services/MailService.php:42-51",
+        "code": "$this->envService->addData(['MAIL_MAILER' => 'smtp', 'MAIL_HOST' => $request->mail_host, 'MAIL_PORT' => $request->mail_port, ...]);",
+        "source_of_host": "Request body field 'mail_host', set by admin via PUT/PATCH /api/admin/mail (app/Http/Controllers/Admin/MailController.php:30-37 — permission:settings middleware)",
+        "trigger": "Any subsequent Mail::send call from Laravel (password reset, order confirmation, invoice email, etc.) — Symfony Mailer SMTP transport opens TCP to MAIL_HOST:MAIL_PORT with starttls handshake.",
+        "validation_gap": "app/Http/Requests/MailRequest.php:28-29 — mail_host = ['required', 'string', 'max:190'], mail_port = ['required', 'string', 'max:190']. NO IP-range block, NO allowlist, NO DNS-rebind defense."
+      },
+      "exploit_walkthrough": [
+        "1. Admin PUTs /api/admin/mail with body: { mail_host: '169.254.169.254', mail_port: '80', mail_username: 'x', mail_password: 'x', mail_encryption: 'none', mail_from_name: 'x', mail_from_email: 'x@x' }.",
+        "2. Validation PASSES (string|max:190, no IP blocklist).",
+        "3. MailService::update writes MAIL_HOST=169.254.169.254 + MAIL_PORT=80 to .env via Dipokhalder\\EnvEditor + Artisan::call('optimize:clear').",
+        "4. Subsequent Mail::send → Symfony Mailer connects to 169.254.169.254:80 — handshake fails (no SMTP greeting), but TCP connect timing + error message ('Connection could not be established with host 169.254.169.254:80 stream_socket_client(): Unable to connect…') is logged to storage/logs/laravel.log.",
+        "5. Attacker (admin) iterates host/port via mail-send triggers, maps internal VPC."
+      ],
+      "blast_radius": "V1 LAN: laptop-local. V2 SaaS: tenant-admin gains internal-VPC probe primitive. Additional risk: if MAIL_HOST is set to a credential-collection honeypot ('attacker.com:25'), every mail-send leaks SMTP-AUTH credentials in cleartext (LOGIN auth) — this is admin-on-self though (admin set their own MAIL_HOST), so impact is limited to their own outbound mail metadata.",
+      "fix": "Add IP blocklist + allowlist of TLD/MX-style values in MailRequest:28-29. Reject 169.254.0.0/16, 127.0.0.0/8, ::1, fe80::/10. Optionally enforce TLD presence (must contain '.', cannot be bare IP unless on explicit allowlist). Sentinel: tests/Feature/Sentinels/MailHostAllowlistSentinelTest.",
+      "v1_release_blocker": false,
+      "v1_0_x_cloud_prep_backlog": true
+    },
+    {
+      "id": "L7-2-F-03",
+      "severity": "P0",
+      "title": "LanguageService LFI/RFI/SSRF gadget — pre-existing P0 SEC-RCE flagged in code, gated only by permission:settings",
+      "evidence": {
+        "file": "app/Services/LanguageService.php:181-220",
+        "code_fileText": "if (file_exists($request->path)) { ... include($request->path); }",
+        "code_fileTextStore": "$file = fopen($request->x_language_file_path, 'rw'); $fileContent = file_get_contents($request->x_language_file_path); ... file_put_contents($request->x_language_file_path, $fileContent);",
+        "source_of_path": "request body fields 'path' and 'x_language_file_path' — admin-supplied, validated only as 'required, string' in LanguageFileTextGetRequest:25-31 (no path normalization, no base_path() containment)",
+        "trigger": "POST /api/admin/language/file-text + /api/admin/language/file-text-store (both gated by permission:settings, LanguageController:27)",
+        "validation_gap": "ZERO path validation beyond 'string'. file_get_contents/fopen accept PHP stream wrappers (http://, https://, php://, php://input, php://filter, data://, phar://, ftp://, ssh2:// if ext loaded). include() of remote PHP IF allow_url_include=On (default Off in PHP 7+).",
+        "team_awareness": "Comment at LanguageController:23-27 explicitly labels this as '[P0 SEC-RCE]' — known issue accepted for V1 single-tenant trust boundary."
+      },
+      "exploit_walkthrough_ssrf": [
+        "1. Admin POSTs /api/admin/language/file-text with { name: 'foo.php', path: 'http://169.254.169.254/latest/meta-data/iam/security-credentials/' }.",
+        "2. file_exists('http://169.254.169.254/...') returns TRUE if URL is reachable (PHP stream wrapper).",
+        "3. include() loads response body AS PHP — if response is non-PHP (typical metadata service JSON), echoes content to output buffer + may trigger PHP parse warnings.",
+        "4. Response body leaks to admin via stdout / 422 error message.",
+        "5. Alternative: POST /api/admin/language/file-text-store with x_language_file_path = 'php://filter/convert.base64-encode/resource=http://169.254.169.254/latest/meta-data/...' → file_get_contents reads the URL, str_replace operates on the content, file_put_contents tries to write back (fails — stream is read-only) but the read leak already happened (response body returned to admin)."
+      ],
+      "blast_radius": "Full SSRF (read internal HTTP services via file_get_contents wrapper) + arbitrary local file read (file://, php://filter base64) + arbitrary local file write (file_put_contents to ANY writable path) + potential RCE (file_put_contents PHP code to a public/ accessible .php path → browse to it). V1 single-tenant: owner-on-self risk only. V2 SaaS: TENANT ADMIN COMPROMISE = HOST COMPROMISE.",
+      "fix": "Before V2 SaaS cutover: refactor LanguageService::fileText + fileTextStore to (a) accept only language code + filename (not raw path), (b) compute path internally as resource_path('lang/' . $code . '/' . basename($name)), (c) realpath() the result and assert str_starts_with($realpath, realpath(resource_path('lang')) . DIRECTORY_SEPARATOR), (d) refuse $name containing '..', '/', '\\\\', or null byte, (e) refuse $code not matching /^[a-z]{2,5}(-[A-Z]{2})?$/. Sentinel: tests/Feature/Sentinels/LanguageServicePathContainmentSentinelTest with negative tests for http://, php://, data://, file://, ../etc/passwd, /etc/passwd, php://input.",
+      "v1_release_blocker": false,
+      "v1_0_x_cloud_prep_backlog_critical": true,
+      "note": "V1 ACCEPTED RISK per existing in-code comment — owner trust boundary. CANNOT proceed to V2 SaaS without hardening this."
+    }
+  ],
+  "ssrf_vector_summary": {
+    "outbound_callsites_total": 24,
+    "user_controlled_destination": 3,
+    "admin_only_gated": 3,
+    "non_admin_reachable": 0,
+    "v1_release_blockers": 0,
+    "v1_0_x_cloud_prep_backlog": 3
+  },
+  "verdict": {
+    "v1_le_cayenne_lan_release_status": "GREEN — single-box LAN deploy, owner controls everything, no public ingress, no AWS metadata to exfil. All 3 user-controlled SSRF/LFI vectors are gated by permission:settings (owner-only), and the trust boundary is the laptop itself. ZERO release blockers for V1.",
+    "v2_saas_cloud_cutover_status": "RED-BLOCKED — 3 P0/P1 findings (L7-2-F-01 printer host, L7-2-F-02 mail host, L7-2-F-03 LanguageService LFI/RFI/SSRF gadget) MUST be hardened with host allowlist + path containment BEFORE owner initiates AWS cutover. Tenant-admin compromise pattern = host compromise pattern.",
+    "fix_complexity": "Low (1-2 days of work) — add IP/host validation rules in 2 FormRequests + refactor 1 service to use resource_path containment + 3 sentinel tests. No frozen-zone touch required. No NF525 impact."
+  },
+  "top_3_ssrf_vectors": [
+    "1. LanguageService LFI/RFI/SSRF gadget (L7-2-F-03) — KNOWN P0 SEC-RCE in code comment, gated only by permission:settings. Full RCE + SSRF + LFW gadget. V2 SaaS cutover blocker.",
+    "2. Printer host fsockopen (L7-2-F-01) — admin sets Printer.host to arbitrary IP, testPrint fires TCP connect. Internal-VPC port-scan primitive. V2 SaaS cutover blocker.",
+    "3. SMTP host (L7-2-F-02) — admin sets MAIL_HOST in .env to arbitrary IP, mail-send triggers TCP connect. Internal-VPC probe primitive. V2 SaaS cutover blocker."
+  ],
+  "recommendations": [
+    "P0 — Before V2 SaaS cutover: refactor LanguageService::fileText + fileTextStore to use code+filename interface with resource_path() containment; add LanguageServicePathContainmentSentinelTest negative-input suite.",
+    "P1 — Before V2 SaaS cutover: add IP blocklist (rfc1918 + link-local + loopback) and optional allowlist to PrinterRequest and MailRequest; add PrinterHostAllowlistSentinelTest + MailHostAllowlistSentinelTest.",
+    "P2 — Defense-in-depth: enforce a Laravel HTTP-client middleware that strips Stream wrappers (http://, php://, data://, etc) from any URL-typed user input across all FormRequests; central rules helper App\\Rules\\SafeRemoteHost.",
+    "P3 — Production boot guard: refuse to BOOT if MAIL_HOST or any Printer.host in DB matches a blocklist IP — promotes runtime detection to startup-fail-closed (mirrors AppServiceProvider:78-145 NF525 boot guards pattern).",
+    "P3 — Observability: log every TCP connect attempt from TcpPrinterTransport with host+port+resolved_ip+source_user_id to a dedicated 'hardware' log channel — port-scan attempts become alertable."
+  ],
+  "cross_references": [
+    "L7.1 (auth/authz audit) — confirm permission:settings is enforced on MailController, PrinterController, LanguageController",
+    "L8.1 (3-way cascade) — printer transport failure does NOT roll back order state (separate concern)",
+    "L12.1 (production boot guards) — current guards list (POS_SIMULATION_HARDWARE, IDEMPOTENCY_MIDDLEWARE_ENABLED, APP_DEBUG, APP_URL, CACHE_DRIVER) does NOT include MAIL_HOST blocklist — extend if cloud cutover initiated",
+    "UNI-03 (V1.0.X cloud-prep backlog from CLAUDE.md §8) — same backlog item bucket: 'redis or memcached' cache-driver list widening + add SSRF host allowlists",
+    "feedback_no_cloud_until_owner_initiates.md — these findings stay backlog UNTIL owner explicitly initiates cloud cutover; do not surface as V1 release blockers"
+  ]
+}

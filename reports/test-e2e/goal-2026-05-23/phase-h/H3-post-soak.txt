@@ -1,0 +1,19 @@
+=== H.3 POST-SOAK 2026-05-24T02:09:03+0200 ===
+--- audit_logs ---
+97
+--- orders ---
+558	942
+--- outbox pending / stale-30s ---
+1259	1253
+--- fiscal_seq per branch ---
+1	219
+--- RSS ---
+55008
+--- chain ---
+  + branch=4 CHAIN OK
+  + branch=5 CHAIN OK
+SWEEP COMPLETE — CHAIN OK on every active branch (5 total)
+--- DB connections ---
+Threads_connected	1
+--- disk usage storage/logs ---
+365M	storage/logs

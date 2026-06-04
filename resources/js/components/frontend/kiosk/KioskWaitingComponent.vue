@@ -22,6 +22,21 @@
 
     <!-- Contenu principal -->
     <div v-else class="kiosk-waiting-content">
+      <!-- [GAP-FIX-03] Rush banner — is_rush signal consumer (source: KioskMenuService::computeIsRush) -->
+      <div
+        v-if="isRush && !isReady"
+        class="kiosk-rush-banner"
+        role="status"
+        aria-live="polite"
+        data-testid="kiosk-rush-banner"
+      >
+        <span class="kiosk-rush-banner-icon" aria-hidden="true">🔥</span>
+        <span class="kiosk-rush-banner-text">
+          <strong>{{ $t('kiosk.rush.active_title') }}</strong>
+          <span class="kiosk-rush-banner-subtitle">{{ $t('kiosk.rush.subtitle') }}</span>
+        </span>
+      </div>
+
       <!-- En préparation -->
       <transition name="fade-scale" mode="out-in">
         <div v-if="!isReady" key="preparing" class="kiosk-waiting-preparing">
@@ -83,6 +98,17 @@
       <template v-else>
         <span class="kiosk-waiting-preparing-hint">
           {{ $t('kiosk.waiting_subtitle') }}
+        </span>
+        <!-- [Owner 2026-05-21] Home button always visible during preparation +
+             auto-redirect 10s — owner instructed "normalement ça redirige
+             après 10 secondes... bouton de retourner à l'accueil au bout de
+             10 secondes automatique". Customer keeps their queue number on
+             KDS/OSS regardless of which screen they're on. -->
+        <button type="button" class="kiosk-waiting-new-order" @click="newOrder">
+          {{ $t('kiosk.new_order') }}
+        </button>
+        <span class="kiosk-waiting-auto-reset" v-if="preparingAutoRedirectSeconds > 0">
+          {{ $t('kiosk.auto_redirect', { n: preparingAutoRedirectSeconds }) }}
         </span>
         <!-- Allow cancellation during preparation (before kitchen starts) -->
         <button type="button"
@@ -147,12 +173,20 @@ import orderStatusEnum from '../../../enums/modules/orderStatusEnum';
 import paymentStatusEnum from '../../../enums/modules/paymentStatusEnum';
 import { onEvents } from '../../../services/eventContract';
 import kioskHardware from '../../../services/kioskHardware';
+import { buildIdempotencyHeaders } from '../../../helpers/idempotencyHeaders';
 
 // [AUDIT-P1-C] Polling interval is always 15s — Echo provides real-time pushes.
 // Timeout after 15 minutes if order never becomes ready (customer should contact staff).
+// [HEAL B.3 2026-05-19] Intentional per-surface constant, NOT config-driven.
+// Customer-facing screen: 15s balances UX freshness vs network noise. See
+// config/broadcasting.php for the per-surface SoT note (RED-Z3 §B-6 closed).
 const POLL_INTERVAL_MS   = 15000;
 const AUTO_RESET_SECONDS = 20;
 const TIMEOUT_SECONDS    = 900; // 15 minutes
+// [Owner 2026-05-21] Preparing-state auto-redirect to idle. Customer keeps
+// their queue number on KDS/OSS — leaving the waiting screen doesn't
+// cancel anything. 10s = owner instruction.
+const PREPARING_AUTO_REDIRECT_SECONDS = 10;
 // Use shared enum — keeps in sync with PHP OrderStatus and KDS component
 const STATUS_PREPARED  = orderStatusEnum.PREPARED;   // 8
 const STATUS_DELIVERED = orderStatusEnum.DELIVERED;  // 13
@@ -191,7 +225,21 @@ export default {
       _eventSub: null,
       _pollInFlight: false, // [AUDIT-P2-G] prevent overlapping poll requests
       _readyFlashActive: false,
+      // [Owner 2026-05-21] Countdown to auto-redirect home during preparing state.
+      preparingAutoRedirectSeconds: PREPARING_AUTO_REDIRECT_SECONDS,
+      preparingAutoRedirectTimer: null,
     };
+  },
+  computed: {
+    // [GAP-FIX-03] Consume is_rush server-driven flag from kioskMenu Vuex store.
+    // Backend signal: KioskMenuService::computeIsRush (checks config kiosk.rush_windows).
+    // Vuex storage: kioskMenu.branchFlags.is_rush (mutation SET_BRANCH_FLAGS).
+    // Banner shows on waiting screen post-confirmation so client renegotiates
+    // expectation BEFORE picking up.
+    isRush() {
+      const flags = this.$store.getters['kioskMenu/kioskBranchFlags'];
+      return !!(flags && flags.is_rush);
+    },
   },
   mounted() {
     // If this is an offline-queued order, skip polling and show "syncing" state
@@ -200,6 +248,8 @@ export default {
       return;
     }
     this.startPolling();
+    // [Owner 2026-05-21] Start the 10s preparing-state auto-redirect countdown.
+    this.startPreparingAutoRedirect();
     this._subscribeEcho();
     this.startElapsedTimer();
   },
@@ -354,6 +404,29 @@ export default {
       }, 1000);
     },
 
+    // [Owner 2026-05-21] Preparing-state auto-redirect: customer doesn't have
+    // to stay on the waiting screen — their queue number is broadcast to KDS
+    // and OSS. After 10s in preparing state we route back to idle so the
+    // kiosk is ready for the next customer. Cleared by stopAll() when order
+    // transitions to PREPARED (then startAutoReset handles ready-state).
+    startPreparingAutoRedirect() {
+      this.preparingAutoRedirectSeconds = PREPARING_AUTO_REDIRECT_SECONDS;
+      this.preparingAutoRedirectTimer = setInterval(() => {
+        this.preparingAutoRedirectSeconds--;
+        if (this.preparingAutoRedirectSeconds <= 0) {
+          this.stopAll();
+          this.newOrder();
+        }
+      }, 1000);
+    },
+
+    stopPreparingAutoRedirect() {
+      if (this.preparingAutoRedirectTimer) {
+        clearInterval(this.preparingAutoRedirectTimer);
+        this.preparingAutoRedirectTimer = null;
+      }
+    },
+
     async playReadySound() {
       try {
         const Ctor = window.AudioContext || window.webkitAudioContext;
@@ -427,9 +500,12 @@ export default {
         // [AUDIT-F-004] Kiosk customer cancellation from waiting screen → 'customer_request'
         // (OrderCancelReason enum). Backend OrderStatusRequest 422s without whitelisted reason
         // when actor is kiosk machine token.
-        await axios.post(`frontend/order/change-status/${this.orderId}`, {
+        const cancelPayload = {
           status: STATUS_CANCELLED,
           reason: 'customer_request',
+        };
+        await axios.post(`frontend/order/change-status/${this.orderId}`, cancelPayload, {
+          headers: buildIdempotencyHeaders(cancelPayload),
         });
         // Success — clean up and return to idle
         this.showCancelConfirm = false;
@@ -449,6 +525,8 @@ export default {
       clearInterval(this.pollTimer);
       clearInterval(this.countdownTimer);
       clearInterval(this.elapsedTimer);
+      // [Owner 2026-05-21] Also clear preparing-state auto-redirect.
+      this.stopPreparingAutoRedirect();
     },
 
     // [AUDIT-P47-BUG9] Dismiss timeout overlay and resume polling (customer may want to keep waiting)
@@ -827,6 +905,41 @@ export default {
   vertical-align: middle;
 }
 @keyframes spin-sm { to { transform: rotate(360deg); } }
+
+/* [GAP-FIX-03] Rush banner — visible during preparing state when chef backlog detected. */
+.kiosk-rush-banner {
+  position: absolute;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 22px;
+  background: rgba(244, 80, 30, 0.10);
+  border: 1px solid rgba(244, 80, 30, 0.32);
+  border-radius: 999px;
+  max-width: 90vw;
+  box-shadow: 0 4px 16px rgba(244, 80, 30, 0.08);
+}
+.kiosk-rush-banner-icon { font-size: 22px; }
+.kiosk-rush-banner-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  color: var(--kiosk-text);
+  font-size: 15px;
+  line-height: 1.2;
+  text-align: left;
+}
+.kiosk-rush-banner-text strong { font-weight: 800; }
+.kiosk-rush-banner-subtitle {
+  font-size: 13px;
+  color: var(--kiosk-text-muted);
+  font-weight: 500;
+}
 
 /* Network lost banner */
 .kiosk-network-banner {

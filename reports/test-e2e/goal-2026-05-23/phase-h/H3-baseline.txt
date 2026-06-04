@@ -1,0 +1,19 @@
+=== H.3 BASELINE PRE-SOAK 2026-05-24T01:53:28+0200 ===
+--- audit_logs ---
+69
+--- orders ---
+374	758
+--- outbox pending / stale-30s ---
+890	889
+--- fiscal_seq per branch ---
+1	93
+--- RSS ---
+58368
+--- chain ---
+  + branch=4 CHAIN OK
+  + branch=5 CHAIN OK
+SWEEP COMPLETE — CHAIN OK on every active branch (5 total)
+--- DB connections ---
+Threads_connected	1
+--- disk usage storage/logs ---
+365M	storage/logs

@@ -162,7 +162,7 @@ axios.interceptors.response.use(
         // customer-facing order-status wall display) must NEVER bounce to
         // /login on a 401. The screen renders an empty state instead — that's
         // far better UX than leaking the admin login form to a customer.
-        const publicFriendlyPaths = ['/admin/order-status-screen', '/order-status'];
+        const publicFriendlyPaths = ['/admin/order-status-screen', '/order-status-screen', '/order-status'];
         const onPublicFriendly = publicFriendlyPaths.some((p) => path === p || path.startsWith(p + '/'));
         if (onPublicFriendly) {
             return Promise.reject(error);
@@ -206,3 +206,41 @@ router.afterEach(() => {
 });
 
 app.mount('#app');
+
+// [GOAL-2026-05-29 P-AUTH] Proactive Sanctum token refresh. The SPA is Bearer-
+// everywhere: the KDS/OSS delta-poll AND the WebSocket channel-auth both use this
+// token (sanctum.expiration = 480min). Without a refresh the ENTIRE live sync (WS +
+// poll) dies at ~8h — an always-on KDS/OSS would silently stop receiving orders mid
+// service-day until a manual re-login. Refresh every 2h (4 refreshes per TTL, ample
+// margin, robust to a missed tick) via the existing /api/refresh-token endpoint
+// (abilities preserved). (bootstrap.js's "no backend refresh-token endpoint" comment
+// was stale — the endpoint exists at routes/api.php:155.)
+const TOKEN_REFRESH_INTERVAL_MS = 2 * 60 * 60 * 1000;
+setInterval(() => {
+    try {
+        if (store.state.auth && store.state.auth.authToken) {
+            store.dispatch('refreshAuthToken').catch(() => {});
+        }
+    } catch (_) { /* never let the refresh timer break the app */ }
+}, TOKEN_REFRESH_INTERVAL_MS);
+
+// [REG-2 2026-05-30] Cross-tab token-rotation sync. The 2h proactive refresh in ONE tab
+// rotates the Sanctum token (RefreshTokenController deletes the old one server-side).
+// vuex-persistedstate has no `storage`-event listener, so a SECOND tab keeps the now-dead
+// token in memory and 401s on its next request -> the global 401 handler force-logs it out
+// mid-service. Fix: when another tab writes a fresh auth token to localStorage, adopt it
+// (authTokenRefreshed re-injects Echo too) instead of dying; when another tab logs out,
+// follow. Guarded so a logged-out follower is never silently auto-logged-in by another tab.
+window.addEventListener('storage', (e) => {
+    if (e.key !== 'vuex' || !e.newValue) return;
+    try {
+        const persisted = JSON.parse(e.newValue);
+        const freshToken = persisted && persisted.auth ? persisted.auth.authToken : null;
+        const current = store.state.auth && store.state.auth.authToken;
+        if (freshToken && current && freshToken !== current) {
+            store.commit('authTokenRefreshed', freshToken); // adopt the rotated token
+        } else if (!freshToken && current) {
+            store.commit('authLogout'); // another tab logged out -> follow
+        }
+    } catch (_) { /* never let a cross-tab sync error break the app */ }
+});

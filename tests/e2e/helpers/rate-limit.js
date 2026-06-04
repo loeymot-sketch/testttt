@@ -18,6 +18,12 @@ function clearFoodKingRateLimits() {
       'pos@lecayenne.fr|127.0.0.1',
       'chef@lecayenne.fr|127.0.0.1',
       'admin@lecayenne.fr|127.0.0.1',
+      // [test-e2e fix A-007 round-1 2026-05-21] macOS Chromium often
+      // resolves localhost to ::1 (IPv6); without these the login-lockout
+      // limiter accumulates and the 4th sequential test 429s silently.
+      'pos@lecayenne.fr|::1',
+      'chef@lecayenne.fr|::1',
+      'admin@lecayenne.fr|::1',
       // [iter15-mega-fix D-001 2026-05-10] Kiosk login limiter is keyed by
       // 'kiosk:<lower(username)>|<ip>' (RouteServiceProvider::kiosk-login).
       // Without these keys an aborted Wave-C run leaves the kiosk-machine

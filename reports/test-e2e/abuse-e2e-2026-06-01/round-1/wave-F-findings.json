@@ -1,0 +1,46 @@
+{
+  "wave": "F",
+  "round": 1,
+  "states_reviewed": 11,
+  "findings": [
+    {
+      "id": "F-001",
+      "state_artifact": "test-e2e-F/07-kds-board-hydrated.png",
+      "category": "text_truncation",
+      "severity": "P2",
+      "evidence": "On EVERY KDS card the right side of kds-card__main is visibly clipped at the card border: the screenshot shows '700:0' with the 'Attente' elapsed-label cut to 'ATT...' / 'ATTENT' at the right edge (same on cards A0012/A0013/A0015/A0016 in 07, 07b, 08). DOM confirms structure: <div class=\"kds-card__main\"><div class=\"kds-card__queue\">N°A0012</div><div class=\"kds-card__elapsed-wrap\"><span class=\"kds-card__elapsed-label\">Attente</span><div class=\"kds-card__elapsed ...\">700:07</div></div></div>. The combination of the oversized queue number (A0012) plus a 6-char timer (700:07 — abnormal ~11.6h stale seed value) overflows the card width and clips the non-critical 'Attente' label. MEASURED-P1 rule NOT met: no computed scrollWidth>clientWidth+2 obtainable from the static DOM dump, the clipped token is the label not the critical digits, and a source comment in the bundle references a prior heal ('ATTENTE rendering as ATTEN ... Now sized to fit inside 300px'). Pure aesthetic/edge-seed clipping → P2 disclose-only.",
+      "fix_hint": "resources/js/components/admin/kds/v2/KdsCard.vue (kds-card__elapsed-wrap / kds-card__main flex layout): cap the elapsed timer display (e.g. clamp minutes to a max badge or switch to Hh format above 99 min) and/or set min-width:0 + overflow:hidden + flex-shrink on kds-card__queue so the elapsed-wrap never spills past the 3px card border. Verify with computed scrollWidth on a real >99min order.",
+      "status": "open"
+    },
+    {
+      "id": "F-002",
+      "state_artifact": "test-e2e-F/10-oss-customer-ready-notification.png",
+      "category": "aria_keyboard",
+      "severity": "P2",
+      "evidence": "OSS customer status screen has NO aria-live / role=status region on its dynamic status columns. DOM grep: `aria-live=\"...\"` count = 0 across 10-oss-customer-ready-notification.dom.html; the two columns use only role=\"region\" aria-label=\"En préparation\" and role=\"region\" aria-label=\"Prêt\". When an order moves to ready (our A0024 appears in the Prêt region with class oss-new-ready oss-pulse-ready) a screen-reader user gets no announcement. Per protocol category #8 this is P2 (live region missing on dynamic-status container); P1 escalation requires it to block a primary task path — OSS is a passive customer wall display, not an interactive flow, so it stays P2. (KDS recall path DOES carry aria-live=polite per card markup, so the chef-side critical path is covered.)",
+      "fix_hint": "resources/js/components/frontend/order-status-screen/* (OSS column wrapper): add aria-live=\"polite\" + role=\"status\" to the 'Prêt'/ready <ul> so newly-ready order numbers are announced. Non-blocking; customer wall display.",
+      "status": "open"
+    },
+    {
+      "id": "F-003",
+      "state_artifact": "test-e2e-F/05-kiosk-item-disabled-cascade.png",
+      "category": "silent_error",
+      "severity": "P2",
+      "evidence": "Kiosk private-channel realtime is degraded on the public terminal: 05-kiosk network.json shows POST localhost:8000/api/broadcasting/auth → 302 then GET localhost:8000/api/login → 401, and console.json carries level=error 'Failed to load resource: the server responded with a status of 401 (Unauthorized)' on /api/login. This is the DOCUMENTED KNOWN SIGNAL (AUDIT_PLAN lines 107-114): the kiosk SPA's global Echo bootstrap attempts private-channel auth with a session guard the public terminal doesn't hold. CONSEQUENCE OBSERVED + ACCOUNTED: a live 86 on an already-mounted kiosk does NOT re-apply without a reload; the spec therefore proved the cascade via a FRESH kiosk load — backend /api/frontend/menu returns is_available=false and the freshly-loaded card 26 renders class kiosk-product-card--filtered-out + aria-disabled=true + add button disabled + title=\"Épuisé\" (localized, NOT a raw key — 0 occurrences of 'out_of_stock_manual' in the kiosk DOM, contradicting the spec's stale narration comment). The kiosk CORE ordering flow (idle→catalogue→card-render→disabled-protection: clicking the 86'd card did NOT open the wizard) works WITHOUT the realtime channel → realtime-degraded, at-most-P2 per plan, NOT a P0 silent_error.",
+      "fix_hint": "No product fix required for V1 (documented degraded-realtime + reload fallback, owner-accepted). Cloud-prep backlog: expose a kiosk-scoped public broadcasting auth (or use the kiosk-event poll path the kiosk already falls back to) so live availability flips reflect on a mounted terminal without reload. Suppress the 401 to console.warn so it stops registering as a console error.",
+      "status": "open"
+    }
+  ],
+  "summary": {
+    "P0": 0,
+    "P1": 0,
+    "P2": 3,
+    "P3": 0,
+    "open_P0": 0,
+    "open_P1": 0,
+    "open_P2": 3,
+    "open_P3": 0
+  },
+  "round_to_round_closures": {},
+  "verdict": "GREEN"
+}

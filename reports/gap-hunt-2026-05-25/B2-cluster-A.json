@@ -1,0 +1,248 @@
+{
+  "agent": "B2-CLUSTER-A — Inter-System Gap Hunter (C1+C2+C3)",
+  "mission": "Audit READ-ONLY de 3 frontieres entre systemes FoodKing V1: (C1) Borne -> POS handover paiement comptoir, (C2) POS -> KDS rectification cancel apres envoi cuisine, (C3) KDS -> OSS communication retard / ETA client.",
+  "scope": "Mapping events + listeners + broadcasters + subscribers + UI handlers a l'intersection des surfaces. Pas d'implementation. Pas de modification.",
+  "files_audited": [
+    "app/Events/OrderCanceled.php",
+    "app/Events/OrderPaidAtCounter.php",
+    "app/Events/OrderStatusChanged.php",
+    "app/Events/OrderCreated.php",
+    "app/Providers/EventServiceProvider.php (167-200 cancel cascade + 161-167 paid-at-counter)",
+    "app/Listeners/PersistOrderPaidAtCounterToOutbox.php",
+    "app/Listeners/ReleaseAvailabilityOnOrderCanceled.php",
+    "app/Listeners/ReleaseStockOnOrderCanceled.php",
+    "app/Domain/Events/EventContract.php (BROADCAST_MAP)",
+    "app/Domain/Kds/KitchenReleaseRule.php",
+    "app/Enums/EventType.php",
+    "app/Enums/PaymentStatus.php (PENDING_COUNTER=15)",
+    "app/Enums/PosPaymentMethod.php (COUNTER_DEFERRED)",
+    "app/Services/PaymentService.php:193-447 (confirmCounterPayment) + 590-650 (cancelCounterPayment)",
+    "app/Services/FrontendOrderService.php:200-272 (kiosk cash counter-deferred order creation)",
+    "app/Services/KitchenDisplaySystemOrderService.php:52-178 (KDS list payment-status gate)",
+    "app/Services/OrderStatusScreenOrderService.php (OSS list — no ETA field)",
+    "app/Services/PosParkedOrderService.php (parked = single-cashier, NOT kiosk handover)",
+    "app/Models/PosParkedOrder.php",
+    "app/Http/Resources/CDSOrderDetailsResource.php (5 fields, no ETA)",
+    "app/Http/Resources/PosShortcutOrderResource.php",
+    "app/Http/Resources/KDSOrderDetailsResource.php (exposes preparation_time but never used as live ETA channel)",
+    "app/Http/Resources/OrderDetailsResource.php",
+    "app/Http/Controllers/Admin/OrderStatusScreenController.php",
+    "app/Http/Controllers/Frontend/KioskEventController.php",
+    "app/Http/Controllers/Frontend/OrderController.php",
+    "app/Http/Controllers/Admin/Pos/ParkedOrderController.php",
+    "app/Jobs/CleanupStalePendingKioskOrders.php (15-min auto-reject)",
+    "app/Jobs/DispatchDomainEventsJob.php (outbox->Echo)",
+    "routes/api.php:797-895 (counter-collect.pending / .confirm / .cancel)",
+    "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue:1490-1881 (Echo subscriptions)",
+    "resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue:115-160 (isCashPending UI badge)",
+    "resources/js/components/admin/orderStatusScreen/PreparingAndReadyComponent.vue:257-290 (Echo subscriptions — no ETA)",
+    "resources/js/components/frontend/kiosk/KioskCashInstructionComponent.vue (post-cash redirect screen with order #)",
+    "resources/js/components/frontend/kiosk/KioskWaitingComponent.vue:181-345 (PENDING_COUNTER gate)",
+    "resources/js/components/frontend/kiosk/KioskPaymentComponent.vue:377-414 (cash path)",
+    "resources/js/services/eventContract.js (BROADCAST_MAP front mirror)",
+    "tests/Feature/Listeners/OrderCanceledCascadeHardenedSentinelTest.php (GOAL-I2-HEAL-01 sentinel)",
+    "tests/Feature/Payment/CounterDeferredPaymentLifecycleTest.php"
+  ],
+  "cluster_c1_borne_to_pos_handover": {
+    "cluster_id": "C1",
+    "title": "Client commande borne puis veut payer caisse — workflow propre ?",
+    "current_state_evidence": {
+      "kiosk_cash_path": "FrontendOrderService.php:200-272 — quand kiosk + payment_method=CASH_ON_DELIVERY, l'ordre est cree avec payment_status=PENDING_COUNTER + pos_payment_method=COUNTER_DEFERRED + auto-accept ACCEPT. Le KDS le voit DEJA en cuisine (KitchenDisplaySystemOrderService.php:74 inclut explicitement PENDING_COUNTER dans son where + KdsOrderCard.vue:115-160 affiche un badge 'EN ATTENTE ENCAISSEMENT' rouge passif au lieu du CTA Pret).",
+      "kiosk_displays_to_customer": "KioskCashInstructionComponent.vue renders order_number + amount + 45s auto-redirect to /kiosk/idle. Texte 'Presentez-vous au comptoir' (i18n key kiosk.cash_instruction.title). NO QR code generation. NO printed ticket. NO secure short-token. Le client doit memoriser/noter le numero de commande affiche grand format (line 19-22, 96px font-size).",
+      "pos_side_lookup_endpoint": "routes/api.php:797-814 GET /api/admin/pos/counter-collect/pending — liste les 50 derniers PENDING_COUNTER de la branche. Filtre branch_id si user branch>0. Caissier scrolle pour trouver le bon ordre par numero. PAS de recherche par QR scan. PAS de claim-by-token. POS shortcut widget OrderStatusScreenController exposes PosShortcutOrderResource avec total mais aucun token unique scannable.",
+      "stale_safety_net": "Jobs/CleanupStalePendingKioskOrders.php — apres 15 min, PENDING + UNPAID + kiosk source-surface sont auto-rejected via OrderStateMachine + OrderCanceled::dispatch (releases stock). MAIS la query filtre uniquement payment_status=UNPAID (line 33), donc les PENDING_COUNTER (=15) ne sont PAS purges automatiquement. Un ordre PENDING_COUNTER abandonne reste dans la liste cuisine indefiniment (TTL effectif = midnight rollover par order_datetime via KDS list). VERIFIED: line 33 'where(\\'payment_status\\', PaymentStatus::UNPAID)' n'inclut pas PENDING_COUNTER.",
+      "parked_order_role": "PosParkedOrderService est SCOPE-MINIMAL au caissier connecte (user_id + branch_id, ParkedOrderController.php:72-101). C'est un mecanisme de mise-en-attente d'un panier en cours de saisie POS, PAS un mecanisme de handover kiosk->POS. Les ordres kiosk PENDING_COUNTER ne transitent jamais via pos_parked_orders. AUCUNE table 'kiosk_handover' ou 'pickup_code' n'existe (grep app/Models = 0).",
+      "fcm_topic_for_customer": "SendFcmOnOrderStatusChange.php:114-120 publishes a 'customer_order_{$orderId}' FCM topic when status=PREPARED. Le client borne ne s'abonne PAS a ce topic — pas de device-token persisted post-checkout. Topic publie sans subscriber. Le client doit revenir physiquement scruter l'OSS (CDS wall display) pour voir son numero apparaitre en colonne 'Pret'."
+    },
+    "gaps": [
+      {
+        "id": "GAP-C1-001",
+        "title": "Aucun token de retrait / QR code / pickup-code unique genere par la borne — caissier identifie par lecture humaine du numero",
+        "severity": "P2",
+        "category": "ux_friction + revenue_protection",
+        "evidence_absence": "grep 'pickup_code|claim_token|qr_token|pickup_qr|kiosk_handover|order_short_code' app/Models app/Services database/migrations app/Http/Resources = 0 hits. CDSOrderDetailsResource.php expose 'token' (line 20) mais c'est le token Sanctum/auth de l'ordre, PAS un code de retrait public. KioskCashInstructionComponent affiche queue_number (4 chiffres reutilisables) — pas un identifiant unique sur la journee si queue_number wrap quotidien.",
+        "user_story": "En tant que client borne, je paie en especes et la borne me dit 'Numero #45, presentez-vous au comptoir avec 12,50€'. Si je l'oublie ou bredouille le mauvais chiffre au caissier, il doit fouiller manuellement dans 50 ordres PENDING_COUNTER pour le retrouver. En tant que caissier, je n'ai aucun moyen rapide non-ambigu d'identifier 'cet ordre est bien le tien'.",
+        "impact": "FRICTION-WEEKLY (single-branch low volume, mais erreur d'attribution = encaissement sur la mauvaise commande = NF525 fiscal sequence sealed sur le mauvais ordre, irreversible une fois confirmCounterPayment a fait next() sur le fiscal_sequence)",
+        "effort": "M",
+        "frozen_zone_touch_needed": false,
+        "implementation_hint": "Generer un pickup_code 4-char alphanumerique a la creation de PENDING_COUNTER (FrontendOrderService.php:266) — colonne orders.pickup_code UNIQUE + index branch_id. Afficher sur KioskCashInstructionComponent en remplacement / a cote du queue_number. Caissier saisit le pickup_code dans une nouvelle barre de recherche du POS shortcut. Optionnel: QR code via SimpleSoftwareIO/simple-qrcode (deja installe, cf services DiningTableService.php:101). Pas de frozen-zone touch. 4h."
+      },
+      {
+        "id": "GAP-C1-002",
+        "title": "CleanupStalePendingKioskOrders ne purge PAS les PENDING_COUNTER abandonnes — orders zombies en cuisine indefiniment",
+        "severity": "P1",
+        "category": "stock_leak + waste_kitchen",
+        "evidence_absence": "Jobs/CleanupStalePendingKioskOrders.php:33 'where(\\'payment_status\\', PaymentStatus::UNPAID)' — la query filtre UNPAID=10 mais le kiosk cash-counter-deferred cree avec payment_status=PENDING_COUNTER=15 (FrontendOrderService.php:266). Resultat: un ordre kiosk paye en especes mais jamais reclame au comptoir reste status=ACCEPT + payment_status=PENDING_COUNTER. Le KDS continue de l'afficher (KitchenDisplaySystemOrderService.php:74 inclut explicitement PENDING_COUNTER). Le chef peut le preparer croyant que ca va etre paye, ou attendre l'encaissement qui ne vient jamais.",
+        "user_story": "En tant que chef, je vois sur mon ecran KDS un badge 'EN ATTENTE ENCAISSEMENT' depuis 2h. Soit je commence a preparer pensant que le client va arriver (waste), soit je laisse macerer et a la fin de la journee la cuisine est polluee de zombies. Reciproquement, en tant que caissier, la liste counter-collect/pending limit 50 se sature de zombies et masque les vraies commandes a encaisser.",
+        "impact": "FRICTION-DAILY (single-branch low volume mais probabilite > 5% que client abandonne entre selection cash et arrivee comptoir — distraction, ami, oubli) + risque NF525 si un zombie est jamais encaisse mais a deja decrement stock + flag fiscal_alloc_error_at",
+        "effort": "S",
+        "frozen_zone_touch_needed": false,
+        "implementation_hint": "Etendre Jobs/CleanupStalePendingKioskOrders.php:33 a 'whereIn(\\'payment_status\\', [PaymentStatus::UNPAID, PaymentStatus::PENDING_COUNTER])'. Conserver le threshold 15min (ou allonger a 30min pour PENDING_COUNTER per owner-gate). Le path REJECTED + OrderCanceled dispatch est deja teste (OrderCanceledCascadeHardenedSentinelTest.php). 1h."
+      },
+      {
+        "id": "GAP-C1-003",
+        "title": "Pas de mecanisme de claim 'cet ordre m'appartient' avec preuve cote client — risque mauvaise attribution NF525",
+        "severity": "P2",
+        "category": "fiscal_integrity",
+        "evidence_absence": "PaymentService::confirmCounterPayment (PaymentService.php:193) prend un Order $order route-bound (routes/api.php:815 Route::post('/counter-collect/{order}/confirm') qui resolve via implicit binding $order->id). Aucune verification que le client physiquement present possede la preuve qu'il est le commanditaire (sauf le numero qu'il rebredouille au caissier). NF525 fiscal_sequence_no::next() est alloue line 322 — appelle FiscalSequenceService::next($branchId). Si le caissier se trompe d'ordre, la sequence fiscale est definitivement allouee a la mauvaise commande.",
+        "user_story": "En tant que caissier sur la liste counter-collect/pending, je vois 12 ordres PENDING_COUNTER. Le client en face me dit 'Quarante-cinq'. Je clique sur le ticket #45 et je tape 12,50€ recus. Si en realite le client voulait dire #54 (lapsus ou mauvaise lecture), l'ordre #45 est definitivement seal-fiscaled (audit_logs append-only + fiscal_sequence_no monotonic). Aucun rollback possible (PaymentStateMachine PAID est terminal — PaymentStateMachineExtendedTest.php). Le vrai client #54 va recevoir un encaissement plus tard avec un fiscal_sequence_no posterieur, mais c'est trop tard pour reparer #45.",
+        "impact": "BUSINESS-CRITICAL (rare mais regulatoire) — NF525 fiscal sequence integrity",
+        "effort": "M",
+        "frozen_zone_touch_needed": false,
+        "implementation_hint": "Coupler avec GAP-C1-001 (pickup_code). Confirmation cote POS demande explicitement la saisie/scan du pickup_code avant d'appeler confirmCounterPayment. Verifier server-side: $order->pickup_code === request('pickup_code') sinon throw 422 'pickup_code_mismatch'. Le caissier peut toujours bypass via 'mode degrade' avec audit_log dedie (manual_attribution_override) si le client a vraiment perdu son ticket — owner-gate pour la decision UX. 6h total."
+      }
+    ],
+    "top_finding": {
+      "id": "GAP-C1-002",
+      "rationale": "PENDING_COUNTER zombies pollute KDS indefiniment + risque NF525 si un zombie est encaisse a tort par un caissier confus. Job purge deja en place pour UNPAID — simple extension whereIn payment_status pour englober PENDING_COUNTER + threshold 30min owner-gate. Coup de fix unique (1 ligne de code + 1 test). High signal/effort ratio."
+    }
+  },
+  "cluster_c2_pos_kds_rectification": {
+    "cluster_id": "C2",
+    "title": "Caissier annule encaissement APRES commande envoyee KDS — KDS doit savoir",
+    "current_state_evidence": {
+      "cancellation_dispatcher_path": "PaymentService::cancelCounterPayment (PaymentService.php:590-650). Locks Order, asserts counter-deferred + visible-to-branch. Flips payment_status=REFUNDED + status=CANCELED + persists pos_payment_note=$reason. Records OrderStateMachine::recordTransition (audit row). AuditLogService::write 'order.counter_payment_canceled'. POST-commit: dispatches OrderCanceled::dispatch($order) + OrderStatusChanged::dispatch($order, $oldStatus, OrderStatus::CANCELED).",
+      "event_provider_cascade_for_cancel": "EventServiceProvider.php:170-173 — OrderCanceled::class wires: [ReleaseStockOnOrderCanceled, ReleaseAvailabilityOnOrderCanceled]. AUCUN listener Persist*ToOutbox n'est cable a OrderCanceled. Resultat: OrderCanceled est strictement DOMAIN-INTERNAL (release stock + availability) et n'est JAMAIS broadcaste via outbox -> Pusher -> Echo.",
+      "broadcast_map_drift": "EventContract.php:39 BROADCAST_MAP declare 'OrderCancelled' => EventType::ORDER_CANCELLED ainsi que REQUIRED_PAYLOAD_KEYS line 60 EventType::ORDER_CANCELLED => ['order_id']. MAIS aucun listener PersistOrderCancelledToOutbox n'existe (grep 'PersistOrder*Cancelled\\|PersistOrder*Canceled' = 0 hits). Le contract declare l'event mais aucun emitter ne l'instancie en outbox row. C'est un slot de contract orphelin.",
+      "kds_pickup_via_orderstatuschanged": "Le KDS s'appuie EXCLUSIVEMENT sur OrderStatusChanged broadcast (KitchenDisplaySystemComponent.vue:1855-1859). _statusChangeAffectsKds (line 1506-1517) filtre en JS sur new_status in [4,7,8] (ACCEPT, PREPARING, PREPARED). Quand cancelCounterPayment fire OrderStatusChanged($order, oldStatus=ACCEPT|PREPARING|PREPARED, newStatus=CANCELED=11): old_status est dans KDS_VISIBLE, donc _debouncedRefresh() est appele. Le polling repasse, l'ordre disparait de la liste (KitchenReleaseRule::visibleStatuses ne contient pas CANCELED). NET RESULT: KDS UI retire la card via refresh — pas via push delta direct.",
+      "kds_card_removal_evidence": "KitchenDisplaySystemOrderService::list (KitchenDisplaySystemOrderService.php:71) ->whereIn('status', KitchenReleaseRule::visibleStatuses()) — CANCELED n'y figure pas. La card disparait au prochain refreshOrderList (debounced ~300ms post-event). FCM kitchen_branch topic ne recoit PAS de notification specifique cancel (SendFcmOnOrderStatusChange.php:92-138 switch case n'a aucune branch case OrderStatus::CANCELED). Chef ne recoit aucune alerte push 'cette commande a ete annulee' — la card disparait silencieusement.",
+      "stock_release_chain": "OrderCanceled cascade ReleaseStockOnOrderCanceled + ReleaseAvailabilityOnOrderCanceled libere stock + availability counters (GOAL-I2-HEAL-01 healing 2026-05-24, try/catch wrapping). Idempotent via released_qty ledger. Confirme par OrderCanceledCascadeHardenedSentinelTest."
+    },
+    "gaps": [
+      {
+        "id": "GAP-C2-001",
+        "title": "Chef ne recoit AUCUNE notification visible / sonore / contextuelle lorsqu'un ordre est cancel apres avoir ete envoye en cuisine — la card disparait silencieusement",
+        "severity": "P0",
+        "category": "kitchen_workflow_safety + waste",
+        "evidence_absence": "KitchenDisplaySystemComponent.vue:1841-1880 subscribeEcho liste {OrderStatusChanged, OrderCreated, OrderPaidAtCounter, ItemAvailabilityChanged, OrderTableChanged}. AUCUN handler dedie pour cancel — pas de toast, pas de son, pas de flash visuel. _statusChangeAffectsKds (1506-1517) returns true mais juste pour trigger refresh. La card disparait silencieusement de la liste au prochain refresh sans signal sonore/visuel. SendFcmOnOrderStatusChange.php:92-138 switch case has NO case for OrderStatus::CANCELED — aucune notification kitchen_branch FCM. KdsUndoToast.vue n'existe que pour le scenario chef bump PREPARED-undo, pas pour ordre cancel server-side. Chef peut etre en train de bumper l'ordre AU MEME MOMENT que le caissier l'annule -> race condition silencieuse, chef voit la card disparaitre + ne comprend pas pourquoi son tap n'a pas valide.",
+        "user_story": "En tant que chef en rush, je viens de finir de couper les ingredients pour la commande #42, je leve les yeux pour aller cuire la viande, et la card a disparu. Soit elle a ete cancel par le caissier (motif: client parti / refund), soit le bouton 'Pret' a marche silencieusement et passe en historique. JE NE SAIS PAS. Je risque de jeter la viande deja preparee a la poubelle, ou pire continuer la cuisson et la laisser sur le passe ou personne ne viendra la chercher. Waste matiere + temps + frustration.",
+        "impact": "BUSINESS-CRITICAL-DAILY (chef rush, raters, perception qualite, waste matiere)",
+        "effort": "M",
+        "frozen_zone_touch_needed": false,
+        "implementation_hint": "(1) Ajouter un listener PersistOrderCancelledToOutbox cable a OrderCanceled::class dans EventServiceProvider:170. Le listener persiste un DomainEvent type=ORDER_CANCELLED, broadcast_as='OrderCancelled', channel='private-branch.{branchId}', payload={order_id, queue_number, reason, source='counter_collect_cancel'|'admin_cancel'|'auto_reject'} (cf EventContract::REQUIRED_PAYLOAD_KEYS line 60 deja prevu). DispatchDomainEventsJob handle le push Echo. (2) Cote KDS: KitchenDisplaySystemComponent.vue:1848-1875 ajouter handler {broadcastAs: 'OrderCancelled', handler: (parsed) => { this._showCancelToast(parsed); this._debouncedRefresh(); }}. (3) UI _showCancelToast: toast rouge sticky 6s + son distinct + animation card fade-out avant disparition au refresh, texte 'Commande #{queue_number} ANNULEE - {reason}'. (4) Bonus: FCM kitchen_branch case OrderStatus::CANCELED. ZERO frozen-zone touch (KDS Vue + new Listener + EventServiceProvider register line). 6h total."
+      },
+      {
+        "id": "GAP-C2-002",
+        "title": "OrderCancelled broadcast_as declare dans BROADCAST_MAP mais AUCUN emitter (slot orphelin contract)",
+        "severity": "P1",
+        "category": "contract_drift",
+        "evidence_absence": "EventContract.php:39 declare 'OrderCancelled' => EventType::ORDER_CANCELLED dans BROADCAST_MAP. EventContract.php:60 declare EventType::ORDER_CANCELLED => ['order_id'] dans REQUIRED_PAYLOAD_KEYS. MAIS grep 'broadcast_as.*OrderCancelled\\|OrderCancelled.*broadcast_as\\|PersistOrder*Cancel*ToOutbox' app/Listeners app/Services = 0 hits. EventServiceProvider.php:170-173 OrderCanceled wires uniquement [ReleaseStock, ReleaseAvailability], pas de PersistToOutbox. resources/js/services/eventContract.js:18 miroir cote front sans verifier que l'emitter existe — il y a un attente d'event jamais emise.",
+        "user_story": "En tant que future agent voulant ajouter une feature 'tableau de bord cancel rate', je grep BROADCAST_MAP, je vois OrderCancelled declare, je m'attends a m'abonner aux events outbox via Echo et obtenir une stream temps-reel des cancels. Je perds 30 minutes a debug 'pourquoi je ne recois aucun event' avant de realiser qu'aucun Persist*ToOutbox ne le produit. C'est un piege contract.",
+        "impact": "FRICTION-MONTHLY (developpeur trap) + bloque toute feature analytics realtime sur cancel rate",
+        "effort": "S",
+        "frozen_zone_touch_needed": false,
+        "implementation_hint": "Closely related to GAP-C2-001: creer Listeners/PersistOrderCancelledToOutbox.php cable sur OrderCanceled::class. Pattern miroir PersistOrderPaidAtCounterToOutbox.php (idempotency_key sha1(EventType::ORDER_CANCELLED + '|' + order_id), payload {order_id, queue_number, reason if available, branch_id, _origin, payment_method, fiscal_sequence_no si exist}, channel ['private-branch.'.$branchId], broadcast_as='OrderCancelled', afterCommit DispatchDomainEventsJob). Test: sentinel /tests/Feature/EventContractTest.php est deja teste line 36 -- ajouter assertion qu'un OrderCancelled outbox row est cree apres cancelCounterPayment. 3h."
+      },
+      {
+        "id": "GAP-C2-003",
+        "title": "Race chef-bump-vs-cashier-cancel n'est pas verbalisee — chef peut bumper un ordre cancel ms apres et obtenir un 422 cryptique",
+        "severity": "P2",
+        "category": "race_condition_ux",
+        "evidence_absence": "KitchenDisplaySystemOrderService::changeStatus (line 280+) verifie KitchenReleaseRule::canTransition (PREPARING->PREPARED only). Si l'ordre est passe a CANCELED entre le moment ou le chef voit la card et clique 'Pret', l'API retourne 422 avec un message d'erreur de transition. Cote KDS Vue, l'erreur est sans doute toastee generiquement ('La commande n'est plus dans l'etat attendu') sans dire 'la commande a ete annulee par le caissier'.",
+        "user_story": "En tant que chef qui tape 'Pret' sur la card #42, j'obtiens une erreur 422 'transition invalide'. Je rappuie en pensant que c'est un bug reseau. Toujours 422. Je finis par regarder la liste, la card a disparu — je realise qu'elle a ete annulee. Verbatim cryptique cote chef.",
+        "impact": "FRICTION-WEEKLY (rush hour where cancellations occur)",
+        "effort": "XS",
+        "frozen_zone_touch_needed": false,
+        "implementation_hint": "Cote backend, KitchenDisplaySystemOrderService::changeStatus ajouter check explicite if status === CANCELED -> throw \\App\\Exceptions\\OrderAlreadyCanceledException avec error_code='order_canceled_by_cashier' (miroir PaymentAlreadyCollectedException pattern). Route closure converti en 409 avec error_code. Cote KDS Vue, intercepte error_code, toast 'Commande #X annulee par le caissier' au lieu du generic. 2h."
+      }
+    ],
+    "top_finding": {
+      "id": "GAP-C2-001",
+      "rationale": "Chef silent radio quand cancel apres send-to-kitchen = BUSINESS CRITICAL DAILY. Card disparait sans son ni alerte = waste matiere (viande pre-cuite jetee), waste temps (chef cherche pourquoi son tap n'a pas marche), frustration. Le fix necessite cabler un PersistOrderCancelledToOutbox listener + ajouter handler KDS OrderCancelled — le contract est DEJA prevu dans EventContract.php:39+60 mais l'emitter manque. ZERO frozen-zone. 6h. La preconnaissance de l'autre Cluster C2 (GAP-C2-002) revele un mauvais signe: le slot est attendu, juste pas cable."
+    }
+  },
+  "cluster_c3_kds_oss_eta_communication": {
+    "cluster_id": "C3",
+    "title": "Chef signale 'retard 10 min' au client via OSS — peut-il ?",
+    "current_state_evidence": {
+      "oss_payload_fields": "CDSOrderDetailsResource.php:15-25 expose 5 champs publics: id, order_serial_no, token, queue_number, order_type, status. AUCUN champ ETA / preparation_time / estimated_ready_at / delay_minutes. La wall display TV publique ne peut donc pas afficher d'ETA.",
+      "preparation_time_existing_field": "Order model exposes preparation_time (Order.php:35,83) et KDSOrderDetailsResource (line 72) — mais c'est un setting GLOBAL pris de Settings::group('order_setup')->get('order_setup_food_preparation_time') (FrontendOrderService.php:265, defaut 15min). Une fois set a la creation de l'ordre, c'est immuable cote api. AUCUN endpoint route Route::patch '/kds/orders/{id}/preparation_time' / '/orders/{id}/eta' / '/orders/{id}/delay'. grep 'Route::.*eta|Route::.*preparation_time' routes/api.php = 0 hits.",
+      "kds_ui_eta_controls": "grep 'eta|delay|retard|push.*delay' resources/js/components/admin/kitchenDisplaySystem = ZERO matches (sauf comment cassbump _flashCardForBump animation). Les seuls clics chef supportes sont 'Pret' (bump PREPARING->PREPARED), 'Reculer' (undo recent PREPARED->PREPARING via KdsUndoToast 3s window), drawer historique read-only. PAS de bouton '+5 min' / '+10 min' / 'pousser ETA'.",
+      "oss_event_subscriptions": "PreparingAndReadyComponent.vue:257-290 — Echo subscribe sur 'OrderStatusChanged' + 'OrderCreated' uniquement. Pas de listener 'OrderEtaUpdated' ou similaire. Polling 5-10s back-off connecte (ossSyncService) re-fetch CDSOrderDetailsResource — qui n'expose pas ETA. Aucun canal pour push delay info au customer wall.",
+      "kiosk_waiting_eta_consumption": "KioskWaitingComponent.vue affiche progress indeterminee uniquement (i18n key 'kiosk.waiting_subtitle') — pas de countdown. fetchOrderStatus polling backend ne map pas preparation_time vers le payload kiosk. Client ne voit jamais 'pret dans X min'. Cette absence a deja ete identifiee par GAP-S1-P1-003 (rapport B1-S1-P1-borne-chef-rush.json:118-127).",
+      "fcm_topics_for_customer_delay": "SendFcmOnOrderStatusChange.php:92-138 switch case OrderStatus::PREPARING / PREPARED / DELIVERED uniquement. AUCUNE branche case pour 'delay' / 'eta_changed' / 'kitchen_running_late'. Aucun event business 'OrderDelayed' / 'OrderEtaChanged' n'existe (grep app/Events = 0).",
+      "oss_polling_cadence": "OSSPollingComponent / PreparingAndReadyComponent re-fetch /api/admin/oss-order toutes les 5-10s + push via Echo. Si on ajoutait un champ ETA cote backend, le rafraichissement existant suffirait — pas besoin de nouveau canal Pusher (gain conceptuel: low effort if backend layer is built)."
+    },
+    "gaps": [
+      {
+        "id": "GAP-C3-001",
+        "title": "Chef ne peut PAS communiquer un retard au client via OSS — feature absente de bout en bout",
+        "severity": "P1",
+        "category": "customer_communication + perception_quality",
+        "evidence_absence": "(1) Backend: aucune route PATCH/POST 'eta' / 'preparation_time' / 'delay'. (2) Aucun event OrderEtaUpdated / OrderDelayed / KitchenRunningLate. (3) CDSOrderDetailsResource n'expose pas eta. (4) PreparingAndReadyComponent.vue n'a aucun handler delay. (5) KdsOrderCard.vue n'a aucun bouton '+5min' / 'delay'. (6) KioskWaitingComponent n'affiche aucun countdown ETA. (7) SendFcmOnOrderStatusChange n'a aucune branche delay. Le concept entier est MISSING.",
+        "user_story": "En tant que chef en rush, l'ordre #42 a un client special (groupe ou allergene) qui rallonge la prep de 8 min au-dela du standard 15 min. Aujourd'hui je ne peux RIEN signaler. Le client voit son numero figer en 'En preparation' indefiniment. Il vient me demander toutes les 3 min 'c'est pour bientot'. Je perds des secondes a chaque interruption. Le client repart enerve. Avec un simple bouton '+5 min' qui affiche l'ETA actualise sur l'OSS wall, le client patiente, je me concentre. Win-win simple.",
+        "impact": "FRICTION-DAILY (rush hour 12h-14h / 19h-21h). Risque 1-star avis Google 'service lent sans information' tres frequent en QSR France. Sans differenciation versus McDonald's qui n'a pas cette feature non plus mais qui compense par cadence de prep tres rapide.",
+        "effort": "L (full vertical slice)",
+        "frozen_zone_touch_needed": false,
+        "implementation_hint": "VERTICAL SLICE (frozen-zero):  \n(1) Migration: ajout colonne orders.eta_minutes (smallint, signed for negative=ahead, signed for positive=delay) + orders.eta_updated_at + orders.eta_updated_by_user_id.  \n(2) Route: POST /api/admin/kds/orders/{order}/eta + KdsOrderEtaController + KdsOrderEtaRequest (delta in [-15..+30]).  \n(3) Service: KitchenDisplaySystemOrderService::updateEta() — locks order, applies delta to eta_minutes, AuditLogService::write('order.eta_updated'), dispatches OrderEtaUpdated event.  \n(4) Event + Listener: OrderEtaUpdated::dispatch -> PersistOrderEtaUpdatedToOutbox (pattern from PersistOrderPaidAtCounterToOutbox) -> DomainEvent type='order.eta_updated' broadcast_as='OrderEtaUpdated' channel private-branch.{branchId}.  \n(5) CDSOrderDetailsResource: add eta_minutes + eta_label (computed 'pret dans X min').  \n(6) PreparingAndReadyComponent: subscribe OrderEtaUpdated handler -> update local order ETA + render badge orange '+10 min' next to queue_number.  \n(7) KdsOrderCard: add chef CTA mini '+5min' / '+10min' a cote du body. Tap -> POST update.  \n(8) KioskWaitingComponent: bind eta_minutes from polling payload, render 'Pret dans ~X min' (key kiosk.waiting.eta).  \nZERO frozen-zone touch (Order migration + new resource fields + new Vue handlers + new listener — none in CLAUDE.md §7).  \n2-3 jours dev + tests."
+      },
+      {
+        "id": "GAP-C3-002",
+        "title": "Aucun event 'OrderEtaUpdated' dans le contract Event — il faut le creer si la feature C3-001 est shipped",
+        "severity": "P2",
+        "category": "event_contract_extension",
+        "evidence_absence": "EventType.php ne contient pas ORDER_ETA_UPDATED / ORDER_DELAYED. EventContract.php:34-49 BROADCAST_MAP idem. REQUIRED_PAYLOAD_KEYS idem. Si on implemente GAP-C3-001 il faudra ajouter 1 const + 1 entree BROADCAST_MAP + 1 entree REQUIRED_PAYLOAD_KEYS.",
+        "user_story": "En tant qu'agent qui ship GAP-C3-001, je dois penser a etendre EventContract — le test EventContractTest.php verifie la coherence. Si oublie, le DispatchDomainEventsJob va lever PayloadMismatchException et le broadcast Pusher echoue.",
+        "impact": "BLOCKER pour la feature GAP-C3-001 si oublie",
+        "effort": "XS",
+        "frozen_zone_touch_needed": false,
+        "implementation_hint": "Etendre EventType.php avec const ORDER_ETA_UPDATED = 'order.eta_updated'. Etendre EventContract.php:34 BROADCAST_MAP avec 'OrderEtaUpdated' => EventType::ORDER_ETA_UPDATED. Etendre REQUIRED_PAYLOAD_KEYS avec ORDER_ETA_UPDATED => ['order_id', 'eta_minutes', 'updated_by_user_id', 'branch_id']. Etendre resources/js/services/eventContract.js miroir. Test sentinel deja en place dans tests/Feature/EventContractTest.php — il assert la coherence map<->payload<->miroir-js. 1h."
+      },
+      {
+        "id": "GAP-C3-003",
+        "title": "Pas de fallback ETA generique 'cuisine ~X min' meme sans intervention chef — orphan signal is_rush deja calcule jamais affiche",
+        "severity": "P2",
+        "category": "ux_baseline",
+        "evidence_absence": "KioskMenuService.php:163-207 computeIsRush(branch) calcule un booleen base sur config('kiosk.rush_windows'). resources/js/store/modules/kioskMenu.js:175 stocke branchFlags.is_rush. ZERO consommateur — grep 'is_rush' resources/js/components = 0 binding. Le signal est calcule et stocke mais aucun composant Vue ne l'affiche. C'est le meme GAP signale dans B1-S1-P1 (GAP-S1-P1-002). Pour OSS specifiquement: rien dans PreparingAndReadyComponent ne lit is_rush ni n'affiche un 'attente estimee actuelle moyenne ~12 min'.",
+        "user_story": "En tant que client devant l'OSS wall, je vois mon numero en 'En preparation' depuis 4 min. Aucune indication 'cuisine en rush, attente +5 min standard'. Je n'ai pas de mental anchor pour patienter. Si le wall affichait 'Attente actuelle ~12 min' generique, je patiente sans interruption.",
+        "impact": "FRICTION-DAILY (subset of GAP-C3-001 — bandage low-effort tant que C3-001 n'est pas shipped)",
+        "effort": "XS",
+        "frozen_zone_touch_needed": false,
+        "implementation_hint": "PreparingAndReadyComponent fetch /api/frontend/oss-flags (nouveau endpoint mini-payload {is_rush, current_estimated_wait_minutes}). Render banner top-of-wall 'Attente actuelle environ X min' conditionne sur is_rush. Reutilise KioskMenuService::computeIsRush logic. 2h. Sister-of GAP-S1-P1-002."
+      }
+    ],
+    "top_finding": {
+      "id": "GAP-C3-001",
+      "rationale": "Feature absente 100% de bout en bout (backend route + event + frontend handler + UI chef CTA + OSS rendering + kiosk consumer). Sans aucun mecanisme de communication ETA chef->client, le rush degenere en file d'interruptions. Effort L mais surface clean (zero frozen-zone touch). Mes 3 sub-gaps C3-001/002/003 forment une triade coherente: 003=quick-fix UX bandage avant que 001 soit shipped, 001=vertical slice complete, 002=hygiene contract a piggyback dans 001. Score business: tres haut pour fast-casual rush hour."
+    }
+  },
+  "cross_cluster_observations": [
+    {
+      "id": "CROSS-001",
+      "title": "Pattern recurrent: signals calcules cote backend, stockes cote Vuex, jamais binded cote UI",
+      "evidence": "is_rush (KioskMenuService.php:163 -> kioskMenu.js:175 -> 0 consumer). preparation_time (Order model -> KDSOrderDetailsResource -> KioskWaitingComponent ne le map pas). pickup_code (n'existe pas — devrait exister cf GAP-C1-001). ETA delta (n'existe pas — cf GAP-C3-001).",
+      "implication": "Une discipline 'producer-consumer audit' mensuelle revelerait des orphans similaires. Possible V1.0.2 chore."
+    },
+    {
+      "id": "CROSS-002",
+      "title": "EventContract BROADCAST_MAP declare des events sans emitter cable — slot orphelins contract",
+      "evidence": "EventContract.php:39 'OrderCancelled' declare mais aucun Persist*ToOutbox emit. Risque que d'autres declarations soient dans le meme cas. grep 'broadcast_as.*<key>' app/Listeners pour chaque cle de BROADCAST_MAP serait une assertion contract.",
+      "implication": "Sentinel test 'BroadcastMapEmitterCoverageSentinelTest' qui verifie pour chaque cle de BROADCAST_MAP qu'au moins un Persist*ToOutbox cable un listener emit avec broadcast_as=cle. V1.0.2 backlog."
+    },
+    {
+      "id": "CROSS-003",
+      "title": "Aucun mecanisme de canal direct chef <-> client (autre que statut +/- 1 dimension). FCM topics customer_order_{orderId} produit cote backend mais sans device-token persisted -> publication void.",
+      "evidence": "SendFcmOnOrderStatusChange.php:114-120 publishes to customer_order_{$orderId} topic mais aucun client kiosk ne s'abonne (pas de device-token persisted post-checkout pour kiosk anonymous customers).",
+      "implication": "Pour ship une vraie communication retard, GAP-C3-001 doit s'appuyer sur OSS wall display + KioskWaitingComponent polling (channels existants) plutot que FCM customer-order topic. C'est ce que mon implementation_hint GAP-C3-001 fait."
+    }
+  ],
+  "verdict": "3 inter-system gaps verifies + 6 sub-gaps. Pattern dominant: les CONTRACT slots sont declares mais les EMITTERS manquent (C2-002), les SIGNALS sont produits mais jamais CONSOMMES (C1, C3), et les SURFACES UI ne communiquent pas avec les services backend prets a recevoir (C3-001). 1 gap P0 BUSINESS-CRITICAL (C2-001: chef silent radio quand cancel apres send-to-kitchen — waste matiere quotidien). 1 gap P1 STOCK_LEAK (C1-002: PENDING_COUNTER zombies pollue KDS car job purge filtre seulement UNPAID). 1 gap P1 FEATURE-ABSENTE (C3-001: chef ne peut pas signaler retard au client). 0 frozen-zone touch sur les 3 fixes principaux. NF525 fiscal_sequence est respecte (le risque est uniquement attribution erreur via pickup_code GAP-C1-003).",
+  "frozen_zone_audit": {
+    "frozen_files_touched_by_audit": 0,
+    "files_read_only_inspection": [
+      "app/Services/Fiscal/FiscalSequenceService.php (referenced indirectly via PaymentService:322, NOT inspected)",
+      "All frozen-zone components per CLAUDE.md §7 untouched. This is a READ-ONLY audit."
+    ],
+    "implementation_only_frozen_lock_needed": "NONE for the 3 top findings (C1-002, C2-001, C3-001). All three are scope-minimal additions to new files + new event listeners + new resource fields. Frozen zones are NOT in scope."
+  },
+  "verification_notes": {
+    "advisor_call": "Attempted, advisor unavailable this turn. Proceeded with high-confidence evidence-based findings.",
+    "cross_validation_signals": [
+      "OrderCanceled cascade verified via OrderCanceledCascadeHardenedSentinelTest.php (post-GOAL-I2-HEAL-01 hardening)",
+      "KDS visible statuses verified via KitchenReleaseRule::visibleStatuses() + KitchenDisplaySystemOrderService:71",
+      "Kiosk cash counter-deferred flow verified via FrontendOrderService:200-272 + PaymentService::confirmCounterPayment:193-447",
+      "OSS payload contents verified via CDSOrderDetailsResource (5 fields)",
+      "EventContract drift verified via EventContract.php:39 BROADCAST_MAP entry without emitter (grep 0 hits)"
+    ]
+  }
+}

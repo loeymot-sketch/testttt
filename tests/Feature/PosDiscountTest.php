@@ -39,6 +39,12 @@ class PosDiscountTest extends TestCase
     {
         parent::setUp();
 
+        // [GOAL-GOLIVE-VAT10 / F1-dormancy 2026-05-30] Manual POS discounts are
+        // OFF by default in V1 (F1 fiscal split dormant guard). This suite
+        // validates the discount permission LADDER, which is preserved code —
+        // enable the flag so the ladder is exercised, not the V1 gate.
+        \Illuminate\Support\Facades\Config::set('pos.manual_discount_enabled', true);
+
         $this->seedSpatieRoles();
         $this->seedMinimalSettings();
 

@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  fr.lecayenne.serve — FoodKing V1 LOCAL Le Cayenne · HTTP app server (artisan serve).
+  macOS launchd user-agent. Native Mac equivalent of the Hetzner supervisor
+  template (deploy/ansible/templates/supervisor-foodking.conf.j2 [program:foodking-*]).
+
+  WHY launchd (not supervisor/pm2): this box is macOS. The Hetzner template targets
+  Linux + supervisord + /var/www/lecayenne and is NOT applicable here.
+
+  INSTALL  (see deploy/local/README.md — do NOT run blind; ports 8000/6379 may be held
+            by manually-launched daemons + a parallel session):
+    cp deploy/local/fr.lecayenne.serve.plist ~/Library/LaunchAgents/
+    launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/fr.lecayenne.serve.plist
+  Or use the wrapper:  deploy/local/dev-stack.sh start
+
+  launchd does NOT inherit your shell PATH. All binaries are absolute. Verified paths
+  (2026-06-04): php = /opt/homebrew/opt/php@8.2/bin/php (PHP 8.2.30).
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>fr.lecayenne.serve</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/opt/homebrew/opt/php@8.2/bin/php</string>
+        <string>artisan</string>
+        <string>serve</string>
+        <string>--host=127.0.0.1</string>
+        <string>--port=8000</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <!-- Homebrew php first so any shell-outs resolve the right toolchain. -->
+        <key>PATH</key>
+        <string>/opt/homebrew/opt/php@8.2/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
+
+    <!-- Start at load + restart if it ever dies (the whole point of this task). -->
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+
+    <!-- Avoid a thrash loop if the app is mid-deploy / migration. -->
+    <key>ThrottleInterval</key>
+    <integer>10</integer>
+
+    <key>StandardOutPath</key>
+    <string>/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/storage/logs/launchd-serve.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/storage/logs/launchd-serve.log</string>
+</dict>
+</plist>

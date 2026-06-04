@@ -3,7 +3,7 @@
     <section class="pos-v5-shell pos-v5-floorplan">
         <header class="pos-v5-floorplan__head">
             <div>
-                <p class="pos-v5-floorplan__eyebrow">Caisse FoodKing · Plan de salle</p>
+                <p class="pos-v5-floorplan__eyebrow">Caisse Le Cayenne · Plan de salle</p>
                 <h2 class="pos-v5-floorplan__title">{{ $t('label.floorplan') }}</h2>
                 <p class="pos-v5-floorplan__meta">
                     <span class="pos-v5-tabular">{{ tables.length }}</span> tables

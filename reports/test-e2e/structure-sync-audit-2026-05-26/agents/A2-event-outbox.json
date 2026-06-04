@@ -1,0 +1,145 @@
+{
+  "agent": "A2 event outbox",
+  "audit_date": "2026-05-27",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "discipline": "DM6 NF525 RO / READ-ONLY",
+  "events_total": 38,
+  "events_total_note": "ls app/Events/ excluding Concerns/ subdir. Baseline prior cycle was 37; +1 this session = KdsOrderRecalled (Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25). Verified: app/Events/KdsOrderRecalled.php exists, uses DispatchableAfterCommit trait, ctor signature (int orderId, int branchId, ?int queueNumber, int actorId, string recalledAt, string correlationId).",
+  "listeners_total": 43,
+  "listeners_total_note": "ls app/Listeners/ excluding Concerns/. Inventory includes 13 Persist*ToOutbox + 1 PersistOrderPaymentStatusChangedOnRefundCreated bridge + 12 mutation/side-effect listeners + 12 Notification-style listeners + 5 release/clawback/decrement listeners.",
+  "after_commit_pattern_count": 25,
+  "after_commit_pattern_note": "grep -l 'use DispatchableAfterCommit;' app/Events/ = 25 files. Prior cycle baseline was 24; +1 this session = KdsOrderRecalled. Trait at app/Events/Concerns/DispatchableAfterCommit.php correctly defers until DB::transaction() commits and drops on rollback. List: BranchStatusChanged, CatalogChanged, CategoryCreated, CategoryDeleted, CategoryUpdated, ComposerProfileChanged, ComposerProfilePublished, CouponChanged, IngredientAvailabilityChanged, ItemAvailabilityChanged, ItemCreated, ItemDeleted, ItemExtraAvailabilityChanged, ItemUpdated, ItemVariationAvailabilityChanged, KdsOrderRecalled, OrderCanceled, OrderCreated, OrderPaidAtCounter, OrderPaymentStatusChanged, OrderStatusChanged, OrderTableChanged, RefundCreated, SettingsUpdated, StockLevelChanged.",
+  "heal_5_kds_recalled_wired": true,
+  "heal_5_evidence": {
+    "event_file": "app/Events/KdsOrderRecalled.php",
+    "listener_file": "app/Listeners/PersistKdsOrderRecalledToOutbox.php",
+    "esp_listen_block_lines": "165-167",
+    "esp_listen_mapping": "KdsOrderRecalled::class => [ PersistKdsOrderRecalledToOutbox::class ]",
+    "broadcast_as": "KdsOrderRecalled",
+    "channel": "private-branch.{branchId}",
+    "idempotency_key": "sha1(event_type|order_id|recalled_at|correlation_id)",
+    "outbox_pattern": "DomainEvent::firstOrCreate -> DispatchDomainEventsJob::dispatch inside DB::afterCommit",
+    "swallow_escalation": "wraps inline dispatch with OutboxBroadcastSwallowedEvent dispatch on Throwable",
+    "deliberate_omissions": "DOES NOT chain SendOrderMail/SendOrderSms/FCM (recall is internal kitchen only; customer-facing OSS already notified on initial PREPARING->PREPARED).",
+    "runtime_verification": "php artisan event:list shows: App\\Events\\KdsOrderRecalled -> App\\Listeners\\PersistKdsOrderRecalledToOutbox"
+  },
+  "heal_2_stock_low_active": true,
+  "heal_2_evidence": {
+    "event_file": "app/Events/StockLevelChanged.php",
+    "listener_file": "app/Listeners/NotifyStockLowOnStockLevelChanged.php",
+    "esp_listen_block_lines": "288-292",
+    "esp_listen_mapping": "StockLevelChanged::class => [ InvalidateKioskMenuCacheOnCatalogChange, PersistCatalogChangedToOutbox, NotifyStockLowOnStockLevelChanged ]",
+    "config_flag": "catalog_v15.stock_low_alert.enabled",
+    "config_default": "env('FK_CATALOG_STOCK_LOW_ALERT_ENABLED', false)",
+    "env_actual": ".env line 'FK_CATALOG_STOCK_LOW_ALERT_ENABLED=true' confirmed (also in .env.example)",
+    "runtime_config_value": "true (verified via artisan tinker config('catalog_v15.stock_low_alert.enabled') => true)",
+    "throttle_seconds": 3600,
+    "no_longer_log_only_caveat": "Activated by env (HEAL-2 V102-03 2026-05-26 per listener docblock). V1 Le Cayenne uses BINARY stock so threshold_low=0 today => listener short-circuits before emitting Log::warning (no false alerts). Wiring is active; emission deferred to V1.0.2 admin UI for threshold_low > 0 — observability lights up immediately without env churn.",
+    "guardrail_pinned": "Listener MUST NOT broadcast ItemAvailabilityChanged (binary on_hand->0 rupture broadcast handled by StockService::syncItemAvailabilityForStockLevel). Sentinel: tests/Feature/Stock/StockRuptureAlertListenerSentinelTest.php",
+    "runtime_verification": "php artisan event:list shows: App\\Events\\StockLevelChanged -> App\\Listeners\\NotifyStockLowOnStockLevelChanged (and 2 sibling listeners)"
+  },
+  "domain_events_count": 13,
+  "failed_jobs_count": 0,
+  "persist_to_outbox_count": 13,
+  "persist_to_outbox_list": [
+    "PersistBranchStatusChangedToOutbox",
+    "PersistCatalogChangedToOutbox",
+    "PersistCouponChangedToOutbox",
+    "PersistItemAvailabilityChangedToOutbox",
+    "PersistItemExtraAvailabilityChangedToOutbox",
+    "PersistItemVariationAvailabilityChangedToOutbox",
+    "PersistKdsOrderRecalledToOutbox",
+    "PersistOrderCreatedToOutbox",
+    "PersistOrderPaidAtCounterToOutbox",
+    "PersistOrderPaymentStatusChangedToOutbox",
+    "PersistOrderStatusChangedToOutbox",
+    "PersistOrderTableChangedToOutbox",
+    "PersistSettingsUpdatedToOutbox"
+  ],
+  "persist_to_outbox_pattern_observed": "DomainEvent::firstOrCreate(idempotency_key) -> if wasRecentlyCreated -> DB::afterCommit(DispatchDomainEventsJob::dispatch) wrapped in try/catch that emits OutboxBroadcastSwallowedEvent on failure (HEAL B.2 2026-05-19). Escalation listener EscalateOutboxBroadcastSwallowed wired on OutboxBroadcastSwallowedEvent (ESP lines 318-320).",
+  "outbox_bridge_listener": {
+    "name": "PersistOrderPaymentStatusChangedOnRefundCreated",
+    "purpose": "[WG-1-WF6-P1-1] Bridges RefundCreated -> OrderPaymentStatusChanged so PersistOrderPaymentStatusChangedToOutbox can broadcast realtime refund signal. NOT counted in persist_to_outbox_count because it does not write directly to domain_events.",
+    "wired_at_lines": "ESP lines 197-211 (FIRST under RefundCreated to survive downstream listener throw)"
+  },
+  "orphan_events": [
+    {
+      "name": "ComposerProfilePublished",
+      "reason": "Dispatched by app/Services/Composer/ComposerProfileService.php:168 (::dispatch) but NOT mapped to any listener in EventServiceProvider::$listen. ComposerProfileChanged IS mapped (->InvalidateKioskMenuCacheOnCatalogChange + PersistCatalogChangedToOutbox). ComposerProfilePublished appears to be a placeholder event with no consumer."
+    },
+    {
+      "name": "StockDecrementFailedEvent",
+      "reason": "Dispatched by DecrementStockOnOrderCreated and DecrementItemAvailabilityOnOrder listeners for ops observability, but NOT mapped to any consumer listener in $listen. Used as a fire-and-forget signal (Log::warning wrap absorbs dispatch failure). No outbox row, no broadcast — observable only via stock_decrement_failures table population logic if any. Verify if downstream ops alerting depends on it."
+    }
+  ],
+  "orphan_listeners": [
+    {
+      "name": "DispatchKdsTicket",
+      "reason": "Lives at app/Listeners/DispatchKdsTicket.php but is NOT registered in EventServiceProvider::$listen as an event listener. Instead it is invoked DIRECTLY as a service via dependency injection in app/Services/KitchenDisplaySystemOrderService.php (line 21+32+34+36 constructor injection). Confusing namespace placement (Listeners/) for a service-style invocable — consider relocating to app/Services/Kitchen/ to avoid auditor whiplash."
+    }
+  ],
+  "listener_count_breakdown": {
+    "persist_to_outbox": 13,
+    "outbox_bridge": 1,
+    "mutation_release_clawback": 7,
+    "kiosk_cache_invalidation": 3,
+    "notification_outbound": 12,
+    "fcm_push": 2,
+    "loyalty": 2,
+    "outbox_swallow_escalator": 1,
+    "branch_token_revoke": 1,
+    "bump_menu_snapshot": 1,
+    "service_invocable_misnamed": 1
+  },
+  "event_listener_mapping_complete": "Every event present in app/Events/ is either (a) consumed via a listener in $listen, (b) chained internally by another listener (e.g., RefundCreated -> OrderPaymentStatusChanged via bridge), or (c) flagged as orphan above. Runtime cross-check via php artisan event:list confirms all wires fire at boot.",
+  "key_runtime_findings": [
+    "OrderStatusChanged has 3 listeners (PersistOrderStatusChangedToOutbox FIRST, AwardLoyaltyPointsOnDelivery, SendFcmOnOrderStatusChange) — order matters per F-002 round-3 comment block at ESP:140-149.",
+    "OrderCreated has 4 listeners (Persist FIRST, DecrementItemAvailability, DecrementStock, SendFcmOnOrderCreated) — same outbox-first invariant.",
+    "RefundCreated has 4 listeners (PersistOrderPaymentStatusChangedOnRefundCreated FIRST, ReleaseStock, ReleaseAvailability, ClawbackLoyaltyPointsOnRefund LAST per GOAL-J2-HEAL-07 comment ESP:204-210).",
+    "BranchStatusChanged listener order: RevokeTokens FIRST (sync DB delete), Persist*ToOutbox SECOND (async broadcast) — T-6.4 GOAL Phase 2 2026-05-18 comment ESP:306-308.",
+    "Outbox swallow escalator (HEAL B.2 2026-05-19) wires OutboxBroadcastSwallowedEvent -> EscalateOutboxBroadcastSwallowed at ESP:318-320 — closes RED-Z3 finding B-3 P1 alarm void.",
+    "Heal-5 KdsOrderRecalled deliberately does NOT reuse OrderStatusChanged to avoid triggering customer-facing SendOrderMail/SendOrderSms/SendOrderPush — recall is internal kitchen only.",
+    "OrderStatusChanged via HasDomainEvents trait at app/Models/Order.php (eloquent.saved listener) emits when status changes — verified via php artisan event:list.",
+    "Three findings flagged below."
+  ],
+  "findings": [
+    {
+      "id": "A2-F1",
+      "severity": "P2",
+      "title": "Orphan event ComposerProfilePublished dispatched without consumer",
+      "evidence": "app/Services/Composer/ComposerProfileService.php:168 calls ComposerProfilePublished::dispatch((int) $fresh->id) but EventServiceProvider::$listen has zero mapping for this class. ComposerProfileChanged (sibling event) IS wired. Either ComposerProfilePublished is dead code or a wiring TODO.",
+      "impact": "Silent no-op dispatch — no domain_events row, no broadcast, no listener side-effects. If a consumer was intended (e.g., kiosk push notification on composer wizard publish), it is missing in production. Low blast radius today because the dispatch is paired with a sibling event that already triggers catalog refresh, but the intent ambiguity is a documentation/maintenance debt.",
+      "recommendation": "Either wire ComposerProfilePublished into $listen (mirror ComposerProfileChanged) or delete the dispatch line + event class to reduce confusion."
+    },
+    {
+      "id": "A2-F2",
+      "severity": "P3",
+      "title": "DispatchKdsTicket misplaced in app/Listeners/ but used as service-invocable, not an event listener",
+      "evidence": "app/Listeners/DispatchKdsTicket.php is constructor-injected into app/Services/KitchenDisplaySystemOrderService.php:32+34+36 as $kdsTicketDispatcher and called directly. It is NOT registered in EventServiceProvider::$listen. Auditor expectation when scanning app/Listeners/ is: every file is referenced by $listen. This violates that invariant.",
+      "impact": "Auditor whiplash + 'orphan listener' false positive during structure audits. No runtime defect — just namespace hygiene.",
+      "recommendation": "Move to app/Services/Kitchen/Dispatching/KdsTicketDispatcher.php (or similar) and update the import in KitchenDisplaySystemOrderService. Pure refactor, no behavior change."
+    },
+    {
+      "id": "A2-F3",
+      "severity": "P2",
+      "title": "StockDecrementFailedEvent dispatched without consumer — ops blind to stock failures",
+      "evidence": "DecrementStockOnOrderCreated:46 and DecrementItemAvailabilityOnOrder:53 both call event(new StockDecrementFailedEvent(...)) wrapped in try/catch ('dispatch absorbed'). EventServiceProvider::$listen has no mapping. No domain_events row, no broadcast, no log persistence beyond Log::warning at the dispatch site.",
+      "impact": "Stock decrement failures (per-order P1 stock leak scenarios) emit an event that goes nowhere. Ops gets at most a Log::warning entry that may be drowned by other log noise. No pager-grade alerting like the HEAL B.2 OutboxBroadcastSwallowedEvent escalator. If FK ever needs proactive 'stock_decrement_failed > 5 in 1h => page on-call', the listener slot is empty.",
+      "recommendation": "Mirror HEAL B.2 pattern — wire StockDecrementFailedEvent -> a new EscalateStockDecrementFailed listener that emits Log::channel('fiscal')->critical with structured payload (order_id, branch_id, sku, qty, exception_class). 30-min implementation, closes the ops blind spot."
+    }
+  ],
+  "evidence_commands_executed": [
+    "ls app/Events/ | wc -l => 39 (38 + Concerns dir)",
+    "ls app/Listeners/ | wc -l => 43",
+    "grep -l 'use DispatchableAfterCommit;' app/Events/ | wc -l => 25",
+    "ls app/Listeners/ | grep -c 'ToOutbox' => 13",
+    "php artisan tinker domain_events count => 13",
+    "php artisan tinker failed_jobs count => 0",
+    "php artisan tinker config('catalog_v15.stock_low_alert.enabled') => true",
+    "grep FK_CATALOG_STOCK_LOW_ALERT_ENABLED .env => FK_CATALOG_STOCK_LOW_ALERT_ENABLED=true",
+    "php artisan event:list => all 25 domain events registered, plus framework eloquent.* hooks"
+  ],
+  "verdict": "GREEN",
+  "verdict_rationale": "HEAL-5 (KdsOrderRecalled) and HEAL-2 (NotifyStockLowOnStockLevelChanged) are both correctly wired with full evidence chain (file -> trait -> $listen array entry -> runtime event:list confirmation -> env/config flag). DispatchableAfterCommit pattern coverage increased from 24 -> 25 as expected. Outbox count 13 and failed_jobs=0 indicate a healthy pipeline. The 3 findings (A2-F1 ComposerProfilePublished orphan, A2-F2 DispatchKdsTicket misplaced, A2-F3 StockDecrementFailedEvent unconsumed) are P2/P3 hygiene issues with zero V1 ship-blocker impact — defer to V1.0.2 backlog.",
+  "v1_ship_block": false
+}

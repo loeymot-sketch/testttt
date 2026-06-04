@@ -1,0 +1,57 @@
+{
+  "zone": "PLOY-3-CROSS-SURFACE",
+  "role": "DBA",
+  "scope": "Cross-surface ledger consistency, source_surface analytics integrity, balance read-after-write across surfaces, retention",
+  "findings": [
+    {
+      "id": "PLOY-3-DBA-01",
+      "severity": "P2",
+      "title": "source_surface column is informational only — no DB-layer enforcement of surface→action mapping",
+      "files": ["database/migrations/2026_03_26_075918_create_loyalty_transactions_table.php:28"],
+      "finding": "source_surface is VARCHAR(20) nullable with comment 'kiosk | pos | web | mobile | admin'. No CHECK constraint, no ENUM, no validation at DB. App-layer (PLOY-3-A-01) writes 'pos' when mobile-app redeems. Polluted analytics.",
+      "remediation": "ALTER COLUMN source_surface ENUM('kiosk','pos','web','mobile','admin','system') NOT NULL DEFAULT 'system'. Backfill via SQL inspection: rows where order.source_surface='pos' but transaction.source_surface differs → audit + correct."
+    },
+    {
+      "id": "PLOY-3-DBA-02",
+      "severity": "P2",
+      "title": "No DB-layer GUARANTEE of single concurrent redeem-per-user — cross-surface race",
+      "cross_ref": "PLOY-1-DBA-01, PLOY-2-DBA-01",
+      "finding": "If customer is logged into mobile-app AND simultaneously scans QR at kiosk: mobile clicks 'Redeem 100', kiosk concurrently scans + presses 'Apply 100'. Two separate API endpoints with separate lockForUpdate scopes. Each will SERIALIZE access to users.loyalty_points row but both will see sufficient balance and both will insert separate ledger rows.",
+      "impact": "Same as PLOY-2-R-01 but across surfaces (mobile + kiosk instead of double-tap on one surface). User loses points to orphan row.",
+      "remediation": "Same as PLOY-2-DBA-01: dedup_key UNIQUE INDEX on (user_id, type, nonce_window) where nonce_window = floor(time/30s)."
+    },
+    {
+      "id": "PLOY-3-DBA-03",
+      "severity": "P2",
+      "title": "Read-your-writes consistency across surfaces — no explicit query routing",
+      "finding": "If MySQL has read-replicas (verify deploy), balance read after a redeem on one surface might hit a stale replica from another surface. CLAUDE.md doesn't explicitly mention replica setup but standard Laravel app could have one.",
+      "remediation": "Use DB::table('users')->useWritePdo()->where('id', $id)->value('loyalty_points') for post-mutation read AND for cross-surface balance lookups. OR document that V1 is single-DB-instance (no replica risk)."
+    },
+    {
+      "id": "PLOY-3-DBA-04",
+      "severity": "P3",
+      "title": "loyalty_consents table not cross-referenced with loyalty_transactions",
+      "files": ["database/migrations/2026_04_18_120008_create_loyalty_consents_table.php"],
+      "finding": "Customer opt-in is recorded in loyalty_consents (RGPD compliance). On opt-OUT, ledger rows remain. No way to tell from loyalty_transactions whether the user_id is still consented to data processing.",
+      "remediation": "JOIN at query time via users.consent_status (if exists) OR latest loyalty_consents.consent_accepted. Document the cross-table invariant."
+    },
+    {
+      "id": "PLOY-3-DBA-05",
+      "severity": "P3",
+      "title": "users.loyalty_code UNIQUE constraint — cross-surface generation race",
+      "files": ["database/migrations/2026_03_08_145926_add_loyalty_fields_to_users_table.php:17"],
+      "finding": "users.loyalty_code is UNIQUE (column-level). Code generation via md5(uniqid())+substring(0,8) (LoyaltyController register line 162). uniqid() is microsecond-based, but two concurrent registrations CAN collide in 8-char substring (very rare ~1/4 billion). On collision, INSERT fails with 23000. No retry loop.",
+      "remediation": "Add retry-on-collision loop (max 3 attempts) in register/optIn or use UUID-based generation."
+    },
+    {
+      "id": "PLOY-3-DBA-06",
+      "severity": "P3",
+      "title": "loyalty_transactions retention — no expiry / archival policy",
+      "finding": "Per CLAUDE.md §8, fiscal data has 6-year retention. Loyalty is NOT fiscal but money-equivalent. No archival cron, no soft-delete. Table will grow unbounded.",
+      "remediation": "V1.0.2: archival cron moving rows older than 7 years to loyalty_transactions_archive (or equivalent). Per business rules + legal review."
+    }
+  ],
+  "verdict": "PASS-WITH-CONCERN",
+  "blocker_for_v1": false,
+  "notes": "Cross-surface schema is sound at single-DB-instance scale. P2s on analytics integrity + race protection are V1.0.2 sprint. No data corruption risk in V1 LeCayenne single-resto."
+}

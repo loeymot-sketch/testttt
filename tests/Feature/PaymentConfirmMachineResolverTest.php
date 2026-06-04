@@ -56,7 +56,9 @@ class PaymentConfirmMachineResolverTest extends TestCase
             'id' => $order->id,
             'branch_id' => $branch->id,
             'payment_status' => PaymentStatus::PAID,
-            'status' => OrderStatus::ACCEPT,
+            // [Wave S-1 — 2026-05-20] Owner P-OWNER Wave S-1: kiosk paid TPE
+            // auto-advances to PREPARING after payment-confirm finalize.
+            'status' => OrderStatus::PREPARING,
             'transaction_id' => 'FK-M06-MACHINE-BRANCH',
         ]);
     }

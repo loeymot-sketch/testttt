@@ -71,8 +71,14 @@ class OutboxRetryFailedScheduleTest extends TestCase
         );
     }
 
-    public function test_retry_failed_resets_attempts_5_within_window(): void
+    public function test_retry_failed_preserves_attempts_5_within_window(): void
     {
+        // [Heal B.1 Z3 B-2 P0 — 2026-05-19] Sentinel updated: pre-heal this
+        // test asserted `attempts==0` post-replay, encoding the very defect
+        // RED-Z3 B-2 caught (chronic-fail flap, prune-lane unreachable,
+        // last_error history destruction). Post-heal contract: attempts
+        // and last_error are PRESERVED; only dispatched_at is re-nulled
+        // so DispatchDomainEventsJob Phase 1 can re-claim the row.
         Bus::fake();
 
         $event = $this->makeFailedEvent(attempts: 5, createdMinutesAgo: 30);
@@ -82,21 +88,23 @@ class OutboxRetryFailedScheduleTest extends TestCase
         $this->assertSame(0, $exit);
 
         $event->refresh();
-        $this->assertSame(0, $event->attempts, 'attempts must be reset to 0 for re-queue.');
-        $this->assertNull($event->last_error);
-        $this->assertNull($event->dispatched_at);
+        $this->assertSame(5, $event->attempts, 'attempts must be PRESERVED (Heal B.1 monotonic semantics).');
+        $this->assertSame('Pusher unreachable', (string) $event->last_error, 'last_error must be PRESERVED as forensic trail.');
+        $this->assertNull($event->dispatched_at, 'dispatched_at must be re-nulled so DispatchDomainEventsJob can re-claim.');
 
         Bus::assertDispatched(DispatchDomainEventsJob::class, function (DispatchDomainEventsJob $job) use ($event): bool {
             return $job->domainEventId === $event->id;
         });
     }
 
-    public function test_retry_failed_resets_attempts_6_within_window(): void
+    public function test_retry_failed_preserves_attempts_6_within_window(): void
     {
-        // attempts can exceed 5 if the command was never scheduled (the very
-        // bug Sprint 3B fixes) and the row drifted past 5 via the dispatch
-        // job's own `attempts++` counter. The `failed(5)` scope is `>= 5`,
-        // so attempts=6 must also be picked up.
+        // [Heal B.1 Z3 B-2 P0 — 2026-05-19] Sentinel updated post-heal.
+        // attempts can exceed 5 if a row drifted past the `failed(5)` scope
+        // via the dispatch job's own `attempts++` counter. The `failed(5)`
+        // scope is `>= 5`, so attempts=6 must also be picked up. Now also
+        // bound above by REPLAY_MAX_ATTEMPTS=12 (heal-1 cap filter); 6 is
+        // well below the cap so this row still replays.
         Bus::fake();
 
         $event = $this->makeFailedEvent(attempts: 6, createdMinutesAgo: 60);
@@ -104,7 +112,8 @@ class OutboxRetryFailedScheduleTest extends TestCase
         Artisan::call('foodking:outbox:retry-failed', ['--since' => '24h']);
 
         $event->refresh();
-        $this->assertSame(0, $event->attempts);
+        $this->assertSame(6, $event->attempts, 'attempts must be PRESERVED (Heal B.1 monotonic semantics).');
+        $this->assertSame('Pusher unreachable', (string) $event->last_error, 'last_error must be PRESERVED.');
 
         Bus::assertDispatched(DispatchDomainEventsJob::class);
     }

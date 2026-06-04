@@ -147,6 +147,8 @@ abstract class TestCase extends BaseTestCase
             'pos-reopen-z',
             // [Sprint 1D / F-4 — 2026-05-16] Cash variance override
             'cash.reconcile.variance.override',
+            // [Wave O — O4 2026-05-20] Admin daily cash sessions read-only report.
+            'cash-sessions-report',
         ];
         foreach ($permissionNames as $perm) {
             Permission::firstOrCreate(['name' => $perm, 'guard_name' => 'sanctum']);
@@ -185,6 +187,9 @@ abstract class TestCase extends BaseTestCase
                 'pos-reopen-z',
                 // [Sprint 1D / F-4] approve cash variance beyond threshold.
                 'cash.reconcile.variance.override',
+                // [Wave O — O4 2026-05-20] Branch Manager voit le rapport caisses
+                // quotidien (scoped à sa branche via BranchScope du model).
+                'cash-sessions-report',
             ]);
         }
 

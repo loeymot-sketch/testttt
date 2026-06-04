@@ -1,0 +1,126 @@
+{
+  "wave": "STOCK+ORDER+LIVREUR+ITEMS",
+  "agent": "E2E Agent STOCK+ORDER+LIVREUR",
+  "round": 1,
+  "date": "2026-05-18",
+  "states_reviewed": 17,
+  "pages_audited": 18,
+  "spec_file": "tests/e2e/goal-pageby-stock-2026-05-18.spec.js",
+  "artifact_root": "tests/e2e/__screenshots__/goal-pageby-stock-2026-05-18/",
+  "pipeline": "artifact-quartet (png + dom.html + console.json + network.json) per state via tests/e2e/helpers/mega-audit-snap.js",
+  "findings": [
+    {
+      "id": "STOCK-001",
+      "category": "silent_error",
+      "severity": "P0",
+      "state_artifact": "02-stock-scan-trigger/02-stock-after-scan-click.{png,network.json}",
+      "page": "Page 2 — Stock dashboard manual scan trigger",
+      "evidence": "POST /api/admin/stock/scan-rupture/run returned HTTP 422 ('No branch available for stock rupture scan.') with no toast/alert in UI. Root cause: StockRuptureDashboardController::scopedBranches() filtered Branch::where('status', 1) while Branch model uses canonical Status::ACTIVE=5 enum. scopedBranches returned 0 → branchId=0 → abort_if 422.",
+      "fix_applied": "app/Http/Controllers/Admin/StockRuptureDashboardController.php — import Status enum + change where('status', 1) to whereIn('status', [Status::ACTIVE, 1]) (mirroring PersistCatalogChangedToOutbox L39 bridge pattern). Verified post-heal: curl POST → {\"ok\":true,\"exit_code\":0,\"branch_id\":1}.",
+      "status": "HEALED"
+    },
+    {
+      "id": "LIVREUR-001",
+      "category": "silent_error",
+      "severity": "P0",
+      "state_artifact": "14-livreur-list/14-livreur-list.{png,network.json}",
+      "page": "Page 14 — /admin/delivery-boys list (also impacts Page 10 + Page 16)",
+      "evidence": "GET /api/admin/delivery-boy returned HTTP 422 'There is no role with id `3`.' Cause: DeliveryBoyService::list() called User::role(EnumRole::DELIVERY_BOY) passing int 3. Spatie HasRoles::scopeRole (L84) does is_numeric($role) ? findById : findByName — so int 3 is treated as roles.id PK, but the Spatie roles table AUTO_INCREMENT had skipped past 3 (current IDs 73-77). Same latent bug pattern exists in WaiterService.php:41, ChefService.php:40, CustomerService.php:40, AdministratorService.php:43 (5 sites total, only DeliveryBoyService fixed within scope).",
+      "fix_applied": "app/Services/DeliveryBoyService.php L40 — replaced ->role(EnumRole::DELIVERY_BOY) with ->role('Delivery Boy', 'sanctum') (name lookup stable across AUTO_INCREMENT churn). Also seeded 5 missing Spatie roles via tinker firstOrCreate (Customer/Delivery Boy/Waiter/Branch Manager/Stuff). Verified post-heal: list endpoint returns 200, page renders 'Livreur E2E' row.",
+      "status": "HEALED",
+      "latent_pattern_left_open": "WaiterService::list, ChefService::list, CustomerService::list, AdministratorService::list — same is_numeric trap will trigger 422 the moment any of those pages is exercised. Out of scope for this wave, documented for V1.0.2 follow-up sweep."
+    },
+    {
+      "id": "LIVREUR-002",
+      "category": "i18n_leak",
+      "severity": "P1",
+      "state_artifact": "08-items-edit/08-items-edit-view.dom.html, 10-order-detail/10-order-detail.dom.html",
+      "page": "Page 8 (Items edit breadcrumb) + Page 10 (Order detail breadcrumb)",
+      "evidence": "Breadcrumb final segment rendered literal 'menu.view' string. BreadcrumbComponent.vue L16 does $t('menu.'+val.meta.breadcrumb); the meta.breadcrumb is 'view' for show routes (itemRoutes.js:88, onlineOrderRoutes.js:40, etc., 10+ routes). Vue-i18n returns the key untranslated when missing. fr.json had no menu.view entry (en.json + ar.json already had it: View / عرض).",
+      "fix_applied": "resources/js/languages/fr.json — added \"menu.view\": \"Voir\". Ran npm run dev (Mix compile 10.4s). Re-ran Page 8 + Page 10: 0 occurrences of 'menu.view' in DOM, breadcrumb now reads 'Voir'.",
+      "status": "HEALED"
+    },
+    {
+      "id": "LIVREUR-003",
+      "category": "data_integrity_observation",
+      "severity": "P3",
+      "state_artifact": "14-livreur-list/14-livreur-list.png",
+      "page": "Page 14 — /admin/delivery-boys list",
+      "evidence": "STATUT column shows an empty/dash badge rather than a label (Actif/Inactif). DeliveryBoyResource ships 'status' as integer (5 or 10). Vue list template likely missing a status→label mapper for livreurs. Visible cosmetic gap.",
+      "fix_applied": "NOT FIXED — out of scope (V1.0.2 backlog). Cosmetic only, table action buttons render correctly.",
+      "status": "OPEN"
+    }
+  ],
+  "p0_liv_02_nf525_attested": {
+    "page": "Page 18 — DELIVERED + CASH_ON_DELIVERY → delivery.cash_collected_escrow",
+    "evidence_file": "18-livreur-cash-escrow/18c-audit-log-evidence.json",
+    "audit_row": {
+      "id": 27,
+      "action": "delivery.cash_collected_escrow",
+      "resource": "order",
+      "resource_id": 1492,
+      "branch_id": 1,
+      "user_id": 30,
+      "payload_summary": {
+        "amount_collected": 15.5,
+        "payment_method": 1,
+        "event": "doorstep_cash_collection",
+        "delivery_boy_id": 30
+      }
+    },
+    "verification_method": "PHP artisan tinker query DB::table('audit_logs')->where('action','delivery.cash_collected_escrow') run via spec, full row JSON dumped to disk for reviewer."
+  },
+  "summary": {
+    "P0": 2,
+    "P1": 1,
+    "P2": 0,
+    "P3": 1,
+    "open_P0": 0,
+    "open_P1": 0,
+    "open_P2": 0,
+    "open_P3": 1
+  },
+  "round_to_round_closures": {
+    "STOCK-001": "PASS_HEAL",
+    "LIVREUR-001": "PASS_HEAL",
+    "LIVREUR-002": "PASS_HEAL",
+    "LIVREUR-003": "OPEN_OUT_OF_SCOPE"
+  },
+  "verdict": "GREEN — all in-scope P0/P1 healed; 1 cosmetic P3 deferred V1.0.2",
+  "test_run_evidence": {
+    "final_run_passed": 17,
+    "final_run_failed": 0,
+    "duration_sec": 158,
+    "headed": "headless (config default; spec runs head-less in CI/sandbox identically)",
+    "spec_categories": ["STOCK (1-4)", "ITEMS (6-8)", "ORDERS (9-12)", "LIVREUR (14-18)"]
+  },
+  "frozen_zones_diff": "0 lines — no PaymentService, no BranchScope, no fiscal services, no IdempotencyKeyMiddleware touched. Confirmed by file scope: app/Http/Controllers/Admin/StockRuptureDashboardController.php (NOT frozen) + app/Services/DeliveryBoyService.php (NOT frozen) + resources/js/languages/fr.json (NOT frozen).",
+  "nf525_chain_unchanged": true,
+  "files_modified": [
+    {
+      "path": "app/Http/Controllers/Admin/StockRuptureDashboardController.php",
+      "change": "import Status + whereIn status enum bridge (STOCK-001 heal)",
+      "frozen": false
+    },
+    {
+      "path": "app/Services/DeliveryBoyService.php",
+      "change": "->role('Delivery Boy', 'sanctum') instead of ->role(int) (LIVREUR-001 heal)",
+      "frozen": false
+    },
+    {
+      "path": "resources/js/languages/fr.json",
+      "change": "+ menu.view = Voir (LIVREUR-002 heal)",
+      "frozen": false
+    },
+    {
+      "path": "tests/e2e/goal-pageby-stock-2026-05-18.spec.js",
+      "change": "NEW — 17 tests across STOCK/ITEMS/ORDERS/LIVREUR",
+      "frozen": false
+    }
+  ],
+  "data_fixtures_created": [
+    "User id=30 livreur-e2e@lecayenne.fr role='Delivery Boy' branch=1 status=ACTIVE (via tinker, for Pages 17+18)",
+    "Order id=1492 serial=E2E-LIV-* delivery_boy_id=30 payment_method=CASH_ON_DELIVERY status=OUT_FOR_DELIVERY→DELIVERED (via tinker + spec)",
+    "Spatie roles seeded id=76..80 (Customer/Delivery Boy/Waiter/Branch Manager/Stuff) — were missing from RoleTableSeeder run state"
+  ]
+}

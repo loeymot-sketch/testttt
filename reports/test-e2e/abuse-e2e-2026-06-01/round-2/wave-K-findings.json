@@ -1,0 +1,47 @@
+{
+  "wave": "K",
+  "round": 2,
+  "states_reviewed": 4,
+  "states": [
+    "test-e2e-K/01-tracker-with-reprint-button.png",
+    "test-e2e-K/02-receipt-original-no-duplicata.png",
+    "test-e2e-K/03-after-first-print-still-original.png",
+    "test-e2e-K/04-reprint-duplicata-marker-visible.png"
+  ],
+  "findings": [
+    {
+      "id": "K-002",
+      "state_artifact": "test-e2e-K/04-reprint-duplicata-marker-visible.png",
+      "category": "numeric_integrity",
+      "severity": "P2",
+      "evidence": "CORE ASSERTION 2 (same fiscal_sequence_no on reprint) is NOT independently re-verified after the reprint. tests/e2e/test-e2e-abuse-K-receipt.spec.js:370-406: the post-reprint re-read `page.request.get('/api/admin/pos-order/show/${orderId}')` returns 401 (separate Playwright APIRequestContext does not carry the SPA's Sanctum bearer token; the route group is auth:sanctum, routes/api.php:295 wrapping :973), so `reShowSeqNo=null`. The continuity check then degenerates to a tautology: `continuitySeqNo = reShowSeqNo != null ? ... : originalSeqNo` (:398) and `originalSeqNo = showSeqNo != null ? Number(showSeqNo) : ...` (:387), then `expect(continuitySeqNo).toBe(originalSeqNo)` (:403-406) compares originalSeqNo to itself. The DOM 'N° ticket NF525: 1999' visible in states 02/03/04 is NOT independent post-reprint evidence either: the receipt modal is opened ONCE before any print (spec :266-291), and print1/print2 are clicks inside that already-open modal; ReceiptComponent.vue effectiveOrder (:444-454) spreads `...this.order` and overrides ONLY receipt_print_count — fiscal_sequence_no is never re-fetched. So all three states render the SAME single pre-reprint fetched object. The post-reprint DB seq_no is observed in NO artifact. Continuity is true only by the STRUCTURAL guarantee that the controller UPDATEs receipt_print_count alone (PosReceiptPrintController.php:43-48), which the spec does not assert against.",
+      "fix_hint": "Pass the SPA bearer token to the RESHOW request so it returns 200: read it in-page (e.g. await page.evaluate(() => localStorage.getItem('token'))) and send `headers: { Authorization: 'Bearer '+token, Accept: 'application/json' }`. Then assert reShowSeqNo is non-null AND === originalSeqNo (non-tautological post-reprint re-read). This converts the structural guarantee into a regression-catching assertion that would fail if a future controller change minted a new seq_no on reprint.",
+      "status": "open"
+    },
+    {
+      "id": "K-003",
+      "state_artifact": "test-e2e-K/04-reprint-duplicata-marker-visible.png",
+      "category": "numeric_integrity",
+      "severity": "P2",
+      "evidence": "audit_emitted (the NF525 tamper-evident reissue trace, pos.receipt.reprint chained — PosReceiptPrintController.php:67,:83) is measured in the print2 JSON but is NOT a hard assertion. tests/e2e/test-e2e-abuse-K-receipt.spec.js:421-426 only emits `note('AUDIT', ...)` on print2.audit_emitted; there is no `expect(print2.audit_emitted).toBe(true)`. If the audit chain silently degraded (controller returns audit_emitted=false on a Throwable, :95-102, by design for cashier operational continuity), the spec would still PASS and only log a note. The note() string is written to stdout/console only — it is NOT persisted to any console.json artifact (verified: PRINT2/AUDIT/RESHOW absent from all 4 *.console.json). Value was true this run (caller-confirmed), so this is a missing-assertion coverage gap, not a defect.",
+      "fix_hint": "Add `expect(print2.audit_emitted, 'reprint MUST chain a pos.receipt.reprint audit event (NF525 reissue trace)').toBe(true);` after spec line 349. Optionally persist the print1/print2 JSON + audit_emitted into the artifact set so a reviewer can verify the chain emission without re-running.",
+      "status": "open"
+    },
+    {
+      "id": "K-004",
+      "state_artifact": "test-e2e-K/04-reprint-duplicata-marker-visible.network.json",
+      "category": "silent_error",
+      "severity": "P3",
+      "evidence": "The mega-audit network.json sink is unreliable as a silent-error oracle for this wave. Per REVIEWER_PROTOCOL it should capture status>=400 OR duration>2000ms, but: (a) it logged ONLY 2xx entries (01:201/200 login, 03+04:200 print-receipt) — duration_ms is null throughout; (b) the RESHOW 401 documented by the spec (:382) appears in NO network.json (page.request bypasses the page response listener and/or fired after the last snap). So a genuine 4xx escaped the sink. Category-6/10 (silent error / unexpected 4xx) clearance for this wave therefore rests on the IN-BROWSER asserted responses (posOrder/show 200 spec:272; print1 200 spec:323; print2 200 spec:344) plus clean console.json (no level=error; only allowlisted Rubik font-decode warnings + one vendor app.js cssRules SecurityError at log level), NOT on the empty network.json.",
+      "fix_hint": "Make the mega-audit recorder capture page.request (APIRequestContext) responses too, or snap() once more after the RESHOW so its 4xx lands in network.json. Independently, the RESHOW 401 is a test-harness auth-context artifact (no bearer on page.request), not a product auth bug — the real UI path returned 200.",
+      "status": "open"
+    }
+  ],
+  "summary": {
+    "open_P0": 0,
+    "open_P1": 0,
+    "open_P2": 2,
+    "open_P3": 1
+  },
+  "verdict": "GREEN"
+}

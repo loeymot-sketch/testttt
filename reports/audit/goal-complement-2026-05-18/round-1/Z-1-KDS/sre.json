@@ -1,0 +1,115 @@
+{
+  "role": "SRE",
+  "zone": "Z-1 KDS deeper",
+  "mode": "AUDIT-ONLY",
+  "date": "2026-05-18",
+  "scope": "Cadence cap, polling, Echo subscription, broadcast reliability, queue+cron, observability",
+  "anchors_verified": [
+    "app/Services/KdsSyncService.php:37-149",
+    "app/Listeners/DispatchKdsTicket.php:1-22",
+    "app/Events/OrderStatusChanged.php:1-26",
+    "app/Events/Concerns/DispatchableAfterCommit.php (referenced)",
+    "config/kds.php (V2 default-on, no cadence settings here)",
+    "tests/Feature/Sentinels/KdsItemAvailabilityEchoSentinelTest.php (test exists)"
+  ],
+  "findings": [
+    {
+      "id": "Z1-SRE-P1-01",
+      "severity": "P1",
+      "title": "KDS polling cadence is configured by session-A Wave 2c-3 (cadence cap 60s) — verify config knob is wired before declaring AUDIT-ONLY VALIDATED",
+      "evidence": {
+        "file": "plans/GOAL_PRODUCTION_READINESS_COMPLEMENT_2026-05-18.md",
+        "lines": "39",
+        "claim": "KDS cadence cap (60s) + cron iterate — Wave 2c-3 heal (session-A owner)",
+        "kds_config_file_state": "config/kds.php only contains v2_default_enabled — NO cadence_ms / poll_interval_seconds setting",
+        "frontend_check": "public/js/admin-kds.js is DIRTY per scope; cannot Read without writing"
+      },
+      "impact": "If session-A Wave 2c-3 ships cadence cap config in kds.php but it's not yet committed, the polling cadence may currently rely on hard-coded frontend constant. Bursts of polling without cap can DDoS the /kds-order/sync endpoint.",
+      "scope_minimal_heal_recommendation": "Coordinate with session-A: confirm Wave 2c-3 commit lands kds.cadence.cap_ms in config/kds.php with default 60000 + frontend wiring. AUDIT-ONLY for Z-1 (off-limits per GOAL).",
+      "backlog_ticket": "V1.0.2-KDS-CADENCE-CAP (session-A owned, verify post-merge)",
+      "audit_status": "Read-verified config/kds.php has NO cadence setting at audit time; session-A WIP per GOAL §0.2"
+    },
+    {
+      "id": "Z1-SRE-PASS-02",
+      "severity": "PASS",
+      "title": "DispatchableAfterCommit on OrderStatusChanged prevents broadcast leakage on transaction rollback",
+      "evidence": {
+        "file": "app/Events/OrderStatusChanged.php",
+        "lines": "11-17",
+        "code_excerpt": "use DispatchableAfterCommit; ... // Uses DispatchableAfterCommit (gate C9 — KI-001) so the event is deferred until the surrounding DB::transaction() commits, and dropped entirely on rollback."
+      },
+      "verdict": "Transaction safety: KDS broadcast cannot fire on a rolled-back status change. Defends against ghost cards on chef screen. PASS.",
+      "audit_status": "Read-verified"
+    },
+    {
+      "id": "Z1-SRE-PASS-03",
+      "severity": "PASS",
+      "title": "Echo broadcast failure does not break KDS changeStatus flow",
+      "evidence": {
+        "file": "app/Services/KitchenDisplaySystemOrderService.php",
+        "lines": "241-245",
+        "code_excerpt": "try { $this->kdsTicketDispatcher->dispatch($snapshot, $oldStatus, $newStatus); } catch (\\Exception $e) { Log::warning('[KDS] OrderStatusChanged broadcast failed: ' . $e->getMessage()); }"
+      },
+      "verdict": "Broadcast wrapped in try/catch with Log::warning. Order.status mutation still commits even if Pusher is down. Frontend polling fallback (/kds-order/sync) covers the gap. PASS.",
+      "audit_status": "Read-verified"
+    },
+    {
+      "id": "Z1-SRE-PASS-04",
+      "severity": "PASS",
+      "title": "KdsSyncService minute-bucket cache (5s TTL) protects against polling stampede",
+      "evidence": {
+        "file": "app/Services/KdsSyncService.php",
+        "lines": "39-49",
+        "code_excerpt": "$minuteBucket = CarbonImmutable::now('UTC')->format('YmdHi'); $cacheKey = sprintf('kds.sync.%s.%s.%s', ...); return Cache::remember($cacheKey, 5, function () ...);"
+      },
+      "verdict": "50 concurrent KDS clients polling within a 5s window hit Redis cache, not the database. Cache key salted with branch_id + since timestamp hash. PASS.",
+      "audit_status": "Read-verified"
+    },
+    {
+      "id": "Z1-SRE-P2-05",
+      "severity": "P2",
+      "title": "No observable metric for KDS broadcast failure rate — silent degradation possible",
+      "evidence": {
+        "file": "app/Services/KitchenDisplaySystemOrderService.php",
+        "lines": "243-245",
+        "code_excerpt": "Log::warning('[KDS] OrderStatusChanged broadcast failed: ' . $e->getMessage());"
+      },
+      "impact": "Pusher outage logs to file/stack channel only. No counter exposed to SyncOverviewController observability dashboard. Operator does not learn KDS is degraded until chef complains.",
+      "scope_minimal_heal_recommendation": "Increment observability counter on broadcast failure (e.g. observability.kds.broadcast_failed_total). Surface in /admin/observability/sync-overview. Estimated 2h.",
+      "backlog_ticket": "V1.0.2-KDS-BROADCAST-FAILURE-METRIC",
+      "audit_status": "Read-verified — no metric emitter at the catch site"
+    },
+    {
+      "id": "Z1-SRE-P2-06",
+      "severity": "P2",
+      "title": "Side-effect dispatches (Mail/SMS/Push) fire BEFORE broadcast — risk of mail-without-broadcast inconsistency",
+      "evidence": {
+        "file": "app/Services/KitchenDisplaySystemOrderService.php",
+        "lines": "237-245",
+        "code_excerpt": "SendOrderMail::dispatch(['order_id' => $snapshot->id, 'status' => $newStatus]); SendOrderSms::dispatch(...); SendOrderPush::dispatch(...); try { $this->kdsTicketDispatcher->dispatch(...); } catch (\\Exception $e) { Log::warning(...); }"
+      },
+      "impact": "Order is moved to PREPARED → SMS sent to customer 'Your order is ready' → broadcast fails → customer arrives but no chef saw the bump → confusion. The order IS prepared in DB but UI lags. Severity P2 because polling fallback closes the gap within cadence_cap seconds.",
+      "scope_minimal_heal_recommendation": "Consider reordering: broadcast first (failure non-blocking), then dispatch Mail/SMS/Push only on broadcast success OR via the same outbox pattern. Estimated 3-4h with regression test.",
+      "backlog_ticket": "V1.0.3-KDS-SIDEEFFECT-ORDERING-VS-BROADCAST",
+      "audit_status": "Read-verified"
+    },
+    {
+      "id": "Z1-SRE-P3-07",
+      "severity": "P3",
+      "title": "No retry/dead-letter queue for OrderStatusChanged broadcast failures",
+      "evidence": {
+        "scope": "OrderStatusChanged uses DispatchableAfterCommit but the broadcast itself is fire-and-forget; if Pusher is down at dispatch time, the event is lost from the broadcast channel (DB state is unaffected)."
+      },
+      "impact": "KDS clients must rely on polling fallback to recover. Acceptable for V1, but a Pusher outage causes 60s lag per cadence_cap.",
+      "scope_minimal_heal_recommendation": "Use the existing Outbox pattern (post-Wave 2c-5) for broadcast persistence + replay. Estimated 4-6h. Already partially wired via PersistOrderStatusChangedToOutbox listener (verified file exists).",
+      "backlog_ticket": "V1.0.3-KDS-BROADCAST-OUTBOX-REPLAY",
+      "audit_status": "Read-verified existence of app/Listeners/PersistOrderStatusChangedToOutbox.php"
+    }
+  ],
+  "echo_subscription_check": {
+    "broadcaster_channel_naming_pattern": "Per CLAUDE.md §9, channel names are per-branch. Verified via OrderTableChanged.php comment + ItemExtraAvailabilityChanged.php comment 'per-branch channel so POS / Kiosk / KDS can invalidate'.",
+    "broadcaster_listener_exists": "app/Listeners/DispatchKdsTicket.php:1-22 — gates broadcast on KitchenReleaseRule::shouldDispatchStatusChanged.",
+    "broadcaster_resilience": "PASS — DispatchableAfterCommit + try/catch around Pusher dispatch."
+  },
+  "summary_one_line": "Broadcast pipeline is resilient (after-commit + try/catch + polling fallback). Two P2 backlog items: observability counter for failure rate + ordering of side-effects vs broadcast. P1 verification needed for session-A cadence cap wiring post-merge."
+}

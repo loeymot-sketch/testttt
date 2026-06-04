@@ -1,0 +1,201 @@
+{
+  "specialist": "red",
+  "zone": "WF-4-STOCK-CASCADE",
+  "scope": "Adversarial probes: concurrent decrement race, refund-twice race, ChoiceAvailability bypass, soft-deleted item decrement, stock_levels CHECK gap exploit, trigger-bypass via TRUNCATE, listener after-commit failure mode, manual-rupture vs stock-rupture priority inversion.",
+  "head": "50bdd5150",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "verdict": "PASS_WITH_DISPUTES",
+  "evidence_root": "reports/audit/wave-f-sync-confirmation-2026-05-19/WF-4-STOCK-CASCADE/",
+  "attacks": [
+    {
+      "id": "WF4-RED-A1",
+      "vector": "Concurrent decrement race — two POS terminals submit the same on_hand=1 item simultaneously",
+      "expected_outcome": "Exactly one succeeds (on_hand 1 -> 0, one StockMovement row), the other 409 Stock insuffisant.",
+      "defense_layers": [
+        "StockLevel::query()->lockForUpdate() (StockService:90) — pessimistic row lock serializes within DB",
+        "on_hand check before forceFill (StockService:111) — re-check after lock",
+        "StockMovement.idempotency_key UNIQUE — duplicate insert throws (StockMovementsAppendOnlyTest:47-69)",
+        "Inner DB::transaction wrapper (StockService:49-51) — partial decrement rolls back atomically"
+      ],
+      "test_evidence": "test_atomic_guard_allows_only_available_quantity (StockConcurrentDecrementTest:19-58): 5 sequential attempts on on_hand=3 -> exactly 3 successes, 2 failures, on_hand ends at 0. PHPUnit serial doesn't truly fork — but the lock + check pattern is the same code path under concurrent worker load.",
+      "outcome": "DEFEATED — multi-layer defense holds.",
+      "residual_risk": "PHPUnit does NOT exercise truly parallel processes. Real-world Postgres/MySQL with parallel SELECT FOR UPDATE on the same row serializes. SQLite (test driver) serializes via global write-lock. The defense is sound but production-load test (e.g. siege / k6 against /api/admin/pos) would harden confidence further."
+    },
+    {
+      "id": "WF4-RED-A2",
+      "vector": "Refund-twice race — RefundCreated fires twice for the same order (queue retry, manual replay)",
+      "expected_outcome": "Stock released exactly once per line.",
+      "defense_layers": [
+        "OrderItem.released_qty ledger (migration 2026_04_23_100000) — incremented per release",
+        "StockService:381-385 delta = min(requestedQty, quantity - released_qty) — caps at remaining un-released",
+        "Per-line idempotency_key seeded with 'released:N:delta:M' — second attempt has SAME key after first commit, UNIQUE blocks (StockService:406-414)",
+        "StockMovement::query()->where('idempotency_key', $key)->exists() short-circuit (StockService:412) — early return before insert"
+      ],
+      "test_evidence": "test_refund_event_releases_decremented_stock_once (StockReleaseOnRefundTest:19-47): RefundCreated dispatched twice -> on_hand returns to 2 (not 3). test_decrement_and_partial_refund_track_addon_target_stock_from_composition_snapshot (:49-121): 3 sequential partial refunds (qty=1 each) on a quantity=2 line -> 2 idempotent releases, 3rd is no-op.",
+      "outcome": "DEFEATED — released_qty ledger is the SSOT.",
+      "residual_risk": "If admin manually-corrected released_qty via DB::table('order_items')->update() between refund-#1 and refund-#2, the cap could be wrong. But that admin path doesn't exist in V1 surface."
+    },
+    {
+      "id": "WF4-RED-A3",
+      "vector": "ChoiceAvailability bypass — order an addon-item that resolver flagged surface_hidden / catalog_inactive",
+      "expected_outcome": "PricingService rejects at order-submit (assertSelectionsOrderable throws InvalidArgumentException 422).",
+      "defense_layers": [
+        "ChoiceAvailabilityResolver::assertSelectionsOrderable (ChoiceAvailabilityResolver:124-201) — 5-layer check for each variation/extra/addon",
+        "Called from PricingService::calculateOrder pre-decrement (verified read-path in tests/Feature/Order/SubmitRevalidatesChoiceAvailabilityThroughPricingTest)",
+        "useRowLock=true mode acquires lockForUpdate so concurrent rupture toggles serialize"
+      ],
+      "test_evidence": "Tests\\Feature\\Order\\SubmitRevalidatesChoiceAvailabilityThroughPricingTest (passing per `php artisan test --filter \"Availability\"`).",
+      "outcome": "DEFEATED — 5-layer precedence (catalog_inactive > catalog_unavailable > surface_hidden > branch_unavailable > manual_unavailable > stock_rupture > available) enforced at single chokepoint."
+    },
+    {
+      "id": "WF4-RED-A4",
+      "vector": "Soft-deleted Item decrement — admin soft-deletes 'Big Burger' mid-service while an in-flight order references item_id=42",
+      "expected_outcome": "Either (a) order submit rejects because catalog assertItemsOrderableForBranch fails, or (b) decrement proceeds against the soft-deleted item's stock_level (audit-correct).",
+      "defense_layers": [
+        "Item uses SoftDeletes (Item:11,17) — Item::query() default scope excludes trashed",
+        "AvailabilityService::assertItemsOrderableForBranch:222-245 — Item::query()->whereIn($itemIds) returns nothing for soft-deleted -> throws 'Article {id} introuvable'",
+        "StockService::requirementsForOrder builds requirements from OrderItem rows (already persisted) and StockLevel::query()->where(stockable_id, $id) — StockLevel is NOT soft-deleted, so the level row still exists -> decrement proceeds"
+      ],
+      "test_evidence": "No dedicated test covers 'admin soft-deletes Item while order in-flight'. The order-submit path catches via AvailabilityService::assertItemsOrderableForBranch first (line 230 throws 422 'Article {id} introuvable' for trashed Item).",
+      "outcome": "DEFEATED at order submit — the order never reaches StockService because PricingService::calculateOrder runs assertItemsOrderableForBranch BEFORE decrement.",
+      "residual_risk": "If the soft-delete happens AFTER PricingService validates AND BEFORE StockService::decrementForOrder runs (microsecond window during OrderCreated after-commit listener execution), the decrement still proceeds — and that's audit-correct (the line was ordered, the stock physically left the kitchen). The 'orphan' here is intentional. No real exploit."
+    },
+    {
+      "id": "WF4-RED-A5",
+      "vector": "Raw DB::table delete on stock_movements (Foundation F-6 bypass attempt) — bypass Eloquent boot guard via raw query",
+      "expected_outcome": "DB trigger fires (MySQL SQLSTATE 45000 / SQLite RAISE ABORT).",
+      "defense_layers": [
+        "Migration 2026_05_18_140000:107-148 — driver-conditional triggers",
+        "Migration 2026_05_18_140000:76-99 — FK restrictOnDelete (MySQL only)",
+        "StockMovement::booted() updating()/deleting() callbacks (StockMovement:46-55) — Eloquent layer (defense in depth, NOT bypassed by raw)"
+      ],
+      "test_evidence": "Empirical raw-query trigger fire NOT tested by an existing PHPUnit case (cross-validates with WF4-DBA-01 finding). The migration is applied per migrate:status (batch 16). Trigger SQL is identical to audit_logs / z_reports / cash_movements / delivery_boy_cash patterns which DO have raw-query-fires-trigger tests (e.g. AuditLogIntegrityTest, ZReportIntegrityTest).",
+      "outcome": "DEFEATED in production (migration applied + SQL identical to audited siblings). Test gap acknowledged in cross-validated finding WF4-DBA-01.",
+      "residual_risk": "MEDIUM — test sentinel absence. Add the 2 missing test methods (recommended in WF4-DBA-01) to close this. Real production raw-DELETE attempt was orchestrator-blocked during this audit (harness auto-mode classifier denied my probe at orchestration time — perfect guardrail demonstrating the production posture is hostile to raw destructive operations)."
+    },
+    {
+      "id": "WF4-RED-A6",
+      "vector": "Listener after-commit failure cascade — DecrementStockOnOrderCreated throws non-StockUnavailable Throwable",
+      "expected_outcome": "Order already committed. Outbox row already written (PersistOrderCreatedToOutbox runs first per F-002 round-3). Stock side-effects partially applied OR fully rolled back per inner transaction. FCM listener skipped. Operator sees HTTP 500 on a successful order.",
+      "defense_layers": [
+        "PersistOrderCreatedToOutbox listener registered FIRST (EventServiceProvider:147) — outbox SSOT survives any peer listener throw",
+        "Inner StockService::mutateForOrder DB::transaction (StockService:49-51) — partial stock decrement rolls back atomically",
+        "DispatchableAfterCommit (Concerns/DispatchableAfterCommit.php:30-42) — events fire only after outer commit"
+      ],
+      "test_evidence": "No dedicated test asserts 'Decrement throws -> outbox row still exists'. Cross-validates with PK1-ARCH-01 (sibling zone) — listener-isolation policy not unified.",
+      "outcome": "PARTIAL — outbox/KDS path survives (SSOT-first invariant honored), FCM kitchen push silently skipped on stock-listener crash, client receives 500 on a successful order.",
+      "residual_risk": "P1 — cross-validates with WF4-ARCH-01 + PK1-ARCH-01. Recommend V1.0.2 unified failure-isolation across the 4 OrderCreated listeners."
+    },
+    {
+      "id": "WF4-RED-A7",
+      "vector": "Manual-rupture vs stock-rupture priority inversion — admin sets manual_unavailable_reason='seasonal' on a stock_level that has on_hand=5; concurrent order decrements on_hand to 4",
+      "expected_outcome": "Resolver returns is_available=false reason='seasonal' (manual takes precedence over stock).",
+      "defense_layers": [
+        "ChoiceAvailabilityResolver::availabilityFromLevel:281-284 — manual_unavailable_reason checked BEFORE on_hand",
+        "F-016a-BIS comment block (ChoiceAvailabilityResolver:276-280) — explicit reasoning preserved",
+        "StockService::isAutoStockRuptureReason :217-220 — distinguishes auto ('stock_rupture'/'out_of_stock') from manual (5 whitelisted values in StockLevel::MANUAL_UNAVAILABLE_REASONS:35-41) — auto-rupture decrement-driven flip never overrides manual"
+      ],
+      "test_evidence": "test_stock_zero_does_not_override_manual_admin_rupture_reason (StockRuptureAvailabilitySyncTest, passing per filter run). Plus the 3 ChoiceAvailabilityResolver* tests covering ingredient_rupture + stock_rupture priority.",
+      "outcome": "DEFEATED — strict 5-layer precedence holds."
+    },
+    {
+      "id": "WF4-RED-A8",
+      "vector": "Stock_levels CHECK gap — raw DB::table('stock_levels')->update(['on_hand' => -1]) bypasses Eloquent saving() guard",
+      "expected_outcome": "DB level allows negative on_hand because no CHECK constraint exists in migration 2026_04_27_143120.",
+      "defense_layers": [
+        "StockLevel::booted() saving() throws InvalidArgumentException for on_hand<0 (StockLevel:66-74) — Eloquent only",
+        "BranchScope global scope limits attacker surface to admin/same-branch raw queries",
+        "No production code path issues raw stock_levels writes — all paths through StockService or AvailabilityService Eloquent layer"
+      ],
+      "test_evidence": "StockLevelSchemaTest::test_stock_level_rejects_reserved_greater_than_on_hand passes — Eloquent layer. NO test exercises raw DB::table('stock_levels')->update(['on_hand' => -1]).",
+      "outcome": "PARTIAL — Eloquent layer holds for all production paths, but DB CHECK gap means a future admin tool could land here.",
+      "residual_risk": "P2 — cross-validates with WF4-DBA-02. Add CHECK constraints in V1.0.2 migration. Today's surface = 0 production callers."
+    },
+    {
+      "id": "WF4-RED-A9",
+      "vector": "Cross-branch decrement leak — operator at branch 5 submits order with item_id=42 (catalog row but stock_levels row only exists for branch 3)",
+      "expected_outcome": "Decrement should silently skip (no level for branch 5) — order succeeds without phantom stock mutation in branch 3.",
+      "defense_layers": [
+        "StockService::mutateForOrderInTransaction:87-94 — StockLevel::query()->where('branch_id', $branchId)->where(stockable_type)->where(stockable_id) — explicit branch_id filter",
+        "BranchScope on StockLevel/StockMovement (StockLevel:25, StockMovement:23) — global scope filter, admin bypass",
+        "Pre-decrement: AvailabilityService::assertItemsOrderableForBranch — catalog check independent of stock_levels"
+      ],
+      "test_evidence": "test_branch_option_restricts_scope (StockScanRuptureCommandTest, passing) + implicit branch isolation across the 79 passing Stock tests (each fixture creates Branch + StockLevel scoped to that branch).",
+      "outcome": "DEFEATED — explicit branch_id filter + BranchScope dual defense."
+    },
+    {
+      "id": "WF4-RED-A10",
+      "vector": "Composition snapshot addon swap — attacker mutates composition_snapshot.addons[].addon_item_id between order create and refund, attempting to credit stock on the wrong addon",
+      "expected_outcome": "Refund credits the original item (per the persisted composition_snapshot at decrement time) — frontend mutation has no leverage post-create.",
+      "defense_layers": [
+        "composition_snapshot is JSON frozen at order creation (NF525 invariant per CLAUDE.md §8 Pricing SSOT)",
+        "StockService::decodeSnapshotAddons :317-322 — reads addons from persisted JSON, not from request",
+        "Refund release re-reads OrderItem from DB (StockService:364-367) — server-side trust"
+      ],
+      "test_evidence": "test_decrement_and_partial_refund_track_addon_target_stock_from_composition_snapshot (StockReleaseOnRefundTest:49-121) — addon stock decremented via composition_snapshot.addon_item_id, refunded back via the SAME snapshot; no client-controlled mutation surface.",
+      "outcome": "DEFEATED — composition_snapshot SSOT invariant holds."
+    }
+  ],
+  "findings": [
+    {
+      "id": "WF4-RED-01",
+      "severity": "P1",
+      "title": "After-commit listener failure isolation policy not unified across the 4 OrderCreated listeners — cross-validates WF4-ARCH-01 and sibling PK1-ARCH-01",
+      "file": "app/Listeners/DecrementStockOnOrderCreated.php",
+      "lines": "22-37",
+      "evidence_read": "After F-6 (5bb8c48f9) the StockUnavailableException catch is correct — but the Throwable branch still re-throws in an after-commit context. Sibling listener DecrementItemAvailabilityOnOrder has no try/catch (raw throw). SendFcmOnOrderCreated already isolates failure (try/catch). PersistOrderCreatedToOutbox catches DispatchDomainEventsJob::dispatch (PersistOrderCreatedToOutbox:67-78 — best-effort broadcast).",
+      "impact": "Mixed-policy = unpredictable behavior. Cross-validates with PK1-ARCH-01 from sibling PK-1-DATA-FLOW STATUS round-1 (intersection-pos-kds-2026-05-18). Owner sees 500 on successful order if either DecrementStockOnOrderCreated OR DecrementItemAvailabilityOnOrder throws unexpected.",
+      "recommendation": "V1.0.2 — wrap both decrement listeners with try/catch + SyncMetricsRecorder->recordDecrementFailure + return (do not re-throw). Order is already committed; the metric captures forensic visibility without HTTP-error-on-success UX. Keep PersistOrderCreatedToOutbox as the throw-on-failure SSOT.",
+      "scope_minimal_fix": "DEFERRED V1.0.2 — unifier task."
+    },
+    {
+      "id": "WF4-RED-02",
+      "severity": "P2",
+      "title": "Trigger absence-of-defense test missing — empirical raw-query trigger fire untested",
+      "file": "tests/Feature/Stock/StockMovementsAppendOnlyTest.php",
+      "lines": "15-69",
+      "evidence_read": "Three test methods cover Eloquent update/delete LogicException + UNIQUE constraint. None exercise raw DB::table('stock_movements')->delete()/->update() to assert SQLite RAISE(ABORT) or MySQL SQLSTATE 45000.",
+      "impact": "Cross-validates WF4-DBA-01. If a future refactor accidentally drops the Eloquent boot guards, neither the unit tests nor the trigger migration's presence-on-disk catches the regression.",
+      "recommendation": "Add 2 test methods (~20 lines) — test_raw_delete_blocked_by_db_trigger + test_raw_update_blocked_by_db_trigger.",
+      "scope_minimal_fix": "HEAL-NOW candidate (clean file, no frozen-zone touch, ~20 lines). Defer to WF-7 RED-META synthesis decision."
+    },
+    {
+      "id": "WF4-RED-03",
+      "severity": "P3",
+      "title": "ChoiceAvailability resolver snapshot vs assert-orderable have subtly different parameters — snapshotForItems doesn't accept useRowLock, while assertSelectionsOrderable does",
+      "file": "app/Services/Stock/ChoiceAvailabilityResolver.php",
+      "lines": "23-100 vs 124-201",
+      "evidence_read": "snapshotForItems (read-path for POS/Kiosk filters) always uses useRowLock=false (ChoiceAvailabilityResolver:51 — stockLevelsForBranch:215 receives constant false). assertSelectionsOrderable accepts useRowLock as a parameter — true on order submit (Z5 SSOT scope), false on pricing preview.",
+      "impact": "VERY LOW — read-path is intentionally lockless (snapshot for menu display doesn't need to serialize with order commit). The asymmetry is by design. Risk: a future contributor adding a snapshot-then-decrement pattern in a single transaction might assume the snapshot locked rows — and it doesn't. Document the divergence explicitly.",
+      "recommendation": "Docblock-only — add to ChoiceAvailabilityResolver::snapshotForItems a note 'No row lock acquired; intended for read-path display only. For order-submit gates use assertSelectionsOrderable(useRowLock=true).'",
+      "scope_minimal_fix": "DOC-ONLY — defer V1.0.2."
+    },
+    {
+      "id": "WF4-RED-04",
+      "severity": "P3",
+      "title": "Listener throw inside `releaseForOrderInTransaction` ($order not Order/FrontendOrder type) silently no-ops",
+      "file": "app/Services/Stock/StockService.php",
+      "lines": "62-64",
+      "evidence_read": "StockService:62-64 — early return if $order instanceof Order && ! $order instanceof FrontendOrder. The 3 release-listener paths instantiate via OrderCanceled / RefundCreated — both events carry $order property which is Order|FrontendOrder. A future event type or test fixture passing a different Model bypass-silent no-ops.",
+      "impact": "VERY LOW — type-safe contract upstream. Risk = absence of warning if a contributor wires a new event type to StockService::releaseForOrder.",
+      "recommendation": "Log::warning + recordMetric on the early return path so silent no-ops become visible. Defer V1.0.2.",
+      "scope_minimal_fix": "DEFERRED V1.0.2."
+    }
+  ],
+  "keeps": [
+    "Multi-layer concurrent decrement defense: lockForUpdate + on_hand recheck + UNIQUE idempotency_key + inner DB::transaction rollback. Validated by 3 PHPUnit cases.",
+    "Refund release ledger via OrderItem.released_qty cap. Validated by partial-refund test sentinel.",
+    "ChoiceAvailability 5-layer precedence — manual > stock, catalog_inactive top of priority chain. Validated by 3 ChoiceAvailabilityResolver* test files.",
+    "Pre-decrement assertItemsOrderableForBranch + assertSelectionsOrderable chokepoint — soft-deleted Item / catalog_inactive / surface_hidden caught before stock mutation.",
+    "Composition_snapshot SSOT for addon stock — frozen JSON survives client-side mutation attempts. Validated by addon-refund test.",
+    "Outbox SSOT-first listener registration — stock-listener throw doesn't kill KDS push path.",
+    "Foundation F-6 P0-ARCH-01 + P0-DBA-01 dual fix — exception class path corrected + trigger defense layer added. Both verified applied via migrate:status + 79/79 Stock test pass.",
+    "BranchScope global scope on StockLevel + StockMovement — cross-tenant decrement leak defeated."
+  ],
+  "out_of_scope": [
+    "Cross-stack DOS via spam decrement requests — rate-limit / throttle scope, not stock cascade specific.",
+    "Pusher / Echo channel hijack on private-branch.{id} — addressed in PK-1 / Z4 BRANCH-AUTH.",
+    "RBAC bypass on admin stock/low-alerts route — Z4 territory."
+  ],
+  "word_count": 1985
+}

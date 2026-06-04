@@ -34,7 +34,9 @@ class ItemReportResource extends JsonResource
             "status"           => $this->status,
             "description"      => $this->description === null ? '' : $this->description,
             "caution"          => $this->caution === null ? '' : $this->caution,
-            "order"            => $this->orders_count,
+            // [ITEMS-SEM-02 heal] units actually sold in the period (SUM quantity), realized-only.
+            "order"            => (int) ($this->units_sold ?? 0),
+            "units_sold"       => (int) ($this->units_sold ?? 0),
             "thumb"            => $this->thumb,
             "cover"            => $this->cover,
             "preview"          => $this->preview,

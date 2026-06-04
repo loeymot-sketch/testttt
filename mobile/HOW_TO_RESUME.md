@@ -6,6 +6,22 @@
 
 ---
 
+## 🆕 2026-05-28 — Cross-codebase audit + Web sous git
+
+Cycle ultraplan séparé (branche `heal/cms-pr1-quickwins-2026-05-18`,
+PAS sur cette branche mobile) a:
+- Initialisé `/Users/1millnonstop/Downloads/web` sous git (tag `web-baseline-2026-05-28`)
+- Confirmé mobile↔web bit-identical (41 items canonical, prix alignés)
+- Verifié 20/20 specs E2E mobile + 16/16 PNG baselines préservés (TEST-E2E pass)
+- Audité wizard parity kiosk×mobile×web (ALIGNED post heal 2026-05-18)
+- Synthétisé état dans `docs/CROSS_CODEBASE_STATE.md` + pointer BRAIN §2
+
+Ce cycle n'a PAS touché la branche `feature/mobile-app-le-cayenne-2026-05-10`.
+La mobile app reste à HEAD du cycle loyalty 2026-05-10/11 (16 commits cumulatifs).
+Voir aussi `docs/CROSS_CODEBASE_STATE.md` pour synthèse 3 codebases.
+
+---
+
 ## 🟢 État actuel (sauvegardé ✓)
 
 ### ✅ Isolation confirmée

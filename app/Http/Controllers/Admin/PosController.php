@@ -89,6 +89,13 @@ class PosController extends AdminController
      */
     private function assertCashDrawerSessionOpenIfCashInvolved(PosOrderRequest $request): void
     {
+        // [2026-05-18] Hardware simulation: when the physical drawer is not yet
+        // plugged in, skip the open-session precondition. NF525 invariants
+        // (sequence, audit chain, composition_snapshot) remain enforced.
+        if (config('pos.simulation_hardware') === true) {
+            return;
+        }
+
         $needsCashSession = false;
 
         // Single-tender legacy path
@@ -221,8 +228,14 @@ class PosController extends AdminController
         }
 
         if ((int) $request->input('order_type', 0) === OrderType::DELIVERY && $request->filled('delivery_distance_km')) {
+            // [GOAL-COMPLEMENT-2026-05-18 Z-4 LIVREUR-Z4-ARCH-03 P0] DEL-5 wire-up.
+            // POS quote endpoint must also resolve the per-branch fee config
+            // when branch_id is in the payload. Mirrors OrderRequest:117 +
+            // PosOrderRequest:28 + DeliveryQuoteService:63. Null-safe.
+            $branchId = (int) $request->input('branch_id', 0);
+            $branch = $branchId > 0 ? \App\Models\Branch::find($branchId) : null;
             $request->merge([
-                'delivery_charge' => $this->deliveryFeeService->fromDistanceKm($request->input('delivery_distance_km')),
+                'delivery_charge' => $this->deliveryFeeService->fromDistanceKm($request->input('delivery_distance_km'), $branch),
             ]);
         }
     }

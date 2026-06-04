@@ -1,0 +1,147 @@
+- generic [ref=e1]:
+  - generic [ref=e36]:
+    - generic [ref=e37]:
+      - generic [ref=e38]:
+        - img [ref=e40]
+        - generic [ref=e41]:
+          - generic [ref=e42]: Nos
+          - generic [ref=e43]: Boissons
+      - button "Mon compte" [ref=e45] [cursor=pointer]:
+        - generic [ref=e46]: 👤
+        - text: Mon compte
+    - generic [ref=e47]:
+      - navigation "Navigation catégories" [ref=e48]:
+        - button "Sandwich Cayenne" [ref=e49] [cursor=pointer]:
+          - generic [ref=e50]: Sandwich Cayenne
+        - button "Galette" [ref=e52] [cursor=pointer]:
+          - generic [ref=e53]: Galette
+        - button "Sandwich Classique" [ref=e55] [cursor=pointer]:
+          - generic [ref=e56]: Sandwich Classique
+        - button "Burgers" [ref=e58] [cursor=pointer]:
+          - generic [ref=e59]: Burgers
+        - button "Tacos" [ref=e61] [cursor=pointer]:
+          - generic [ref=e62]: Tacos
+        - button "Bols Gourmands" [ref=e64] [cursor=pointer]:
+          - generic [ref=e65]: Bols Gourmands
+        - button "Menu enfant" [ref=e67] [cursor=pointer]:
+          - generic [ref=e68]: Menu enfant
+        - button "Frites" [ref=e70] [cursor=pointer]:
+          - generic [ref=e71]: Frites
+        - button "Suppléments" [ref=e73] [cursor=pointer]:
+          - generic [ref=e74]: Suppléments
+        - button "Desserts" [ref=e76] [cursor=pointer]:
+          - generic [ref=e77]: Desserts
+        - button "Boissons" [ref=e79] [cursor=pointer]:
+          - generic [ref=e80]: Boissons
+      - main [ref=e82]:
+        - generic [ref=e83]:
+          - generic [ref=e84]:
+            - heading "Boissons" [level=1] [ref=e85]
+            - paragraph [ref=e86]: 8 produits
+          - list [ref=e87]:
+            - listitem [ref=e88] [cursor=pointer]:
+              - generic [ref=e89]:
+                - img [ref=e90]
+                - button "Ajouter Eau Plate 50cl" [ref=e91]:
+                  - generic [ref=e92]: +
+              - generic [ref=e93]:
+                - heading "Eau Plate 50cl" [level=2] [ref=e94]
+                - generic [ref=e95]:
+                  - generic [ref=e97]: Halal
+                  - generic [ref=e99]: Végétarien
+                - paragraph [ref=e100]: Eau minérale
+                - generic [ref=e101]: €1,00
+            - listitem [ref=e102] [cursor=pointer]:
+              - generic [ref=e103]:
+                - img [ref=e104]
+                - button "Ajouter Capri-Sun" [ref=e105]:
+                  - generic [ref=e106]: +
+              - generic [ref=e107]:
+                - heading "Capri-Sun" [level=2] [ref=e108]
+                - generic [ref=e109]:
+                  - generic [ref=e111]: Halal
+                  - generic [ref=e113]: Végétarien
+                - paragraph [ref=e114]: Capri-Sun 20cl
+                - generic [ref=e115]: €1,50
+            - listitem [ref=e116] [cursor=pointer]:
+              - generic [ref=e117]:
+                - img [ref=e118]
+                - button "Ajouter Coca-Cola 33cl" [ref=e119]:
+                  - generic [ref=e120]: +
+              - generic [ref=e121]:
+                - heading "Coca-Cola 33cl" [level=2] [ref=e122]
+                - generic [ref=e123]:
+                  - generic [ref=e125]: Halal
+                  - generic [ref=e127]: Végétarien
+                - paragraph [ref=e128]: Coca-Cola original
+                - generic [ref=e129]: €1,50
+            - listitem [ref=e130] [cursor=pointer]:
+              - generic [ref=e131]:
+                - img [ref=e132]
+                - button "Ajouter Coca-Cola Zero 33cl" [ref=e133]:
+                  - generic [ref=e134]: +
+              - generic [ref=e135]:
+                - heading "Coca-Cola Zero 33cl" [level=2] [ref=e136]
+                - generic [ref=e137]:
+                  - generic [ref=e139]: Halal
+                  - generic [ref=e141]: Végétarien
+                - paragraph [ref=e142]: Coca-Cola sans sucre
+                - generic [ref=e143]: €1,50
+            - listitem [ref=e144] [cursor=pointer]:
+              - generic [ref=e145]:
+                - img [ref=e146]
+                - button "Ajouter Fanta Orange 33cl" [ref=e147]:
+                  - generic [ref=e148]: +
+              - generic [ref=e149]:
+                - heading "Fanta Orange 33cl" [level=2] [ref=e150]
+                - generic [ref=e151]:
+                  - generic [ref=e153]: Halal
+                  - generic [ref=e155]: Végétarien
+                - paragraph [ref=e156]: Fanta Orange
+                - generic [ref=e157]: €1,50
+            - listitem [ref=e158] [cursor=pointer]:
+              - generic [ref=e159]:
+                - img [ref=e160]
+                - button "Ajouter Oasis Tropical 33cl" [ref=e161]:
+                  - generic [ref=e162]: +
+              - generic [ref=e163]:
+                - heading "Oasis Tropical 33cl" [level=2] [ref=e164]
+                - generic [ref=e165]:
+                  - generic [ref=e167]: Halal
+                  - generic [ref=e169]: Végétarien
+                - paragraph [ref=e170]: Oasis Tropical
+                - generic [ref=e171]: €1,50
+            - listitem [ref=e172] [cursor=pointer]:
+              - generic [ref=e173]:
+                - img [ref=e174]
+                - button "Ajouter Orangina 33cl" [ref=e175]:
+                  - generic [ref=e176]: +
+              - generic [ref=e177]:
+                - heading "Orangina 33cl" [level=2] [ref=e178]
+                - generic [ref=e179]:
+                  - generic [ref=e181]: Halal
+                  - generic [ref=e183]: Végétarien
+                - paragraph [ref=e184]: Orangina
+                - generic [ref=e185]: €1,50
+            - listitem [ref=e186] [cursor=pointer]:
+              - generic [ref=e187]:
+                - img [ref=e188]
+                - button "Ajouter Sprite 33cl" [ref=e189]:
+                  - generic [ref=e190]: +
+              - generic [ref=e191]:
+                - heading "Sprite 33cl" [level=2] [ref=e192]
+                - generic [ref=e193]:
+                  - generic [ref=e195]: Halal
+                  - generic [ref=e197]: Végétarien
+                - paragraph [ref=e198]: Sprite
+                - generic [ref=e199]: €1,50
+    - region "Panier et paiement" [ref=e200]:
+      - generic [ref=e201]:
+        - button "Ouvrir le panier — 0 articles" [disabled] [ref=e202]:
+          - img [ref=e204]
+          - generic [ref=e208]: 0 article
+        - generic [ref=e209]: €0,00
+      - generic [ref=e210]:
+        - button "Abandonner ma commande" [ref=e211] [cursor=pointer]
+        - button "Payer" [disabled] [ref=e212]
+  - status

@@ -25,6 +25,9 @@ class CleanupVsConfirmRaceTest extends TestCase
         parent::setUp();
         $this->seedSpatieRoles();
         $this->seedMinimalSettings();
+        // [TRAP-2 2026-06-04] Pin TTL to 15 min so the 30-min stale order is
+        // cleaned deterministically under the new config-driven default.
+        config(['kiosk.stale_collect_ttl_minutes' => 15]);
     }
 
     public function test_late_payment_confirm_after_cleanup_is_rejected_and_audited(): void

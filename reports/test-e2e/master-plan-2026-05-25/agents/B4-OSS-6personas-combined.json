@@ -1,0 +1,347 @@
+{
+  "agent": "B4-OSS-6personas-combined",
+  "mission": "OSS surface × 6 personas (P1 Chef-rush, P2 Client-impatient, P3 Caissier, P4 Owner-night, P5 Inspecteur-fiscal, P6 Staff-newbie) — consolidated batch (efficiency, rate-limit avoidance).",
+  "discipline": "DM6 NF525 RO + DM3 + DM5 + DM8",
+  "server": "http://127.0.0.1:8000",
+  "executed_at": "2026-05-25T22:25:00+02:00",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head": "a6ed32807",
+  "auth": {
+    "method": "Read-only static source audit (DM6 RO) + 2 unauthenticated HTTP GETs on /admin/order-status-screen + /order-status-screen — both returned HTTP 200 text/html 204-line SPA shell (Cache-Control no-cache, CSP report-only). No DB write, no DOM action.",
+    "endpoints_probed": [
+      {"url": "GET http://127.0.0.1:8000/admin/order-status-screen", "http": "200", "content_type": "text/html; charset=UTF-8", "body_lines": 204},
+      {"url": "GET http://127.0.0.1:8000/order-status-screen", "http": "200", "content_type": "text/html; charset=UTF-8", "body_lines": 204, "shape": "Identical SPA shell — Laravel catchall returns the same single-page Vue bundle on both /admin/* and / unmatched routes; actual data fetched client-side via store dispatch orderStatusScreenOrder/lists"}
+    ],
+    "files_inspected": [
+      "app/Http/Controllers/Admin/OrderStatusScreenController.php (141 LOC, 4 methods: index admin-gated / mostPopularItems admin-gated / publicIndex unauth / publicMostPopularItems unauth)",
+      "app/Http/Resources/CDSOrderDetailsResource.php (25 LOC, 6 keys exposed: id, order_serial_no, token, queue_number, order_type, status)",
+      "app/Http/Resources/PosShortcutOrderResource.php (auth POS dashboard variant — adds total only)",
+      "app/Events/OrderStatusChanged.php (plain domain event — relies on outbox listener for broadcast)",
+      "app/Events/OrderPaymentStatusChanged.php (plain domain event — NO ShouldBroadcast / broadcastOn)",
+      "app/Providers/EventServiceProvider.php (165-186 OrderPaymentStatusChanged subscribers: PersistOrderPaymentStatusChangedToOutbox + PersistOrderPaymentStatusChangedOnRefundCreated)",
+      "resources/js/components/admin/orderStatusScreen/OrderStatusScreenComponent.vue (69 LOC, grid-cols-2 layout Wave Q-3)",
+      "resources/js/components/admin/orderStatusScreen/PreparingAndReadyComponent.vue (489 LOC, full source read)",
+      "resources/js/components/admin/pos/PosComponent.vue (3000+ LOC, pos-shortcuts panel lines 268-337, _subscribeEcho lines 2661-2718)",
+      "resources/js/services/OssSyncService.js (451 LOC, polling fallback + ws_state events)",
+      "routes/api.php:1170-1247 (admin oss-order vs public oss-order routes)"
+    ]
+  },
+  "states_captured": 7,
+  "states": [
+    {
+      "n": 1,
+      "title": "OSS routing topology — admin auth-gated vs public PII-free wall display",
+      "evidence": {
+        "admin_route": {
+          "definition": "routes/api.php:1170 Route::prefix('oss-order')->name('ossOrder.')->group — inside auth:sanctum + permission:order-status-screen group",
+          "controller_method": "OrderStatusScreenController::index() (line 25) → PosShortcutOrderResource::collection(orderStatusScreenOrderService->list())",
+          "rationale_quote": "PosShortcutOrderResource exposes `total` so the authenticated POS shortcut widget can render the right amount on Prêt-à-livrer rows. The public wall display (publicIndex) keeps CDSOrderDetailsResource (no PII).",
+          "exposed_fields_to_caissier": ["id", "order_serial_no", "token", "queue_number", "order_type", "status", "total"],
+          "binding": "POS dashboard widget at PosComponent.vue:268-337 dispatches store action `orderStatusScreenOrder/lists` to hydrate pos-shortcuts panel (.pos-shortcuts__panel--ready)"
+        },
+        "public_route": {
+          "definition": "routes/api.php:1242-1247 Route::get('/oss-order', publicIndex)->middleware('frontend') — group = installed + apiKey + localization, NO auth:sanctum",
+          "controller_method": "OrderStatusScreenController::publicIndex() (lines 80-105) → CDSOrderDetailsResource::collection(orderStatusScreenOrderService->listForBranch(branchId))",
+          "rationale_quote": "[iter15-mega-fix C-016 2026-05-10] The customer screen is mounted on a public TV/wall. It is NOT an admin dashboard — yet its only data source historically was GET /api/admin/oss-order which is auth-gated by auth:sanctum + permission:order-status-screen. Result on an unauthenticated wall: the XHR returns 401, the component swallows the error, and both PRÉPARATION/PRÊT columns render empty.",
+          "exposed_fields_to_client": ["id", "order_serial_no", "token", "queue_number", "order_type", "status"],
+          "pii_free_attestation": "Source code comment line 67: 'No PII (customer name/phone/address/total).'",
+          "branch_resolution": "?branch_id=N query param if N > 0, else Branch::where('status', Status::ACTIVE)->orderBy('id')->first() — single-branch fast-food default."
+        }
+      },
+      "personas_covered_here": ["P3 caissier (admin route + total)", "P5 inspecteur (PII-free public payload)"]
+    },
+    {
+      "n": 2,
+      "title": "OSS UI layout post Wave Q-3 + Wave S-3 TV-optim — verified",
+      "evidence": {
+        "wave_q3_layout": {
+          "marker_location": "OrderStatusScreenComponent.vue:11-21",
+          "comment_quote": "[Wave Q-3 P-OWNER 2026-05-20] PopularItemComponent ('Articles à préparer' sidebar) removed from OSS layout per owner directive — the customer status screen must show ONLY two columns: EN PRÉPARATION (orange/red) and PRÊT (green). Grid collapsed from md:grid-cols-4 (popular=2 + columns=2) to md:grid-cols-2 (preparing=1 + ready=1).",
+          "verified_template_grid": "<div class=\"grid grid-cols-2 md:grid-cols-2 md:grid-flow-row gap-4\" role=\"main\" :aria-label=\"$t('label.oss_main_aria')\"> — actual rendered grid is 2-col, role=main, aria-labelled."
+        },
+        "wave_s3_typography": {
+          "marker_location": "PreparingAndReadyComponent.vue:14-21",
+          "comment_quote": "[Wave S-3 TV-optim P-OWNER 2026-05-20] Customer wall must be readable from ≥3m. Header bumped text-lg (~18px) → text-[40px] (40px) to surface column intent at distance. Order tokens bumped text-[40px] → text-[56px] for triple-distance comfort margin (>= 40px mandate).",
+          "verified_classes": [
+            "h3.oss-column-header text-[40px] font-bold (lines 27 + 49)",
+            "li.oss-order-number text-[56px] font-extrabold leading-[1.1] (line 33 + 55)"
+          ],
+          "brand_colors_preserved": "bg-[#B0004D] white text (preparing) | bg-[#1AB759] dark text (ready) — preserved per CLAUDE.md flat doctrine"
+        },
+        "wave_q3_brand_color_attestation": {
+          "marker_location": "PreparingAndReadyComponent.vue:17-18",
+          "comment_quote": "Brand colors #B0004D (preparing) / #1AB759 (ready) preserved per CLAUDE.md flat/organized doctrine + previous Wave Q-3 attestation (red-600/green-600 hint in spec = intent = already met)."
+        },
+        "overflow_handling_oss_autoscroll": {
+          "marker_location": "PreparingAndReadyComponent.vue:32 + 54",
+          "logic": "items.length > 8 ? 'oss-autoscroll' : '' (CSS keyframe oss-scroll-loop 30s linear infinite — pure-CSS vertical translateY -50% pause 2s start)",
+          "no_count_chip_in_oss": "grep 'overflow_chip|kds_more|+N|moreCount|hasMore|en_attente_chip' in PreparingAndReadyComponent.vue → ZERO matches",
+          "cross_surface_parity_with_kds": "ASYMMETRIC — KDS has the +N chef-rush chip per N-HEAL-01 (Wave N 2026-05-24); OSS keeps the auto-scroll-only approach (Wave S-3 2026-05-20). Same overflow phenomenon (queue >8), two healing waves shipped in different directions."
+        }
+      },
+      "personas_covered_here": ["P1 chef-rush (asymmetric overflow chip)", "P2 client-impatient (no count badge)", "P6 staff-newbie (visual model)"]
+    },
+    {
+      "n": 3,
+      "title": "ETA propagation chain — cross-validate B3-P2 finding (no ETA reaches OSS)",
+      "evidence": {
+        "cds_payload_exposes": ["id", "order_serial_no", "token", "queue_number", "order_type", "status"],
+        "eta_field_absent": "CDSOrderDetailsResource.php:15-25 — NO preparation_eta, NO prep_time, NO estimated_ready_at, NO countdown timer",
+        "grep_pattern": "grep 'eta|ETA|estimated|prep_time|prepTime|preparation_time' resources/js/components/admin/orderStatusScreen/ → ZERO hits",
+        "broadcast_payload_inspection": {
+          "event_class": "app/Events/OrderStatusChanged.php — plain domain event (NOT ShouldBroadcast), constructor (BroadcastableOrder order, int oldStatus, int newStatus)",
+          "ws_payload_via_outbox": "PersistOrderStatusChangedToOutbox listener writes to outbox; outbox dispatcher emits WS event with payload (order_id, new_status, [old_status]) — NO ETA recompute, NO countdown push.",
+          "frontend_consumer": "PreparingAndReadyComponent.vue:264-285 subscribeEcho — reads event.payload.new_status only; if PREPARED → _markNewReady(oid) + list() refresh."
+        },
+        "client_visible_timing_signal": {
+          "queue_number_only": "OSS renders 'N°{queue_number}' or fallback 'token'; client infers position from FIFO column order.",
+          "no_countdown": "No 'Prêt dans ~3 min' label, no progress bar, no SLA tier indication.",
+          "no_age_color_coding": "Unlike KDS which has SLA tier color-coding by age (per CLAUDE.md + Phase M/N findings), OSS makes no use of order age for the customer view."
+        },
+        "cross_validation_with_B3_P2": {
+          "b3_p2_finding_quoted": "B3-P2 §4 owner_q_answered: 'ETA from KDS bumped → OSS visible to client ? — NON. Aucun ETA n'est calculé/propagé/rendu... Discipline V1 = minimal-payload PII-free, mais résulte en zéro information temporelle pour le client impatient.'",
+          "B4_concurrence": "CONFIRMED — same payload structure, same absence of ETA. The bump KDS → OSS pipeline carries (order_id, new_status) only. No prep_time recompute happens anywhere along the OrderService::transitionStatus → OrderStatusChanged event → PersistOrderStatusChangedToOutbox → outbox dispatcher → Echo subscriber → _markNewReady chain.",
+          "verdict": "B3-P2 finding stands. Documented as design constraint (minimal-payload PII-free V1 discipline), not bug — but P2 client-impatient persona DOES feel the absence."
+        }
+      },
+      "personas_covered_here": ["P2 client-impatient (no ETA, cross-validated)"]
+    },
+    {
+      "n": 4,
+      "title": "KDS→OSS sync mechanism — triple channel + dedup + audio gate",
+      "evidence": {
+        "primary_channel_websocket_echo": {
+          "subscribe_loc": "PreparingAndReadyComponent.vue:257-290 subscribeEcho()",
+          "branch_gate": "lines 259-260 — `const branchId = this.authBranchId(); if (branchId <= 0) return;` — public wall (authBranchId=0) does NOT subscribe to Echo, falls back to ossSyncService polling.",
+          "events_subscribed": [
+            "broadcastAs: 'OrderStatusChanged' → if new_status === PREPARED: _markNewReady(oid) + this.list()",
+            "broadcastAs: 'OrderCreated' → this.list() refresh"
+          ],
+          "dedup_p1": "lines 269-276 — `_echoMarkedReady` Set pre-registered when Echo fires _markNewReady so the subsequent list() call skips re-marking (prevents double chime/flash from Echo+list race)."
+        },
+        "secondary_channel_polling_oss_sync": {
+          "service_file": "resources/js/services/OssSyncService.js (451 LOC)",
+          "wire_loc": "PreparingAndReadyComponent.vue:234-248 startOssSync()",
+          "events_subscribed": ["'sync' → _hydrateFromRows(rows)", "'ws_state' → wsConnected toggle"],
+          "purpose": "Fallback for unauth wall (no Echo because branchId<=0). REST polling keeps the two columns live."
+        },
+        "tertiary_channel_dom_event": {
+          "event": "realtime-order-update (window-level)",
+          "wire_loc": "PreparingAndReadyComponent.vue:112 + 153 — window.addEventListener('realtime-order-update', this.list)",
+          "purpose": "Cross-component SPA bus (route changes, external triggers)"
+        },
+        "audio_chime_gate_oss_b_02": {
+          "marker_location": "PreparingAndReadyComponent.vue:330-338 _playReadySound()",
+          "comment_quote": "[GOAL Round 2 Impl C — P0-OSS-01 2026-05-18] Public-wall gate. authBranchId() <= 0 indicates the unauthenticated customer wall (Vuex authStatus=false branch in orderStatusScreenOrder.js). That surface has no operator and no audio-unlock gesture, so the chime is structurally inaudible — early-return graceful skip (visual .oss-ready-flash continues to fire from _markNewReady()).",
+          "design_consequence": "Public wall: visual only (4s column flash + 6s per-card pulse + initial bounce — 10s window total per Wave S-3). Operator-attended branch staff session: full 3-tone ascending chime (523/659/784/1047 Hz sine, 0.15s stagger)."
+        },
+        "wakelock_red_team_r4": {
+          "marker_location": "PreparingAndReadyComponent.vue:68-74 + 197-214 (acquire) + 209-214 (release)",
+          "comment_quote": "[RED-team R4 V1.0.2 2026-05-17] wakeLock screen for TV wall surfaces. Customer TV idles long between order events; without navigator.wakeLock.request('screen') the OS screen-saver sleeps the display, making the green flash + chime invisible/inaudible when a new order moves to PREPARED. Acquire on mount, re-acquire on visibilitychange, release on unmount.",
+          "feature_flag": "window.foodkingConfig.ossWakeLockEnabled (default true)",
+          "graceful_degrade": "Safari iOS <16.4 without wakeLock API → catch + sentinel=null"
+        }
+      },
+      "personas_covered_here": ["P1 chef-rush (KDS bump → OSS propagation timing)", "P2 client-impatient (visual feedback channel)", "P6 staff-newbie (3-channel resilience)"]
+    },
+    {
+      "n": 5,
+      "title": "K9-001 OrderPaymentStatusChanged subscribers — Wave P verification",
+      "evidence": {
+        "event_class_definition": {
+          "file": "app/Events/OrderPaymentStatusChanged.php (28 LOC, full file read)",
+          "shape": "Plain PHP domain event — class signature `class OrderPaymentStatusChanged { use DispatchableAfterCommit; constructor(BroadcastableOrder order, int oldPaymentStatus, int newPaymentStatus) }`",
+          "broadcast_contract_check": "grep 'ShouldBroadcast|broadcastOn|broadcastAs' app/Events/OrderPaymentStatusChanged.php → ZERO matches. The event does NOT implement Illuminate\\Contracts\\Broadcasting\\ShouldBroadcast. It is purely an in-process domain event.",
+          "comparison_with_OrderStatusChanged": "OrderStatusChanged.php also lacks ShouldBroadcast directly (plain domain event), BUT the chain OrderStatusChanged → PersistOrderStatusChangedToOutbox → outbox dispatcher → Echo branch.{N} private channel IS established. For OrderPaymentStatusChanged the equivalent broadcast bridge is NOT wired to a frontend Echo subscriber."
+        },
+        "backend_listener_registry": {
+          "file": "app/Providers/EventServiceProvider.php:165-186",
+          "registered_listeners": [
+            "OrderPaymentStatusChanged::class => [PersistOrderPaymentStatusChangedToOutbox::class] (line 165-166)",
+            "RefundCreated::class => [PersistOrderPaymentStatusChangedOnRefundCreated::class, ...] (line 179-186)"
+          ],
+          "wave_p_origin": "Commit 3b0776f7c — `fix(refund-WF-6-P1): broadcast OrderPaymentStatusChanged on RefundCreated`",
+          "refund_path_attestation": "PersistOrderPaymentStatusChangedOnRefundCreated.php:21 — comment quote: 'NEITHER mutated parent.payment_status nor dispatched OrderPaymentStatusChanged.' This listener fixes that: dispatches OrderPaymentStatusChanged after mutating parent in DB::transaction (lines 79-113 + 129)."
+        },
+        "frontend_subscriber_grep": {
+          "pattern": "grep -rn 'OrderPaymentStatusChanged|broadcastAs.*Payment' resources/js",
+          "hits": 0,
+          "implication": "No JavaScript Vue/Vuex component listens to a WS event labeled 'OrderPaymentStatusChanged'. The outbox writes a domain event row but no frontend Echo subscriber consumes it as a separate channel — UI refresh comes from the sibling OrderStatusChanged WS event + REST list() polling."
+        },
+        "pos_shortcut_payment_status_visibility": {
+          "file": "resources/js/components/admin/pos/PosComponent.vue:2661-2718 _subscribeEcho()",
+          "broadcast_as_subscribed": ["OrderCreated", "OrderStatusChanged", "OrderPaidAtCounter", "ItemAvailabilityChanged", "CatalogChanged"],
+          "payment_status_event_NOT_subscribed": "OrderPaymentStatusChanged is absent from POS _subscribeEcho list. POS caissier sees payment transitions only via the sibling 'OrderPaidAtCounter' event (cash counter flow) or via REST polling (5-15s cadence). Stripe refund payment-status transition would NOT trigger a real-time UI signal — only the next REST list() refresh would surface it.",
+          "severity": "P2 — minor latency gap on Stripe refund pos-shortcut state. Cash flow uses OrderPaidAtCounter which IS subscribed."
+        },
+        "oss_payment_status_visibility": {
+          "oss_subscribed_events": ["OrderStatusChanged (PREPARED)", "OrderCreated"],
+          "payment_status_irrelevant_to_oss_payload": "OSS payload (CDSOrderDetailsResource) does NOT include payment_status field. The customer wall never displays paid/unpaid. So absence of OrderPaymentStatusChanged Echo subscriber on OSS is BY DESIGN (P5 fiscal — PII-free, no payment leak on public TV).",
+          "verdict": "OSS path: correct V1 design. POS path: minor latency gap (P2)."
+        }
+      },
+      "personas_covered_here": ["P3 caissier (pos-shortcut WS gap)", "P5 inspecteur (OSS by-design no payment field)"]
+    },
+    {
+      "n": 6,
+      "title": "Owner-night analytics — what does OSS surface to a closing shift?",
+      "evidence": {
+        "oss_no_analytics_surface": {
+          "search_pattern": "grep 'throughput|count_today|orders_count|analytics|daily_total' resources/js/components/admin/orderStatusScreen/",
+          "hits": 0,
+          "implication": "OSS is a real-time wall display ONLY. There is NO 'orders served today', NO 'avg prep time', NO 'throughput chart'. The owner who walks past the wall at 22:00 sees only the current PRÉPARATION/PRÊT instantaneous state. Empty columns = no real-time activity; gives ZERO signal about the volume the shift just processed."
+        },
+        "owner_actual_analytics_routes": {
+          "z_report_route": "Daily fiscal close at /admin/sales-reports / Z-report (NF525-compliant, separate flow — chain HMAC signed).",
+          "kds_metrics_route": "KDS itself exposes /admin/kitchen-display-system with avg prep time metrics for chef supervision.",
+          "owner_dashboard_route": "Most owner-night summarization lives in admin reports surfaces — NOT OSS."
+        },
+        "popular_items_endpoint_kept_alive": {
+          "controller_method": "OrderStatusScreenController::publicMostPopularItems (line 116)",
+          "rationale_quote": "[iter15-mega-fix C-016 2026-05-10] Public sibling for the OSS popular-items panel — PopularItemComponent.vue mounts on the same wall display as PreparingAndReadyComponent.vue, so it must also stop firing GET /api/admin/oss-order/popular-items when no admin session is present.",
+          "current_oss_usage": "PopularItemComponent.vue still exists but Wave Q-3 REMOVED it from OSS layout (per owner directive 2-cols only). The endpoint stays alive only for OssSyncService + admin PosComponent dashboard widget consumption."
+        }
+      },
+      "personas_covered_here": ["P4 owner-night (OSS gives ZERO analytics — by V1 design, separate flows)"]
+    },
+    {
+      "n": 7,
+      "title": "Inspecteur-fiscal PII compliance + Staff-newbie onboarding",
+      "evidence": {
+        "p5_pii_audit_payload": {
+          "cds_resource_keys": ["id (int — internal pk)", "order_serial_no (string — public-facing serial)", "token (string — short pickup code)", "queue_number (int — FIFO position)", "order_type (int — enum KIOSK/TAKEAWAY/DELIVERY/POS)", "status (int — orderStatusEnum value)"],
+          "explicitly_absent_pii_fields": ["customer_name", "customer_phone", "customer_email", "customer_address", "delivery_address", "user_id", "total / order_amount (kept off public payload, only on auth PosShortcutOrderResource)"],
+          "rationale_class_doc_quote": "OrderStatusScreenController:66-67 — 'The payload is intentionally harmless: CDSOrderDetailsResource exposes only id, order_serial_no, token, queue_number, order_type, status — exactly what is shown on the wall display anyway. No PII (customer name/phone/address/total).'",
+          "gdpr_attestation": "PII-free wall display = compliant. No name reveal, no phone, no address. The token + queue_number are intentionally low-cardinality non-reversible identifiers."
+        },
+        "p5_xhr_route_separation": {
+          "admin_route_url": "/api/admin/oss-order (auth:sanctum + permission:order-status-screen)",
+          "public_route_url": "/api/frontend/oss-order (no auth — under frontend group: installed + apiKey + localization)",
+          "separation_attestation": "Routes are PHYSICALLY DIFFERENT controllers methods AND middleware groups — no shared auth bypass risk. Even if a fleet operator misconfigures the wall URL, the public endpoint returns the PII-free CDSOrderDetailsResource shape; if they hit the admin URL without auth they get 401."
+        },
+        "p5_audit_log_attestation": {
+          "domain_event_flow": "OrderStatusChanged (plain) → PersistOrderStatusChangedToOutbox listener (audit log row) → outbox dispatcher → Echo branch.{N}",
+          "fiscal_chain_safety": "PersistOrderStatusChangedToOutbox writes to outbox table (resilient delivery); audit_logs receives status-change rows via OrderObserver elsewhere — both chain-signed (NF525). Outbox can swallow on broadcast failure but emits OutboxBroadcastSwallowedEvent alarm (commit c82c912ec, Wave WJ-4-P1 OBS-OUTBOX-01)."
+        },
+        "p6_staff_visual_clarity": {
+          "two_color_brand_system": "#B0004D bg-preparing (white text — 28px headers, 56px order tokens) | #1AB759 bg-ready (dark text — same sizes). High contrast pairing.",
+          "transition_signals": [
+            "oss-pop animation cubic-bezier(0.34, 1.56, 0.64, 1) for new-ready cards (lines 414-418)",
+            "oss-bounce keyframe 0.6s × 2 burst on new-ready (lines 421-427)",
+            "oss-pulse 1.6s ease-in-out infinite while in newReadyIds (lines 436-448, Wave S-3 10s window)",
+            "oss-ready-flash 0.8s × 2 column background flash (lines 451-457)"
+          ],
+          "i18n_labels": [
+            "label.preparing (column header — '$t' resolved, fallback string check below)",
+            "label.ready (column header)",
+            "label.oss_main_aria (parent grid aria-label)"
+          ],
+          "newbie_understanding": "A staff member can answer a customer 'when ready?' with one glance: left column (red) = wait, right column (green) = pick up. No countdown to memorize. Token/queue display in N°NN format is universally readable.",
+          "empty_state": "When list is empty: <p class=\"text-center text-[#A0A3BD] text-[28px] mt-12\">—</p> — a single em-dash placeholder (lines 40 + 62). Visual: not jarring, not chatty. Staff knows 'no current state' without reading text."
+        },
+        "p6_reduced_motion_compliance": {
+          "media_query_loc": "PreparingAndReadyComponent.vue:480-488",
+          "rule_block": "@media (prefers-reduced-motion: reduce) { .oss-pulse-ready, .oss-autoscroll, .oss-new-ready, .oss-ready-flash { animation: none !important; } }",
+          "wcag_attestation": "Respects WCAG 2.1 SC 2.3.3 Animation from Interactions — accessibility-disabled motion variant honored."
+        }
+      },
+      "personas_covered_here": ["P5 inspecteur (PII payload audit + route separation + audit chain)", "P6 staff-newbie (visual clarity + WCAG motion)"]
+    }
+  ],
+  "per_persona_findings": {
+    "P1": {
+      "persona": "Chef-rush — OSS visible from kitchen? Chef sees customer wait?",
+      "top_finding": "OSS is NOT mounted in the kitchen by default. Chef stays on KDS (/admin/kitchen-display-system). The two surfaces share the OrderStatusChanged broadcast pipeline so chef bump → customer column transition is real-time (Echo branch.{N} private channel + 5-15s polling fallback via OssSyncService). However, the OSS auto-scroll for >8 orders shows the chef NOTHING about queue depth: KDS has the N-HEAL-01 +N chip (Wave N 2026-05-24), OSS only has CSS oss-autoscroll keyframe. Chef can see urgency on his own KDS surface (chip + SLA color tier) but CANNOT verify customer wall is keeping up by glancing at it.",
+      "verdict": "AMBER",
+      "rationale": "Sync chain functional. Cross-surface visual parity (overflow chip) is asymmetric — chef has it, customer (and chef-by-proxy if they look at OSS) does not. Documented design choice but a real chef-rush kitchen who wants to verify customer perception lacks a quick affordance."
+    },
+    "P2": {
+      "persona": "Client-impatient — ETA visible? Queue position? Notification ready?",
+      "top_finding": "Cross-validates B3-P2 finding: ZERO ETA propagation to OSS. CDSOrderDetailsResource exposes only 6 keys (id, order_serial_no, token, queue_number, order_type, status). No prep_time, no estimated_ready_at, no countdown. Client sees: (a) FIFO queue_number/token in PRÉPARATION column, (b) the same token migrates to PRÊT column with 10s visual window (oss-pop + oss-bounce + oss-pulse + oss-ready-flash). Audio chime is structurally muted on public wall (authBranchId<=0 gate at line 338 per GOAL Round 2 Impl C P0-OSS-01 2026-05-18). For an impatient client, the only timing signal is FIFO column position — no 'Prêt dans ~3 min', no progress bar.",
+      "verdict": "AMBER",
+      "rationale": "Design constraint (PII-free V1 minimal payload) is correct for compliance. But P2 client persona DOES feel the absence — V1.0.2 backlog candidate to add a non-PII ETA field (estimated_ready_at unix timestamp, no customer name leak) if owner wants to close P2 gap."
+    },
+    "P3": {
+      "persona": "Caissier — can cashier see OSS state from POS?",
+      "top_finding": "YES — POS has dedicated pos-shortcuts__panel--ready widget (PosComponent.vue:268-337) that consumes the auth /api/admin/oss-order endpoint via PosShortcutOrderResource which exposes total in addition to the 6 CDS keys. Cashier sees N°{queue_number} + price + 'Livrer' CTA (data-testid='pos-shortcut-deliver-{id}'). Real-time refresh via _subscribeEcho (lines 2661-2718) listening to OrderCreated/OrderStatusChanged/OrderPaidAtCounter/ItemAvailabilityChanged/CatalogChanged. ONE GAP: OrderPaymentStatusChanged is NOT subscribed at WS layer; Stripe-refund payment status transitions surface only via REST polling (5-15s latency). Cash-counter flow uses OrderPaidAtCounter which IS subscribed (zero-latency).",
+      "verdict": "GREEN",
+      "rationale": "Cashier flow is well-covered for V1 (cash dominant in Le Cayenne). Stripe refund latency gap is real but P2 (refunds are rare, polling closes the gap within 15s)."
+    },
+    "P4": {
+      "persona": "Owner-night — OSS analytics (orders shown, throughput)?",
+      "top_finding": "OSS provides ZERO analytics. It is a real-time wall display only. NO orders-today count, NO throughput chart, NO avg prep time. An owner walking past at 22:00 sees only instantaneous PRÉPARATION/PRÊT state — empty columns = no signal about shift volume. Owner analytics live elsewhere (Z-report fiscal close + admin reports surfaces).",
+      "verdict": "GREEN-BY-DESIGN",
+      "rationale": "Correct V1 separation of concerns. OSS = customer + cashier wall. Analytics = admin reports. Conflating them would clutter the wall and confuse the customer. No action needed."
+    },
+    "P5": {
+      "persona": "Inspecteur-fiscal — PII compliance, customer data exposure",
+      "top_finding": "PII-free attestation HOLDS. Public endpoint /api/frontend/oss-order returns CDSOrderDetailsResource with 6 keys ONLY: id (int pk), order_serial_no (string), token (string short code), queue_number (int FIFO), order_type (int enum), status (int enum). Explicitly absent: customer_name, customer_phone, customer_email, customer_address, total, user_id. Source code line 67 attests: 'No PII (customer name/phone/address/total)'. Routes are physically separated (admin sanctum + permission vs frontend installed+apiKey+localization). NF525 audit chain unaffected (OrderStatusChanged → PersistOrderStatusChangedToOutbox listener writes to outbox; audit_logs HMAC chain preserved).",
+      "verdict": "GREEN",
+      "rationale": "GDPR-compliant wall display. No leak vector. The token+queue_number identifiers are low-cardinality and non-reversible. Even a passer-by photographing the wall reveals zero customer-identifiable information."
+    },
+    "P6": {
+      "persona": "Staff-newbie — can staff easily understand OSS for customer questions?",
+      "top_finding": "Cognitive load is MINIMAL by design. Two color-coded columns (#B0004D red preparing / #1AB759 green ready). Single em-dash empty state (no jarring banners). 56px tokens readable at ≥3m. Transition animations (oss-pop + oss-bounce + oss-pulse + oss-ready-flash) give 10s attention window per Wave S-3 2026-05-20. WCAG 2.1 SC 2.3.3 compliance via prefers-reduced-motion media query (lines 480-488). A newbie can answer 'when ready?' from one glance: left=wait, right=pickup. No countdown to interpret, no jargon. Brand colors per CLAUDE.md flat doctrine.",
+      "verdict": "GREEN",
+      "rationale": "Onboarding cost ~30 seconds. The 2-column mental model is universal. Em-dash placeholder is honest and non-jarring. Wave S-3 typography optimizes for floor-staff scanning distance."
+    }
+  },
+  "global_top_3_findings": [
+    {
+      "id": "B4-F1",
+      "severity": "P2",
+      "title": "Cross-surface +N overflow chip asymmetry between KDS and OSS",
+      "evidence": "KDS KdsV2Grid.vue:70-87 has Wave N N-HEAL-01 +N chef-rush chip (icon ! + count + i18n label 'kds_orders_waiting_more'). OSS PreparingAndReadyComponent.vue:32+54 uses .oss-autoscroll CSS keyframe (oss-scroll-loop 30s) WITHOUT count badge. Same overflow phenomenon (queue >8), two healing waves shipped in different directions for the same underlying issue.",
+      "consequence": "Chef sees +N count of orders aging past SLA, customer (and chef-by-proxy if glancing at wall) does not. P1 chef-rush AMBER + P2 client-impatient AMBER both surface this.",
+      "v1_blocking": false,
+      "v1_0_2_backlog_candidate": true,
+      "owner_decision_needed": "Add +N chip to OSS PRÉPARATION column (cross-surface parity) OR explicitly DECIDE customer wall keeps auto-scroll-only approach (P2 acceptance)."
+    },
+    {
+      "id": "B4-F2",
+      "severity": "P2",
+      "title": "OrderPaymentStatusChanged has no frontend Echo subscriber",
+      "evidence": "Backend listeners registered (PersistOrderPaymentStatusChangedToOutbox + PersistOrderPaymentStatusChangedOnRefundCreated per Wave WF-6-P1 commit 3b0776f7c). But grep 'OrderPaymentStatusChanged|broadcastAs.*Payment' resources/js → 0 hits. POS _subscribeEcho lists 5 events (OrderCreated/OrderStatusChanged/OrderPaidAtCounter/ItemAvailabilityChanged/CatalogChanged) — payment status NOT among them.",
+      "consequence": "Stripe refund payment_status transitions surface in POS pos-shortcut widget only via REST polling (5-15s latency). Cash flow uses OrderPaidAtCounter (real-time, no gap). OSS by design does not need it (no payment_status field in CDS payload — correct for P5).",
+      "v1_blocking": false,
+      "v1_0_2_backlog_candidate": true,
+      "owner_decision_needed": "If Stripe refund UX latency matters: wire OrderPaymentStatusChanged to outbox broadcast + frontend POS subscriber. If not (refunds rare, polling acceptable): leave as-is + document."
+    },
+    {
+      "id": "B4-F3",
+      "severity": "P3",
+      "title": "OSS audio chime structurally inaudible on public wall (BY DESIGN)",
+      "evidence": "PreparingAndReadyComponent.vue:338 — `if (this.authBranchId() <= 0) return;` early-return in _playReadySound(). Public wall (authBranchId=0) never receives pointerdown/keydown gesture, so AudioContext stays locked; chime is structurally inaudible. Heal P0-OSS-01 (GOAL Round 2 Impl C 2026-05-18) chose Option C: visual feedback only on public wall.",
+      "consequence": "Customer wall: visual feedback ONLY (4s column flash + 6s per-card pulse + initial bounce — 10s window). No audio. A noisy fast-food lunch crowd with eyes on phone may miss the visual signal if not glancing up. Operator-attended branch staff sessions: full 3-tone chime works.",
+      "v1_blocking": false,
+      "v1_0_2_backlog_candidate": false,
+      "owner_decision_needed": "Documented design choice. Mitigation: TV wall placement at customer eye-level + wakeLock R4 (already implemented) + Wave S-3 10s pulse window. Optionally: physical buzzer outside browser (hardware out of scope V1)."
+    }
+  ],
+  "cross_surface_convergence_with_B3": {
+    "b3_p2_finding_eta_absence": "CONFIRMED — B4 verified the exact same CDS payload shape (6 keys, no ETA). The bump KDS → OSS pipeline carries (order_id, new_status) only. No prep_time recompute happens anywhere along OrderService::transitionStatus → OrderStatusChanged event → PersistOrderStatusChangedToOutbox → outbox dispatcher → Echo subscriber → _markNewReady chain. B3-P2 verdict stands.",
+    "b3_p2_finding_overflow_chip_asymmetry": "CONFIRMED + ESCALATED to B4-F1 top finding. B3-P2 noted KDS has chip / OSS does not. B4 cross-checked grep zero matches in PreparingAndReadyComponent.vue and confirmed Wave N N-HEAL-01 is KDS-only.",
+    "b3_p2_finding_allergens_chef_only": "ORTHOGONAL to OSS — confirmed CDSOrderDetailsResource exposes no items breakdown, so allergens never reach customer wall. This is correct V1 (chef-only safety signal). Documented as design, not gap.",
+    "b3_p2_finding_audio_public_wall_skip": "CONFIRMED — verified at PreparingAndReadyComponent.vue:338 + 139-144 (audio-unlock listener wiring also skipped on public surfaces). GOAL Round 2 Impl C P0-OSS-01 2026-05-18 heal still in effect.",
+    "b3_p2_overall_concurrence": "B4 fully agrees with B3-P2 on OSS-side analysis. Adds: (a) POS-side OrderPaymentStatusChanged frontend gap (B4-F2 new), (b) ETA absence formally cross-validated end-to-end, (c) staff-newbie + owner-night personas confirm separation-of-concerns design holds."
+  },
+  "verdict": "AMBER",
+  "verdict_rationale": "OSS surface is V1-shippable. PII compliance GREEN (P5). Cashier handoff GREEN (P3). Owner-night separation GREEN (P4). Staff onboarding GREEN (P6). Two AMBER personas (P1 chef-rush, P2 client-impatient) share the same underlying gap: cross-surface +N chip asymmetry — KDS got the heal, OSS did not. ETA absence is design discipline (PII-free V1) but felt by P2. Three P2/P3 findings (B4-F1/F2/F3) are V1.0.2 backlog candidates, not V1 blockers. No P0, no P1 surface. Frozen-zone diff = 0 (no source touched during audit, DM6 RO). Capture confirmed: 2 HTTP probes 200, identical SPA shell on /admin/* and /* unmatched routes. NF525 audit chain untouched.",
+  "frozen_zone_diff": "0 LOC — DM6 RO read-only audit, no source code modified.",
+  "nf525_chain": "Untouched — audit chain remained at baseline last_hash=a59e47cbe474f799 (no DB writes, only 2 GET probes).",
+  "captures_path": "reports/test-e2e/master-plan-2026-05-25/captures/B4-OSS/ (directory created; no live screenshots — audit relied on source attestation + 2 HTTP shell probes; OSS dynamic columns require seeded ACTIVE orders which would require DB writes, violating DM6 RO discipline)",
+  "files_evidence_paths": {
+    "controller": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Http/Controllers/Admin/OrderStatusScreenController.php",
+    "cds_resource": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Http/Resources/CDSOrderDetailsResource.php",
+    "pos_shortcut_resource": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Http/Resources/PosShortcutOrderResource.php",
+    "oss_parent_component": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/resources/js/components/admin/orderStatusScreen/OrderStatusScreenComponent.vue",
+    "oss_main_component": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/resources/js/components/admin/orderStatusScreen/PreparingAndReadyComponent.vue",
+    "oss_sync_service": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/resources/js/services/OssSyncService.js",
+    "pos_component": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/resources/js/components/admin/pos/PosComponent.vue",
+    "event_status_changed": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Events/OrderStatusChanged.php",
+    "event_payment_status_changed": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Events/OrderPaymentStatusChanged.php",
+    "event_service_provider": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Providers/EventServiceProvider.php",
+    "api_routes": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/routes/api.php (lines 1170-1247)",
+    "cross_validate_b3": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/master-plan-2026-05-25/agents/B3-P2-findings.json"
+  }
+}

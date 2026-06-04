@@ -10,6 +10,7 @@ use App\Enums\Status;
 use Illuminate\Support\Str;
 use App\Events\ItemCreated;
 use App\Events\ItemDeleted;
+use App\Events\ItemUpdated;
 use App\Models\ItemBranchAvailability;
 use App\Models\ItemVariation;
 use App\Models\ItemExtra;
@@ -155,6 +156,66 @@ class ItemService
             }
             $q->orWhereJsonContains('channels', $surface);
         });
+    }
+
+    /**
+     * [MISSION FIX D4 2026-05-21] Global available/unavailable counts for the
+     * admin catalog header card. Page-local filter on $items would understate
+     * "INDISPONIBLES" when ruptured items don't appear on the visible page
+     * (Wave Y Round 1 C-013 — `/admin/items` showed `0` while
+     * `/admin/stock-rupture-dashboard` listed Chicken Burger as RUPTURE).
+     *
+     * Counts ACTIVE items only (matches the catalog listing default) and
+     * combines the global `items.is_available` flag with per-branch overrides
+     * from `item_branch_availability`. BranchScope on
+     * ItemBranchAvailability is admin-bypass (branch_id=0); we still resolve
+     * to a concrete branchId from the caller so the count is deterministic.
+     */
+    public function availabilityCounts(?int $branchId): array
+    {
+        $activeQuery = Item::query()->where('status', \App\Enums\Status::ACTIVE);
+        $totalActive = (int) (clone $activeQuery)->count();
+
+        if ($branchId === null || $branchId < 1) {
+            // Global fallback (no branch resolvable): use the global flag only.
+            $globallyUnavailable = (int) (clone $activeQuery)
+                ->where(function ($q): void {
+                    $q->where('is_available', false)->orWhere('is_available', 0);
+                })
+                ->count();
+            return [
+                'available_count'   => max(0, $totalActive - $globallyUnavailable),
+                'unavailable_count' => $globallyUnavailable,
+            ];
+        }
+
+        // Per-branch overrides: an item is unavailable on this branch if EITHER
+        // the global flag is false OR there's an override row with is_available=false.
+        $overrideUnavailableIds = ItemBranchAvailability::query()
+            ->withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
+            ->where('branch_id', $branchId)
+            ->where('is_available', false)
+            ->pluck('item_id')
+            ->map(fn ($id): int => (int) $id)
+            ->all();
+
+        $globallyUnavailableIds = (clone $activeQuery)
+            ->where(function ($q): void {
+                $q->where('is_available', false)->orWhere('is_available', 0);
+            })
+            ->pluck('id')
+            ->map(fn ($id): int => (int) $id)
+            ->all();
+
+        $unavailableActiveIds = (clone $activeQuery)
+            ->whereIn('id', array_values(array_unique(array_merge($overrideUnavailableIds, $globallyUnavailableIds))) ?: [0])
+            ->pluck('id')
+            ->count();
+
+        return [
+            'available_count'   => max(0, $totalActive - (int) $unavailableActiveIds),
+            'unavailable_count' => (int) $unavailableActiveIds,
+        ];
     }
 
     private function applyBranchAvailabilityOverlay($result, mixed $branchId): void
@@ -321,6 +382,15 @@ class ItemService
                             ->delete();
                     }
                 }
+
+                // [GOAL-I2-HEAL-02 2026-05-24] Phase I.3 RISK-01 AMBER:
+                // Dispatch ItemUpdated so kiosk menu cache invalidates immediately
+                // (mirrors store/destroy symmetry). Without this, admin rename/reprice
+                // shows OLD on kiosk up to 60s TTL.
+                $updatedItemId = (int) $item->id;
+                DB::afterCommit(function () use ($updatedItemId): void {
+                    event(new ItemUpdated($updatedItemId));
+                });
             });
             $refreshed = $item->refresh();
             $this->warnCatalogChannelsNullIfNeeded($refreshed, 'update');
@@ -534,16 +604,29 @@ class ItemService
             $requests = $request->all();
             $method = $request->get('paginate', 0) == 1 ? 'paginate' : 'get';
             $methodValue = $request->get('paginate', 0) == 1 ? $request->get('per_page', 10) : '*';
-            return Item::with('category')->withCount('orders')->where(function ($query) use ($requests) {
-                if (isset($requests['from_date']) && isset($requests['to_date'])) {
-                    $first_date = date('Y-m-d', strtotime($requests['from_date']));
-                    $last_date = date('Y-m-d', strtotime($requests['to_date']));
-                    $query->whereDate('created_at', '>=', $first_date)->whereDate(
-                        'created_at',
-                        '<=',
-                        $last_date
-                    );
-                }
+            // [ITEMS-SEM-01/02/NET-03 heal 2026-06-01, owner "agree with the Z"]
+            // "Units sold" = SUM(order_items.quantity) — NOT COUNT of order lines —
+            // scoped to the SALE date (the parent order's order_datetime, NOT
+            // Item.created_at which is catalog-creation), and restricted to NET
+            // realized orders (Order::scopeRealizedRevenue) so cancelled / refunded /
+            // unpaid lines are not counted as sold.
+            $appTz = config('app.timezone');
+            $from = isset($requests['from_date'])
+                ? \Carbon\Carbon::parse($requests['from_date'], $appTz)->startOfDay() : null;
+            $toExclusive = isset($requests['to_date'])
+                ? \Carbon\Carbon::parse($requests['to_date'], $appTz)->addDay()->startOfDay() : null;
+
+            return Item::with('category')
+                ->withSum(['orders as units_sold' => function ($q) use ($from, $toExclusive) {
+                    $q->whereHas('order', function ($o) use ($from, $toExclusive) {
+                        $o->realizedRevenue();
+                        if ($from && $toExclusive) {
+                            $o->where('order_datetime', '>=', $from)
+                              ->where('order_datetime', '<', $toExclusive);
+                        }
+                    });
+                }], 'quantity')
+                ->where(function ($query) use ($requests) {
                 foreach ($requests as $key => $request) {
                     if (in_array($key, $this->itemFilter)) {
                         if ($key == "except") {
@@ -558,7 +641,7 @@ class ItemService
                         }
                     }
                 }
-            })->orderBy('orders_count', 'desc')->$method(
+            })->orderByRaw('units_sold IS NULL, units_sold DESC')->$method(
                     $methodValue
                 );
         } catch (Exception $exception) {

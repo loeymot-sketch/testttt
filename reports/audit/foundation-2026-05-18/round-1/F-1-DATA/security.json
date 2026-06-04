@@ -1,0 +1,106 @@
+{
+  "specialist": "Security",
+  "zone": "F-1 Data Storage",
+  "scope": "SQL injection surfaces, credential exposure in seeders/migrations, multi-tenant leakage tests coverage, FK + cascade orphan-creation potential",
+  "approach": "Read-only scan for DB::raw, DB::statement, whereRaw, DB::select; inspected seeders for hardcoded credentials; audited UserTableSeeder + KioskMachineTableSeeder for production safety guards.",
+  "findings": [
+    {
+      "id": "SEC-F1-001",
+      "severity": "P0-GOOD",
+      "title": "Production seeder guards in place (no default-cred leak in prod)",
+      "evidence": [
+        "database/seeders/UserTableSeeder.php:25-29 — `if (app()->environment('production')) { Log::warning(...); return; }`",
+        "database/seeders/KioskMachineTableSeeder.php:22-25 — same production guard",
+        "Note: comment line 25 `[AUDIT-P0-C] Safety guard: never seed default credentials in production.`"
+      ],
+      "removes_breaks": "Removing guard would re-create admin@lecayenne.fr/123456 + kiosk123 in production. P0 security violation.",
+      "decision": "KEEP-AS-IS — exemplary defensive pattern from prior AUDIT-P0-C."
+    },
+    {
+      "id": "SEC-F1-002",
+      "severity": "P1-DEMO-CREDS",
+      "title": "DEMO-mode default credentials present but bounded by env flag",
+      "evidence": [
+        "database/seeders/MailTableSeeder.php:28 — `mail_password: $envService->getValue('DEMO') ? 'rb-XO$3~dc4q' : ''` (demo only)",
+        "database/seeders/NotificationTableSeeder.php:24 — Firebase API key `AIzaSyDg1xBSwmHKV0usIKxTFL5a6fFTb4s3XVM` only in DEMO mode",
+        "database/seeders/PaymentGatewayTableSeederVersionOne.php:52,92 — paypal_client_secret + stripe_secret are placeholders, not real creds"
+      ],
+      "removes_breaks": "Removing requires alternate provisioning for demo environments. KEEP-AS-IS, but ensure DEMO=true is NEVER set in production .env (deploy doc).",
+      "decision": "DOCUMENT — flag in deploy runbook. Demo credentials are only applied when DEMO env flag is true."
+    },
+    {
+      "id": "SEC-F1-003",
+      "severity": "P0-GOOD",
+      "title": "Zero SQL injection vectors in service layer raw SQL",
+      "evidence": [
+        "app/Services/Fiscal/ZReportCashEnrichmentService.php:170-172 — DB::raw with PHP integer enum literal (PosPaymentMethod::CASH=number), no user input",
+        "app/Services/Menu/AvailabilityService.php:310,325 — DB::raw uses column reference `daily_consumed_qty` (schema-defined, not request data)",
+        "app/Http/Controllers/Admin/PosCategoryController.php:92-98 — subQuery->select(DB::raw(1)) — boolean EXISTS pattern, no input",
+        "app/Http/Controllers/Admin/Pos/PosReceiptPrintController.php:47 — atomic increment via DB::raw('COALESCE(receipt_print_count, 0) + 1'), no input"
+      ],
+      "decision": "Clean. No raw SQL accepts user input — all parameterized via Eloquent bindings."
+    },
+    {
+      "id": "SEC-F1-004",
+      "severity": "P1-FK-CHECKS-OFF-PATTERN",
+      "title": "SET FOREIGN_KEY_CHECKS=0 / PRAGMA foreign_keys=0 used in TaxService + ItemCategoryService — bounded scope",
+      "evidence": [
+        "app/Services/TaxService.php:87-89 — wraps a tax deletion with FK_CHECKS=0/1 toggle",
+        "app/Services/ItemCategoryService.php:175-181 — cross-driver PRAGMA/SET for category deletion"
+      ],
+      "implication": "Allows orphan rows on hard-delete of taxes/categories. Mitigation: domain-level soft-delete + admin-only access path. Risk surface bounded to admin role.",
+      "removes_breaks": "Removing the FK toggle would block admin tax/category deletions when references exist (proper FK behavior). May require larger refactor of cascade logic.",
+      "decision": "DOCUMENT — works in current admin flows but is a code smell. STRUCTURAL-RECOMMENDATION: replace with explicit cascade-or-block decision per relationship in V1.0.2."
+    },
+    {
+      "id": "SEC-F1-005",
+      "severity": "P1-BRANCHSCOPE-RECURSION-PATTERN",
+      "title": "BranchScope safely guards against Sanctum recursion + console mode — DOCUMENTED edge cases",
+      "evidence": [
+        "app/Models/Scopes/BranchScope.php:21-23 — `if ($model instanceof User) return;` prevents Sanctum auth loop",
+        "Same file:27 — runningInConsole OR runningUnitTests guard",
+        "Same file:31-39 — admin (branch_id=0) bypass + staff strict equality"
+      ],
+      "implication": "Cron + queue workers fully see all branches. This is correct for fiscal cron + outbox dispatch but means any new HTTP-path admin action MUST explicitly use Auth::check() + branch context. The frozen file is well-commented.",
+      "decision": "KEEP-AS-IS — frozen, working, well-documented. Sister test: tests/Feature/Multitenant/WizardProfileBranchScopeTest.php exists."
+    },
+    {
+      "id": "SEC-F1-006",
+      "severity": "P1-WEBHOOK-NO-BRANCH-CONTEXT",
+      "title": "webhook_events is intentionally global (no branch_id, no BranchScope)",
+      "evidence": [
+        "database/migrations/2026_05_09_120000_create_webhook_events_table.php — no branch_id column",
+        "app/Models/WebhookEvent.php:43-46 docblock — 'WebhookEvent is intentionally global (no BranchScope) because providers do not carry tenant context in webhooks. The eventual order_id FK link inherits branch via Order.'"
+      ],
+      "implication": "Tenant context resolved post-processing via order_id → Order.branch_id. Verified by 2026-05-18 FK migration that scrubs orphan order_ids before constraint add.",
+      "decision": "ACCEPTABLE — provider webhooks are tenant-blind. Branch is reconstructed via Order link."
+    },
+    {
+      "id": "SEC-F1-007",
+      "severity": "P2-CUSTOMER-NFC-LEAK",
+      "title": "Customer model (extends User) — NFC UID lookups may cross-branch leak if controller skips branch filter",
+      "evidence": [
+        "app/Models/Customer.php:9-23 — extends User, adds nfc_uid fillable",
+        "User exempted from BranchScope (BranchScope.php:21)",
+        "database/migrations/2026_04_20_220000_add_nfc_uid_to_customers.php — likely creates nfc_uid lookup index"
+      ],
+      "implication": "Any controller doing `Customer::where('nfc_uid', $x)->first()` without branch filter returns cross-branch customers. Test coverage gap.",
+      "removes_breaks": "Adding BranchScope to Customer would BREAK Customer login (pre-auth) and admin cross-branch loyalty inspection.",
+      "decision": "STRUCTURAL-RECOMMENDATION — audit all Customer::where('nfc_uid') call sites to ensure explicit branch filtering. Not a P0 because branch isolation is per-business-controller-level."
+    },
+    {
+      "id": "SEC-F1-008",
+      "severity": "P0-GOOD",
+      "title": "Sister regression test exists for BranchScope",
+      "evidence": "Tests cited in scope file docblocks: tests/Feature/Multitenant/WizardProfileBranchScopeTest.php + tests/Feature/Orders/IdempotencyBranchScopedTest.php + tests/Feature/Sentinels/IdempotencyRecoveryBranchScopedTest.php",
+      "decision": "Coverage exists for the multi-tenant critical paths."
+    }
+  ],
+  "summary": {
+    "sql_injection_surfaces": 0,
+    "credential_exposure_prod_blocked": true,
+    "demo_credentials_bounded": true,
+    "fk_off_pattern_risk": "bounded to admin tax/category deletion",
+    "verdict": "No critical security finding. NF525 + BranchScope + Sanctum + idempotency are layered defense. The few admin-path FK_CHECKS toggles are bounded by RBAC and should be cleaned up in V1.0.2 but are not V1 blockers."
+  }
+}

@@ -1,0 +1,115 @@
+{
+  "specialist": "Architect",
+  "scope": "WF-2 POS->OSS sync cascade integrity — OSS-specific patterns",
+  "mode": "READ-ONLY",
+  "anchors": {
+    "backend": [
+      "app/Events/OrderStatusChanged.php",
+      "app/Listeners/PersistOrderStatusChangedToOutbox.php",
+      "app/Jobs/DispatchDomainEventsJob.php",
+      "app/Services/OrderService.php#L1665-L1891",
+      "app/Services/OrderStatusScreenOrderService.php",
+      "app/Http/Controllers/Admin/OrderStatusScreenController.php",
+      "app/Http/Resources/CDSOrderDetailsResource.php",
+      "routes/api.php#L1096-L1173"
+    ],
+    "frontend": [
+      "resources/js/components/admin/orderStatusScreen/OrderStatusScreenComponent.vue",
+      "resources/js/components/admin/orderStatusScreen/PreparingAndReadyComponent.vue",
+      "resources/js/services/OssSyncService.js",
+      "resources/js/services/eventContract.js"
+    ],
+    "config": [
+      "config/oss.php"
+    ]
+  },
+  "cascade_validation": {
+    "step_1_pos_changeStatus_DB_transaction": {
+      "status": "OK",
+      "evidence": "OrderService.php:1744 wraps the status mutation in DB::transaction. lockForUpdate guards against concurrent writers (OrderService.php:1685-1715 self-cancel path; admin/POS path uses transactional update with `oldStatusForBroadcast` captured INSIDE the closure before save).",
+      "notes": "Branch-isolation guard (line 1747-1752) aborts 403 before mutation if non-Admin staff tries to bump another branch's order."
+    },
+    "step_2_event_after_commit": {
+      "status": "OK",
+      "evidence": "OrderStatusChanged uses the DispatchableAfterCommit trait (Events/OrderStatusChanged.php:6,17). OrderService.php dispatches AFTER the DB::transaction closure returns (line 1869) — never inside.",
+      "notes": "Pattern mirrors KDS cascade; the comment '[PHASE-E] After commit; ShouldBroadcastNow' (line 1867) documents the invariant."
+    },
+    "step_3_outbox_write": {
+      "status": "OK",
+      "evidence": "PersistOrderStatusChangedToOutbox::handle (Listeners/PersistOrderStatusChangedToOutbox.php:15) writes a DomainEvent row via firstOrCreate keyed on a sha1 idempotency key including event_type|order_id|old|new|correlation_id (lines 26-32). Channel set to `private-branch.{branch_id}` (line 52). broadcast_as='OrderStatusChanged' (line 53). Payload preserves order_id, queue_number, _origin, payment_method, payment_status, old_status, new_status, token.",
+      "notes": "Sprint 5C Z8-P1-01 short-circuits replay (line 64-66) — if firstOrCreate returns existing, skip afterCommit dispatch. This is a defense-in-depth on top of DispatchDomainEventsJob's Phase 1 atomic claim."
+    },
+    "step_4_broadcast_dispatch": {
+      "status": "OK",
+      "evidence": "DispatchDomainEventsJob uses Phase 1 lockForUpdate atomic claim (lines 60-86) — concurrent worker who acquires lock after the winner sees dispatched_at != null and skips. Phase 2 broadcast happens OUTSIDE the DB transaction (line 97 comment + line 116 BroadcastManager::broadcast). Envelope built via EventContract::buildEnvelope + assertEnvelopeValid (lines 107-110). Backoff curve [1,5,15,60,300]s with tries=6 (lines 40-42) outlasts typical Pusher/Soketi restart.",
+      "notes": "Dispatched via DB::afterCommit (Listener line 68) so a transaction rollback after the firstOrCreate would NOT broadcast — atomic with the producing transaction."
+    },
+    "step_5_oss_realtime_reception": {
+      "status": "OK",
+      "evidence": "PreparingAndReadyComponent.vue subscribeEcho() (line 245-278) uses onEvents(branchId, [...]) on `private-branch.{branchId}`. branchId<=0 → early-return (line 248) so unauthenticated public TV wall sticks to polling. OrderStatusChanged handler (line 254-268) increments _echoMarkedReady set to deduplicate _markNewReady with the imminent list() refresh.",
+      "notes": "Symmetric defense: AUDIT-P1 (line 256-259) — Echo fires _markNewReady; list() would re-fire because order is not yet in prevPreparedIds. _echoMarkedReady stamps the ID so list() skips it."
+    },
+    "step_6_polling_fallback": {
+      "status": "OK",
+      "evidence": "OssSyncService.js fully audited. Cadence: 60s when WS connected (line 9), 2s when disconnected (line 16; tightened during round-2 cluster-6 to meet SYNC-2 8s budget). Visibility burst-poll (lines 218-226) collapses worst-case lag on tab refocus. 5xx → exponential backoff doubled to 30s cap (line 329).",
+      "notes": "Cadence ceiling 60s clamp + floor 250ms (lines 34-35, 430-435) protect against owner misconfig (e.g. 999999999ms freeze). Sister to PosSyncService Wave 3c heal."
+    },
+    "step_7_allowlist_serialization": {
+      "status": "OK",
+      "evidence": "OrderStatusScreenOrderService::list() AND ::listForBranch() both use whereIn('order_type', [KIOSK, TAKEAWAY]) — fail-closed allowlist (lines 59-62 and 196-199). Sister coverage: tests/Feature/OSS/OssCustomerScreenFilterTest.php 7 tests asserting POS/DELIVERY/DINING_TABLE excluded, KIOSK/TAKEAWAY included.",
+      "notes": "CDSOrderDetailsResource (Resources/CDSOrderDetailsResource.php) exposes ONLY: id, order_serial_no, token, queue_number, order_type, status. PII-clean — no customer name, phone, address, total. Audit comment at OrderStatusScreenController.php:60-62 confirms the public TV wall payload is intentionally harmless."
+    },
+    "step_8_chime_on_prepared": {
+      "status": "OK",
+      "evidence": "_playReadySound (PreparingAndReadyComponent.vue:308-347) gates on authBranchId()>0 (line 317) — public TV wall has no operator gesture, AudioContext stays suspended, so early-return avoids console autoplay-warning flood. Operator-attended path uses lazy-init AudioContext via {once:true} pointerdown/keydown listeners (lines 108-132). 4-tone chime [523,659,784,1047]Hz (line 334) with 0.15s stagger.",
+      "notes": "Chime fires from _markNewReady (line 294), which itself is called from BOTH Echo handler (line 264) AND _hydrateFromRows poll handler (line 357). Double-fire prevented by _echoMarkedReady set (lines 261-263, 355)."
+    },
+    "step_9_wake_lock_lifecycle": {
+      "status": "OK",
+      "evidence": "_acquireWakeLock (lines 186-196) calls navigator.wakeLock.request('screen') with feature flag (window.foodkingConfig.ossWakeLockEnabled, default true). Sentinel addEventListener('release', ...) auto-clears _wakeLockSentinel (line 194). Re-acquire on visibilitychange='visible' (lines 135-137). Release on unmount (line 162). Graceful degrade on Safari iOS <16.4 (line 189 'wakeLock' in navigator check).",
+      "notes": "Sentinel test ossWakeLockOnMount.spec.js asserts wiring + idempotency + flag-off path + missing-API path."
+    }
+  },
+  "oss_patterns_observed": [
+    {
+      "pattern": "Byte-identical-query-bodies between list() and listForBranch()",
+      "rationale": "Service docstring line 144 mandates identical filters so admin dashboard and public TV wall match. The 4 lines deviating (line 65 today range, line 78-79 TZ-UTC, line 196 allowlist, line 230 branchId>0) are mechanical mirrors with audit-comment trail at each site.",
+      "verdict": "GOOD — easy to audit, hard to drift silently."
+    },
+    {
+      "pattern": "Two-tier audio gating: authBranchId()>0 for listeners + authBranchId()<=0 early-return inside _playReadySound",
+      "rationale": "Belt-and-braces. The listener gate (line 127) avoids wiring dead listeners on public wall. The runtime gate (line 317) protects against future regressions if listeners are wired by another code path. Sentinel ossChimePublicWall.spec.js asserts BOTH gates.",
+      "verdict": "GOOD — defense in depth."
+    },
+    {
+      "pattern": "Visibility burst-poll + sustained-disconnect dev warn",
+      "rationale": "Tab backgrounded → setTimeout throttles to ~1s; visibilitychange fires immediately on focus regain → instant fetch. Dev-only warn (gated by appEnv !== production) surfaces sustained Pusher outage without spamming prod logs.",
+      "verdict": "EXCELLENT — addresses real-world UX gotcha caught in round-2 cluster-6."
+    },
+    {
+      "pattern": "_echoMarkedReady dedup set",
+      "rationale": "Echo fires _markNewReady → list() refresh races → list() would re-fire because the new order is not yet in prevPreparedIds → double chime + double flash. _echoMarkedReady stamps the ID; _hydrateFromRows (line 355-360) skips marked IDs.",
+      "verdict": "GOOD — solves real concurrency hazard cleanly."
+    }
+  ],
+  "concerns_for_red": [
+    {
+      "id": "ARCH-OSS-01",
+      "severity": "P2",
+      "title": "Cadence-fallback config plumbing distributed across boot",
+      "detail": "window.foodkingConfig.ossFallbackPolling is read by OssSyncService._runtimeConfig() (line 117-136). The plumbing relies on the Blade boot to set this object; if a deploy emits the Blade template before the catalog publishes the JSON, the service falls back to DEFAULTS silently. RED should confirm presence in admin Blade includes."
+    },
+    {
+      "id": "ARCH-OSS-02",
+      "severity": "P3",
+      "title": "_origin payload coupling to KDS audit chain",
+      "detail": "PersistOrderStatusChangedToOutbox::resolveOrigin (lines 107-120) populates payload._origin from source_surface fallback chain. KDS-side consumers may depend on this; OSS does not. Documentation comment is in OrderService dispatch site, not in the listener — small clarity gap, not a defect."
+    }
+  ],
+  "verdict": "Cascade integrity is COMPLETE end-to-end. 9 cascade points all validated with code-anchored evidence. Three concurrency hazards (broadcast-during-tx, double-chime via Echo+poll, OSS query divergence between authed/public paths) have explicit defenses with sentinels. Pattern quality is high — byte-identical sister methods + audit-comment trail at every patch site + 6+ sentinel specs (OssCustomerScreenFilterTest, ossWakeLockOnMount, ossChimePublicWall, posOssCadenceCap, ossSyncFallback, orderStatusScreenOssSync) provide defense-in-depth.",
+  "no_op_actions_recommended": [
+    "Confirm RED simulation of DELIVERY-with-token order (OssCustomerScreenFilterTest already proves this; add no further test)",
+    "Confirm visibility-burst-poll cooldown (visibilityBurstMinIntervalMs=1000) catches focus storms (already covered by ossSyncFallback fakeTimers)",
+    "Confirm chime non-fire on public wall when AudioContext is null (ossChimePublicWall.spec.js asserts this — no further action)"
+  ]
+}

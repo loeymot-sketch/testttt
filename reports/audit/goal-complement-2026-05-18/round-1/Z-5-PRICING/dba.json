@@ -1,0 +1,137 @@
+{
+  "zone": "Z-5-PRICING",
+  "role": "DBA",
+  "mission": "Audit-only (FROZEN) — composition_snapshot JSON column + write sites + zero UPDATE invariant",
+  "scope_files_read": [
+    "database/migrations/2026_04_22_000020_add_composition_snapshot_to_order_items.php",
+    "app/Models/OrderItem.php",
+    "app/Services/Pricing/PricingService.php (FROZEN)",
+    "app/Services/OrderService.php (write sites L466, L821, L1277)",
+    "app/Services/FrontendOrderService.php (write site L441)",
+    "app/Services/Order/RefundWithCounterEntryService.php (copy-forward L136)"
+  ],
+  "verdict": "GREEN — schema correct, write sites identified, copy-forward path preserves immutability",
+  "schema_definition": {
+    "table": "order_items",
+    "column": "composition_snapshot",
+    "type": "JSON nullable",
+    "position": "after item_extras (legacy item_extras + item_variations JSON columns retained for backward-compat reads)",
+    "migration": "database/migrations/2026_04_22_000020_add_composition_snapshot_to_order_items.php",
+    "model_cast": "App\\Models\\OrderItem::$casts['composition_snapshot'] = 'array' (model L71)",
+    "fillable": true,
+    "default_value": "NULL (nullable column; legacy rows pre-T07 have NULL — OrderItemResource handles fallback to raw item_variations/item_extras JSON cf. L31-36)"
+  },
+  "write_sites_audit": {
+    "build_then_insert_count": 5,
+    "copy_forward_count": 1,
+    "total_insert_sites": 6,
+    "build_then_insert_sites": [
+      {
+        "id": "WS1",
+        "file": "app/Services/Pricing/PricingService.php",
+        "line": 291,
+        "context": "calculateOrder — bulk insert payload row construction",
+        "snapshot_source": "$this->snapshotBuilder->build(...) at L270-276",
+        "operation": "INSERT (json_encode + array element in mass-insert payload)",
+        "trust_level": "PRIMARY SSOT path (when config('pricing.use_ssot_service')=true)"
+      },
+      {
+        "id": "WS2",
+        "file": "app/Services/OrderService.php",
+        "line": 466,
+        "context": "Legacy inline pricing path #1 — store order items (POS/web order)",
+        "snapshot_source": "(new CompositionSnapshotBuilder())->build($item, $dbVariations, $dbExtras) at L451",
+        "operation": "INSERT (json_encode + array element in mass-insert payload)",
+        "trust_level": "Legacy fallback path (gated by !config('pricing.use_ssot_service'))"
+      },
+      {
+        "id": "WS3",
+        "file": "app/Services/OrderService.php",
+        "line": 821,
+        "context": "Legacy inline pricing path #2",
+        "snapshot_source": "(new CompositionSnapshotBuilder())->build(...) at L806",
+        "operation": "INSERT",
+        "trust_level": "Legacy fallback"
+      },
+      {
+        "id": "WS4",
+        "file": "app/Services/OrderService.php",
+        "line": 1277,
+        "context": "Legacy inline pricing path #3",
+        "snapshot_source": "(new CompositionSnapshotBuilder())->build(...) at L1262",
+        "operation": "INSERT",
+        "trust_level": "Legacy fallback"
+      },
+      {
+        "id": "WS5",
+        "file": "app/Services/FrontendOrderService.php",
+        "line": 441,
+        "context": "Frontend (kiosk/web) legacy inline pricing path",
+        "snapshot_source": "(new CompositionSnapshotBuilder())->build(...) at L426",
+        "operation": "INSERT",
+        "trust_level": "Legacy fallback"
+      }
+    ],
+    "copy_forward_sites": [
+      {
+        "id": "WS6",
+        "file": "app/Services/Order/RefundWithCounterEntryService.php",
+        "line": 136,
+        "context": "Refund counter-entry mirror — clones parent OrderItem with negated qty/total",
+        "snapshot_source": "$item->composition_snapshot (already-frozen value read from parent OrderItem)",
+        "operation": "INSERT (Eloquent OrderItem::create with snapshot copied verbatim)",
+        "trust_level": "Copy-forward — preserves NF525 immutability (mirror order is part of the audit chain, snapshot in the mirror must match parent)",
+        "rationale": "The refund mirror order is a NEW order_items row (different order_id), so this is technically a 6th INSERT site. But it copies an already-immutable snapshot value rather than re-computing it. NF525-compliant: the original frozen snapshot is preserved on the mirror, ensuring 6-year reprint reconciles correctly."
+      }
+    ]
+  },
+  "task_contract_reconciliation": {
+    "task_states_5_write_sites": "Confirmed. Plan §6 Sub 6.2 T-6.2.1 says '5 write sites'. This refers to the 5 sites where CompositionSnapshotBuilder::build() produces a fresh snapshot for a new order.",
+    "refund_mirror_is_6th_insert_but_copy_forward": "RefundWithCounterEntryService L136 is a 6th INSERT site but is a copy of a frozen value, not a fresh snapshot. It does not re-enter the audit perimeter for snapshot correctness — the source snapshot was already audited at its creation site.",
+    "sentinel_test_PR03": "Zone5PricingSsotConvergenceSentinelTest::test_pr03_* greps app/ for any UPDATE/save/assign on composition_snapshot and asserts ZERO offenders. This catches both refund and main paths."
+  },
+  "findings": [
+    {
+      "id": "Z5-DBA-OBS-01",
+      "severity": "INFO",
+      "ref": "OrderItem model casts L71",
+      "observation": "Eloquent `'composition_snapshot' => 'array'` cast — reads JSON column into PHP array transparently. PR03-bis sentinel asserts this cast via reflection."
+    },
+    {
+      "id": "Z5-DBA-OBS-02",
+      "severity": "INFO",
+      "ref": "All 5 builder-driven sites + 1 copy-forward",
+      "observation": "ALL insertion paths use `json_encode($compositionSnapshot)` or copy the already-encoded value from the parent row. Eloquent cast on read deserializes uniformly. No mixed encoded/raw write paths."
+    },
+    {
+      "id": "Z5-DBA-OBS-03",
+      "severity": "INFO",
+      "ref": "PricingService.php:114-117",
+      "observation": "Preloads `dbAttributes` collection ONCE before the per-item loop, then passes it into snapshotBuilder->build(). Avoids N+1 inside the snapshot builder (the builder otherwise does its own attribute lookup at L55-57). Performance optimization correct."
+    },
+    {
+      "id": "Z5-DBA-P3-01",
+      "severity": "P3 (V1.1 backlog)",
+      "ref": "database/migrations/* — no immutability trigger for order_items.composition_snapshot",
+      "observation": "Per CLAUDE.md §8, NF525-critical immutable columns (audit_logs hash chain, z_reports) have BEFORE DELETE / BEFORE UPDATE SIGNAL SQLSTATE '45000' triggers. The composition_snapshot column does NOT have an equivalent DB-level BEFORE UPDATE trigger. Wave 1 (NF525 fiscal audit) and the Zone5 sentinel docblock both acknowledge this as V1.1 backlog. Application-layer is the only enforcement today.",
+      "recommendation_v1_1": "Add migration: `CREATE TRIGGER order_items_composition_snapshot_immutable BEFORE UPDATE ON order_items FOR EACH ROW IF OLD.composition_snapshot IS NOT NULL AND NEW.composition_snapshot <> OLD.composition_snapshot THEN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'NF525: composition_snapshot is immutable'; END IF;`. MySQL prod only — SQLite test driver lacks SIGNAL."
+    },
+    {
+      "id": "Z5-DBA-OBS-04",
+      "severity": "INFO",
+      "ref": "items.price + order_items.price + order_items.total_price + order_items.composition_snapshot",
+      "observation": "Mid-day repricing safety: when admin updates items.price, only NEW order rows pick up the new value. EXISTING order_items rows retain their frozen `price` + `total_price` + `composition_snapshot.lines[].unit_price`. Verified end-to-end by Zone5 PR04 sentinel (creates order, mutates items.price, asserts old order_items unchanged + new order picks up new price)."
+    },
+    {
+      "id": "Z5-DBA-OBS-05",
+      "severity": "INFO",
+      "ref": "OrderItemResource.php:31-36 + 56-104",
+      "observation": "Read path prefers `composition_snapshot` when non-NULL, falls back to raw `item_variations` / `item_extras` JSON columns for legacy pre-T07 rows. Backward-compat with 6-year fiscal retention preserved. No path forces a re-encode on read."
+    }
+  ],
+  "p0_p1_count": {
+    "P0_in_frozen_file": 0,
+    "P1_in_frozen_file": 0
+  },
+  "frozen_zone_touch": false
+}

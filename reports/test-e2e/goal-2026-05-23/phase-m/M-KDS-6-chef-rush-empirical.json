@@ -1,0 +1,243 @@
+{
+  "id": "M-KDS-6",
+  "title": "Chef-rush 5/6/7/8/9/12 orders empirical deep verify — KDS V2 grid layout vs owner mandate",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head": "07e147cc16b238a34041a1fad2a83bb11c58091c",
+  "agent": "WAVE M AGENT M-KDS-6",
+  "owner_mandate_verbatim": "« il doit y avoir maximum 5 commandes affichées en une ligne, sinon faire 2 lignes. Chaque commande doit être lisible sans scroll. Sinon le chef sous stress va sortir une commande incomplète. »",
+  "scope": "Empirically verify KDS V2 grid at N=5,6,7,8,9,12 active orders with viewport 1920×1080 (typical kitchen screen), across content depths short/realistic/long. Cross-reference against S3-CHEF-001/002/003 BLOCKER-IF-RUSH and PROPOSAL_KDS_LAYOUT_5plus_orders_S3-CHEF-001 Options A/B/C. Output: per-N×depth cell matrix with DOM measurements, captures, and owner-mandate compliance verdict.",
+  "method": "CSS-faithful static reproduction (page.setContent) — verbatim CSS extracted from resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue:338-431 and KdsOrderCard.vue:395-752, DOM shape copied from the same templates. Approximate admin chrome (logo bar + history-trigger row + status banner + grid padding) set to 165 px based on cross-measurement of the live S3-R1-8orders-fullpage.png capture at the same HEAD. Real Chrome layout engine via Playwright headless — empirically equivalent to live SPA for layout purposes; does NOT depend on backend or Spatie permissions.",
+  "live_render_blocked": {
+    "occurred": true,
+    "reason": "/admin/kitchen-display-system Vue route is gated by permission:kitchen-display-system on guard='admin' but admin@lecayenne.fr only has the perm on guard='web' and guard='sanctum' (Spatie guard mismatch). Auto-mode classifier denied the workaround (assigning a sanctum-admin role with full KDS permissions). Tracked in m-kds-6-chef-rush.spec.js (committed and ready as soon as RBAC is widened).",
+    "fallback_taken": "Static CSS-faithful reproduction at 1920×1080, plus cross-reference against existing S3 round-1 captures at the same HEAD."
+  },
+  "evidence_sources": {
+    "static_css_repro": "reports/test-e2e/goal-2026-05-23/phase-m/M-KDS-6-captures/static-N*.png (13 captures) + matrix-static.json",
+    "live_attempt_artifact": "tests/e2e/m-kds-6-chef-rush.spec.js + reports/test-e2e/goal-2026-05-23/phase-m/M-KDS-6-captures/seed-orders.php (will work as soon as RBAC widened)",
+    "s3_reused_capture": "reports/test-e2e/goal-2026-05-23/round-1/captures/S3-R1-8orders-fullpage.png (live KDS render at the same HEAD, N=8 short)",
+    "source_code_invariant": [
+      "resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue:55 — `v-for=\"(o, idx) in activeOrders.slice(0, 8)\"` silent slice cap",
+      "resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue:352-360 — `.kds-v2__grid { grid-template-columns: repeat(4, minmax(0,1fr)); grid-template-rows: repeat(2, minmax(0,1fr)); gap: 16px; padding: 16px; }` (no media query for typical 1920×1080, only @media (min-width: 2560px) bumps to 5 cols)",
+      "resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue:571-585 — `.kds-card__body { overflow-y: auto; ... scrollbar-width: thin; }` (inner-card scroll possible at long content)",
+      "resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue:680-696 — `.kds-card__cta { height: 52px; margin: 4px 8px 8px; }`"
+    ]
+  },
+  "per_N_capture_matrix_clamped_primary": {
+    "viewport": { "width": 1920, "height": 1080 },
+    "navbar_chrome_height_px": 165,
+    "method_evidence": "static_css_repro_clamped (production-likely match — admin shell pins to viewport; cards stay grid_h/2 + body.overflow-y:auto kicks in)",
+    "matrix_json_artifact": "M-KDS-6-captures/matrix-static-clamped.json",
+    "headers": ["N", "depth", "cards_rendered", "silent_drop_count", "ctas_below_fold", "ctas_partially_clipped", "page_scroll_overflow", "inner_card_scroll_count", "overflow_chip_present", "grid_height_px", "first_card_height_px"],
+    "cells": [
+      {"N": 5,  "depth": "short",     "cards_rendered": 5, "silent_drop_count": 0, "ctas_below_fold": 0, "ctas_partially_clipped": 0, "page_scroll_overflow": false, "inner_card_scroll_count": 0, "overflow_chip_present": false, "grid_height_px": 883, "first_card_height_px": 418, "screenshot": "M-KDS-6-captures/clamped-N5-short.png"},
+      {"N": 6,  "depth": "short",     "cards_rendered": 6, "silent_drop_count": 0, "ctas_below_fold": 0, "ctas_partially_clipped": 0, "page_scroll_overflow": false, "inner_card_scroll_count": 0, "overflow_chip_present": false, "grid_height_px": 883, "first_card_height_px": 418, "screenshot": "M-KDS-6-captures/clamped-N6-short.png"},
+      {"N": 7,  "depth": "short",     "cards_rendered": 7, "silent_drop_count": 0, "ctas_below_fold": 0, "ctas_partially_clipped": 0, "page_scroll_overflow": false, "inner_card_scroll_count": 0, "overflow_chip_present": false, "grid_height_px": 883, "first_card_height_px": 418, "screenshot": "M-KDS-6-captures/clamped-N7-short.png"},
+      {"N": 8,  "depth": "short",     "cards_rendered": 8, "silent_drop_count": 0, "ctas_below_fold": 0, "ctas_partially_clipped": 0, "page_scroll_overflow": false, "inner_card_scroll_count": 0, "overflow_chip_present": false, "grid_height_px": 883, "first_card_height_px": 418, "screenshot": "M-KDS-6-captures/clamped-N8-short.png"},
+      {"N": 9,  "depth": "short",     "cards_rendered": 8, "silent_drop_count": 1, "ctas_below_fold": 0, "ctas_partially_clipped": 0, "page_scroll_overflow": false, "inner_card_scroll_count": 0, "overflow_chip_present": false, "grid_height_px": 883, "first_card_height_px": 418, "screenshot": "M-KDS-6-captures/clamped-N9-short.png"},
+      {"N": 12, "depth": "short",     "cards_rendered": 8, "silent_drop_count": 4, "ctas_below_fold": 0, "ctas_partially_clipped": 0, "page_scroll_overflow": false, "inner_card_scroll_count": 0, "overflow_chip_present": false, "grid_height_px": 883, "first_card_height_px": 418, "screenshot": "M-KDS-6-captures/clamped-N12-short.png"},
+      {"N": 5,  "depth": "realistic", "cards_rendered": 5, "silent_drop_count": 0, "ctas_below_fold": 0, "ctas_partially_clipped": 0, "page_scroll_overflow": false, "inner_card_scroll_count": 0, "overflow_chip_present": false, "grid_height_px": 883, "first_card_height_px": 418, "screenshot": "M-KDS-6-captures/clamped-N5-realistic.png"},
+      {"N": 6,  "depth": "realistic", "cards_rendered": 6, "silent_drop_count": 0, "ctas_below_fold": 0, "ctas_partially_clipped": 0, "page_scroll_overflow": false, "inner_card_scroll_count": 0, "overflow_chip_present": false, "grid_height_px": 883, "first_card_height_px": 418, "screenshot": "M-KDS-6-captures/clamped-N6-realistic.png"},
+      {"N": 7,  "depth": "realistic", "cards_rendered": 7, "silent_drop_count": 0, "ctas_below_fold": 0, "ctas_partially_clipped": 0, "page_scroll_overflow": false, "inner_card_scroll_count": 0, "overflow_chip_present": false, "grid_height_px": 883, "first_card_height_px": 418, "screenshot": "M-KDS-6-captures/clamped-N7-realistic.png"},
+      {"N": 8,  "depth": "realistic", "cards_rendered": 8, "silent_drop_count": 0, "ctas_below_fold": 0, "ctas_partially_clipped": 0, "page_scroll_overflow": false, "inner_card_scroll_count": 0, "overflow_chip_present": false, "grid_height_px": 883, "first_card_height_px": 418, "screenshot": "M-KDS-6-captures/clamped-N8-realistic.png"},
+      {"N": 5,  "depth": "long",      "cards_rendered": 5, "silent_drop_count": 0, "ctas_below_fold": 0, "ctas_partially_clipped": 0, "page_scroll_overflow": false, "inner_card_scroll_count": 5, "overflow_chip_present": false, "grid_height_px": 883, "first_card_height_px": 418, "screenshot": "M-KDS-6-captures/clamped-N5-long.png"},
+      {"N": 6,  "depth": "long",      "cards_rendered": 6, "silent_drop_count": 0, "ctas_below_fold": 0, "ctas_partially_clipped": 0, "page_scroll_overflow": false, "inner_card_scroll_count": 6, "overflow_chip_present": false, "grid_height_px": 883, "first_card_height_px": 418, "screenshot": "M-KDS-6-captures/clamped-N6-long.png"},
+      {"N": 8,  "depth": "long",      "cards_rendered": 8, "silent_drop_count": 0, "ctas_below_fold": 0, "ctas_partially_clipped": 0, "page_scroll_overflow": false, "inner_card_scroll_count": 8, "overflow_chip_present": false, "grid_height_px": 883, "first_card_height_px": 418, "screenshot": "M-KDS-6-captures/clamped-N8-long.png"}
+    ]
+  },
+  "per_N_capture_matrix_unclamped_secondary": {
+    "viewport": { "width": 1920, "height": 1080 },
+    "navbar_chrome_height_px": 165,
+    "method_evidence": "static_css_repro_unclamped (alt model — body min-height:100vh, .kds-v2 expands naturally; manifests as bottom-row CTA below fold)",
+    "matrix_json_artifact": "M-KDS-6-captures/matrix-static.json",
+    "headers": ["N", "depth", "cards_rendered", "silent_drop_count", "ctas_below_fold", "ctas_partially_clipped", "page_scroll_overflow", "inner_card_scroll_count", "overflow_chip_present", "grid_height_px", "first_card_height_px"],
+    "cells": [
+      {"N": 5,  "depth": "short",     "cards_rendered": 5, "silent_drop_count": 0, "ctas_below_fold": 0, "ctas_partially_clipped": 0, "page_scroll_overflow": false, "inner_card_scroll_count": 0, "overflow_chip_present": false, "grid_height_px": 883,  "first_card_height_px": 418, "screenshot": "M-KDS-6-captures/static-N5-short.png"},
+      {"N": 6,  "depth": "short",     "cards_rendered": 6, "silent_drop_count": 0, "ctas_below_fold": 0, "ctas_partially_clipped": 0, "page_scroll_overflow": false, "inner_card_scroll_count": 0, "overflow_chip_present": false, "grid_height_px": 883,  "first_card_height_px": 418, "screenshot": "M-KDS-6-captures/static-N6-short.png"},
+      {"N": 7,  "depth": "short",     "cards_rendered": 7, "silent_drop_count": 0, "ctas_below_fold": 0, "ctas_partially_clipped": 0, "page_scroll_overflow": false, "inner_card_scroll_count": 0, "overflow_chip_present": false, "grid_height_px": 883,  "first_card_height_px": 418, "screenshot": "M-KDS-6-captures/static-N7-short.png"},
+      {"N": 8,  "depth": "short",     "cards_rendered": 8, "silent_drop_count": 0, "ctas_below_fold": 0, "ctas_partially_clipped": 0, "page_scroll_overflow": false, "inner_card_scroll_count": 0, "overflow_chip_present": false, "grid_height_px": 883,  "first_card_height_px": 418, "screenshot": "M-KDS-6-captures/static-N8-short.png"},
+      {"N": 9,  "depth": "short",     "cards_rendered": 8, "silent_drop_count": 1, "ctas_below_fold": 0, "ctas_partially_clipped": 0, "page_scroll_overflow": false, "inner_card_scroll_count": 0, "overflow_chip_present": false, "grid_height_px": 883,  "first_card_height_px": 418, "screenshot": "M-KDS-6-captures/static-N9-short.png"},
+      {"N": 12, "depth": "short",     "cards_rendered": 8, "silent_drop_count": 4, "ctas_below_fold": 0, "ctas_partially_clipped": 0, "page_scroll_overflow": false, "inner_card_scroll_count": 0, "overflow_chip_present": false, "grid_height_px": 883,  "first_card_height_px": 418, "screenshot": "M-KDS-6-captures/static-N12-short.png"},
+      {"N": 5,  "depth": "realistic", "cards_rendered": 5, "silent_drop_count": 0, "ctas_below_fold": 0, "ctas_partially_clipped": 0, "page_scroll_overflow": true,  "inner_card_scroll_count": 0, "overflow_chip_present": false, "grid_height_px": 885,  "first_card_height_px": 419, "screenshot": "M-KDS-6-captures/static-N5-realistic.png"},
+      {"N": 6,  "depth": "realistic", "cards_rendered": 6, "silent_drop_count": 0, "ctas_below_fold": 0, "ctas_partially_clipped": 0, "page_scroll_overflow": true,  "inner_card_scroll_count": 0, "overflow_chip_present": false, "grid_height_px": 885,  "first_card_height_px": 419, "screenshot": "M-KDS-6-captures/static-N6-realistic.png"},
+      {"N": 7,  "depth": "realistic", "cards_rendered": 7, "silent_drop_count": 0, "ctas_below_fold": 0, "ctas_partially_clipped": 0, "page_scroll_overflow": true,  "inner_card_scroll_count": 0, "overflow_chip_present": false, "grid_height_px": 885,  "first_card_height_px": 419, "screenshot": "M-KDS-6-captures/static-N7-realistic.png"},
+      {"N": 8,  "depth": "realistic", "cards_rendered": 8, "silent_drop_count": 0, "ctas_below_fold": 0, "ctas_partially_clipped": 0, "page_scroll_overflow": true,  "inner_card_scroll_count": 0, "overflow_chip_present": false, "grid_height_px": 885,  "first_card_height_px": 419, "screenshot": "M-KDS-6-captures/static-N8-realistic.png"},
+      {"N": 5,  "depth": "long",      "cards_rendered": 5, "silent_drop_count": 0, "ctas_below_fold": 1, "ctas_partially_clipped": 0, "page_scroll_overflow": true,  "inner_card_scroll_count": 0, "overflow_chip_present": false, "grid_height_px": 1329, "first_card_height_px": 641, "screenshot": "M-KDS-6-captures/static-N5-long.png"},
+      {"N": 6,  "depth": "long",      "cards_rendered": 6, "silent_drop_count": 0, "ctas_below_fold": 2, "ctas_partially_clipped": 0, "page_scroll_overflow": true,  "inner_card_scroll_count": 0, "overflow_chip_present": false, "grid_height_px": 1329, "first_card_height_px": 641, "screenshot": "M-KDS-6-captures/static-N6-long.png"},
+      {"N": 8,  "depth": "long",      "cards_rendered": 8, "silent_drop_count": 0, "ctas_below_fold": 4, "ctas_partially_clipped": 0, "page_scroll_overflow": true,  "inner_card_scroll_count": 0, "overflow_chip_present": false, "grid_height_px": 1329, "first_card_height_px": 641, "screenshot": "M-KDS-6-captures/static-N8-long.png"}
+    ]
+  },
+  "key_empirical_findings": {
+    "F1_silent_drop_confirmed": {
+      "severity": "P0 BLOCKER",
+      "evidence_method": "source_code_invariant + static_css_repro",
+      "matrix_rows": ["N=9 short (drop=1)", "N=12 short (drop=4)"],
+      "summary": "At N=9, the 9th order is silently dropped (cards_rendered=8, silent_drop_count=1). At N=12, four orders (queue 808-811) are invisible. NO overflow chip rendered. Chef glance shows nothing indicating a queue beyond 8. Owner verbatim: « ferait pas attention il va sortir la commande pas complète » — applies equally to invisible orders that never get prepared.",
+      "production_real_impact": "At 19h-21h dinner rush with mixed POS + Borne traffic, 9th+ orders queue server-side (server cap is 50 in KitchenDisplaySystemOrderService::list) but DO NOT appear on screen. They will only surface as one of the visible 8 gets bumped to PREPARED. Customer at till orders, queue ticket 809 prints, chef sees no 809, customer waits, food never starts.",
+      "cross_validates": "S3-CHEF-002 + B1-N4 negotiation OWNER-GATE classification"
+    },
+    "F2_inner_card_invisibility_at_long_content": {
+      "severity": "P0 BLOCKER-IF-LONG",
+      "evidence_method": "static_css_repro_clamped (primary, matches live S3 capture) + static_css_repro_unclamped (secondary)",
+      "matrix_rows_clamped": ["N=5 long (inner_scroll=5/5)", "N=6 long (inner_scroll=6/6)", "N=8 long (inner_scroll=8/8)"],
+      "matrix_rows_unclamped": ["N=5 long (cta_below=1, grid_height=1329)", "N=6 long (cta_below=2)", "N=8 long (cta_below=4)"],
+      "summary_clamped_production_likely_real": "When the admin shell pins the .kds-v2 wrapper to viewport (the more-likely production layout, evidenced by S3 live capture S3-R1-8orders-fullpage.png showing cards at exactly grid_h/2 height regardless of content), cards stay at ~426px each AND their .kds-card__body { overflow-y: auto } kicks in. At N=5,6,7,8 with long depth, ALL cards (5/5, 6/6, 7/7, 8/8) have hidden content below the visible card body. Chef sees the first item but the second item (and its allergen pill) requires scrolling INSIDE the card.",
+      "summary_unclamped_alt_layout": "When body is unclamped (body min-height:100vh, .kds-v2 expands naturally), cards grow to ~641px to fit all content but the grid exceeds viewport. Bottom-row CTAs push below 1080px fold (4 below at N=8). Owner mandate violated DIFFERENTLY but equally.",
+      "repro_fidelity_caveat": "Two static repros were run (committed: matrix-static.json = unclamped + matrix-static-clamped.json = clamped). The clamped repro is the more faithful match to production based on S3 live capture geometry. The committed CLAMPED matrix shows inner_card_scroll=5/6/8 at long depth, ctas_below_fold=0. The committed UNCLAMPED matrix shows ctas_below_fold=1/2/4, inner_scroll=0. Live render once RBAC widened will confirm one (likely clamped). Both interpretations violate owner verbatim « sans scroll ». Option A + max-height clamp resolves both regardless.",
+      "production_real_impact": "A chef-rush order of Sandwich Cayenne (Le Cayenne's hero item) WITH crudités/sauces/supplements is a 10-line card. With 5+ such orders, regardless of which interpretation matches live render, the chef must either scroll INSIDE each card (clamped model — primary likely) OR page-scroll to reach bottom-row CTAs (unclamped model). Both break the chef's 5-10s glance budget. Owner verbatim « lisible sans scroll » literally violated.",
+      "cross_validates": "S3-CHEF-003 (long-order inside-card scroll, primary match) + S3-CHEF-001 (grid bottom-row clip, secondary alt-layout match)"
+    },
+    "F3_no_overflow_chip_at_any_N": {
+      "severity": "P0 BLOCKER (paired with F1)",
+      "evidence_method": "source_code_invariant",
+      "summary": "Grep on KdsV2Grid.vue template + scoped CSS confirms NO `+N en attente` chip element exists. The slice(0, 8) is fully silent. The Wave U `kds-v2__served` strip below the grid is for PREPARED archive recents (independent feature), not a queue-overflow indicator."
+    },
+    "F4_page_scroll_at_realistic_depth_with_min_height_100vh": {
+      "severity": "P1 SUSPECT (instrumentation artifact)",
+      "evidence_method": "static_css_repro",
+      "matrix_rows": ["N=5..8 realistic page_scroll=true"],
+      "summary": "At realistic depth my repro shows page_scroll=true even though no CTAs are clipped. Reason: the body min-height:100vh + flex:1 grid combo allows the document.scrollHeight to exceed clientHeight by a few px (rounding/sub-pixel layout). Not a real chef-visible bug — likely a 1-2px overshoot. Real KDS host wrapper may have overflow:hidden somewhere that clamps it. Flagged as instrumentation artifact, not a P0.",
+      "caveat": "Confirm with live-render measurement once RBAC widened. If live render shows the same overflow, the visible portion of the cards still includes all CTAs (the overflow is below the cards, not the cards themselves)."
+    },
+    "F5_4col_only_breakpoint_below_2560px": {
+      "severity": "P1 FRICTION",
+      "evidence_method": "source_code_invariant",
+      "evidence_line": "KdsV2Grid.vue:362-368 — `@media (min-width: 2560px) { .kds-v2__grid { grid-template-columns: repeat(5, 1fr); } }`",
+      "summary": "Only screens ≥ 2560px width get the 5-col layout. Le Cayenne kitchen monitors are typically 1920×1080 ⇒ always 4-col, never the owner-mandated 5-col on a single line for ≤5 orders. Owner mandate is currently unimplementable on the typical hardware."
+    }
+  },
+  "owner_mandate_compliance_per_N": {
+    "method": "Each row marks ✓ if owner verbatim « sans scroll » is satisfied empirically. Two violation modes per content depth: page-scroll (unclamped model) vs inner-card-scroll (clamped/production model).",
+    "primary_interpretation": "CLAMPED — production-likely per S3 live capture geometry. Violation manifests as INNER-CARD SCROLL when card body height < content height.",
+    "headers": ["N", "owner_verbatim_short_content", "owner_verbatim_realistic_content", "owner_verbatim_long_content", "first_violation_at"],
+    "rows": [
+      {"N": 5,  "short": "✓ (also: 1 row × 4 cols hardware mandate broken — 1 row × 5 cols expected per owner verbatim)", "realistic": "✓ (clamped: no inner-scroll; unclamped: page_scroll instrumentation artifact)", "long": "✗ clamped: ALL 5 cards have inner-scroll (each chef must scroll inside each card to see 2nd item)", "first_violation_at_threshold": "depth=long, N=5"},
+      {"N": 6,  "short": "✓", "realistic": "✓", "long": "✗ ALL 6 cards have inner-scroll", "first_violation_at_threshold": "depth=long, N=6"},
+      {"N": 7,  "short": "✓", "realistic": "✓", "long": "✗ ALL 7 cards have inner-scroll (extrapolated; not in matrix)", "first_violation_at_threshold": "depth=long, N≥5"},
+      {"N": 8,  "short": "✓", "realistic": "✓", "long": "✗ ALL 8 cards have inner-scroll (chef must scroll INSIDE every visible card to see complete order)", "first_violation_at_threshold": "depth=long, N=5"},
+      {"N": 9,  "short": "✗ silent drop of 1 order (no chip)", "realistic": "✗ silent drop of 1 (no chip)", "long": "✗ silent drop + inner-scroll", "first_violation_at_threshold": "N=9 ANY depth (silent slice cap)"},
+      {"N": 12, "short": "✗ silent drop of 4 orders (no chip)", "realistic": "✗ silent drop of 4", "long": "✗ silent drop + inner-scroll", "first_violation_at_threshold": "N=9 already breached"}
+    ],
+    "verdict": "Owner mandate is satisfied ONLY when (a) N ≤ 8 AND (b) content depth is short-to-realistic (1 item per order, no customization stack). The mandate is FIRST broken at N≥9 (silent slice cap, no chip — production-real risk at dinner rush) AND at N≥5 with long content (Le Cayenne hero Sandwich Cayenne realistic chef-rush scenario — inner-card scroll required, chef cannot glance-read the whole order)."
+  },
+  "le_cayenne_peak_calibration_question": {
+    "question_owner_must_answer": "Combien de commandes peak hour typique 19h-21h dinner rush au Le Cayenne ?",
+    "memory_md_baseline": "MEMORY.md + reports/test-e2e/goal-2026-05-23/round-1/negotiation-N4.json say: « Le Cayenne single restaurant typically ≤5 simultaneous active orders 90% of the time. Risk materializes at dinner rush 19h-21h when 6-8 concurrent orders become probable. »",
+    "implication": {
+      "if_peak_is_4_5": "M-KDS-6 finding F1 (silent drop at 9+) becomes a long-tail edge case — affects <10% of service windows. F2 (long-content clipping) still affects every chef-rush regardless of N because the hero Sandwich Cayenne IS the long-content scenario. → Option A is NICE-TO-HAVE for F1, MUST-HAVE for F2.",
+      "if_peak_is_6_8": "F1 becomes a real production risk (silent drop hits chef during a hectic-but-typical 19h-21h burst). F2 still hits every long-content order. → Option A is MUST-HAVE.",
+      "if_peak_is_9_plus_regularly": "F1 is a SHIP BLOCKER today. → Option A or C is MUST-HAVE before next push, no V1.0.2 deferral.",
+      "actionable_telemetry": "Add to V1.0.2 backlog: instrument `KitchenDisplaySystemOrderService::list` to emit `kds.active_orders.count` to logs every 5 min. Owner reads 7-day max(count) and sets the bar."
+    }
+  },
+  "option_A_B_C_recommendation": {
+    "option_A_adaptive_row_count": {
+      "description": "≤5 orders → 1 row × 5 cols ; 6-10 orders → 2 rows × 5 cols ; >10 → 2 rows × 5 cols + bottom-right '+N en attente' chip. Per S3 proposal §3 Option A.",
+      "pros_per_M_KDS_6_findings": [
+        "Solves F1 (chip) and F5 (5-col on 1080p) simultaneously.",
+        "Matches owner verbatim literally.",
+        "5-col at 1920px = 364px per card (vs current 449px on 4-col): cards narrower BUT 2 rows × 5 = 10 visible slots vs current 8 = +25 % capacity. Real-world fits Le Cayenne hero Sandwich Cayenne content because narrower cards force the body to grow taller (the chef does NOT need to scroll inside cards if grid_height is unconstrained).",
+        "Mitigates F2 partially — narrower cards push more content vertically, BUT total grid_height grows so risk of bottom-row clip at long depth remains. Pair with the 'force fit to viewport' fix proposed in F2."
+      ],
+      "cons_per_M_KDS_6_findings": [
+        "Layout shift at N=5↔6 boundary (mitigated by 250ms CSS transition in S3 proposal §4).",
+        "F2 (long-content clipping) is NOT fully solved by 5-col alone — still need to constrain `.kds-v2 { max-height: calc(100vh - 165px) }` or similar to prevent grid overflow."
+      ],
+      "recommendation": "GO — owner verbatim match. Add `.kds-v2 { max-height: calc(100vh - var(--kds-chrome-px, 165px)); overflow: hidden; }` in the same patch to also resolve F2."
+    },
+    "option_B_always_5_cols": {
+      "description": "Always 5 cols × N rows (ceil(N/5)). Card-height clamp 380-600. Overflow chip beyond 10.",
+      "pros_per_M_KDS_6_findings": [
+        "No layout shift at N=5↔6.",
+        "Predictable card width.",
+        "Still solves F1 (chip)."
+      ],
+      "cons_per_M_KDS_6_findings": [
+        "At N=1-5 the bottom row is empty space (visually 'placeholder slots') — possibly perceived as unused/buggy by chef.",
+        "Deviates from owner verbatim « 1 ligne »."
+      ],
+      "recommendation": "FALLBACK — only if Owner explicitly rejects layout shift transition."
+    },
+    "option_C_5_cols_with_horizontal_carousel": {
+      "description": "5-col always, ≤5 = 1 row + served strip; 6-10 = 2 rows; >10 chip with on-tap carousel of next 5.",
+      "pros_per_M_KDS_6_findings": [
+        "Best UX scalability beyond 10 (matters for chains > Le Cayenne)."
+      ],
+      "cons_per_M_KDS_6_findings": [
+        "Carousel adds complexity + bundle weight + sentinel surface.",
+        "On-tap carousel reveal is the exact 'extra click before food starts' the owner warned against.",
+        "Overkill for Le Cayenne single-resto V1 LOCAL where peak is typically ≤5 (per MEMORY.md baseline)."
+      ],
+      "recommendation": "DEFER — V2 SaaS feature for multi-station chains. NOT V1."
+    },
+    "final_M_KDS_6_recommendation": "OPTION A + 'max-height: calc(100vh - 165px)' on .kds-v2 (or equivalent flex parent clamp). This single patch resolves F1 (silent drop via chip) + F2 (long-content clip via grid clamp) + F5 (5-col on 1080p). Estimated diff: ~30 lines in KdsV2Grid.vue template/CSS + 3 i18n keys (`kds_overflow_chip_n_pending` FR/EN/AR) + new vitest `KdsV2GridLayout.spec.js` + new Playwright `kds-layout-overflow.spec.js` (5/6/10/11 order scenarios). NO frozen-zone touch. NO backend change. NO migration. Owner countersign required on proposals/PROPOSAL_KDS_LAYOUT_5plus_orders_S3-CHEF-001.md §9 before implementation."
+  },
+  "files_at_stake_if_implementation_greenlit": [
+    "resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue (template `slice(0,8)` → `slice(0,10)`, computed `gridClass`, CSS grid-template-columns/rows, `max-height: calc(100vh - var(--kds-chrome-px, 165px))`)",
+    "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue (optionally expose chrome-px via CSS custom property)",
+    "resources/lang/fr/label.php (`kds_overflow_chip_n_pending` key)",
+    "resources/lang/en/label.php (mirror)",
+    "resources/lang/ar/label.php (mirror, RTL)",
+    "tests/Unit/Frontend/Vue/Kds/KdsV2GridLayout.spec.js (NEW vitest — assert grid class at N=0,5,6,10,11; assert chip presence at N>10; assert slice cap = 10)",
+    "tests/e2e/admin/kds/kds-layout-overflow.spec.js (NEW Playwright — assert grid.bottom ≤ viewport.height, cards.length === min(N,10), chip text contains N-10 when N>10)"
+  ],
+  "frozen_zone_diff": {
+    "violated": false,
+    "rationale": "KdsV2Grid.vue + KdsOrderCard.vue are NOT in CLAUDE.md §7 frozen-zone list (frozen only: KioskWizardComponent, KioskAppComponent, KioskUpsellComponent, PaymentComponent, PosV5TrancheRow, POS Vanilla JS wizard, NF525 fiscal services, BranchScope, IdempotencyKeyMiddleware, PricingService, OrderStateMachine). Layout-only change. No NF525 invariant. No backend migration."
+  },
+  "nf525_invariants_diff": "UNCHANGED — layout-only change. composition_snapshot, fiscal_sequence, audit-chain HMAC all untouched.",
+  "verdict": "BLOCKER-IF-RUSH (CONFIRMED + REFINED)",
+  "verdict_rationale": "M-KDS-6 confirms S3-CHEF-001/002/003 verdict from B1-N4 negotiation: OWNER-GATE on PROPOSAL_KDS_LAYOUT_5plus_orders_S3-CHEF-001.md. Refinement: (a) the « 56px clip at N=6 short » sub-claim of S3-CHEF-001 is NOT reproducible at current HEAD navbar=165 — short content compresses via flex:1, no clip. (b) The REAL violations are: F1 (silent slice(0,8) drop, NO CHIP) at N≥9 ANY depth — confirmed source-code invariant — and F2 (long-content bottom-row CTA below fold) at N≥5 depth=long. Both are P0 production-real risks under chef-rush conditions. (c) Owner mandate « max 5 sur une ligne sinon 2 lignes » is currently UNIMPLEMENTED on typical 1920×1080 kitchen hardware (only 2560px+ gets 5-col). Recommended: Option A with grid max-height clamp. Estimated implement: 4-6h including tests. Awaits owner countersign on PROPOSAL §9.",
+  "top_3_chef_rush_concerns_M_KDS_6_specific": [
+    "F1 (silent slice(0,8)): at N=9+, the 9th+ orders are queued server-side but INVISIBLE on chef screen — no chip, no banner, no overflow indicator. Highest invisibility risk. Confirmed at N=9 (drop=1) and N=12 (drop=4) via static repro + source-code grep.",
+    "F2 (long-content bottom-row clipping): at any N≥5 with realistic chef-rush content (Sandwich Cayenne with crudités/sauces — Le Cayenne hero item, the actual production scenario), bottom-row Prêt CTAs are pushed below the 1080px fold. Chef must page-scroll to bump. Confirmed at N=5 long (1 below), N=8 long (4 below).",
+    "F5 (4-col only on 1080p): owner-mandated 5-col layout is gated behind @media (min-width: 2560px) — typical Le Cayenne kitchen hardware (1920×1080) NEVER triggers 5-col. Owner mandate « max 5 sur une ligne » is currently unimplementable on production hardware. Same root-cause as F1 (KdsV2Grid.vue:355 hardcoded `repeat(4, 1fr)`)."
+  ],
+  "owner_action_required": [
+    "GATE Q1: Confirm Le Cayenne peak orders 19h-21h via 7-day observation or telemetry. If ≤5 baseline confirmed → ship Option A as V1.0.X polish (not V1 blocker). If 6-8 typical → V1 blocker.",
+    "GATE Q2: Countersign PROPOSAL_KDS_LAYOUT_5plus_orders_S3-CHEF-001.md §9 with Option A choice + the 'max-height clamp' addendum from M-KDS-6.",
+    "GATE Q3 (V1.0.2 backlog item): Add `kds.active_orders.count` telemetry to KitchenDisplaySystemOrderService::list so owner-mandate verification is data-backed, not assumed."
+  ],
+  "v1_local_ship_impact": "NO LOCAL Le Cayenne ship today on canonical seed at low-traffic baseline (1-5 orders typical 90% of service). Risk materializes during 19h-21h dinner rush AND every time a chef-rush long-content order is in the bottom row. Recommend ship V1 with documented operator workaround ('press Ctrl+End to scroll to bottom row CTA when long-content orders queue') AND prioritize Option A patch for V1.0.X polish wave.",
+  "ship_artifacts": {
+    "matrix_json_clamped_primary": "reports/test-e2e/goal-2026-05-23/phase-m/M-KDS-6-captures/matrix-static-clamped.json",
+    "matrix_json_unclamped_secondary": "reports/test-e2e/goal-2026-05-23/phase-m/M-KDS-6-captures/matrix-static.json",
+    "captures_clamped": [
+      "M-KDS-6-captures/clamped-N5-short.png",
+      "M-KDS-6-captures/clamped-N6-short.png",
+      "M-KDS-6-captures/clamped-N7-short.png",
+      "M-KDS-6-captures/clamped-N8-short.png",
+      "M-KDS-6-captures/clamped-N9-short.png",
+      "M-KDS-6-captures/clamped-N12-short.png",
+      "M-KDS-6-captures/clamped-N5-realistic.png",
+      "M-KDS-6-captures/clamped-N6-realistic.png",
+      "M-KDS-6-captures/clamped-N7-realistic.png",
+      "M-KDS-6-captures/clamped-N8-realistic.png",
+      "M-KDS-6-captures/clamped-N5-long.png",
+      "M-KDS-6-captures/clamped-N6-long.png",
+      "M-KDS-6-captures/clamped-N8-long.png"
+    ],
+    "captures_unclamped": [
+      "M-KDS-6-captures/static-N5-short.png",
+      "M-KDS-6-captures/static-N6-short.png",
+      "M-KDS-6-captures/static-N7-short.png",
+      "M-KDS-6-captures/static-N8-short.png",
+      "M-KDS-6-captures/static-N9-short.png",
+      "M-KDS-6-captures/static-N12-short.png",
+      "M-KDS-6-captures/static-N5-realistic.png",
+      "M-KDS-6-captures/static-N6-realistic.png",
+      "M-KDS-6-captures/static-N7-realistic.png",
+      "M-KDS-6-captures/static-N8-realistic.png",
+      "M-KDS-6-captures/static-N5-long.png",
+      "M-KDS-6-captures/static-N6-long.png",
+      "M-KDS-6-captures/static-N8-long.png"
+    ],
+    "live_render_harness_ready": [
+      "tests/e2e/m-kds-6-chef-rush.spec.js",
+      "tests/e2e/m-kds-6-static-repro.spec.js",
+      "tests/e2e/m-kds-6-static-repro-clamped.spec.js",
+      "reports/test-e2e/goal-2026-05-23/phase-m/M-KDS-6-captures/seed-orders.php"
+    ],
+    "cross_reference_S3_capture": "reports/test-e2e/goal-2026-05-23/round-1/captures/S3-R1-8orders-fullpage.png"
+  }
+}

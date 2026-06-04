@@ -93,8 +93,8 @@
     @endphp 
     <div class="container">
         <div class="report">
-            <p style="margin: 0px 0px 8px 0px;font-size: 16px;font-weight: bold">{{ App\Libraries\AppLibrary::textShortener($company['company_name'], 60) }}</p>
-            <p>{{ App\Libraries\AppLibrary::textShortener($company['company_address'],60) }}</p>
+            <p style="margin: 0px 0px 8px 0px;font-size: 16px;font-weight: bold">{{ App\Libraries\AppLibrary::textShortener($company['company_name'] ?? 'Le Cayenne', 60) }}</p>
+            <p>{{ App\Libraries\AppLibrary::textShortener($company['company_address'] ?? '', 60) }}</p>
             <p  style="color: #ff006b;margin: 0px 0px 8px 0px;font-size: 16px;font-weight: bold;">{{ trans('all.label.items_report', [], 'en') }}</p>
             <table>
                 <thead>
@@ -108,13 +108,16 @@
                 <tbody>
                     @foreach ($items as $item)
                         @php
-                            $total_quantity+= $item->orders->count();
+                            // [ITEMS-SEM-02 heal] units sold (SUM quantity, realized, date-scoped),
+                            // not COUNT of order lines.
+                            $units = (int) ($item->units_sold ?? 0);
+                            $total_quantity += $units;
                          @endphp
                         <tr>
                             <td>{{$item->name}}</td>
                             <td>{{  optional($item->category)->name }}</td>
                             <td>{{ trans( 'itemType.' . $item->item_type) }}</td>
-                            <td>{{    $item->orders->count() }}</td>
+                            <td>{{ $units }}</td>
 
                         </tr>
                     @endforeach

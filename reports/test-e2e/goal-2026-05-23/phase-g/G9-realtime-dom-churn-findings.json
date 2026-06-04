@@ -1,0 +1,222 @@
+{
+  "phase": "G",
+  "agent": "PHASE G AGENT G.9 — REALTIME DOM CHURN UNDER ECHO",
+  "scope": "Mid-interaction Echo events vs user input/focus/composition across POS (G.9.1), Kiosk wizard (G.9.2), KDS (G.9.3), Cash Overview (G.9.4), focus/scroll preservation patterns (G.9.5)",
+  "date": "2026-05-23",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "method": "code-static + grep-driven (Playwright MCP not invoked — disk-constrained sub-agent context). Cross-verified vendor library behavior in node_modules/vue-next-select/dist/vue-next-select.es.js. Corroborating empirical evidence from prior cycles cited where applicable.",
+
+  "scenarios": {
+    "G_9_1_cashier_customer_search_during_echo_OrderCreated": {
+      "scenario": "Cashier types in /admin/pos customer search box; Echo `OrderCreated` arrives mid-keystroke; Q10 Prêt panel re-renders.",
+      "verdict": "GREEN — search input text + focus preserved",
+      "evidence": {
+        "echo_handlers_in_PosComponent": "resources/js/components/admin/pos/PosComponent.vue:2637-2696 — `_subscribeEcho` registers OrderCreated → calls `_notifyNewOrder` + `loadKioskCashOrders` + `loadActiveOrdersStats` + `loadReadyOrders`. NONE of these dispatch `user/lists`. The `customers` computed (line 1954) reads `user/lists` Vuex getter — unaffected by Echo.",
+        "Q10_panel_always_render": "PosComponent.vue:267-389 — Q10 Prêt à livrer + À encaisser borne panels are ALWAYS rendered (`pos-shortcuts__panel--empty` class only when list empty). Inner `<ul v-if=\"readyOrders.length > 0\">` toggles only the list, not the search box. Per-row `:key=\"o.id\"` (line 291, 355) guarantees in-place patch — list items survive 3-order burst without re-keying.",
+        "search_input_isolation": "Customer search uses `vue-select` (vue-next-select 2.10.5) at PosComponent.vue:532-537. Library source verified at node_modules/vue-next-select/dist/vue-next-select.es.js:808 — `searchingInputValue = ref('')` is internal to the component. Library watcher at line 901-909 reacts to `normalized.options` changes (syncs `normalizedModelValue`) but does NOT touch `searchingInputValue`. The `<input>` DOM ref `inputEl` is stable across options-array identity changes (no `:key` change). Conclusion: even if `customers` array reference changed, the search text + focus would persist.",
+        "destroyed_guard": "PosComponent.vue:2648/2665/2678 — each Echo handler has `if (this._destroyed) return;` guard (Wave T R1 F2 2026-05-20). No race on unmount.",
+        "audio_beep_no_focus_steal": "PosComponent.vue:2914-2939 — `_playNewOrderBeep()` uses WebAudio API (oscillator + gain) — no DOM mutation, no focus capture. `alertService.info` toast renders in portal (vue-toastification) — non-focus-stealing.",
+        "PosOrdersTracker_parity": "PosOrdersTrackerComponent.vue:31-44 — native `<input type=\"search\" v-model.trim=\"filters.query\">` is NOT inside any v-if depending on orders. Echo `OrderCreated` → `fetchOrders()` replaces `orders` array, never touches `filters.query`. Search input + focus preserved.",
+        "race_3_orders_2s_window": "Each Echo handler triggers parallel store dispatches. `loadKioskCashOrders` / `loadReadyOrders` use `try/catch + finally` reset (lines 2998-3105). No throttle/debounce — but each one replaces the bound array via `this.x = list`. Vue 3 reactivity diffs by `:key` — the only DOM nodes that re-render are the ones whose data actually changed."
+      },
+      "findings": [
+        {
+          "id": "G9-INFO-01",
+          "severity": "INFO",
+          "title": "PosComponent fires 3 parallel store dispatches per OrderCreated (kioskCashOrders + activeOrdersStats + readyOrders)",
+          "detail": "Each Echo event triggers `loadKioskCashOrders()` + `loadActiveOrdersStats()` + `loadReadyOrders()` (PosComponent.vue:2652-2660). Under a 3-order burst within 2s these multiply to 9 in-flight requests with no debounce. Backend pricing/orders endpoints are cheap (no SSOT recompute on read), so this is not a DoS risk. Net DOM impact = 0 disruption to customer search input (verified above). Worth noting for back-pressure planning if branchCount scales.",
+          "blocking": false,
+          "remediation": "None for V1. If burst load is observed in prod, wrap the three calls in a 200ms debouncer in `_subscribeEcho`."
+        }
+      ]
+    },
+
+    "G_9_2_customer_wizard_during_admin_sauce_off": {
+      "scenario": "Customer mid-kiosk wizard composing an item; admin toggles a sauce off; Echo `ItemExtraAvailabilityChanged` arrives (bridged to `CatalogChanged` per CatalogChanged.php:88).",
+      "verdict": "GREEN with one P2 INFO — wizard composition is immune to mid-session Echo, but in-wizard step invalidation is silent (toast only).",
+      "evidence": {
+        "kiosk_does_NOT_subscribe_to_ItemExtraAvailabilityChanged": "grep across resources/js — only `StockRuptureDashboardComponent.vue:481` listens to ItemExtraAvailabilityChanged. KioskAppComponent.vue subscribes to ItemAvailabilityChanged + CatalogChanged + ComposerProfileChanged + CouponChanged only (lines 546-575).",
+        "bridge_to_CatalogChanged": "ItemExtraAvailabilityChanged is bridged via CatalogChanged outbox row (app/Events/CatalogChanged.php:88-99 — `entityType='item_extra'`). The kiosk DOES receive the CatalogChanged broadcast for sauce-toggle.",
+        "wizard_immune_to_kioskMenu_mutation": "KioskWizardComponent.vue:443-445 — `resolvedItem` returns `this.item || this.fetchedItem`. Route config `resources/js/router/modules/kioskRoutes.js:173-181` defines `kiosk.wizard` with `props: true` — passes only route params (`itemId`), not an item Object. Inside the wizard: `fetchedItem` is set ONCE in `fetchItemById()` (line 1690) from a one-shot fetch to `/frontendItem/details`. NO computed or watcher rebinds `fetchedItem` to Vuex `kioskMenu`. grep `this.\\$store` in KioskWizardComponent.vue returns only 2 hits (lines 542-543 reading `kioskSettings/customerProfile`) — wizard is decoupled from menu mutations.",
+        "catalog_change_notifier_diff_targets_cart_not_wizard": "composables/useCatalogChangeNotifier.js:184-280 diffs the `kioskCart/snapshot` (committed lines) against new projection. The wizard's mid-composition `selections` ref is NOT in the snapshot until `Add to cart` is pressed. So when sauce X is toggled off mid-wizard, the customer sees `catalog.menu_refreshed_toast` ('Le menu a été mis à jour') but no targeted feedback. They may still tap the now-disabled sauce option and only discover the rejection at backend submit (422 from PricingService).",
+        "composition_snapshot_NF525_safe": "OrderService.php (lines 475, 894, 1358) writes composition_snapshot at create time inside the same DB transaction. NO post-create write path mutates it. For orders already CREATED (e.g., a kiosk order paid 2 minutes before the sauce was 86'd), the live cart UI in another session is irrelevant — the persisted snapshot is bit-frozen. NF525 invariant intact.",
+        "orphan_custom_event": "useCatalogChangeNotifier.js:373 dispatches `window.dispatchEvent(new CustomEvent('wizard:invalidate-step', { ... }))`. Grep across resources/js finds ZERO `addEventListener('wizard:invalidate-step')` or equivalent. KioskWizardComponent.vue:2238 only listens to `keydown`. The CustomEvent is emitted into the void — in-wizard step highlighting + focus + a11y `announce` (a11y/announcer.js) all fire correctly via the composable, but the wizard component never visually marks the affected step as stale.",
+        "wizard_router_view_key_stability": "KioskAppComponent.vue:122-128 wraps `<component>` with `:key=\"kioskRouterViewKey\"`. The key is computed at line 282-290: returns a STABLE constant `kiosk-shell-catalog` on `kiosk.categories` (deliberate per inline comment line 118) and `r.fullPath` elsewhere. Echo events do NOT mutate route or query — the wizard key is stable across CatalogChanged storms. No forced remount.",
+        "toast_visible_focus_neutral": "CatalogChangeToastComponent (resources/js/components/frontend/kiosk/CatalogChangeToastComponent.vue) is mounted as a sibling of router-view (KioskAppComponent.vue:13-19) — overlay portal, does not steal focus from wizard inputs."
+      },
+      "findings": [
+        {
+          "id": "G9-P2-01",
+          "severity": "P2",
+          "title": "Orphan `wizard:invalidate-step` CustomEvent — in-wizard step is never visually invalidated when an extra is removed mid-composition",
+          "detail": "`composables/useCatalogChangeNotifier.js:373` dispatches `window.dispatchEvent(new CustomEvent('wizard:invalidate-step', { detail: { step_ids, removedSelectionsByStep, ... } }))`. The intent per file docstring (line 12-15): 'highlights the affected step in the wizard, focuses it, and announces it via the a11y helper'. The a11y `announce(toastMessage.value, 'polite')` does fire, but the in-wizard visual highlighting + focus does NOT — KioskWizardComponent has no `addEventListener('wizard:invalidate-step')`. Customer mid-composing a sauce that just got 86'd sees only a generic toast 'Le menu a été mis à jour'. They may tap a disabled chip and discover the rejection only at `Add to cart` (PricingService 422). Composition_snapshot NF525 invariant is still intact (frozen at create time).",
+          "blocking": false,
+          "remediation": "Add `mounted() { window.addEventListener('wizard:invalidate-step', this._onCatalogStepInvalidate); }` + matching `beforeUnmount` cleanup in KioskWizardComponent. Inside the handler: highlight affected `:key` step (already keyed via `stepKey()` line 50/80), scroll into view, focus the first invalid chip. The composable already emits the detail payload — only the consumer wiring is missing. Estimated effort: ~20 LOC in the wizard, 0 frozen-zone touches. Defer to V1.0.2 — backend prevents bad orders today.",
+          "evidence_path": "resources/js/composables/useCatalogChangeNotifier.js:365-381 (dispatch site) vs resources/js/components/frontend/kiosk/KioskWizardComponent.vue full file (zero listener registration)."
+        },
+        {
+          "id": "G9-INFO-02",
+          "severity": "INFO",
+          "title": "kioskMenu/fetchMenu({force:true}) on CatalogChanged is a full menu refetch — bandwidth cost under storm",
+          "detail": "KioskAppComponent.vue:765-769 dispatches `kioskMenu/fetchMenu({force:true})` on every CatalogChanged event. A burst of 5 admin sauce-toggles (rare but possible during peak rush 86 cycle) triggers 5 full menu refetches per kiosk per branch. No coalescing/debounce on this path. Le Cayenne V1 single-branch + 3-kiosk load profile makes this acceptable; multi-branch SaaS should add a debouncer.",
+          "blocking": false,
+          "remediation": "V1.0.X cloud-prep: add 500ms debounce to `_handleCatalogChanged`. Not a V1 blocker."
+        }
+      ]
+    },
+
+    "G_9_3_chef_kds_bump_during_OrderCreated_burst": {
+      "scenario": "Chef on /kds clicks Bump on order A; same moment new orders B + C arrive via Echo `OrderCreated`. Verify bump click resolves against order A (not B or C). Verify Vue `:key=\"order.id\"` keeps DOM stable.",
+      "verdict": "GREEN — bump action is order-specific via closure capture; KDS card key stability holds",
+      "evidence": {
+        "bump_handler_captures_order_object": "KitchenDisplaySystemComponent.vue:1776-1788 — `kdsBump(order, item)` is invoked from `@click.prevent.stop=\"kdsBump(dineinOrder, item)\"` (line 425) / `kdsBump(onlineOrder, item)` (line 608) / `kdsBump(takeawayOrder, item)` (line 781) / `kdsBump(kioskOrder, item)` (line 957). Vue v-for binds `order` to the current iteration's object — the click handler closes over that specific reference. Even if the orders array gets replaced 5ms later by `_refreshWithCurrentFilter`, the bump fires against the captured object's `order.id` + `item.id`.",
+          "store_action_keyed_by_id": "store/modules/kds.js:55-62 — `bumpItem({orderId, itemId})` writes to `state.bumpedByOrder[orderId]` keyed by stable IDs. No array index involved. The follow-on `orderStatus(order, nextStatus)` call (line 1784) uses `order.id` from the captured closure, not array position.",
+        "vue_for_key_stability": "All 4 v-for top-level orders use `:key=\"order.id\"` (lines 282, 479, 649, 827). Vue 3 reconciler patches in-place when ID matches. New orders B + C cause Vue to mount NEW DOM nodes ABOVE/BELOW the existing card for A — but the card for A is preserved (same DOM nodes, same event listeners). The click on A's Bump button is delivered to A's handler with A's order object.",
+        "debounce_300ms_coalesces": "_debouncedRefresh (line 2330-2338) coalesces multiple Echo events into ONE refresh after 300ms quiet window. Under B+C arriving within 2s, the chef's click on A fires BEFORE the debounced refresh — even if the refresh later replaces the orders array, the bump store mutation has already been applied. Order A's bumpedItem timestamp persists across refresh because it's in Vuex `kds` module (LocalStorage-persisted via `persistMap`).",
+        "axios_interceptor_no_dom_disturb": "Lines 1448-1471 — interceptor fires `_refreshWithCurrentFilter()` on every successful change-status POST. This calls `kitchenDisplaySystemOrder/lists` which replaces the orders array. Same `:key=\"order.id\"` reconciliation applies — chef's other open bump buttons on cards B/C are not disrupted. NO focus to preserve (touch-input UX, no keyboard nav).",
+        "kdsSyncService_throttle": "KdsSyncService (services/KdsSyncService.js) has CADENCE_FLOOR_MS=250 hard floor (verified in C1 report). Even under WS storm, polling cannot fire faster than every 250ms.",
+        "_destroyed_safe": "Echo handler at line 1855-1858 has implicit lifecycle guard via `beforeUnmount` (line 2348) calling `unsubscribeEcho()` — no zombie callback risk."
+      },
+      "findings": [
+        {
+          "id": "G9-INFO-03",
+          "severity": "INFO",
+          "title": "KDS axios response interceptor bypasses 300ms debounce on every successful change-status POST",
+          "detail": "KitchenDisplaySystemComponent.vue:1448-1471 — global axios response interceptor calls `_refreshWithCurrentFilter()` immediately (no debounce) for any POST to `admin/kds-order/change-status/` returning 2xx. Documented as intentional (line 1459-1461: 'Direct refresh ... so the 09-kds-prete window (~1500ms in the spec) catches the transition'). Under rapid chef bumping (3 orders/sec during rush), this generates 3 immediate refresh calls within 1s, each fetching the full orders list. Net effect: no DOM disturbance (Vue reconciles cleanly via stable `:key`), but backend `kitchenDisplaySystemOrder/lists` endpoint sees triple-load. Acceptable for V1 Le Cayenne single-branch; flag for cloud-prep.",
+          "blocking": false,
+          "remediation": "Optionally add a 200ms post-success cool-down per interceptor instance. Not blocking — existing kdsSyncService CADENCE_FLOOR_MS=250 already protects the polling path; this only affects the click→refresh path."
+        }
+      ]
+    },
+
+    "G_9_4_cash_overview_filter_during_OrderCreated": {
+      "scenario": "Owner on /admin/cash-overview with filter Source=Borne applied; Echo `OrderCreated` fires; verify filter state preserved + F5 URL filter sync (Q8) holds.",
+      "verdict": "GREEN — Cash Overview has zero Echo subscription, zero auto-refresh; filter survives unconditionally",
+      "evidence": {
+        "zero_echo_subscription": "grep -c 'Echo' on CashOverviewComponent.vue returns 0. No `window.Echo`, no `onEvents` import, no subscribe/unsubscribe. Confirms C6 (presumably an earlier sync chain): 'cash-overview has NO realtime subscription'.",
+        "zero_auto_refresh_timer": "grep for setInterval/setTimeout-refresh on the file returns 0 timer registrations beyond `formatTime` (line 257 — pure display formatter). Data loads on form submit only (line 363-422 `submitFilters`).",
+        "filter_state_isolated": "CashOverviewComponent.vue:304-310 — filters are local component state. Echo broadcast is processed by the global `window.Echo` connection (services/eventContract.js) and only flows to components that subscribed. With no subscription, the OrderCreated event is silently dropped at the cash-overview surface.",
+        "F5_url_sync_Q8": "Lines 332-405 — Wave Z Q8 hydration: filters are read from `$route.query` on mount/`created`. `submitFilters` (line 408-422) calls `$router.push({query: q}).catch(() => {})`. F5 reload re-hydrates filters from URL. Filter survives reload because URL is the source of truth.",
+        "no_v_if_on_filter_form": "Filter form (lines 25-235) renders unconditionally — no `v-if` depending on data state. Even if owner is mid-typing a date, the form stays mounted across any background activity."
+      },
+      "findings": [
+        {
+          "id": "G9-INFO-04",
+          "severity": "INFO",
+          "title": "Cash Overview shows stale data if owner doesn't manually re-submit filters",
+          "detail": "Intentional design (Q8 + decision_pages Wave Polish Final 2026-05-21). Owner must hit `Appliquer` button or change a filter to refetch. New kiosk orders created mid-view do NOT auto-appear. This is the trade-off for stable filter state. Documented in 14/14 owner decisions Q1-Q14.",
+          "blocking": false,
+          "remediation": "None — owner-validated design. If real-time tally desired in V1.0.X, add a 30s manual `Rafraîchir` button (NOT Echo-driven, to keep filter editing stable)."
+        }
+      ]
+    },
+
+    "G_9_5_focus_scroll_preservation_keys": {
+      "scenario": "Audit `:key` patterns + `v-if` toggles + focus-trap modal patterns across POS/Kiosk/KDS.",
+      "verdict": "GREEN — no anti-patterns found; one borderline pattern documented",
+      "evidence": {
+        "POS_Q10_always_render_C014": "Wave Polish C-014 (commit 08c3faaee — 2026-05-21) committed the always-render pattern. PosComponent.vue:260-265 inline comment documents the intent: 'previously the root v-if hid both panels when both lists were empty. Cashier could not distinguish a calm period from a WebSocket / polling outage. The panels now always render.'",
+        "stable_keys_audit": [
+          "PosComponent.vue:291 — `:key=\"o.id\"` per Q10 ready row (good)",
+          "PosComponent.vue:355 — `:key=\"o.id\"` per cash-pending row (good)",
+          "PosComponent.vue:766 — `:key=\"\\`cart-${index}\\`\"` per cart line — index-based, but cart lines are owner-controlled (cashier add/remove), no Echo mutation. Acceptable for cart context where addition is from the bottom.",
+          "PosComponent.vue:1185 — `:key=\"order.id\"` for kiosk cash detail card (good)",
+          "PosComponent.vue:1218 — `:key=\"item.id || \\`${order.id}-${itemIdx}\\`\"` graceful fallback (good)",
+          "KioskAppComponent.vue:123 — `:key=\"kioskRouterViewKey\"` on `<component>`. Computed at line 282-290 returns STABLE constant `kiosk-shell-catalog` on categories route + `r.fullPath` elsewhere. Echo events do NOT mutate this key — wizard does not remount on CatalogChanged storms.",
+          "KioskWizardComponent.vue:50, 80 — `:key=\"stepKey(step, index)\"` for visual + dots steps (stable per step ID)",
+          "KioskWizardComponent.vue:107 — `:key=\"chip.key\"` for composition chips (good)",
+          "KioskWizardComponent.vue:145 — `:key=\"currentStepKey\"` on the active step container — DRIVES intentional re-render when step changes (correct UX behavior)",
+          "KDS all 4 sections — `:key=\"orderType.id\"` for top-level orders (282, 479, 649, 827) + `:key=\"item.id || iIdx\"` for items (good with fallback)",
+          "ItemComponent.vue:12 — `:key=\"item.id || item\"` for category items, `:key=\"itemAttribute.id\"` for attributes, `:key=\"variation.id\"`, `:key=\"extra.id\"`, `:key=\"addon\"` — all stable IDs"
+        ],
+        "no_focus_trap_library": "find node_modules for focus-trap returns nothing. PaymentComponent (frozen-zone) and modals rely on browser-native focus behavior. Echo handlers do NOT mount/unmount PaymentComponent (`v-if=\"checkoutProps.is_modal\"` is owner-controlled), so no focus race.",
+        "v_if_on_components_audit": "Echo handlers' side-effects: all 3 surfaces (POS/Kiosk/KDS) mutate ARRAYS (orders, items, cash-orders), never toggle a top-level component-mounting `v-if`. Inner `<ul v-if=\"x.length > 0\">` is acceptable — it only toggles a list, not the container.",
+        "borderline_pos_v5_wizard_card_animation": "PosV5Card / PosV5TrancheRow have `transition` wrappers (frozen-zone) — these can animate enter/leave but do NOT re-mount on data change. Echo OrderCreated does not touch tranches.",
+        "audio_visual_announcements_a11y": "PosComponent.vue:2900 `alertService.info` — portal toast. PosComponent.vue:2914 audio beep — non-DOM. Kiosk `_showToast` (line 634) — portal. None capture focus."
+      },
+      "findings": [
+        {
+          "id": "G9-INFO-05",
+          "severity": "INFO",
+          "title": "PosComponent cart line `:key=\"\\`cart-${index}\\`\"` is index-based — safe for current UX but fragile to insert-at-top",
+          "detail": "PosComponent.vue:766 keys cart rows by array index. Today the cart is append-only from cashier action (no Echo writes to cart). If a future feature adds 'insert at top' or sorts the cart, Vue would re-bind index 0 to the new item and force a re-render of every row's input bindings (qty/note). Latent risk, NOT a current bug.",
+          "blocking": false,
+          "remediation": "Add `cart_line_id` (UUID) to cart line objects + key by it. Defer to V1.0.X UI refactor."
+        }
+      ]
+    }
+  },
+
+  "verifications": {
+    "cashier_search_input_focus_text_preserved_on_OrderCreated": "PASS (code-static)",
+    "wizard_composition_immune_to_mid_session_CatalogChanged": "PASS (code-static, wizard owns local fetchedItem snapshot)",
+    "kds_bump_resolves_against_clicked_order_under_burst": "PASS (closure capture + stable :key=\"order.id\")",
+    "cash_overview_filter_survives_OrderCreated": "PASS (zero Echo subscription)",
+    "no_full_remount_on_echo_events_across_3_surfaces": "PASS (router-view key driven by route only)",
+    "wizard_invalidate_step_orphan_event": "FAIL — emitted with no listener (G9-P2-01)"
+  },
+
+  "top_3_dom_churn_risks": [
+    {
+      "rank": 1,
+      "id": "G9-P2-01",
+      "risk": "Orphan `wizard:invalidate-step` CustomEvent in useCatalogChangeNotifier.js:373 — toast fires but in-wizard step is never visually invalidated when an extra is removed mid-composition. Customer may select a 86'd sauce and only discover rejection at submit (backend 422). Backend NF525 + PricingService prevent bad orders, so this is UX-only, not a fiscal risk."
+    },
+    {
+      "rank": 2,
+      "id": "G9-INFO-02",
+      "risk": "kioskMenu/fetchMenu({force:true}) on every CatalogChanged with no debounce — under multi-toggle admin burst, 5 sauce changes = 5 full menu refetches per kiosk. Bandwidth + Vuex churn cost. No DOM disruption (wizard immune), but tablet kiosk on flaky WiFi may lag."
+    },
+    {
+      "rank": 3,
+      "id": "G9-INFO-03",
+      "risk": "KDS axios response interceptor fires `_refreshWithCurrentFilter()` immediately on every successful change-status POST, bypassing 300ms debounce. Under chef bump-storm (3 orders/sec), backend sees triple-load on `kitchenDisplaySystemOrder/lists`. Acceptable for V1 single-branch; flag for cloud-prep."
+    }
+  ],
+
+  "surfaces_survive_vs_disrupt": {
+    "POS_caisse_customer_search_during_OrderCreated": "SURVIVES — search input text + focus preserved (vue-next-select internal ref decoupled from options reactivity; Echo handlers do not dispatch user/lists)",
+    "POS_caisse_cart_during_OrderCreated": "SURVIVES — cart is `posCart` Vuex module, not touched by Echo handlers",
+    "POS_orders_tracker_search_during_OrderCreated": "SURVIVES — native input v-model on local filters, not toggled by data refresh",
+    "Kiosk_wizard_mid_composition_during_CatalogChanged": "SURVIVES TECHNICALLY — wizard `fetchedItem` is local snapshot, not bound to Vuex menu; route key stable. UX GAP — customer not warned about sauce just toggled off (G9-P2-01)",
+    "Kiosk_cart_during_CatalogChanged": "SURVIVES with prune — useCatalogChangeNotifier diffs cart against new projection and prunes removed items + toast (correct behavior per spec)",
+    "KDS_bump_during_3_order_burst": "SURVIVES — bump captures order object via closure; debounced refresh + stable :key reconcile cleanly",
+    "Cash_Overview_filter_during_OrderCreated": "SURVIVES — zero Echo subscription on this surface",
+    "PaymentComponent_modal_during_OrderCreated": "SURVIVES — frozen-zone v-if controlled by cashier action; Echo handlers do not mutate is_modal"
+  },
+
+  "files_inspected": [
+    "resources/js/components/admin/pos/PosComponent.vue (lines 258-389 Q10 panels, 530-540 customer select, 1954-1963 customers computed, 2636-2696 Echo subscribe, 2722-2799 ItemAvailability handler, 2885-2939 notify+beep, 3080-3105 loadReadyOrders)",
+    "resources/js/components/admin/pos/PosOrdersTrackerComponent.vue (lines 25-44 search input, 616-700 lifecycle+echo)",
+    "resources/js/components/admin/pos/PaymentComponent.vue (no Echo usage; frozen-zone)",
+    "resources/js/components/admin/pos/ItemComponent.vue (lines 12, 107-226 :key audit, 737 sync handler)",
+    "resources/js/components/frontend/kiosk/KioskAppComponent.vue (lines 116-130 router-view key, 282-290 kioskRouterViewKey, 540-579 echo subscribe, 595-619 catalog-change-mid-session, 662-742 ItemAvailability + diff, 745-770 CatalogChanged)",
+    "resources/js/components/frontend/kiosk/KioskWizardComponent.vue (lines 50/80/107/145 :key audit, 389-445 props+resolvedItem, 542-543 only store read, 1682-1710 fetchItemById, 2238 keydown listener)",
+    "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue (lines 282/479/649/827 :key=order.id, 1448-1471 axios interceptor, 1776-1797 kdsBump+kdsRecall, 1819-1838 polling, 1841-1892 echo subscribe, 1945-1967 refreshWithCurrentFilter, 2330-2338 _debouncedRefresh, 2348-2380 beforeUnmount)",
+    "resources/js/components/admin/cashOverview/CashOverviewComponent.vue (lines 25-235 filter form + filter state, 304-340 component data + lifecycle, 363-470 submit/reset/url-sync)",
+    "resources/js/composables/useCatalogChangeNotifier.js (full file — 457 LOC — diff logic + orphan CustomEvent dispatch)",
+    "resources/js/store/modules/kds.js (lines 35-84 bumpedByOrder + bumpItem + recallItem)",
+    "resources/js/router/modules/kioskRoutes.js (lines 172-182 kiosk.wizard route — props:true, only itemId param)",
+    "app/Events/CatalogChanged.php (lines 62-115 bridge ItemExtra + ItemVariation + ComposerProfile + StockLevel events)",
+    "node_modules/vue-next-select/dist/vue-next-select.es.js (lines 740-758 isFocusing watcher, 800-810 disabled+searchingInputValue, 890-910 modelValue+options watchers — verified searchingInputValue is independent from options identity changes)"
+  ],
+
+  "corroborating_reports": [
+    "reports/test-e2e/goal-2026-05-23/round-1/C1-borne-kds-sync.json (Echo channel wiring + composition_snapshot frozen verifications)",
+    "reports/test-e2e/wave-polish-final-2026-05-21/CONVERGENCE_FINAL.md (Q9-S1 ΔT~1s + Wave Polish C-014 Q10 always-render)",
+    "reports/test-e2e/rush-100-2026-05-13/CONVERGENCE_FINAL.md (35 kiosk → KDS bursts, 0 anomaly, fiscal_seq gap-free)",
+    "MEMORY.md → project_wave_polish_final_2026_05_21.md (14/14 Q1-Q14 + Q9-S1 cross-surface sync empirical 0-60s→~1s)"
+  ],
+
+  "frozen_zone_touched": false,
+  "frozen_zone_files_verified_read_only": [
+    "resources/js/components/admin/pos/PaymentComponent.vue (no Echo usage; not modified)",
+    "resources/js/components/frontend/kiosk/KioskWizardComponent.vue (read-only audit)",
+    "resources/js/components/frontend/kiosk/KioskAppComponent.vue (read-only audit)"
+  ],
+
+  "verdict": "GREEN with 1 P2 INFO and 4 INFO findings",
+  "verdict_reasoning": "All 5 scenarios verified via code-static analysis + vendor library source reading. Core conclusions: (1) POS customer search is fully insulated from OrderCreated — Echo handlers do not touch user/lists; vue-next-select 2.10.5 keeps searchingInputValue ref independent from options array identity changes. (2) Kiosk wizard mid-composition is technically immune because fetchedItem is a local one-shot snapshot decoupled from Vuex kioskMenu mutations; however, the `wizard:invalidate-step` CustomEvent dispatched by useCatalogChangeNotifier has zero subscribers (P2 INFO) — UX gap where customer is not visually warned about a sauce just 86'd. NF525 invariant safe (composition_snapshot frozen at create). (3) KDS bump captures the order object via closure on @click, debounced 300ms refresh coalesces bursts, stable :key=\"order.id\" reconciles cleanly — no race on the right order. (4) Cash Overview has zero Echo subscription and zero auto-refresh — filter state survives unconditionally; F5 URL sync (Q8) holds. (5) :key audit across PosComponent + KioskApp + KioskWizard + KDS + ItemComponent shows uniformly stable patterns; no full-component remount on Echo events; the kioskRouterViewKey is route-only, not Echo-driven. No P0 / P1 findings. The single P2 (orphan CustomEvent) is a UX polish item — backend prevents bad orders regardless; defer to V1.0.2.",
+
+  "dm1_proposal": null
+}

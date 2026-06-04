@@ -1,0 +1,101 @@
+{
+  "agent": "SYS-1-POS",
+  "mission": "Complete E2E POS Caisse — every page + every button + real flow",
+  "timestamp_utc": "2026-05-28T10:47:00Z",
+  "server": "http://127.0.0.1:8000",
+  "user": "admin@lecayenne.fr (id=1, branch=0 global admin, role=Admin)",
+  "captures_dir": "reports/test-e2e/per-system-2026-05-28/captures/SYS-1-POS/",
+  "captures_count": 13,
+  "captures": [
+    {"name": "01-redirect-from-login.png", "desc": "initial /login GET → 302 → /kiosk/idle (staffOnlyMode=true root redirect)"},
+    {"name": "02-login-state.png", "desc": "/admin/login returns 404 page-not-found template — should be /login"},
+    {"name": "03-pos-landing.png", "desc": "/admin/pos SPA initial render (about:blank intermediate)"},
+    {"name": "04-pos-v4-landing.png", "desc": "/admin/pos-v4 first render (SPA bootstrap)"},
+    {"name": "05-login-form.png", "desc": "login form prefilled admin@lecayenne.fr / 123456"},
+    {"name": "06-pos-v4-empty.png", "desc": "POS V4 fully loaded — header + Q10 panels + 3 categories + 11 items + cart empty"},
+    {"name": "07-pos-v4-with-cash-drawer-modal.png", "desc": "Cash drawer modal: 'Aucune caisse ouverte' + 50€ default float"},
+    {"name": "08-pos-cash-open.png", "desc": "Cash session opened — Session active 50€ float, opened 28/05 12:40, 0 mouvements, expected 50€"},
+    {"name": "09-category-sandwich.png", "desc": "Sandwich Cayenne category tab selected — but only 11 supplement-like items, no actual sandwiches"},
+    {"name": "10-after-add-frites.png", "desc": "P0 FINDING: clicking 'Frites Seules' silently navigated to KDS empty-state instead of adding to cart"},
+    {"name": "11-pos-orders-list.png", "desc": "P0 FINDING: /admin/pos-orders also redirected to KDS"},
+    {"name": "12-cash-overview.png", "desc": "/admin/cash-overview page rendered OK"},
+    {"name": "13-pos-final-Q10-panel.png", "desc": "Final POS V4 visible: 'Prêt à livrer (0)' + 'À encaisser borne (0)' Q10 panels, 4 product tiles (Menu/Frites/Coca/Sauce), cart empty 0,00€"}
+  ],
+  "tasks_executed": {
+    "1-3_login_entry": "PARTIAL — /login auth works but /admin/login → 404 ; root /login redirects to /kiosk/idle in staffOnlyMode",
+    "4_pos_landing_empty": "GREEN — POS V4 loaded with cart empty, Q10 panels visible",
+    "5-7_catalog_navigation": "AMBER — 3 category tabs render (Toutes/Sandwich/Suppléments) but only 11 items total in DB, Sandwich Cayenne contains supplements not actual sandwiches",
+    "8-11_cart_operations": "RED BLOCKER — Cart add via item click does NOT add to cart ; clicking 'Frites Seules' (simple item, no composition required) silently navigates browser to /admin/kitchen-display-system",
+    "12-19_real_vente_directe": "BLOCKED — could not reach Encaisser flow because cart cannot be filled",
+    "20-22_NF525_post_sale": "BASELINE CAPTURED — audit_logs 1 → 6 (cash session open events only) ; orders=0 ; fiscal_sequence_no NULL ; chain integrity preserved (last hash 05bd1aa7c3d4decc5dac6918eefe5e495e7535e333167446a81e6bf56d4090aa)",
+    "23-27_past_orders_HEAL4": "CODE-VERIFIED — PosOrderShowComponent.vue line 198 + PosRefundModal.vue exist with HEAL-4 / PROPOSAL-02 V101-02 markers ; '💸 Rembourser' CTA gated by permission `pos-refund` ; UI not reachable because /admin/pos-orders redirects to KDS",
+    "28-30_pos_shortcuts_Q10": "CODE-VERIFIED — `data-testid=pos-shortcuts` panel rendered in 06/13 screenshots showing 'Prêt à livrer (0)' + 'À encaisser borne (0)' ; F2-F4 keyboard shortcuts NOT FOUND in codebase (no PosShortcutsPanel.vue, no F2/F3/F4 handlers)",
+    "31_logout": "SKIPPED (deferred to next session capture due to navigation instability)"
+  },
+  "verdict": "AMBER-with-2-P0",
+  "verdict_rationale": "POS V4 SHELL renders correctly (UI/Q10/cash modal/categories all visible and intact). However, two P0 blockers prevent completing the real vente directe flow: (P0-1) item-click navigation hijack, (P0-2) /admin/pos-orders + /admin/pos redirect to KDS via SPA router. NF525 chain integrity verified intact (6 audit entries, hash chained). HEAL-4 refund modal + Q10 panel CODE present, UX path blocked by navigation issue.",
+  "order_created": null,
+  "nf525_state_pre": {"audit_logs": 1, "orders": 0, "last_hash": "unknown"},
+  "nf525_state_post": {"audit_logs": 6, "orders": 0, "last_hash": "05bd1aa7c3d4decc5dac6918eefe5e495e7535e333167446a81e6bf56d4090aa", "chain_intact": true},
+  "cash_session": {"id": 1, "branch_id": 1, "float": "50,00 €", "opened": "28/05 12:40", "status": "open"},
+  "critical_findings": [
+    {
+      "id": "SYS1-P0-01",
+      "severity": "P0",
+      "title": "POS item-click navigates to KDS instead of adding to cart",
+      "evidence": "Captures 10 + 11 ; clicking aria-label='Ajouter Frites Seules, 2,00 €' button (simple item, status=5/active, price=2€) triggers browser navigation to /admin/kitchen-display-system. Console shows 0 errors during click. Same behaviour observed when navigating to /admin/pos-orders.",
+      "impact": "Cashier cannot create any vente directe order. Blocks the entire POS revenue flow. NF525 fiscal_sequence_no unallocated because no order ever reaches PosController::store.",
+      "reproduction": "1. Login admin@lecayenne.fr. 2. /admin/pos-v4. 3. Open cash drawer 50€. 4. Click any product tile. → Browser navigates to KDS.",
+      "suspected_root_cause": "router beforeEach guard reading authDefaultPermission for staffOnlyMode admin may redirect to KDS (admin's default permission landing). May also be a Vue-router replace() side-effect during cart state update conflicting with auth guard."
+    },
+    {
+      "id": "SYS1-P0-02",
+      "severity": "P0",
+      "title": "/admin/pos and /admin/pos-orders SPA routes redirect to /admin/kitchen-display-system",
+      "evidence": "Captures 03 + 04 + 11 ; direct navigation to /admin/pos or /admin/pos-orders consistently lands on KDS after 1-3s SPA bootstrap. /admin/pos-v4 (dedicated controller, no SPA router) reaches the POS shell correctly.",
+      "impact": "Sidebar nav 'POS' link (e37, href=/admin/pos) and 'Commandes caisse' link (e60, href=/admin/pos-orders) are broken for admin user. Workaround: /admin/pos-v4 direct URL.",
+      "suspected_root_cause": "resources/js/router/index.js posRoutes uses meta.permissionUrl='pos'. handlePermissionDenied() called even though user.can('pos')=true (verified via tinker getAllPermissions). Likely store.getters.authPermission entry has access=false despite Spatie having the grant — store hydration mismatch."
+    },
+    {
+      "id": "SYS1-P1-03",
+      "severity": "P1",
+      "title": "Catalog only contains 11 items, 'Sandwich Cayenne' tab shows supplements not sandwiches",
+      "evidence": "Capture 06 + 09 ; tab list = [Toutes, Sandwich Cayenne, Suppléments] ; 11 items total = 1 menu, 1 frites, 1 boisson, 1 sauce, 7 supplément products (œuf, jambon, fromage…). No actual sandwich SKUs.",
+      "impact": "Test scenario 'add Sandwich' impossible. POS demo content not representative of Le Cayenne menu (Wave Y V2 catalog claims 85 images + 37 prix). Catalog may not have been re-seeded in this local env.",
+      "data": "Item::count()=11, Item::where('status','active')=0 (status enum uses int 5 not string 'active')"
+    },
+    {
+      "id": "SYS1-P2-04",
+      "severity": "P2",
+      "title": "F2/F3/F4 keyboard shortcuts not implemented",
+      "evidence": "grep -rn 'F2\\|F3\\|F4\\|PosShortcutsPanel' resources/js/components/admin/pos/ returns no keyboard-handler matches ; data-testid='pos-shortcuts' is the kiosk-cash routing panel (Q10 P-OWNER 2026-05-21), not a hotkey overlay.",
+      "impact": "Mission tasks 28-30 cannot be validated. Q10 'panel' = visual list of pending orders only, not a keyboard shortcuts panel.",
+      "note": "Q10 in spec refers to BRAIN owner-question Q10 (cross-surface kiosk-cash routing UI) — successfully implemented and visible (capture 13). F2-F4 may be planned for V1.0.2 backlog."
+    },
+    {
+      "id": "SYS1-P2-05",
+      "severity": "P2",
+      "title": "/admin/login route returns 404 Page non trouvée",
+      "evidence": "Capture 02 ; visiting /admin/login renders the frontend 404 template inside the admin shell.",
+      "impact": "Cosmetic — /login is the correct path. May confuse staff who type /admin/login by habit."
+    }
+  ],
+  "adversarial_inline": {
+    "race_condition_cashier_double_click": "NOT_TESTED — blocked by P0-01 (item click hijack)",
+    "network_drop_mid_payment": "NOT_TESTED — blocked by P0-01",
+    "cart_30_items_cap_50_ValidJsonOrder": "NOT_TESTED — blocked by P0-01"
+  },
+  "code_verified_features": {
+    "PosRefundModal_HEAL4": "PRESENT — resources/js/components/admin/pos/PosRefundModal.vue + PosOrderShowComponent.vue line 198 ('💸 Rembourser' CTA gated by permission pos-refund)",
+    "Q10_kiosk_cash_routing_panel": "PRESENT — PosComponent.vue line 268-360 (À encaisser borne + Prêt à livrer panels with data-testid pos-shortcuts) visible in captures 06/13",
+    "ReceiptRemboursementMarker": "PRESENT — Phase F.10 F10-OG-1 P2 → F2-HEAL-03",
+    "CashDrawerSession_open_close": "WORKING — verified via capture 08 (Session active 50€ opened 28/05 12:40)"
+  },
+  "console_health": "0 errors except 1 unrelated 400 on /api/admin/kds-order/sync?branch_id=0 (admin global user querying scoped KDS endpoint) ; 1 WebSocket reconnect warning for ws://127.0.0.1:6001 (broadcasting offline in dev)",
+  "next_actions_recommended": [
+    "P0-01 root cause investigation: Vue-router guard logs during product tile click — likely store.dispatch in addToCart triggers nav side effect",
+    "P0-02 hydration audit: compare Spatie::getAllPermissions vs store.getters.authPermission for admin@lecayenne.fr branch_id=0",
+    "Re-seed Le Cayenne canonical menu (37 items per project_le_cayenne_v2_2026-05-21.md) — current local DB has only 11 placeholder items",
+    "Plan F2/F3/F4 keyboard shortcuts implementation as V1.0.2 backlog item if cashier muscle-memory is a requirement"
+  ]
+}

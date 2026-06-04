@@ -17,6 +17,14 @@ const WS_RECONNECTING = 'RECONNECTING';
 const WS_DEGRADED = 'DEGRADED';
 const WS_DISCONNECTED = 'DISCONNECTED';
 const WS_SESSION_INVALID = 'SESSION_INVALID';
+// [Wave 3 P1 / KDS-RED-09 2026-05-18] Safe cadence floor — 4 req/s max per
+// station. Mirrors config/catalog_v15.php clamp; protects against owner
+// misconfig (FK_CATALOG_KDS_*=10 → ~80 req/s/station DoS).
+// [Wave 3b P1 / KDS-ADV3B-04 2026-05-18] Upper cap 60_000ms base / 30_000ms
+// jitter protects against silent-blind misconfig (e.g. =999999999 → 11.5d).
+const CADENCE_FLOOR_MS = 250;
+const CADENCE_CEILING_MS = 60_000;
+const JITTER_CEILING_MS = 30_000;
 const DEFAULT_CADENCE_OPTIONS = Object.freeze({
     highActivityBaseMs: 3000,
     highActivityJitterMs: 1000,
@@ -126,10 +134,18 @@ export class KdsSyncService {
 
         try {
             const branchQuery = this._branchId !== null && this._branchId !== undefined ? `&branch_id=${encodeURIComponent(this._branchId)}` : '';
+            const headers = this._authHeaders();
+            // [HEAL 2026-05-27] Skip polling tick if auth token not yet hydrated
+            // from Vuex/localStorage. Avoids 401 on the very first poll fired
+            // before Vuex-persistedstate has restored authToken on page load.
+            // Next tick will retry naturally when token is available.
+            if (!headers.Authorization) {
+                return null;
+            }
             const response = await this.fetchFn(`/api/admin/kds-order/sync?since=${encodeURIComponent(this._lastSince)}${branchQuery}&include_deleted=true`, {
                 method: 'GET',
                 credentials: 'same-origin',
-                headers: this._authHeaders(),
+                headers,
                 signal,
             });
 
@@ -449,18 +465,35 @@ export class KdsSyncService {
             ? window.foodkingConfig.kdsFallbackPolling
             : {};
 
-        const toInt = (value, fallback) => {
+        // [Wave 3 P1 / KDS-RED-09 2026-05-18] Base cadences are clamped to
+        // CADENCE_FLOOR_MS (250ms = 4 req/s) so an owner-misconfig like
+        // window.foodkingConfig.kdsFallbackPolling.disconnectedBaseMs=10 cannot
+        // weaponize the polling loop into PHP-FPM saturation. Jitters keep a
+        // 0 floor since they widen — never shorten — the wait.
+        // [Wave 3b P1 / KDS-ADV3B-04 2026-05-18] Upper cap CADENCE_CEILING_MS
+        // (60_000ms = 1 poll/min minimum) and JITTER_CEILING_MS (30_000ms)
+        // prevent the symmetric silent-blind misconfig where a runaway value
+        // (e.g. disconnectedBaseMs=999999999) would stall KDS for ~11.5 days.
+        const clampBase = (value, fallback) => {
             const parsed = parseInt(value, 10);
-            return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
+            const candidate = Number.isFinite(parsed) ? parsed : fallback;
+            const floored = candidate >= CADENCE_FLOOR_MS ? candidate : CADENCE_FLOOR_MS;
+            return floored <= CADENCE_CEILING_MS ? floored : CADENCE_CEILING_MS;
+        };
+        const clampJitter = (value, fallback) => {
+            const parsed = parseInt(value, 10);
+            const candidate = Number.isFinite(parsed) ? parsed : fallback;
+            const floored = candidate >= 0 ? candidate : 0;
+            return floored <= JITTER_CEILING_MS ? floored : JITTER_CEILING_MS;
         };
 
         return {
-            highActivityBaseMs: toInt(cfg.highActivityBaseMs, DEFAULT_CADENCE_OPTIONS.highActivityBaseMs),
-            highActivityJitterMs: toInt(cfg.highActivityJitterMs, DEFAULT_CADENCE_OPTIONS.highActivityJitterMs),
-            degradedBaseMs: toInt(cfg.degradedBaseMs, DEFAULT_CADENCE_OPTIONS.degradedBaseMs),
-            degradedJitterMs: toInt(cfg.degradedJitterMs, DEFAULT_CADENCE_OPTIONS.degradedJitterMs),
-            disconnectedBaseMs: toInt(cfg.disconnectedBaseMs, DEFAULT_CADENCE_OPTIONS.disconnectedBaseMs),
-            disconnectedJitterMs: toInt(cfg.disconnectedJitterMs, DEFAULT_CADENCE_OPTIONS.disconnectedJitterMs),
+            highActivityBaseMs: clampBase(cfg.highActivityBaseMs, DEFAULT_CADENCE_OPTIONS.highActivityBaseMs),
+            highActivityJitterMs: clampJitter(cfg.highActivityJitterMs, DEFAULT_CADENCE_OPTIONS.highActivityJitterMs),
+            degradedBaseMs: clampBase(cfg.degradedBaseMs, DEFAULT_CADENCE_OPTIONS.degradedBaseMs),
+            degradedJitterMs: clampJitter(cfg.degradedJitterMs, DEFAULT_CADENCE_OPTIONS.degradedJitterMs),
+            disconnectedBaseMs: clampBase(cfg.disconnectedBaseMs, DEFAULT_CADENCE_OPTIONS.disconnectedBaseMs),
+            disconnectedJitterMs: clampJitter(cfg.disconnectedJitterMs, DEFAULT_CADENCE_OPTIONS.disconnectedJitterMs),
         };
     }
 }

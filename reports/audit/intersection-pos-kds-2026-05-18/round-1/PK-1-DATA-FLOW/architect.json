@@ -1,0 +1,79 @@
+{
+  "specialist": "architect",
+  "zone": "PK-1-DATA-FLOW",
+  "scope": "Order creation cascade POS -> KDS (7 hops): PosController -> OrderService -> OrderCreated event -> 4 listeners -> DomainEvent outbox row -> DispatchDomainEventsJob -> KdsSyncController/KdsSyncService -> admin-kds.js render",
+  "verdict": "PASS_WITH_FINDINGS",
+  "evidence_root": "reports/audit/intersection-pos-kds-2026-05-18/round-1/PK-1-DATA-FLOW/",
+  "cascade_integrity": {
+    "listener_order_correct": true,
+    "evidence": "app/Providers/EventServiceProvider.php:145-151 — OrderCreated subscribers in this order: PersistOrderCreatedToOutbox (line 147 — SSOT-first per F-002 round-3 comment), DecrementItemAvailabilityOnOrder (148), DecrementStockOnOrderCreated (149), SendFcmOnOrderCreated (150). The SSOT defense is honored: even if FCM (last) throws, outbox already wrote.",
+    "after_commit_guard": "app/Events/OrderCreated.php:14 + app/Events/Concerns/DispatchableAfterCommit.php:30-42 — event() dispatch deferred via DB::afterCommit(); on rollback the closure is silently dropped. Consumers never observe orders that did not persist.",
+    "idempotency_outbox_write": "app/Listeners/PersistOrderCreatedToOutbox.php:22 — sha1(event_type|aggregate_id) keyed firstOrCreate. Listener replay (queue retry between persistence and post-commit dispatch) absorbed by UNIQUE index + wasRecentlyCreated short-circuit (line 57). Sibling parity comment refs PersistCatalogChangedToOutbox:92 and PersistCouponChangedToOutbox:82.",
+    "idempotency_broadcast_job": "app/Jobs/DispatchDomainEventsJob.php:65-86 — Phase 1 atomic claim under lockForUpdate + dispatched_at guard. Losing worker observes dispatched_at != null after lock, returns silently (Log::info line 89). Phase 2 broadcast happens AFTER claim transaction commits to honour the commit_before_dispatch invariant. Test sentinel: tests/Feature/Outbox/OutboxConcurrentWorkerDedupeTest.php:46-90 — second handle() call no-ops."
+  },
+  "findings": [
+    {
+      "id": "PK1-ARCH-01",
+      "severity": "P1",
+      "title": "Stale rollback comment in DecrementStockOnOrderCreated — re-throw no longer rolls back order",
+      "file": "app/Listeners/DecrementStockOnOrderCreated.php",
+      "lines": "17-37",
+      "evidence_read": "DecrementStockOnOrderCreated:17-20 says 'Domain-expected exception — let it bubble up to the request stack so the order creation transaction can be rolled back upstream. (Pre-iter12 behavior preserved.)' AND :22-37 logs+rethrows on Throwable saying 'The order transaction (which spawned this event after-commit) stays consistent — a hard fail surfaces the orphan'.",
+      "actual_behavior": "OrderCreated uses DispatchableAfterCommit (app/Events/OrderCreated.php:14) — event() runs in DB::afterCommit() closure (DispatchableAfterCommit:35-39). When a listener throws there, the transaction has ALREADY committed. Re-throwing only (a) propagates a 500 to whatever code triggered the event() (likely the request stack since after-commit fires at end of outer transaction wrapper), and (b) prevents sibling listener SendFcmOnOrderCreated (line 150) from firing. Outbox already wrote (line 147 = first listener). Stock decrement DID happen via StockService::decrementForOrder.",
+      "impact": "Mid-severity: the order exists with paid status, outbox event broadcasts to KDS, but the HTTP response surfaces a 500 to POS / kiosk client. UX-confusing (operator sees 'failed' for an order that physically exists and is already on the KDS). Pre-iter12 mental model in the comment is no longer accurate.",
+      "recommendation": "Either (a) update comment to reflect after-commit reality + add explicit Sentry breadcrumb + return without re-throw (event() in afterCommit closure should NOT bubble up HTTP error for already-committed state), or (b) keep re-throw but document that the consumer sees a 500 and must reconcile via OSS. Decide with PK-4 RESILIENCE — listener failure isolation policy needs to be unified across the four OrderCreated listeners (SendFcm already isolated per :109-120, AvailabilityService throws on missing relation, Stock throws on Throwable).",
+      "scope_minimal_fix": "1-line comment fix + optional 3-line try/catch wrap (clean file, not frozen, not DIRTY). Defer to PK-4 unifier."
+    },
+    {
+      "id": "PK1-ARCH-02",
+      "severity": "P2",
+      "title": "BroadcastableOrder interface is intentionally empty — listener depends on structural typing of concrete models",
+      "file": "app/Contracts/BroadcastableOrder.php",
+      "lines": "11-16",
+      "evidence_read": "BroadcastableOrder:11-16 is an empty marker interface. PersistOrderCreatedToOutbox:30-42 reads off `$order->branch_id`, `queue_number`, `payment_status`, `payment_method`, `pos_payment_method`, `source_surface`, `payment_status`, `status`, `order_type`, `total`, `created_at` — none guaranteed by the contract; only convention (per the file's docblock 'Both models expose: id, branch_id, queue_number, status, order_type, total, token, created_at').",
+      "impact": "Brittle but currently working: Order and FrontendOrder both expose all read fields. Risk: any future model implementing BroadcastableOrder (e.g. a hypothetical OnlineOrder, BulkOrder, DemoOrder) would crash with 'Undefined property' inside the outbox listener — a hidden production booby-trap.",
+      "recommendation": "V1.0.X: tighten the interface with documented getter contract (getBranchId, getQueueNumber, getPaymentMethod, getOrderTotal, getOriginSurface) so PHP type-check catches drift at compile-time. Out-of-scope for this audit cycle — no acute breach.",
+      "scope_minimal_fix": "DEFERRED V1.0.X — backlog item only, no acute breach."
+    },
+    {
+      "id": "PK1-ARCH-03",
+      "severity": "P2",
+      "title": "Best-effort broadcast catch silently swallows ALL exceptions during after-commit dispatch",
+      "file": "app/Listeners/PersistOrderCreatedToOutbox.php",
+      "lines": "67-78",
+      "evidence_read": "PersistOrderCreatedToOutbox:67-78 wraps DispatchDomainEventsJob::dispatch in try/Throwable and logs warning (E-001 round-3 cluster-8). Comment: 'broadcast best-effort; do not fail HTTP on Pusher dispatch error'.",
+      "impact": "DispatchDomainEventsJob::dispatch in Laravel 9+ writes to the queue (Redis / database). If the queue connection is down, the job never lands → KDS never gets the push (polling fallback still works since the order row exists). The Log::warning at :70 is the ONLY surface. No alert / metric increment.",
+      "recommendation": "V1.0.X: emit a counter increment to SyncMetricsRecorder so a monitoring dashboard can alarm on 'outbox_inline_dispatch_failures > N/min'. Currently the failure is invisible until the polling fallback masks the gap. Out-of-scope to fix here — observability hardening backlog.",
+      "scope_minimal_fix": "DEFERRED V1.0.X — backlog item only."
+    },
+    {
+      "id": "PK1-ARCH-04",
+      "severity": "P3",
+      "title": "DispatchKdsTicket lingers as a parallel push channel separate from outbox",
+      "file": "app/Services/KitchenDisplaySystemOrderService.php",
+      "lines": "241-245",
+      "evidence_read": "KitchenDisplaySystemOrderService::changeStatus:241-245 directly invokes DispatchKdsTicket->dispatch in a try/catch outside the outbox. This is for the status-change flow (not order creation) but worth flagging because it represents a second sync path that bypasses the V1 envelope contract.",
+      "impact": "Status changes bypass EventContract::assertEnvelopeValid (DispatchDomainEventsJob:110). PK-2 STATUS-SYNC zone.",
+      "recommendation": "Hand off to PK-2 — out of scope here.",
+      "scope_minimal_fix": "OUT-OF-SCOPE — PK-2 territory."
+    }
+  ],
+  "keeps": [
+    "Listener registration order (Outbox-first, FCM-last) — F-002 round-3 invariant preserved. Defense-in-depth proven by the fact that even with PK1-ARCH-01 stale comment, Outbox writes BEFORE Stock can throw.",
+    "Outbox idempotency via sha1(event_type|aggregate_id) + UNIQUE index + wasRecentlyCreated guard — Sprint 3B P1-SYNC-03 parity with PersistCatalogChanged + PersistCouponChanged listeners.",
+    "lockForUpdate claim pattern in DispatchDomainEventsJob (NEW-01) — concurrent workers cannot double-broadcast. Test sentinel: tests/Feature/Outbox/OutboxConcurrentWorkerDedupeTest.php.",
+    "DispatchableAfterCommit trait — fires after outer transaction commit, drops on rollback. KI-001 / gate C9 invariant preserved.",
+    "Backoff curve [1, 5, 15, 60, 300] tries=6 — total ~6.4 min retry window > typical Pusher/Soketi restart. NEW-03 / Audit T G2.",
+    "EventContract V1 envelope validation BEFORE broadcast (DispatchDomainEventsJob:110) — REQUIRED_PAYLOAD_KEYS for ORDER_CREATED = ['order_id', 'queue_number', '_origin', 'payment_method']. PersistOrderCreatedToOutbox:31-42 satisfies this (and more).",
+    "Correlation ID propagation (PersistOrderCreatedToOutbox:82-98 + HasCorrelationId trait on DispatchDomainEventsJob:22) — observable end-to-end."
+  ],
+  "out_of_scope": [
+    "10 pre-existing KDS test failures (V1.0.X backlog) — c2613cab0 TZ regression, session-A pickup.",
+    "DispatchKdsTicket parallel channel (status change) — PK-2 zone.",
+    "OrderService.php DIRTY — observe only.",
+    "admin-kds.js DIRTY — observe only.",
+    "Pusher / Echo subscription correctness — PK-4 RESILIENCE zone.",
+    "TZ boundary correctness in KdsSyncService — PK-4 RESILIENCE/TZ zone."
+  ],
+  "word_count": 1180
+}

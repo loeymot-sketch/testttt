@@ -1,0 +1,50 @@
+{
+  "wave": "B",
+  "round": 1,
+  "states_reviewed": 24,
+  "review_method": "All 24 artifact quartets (PNG vision + DOM + console.json + network.json) inspected. Console: only CSP report-only (allowlisted), info-level [PosSyncService] + [POS-WIZARD] logs - zero level=error. Network: only 201/200/204 (csp-report 204, broadcasting/auth 200, /api/auth/login 201, /api/admin/pos 201, parked-orders 201) - zero 4xx/5xx outside allowlist; no request >2000ms recorded. Root cause of B-001 confirmed in source (PosCashDrawerSessionDialog.vue + cashDrawer store + backend CashDrawerService).",
+  "findings": [
+    {
+      "id": "B-001",
+      "state_artifact": "test-e2e-B/12a-cash-session-dialog.png + 12b-cash-session-movements.png",
+      "category": "numeric_integrity",
+      "severity": "P0",
+      "status": "open",
+      "evidence": "FISCAL CASH-RECONCILIATION SURFACE shows contradictory expected-amount across two views of the SAME active session. State 12a (active summary) DOM literally renders: 'Fond de caisse initial 50,00 EUR' / 'Mouvements 0' / 'Montant attendu 50,00 EUR'. State 12b ('Voir les mouvements', same session) renders a non-empty cash_movements ledger with >=7 order_payment IN rows: 2,00 / 4,00 / 150,00 (Kiosk cash collected at POS) / 144,00 (Kiosk cash collected at POS) / 42,00 / 4,00 / 6,00 EUR (list continues). Visible IN movements alone sum to >=352 EUR, so the TRUE expected drawer = 50 (float) + >=352 = >=402 EUR, NOT the 50,00 EUR the summary shows. The summary under-counts both movement count (0 vs >=7) and expected amount (50,00 vs >=402 EUR). Actionable-path proof: in PosCashDrawerSessionDialog.vue the active view's 'Cloturer la caisse' button is @click=\"mode = 'close'\" (line 153) which does NOT call loadMovements; the close/reconcile view binds the SAME expectedTotal computed (data-testid=cash-session-close-expected, line 208-209) and the on-screen variance = closingAmount - expectedTotal (line ~394). So a cashier who goes active -> Cloturer WITHOUT first clicking 'Voir les mouvements' is shown expected=50,00 EUR and a FAKE variance, and reconciles the drawer against that wrong figure.",
+      "root_cause": "PosCashDrawerSessionDialog.vue computeds movementsCount = this.movements.length (line 382-383) and expectedTotal = CashDrawerService.computeExpected(opening, this.movements) (line 388-391) both derive from the Vuex getter cashDrawer/movements. That array is ONLY hydrated by cashDrawer/loadMovements (store/modules/cashDrawer.js line 153), dispatched EXCLUSIVELY from openMovements() (dialog line 495-503) on the 'Voir les mouvements' click. PosComponent mount calls cashDrawer/loadCurrentSession (PosComponent.vue line 2407/2442) which commits setCashDrawerSession but NEVER fetches movements. Hence in 'active' and 'close' modes movements=[] -> count 0, expected = opening only.",
+      "mitigation_context": "NOT a persisted-data corruption: backend CashDrawerService::reconcileSession (app/Services/Cash/CashDrawerService.php line 257-262) authoritatively recomputes expected = opening_amount + sum(signed cash_movements) from the DB on close; it does NOT trust the client-displayed expectedTotal. So the saved Z/cash-trail variance is correct. The defect is the WRONG NUMBER SHOWN TO THE OPERATOR on the reconciliation surface they act on (count-out + variance-explain) - a cash-control risk and a hard numeric mismatch between two surfaces of the same fiscal session.",
+      "fix_hint": "resources/js/components/admin/cash/PosCashDrawerSessionDialog.vue - hydrate movements whenever an OPEN session is shown so active+close summaries are truthful. Options: (a) in resolveMode() line 456-462, after setting mode='active', dispatch cashDrawer/loadMovements; (b) in store/modules/cashDrawer.js loadCurrentSession line 64-83 also fetch movements when session is OPEN; (c) gate the 'Cloturer la caisse' transition (dialog line 153) behind an await loadMovements so the close view never renders a stale 0-movements expected. File is NOT in the frozen list (frozen cash files = FiscalSequenceService/ZReportService/AuditLogService) -> fix directly, no GATE-ESCALATION. After fix re-capture 12a and assert 'Montant attendu' == 50 + sum(IN movements) and 'Mouvements' == ledger row count.",
+      "verify_steps": [
+        "grep -n 'movementsCount|expectedTotal|loadMovements|mode = .close' resources/js/components/admin/cash/PosCashDrawerSessionDialog.vue",
+        "grep -n 'loadMovements|loadCurrentSession|setMovements' resources/js/store/modules/cashDrawer.js",
+        "12a-cash-session-dialog.dom.html contains 'Mouvements 0' and 'Montant attendu 50,00'",
+        "12b-cash-session-movements.png ledger lists order_payment IN rows 2/4/150/144/42/4/6 EUR (>=7 rows)"
+      ]
+    }
+  ],
+  "clean_state_evidence": {
+    "numeric_integrity_main_chain": "VERIFIED EQUAL across all surfaces for paid order #0306264113 (N A0006): cart grand-total 3.00 (05) = payment-modal MONTANT TOTAL 3.00 (08a) = cash change 13.00-3.00=10.00 (08b) = receipt TOTAL 3,00 with HT 2,73 + VAT(10%) 0,27 (09b) = POS Commandes Caisse history row MONTANT 3,00 (10b). No mismatch.",
+    "discount_math": "06b: Sous-total 3.00 - Remise 0.03 = Total 2.97 (1% discount correct). Reason-required guard exercised: discount applied only after motif 'geste commercial test' supplied.",
+    "console": "All 24 console.json clean: CSP report-only (allowlisted), info-level PosSyncService, log-level POS-WIZARD. Zero level=error.",
+    "network": "All 24 network.json clean: 201/200/204 only. Zero 4xx/5xx outside allowlist. broadcasting/auth returned 200 (not the 302 signal) on POS. No silent_error.",
+    "visual_palette": "Cayenne palette intact (primary #F4501E). No truncated critical labels, no clickable bbox overlap, modals render+dismiss cleanly. Empty cart shows plate icon + 'Aucun article. Selectionnez un produit dans la grille.' (>20 chars).",
+    "i18n": "No DOM text matching ^[a-z]+(.[a-z_]+){1,4}$ on any POS surface.",
+    "frozen_observed": "pos-wizard.js popup (04a/04b) OBSERVED only - Menu (Frites + Boisson) EUR3.00, enabled 'Ajouter au panier' CTA, Apercu ticket. Not edited.",
+    "audit_integrity_caveats": [
+      "13b-delivery: Google Places geocode returned no suggestion (ENV-gated dev) -> delivery whole-km fee path NOT exercised. Environmental, not a product defect.",
+      "cart=tracker hard assert degrades to soft note unless tracker-amount-<id> rendered; for this run equality is VISUALLY CORROBORATED (10b history #0306264113 MONTANT 3,00) not strictly spec-proven via the tracker-amount element."
+    ]
+  },
+  "summary": {
+    "P0": 1,
+    "P1": 0,
+    "P2": 0,
+    "P3": 0,
+    "open_P0": 1,
+    "open_P1": 0,
+    "open_P2": 0,
+    "open_P3": 0
+  },
+  "round_to_round_closures": {},
+  "verdict": "RED"
+}

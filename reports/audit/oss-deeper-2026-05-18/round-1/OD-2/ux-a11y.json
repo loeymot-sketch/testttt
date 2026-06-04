@@ -1,0 +1,93 @@
+{
+  "specialist": "UX/A11y",
+  "zone": "OSS-deeper-Wave-C",
+  "mode": "AUDIT-ONLY-READ",
+  "scope": "Public-wall a11y (large display + audio mute UX), back-of-restaurant visibility, cross-browser audio compatibility matrix, view-distance documentation.",
+  "anchors_inspected": [
+    "resources/js/components/admin/orderStatusScreen/PreparingAndReadyComponent.vue",
+    "resources/js/components/admin/orderStatusScreen/OrderStatusScreenComponent.vue",
+    "resources/js/components/admin/orderStatusScreen/PopularItemComponent.vue",
+    "public/js/admin-oss.js (DIRTY — read-only)",
+    "tests/js/ossChimePublicWall.spec.js"
+  ],
+  "out_of_scope": "PRÊT contrast ratio 5.30:1 (healed P1-OSS-01), chime gate (healed P0-OSS-01), wake-lock wiring (R4 V1.0.2), Echo+poll dedupe (AUDIT-P1).",
+  "findings": [
+    {
+      "id": "OD-UX-01",
+      "severity": "P2",
+      "title": "No mute UX — operator with intrusive 3-tone chime must close tab or adjust OS volume",
+      "context": "Operator-attended OSS (POS supervisor monitor, kitchen pass-through tablet) fires `_playReadySound()` on every PREPARED transition — 4 oscillators × 0.4s each = ~1.5 sec C-major arpeggio at 25% gain (PreparingAndReadyComponent.vue:334-345). During rush hour with 30+ orders/hour all transitioning to PREPARED within 60-minute windows, the chime fires every ~2 min. Operator UX: no mute button, no volume slider, no per-session 'silence chime' toggle in the component template (lines 1-53 contain only the two transition-group columns; no controls). Workaround: operator must use OS-level volume or close the tab — neither acceptable for a long-running monitor surface.",
+      "evidence": "PreparingAndReadyComponent.vue:1-53 template body — zero controls. PopularItemComponent.vue and OrderStatusScreenComponent.vue (parent) — also zero controls. No `<button>`, no `<input type='range'>`, no `aria-pressed` toggle, no per-session settings persistence.",
+      "real_world_impact": "Operator-attended only. Public wall is gated off (P0-OSS-01 — chime silent there). Rush-hour operator fatigue / 'sound off' workaround → operator stops hearing legit signals → defeat the chime purpose.",
+      "heal_recommendation": "V1.0.2: add a small `<button @click='_chimeMuted = !_chimeMuted'` aria-pressed toggle in the PRÊT column header (top-right, sibling of `<h3>` line 38), persisted via `localStorage.setItem('foodking.oss.chime_muted', ...)`. Gate `_playReadySound` line 317 with `if (this._chimeMuted) return;`. Visual flash (`.oss-ready-flash` + `.oss-new-ready`) remains unconditionally to preserve the visual signal. Aria label `$t('label.oss_chime_toggle')` for screen readers.",
+      "verdict": "P2 — operator-UX defect, not user-blocking. Backlog only.",
+      "wcag_ref": "n/a (operator preference, not a compliance gap)",
+      "frozen_zone_touch": false
+    },
+    {
+      "id": "OD-UX-02",
+      "severity": "P3",
+      "title": "Cross-browser audio compatibility matrix — Safari iOS gesture-per-session caveat undocumented",
+      "context": "PreparingAndReadyComponent.vue:110-112 uses `window.AudioContext || window.webkitAudioContext` (correct fallback). However, the audio-unlock listener registration (line 127-132) is wired with `{ once: true }` on `pointerdown` + `keydown` — meaning a SINGLE user gesture unlocks `_audioCtx` for the session lifetime. This works on desktop Chrome/Firefox/Safari and Android Chrome WebView. iOS Safari (Web Audio policy ≥16.4) auto-suspends AudioContext when the tab loses focus AND when the lock screen activates — the `suspended → resume()` path at line 328-332 handles this via fire-and-forget; if `resume()` fails (e.g. screen relocked between events), the chime silently skips. NO documentation in the file or in CLAUDE.md describes which browsers are officially supported on which surface.",
+      "evidence": "PreparingAndReadyComponent.vue:110-112, 127-132, 328-332. No `docs/OSS_BROWSER_SUPPORT.md` exists (grep returns zero). The `[iter15-mega-fix C-034 round-7 2026-05-10]` docblock at line 87-91 mentions Chrome's autoplay policy but does not enumerate iOS Safari / Firefox quirks.",
+      "compatibility_matrix": {
+        "Chrome_desktop": "GREEN — AudioContext unlocked on first gesture, chime fires reliably.",
+        "Edge_desktop": "GREEN — same as Chrome (same engine).",
+        "Firefox_desktop": "GREEN — minor: Firefox does not auto-suspend on tab-blur, so chime continues even if tab is backgrounded (operator might find this acceptable or annoying).",
+        "Safari_macOS_14plus": "GREEN — AudioContext unlocks on gesture, persists across tab-blur.",
+        "iOS_Safari_16_4plus": "AMBER — Web Audio auto-suspends on lock-screen + extended tab-blur. resume() handles common cases. If tablet sleeps mid-rush, first chime after wake may be muted; subsequent chimes fire after resume() completes.",
+        "Android_WebView": "GREEN — Chrome-equivalent.",
+        "Android_Firefox": "GREEN — equivalent to desktop Firefox.",
+        "Samsung_Internet": "AMBER — autoplay policy stricter than Chrome; gesture-unlock works; suspended-resume reliability unverified."
+      },
+      "heal_recommendation": "V1.0.2: write `docs/OSS_BROWSER_SUPPORT.md` enumerating the matrix above. No code change required for V1 (the lazy-init + suspended-resume pattern already covers the common cases).",
+      "verdict": "P3 — documentation gap, no code defect.",
+      "frozen_zone_touch": false
+    },
+    {
+      "id": "OD-UX-03",
+      "severity": "P3",
+      "title": "Back-of-restaurant visibility — no documented max-viewing-distance gate",
+      "context": "Customer wall is intended to be visible from 5-15m (across the restaurant floor). Current implementation: `text-[40px]` (line 23 + 43) ≈ 53.3px CSS pixels at standard 96dpi, rendered as `font-weight: 600` semibold and `leading-10` (40px line-height). At 5m viewing distance, a 53px-tall character subtends ~0.6° visual angle — readable for 20/20 vision but uncomfortable for 50+ year-old customers with presbyopia. At 10m, subtended angle drops to ~0.3° — below comfortable-reading threshold for most. Owner has NOT documented the expected restaurant dimensions (table count, ceiling height, wall-to-wall distance) so the 40px choice is empirically derived from owner approval at iter15, not from a measured worst-case.",
+      "evidence": "PreparingAndReadyComponent.vue:23 + 43 — `[&_li]:text-[40px]` Tailwind utility. Tests/e2e/__screenshots__/oss/oss-oss-public-3840x2160.png is the 4K snapshot showing the rendered scale on a real TV. No `docs/OSS_DISPLAY_PHYSICAL.md`.",
+      "axe_results_attest": "Z-2 OSS axe-clean per round-1/Z-2-OSS/ux-a11y.json (Wave Z complement). Wave C does NOT re-run axe — would be duplicate. ARIA roles `role='region'` + `aria-label` on both columns (lines 16, 36) confirmed. `role='main'` on parent (OrderStatusScreenComponent.vue:13). Screen-reader nav OK.",
+      "heal_recommendation": "V1.0.2 OR sooner if Le Cayenne floor turns out to be deeper than expected: parameterize the font-size via a foodkingConfig.ossFontScale (default 1.0, range 0.8-2.0) so a deeper floor can scale up without code change. Document expected viewing distance in `docs/OSS_DISPLAY_PHYSICAL.md`. Non-blocking — owner has approved the current 40px scale at iter15.",
+      "verdict": "P3 — documentation + future-flex gap.",
+      "wcag_ref": "WCAG 2.1 1.4.4 Resize Text (AA) — text uses px not rem, so user-agent zoom may not scale predictably. Tailwind config could be migrated to rem-based for full compliance. Backlog.",
+      "frozen_zone_touch": false
+    },
+    {
+      "id": "OD-UX-04",
+      "severity": "INFO",
+      "title": "Animation reduce-motion preference not honored on OSS transitions",
+      "context": "Two animations fire on the OSS public wall: `oss-pop` (scale 0.6→1 cubic-bezier bouncy) on a new PRÊT item, `oss-bounce` (scale 1→1.12 twice) on each newly-ready item, `oss-flash` (column-bg fade) on flash trigger. CSS does NOT wrap these in `@media (prefers-reduced-motion: reduce)`. Customers with vestibular disorders sitting in front of the wall could experience motion-induced discomfort during rush hour with frequent transitions.",
+      "evidence": "PreparingAndReadyComponent.vue:383-415 `<style scoped>` body — no `@media (prefers-reduced-motion: reduce) { .oss-pop, .oss-bounce, .oss-flash { animation: none; transition: none; } }` block.",
+      "real_world_impact": "Low — most customer interactions are brief (look-and-leave). WCAG 2.3.3 Animation from Interactions is AAA-only, not AA-required.",
+      "heal_recommendation": "V1.0.2: add the reduced-motion media query. ~6 CSS lines.",
+      "verdict": "INFO — WCAG AAA, not AA-required. Backlog cosmetic.",
+      "wcag_ref": "WCAG 2.3.3 Animation from Interactions (AAA — not AA-required)",
+      "frozen_zone_touch": false
+    },
+    {
+      "id": "OD-UX-05",
+      "severity": "INFO",
+      "title": "PopularItemComponent visible-on-md-only — hidden on small screens (mobile portrait)",
+      "context": "PopularItemComponent.vue:5 `class='col-span-2 md:block hidden'` — the entire 'top 9 popular items' panel is `display: none` on screens narrower than 768px. This is INTENTIONAL on customer wall (TV/tablet always landscape ≥ 1024px) but could surprise an operator opening the OSS on a phone in portrait mode (e.g. shift manager checking from home).",
+      "evidence": "PopularItemComponent.vue:5 — explicit `md:block hidden` Tailwind utilities.",
+      "verdict": "INFO — by-design, not a defect.",
+      "frozen_zone_touch": false
+    }
+  ],
+  "keep_as_is": [
+    "PreparingAndReadyComponent.vue:16 + 36 — role='region' + aria-label for both columns",
+    "OrderStatusScreenComponent.vue:13 — role='main' + aria-label='label.oss_main_aria'",
+    "PopularItemComponent.vue:6 — role='region' + aria-label",
+    "Chime gate authBranchId() <= 0 (P0-OSS-01 heal)",
+    "wake-lock acquire/release/re-acquire on visibilitychange (R4 V1.0.2)",
+    "PRÊT text-[#0E7C3A] vs white contrast 5.30:1 (P1-OSS-01 heal)",
+    "AudioContext lazy-init pattern (iter15 C-034 round-7)"
+  ],
+  "wordcount": 1245,
+  "verdict_overall": "GREEN — 1 P2 (no mute UX) + 2 P3 (browser-matrix docs, view-distance docs) + 2 INFO (reduced-motion, portrait-hidden). No WCAG AA blockers, no V1 blockers. All findings deferrable to V1.0.2.",
+  "frozen_zone_touch": false
+}

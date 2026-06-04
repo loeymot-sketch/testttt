@@ -1,0 +1,288 @@
+{
+  "agent": "G.1 Real soak NEW F.1 caps",
+  "captured_at": "2026-05-23T23:16:31+02:00",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head_during_soak": "69279bc85",
+  "method": "E2EStressCommand foodking:e2e:stress · 10 sequential batches × 20 orders / 5 branches / concurrency 3 / type=kiosk / 85s sleep between batches · single Laravel artisan-serve PID 53293 · MySQL + Redis (predis) · monitor tick cadence ~60s · 200 orders total · base-url http://localhost:8000",
+  "context_vs_f2": "F.2 was AMBER because every request was 429'd by the kiosk-orders bucket (60/min keyed by kiosk:<user>|<ip>) BEFORE reaching the controller. G.1 strategy: 5 distinct kiosk fixtures per batch + 85s sleep between batches. ZERO 429s during the 200-order soak. POST-HOC NOTE (advisor 2026-05-23): the 85s sleep wasn't strictly load-bearing for 429 avoidance because E2EStressCommand provisionFixtures() mints FRESH User+KioskMachine per --branches per invocation, so each batch's kiosk-orders bucket key (kiosk:<NEW_user_id>|<ip>) is fresh anyway. The 85s sleep bought sustained-pressure wall-clock duration (the actual G.1 goal) not rate-limit headroom. Within a single batch, 20 orders × 5 fresh fixtures = 4 orders/fixture/batch — comfortably under any reasonable per-fixture cap regardless of sleep cadence.",
+  "duration": {
+    "started_at": "2026-05-23T23:02:22+02:00",
+    "finished_at": "2026-05-23T23:15:39+02:00",
+    "total_wall_clock_minutes": 13.3,
+    "batches_total": 10,
+    "orders_per_batch": 20,
+    "branches_per_batch": 5,
+    "concurrency": 3,
+    "sleep_between_batches_s": 85,
+    "monitor_ticks_total": 14
+  },
+  "baseline": {
+    "timestamp": "2026-05-23T23:02:10+02:00",
+    "audit_logs_count": 67,
+    "orders_count": 139,
+    "outbox_pending": 832,
+    "outbox_stale_30s": 832,
+    "fiscal_seq_branch_1_max": 68,
+    "fiscal_seq_branches_2_5_max": null,
+    "server_rss_kb": 57824,
+    "nf525_chain": "CHAIN OK (audit_logs + z_reports) (2 active branches sweep)"
+  },
+  "post_soak": {
+    "timestamp": "2026-05-23T23:16:31+02:00",
+    "audit_logs_count": 67,
+    "orders_count": 339,
+    "outbox_pending": 832,
+    "outbox_stale_30s": 832,
+    "fiscal_seq_branch_1_max": 68,
+    "fiscal_seq_branches_2_5_max": null,
+    "server_rss_kb": 52320,
+    "nf525_chain": "CHAIN OK (audit_logs + z_reports) (5 active branches sweep — branches 2-5 became active via stress fixtures, all chain-clean)",
+    "fiscal_kiosk_auto_allocate_sequence_config": true
+  },
+  "deltas": {
+    "audit_logs": 0,
+    "orders": 200,
+    "fiscal_sequence_no_branch_1": 0,
+    "outbox_depth_change": 0,
+    "outbox_stale_change": 0,
+    "server_rss_change_kb": -5504,
+    "interpretation": "200 orders successfully persisted (200/200 HTTP 201). 0 fiscal_sequence_no allocations because E2EStressCommand kiosk path creates orders in payment_status=UNPAID — FrontendOrderService::store sets UNPAID at line 266 (kiosk CARD path is NOT counter-deferred-cash). Fiscal allocation triggers at markPaid (FrontendOrderService:1153), which requires a separate paymentConfirm call the stress command does NOT make. Same applies to audit_logs (HMAC chain append happens at PAID transition) and outbox (DomainEvent emission happens at PAID transition). RSS DECREASED net -5504 KB (no leak signature)."
+  },
+  "latency_timeline_per_batch": [
+    {"batch": 1,  "at": "23:02:23", "avg_latency_ms": 63.85,  "throughput_rps": 15.66, "status": "201×20", "verdict": "PASS"},
+    {"batch": 2,  "at": "23:03:50", "avg_latency_ms": 63.28,  "throughput_rps": 15.80, "status": "201×20", "verdict": "PASS"},
+    {"batch": 3,  "at": "23:05:18", "avg_latency_ms": 153.98, "throughput_rps": 6.49,  "status": "201×20", "verdict": "PASS — transient spike (×2.4 vs B1-B2 baseline) — correlated with parallel agent G.10/G.12/G.15 phpunit/backup activity on same shell host. Recovered fully at B4."},
+    {"batch": 4,  "at": "23:06:48", "avg_latency_ms": 61.05,  "throughput_rps": 16.38, "status": "201×20", "verdict": "PASS — recovered to baseline"},
+    {"batch": 5,  "at": "23:08:15", "avg_latency_ms": 61.00,  "throughput_rps": 16.39, "status": "201×20", "verdict": "PASS"},
+    {"batch": 6,  "at": "23:09:42", "avg_latency_ms": 230.69, "throughput_rps": 4.33,  "status": "201×20", "verdict": "PASS — second transient spike (×3.6 vs baseline). Coincided with G.10/G.12 work tail and config:clear/cache regression-rebuild activity. Recovered at B7-B8."},
+    {"batch": 7,  "at": "23:11:15", "avg_latency_ms": 78.66,  "throughput_rps": 12.71, "status": "201×20", "verdict": "PASS — partial recovery"},
+    {"batch": 8,  "at": "23:12:42", "avg_latency_ms": 59.81,  "throughput_rps": 16.72, "status": "201×20", "verdict": "PASS — back to baseline"},
+    {"batch": 9,  "at": "23:14:10", "avg_latency_ms": 60.02,  "throughput_rps": 16.66, "status": "201×20", "verdict": "PASS"},
+    {"batch": 10, "at": "23:15:37", "avg_latency_ms": 58.05,  "throughput_rps": 17.23, "status": "201×20", "verdict": "PASS — FASTER than baseline. No cumulative degradation."}
+  ],
+  "rss_series_kb": [
+    {"t": "23:02:10", "rss": 57824, "note": "baseline"},
+    {"t": "23:02:38", "rss": 57856, "note": "tick=1"},
+    {"t": "23:03:40", "rss": 57856},
+    {"t": "23:04:42", "rss": 56736, "note": "post-batch2"},
+    {"t": "23:05:44", "rss": 56736},
+    {"t": "23:06:46", "rss": 56736},
+    {"t": "23:07:48", "rss": 56608, "note": "post-batch4"},
+    {"t": "23:08:50", "rss": 52512, "note": "drop ~4MB post GC"},
+    {"t": "23:09:53", "rss": 52512},
+    {"t": "23:10:55", "rss": 52512},
+    {"t": "23:11:57", "rss": 52320, "note": "post-batch7"},
+    {"t": "23:12:59", "rss": 52352},
+    {"t": "23:14:01", "rss": 48320, "note": "low point — additional GC"},
+    {"t": "23:14:14", "rss": 52288},
+    {"t": "23:15:03", "rss": 49200},
+    {"t": "23:15:16", "rss": 49200},
+    {"t": "23:16:06", "rss": 52432, "note": "post-batch10"},
+    {"t": "23:16:17", "rss": 52432},
+    {"t": "23:16:31", "rss": 52320, "note": "FINAL post-soak — NET DELTA -5504 KB vs baseline (-9.5%) — no memory leak signature"}
+  ],
+  "monitor_summary": {
+    "ticks_observed": 14,
+    "interval_s": 60,
+    "audit_logs_observed_min": 67,
+    "audit_logs_observed_max": 67,
+    "audit_logs_drift": 0,
+    "outbox_pending_observed_min": 832,
+    "outbox_pending_observed_max": 832,
+    "outbox_pending_drift": 0,
+    "fiscal_seq_branch_1_observed_min": 68,
+    "fiscal_seq_branch_1_observed_max": 68,
+    "fiscal_seq_branch_1_drift": 0,
+    "rss_observed_min_kb": 48320,
+    "rss_observed_max_kb": 57856,
+    "rss_observed_envelope_kb": 9536,
+    "chain_status_throughout": "CHAIN OK on every tick across 5 active branches"
+  },
+  "http_results_aggregate": {
+    "total_requests": 200,
+    "status_201_ok": 200,
+    "status_429_rate_limited": 0,
+    "status_5xx_server_error": 0,
+    "status_4xx_other": 0,
+    "network_errors": 0,
+    "duplicate_fiscal_sequence_no": 0,
+    "duplicate_queue_number": 0,
+    "cross_branch_leak": 0
+  },
+  "queue_number_contiguity": {
+    "branch_1_today_n": 119,
+    "branch_1_today_duplicates": 0,
+    "branch_2_today_n": 42,
+    "branch_2_today_duplicates": 0,
+    "branch_3_today_n": 40,
+    "branch_3_today_duplicates": 0,
+    "branch_4_today_n": 40,
+    "branch_4_today_duplicates": 0,
+    "branch_5_today_n": 40,
+    "branch_5_today_duplicates": 0,
+    "note": "queue_number scheme: branch_1 uses numeric (801..919), branches 2-5 use A-prefix (A0001..A0042). All gap-free per branch per business_date. NO duplicates under concurrency=3 across 200 orders — UNIQUE constraint + locking held."
+  },
+  "fiscal_sequence_contiguity": {
+    "branch_1": {"n": 63, "min": 1, "max": 68, "expected_if_contiguous": 68, "observed_gap": 5},
+    "note": "5-row gap on branch 1 is PRE-EXISTING (predates soak) — no fiscal sequence allocations occurred during the soak because all 200 kiosk orders were UNPAID at create-time. Branches 2-5 have null max because no fiscal allocations exist on those branches at all."
+  },
+  "latency_drift_detected": false,
+  "latency_drift_analysis": {
+    "baseline_window_b1_b2_b4_b5": {"mean_ms": 62.30, "stddev_ms": 1.41},
+    "steady_state_window_b8_b9_b10": {"mean_ms": 59.29, "stddev_ms": 0.97},
+    "transient_spikes": [
+      {"batch": 3, "latency_ms": 153.98, "ratio_vs_baseline": 2.47, "likely_cause": "parallel agent G.10/G.12/G.15 phpunit + backup drill concurrent on same artisan-serve PHP single-process server (PHP -S serializes requests in one thread)"},
+      {"batch": 6, "latency_ms": 230.69, "ratio_vs_baseline": 3.70, "likely_cause": "same — peak external contention from agent G.10 phpunit Wave V tinker-heavy probes / G.12 backup IO"}
+    ],
+    "monotonic_drift_signature": "ABSENT — final batch B10 latency 58.05ms is FASTER than baseline B1 63.85ms. No accumulating degradation across the 13.3-min window.",
+    "conclusion": "Latency variance is EXOGENOUS (concurrent dev-host contention from sibling agents on a single-process PHP -S server), not endogenous (no internal accumulation). Production php-fpm with worker pool would absorb this trivially. ZERO cumulative drift signature in own-traffic."
+  },
+  "memory_growth_mb": -5.4,
+  "memory_growth_analysis": "Server RSS series N=19 samples shows envelope 48320..57856 KB across 14 minutes. Final post-soak RSS (52320 KB) is 5504 KB BELOW baseline (-9.5%). No monotonic-growth signature; heap reclaimed across the run. Consistent with F.2-OBS-03 (no PHP heap fragmentation under burst).",
+  "rate_limit_429_count_during_soak": 0,
+  "rate_limit_strategy_validation": {
+    "kiosk_orders_bucket_60_per_min_per_fixture": "RESPECTED — 5 fixtures × 4 orders/min effective rate = 20 orders/min per fixture per batch / 60s = 4/min — well under cap. ZERO 429 across 200 requests.",
+    "f1_caps_actually_exercised": {
+      "api_per_user_1000_per_min": "TOUCHED INDIRECTLY — each kiosk POST also passes through the `api` bucket. With 5 user_ids × ~17 reqs/s peak burst → well under 1000/min per fixture. No 429.",
+      "menu_availability_1000_per_min": "NOT EXERCISED — soak does not toggle menu availability.",
+      "kiosk_orders_60_per_min_per_kiosk_fixture": "RESPECTED but NOT RAISED by F.1 — this is the bucket that 429'd F.2. F.1 commit 10539a012 raised `api` + added `menu-availability` named limiter, but did NOT touch `kiosk-orders`. Production prod_default is 5/min (config/kiosk.php line 60: `Limit::perMinute((int) config('kiosk.order_rate_limit', 5))`). Local dev .env raises to 60/min via KIOSK_ORDER_RATE_LIMIT=60. SEE FINDING G1-OBS-04 for honest disclosure."
+    }
+  },
+  "nf525_chain_pre": "CHAIN OK (audit_logs + z_reports) (branches=1,2 sweep, count=67)",
+  "nf525_chain_post": "CHAIN OK (audit_logs + z_reports) (branches=1,2,3,4,5 sweep, count=67 bit-identical, no append)",
+  "nf525_chain_evolution_during_soak": {
+    "ticks_observed": 14,
+    "chain_status_per_tick": "CHAIN OK at every tick — branches 2-5 became active via stress fixtures (chain init), all stayed bit-identical to baseline at audit_logs.count=67 (no append because no PAID transitions occurred)",
+    "audit_logs_count_pre": 67,
+    "audit_logs_count_post": 67,
+    "fiscal_sequence_no_branch_1_pre": 68,
+    "fiscal_sequence_no_branch_1_post": 68
+  },
+  "cumulative_degradation_detected": [
+    {
+      "id": "G1-OBS-01",
+      "severity": "INFO",
+      "title": "Zero cumulative degradation across 200-order kiosk soak — F.2 AMBER promoted to GREEN on measured surfaces",
+      "summary": "200 orders / 10 batches / 13.3 min wall-clock / 5 distinct kiosk fixtures / concurrency 3. 200/200 HTTP 201 OK. Zero 429, zero 5xx, zero network errors. Final-batch latency (58.05ms) FASTER than first-batch latency (63.85ms). DB invariants 0/0/0 (duplicate_fiscal, duplicate_queue, cross_branch_leak). RSS net -5504 KB (-9.5%). NF525 chain bit-identical pre/post (CHAIN OK throughout).",
+      "evidence": "G1-soak-run.txt (10 batch reports) · G1-soak-monitor.txt (14 ticks) · G1-soak-post.txt"
+    },
+    {
+      "id": "G1-OBS-02",
+      "severity": "INFO",
+      "title": "Transient latency spikes at B3 and B6 — EXOGENOUS, not internal",
+      "summary": "Two batches spiked 2.4x (B3=153.98ms) and 3.6x (B6=230.69ms) above the ~62ms steady-state mean. Pattern is non-monotonic: spikes resolve completely at the NEXT batch. Root cause: PHP -S artisan-serve runs single-process / single-threaded — when sibling agents G.10/G.12/G.15 ran heavy phpunit sentinels / backup drill / tinker queries during this soak, those requests contended with soak requests in the same PHP event loop. Production php-fpm with worker pool (5-20 workers) would absorb this trivially.",
+      "evidence": "B3 spike at 23:05:18 coincides with G.15 phpunit-sentinels-run.txt (3.1KB result file dated 23:01). B6 spike at 23:09:42 coincides with G.10 time-edge tinker queries + G.12 backup completion. Final batch B10 returns to 58ms < baseline 63ms — confirming spikes are not cumulative.",
+      "production_impact": "NONE if production uses php-fpm. Local-dev php-S is testing-only — production never uses it (NF525 boot guard at AppServiceProvider:78-145 plus deploy scripts always launch via php-fpm + nginx).",
+      "action": "DOCUMENT ONLY — no action needed. Latency CI assertions should not be authored against this signal."
+    },
+    {
+      "id": "G1-OBS-03",
+      "severity": "AMBER",
+      "title": "Cache::lock fiscal-allocator + audit_logs HMAC append + outbox DomainEvent emission STILL NOT EXERCISED by E2EStressCommand kiosk path",
+      "summary": "Inherited from F.2-OBS-04 — root cause IDENTIFIED in G.1: FrontendOrderService::store at line 266 sets payment_status=UNPAID for kiosk-CARD orders (the path the stress command uses). NF525 fiscal allocation happens at markPaid (line 1153 — kiosk_auto_allocate_sequence config gates) which requires a SEPARATE paymentConfirm call the stress command does NOT make. SAME for audit_logs (HMAC chain append on PAID transition) and outbox DomainEvents. Result: 200 successfully persisted orders BUT zero fiscal_sequence_no allocations, zero audit_logs appends, zero outbox emissions FROM the soak itself.",
+      "evidence": "FrontendOrderService.php:266 payment_status=UNPAID · FrontendOrderService.php:1153 fiscal allocation in markPaid only · audit_logs delta 67→67 across the soak · b1_fs delta 68→68 · outbox 832→832 · 234 of 339 orders post-soak in payment_status=10 (PENDING_COUNTER) — these are the 200 soak orders plus pre-existing PENDING",
+      "what_DID_get_exercised_by_G1": [
+        "FrontendOrderController@store full request path (200×)",
+        "Sanctum kiosk:order token validation (200×)",
+        "X-Idempotency-Key middleware (200×, scope branch+user+hash unique per request via UNIQUE token)",
+        "ValidJsonOrder + OrderRequest FormRequest validation (200×)",
+        "PricingService SSOT calculateOrder for kiosk (200×)",
+        "OrderQuoteService quote creation + consumption (200× via fetchKioskQuote pre-fetch loop)",
+        "DB::transaction → FrontendOrder::create + OrderItem::insert (200×)",
+        "allergens_snapshot hydration (200×)",
+        "BranchScope multi-tenant boundary (5 branches concurrent)",
+        "MySQL connection pool under c=3 concurrent over 200 requests",
+        "Redis cache via predis (PricingService caches)",
+        "kiosk-orders rate-limit bucket (60/min per fixture — RESPECTED, 0 trips)",
+        "PHP heap under 13-min sustained burst (RSS -5504 KB net)"
+      ],
+      "what_was_NOT_exercised_by_G1": [
+        "FiscalSequenceService::next Cache::lock 5s + DB FOR UPDATE under contention (RushMidiSimulationTest @group stress is the only attestation, sqlite-memory)",
+        "AuditLogService::write HMAC chain append throughput",
+        "DomainEvent outbox producer rate / DispatchDomainEventsJob ack",
+        "ZReportService close throughput"
+      ],
+      "action": "V1.0.2 backlog — extend E2EStressCommand with paymentConfirm helper to chain quote→store→paymentConfirm so full NF525 fiscal pipeline is exercised. Documented as F.2-OBS-02 sibling. NOT a V1 ship blocker — RushMidiSimulationTest CI suite + manual POS flow E2E tests cover the structural invariants; G.1 closes the HTTP-pressure surface for create-path."
+    },
+    {
+      "id": "G1-OBS-04",
+      "severity": "AMBER",
+      "title": "F.1 commit 10539a012 did NOT raise the kiosk-orders rate-limit bucket — contrary to the simplified phrase \"F.1 raised V1 LOCAL caps to 1000/min\"",
+      "summary": "F.1 raised TWO buckets: (a) `api` per-user bucket via API_THROTTLE_PER_MINUTE config (50→1000 local), and (b) added a new named `menu-availability` limiter (60→1000 local via MENU_AVAILABILITY_RATE_LIMIT). F.1 did NOT touch the `kiosk-orders` bucket at RouteServiceProvider:60-71 which remains keyed by `kiosk:<user_id>|<ip>` with config('kiosk.order_rate_limit', DEFAULT=5/min). Local .env raises KIOSK_ORDER_RATE_LIMIT=60 for testing, but production-default stays 5/min. F.2's run-1 was 429'd by this bucket because all 100 requests hit one kiosk fixture's bucket at once. G.1 strategy: 5 distinct fixtures × paced 4/min/fixture = 20/min/fixture max = well under 60/min cap.",
+      "evidence": "git diff 10539a012^ 10539a012 -- app/Providers/RouteServiceProvider.php shows only `admin-mutation` lookup-in-closure refactor + new `menu-availability` limiter ADDED. Lines 60-71 (kiosk-orders) UNCHANGED. config/kiosk.php confirms 'order_rate_limit' default is 5.",
+      "owner_question_pending": "Is KIOSK_ORDER_RATE_LIMIT default=5/min (production) the right cap for a multi-borne busy fast-food? A single kiosk fixture submitting >5 orders/min in production would 429. Currently 'fixed' for local-dev by .env override only. Three orientations possible: (a) raise prod default; (b) add per-machine keying (kiosk:<machine_id> instead of kiosk:<user>|<ip>) so each borne has its own bucket; (c) accept the cap as intentional (5 orders/min per borne is realistic — kiosks have human-touch latency).",
+      "action": "DOCUMENT as V1.0.2 BACKLOG owner question — not blocking V1 single-borne deploy at Le Cayenne LOCAL (one borne = one fixture, well under 5/min realistically). MUST resolve before SaaS multi-borne rollout."
+    },
+    {
+      "id": "G1-OBS-05",
+      "severity": "INFO",
+      "title": "Outbox pre-existing backlog (832 stale) UNCHANGED by G.1 — same as F.2-OBS-05",
+      "summary": "Baseline outbox_pending=832 (persistent dev-box backlog noted by CLAUDE.md C8 finding at ~742 and F.2 baseline at 751). Post-soak 832 — ZERO delta from G.1 because no DomainEvent emissions occurred (no PAID transitions). Stale-30s metric also unchanged. Lack of `queue:work` daemon is a known dev-box gap — production cutover requires the worker (production env guard at AppServiceProvider:78-145 already documented for QUEUE_DRIVER).",
+      "evidence": "monitor obx_p column constant at 832 across 14 ticks · post-soak obx_p=832 = baseline obx_p=832",
+      "action": "Documented in BRAIN — no new action."
+    },
+    {
+      "id": "G1-OBS-06",
+      "severity": "INFO",
+      "title": "Memory leak signature ABSENT under 13.3-min sustained 200-order burst",
+      "summary": "Server RSS series N=19 samples: baseline 57824 KB → minimum during run 48320 KB → maximum during run 57856 KB → final 52320 KB. Final-vs-baseline delta = -5504 KB (-9.5%). Heap reclaimed across the run, no monotonic-growth signature. Consistent with F.2-OBS-03 RSS proxy GREEN but with FAR more samples and a true full-controller-path workload (200 successful POSTs vs F.2's 0 successful POSTs).",
+      "evidence": "ps -o rss=,etime= -p 53293 sampled every 60s for 14 ticks · F.2-OBS-03 confirmed",
+      "caveat": "PHP built-in dev server is single-process / per-request — true production php-fpm worker dynamics differ (workers can be max_requests-recycled). Production attestation under php-fpm + Opcache stays required for full picture, BUT G.1 doubled the confidence vs F.2 (real successful POSTs hitting full controller path)."
+    },
+    {
+      "id": "G1-OBS-07",
+      "severity": "INFO",
+      "title": "Multi-tenant BranchScope concurrency held under 5 simultaneous branches",
+      "summary": "200 orders spread across 5 distinct branches (branch_id 1..5) submitted concurrently via Guzzle Pool. Post-soak per-branch counts: b1=+38, b2=+42, b3=+40, b4=+40, b5=+40 (total +200). cross_branch_leak invariant = 0 in every batch report. BranchScope global enforcement held under c=3 concurrent across 200 inserts. Sanctum tokens were branch-scoped (each kiosk fixture had own User with branch_id=N).",
+      "evidence": "G1-soak-post.txt per-branch counts · 10× 'cross_branch_leak: 0' in run reports",
+      "production_relevance": "Strong signal for multi-tenant integrity. Production single-restaurant Le Cayenne does not hit multi-branch concurrency, but the same code path serves a future multi-restaurant SaaS — this is positive evidence."
+    },
+    {
+      "id": "G1-OBS-08",
+      "severity": "INFO",
+      "title": "Idempotency middleware held under burst (no duplicate-key 409 across 200 requests with UNIQUE per-request token)",
+      "summary": "Each soak request POSTs with X-Idempotency-Key sourced from minimalKioskOrderPayload's UNIQUE token ('STRESS-Q13-ART-' + $i + uniqid suffix). The IdempotencyKeyMiddleware cache + DB UNIQUE constraint held — zero replay conflicts (would have shown as 409 not 201). The 200×201 result confirms 200 distinct idempotency-key insertions. Idempotency-Key cache growth: not directly measured here, but RSS proxy is BELOW baseline so any growth is bounded (Redis-backed by predis).",
+      "evidence": "200/200 status=201 (a 409 conflict would have been counted as failed=1) · RSS net negative · F.2-OBS-Idempotency cache growth marked NOT MEASURED — G.1 now provides indirect attestation (would have shown as RSS growth, did not)."
+    }
+  ],
+  "expected_concerns_addressed_vs_f2": {
+    "cache_fragmentation": "STILL NOT MEASURED directly (no fiscal alloc) but RSS proxy GREEN (RSS -5.4 MB net). F.2 'NOT MEASURED, RSS proxy GREEN' → G.1 confirms RSS proxy GREEN with 200 real successful POSTs.",
+    "listener_accumulation": "RSS proxy GREEN — even with 200 successful controller hits firing whatever listeners hang off FrontendOrder::created, no growth signature.",
+    "memory_leak": "GREEN — server RSS settled BELOW baseline (-5.4 MB net), with N=19 samples across 14 min vs F.2's 14 samples across 5 min.",
+    "db_connection_pool_exhaustion": "NOT TRIGGERED — zero 500/connection-refused across 200 successful requests at c=3. F.2 'NOT TRIGGERED' confirmed by G.1 with 200 real successful POSTs.",
+    "outbox_stale": "PRE-EXISTING — G1-OBS-05 confirms same as F.2-OBS-05. Not aggravated by G.1.",
+    "fiscal_sequence_latency_drift": "STILL NOT EXERCISED directly (G1-OBS-03). RushMidiSimulationTest CI suite remains the structural attestation. The path of NF525 allocation is not reachable via E2EStressCommand kiosk path without a paymentConfirm helper.",
+    "idempotency_key_cache_growth": "ATTESTED INDIRECTLY — 200 distinct keys insertions across the burst, no RSS growth signature. G1-OBS-08 documents.",
+    "latency_drift": "MEASURED — ABSENT. 10-batch series shows two exogenous transient spikes (G1-OBS-02) but final-batch latency FASTER than baseline. No accumulating signature."
+  },
+  "verdict": "GREEN-WITH-DISCLOSURE",
+  "verdict_rationale": "GREEN on all directly-measured surfaces: 200/200 HTTP 201, zero 429, zero 5xx, zero network errors, zero invariant duplicates, NF525 chain bit-identical pre/post, RSS net -5.4 MB (no leak), no cumulative latency drift, queue_number contiguous + duplicate-free per branch+date. F.2 AMBER → G.1 GREEN promotion on the surfaces F.2 could exercise (controller path, validation, idempotency, multi-tenant, rate-limit graceful, memory). DISCLOSURE: NF525 fiscal Cache::lock allocation pipeline + audit_logs HMAC append + outbox DomainEvent emission are STILL not directly exercised because E2EStressCommand kiosk path creates UNPAID orders only (G1-OBS-03). This is a stress-tool gap inherited from F.2-OBS-02, not a system defect. F.1 also did NOT raise the kiosk-orders bucket (G1-OBS-04) — owner question pending for prod default. NEITHER disclosure is a V1 ship blocker given Le Cayenne LOCAL single-borne reality and existing CI structural coverage (RushMidiSimulationTest @group stress) of fiscal monotonicity.",
+  "files": {
+    "baseline":   "reports/test-e2e/goal-2026-05-23/phase-g/G1-soak-baseline.txt",
+    "monitor":    "reports/test-e2e/goal-2026-05-23/phase-g/G1-soak-monitor.txt",
+    "run_log":    "reports/test-e2e/goal-2026-05-23/phase-g/G1-soak-run.txt",
+    "post":       "reports/test-e2e/goal-2026-05-23/phase-g/G1-soak-post.txt",
+    "findings":   "reports/test-e2e/goal-2026-05-23/phase-g/G1-soak-findings.json"
+  },
+  "code_touched": {
+    "files_modified": [],
+    "scope": "ZERO production code changes. ZERO frozen-zone diff. Only stress-tool reads; no patches.",
+    "diff_size": "0 lines"
+  },
+  "owner_questions_open": [
+    {
+      "id": "OQ-G1-01",
+      "subject": "kiosk-orders bucket production default",
+      "question": "Production default `config('kiosk.order_rate_limit', 5)` = 5/min keyed by `kiosk:<user_id>|<ip>` — is this the intended cap? A single borne in a real fast-food rush could submit >5 orders/min during lunch peak. Three options: (a) raise default; (b) re-key by machine_id; (c) accept as-is (5/min is realistic). Decision affects post-V1 multi-borne SaaS rollout.",
+      "blocking_v1_local_le_cayenne": false,
+      "blocking_saas_multi_borne": true
+    },
+    {
+      "id": "OQ-G1-02",
+      "subject": "E2EStressCommand kiosk path coverage gap",
+      "question": "Extend stress command with paymentConfirm follow-up so NF525 fiscal Cache::lock allocation + audit chain append + outbox emission are exercised under real HTTP burst (currently only RushMidiSimulationTest sqlite-memory attests this). V1.0.2 backlog?",
+      "blocking_v1_local_le_cayenne": false,
+      "blocking_saas_multi_borne": false
+    }
+  ]
+}

@@ -1,0 +1,915 @@
+{
+  "generated_at": "2026-05-27",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "scope": "V1 LOCAL Le Cayenne — single-restaurant fast-food",
+  "sources": {
+    "router_root": "resources/js/router/index.js",
+    "router_modules": "resources/js/router/modules/*.js (35 files)",
+    "sidebar_component": "resources/js/components/layouts/backend/BackendMenuComponent.vue",
+    "v1_hidden_modules_config": "resources/js/config/v1-hidden-modules.js",
+    "menu_seeder": "database/seeders/MenuTableSeeder.php"
+  },
+  "total_admin_routes_top_level": 35,
+  "total_admin_routes_with_children": 78,
+  "sidebar_construction_rules": [
+    "BackendMenuComponent.buildMergedSidebarMenus pushes dashboard + pos first, then V1_PRIMARY_SIDEBAR_MENUS (stock/rupture, items, ingredients, pos-orders, cash-overview, delivery-boy-cash-sessions), then DB-backed role menu (filtered via V1_HIDDEN_MENU_MODULES).",
+    "Items legacy parent row hidden via V1_HIDDEN_BACKEND_MENU_URLS (children still visible).",
+    "Virtual children inject Catalogue under /admin/items (Studio + item-attributes)."
+  ],
+  "core_v1": [
+    {
+      "path": "/admin/dashboard",
+      "name": "admin.dashboard",
+      "component": "resources/js/components/admin/dashboard/DashboardComponent",
+      "controller": "app/Http/Controllers/Admin/DashboardController.php (api: /api/v1/admin/dashboard/*)",
+      "permission": "dashboard",
+      "sidebar_visible": true,
+      "category": "CORE V1",
+      "notes": "Always-on landing for staff. Mandatory pushBlock #1 in BackendMenuComponent."
+    },
+    {
+      "path": "/admin/pos",
+      "name": "admin.pos",
+      "component": "resources/js/components/admin/pos/PosComponent",
+      "controller": "PosController + PosOrderController (POS confirm flow)",
+      "permission": "pos",
+      "sidebar_visible": true,
+      "category": "CORE V1",
+      "notes": "POS Caisse. Mandatory pushBlock #2 in BackendMenuComponent. Wave Polish Final POS-V5 / vanilla pos-wizard.js frozen design."
+    },
+    {
+      "path": "/admin/pos/floorplan",
+      "name": "admin.pos.floorplan",
+      "component": "resources/js/components/admin/pos/FloorplanComponent",
+      "controller": "—",
+      "permission": "pos",
+      "sidebar_visible": false,
+      "category": "OUT-OF-SCOPE V1",
+      "notes": "Dine-in floorplan DISABLED in V1 per pos.dine_in_enabled=false feature flag. Route exists but hidden."
+    },
+    {
+      "path": "/admin/stock/rupture",
+      "name": "admin.stock.rupture",
+      "component": "resources/js/components/admin/stock/StockRuptureDashboardComponent",
+      "controller": "app/Http/Controllers/Admin/StockRuptureDashboardController.php",
+      "permission": "items (mapped via permissionUrlForSidebarPath stock/* -> items)",
+      "sidebar_visible": true,
+      "category": "CORE V1",
+      "notes": "V1_PRIMARY_SIDEBAR_MENUS[0]. Wave Z S9 fixed. Public-friendly auth not applied."
+    },
+    {
+      "path": "/admin/items",
+      "name": "admin.items (redirect to admin.items.studio)",
+      "component": "ItemComponent (parent shell)",
+      "controller": "app/Http/Controllers/Admin/ItemController.php",
+      "permission": "items",
+      "sidebar_visible": "parent hidden via V1_HIDDEN_BACKEND_MENU_URLS but virtual children shown",
+      "category": "CORE V1"
+    },
+    {
+      "path": "/admin/items/studio",
+      "name": "admin.items.studio",
+      "component": "resources/js/components/admin/items/CatalogStudioComponent",
+      "controller": "ItemController + AvailabilityController + ComposerProfileController",
+      "permission": "items",
+      "sidebar_visible": true,
+      "category": "CORE V1",
+      "notes": "Catalogue. VIRTUAL_CHILDREN_BY_URL[items][0]."
+    },
+    {
+      "path": "/admin/items/create",
+      "name": "admin.items.create",
+      "component": "ItemListComponent (with ?create=1 query)",
+      "controller": "ItemController",
+      "permission": "items_create",
+      "sidebar_visible": false,
+      "category": "CORE V1"
+    },
+    {
+      "path": "/admin/items/show/:id",
+      "name": "admin.item.show",
+      "component": "ItemShowComponent",
+      "controller": "ItemController",
+      "permission": "items",
+      "sidebar_visible": false,
+      "category": "CORE V1"
+    },
+    {
+      "path": "/admin/items/:id/composer",
+      "name": "admin.items.composer",
+      "component": "resources/js/components/admin/items/composer/ProductComposerEditorComponent",
+      "controller": "ComposerProfileController",
+      "permission": "catalog.compose",
+      "sidebar_visible": false,
+      "category": "CORE V1",
+      "notes": "Sub-page reached from Studio per-item edit."
+    },
+    {
+      "path": "/admin/categories/:id/composer",
+      "name": "admin.categories.composer",
+      "component": "ProductComposerEditorComponent",
+      "controller": "ComposerProfileController",
+      "permission": "catalog.compose",
+      "sidebar_visible": false,
+      "category": "CORE V1"
+    },
+    {
+      "path": "/admin/ingredients",
+      "name": "admin.ingredients.list",
+      "component": "resources/js/components/admin/ingredients/IngredientList",
+      "controller": "app/Http/Controllers/Admin/IngredientController.php",
+      "permission": "ingredients_manage",
+      "sidebar_visible": true,
+      "category": "CORE V1",
+      "notes": "V1_PRIMARY_SIDEBAR_MENUS[2]. WAVE Y catalog V2 cycle integrated 85 images + 13 sauces."
+    },
+    {
+      "path": "/admin/ingredients/:type(attribute|extra|addon)",
+      "name": "admin.ingredients.byType",
+      "component": "IngredientList",
+      "controller": "IngredientController",
+      "permission": "ingredients_manage",
+      "sidebar_visible": false,
+      "category": "CORE V1"
+    },
+    {
+      "path": "/admin/pos-orders",
+      "name": "admin.pos-orders",
+      "component": "resources/js/components/admin/pos-orders/PosOrderComponent",
+      "controller": "app/Http/Controllers/Admin/PosOrderController.php",
+      "permission": "pos-orders",
+      "sidebar_visible": true,
+      "category": "CORE V1",
+      "notes": "V1_PRIMARY_SIDEBAR_MENUS[3]."
+    },
+    {
+      "path": "/admin/pos-orders/show/:id",
+      "name": "admin.pos-orders.show",
+      "component": "PosOrderShowComponent",
+      "controller": "PosOrderController",
+      "permission": "pos-orders",
+      "sidebar_visible": false,
+      "category": "CORE V1"
+    },
+    {
+      "path": "/admin/pos-orders-tracker",
+      "name": "admin.pos.orders.tracker",
+      "component": "PosOrdersTrackerComponent",
+      "controller": "PosOrderController",
+      "permission": "pos-orders (mapped)",
+      "sidebar_visible": false,
+      "category": "CORE V1",
+      "notes": "Live tracker accessed from POS Caisse but not in sidebar."
+    },
+    {
+      "path": "/admin/cash-overview",
+      "name": "admin.cash-overview",
+      "component": "resources/js/components/admin/cash-overview/CashOverviewComponent",
+      "controller": "app/Http/Controllers/Admin/CashOverviewController.php",
+      "permission": "cash-sessions-report",
+      "sidebar_visible": true,
+      "category": "CORE V1",
+      "notes": "V1_PRIMARY_SIDEBAR_MENUS[4]. Wave X X4 cash overview unified 2026-05-21."
+    },
+    {
+      "path": "/admin/cash-sessions-report",
+      "name": "admin.cash-sessions-report",
+      "component": "resources/js/components/admin/cash-sessions-report/CashSessionReportListComponent",
+      "controller": "CashSessionReportController",
+      "permission": "cash-sessions-report",
+      "sidebar_visible": false,
+      "category": "CORE V1",
+      "notes": "Linked from Cash Overview, accessible via Setup/Reports if role allows."
+    },
+    {
+      "path": "/admin/kitchen-display-system",
+      "name": "admin.kitchen-display-system",
+      "component": "resources/js/components/admin/kitchen-display-system/KitchenDisplaySystemComponent",
+      "controller": "app/Http/Controllers/Admin/KitchenDisplaySystemController.php",
+      "permission": "kitchen-display-system",
+      "sidebar_visible": true,
+      "category": "CORE V1",
+      "notes": "DB menu seeder \"Pos & Orders\" group child. /kds alias. Sidebar AUTO-HIDDEN on this page (db-sidebar.hidden CSS in template)."
+    },
+    {
+      "path": "/admin/order-status-screen",
+      "name": "admin.order-status-screen",
+      "component": "resources/js/components/admin/order-status-screen/OrderStatusScreenComponent",
+      "controller": "OssOrderController",
+      "permission": "order-status-screen",
+      "sidebar_visible": true,
+      "category": "CORE V1",
+      "notes": "Public-friendly auth route (iter15 C-003). /order-status alias. Sidebar AUTO-HIDDEN on this page."
+    },
+    {
+      "path": "/admin/settings",
+      "name": "admin.settings (redirect to admin.settings.company)",
+      "component": "SettingsComponent shell",
+      "controller": "—",
+      "permission": "settings",
+      "sidebar_visible": true,
+      "category": "CORE V1",
+      "notes": "DB menu seeder \"Setup\" group child. Has its own MenuComponent.vue with sub-sidebar."
+    },
+    {
+      "path": "/admin/settings/company",
+      "name": "admin.settings.company",
+      "component": "CompanyComponent",
+      "controller": "CompanyController",
+      "permission": "settings",
+      "sidebar_visible": "via settings/MenuComponent.vue",
+      "category": "CORE V1"
+    },
+    {
+      "path": "/admin/settings/branches/list",
+      "name": "admin.settings.branch.list",
+      "component": "BranchListComponent",
+      "controller": "BranchController",
+      "permission": "settings",
+      "sidebar_visible": "via settings/MenuComponent.vue",
+      "category": "CORE V1"
+    },
+    {
+      "path": "/admin/settings/branches/show/:id",
+      "name": "admin.settings.branch.show",
+      "component": "BranchShowComponent",
+      "controller": "BranchController",
+      "permission": "settings",
+      "sidebar_visible": false,
+      "category": "CORE V1"
+    },
+    {
+      "path": "/admin/settings/order-setup",
+      "name": "admin.settings.orderSetup",
+      "component": "OrderSetupComponent",
+      "controller": "OrderSetupController",
+      "permission": "settings",
+      "sidebar_visible": "via settings/MenuComponent.vue",
+      "category": "CORE V1"
+    },
+    {
+      "path": "/admin/settings/kiosk-setup",
+      "name": "admin.settings.kioskSetup",
+      "component": "KioskSetupComponent",
+      "controller": "KioskSetupController",
+      "permission": "settings",
+      "sidebar_visible": "via settings/MenuComponent.vue",
+      "category": "CORE V1"
+    },
+    {
+      "path": "/admin/settings/site",
+      "name": "admin.settings.site",
+      "component": "SiteComponent",
+      "controller": "SiteController",
+      "permission": "settings",
+      "sidebar_visible": "via settings/MenuComponent.vue",
+      "category": "CORE V1"
+    },
+    {
+      "path": "/admin/settings/currencies/list",
+      "name": "admin.settings.currency.list",
+      "component": "CurrencyListComponent",
+      "controller": "CurrencyController",
+      "permission": "settings",
+      "sidebar_visible": "via settings/MenuComponent.vue",
+      "category": "CORE V1"
+    },
+    {
+      "path": "/admin/settings/payment-terminals",
+      "name": "admin.settings.paymentTerminals",
+      "component": "PaymentTerminalsComponent",
+      "controller": "—",
+      "permission": "settings",
+      "sidebar_visible": "via settings/MenuComponent.vue",
+      "category": "CORE V1",
+      "notes": "Required for POS payment hardware mapping (NF525 cash-trail context)."
+    },
+    {
+      "path": "/admin/settings/kiosk-machines",
+      "name": "admin.settings.kioskMachines.list",
+      "component": "KioskMachineListComponent",
+      "controller": "KioskMachineController",
+      "permission": "settings",
+      "sidebar_visible": "via settings/MenuComponent.vue",
+      "category": "CORE V1"
+    },
+    {
+      "path": "/admin/profile/edit-profile",
+      "name": "admin.profile.editProfile",
+      "component": "ProfileEditProfileComponent",
+      "controller": "ProfileController",
+      "permission": "(empty — always allowed)",
+      "sidebar_visible": false,
+      "category": "CORE V1",
+      "notes": "Reached via header dropdown."
+    },
+    {
+      "path": "/admin/profile/change-password",
+      "name": "admin.profile.changePassword",
+      "component": "ProfileChangePasswordComponent",
+      "controller": "ProfileController",
+      "permission": "(empty — always allowed)",
+      "sidebar_visible": false,
+      "category": "CORE V1"
+    }
+  ],
+  "optional_v1": [
+    {
+      "path": "/admin/observability/outbox",
+      "name": "admin.observability.outbox",
+      "component": "OutboxOverviewComponent",
+      "controller": "OutboxController",
+      "permission": "dashboard",
+      "sidebar_visible": false,
+      "category": "OPTIONAL V1",
+      "notes": "V1.0.1 hardening. Outbox+webhook observability. Direct URL access only."
+    },
+    {
+      "path": "/admin/administrators",
+      "name": "admin.administrators",
+      "component": "AdministratorComponent",
+      "controller": "AdministratorController",
+      "permission": "administrators",
+      "sidebar_visible": true,
+      "category": "OPTIONAL V1",
+      "notes": "DB seeder \"Users\" group. Required for managing admin accounts (1-2 staff in Le Cayenne)."
+    },
+    {
+      "path": "/admin/administrators/show/:id",
+      "name": "admin.administrators.show",
+      "component": "AdministratorShowComponent",
+      "controller": "AdministratorController",
+      "permission": "administrators",
+      "sidebar_visible": false,
+      "category": "OPTIONAL V1"
+    },
+    {
+      "path": "/admin/employees",
+      "name": "admin.employees",
+      "component": "EmployeeComponent",
+      "controller": "EmployeeController",
+      "permission": "employees",
+      "sidebar_visible": true,
+      "category": "OPTIONAL V1",
+      "notes": "DB seeder \"Users\" group child. Cashiers/POS operators."
+    },
+    {
+      "path": "/admin/employees/show/:id",
+      "name": "admin.employees.show",
+      "component": "EmployeeShowComponent",
+      "controller": "EmployeeController",
+      "permission": "employees",
+      "sidebar_visible": false,
+      "category": "OPTIONAL V1"
+    },
+    {
+      "path": "/admin/chefs",
+      "name": "admin.chefs",
+      "component": "ChefComponent",
+      "controller": "ChefController",
+      "permission": "chefs",
+      "sidebar_visible": true,
+      "category": "OPTIONAL V1",
+      "notes": "DB seeder \"Users\" group child. Kitchen staff for KDS login."
+    },
+    {
+      "path": "/admin/chefs/show/:id",
+      "name": "admin.chefs.show",
+      "component": "ChefShowComponent",
+      "controller": "ChefController",
+      "permission": "chefs",
+      "sidebar_visible": false,
+      "category": "OPTIONAL V1"
+    },
+    {
+      "path": "/admin/push-notifications",
+      "name": "admin.push-notifications",
+      "component": "PushNotificationComponent",
+      "controller": "PushNotificationController",
+      "permission": "push-notifications",
+      "sidebar_visible": true,
+      "category": "OPTIONAL V1",
+      "notes": "DB seeder \"Communications\" group child. Useful for KDS chef alerts and OSS broadcasts."
+    },
+    {
+      "path": "/admin/push-notifications/show/:id",
+      "name": "admin.push-notification.show",
+      "component": "PushNotificationShowComponent",
+      "controller": "PushNotificationController",
+      "permission": "push-notifications",
+      "sidebar_visible": false,
+      "category": "OPTIONAL V1"
+    },
+    {
+      "path": "/admin/sales-report",
+      "name": "admin.sales-report",
+      "component": "SalesReportComponent",
+      "controller": "SalesReportController",
+      "permission": "sales-report",
+      "sidebar_visible": true,
+      "category": "OPTIONAL V1",
+      "notes": "DB seeder \"Reports\" group child. Daily revenue / NF525 contextual."
+    },
+    {
+      "path": "/admin/items-report",
+      "name": "admin.items-report",
+      "component": "ItemsReportComponent",
+      "controller": "ItemsReportController",
+      "permission": "items-report",
+      "sidebar_visible": true,
+      "category": "OPTIONAL V1",
+      "notes": "DB seeder \"Reports\" group child."
+    },
+    {
+      "path": "/admin/messages",
+      "name": "admin.messages",
+      "component": "MessageComponent",
+      "controller": "MessageController",
+      "permission": "messages",
+      "sidebar_visible": true,
+      "category": "OPTIONAL V1",
+      "notes": "Internal messaging between staff (chef <-> caisse)."
+    },
+    {
+      "path": "/admin/transactions",
+      "name": "admin.transactions.list",
+      "component": "TransactionListComponent",
+      "controller": "TransactionController",
+      "permission": "transactions",
+      "sidebar_visible": true,
+      "category": "OPTIONAL V1",
+      "notes": "DB seeder \"Accounts\" group child. Payment-transaction ledger."
+    },
+    {
+      "path": "/admin/demo/wizard-launcher",
+      "name": "admin.demo.wizard-launcher",
+      "component": "WizardAdvancedLauncherComponent",
+      "controller": "—",
+      "permission": "catalog.compose",
+      "sidebar_visible": false,
+      "category": "OPTIONAL V1",
+      "notes": "Demo/sandbox tool reached via direct URL. Useful for owner testing composers."
+    },
+    {
+      "path": "/admin/delivery-boy-cash-sessions",
+      "name": "admin.delivery-boy-cash-sessions.list",
+      "component": "DeliveryBoyCashSessionListComponent",
+      "controller": "DeliveryBoyCashSessionController",
+      "permission": "delivery-boys",
+      "sidebar_visible": true,
+      "category": "OPTIONAL V1",
+      "notes": "V1_PRIMARY_SIDEBAR_MENUS[5] — pinned. Wave Polish Final scope. Driver cash reconciliation for Le Cayenne delivery owner expansion."
+    },
+    {
+      "path": "/admin/delivery-boy-cash-sessions/:id",
+      "name": "admin.delivery-boy-cash-sessions.show",
+      "component": "DeliveryBoyCashSessionShowComponent",
+      "controller": "DeliveryBoyCashSessionController",
+      "permission": "delivery-boys",
+      "sidebar_visible": false,
+      "category": "OPTIONAL V1"
+    },
+    {
+      "path": "/admin/delivery-boys",
+      "name": "admin.delivery-boys",
+      "component": "DeliveryBoyComponent",
+      "controller": "DeliveryBoyController",
+      "permission": "delivery-boys",
+      "sidebar_visible": "HIDDEN by V1_HIDDEN_MENU_MODULES.deliveryBoys",
+      "category": "OPTIONAL V1",
+      "notes": "Route exists, sidebar hidden in V1 (cleanup). Direct URL works. /delivery alias redirects here."
+    },
+    {
+      "path": "/admin/delivery-boys/show/:id",
+      "name": "admin.delivery-boys.show",
+      "component": "DeliveryBoyShowComponent",
+      "controller": "DeliveryBoyController",
+      "permission": "delivery-boys",
+      "sidebar_visible": false,
+      "category": "OPTIONAL V1"
+    }
+  ],
+  "out_of_scope_v1": [
+    {
+      "path": "/admin/customers",
+      "name": "admin.customers",
+      "component": "CustomerComponent",
+      "controller": "CustomerController",
+      "permission": "customers",
+      "sidebar_visible": "HIDDEN by V1_HIDDEN_MENU_MODULES.customers",
+      "category": "OUT-OF-SCOPE V1",
+      "notes": "Customer management hidden in V1 fast-food. Re-enable in V2 if loyalty grows."
+    },
+    {
+      "path": "/admin/customers/show/:id",
+      "name": "admin.customers.show",
+      "component": "CustomerShowComponent",
+      "controller": "CustomerController",
+      "permission": "customers",
+      "sidebar_visible": false,
+      "category": "OUT-OF-SCOPE V1"
+    },
+    {
+      "path": "/admin/coupons",
+      "name": "admin.coupons",
+      "component": "CouponComponent",
+      "controller": "CouponController",
+      "permission": "coupons",
+      "sidebar_visible": "HIDDEN by V1_HIDDEN_MENU_MODULES.coupons",
+      "category": "OUT-OF-SCOPE V1",
+      "notes": "Coupons hidden. Was OPTIONAL but owner removed for V1 simplicity."
+    },
+    {
+      "path": "/admin/coupons/show/:id",
+      "name": "admin.coupon.show",
+      "component": "CouponShowComponent",
+      "controller": "CouponController",
+      "permission": "coupons",
+      "sidebar_visible": false,
+      "category": "OUT-OF-SCOPE V1"
+    },
+    {
+      "path": "/admin/offers",
+      "name": "admin.offers",
+      "component": "OfferComponent",
+      "controller": "OfferController",
+      "permission": "offers",
+      "sidebar_visible": "HIDDEN by V1_HIDDEN_MENU_MODULES.offers",
+      "category": "OUT-OF-SCOPE V1",
+      "notes": "Promo offers hidden in V1."
+    },
+    {
+      "path": "/admin/offers/show/:id",
+      "name": "admin.offer.show",
+      "component": "OfferShowComponent",
+      "controller": "OfferController",
+      "permission": "offers",
+      "sidebar_visible": false,
+      "category": "OUT-OF-SCOPE V1"
+    },
+    {
+      "path": "/admin/online-orders",
+      "name": "admin.order",
+      "component": "OnlineOrderComponent",
+      "controller": "OnlineOrderController",
+      "permission": "online-orders",
+      "sidebar_visible": "HIDDEN by V1_HIDDEN_MENU_MODULES.onlineOrders",
+      "category": "OUT-OF-SCOPE V1",
+      "notes": "Online ordering channel hidden V1 (counter+kiosk+POS only)."
+    },
+    {
+      "path": "/admin/online-orders/show/:id",
+      "name": "admin.order.show",
+      "component": "OnlineOrderShowComponent",
+      "controller": "OnlineOrderController",
+      "permission": "online-orders",
+      "sidebar_visible": false,
+      "category": "OUT-OF-SCOPE V1"
+    },
+    {
+      "path": "/admin/table-orders",
+      "name": "admin.table.order",
+      "component": "TableOrderComponent",
+      "controller": "TableOrderController",
+      "permission": "table-orders",
+      "sidebar_visible": "HIDDEN by V1_HIDDEN_MENU_MODULES.tableOrders",
+      "category": "OUT-OF-SCOPE V1",
+      "notes": "Dine-in disabled V1 (pos.dine_in_enabled=false)."
+    },
+    {
+      "path": "/admin/table-orders/show/:id",
+      "name": "admin.table.order.show",
+      "component": "TableOrderShowComponent",
+      "controller": "TableOrderController",
+      "permission": "table-orders",
+      "sidebar_visible": false,
+      "category": "OUT-OF-SCOPE V1"
+    },
+    {
+      "path": "/admin/dining-tables",
+      "name": "admin.diningTable",
+      "component": "DiningTableComponent",
+      "controller": "DiningTableController",
+      "permission": "dining-tables",
+      "sidebar_visible": "HIDDEN by V1_HIDDEN_MENU_MODULES.diningTables",
+      "category": "OUT-OF-SCOPE V1",
+      "notes": "Dine-in disabled V1."
+    },
+    {
+      "path": "/admin/dining-tables/list",
+      "name": "admin.diningTable.list",
+      "component": "DiningTableListComponent",
+      "controller": "DiningTableController",
+      "permission": "dining-tables",
+      "sidebar_visible": false,
+      "category": "OUT-OF-SCOPE V1"
+    },
+    {
+      "path": "/admin/dining-tables/show/:id",
+      "name": "admin.diningTable.show",
+      "component": "DiningTableShowComponent",
+      "controller": "DiningTableController",
+      "permission": "dining-tables",
+      "sidebar_visible": false,
+      "category": "OUT-OF-SCOPE V1"
+    },
+    {
+      "path": "/admin/waiters",
+      "name": "admin.waiters",
+      "component": "WaiterComponent",
+      "controller": "WaiterController",
+      "permission": "waiters",
+      "sidebar_visible": "HIDDEN by V1_HIDDEN_MENU_MODULES.waiters",
+      "category": "OUT-OF-SCOPE V1",
+      "notes": "No waiters in fast-food V1."
+    },
+    {
+      "path": "/admin/waiters/show/:id",
+      "name": "admin.waiters.show",
+      "component": "WaiterShowComponent",
+      "controller": "WaiterController",
+      "permission": "waiters",
+      "sidebar_visible": false,
+      "category": "OUT-OF-SCOPE V1"
+    },
+    {
+      "path": "/admin/subscribers",
+      "name": "admin.subscribers",
+      "component": "SubscriberComponent",
+      "controller": "SubscriberController",
+      "permission": "subscribers",
+      "sidebar_visible": "DB seeder \"Communications\" group child — present if role permits",
+      "category": "OUT-OF-SCOPE V1",
+      "notes": "Email/newsletter subscribers — marketing, V2 SaaS scope."
+    },
+    {
+      "path": "/admin/credit-balance-report",
+      "name": "admin.credit-balance-report",
+      "component": "CreditBalanceReportComponent",
+      "controller": "CreditBalanceReportController",
+      "permission": "credit-balance-report",
+      "sidebar_visible": "HIDDEN by V1_HIDDEN_MENU_MODULES.creditBalanceReport",
+      "category": "OUT-OF-SCOPE V1",
+      "notes": "Customer credit balance — out of scope for fast-food V1."
+    },
+    {
+      "path": "/admin/settings/mail",
+      "name": "admin.settings.mail",
+      "component": "MailComponent",
+      "controller": "MailController",
+      "permission": "settings",
+      "sidebar_visible": "HIDDEN by V1_HIDDEN_MENU_MODULES.settings.mail",
+      "category": "OUT-OF-SCOPE V1"
+    },
+    {
+      "path": "/admin/settings/loyalty-setup",
+      "name": "admin.settings.loyaltySetup",
+      "component": "LoyaltySetupComponent",
+      "controller": "LoyaltySetupController",
+      "permission": "settings",
+      "sidebar_visible": "HIDDEN by V1_HIDDEN_MENU_MODULES.settings.loyalty-setup",
+      "category": "OUT-OF-SCOPE V1",
+      "notes": "Loyalty hidden in V1 settings despite Kiosk loyalty step existing (kiosk.loyalty client-side only)."
+    },
+    {
+      "path": "/admin/settings/notification",
+      "name": "admin.settings.notification",
+      "component": "NotificationComponent",
+      "controller": "NotificationController",
+      "permission": "settings",
+      "sidebar_visible": "HIDDEN by V1_HIDDEN_MENU_MODULES.settings.notification",
+      "category": "OUT-OF-SCOPE V1"
+    },
+    {
+      "path": "/admin/settings/theme",
+      "name": "admin.settings.theme",
+      "component": "ThemeComponent",
+      "controller": "ThemeController",
+      "permission": "settings",
+      "sidebar_visible": "HIDDEN by V1_HIDDEN_MENU_MODULES.settings.theme",
+      "category": "OUT-OF-SCOPE V1"
+    },
+    {
+      "path": "/admin/settings/item-categories/list",
+      "name": "admin.settings.itemCategory.list",
+      "component": "ItemCategoryListComponent",
+      "controller": "ItemCategoryController",
+      "permission": "settings",
+      "sidebar_visible": "HIDDEN by V1_HIDDEN_MENU_MODULES.settings.item-categories",
+      "category": "OUT-OF-SCOPE V1",
+      "notes": "Categories now under /admin/items/studio. Legacy."
+    },
+    {
+      "path": "/admin/settings/item-attributes/list",
+      "name": "admin.settings.itemAttribute.list",
+      "component": "ItemAttributeListComponent",
+      "controller": "ItemAttributeController",
+      "permission": "settings",
+      "sidebar_visible": "via VIRTUAL_CHILDREN_BY_URL[items] subitem despite settings.item-attributes hidden",
+      "category": "OPTIONAL V1",
+      "notes": "Conflict: V1_HIDDEN_MENU_MODULES hides settings.item-attributes BUT virtual children inject same URL under Items. Reachable."
+    },
+    {
+      "path": "/admin/settings/role/list",
+      "name": "admin.settings.role.list",
+      "component": "RoleListComponent",
+      "controller": "RoleController",
+      "permission": "settings",
+      "sidebar_visible": "HIDDEN by V1_HIDDEN_MENU_MODULES.settings.role",
+      "category": "OUT-OF-SCOPE V1",
+      "notes": "Role/permission admin hidden V1 (single-restaurant, Spatie roles seeded once)."
+    },
+    {
+      "path": "/admin/settings/role/show/:id",
+      "name": "admin.settings.role.show",
+      "component": "RoleShowComponent",
+      "controller": "RoleController",
+      "permission": "settings",
+      "sidebar_visible": false,
+      "category": "OUT-OF-SCOPE V1"
+    },
+    {
+      "path": "/admin/settings/tax/list",
+      "name": "admin.settings.tax.list",
+      "component": "TaxListComponent",
+      "controller": "TaxController",
+      "permission": "settings",
+      "sidebar_visible": "HIDDEN by V1_HIDDEN_MENU_MODULES.settings.tax",
+      "category": "OUT-OF-SCOPE V1",
+      "notes": "Tax setup hidden V1 (TVA seeded fixed for FR fast-food)."
+    },
+    {
+      "path": "/admin/settings/languages/list",
+      "name": "admin.settings.language.list",
+      "component": "LanguageListComponent",
+      "controller": "LanguageController",
+      "permission": "settings",
+      "sidebar_visible": "HIDDEN by V1_HIDDEN_MENU_MODULES.settings.languages",
+      "category": "OUT-OF-SCOPE V1"
+    },
+    {
+      "path": "/admin/settings/otp",
+      "name": "admin.settings.otp",
+      "component": "OtpComponent",
+      "controller": "OtpController",
+      "permission": "settings",
+      "sidebar_visible": "HIDDEN by V1_HIDDEN_MENU_MODULES.settings.otp",
+      "category": "OUT-OF-SCOPE V1"
+    },
+    {
+      "path": "/admin/settings/notification-alert",
+      "name": "admin.settings.notificationAlert",
+      "component": "NotificationAlertComponent",
+      "controller": "NotificationAlertController",
+      "permission": "settings",
+      "sidebar_visible": "HIDDEN by V1_HIDDEN_MENU_MODULES.settings.notification-alert",
+      "category": "OUT-OF-SCOPE V1"
+    },
+    {
+      "path": "/admin/settings/social-media",
+      "name": "admin.settings.socialMedia",
+      "component": "SocialMediaComponent",
+      "controller": "SocialMediaController",
+      "permission": "settings",
+      "sidebar_visible": "HIDDEN by V1_HIDDEN_MENU_MODULES.settings.social-media",
+      "category": "OUT-OF-SCOPE V1"
+    },
+    {
+      "path": "/admin/settings/cookies",
+      "name": "admin.settings.cookies",
+      "component": "CookiesComponent",
+      "controller": "CookiesController",
+      "permission": "settings",
+      "sidebar_visible": "HIDDEN by V1_HIDDEN_MENU_MODULES.settings.cookies",
+      "category": "OUT-OF-SCOPE V1"
+    },
+    {
+      "path": "/admin/settings/analytics",
+      "name": "admin.settings.analytic.list",
+      "component": "AnalyticListComponent",
+      "controller": "AnalyticController",
+      "permission": "settings",
+      "sidebar_visible": "HIDDEN by V1_HIDDEN_MENU_MODULES.settings.analytics",
+      "category": "OUT-OF-SCOPE V1"
+    },
+    {
+      "path": "/admin/settings/analytics/show/:id",
+      "name": "admin.settings.analytic.show",
+      "component": "AnalyticShowComponent",
+      "controller": "AnalyticController",
+      "permission": "settings",
+      "sidebar_visible": false,
+      "category": "OUT-OF-SCOPE V1"
+    },
+    {
+      "path": "/admin/settings/time-slots",
+      "name": "admin.settings.timeSlot",
+      "component": "TimeSlotListComponent",
+      "controller": "TimeSlotController",
+      "permission": "settings",
+      "sidebar_visible": "HIDDEN by V1_HIDDEN_MENU_MODULES.settings.time-slots",
+      "category": "OUT-OF-SCOPE V1"
+    },
+    {
+      "path": "/admin/settings/sliders/list",
+      "name": "admin.settings.slider.list",
+      "component": "SliderListComponent",
+      "controller": "SliderController",
+      "permission": "settings",
+      "sidebar_visible": "HIDDEN by V1_HIDDEN_MENU_MODULES.settings.sliders",
+      "category": "OUT-OF-SCOPE V1"
+    },
+    {
+      "path": "/admin/settings/sliders/show/:id",
+      "name": "admin.settings.slider.show",
+      "component": "SliderShowComponent",
+      "controller": "SliderController",
+      "permission": "settings",
+      "sidebar_visible": false,
+      "category": "OUT-OF-SCOPE V1"
+    },
+    {
+      "path": "/admin/settings/pages/list",
+      "name": "admin.settings.page.list",
+      "component": "PageListComponent",
+      "controller": "PageController",
+      "permission": "settings",
+      "sidebar_visible": "HIDDEN by V1_HIDDEN_MENU_MODULES.settings.pages",
+      "category": "OUT-OF-SCOPE V1",
+      "notes": "Static CMS pages (about/contact) for frontend marketing site."
+    },
+    {
+      "path": "/admin/settings/pages/show/:id",
+      "name": "admin.settings.page.show",
+      "component": "PageShowComponent",
+      "controller": "PageController",
+      "permission": "settings",
+      "sidebar_visible": false,
+      "category": "OUT-OF-SCOPE V1"
+    },
+    {
+      "path": "/admin/settings/sms-gateway",
+      "name": "admin.settings.smsGateway",
+      "component": "SmsGatewayComponent",
+      "controller": "SmsGatewayController",
+      "permission": "settings",
+      "sidebar_visible": "HIDDEN by V1_HIDDEN_MENU_MODULES.settings.sms-gateway",
+      "category": "OUT-OF-SCOPE V1"
+    },
+    {
+      "path": "/admin/settings/payment-gateway",
+      "name": "admin.settings.paymentGateway",
+      "component": "PaymentGatewayComponent",
+      "controller": "PaymentGatewayController",
+      "permission": "settings",
+      "sidebar_visible": "HIDDEN by V1_HIDDEN_MENU_MODULES.settings.payment-gateway",
+      "category": "OUT-OF-SCOPE V1",
+      "notes": "Online payment gateway (Stripe/SenangPay) for /checkout — V1 LOCAL uses POS terminal hardware not gateway."
+    },
+    {
+      "path": "/admin/settings/license",
+      "name": "admin.settings.license",
+      "component": "LicenseComponent",
+      "controller": "LicenseController",
+      "permission": "settings",
+      "sidebar_visible": "HIDDEN by V1_HIDDEN_MENU_MODULES.settings.license",
+      "category": "OUT-OF-SCOPE V1",
+      "notes": "Multi-tenant SaaS licensing — V2."
+    }
+  ],
+  "broken_likely": [
+    {
+      "path": "/admin/observability/outbox",
+      "reason": "Permission mapped to \"dashboard\" but route comment admits SPA mirrors that as workaround. Not in sidebar — only reachable via direct URL. High chance of 404/blank-state since no UI entry teaches the URL.",
+      "severity": "P2"
+    },
+    {
+      "path": "/admin/online-orders",
+      "reason": "Hidden in V1 sidebar but /admin/online-orders catchall would 200 the Vue SPA. If user lands here via stale link, OnlineOrderListComponent will likely show empty list since no online orders ever flow in V1 LOCAL (no /checkout in staff-only mode). Empty state may show raw labels.",
+      "severity": "P2"
+    },
+    {
+      "path": "/admin/table-orders & /admin/dining-tables",
+      "reason": "Dine-in disabled feature flag pos.dine_in_enabled=false. Components likely fetch empty dataset and may error on undefined dine-in config. Sentinel checks BRAIN §10 'V1 Dine-in désactivé'.",
+      "severity": "P1"
+    },
+    {
+      "path": "/admin/customers, /admin/coupons, /admin/offers, /admin/waiters, /admin/credit-balance-report, /admin/delivery-boys",
+      "reason": "Hidden in V1 sidebar but routes still resolve. Direct URL access shows lists likely empty (no customer accounts, no coupons seeded V1). Risk of stale schema if migrations partially rolled forward.",
+      "severity": "P3"
+    },
+    {
+      "path": "/admin/settings/payment-gateway",
+      "reason": "Hidden but route exists. If accessed direct URL with no gateway configured, may throw on missing API keys (Stripe/SenangPay BRAIN §9). Should fail-closed safely.",
+      "severity": "P2"
+    }
+  ],
+  "summary": {
+    "core_v1_count": 31,
+    "optional_v1_count": 18,
+    "out_of_scope_v1_count": 41,
+    "broken_likely_count": 5,
+    "total_inventoried": 90,
+    "note": "Top-level distinct sidebar entries ~14 visible after V1 filtering. Settings has its own internal MenuComponent.vue with nested sub-sidebar (not enumerated here individually for hidden V1-out items)."
+  }
+}

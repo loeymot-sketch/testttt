@@ -1,0 +1,109 @@
+{
+  "role": "RED-team (hostile dispute pass, pre-synthesis)",
+  "zone": "Z-1 KDS deeper",
+  "mode": "AUDIT-ONLY",
+  "date": "2026-05-18",
+  "scope": "Adversarial framing — challenge specialist findings, hunt missed P0s, dispute severity",
+  "hostile_framing": "Assume the orchestrator is overselling KDS hardening. Find the hidden failure modes the 4 specialists rationalized away.",
+  "anchors_re_verified": [
+    "app/Services/KitchenDisplaySystemOrderService.php:170-252 (changeStatus full flow)",
+    "app/Services/KdsSyncService.php:37-149 (sync delta)",
+    "resources/js/store/modules/kds.js:1-87 (bump+recall state)",
+    "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue:1709-1740 (recall handler)",
+    "app/Http/Resources/KDSOrderItemsResource.php:17-26 (items board payload — KEY DISCOVERY)",
+    "app/Http/Resources/OrderItemResource.php:21-51 (full order_items payload)"
+  ],
+  "adversarial_findings": [
+    {
+      "id": "Z1-RED-P0-01",
+      "severity": "P0-CHALLENGED",
+      "title": "ATTACK: 'KDSOrderItemsResource items-board payload does NOT include allergens — the chef workstation 'items board' view is BLIND to allergens despite split-by-allergen-hash logic in service'",
+      "evidence": {
+        "primary_file": "app/Http/Resources/KDSOrderItemsResource.php",
+        "lines": "17-26",
+        "code_excerpt": "public function toArray($request): array { return [ 'item_id' => $this->item_id, 'item_name' => $this->orderItem?->name, 'quantity' => $this->quantity, 'item_variations' => $this->safeJsonDecode($this->item_variations), 'item_extras' => $this->safeJsonDecode($this->item_extras), 'item_addons' => $this->resolveAddonsForKds(), 'instruction' => $this->instruction, ]; }",
+        "comparison": "app/Http/Resources/OrderItemResource.php:37 — 'allergens_snapshot' => $this->safeJsonDecode($this->allergens_snapshot), IS exposed in the FULL order_items collection used by KDSOrderDetailsResource (cards view)",
+        "service_context": "app/Services/KitchenDisplaySystemOrderService.php:298-319 splits orderItems by allergen-hash for the items board ($mergedItems groupBy callback hashes allergens_snapshot) — but the rendered KDSOrderItemsResource omits the allergens field entirely"
+      },
+      "rebuttal_to_architect_specialist": "Architect classified this as 'PASS' because allergens reach the cards view via OrderItemResource. The items board view is a SEPARATE endpoint (GET /kds-order/items) with its own resource. The split-by-hash effort is wasted if the rendered output has no allergens column.",
+      "verification_method": "Read both files independently confirms the asymmetry. The items board UI (chef's batched item count panel) sees 'Burger x2' with no allergen indicator. The split makes the GROUPING correct (2 separate rows if allergens differ) but the chef doesn't see the difference visually.",
+      "owner_impact_food_safety": "CRITICAL if items board is used to gauge batched prep. A chef batching nuggets sees '5x' but cannot tell if 1 of those 5 is for a gluten-allergic customer. Severity disputed at P0 (food safety) vs P1 (visual-only gap).",
+      "scope_minimal_heal_recommendation": "Add 'allergens_snapshot' field to KDSOrderItemsResource:17-26, mirroring OrderItemResource. Estimated 30min + visual confirmation on items board screen.",
+      "backlog_ticket": "V1.0.2-KDS-ITEM-BOARD-ALLERGEN-EXPOSURE (severity owner-gated P0/P1)",
+      "audit_status": "Read-verified asymmetry between two resources"
+    },
+    {
+      "id": "Z1-RED-P1-02",
+      "severity": "P1",
+      "title": "ATTACK: 'Side-effect dispatches in changeStatus do not gate on KitchenReleaseRule::shouldDispatchStatusChanged — Mail/SMS/Push fire on EVERY successful transition, including PREPARING→PREPARED redundant transitions'",
+      "evidence": {
+        "file": "app/Services/KitchenDisplaySystemOrderService.php",
+        "lines": "233-245",
+        "code_excerpt": "if (! ($result['changed'] ?? false)) { return; } SendOrderMail::dispatch(['order_id' => $snapshot->id, 'status' => $newStatus]); SendOrderSms::dispatch(...); SendOrderPush::dispatch(...); try { $this->kdsTicketDispatcher->dispatch($snapshot, $oldStatus, $newStatus); }",
+        "broadcast_gate": "DispatchKdsTicket::dispatch:13-15 — calls KitchenReleaseRule::shouldDispatchStatusChanged($oldStatus, $newStatus) — gate exists",
+        "but_sms_no_gate": "Mail/SMS/Push dispatches at lines 237-239 fire UNCONDITIONALLY after the 'changed' check, no semantic gate"
+      },
+      "rebuttal_to_sre_specialist": "SRE classified the dispatch order as P2. RED escalates: Mail/SMS/Push triggers customer notification 'Your order is ready' on EVERY status change — including ACCEPT→PREPARING (which the customer should NOT learn about; it's a chef-internal event). Verify with SendOrderMail listener to see if it self-gates on status === PREPARED only.",
+      "verification_needed": "Read SendOrderMail/SendOrderSms/SendOrderPush listeners to confirm self-gating on status. If not self-gated → P0 (customer spam on every status hop).",
+      "scope_minimal_heal_recommendation": "Add status guard: only dispatch Mail/SMS/Push if newStatus === OrderStatus::PREPARED, OR validate listener self-gating. Estimated 1h.",
+      "backlog_ticket": "V1.0.2-KDS-NOTIFICATION-STATUS-GATE",
+      "audit_status": "Read-verified emission site; listener self-gating NOT verified in this pass (deferred to V1.0.2 audit)"
+    },
+    {
+      "id": "Z1-RED-P1-03",
+      "severity": "P1",
+      "title": "ATTACK: 'No rate limit on POST /kds-order/change-status — a malicious authenticated Chef token can flood transitions and exhaust DB locks'",
+      "evidence": {
+        "file": "routes/api.php",
+        "lines": "1007",
+        "code_excerpt": "Route::post('/change-status/{order}', [KitchenDisplaySystemController::class, 'changeStatus']);",
+        "comparison": "routes/api.php:1016-1018 — observability/client-metrics has middleware('throttle:60,1'); routes/api.php:1025-1027 — observability/outbox/retry-failed has throttle:10,1. KDS change-status has NO throttle middleware."
+      },
+      "rebuttal_to_security_specialist": "Security classified branch isolation as PASS. RED escalates: an INSIDER attack from a compromised chef account can bombard the endpoint, exhausting MySQL lockForUpdate connections. Combined with the lack of idempotency-key (Architect Z1-ARCH-P2-04), this is a viable DoS vector even with auth.",
+      "scope_minimal_heal_recommendation": "Add ->middleware('throttle:60,1') to the route. Estimated 5 min.",
+      "backlog_ticket": "V1.0.2-KDS-CHANGE-STATUS-THROTTLE",
+      "audit_status": "Read-verified absence of throttle"
+    },
+    {
+      "id": "Z1-RED-P2-04",
+      "severity": "P2",
+      "title": "ATTACK: 'KDSOrderDetailsResource leaks order.token field — a token-based reservation/pickup mechanism may be exposed to KDS WebSocket subscribers'",
+      "evidence": {
+        "file": "app/Http/Resources/KDSOrderDetailsResource.php",
+        "lines": "24",
+        "code_excerpt": "'token' => $this->token,"
+      },
+      "rebuttal": "What is order.token used for? If it's a pickup/QR-redemption token shared with the customer, leaking it to KDS broadcast channels means anyone subscribed to KDS Echo channel can fake-redeem an order. If it's an internal trace token, low severity.",
+      "verification_needed": "Read app/Models/Order.php to identify $token semantics and whether it's customer-shared or internal.",
+      "scope_minimal_heal_recommendation": "Defer pending Order::$token semantic clarification. If customer-shared → remove from KDS payload (P1). If internal → PASS.",
+      "backlog_ticket": "V1.0.2-KDS-ORDER-TOKEN-SCOPE-AUDIT",
+      "audit_status": "Read-verified field exposure; semantic not investigated this round"
+    },
+    {
+      "id": "Z1-RED-P2-05",
+      "severity": "P2",
+      "title": "ATTACK: 'KDS V2 kill-switch precedence puts URL ?v2=0 as highest priority — an attacker with XSS can flip KDS layout across all stations'",
+      "evidence": {
+        "file": "config/kds.php",
+        "lines": "16-21",
+        "code_excerpt": "Precedence resolved in KitchenDisplaySystemComponent::useV2Layout: 1. URL `?v2=1`/`?v2=0` — operator emergency, single tab 2. localStorage `kds.v2_enabled` — per-tab sticky 3. window.FK_KDS_V2_DEFAULT_ENABLED — org config 4. true — final fallback"
+      },
+      "rebuttal": "XSS payload can write to localStorage kds.v2_enabled, persistently flipping the layout for that station. Recovery requires manual storage clear. Not a data leak, but operational disruption.",
+      "scope_minimal_heal_recommendation": "Defer — XSS is the upstream issue, not KDS-specific.",
+      "backlog_ticket": "V1.0.3-KDS-LAYOUT-XSS-RESILIENCE (low priority)",
+      "audit_status": "Read-verified"
+    },
+    {
+      "id": "Z1-RED-CONFIRM-06",
+      "severity": "CONFIRMED",
+      "title": "RECONFIRM: 'Recall is localStorage-only is correctly classified P1, not P0 — owner-intent gap is the actual root cause'",
+      "evidence": "Architect Z1-ARCH-P1-01 + Security Z1-SEC-P3-06 both correctly characterize the issue",
+      "rebuttal": "RED initially considered P0 (NF525 audit chain integrity could be implied to include kitchen workflow). However, NF525 specifically covers fiscal sequence + audit_logs for monetary transactions. Kitchen bump-state is operational, not fiscal. P1 stands.",
+      "audit_status": "RED acknowledges Architect/Security correctly classified"
+    }
+  ],
+  "new_p0_found_by_red": 1,
+  "challenged_severities": 2,
+  "confirmed_specialist_findings": 6,
+  "summary_one_line": "RED escalates one P0 candidate (allergen exposure asymmetry between cards-view and items-board resources — food safety) and surfaces two new P1s (no throttle on change-status route, unconditional Mail/SMS/Push dispatch). 4 specialists' branch-isolation/concurrency/index claims stand."
+}

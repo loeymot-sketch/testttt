@@ -51,9 +51,15 @@ return [
     */
 
     'channels' => [
+        // [OPS-2 2026-06-04] Default stack now writes to the DATE-ROTATED
+        // `daily` channel (14-day retention) instead of the unbounded
+        // `single` laravel.log. The box hit 100% disk twice because the
+        // single-file channel grew without a rotation ceiling. `daily`
+        // is self-pruning (Monolog deletes files older than `days`), so
+        // even a server pinned to `LOG_CHANNEL=stack` is now bounded.
         'stack' => [
             'driver' => 'stack',
-            'channels' => ['single'],
+            'channels' => ['daily'],
             'ignore_exceptions' => false,
         ],
 

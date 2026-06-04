@@ -6,11 +6,13 @@ use Exception;
 use App\Enums\Ask;
 use Carbon\Carbon;
 use App\Models\Order;
+use App\Models\OrderStatusTransition;
 use App\Enums\OrderType;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentStatus;
 use App\Enums\PosPaymentMethod;
 use App\Domain\Kds\KitchenReleaseRule;
+use App\Events\KdsOrderRecalled;
 use App\Events\SendOrderSms;
 use Illuminate\Http\Request;
 use App\Events\SendOrderMail;
@@ -20,6 +22,7 @@ use App\Listeners\DispatchKdsTicket;
 use Illuminate\Support\Facades\Log;
 use App\Libraries\QueryExceptionLibrary;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class KitchenDisplaySystemOrderService
@@ -88,16 +91,52 @@ class KitchenDisplaySystemOrderService
             // [AUDIT-P51-BUG1] Fix: include advance orders scheduled for today OR overdue from yesterday+
             // Previously only showed yesterday's advance orders, causing "zombie" orders to persist unseen.
             // [RED-team P1 perf 2026-05-17] whereDate non-sargable → range query (uses idx_orders_datetime)
-            $orders = $query->where(function ($query) {
+            //
+            // [Wave T R5 KDS Adversarial P0 2026-05-20 KDS-T-R5-01] CORRECTION
+            // of Wave 3b heal (commit 148dbebce, sister of `KdsSyncService`).
+            //
+            // ROOT CAUSE: the Wave 3b heal asserted "MySQL session TZ defaults
+            // to UTC" — empirically FALSE on this deployment. Running
+            //   SELECT @@session.time_zone, NOW(), UTC_TIMESTAMP();
+            // returns: time_zone='SYSTEM' (Paris local), NOW()=Paris-local,
+            // UTC_TIMESTAMP()=NOW()-2h. The `mysql.timezone` config key is
+            // NULL so PDO inherits the OS session TZ, which is Europe/Paris.
+            //
+            // CONSEQUENCE of the bug heal: bounds were converted to UTC PHP
+            // strings (e.g. "2026-05-19 22:00:00") and bound as literals.
+            // MySQL session_tz=SYSTEM/Paris interpreted those literals as
+            // Paris-local datetimes, shifting the effective window backward
+            // by 2h. Symptom: last ~2h of every Paris day (22h–minuit)
+            // silently dropped from KDS list — empirically validated
+            // pre-heal (1 row visible out of 11 DB rows for branch=1
+            // status=7 at 23:51 Paris).
+            //
+            // CORRECT BEHAVIOR: use Paris-local Carbon bounds directly. The
+            // bind strings ("2026-05-20 00:00:00" / "2026-05-20 23:59:59")
+            // are interpreted by MySQL under session_tz=Paris, matching the
+            // semantic intent "all of TODAY in Paris". Stored TIMESTAMP
+            // values are likewise displayed/compared as Paris-local under
+            // this session_tz. INVARIANT: this heal assumes session_tz is
+            // OS local (Paris). If config/database.php gains
+            // `connections.mysql.timezone => '+00:00'`, this query must be
+            // re-evaluated (consider whereRaw CONVERT_TZ). Sentinel:
+            // tests/Feature/Sentinels/KdsTodayWindowTzSentinelTest.php
+            // pins the invariant via the full service roundtrip.
+            $appTz = config('app.timezone');
+            $todayStart = Carbon::today($appTz);
+            $todayEnd = Carbon::today($appTz)->endOfDay();
+            $tomorrowStart = Carbon::tomorrow($appTz);
+
+            $orders = $query->where(function ($query) use ($todayStart, $todayEnd, $tomorrowStart) {
                 // Standard orders: placed today (non-advance)
-                $query->where(function ($subQuery) {
-                    $subQuery->whereBetween('order_datetime', [Carbon::today(), Carbon::today()->endOfDay()])
+                $query->where(function ($subQuery) use ($todayStart, $todayEnd) {
+                    $subQuery->whereBetween('order_datetime', [$todayStart, $todayEnd])
                              ->where('is_advance_order', Ask::NO);
                 })
                 // Advance orders: scheduled for today OR overdue from yesterday/past
-                ->orWhere(function ($subQuery) {
+                ->orWhere(function ($subQuery) use ($tomorrowStart) {
                     $subQuery->where('is_advance_order', Ask::YES)
-                             ->where('order_datetime', '<', Carbon::tomorrow()) // Today or overdue past dates
+                             ->where('order_datetime', '<', $tomorrowStart) // Today or overdue past dates
                              ->whereNotIn('status', [OrderStatus::DELIVERED, OrderStatus::CANCELED]); // Not already completed
                 });
             })->where(function ($query) use ($requests) {
@@ -144,6 +183,201 @@ class KitchenDisplaySystemOrderService
     public function lastListOverflow(): bool
     {
         return $this->lastListOverflow;
+    }
+
+    /**
+     * [Wave X3 2026-05-21] KDS "Historique du jour" — read-only V1.
+     *
+     * Returns today's PREPARED / OUT_FOR_DELIVERY / DELIVERED orders for the
+     * caller's branch, sorted by status-change recency (`updated_at` desc),
+     * capped at 50.
+     *
+     * Why `updated_at` and not `order_datetime` like list()/orderItems():
+     * placement time is irrelevant for a "what was bumped today" view. The
+     * last write on the row IS the status transition (validated in
+     * `changeStatus()` above — `$locked->status = $newStatus; $locked->save()`
+     * touches `updated_at` via Eloquent timestamps), so `updated_at` is the
+     * closest proxy to "bump time" without adding a new `bumped_at` column.
+     *
+     * TZ discipline (Wave T R5 lesson, see list() L92-121): bounds are built
+     * with Paris-local Carbon literals. We DO NOT setTimezone('UTC') because
+     * MySQL session_tz=SYSTEM=Paris on this deployment, and the prior heal
+     * already proved UTC-converted bindings silently drop the last ~2h of
+     * every Paris day.
+     *
+     * Branch isolation: identical to list() — admin (branch_id=0) sees all
+     * branches; branch staff (branch_id>0) sees only their own branch.
+     *
+     * Status list is HARD-CODED (not `KitchenReleaseRule::visibleStatuses()`)
+     * because the history view shows POST-bump states (PREPARED+) while the
+     * active board shows PRE/IN-progress (ACCEPT+PREPARING) plus PREPARED.
+     * The two lists are intentionally distinct.
+     *
+     * NF525: read-only — chain untouched.
+     *
+     * @throws Exception
+     */
+    public function historyToday(): \Illuminate\Database\Eloquent\Collection
+    {
+        try {
+            $userBranchId = auth()->user()->branch_id ?? 0;
+
+            $appTz = config('app.timezone');
+            $todayStart = Carbon::today($appTz);
+            $tomorrowStart = Carbon::tomorrow($appTz);
+
+            $query = Order::with(['orderItems', 'address', 'user'])
+                ->whereIn('status', [
+                    OrderStatus::PREPARED,
+                    OrderStatus::OUT_FOR_DELIVERY,
+                    OrderStatus::DELIVERED,
+                ])
+                ->whereBetween('updated_at', [$todayStart, $tomorrowStart]);
+
+            // [Mirror list() L83-85] Admin branch_id=0 sees all; branch staff scoped.
+            if ($userBranchId > 0) {
+                $query->where('branch_id', $userBranchId);
+            }
+
+            return $query->orderByDesc('updated_at')
+                ->limit(50)
+                ->get();
+        } catch (Exception $exception) {
+            Log::info($exception->getMessage());
+            throw new Exception(QueryExceptionLibrary::message($exception), 422);
+        }
+    }
+
+    /**
+     * [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B compensating action]
+     *
+     * Chef recalls a PREPARED order within a 60-second grace window after the
+     * bump. Mandate verbatim: « j'ai pu valider une commande par erreur avec
+     * rapidité, je vais revenir pour la corriger ».
+     *
+     * INVARIANTS (NF525-safe, append-only):
+     *  - `orders.status` is NEVER mutated (stays PREPARED). The state ledger
+     *    is frozen-forward by OrderStateMachine §7.
+     *  - One `order_status_transitions` row is appended with `from=PREPARED`,
+     *    `to=PREPARED`, `reason='kitchen_recall'`. We DO NOT call
+     *    `OrderStateMachine::recordTransition()` because it short-circuits
+     *    when from==to (silent no-op — exact identity-transition guard at
+     *    OrderStateMachine.php:140). We persist directly via the Eloquent
+     *    model, which is the documented compensating-action pattern.
+     *  - The OSS "Prêt" notification to the customer is NOT downgraded.
+     *  - audit_logs HMAC chain is NOT touched (this is a business-events
+     *    journal, not the fiscal chain).
+     *
+     * GUARDS (under lockForUpdate inside DB::transaction):
+     *  - Status must be PREPARED (else 422).
+     *  - `updated_at` must be within last 60 seconds (TTL — else 422).
+     *  - Cap N=1 per order: if a prior `kitchen_recall` row exists for this
+     *    order in the window, return 409 (PROPOSAL §7 R2).
+     *  - Branch isolation: branch staff (branch_id > 0) may only recall
+     *    orders of their own branch (else 403). Admin (branch_id=0) bypass.
+     *
+     * Returns the OrderStatusTransition row id + recalled_at timestamp so the
+     * controller can build a 200 JSON envelope. Broadcasts KdsOrderRecalled
+     * after commit (DispatchableAfterCommit) for KDS boards on other stations.
+     *
+     * @throws HttpException 422 (state, TTL), 403 (branch), 409 (already recalled)
+     */
+    public function recall(Order $order): array
+    {
+        $user = auth()->user();
+        $actorId = $user ? (int) $user->getAuthIdentifier() : 0;
+        $userBranchId = (int) ($user->branch_id ?? 0);
+        $correlationId = request()?->header('X-Correlation-ID') ?? (string) Str::uuid();
+        $windowSeconds = 60;
+
+        $result = DB::transaction(function () use ($order, $actorId, $userBranchId, $correlationId, $windowSeconds) {
+            /** @var Order $locked */
+            $locked = Order::query()
+                ->whereKey($order->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            // Branch isolation under lock (defence-in-depth — BranchScope already
+            // filters route binding for non-admin, but lock + recheck protects
+            // the cross-branch race window).
+            if ($userBranchId > 0 && (int) $locked->branch_id !== $userBranchId) {
+                abort(403, 'Accès refusé : cette commande appartient à une autre succursale.');
+            }
+
+            // State guard — only PREPARED orders are recallable.
+            if ((int) $locked->status !== OrderStatus::PREPARED) {
+                abort(422, trans('all.message.kds_recall_invalid_state'));
+            }
+
+            // TTL guard — 60s window since the last write (updated_at proxy
+            // for bump time; see PROPOSAL §A "Why updated_at").
+            $bumpedAt = $locked->updated_at instanceof \DateTimeInterface
+                ? Carbon::instance($locked->updated_at)
+                : Carbon::parse((string) $locked->updated_at);
+
+            $now = Carbon::now();
+            if ($bumpedAt->lt($now->copy()->subSeconds($windowSeconds))) {
+                abort(422, trans('all.message.kds_recall_window_expired'));
+            }
+
+            // Cap N=1 — refuse a second recall for the same order in the same
+            // window (PROPOSAL §7 R2). Lookup is cheap (indexed order_id).
+            $alreadyRecalled = OrderStatusTransition::query()
+                ->where('order_id', $locked->id)
+                ->where('reason', 'kitchen_recall')
+                ->where('occurred_at', '>=', $bumpedAt)
+                ->exists();
+
+            if ($alreadyRecalled) {
+                abort(409, trans('all.message.kds_recall_already_recalled'));
+            }
+
+            // Append the compensating action row. DO NOT call
+            // OrderStateMachine::recordTransition() — its from==to guard
+            // (OrderStateMachine.php:140) would silently return without writing.
+            $recallRow = OrderStatusTransition::query()->create([
+                'order_id'       => (int) $locked->id,
+                'order_type'     => Order::class,
+                'from_status'    => OrderStatus::PREPARED,
+                'to_status'      => OrderStatus::PREPARED,
+                'actor_id'       => $actorId ?: null,
+                'actor_type'     => $actorId ? 'user' : null,
+                'reason'         => 'kitchen_recall',
+                'correlation_id' => $correlationId,
+                'occurred_at'    => $now,
+            ]);
+
+            // CRITICAL invariant assertion: orders.status MUST stay PREPARED.
+            // The compensating-action contract is broken if anything mutates
+            // this row inside the transaction. A defensive re-read here is
+            // cheap and gives the sentinel test a hard pin.
+            $statusAfter = (int) Order::query()->whereKey($locked->id)->value('status');
+            if ($statusAfter !== OrderStatus::PREPARED) {
+                throw new Exception('[KDS recall] Invariant broken: orders.status mutated during recall transaction.');
+            }
+
+            return [
+                'transition_id' => (int) $recallRow->id,
+                'order_id'      => (int) $locked->id,
+                'branch_id'     => (int) $locked->branch_id,
+                'queue_number'  => $locked->queue_number !== null ? (int) $locked->queue_number : null,
+                'recalled_at'   => $now->toIso8601String(),
+            ];
+        });
+
+        // Broadcast after commit so KDS boards on other stations re-inject
+        // the card with a RAPPELÉ badge. DispatchableAfterCommit drops the
+        // event entirely on rollback (gate C9 — KI-001).
+        KdsOrderRecalled::dispatch(
+            $result['order_id'],
+            $result['branch_id'],
+            $result['queue_number'],
+            $actorId,
+            $result['recalled_at'],
+            $correlationId
+        );
+
+        return $result;
     }
 
     /**
@@ -255,12 +489,24 @@ class KitchenDisplaySystemOrderService
             // orderItems() was still using Carbon::yesterday() for advance orders,
             // causing overdue orders to vanish from the items board after 24h.
             // [RED-team P1 perf 2026-05-17] whereDate non-sargable → range query (uses idx_orders_datetime)
-            $orders = $query->where(function ($query) {
-                $query->where(function ($subQuery) {
-                    $subQuery->whereBetween('order_datetime', [Carbon::today(), Carbon::today()->endOfDay()])->where('is_advance_order', Ask::NO);
-                })->orWhere(function ($subQuery) {
+            //
+            // [Wave T R5 KDS Adversarial P0 2026-05-20 KDS-T-R5-05] CORRECTION
+            // of Wave 3b heal applied to the items-board query. See list()
+            // above for full rationale: empirical session_tz=Paris-local
+            // invalidates the prior UTC-conversion approach which silently
+            // dropped the last ~2h of every Paris day from the chef's items
+            // view. Sentinel: tests/Feature/Services/SisterServicesTzAwareTest.php.
+            $appTz = config('app.timezone');
+            $todayStart = Carbon::today($appTz);
+            $todayEnd = Carbon::today($appTz)->endOfDay();
+            $tomorrowStart = Carbon::tomorrow($appTz);
+
+            $orders = $query->where(function ($query) use ($todayStart, $todayEnd, $tomorrowStart) {
+                $query->where(function ($subQuery) use ($todayStart, $todayEnd) {
+                    $subQuery->whereBetween('order_datetime', [$todayStart, $todayEnd])->where('is_advance_order', Ask::NO);
+                })->orWhere(function ($subQuery) use ($tomorrowStart) {
                     $subQuery->where('is_advance_order', Ask::YES)
-                             ->where('order_datetime', '<', Carbon::tomorrow())
+                             ->where('order_datetime', '<', $tomorrowStart)
                              ->whereNotIn('status', [OrderStatus::DELIVERED, OrderStatus::CANCELED]);
                 });
             })->get();

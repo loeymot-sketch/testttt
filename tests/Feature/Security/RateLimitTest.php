@@ -26,6 +26,12 @@ class RateLimitTest extends TestCase
 
     public function test_admin_mutation_rate_limit_returns_429(): void
     {
+        // [GOAL Phase F.1 2026-05-23] Pin the prod-like ceiling for this assertion.
+        // Local .env raises ADMIN_MUTATION_RATE_LIMIT to 1000/min (V1 LOCAL knob)
+        // which made 31 hits NOT trip the limiter. Config::set isolates the test
+        // from .env so the assertion validates the throttle wiring deterministically.
+        Config::set('app.admin_mutation_rate_limit', 30);
+
         $branch = Branch::factory()->create();
         $user = User::factory()->create(['branch_id' => $branch->id]);
         $user->assignRole('Admin');

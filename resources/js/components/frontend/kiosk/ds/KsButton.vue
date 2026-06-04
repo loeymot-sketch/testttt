@@ -87,6 +87,13 @@ export default {
     font-weight: var(--kiosk-font-weight-bold);
     letter-spacing: var(--kiosk-letter-spacing-caps);
     text-transform: uppercase;
+    /* [Wave Y A-005 2026-05-21] Prevent line overlap when long labels wrap
+       inside a fixed-height button (e.g. "Réessayer le paiement" on the
+       payment-refused error screen). line-height tightening + text-align
+       keeps single-line buttons unchanged but allows clean 2-line layout
+       in the wrap case. */
+    line-height: 1.15;
+    text-align: center;
     cursor: pointer;
     transition: transform var(--kiosk-duration-fast) var(--kiosk-ease-standard),
                 box-shadow var(--kiosk-duration-fast) var(--kiosk-ease-standard),
@@ -115,21 +122,20 @@ export default {
 
 /* ---------- Sizes ---------- */
 .ks-btn--lg {
-    height: var(--kiosk-touch-hero);
+    /* [Wave Y A-005] Allow growth when long labels wrap to 2 lines.
+       Single-line buttons still render at --kiosk-touch-hero exactly. */
     min-height: var(--kiosk-touch-hero);
-    padding: 0 var(--kiosk-space-10);
+    padding: var(--kiosk-space-3) var(--kiosk-space-10);
     font-size: calc(30px * var(--kiosk-text-scale));
 }
 .ks-btn--md {
-    height: 82px;
     min-height: var(--kiosk-touch-comfortable);
-    padding: 0 var(--kiosk-space-8);
+    padding: var(--kiosk-space-3) var(--kiosk-space-8);
     font-size: calc(22px * var(--kiosk-text-scale));
 }
 .ks-btn--sm {
-    height: 60px;
     min-height: var(--kiosk-touch-min);
-    padding: 0 var(--kiosk-space-5);
+    padding: var(--kiosk-space-2) var(--kiosk-space-5);
     font-size: calc(18px * var(--kiosk-text-scale));
 }
 

@@ -29,6 +29,23 @@ class EventType
     // an order. Used by KDS, Z-report aggregation, and outbox fan-out so any
     // `payment_status` mutation is observable as a first-class domain event.
     const ORDER_PAYMENT_STATUS_CHANGED = 'order.payment_status_changed';
+    // [Wave 5G R9 heal 2026-05-17] Admin settings mutation propagation
+    // (currency, tax, site, company, order_setup). Listener fans out one
+    // outbox row per active branch on `private-branch.{id}` so POS/Kiosk
+    // refresh their `frontend/setting` payload without manual reload.
+    const SETTINGS_UPDATED = 'settings.updated';
+    // [Wave 5G R10 heal 2026-05-17] Branch lifecycle status flip (ACTIVE -> INACTIVE).
+    // Listener revokes all Sanctum tokens of users belonging to the branch when
+    // the new status is INACTIVE so deactivation takes effect immediately
+    // rather than waiting for the 480-minute TTL.
+    const BRANCH_STATUS_CHANGED = 'branch.status_changed';
+    // [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B compensating action]
+    // Chef recalled a PREPARED order within the 60s grace window. Append-only:
+    // `orders.status` stays PREPARED — only `order_status_transitions` gets the
+    // `kitchen_recall` row. Frontend KDS boards (KitchenDisplaySystemComponent)
+    // listen via `private-branch.{branchId}` and re-inject the card with a
+    // RAPPELÉ badge for 60s. Customer-facing OSS notification is untouched.
+    const KDS_ORDER_RECALLED = 'kds.order_recalled';
 
     public static function all(): array
     {
@@ -48,6 +65,11 @@ class EventType
             self::COUPON_CHANGED,
             // [P13]
             self::ORDER_PAYMENT_STATUS_CHANGED,
+            // [Wave 5G R9 / R10]
+            self::SETTINGS_UPDATED,
+            self::BRANCH_STATUS_CHANGED,
+            // [Heal-5]
+            self::KDS_ORDER_RECALLED,
         ];
     }
 }

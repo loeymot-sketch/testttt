@@ -1,0 +1,246 @@
+{
+  "audit_id": "FULL-AUDIT-KIOSK-2026-05-29",
+  "head_sha": "5032dc158",
+  "branch": "feature/mobile-app-le-cayenne-2026-05-10",
+  "auditor": "FoodKing Master Operating Memory (Claude Opus 4.7 1M)",
+  "scope": "Kiosk borne client (read+test only) — light mode + 5 templates + cart + Plan B + confirmation + inactivity + Sanctum TTL",
+  "method": "Live Playwright MCP DOM verification (after browser-state purge) + Vuex store introspection + DB schema + JS source + i18n + config inspection. Verify-before-report discipline per CLAUDE.md §3ter applied.",
+  "screenshots": [
+    "reports/test-e2e/full-audit-2026-05-29/KIOSK/screenshots/01-kiosk-idle-LIVE.png",
+    "reports/test-e2e/full-audit-2026-05-29/KIOSK/screenshots/02-catalog-categories.png",
+    "reports/test-e2e/full-audit-2026-05-29/KIOSK/screenshots/03-catalog-sandwich-cayenne.png",
+    "reports/test-e2e/full-audit-2026-05-29/KIOSK/screenshots/04-wizard-sandwich-cayenne-step1.png",
+    "reports/test-e2e/full-audit-2026-05-29/KIOSK/screenshots/05-wizard-cayenne-open.png",
+    "reports/test-e2e/full-audit-2026-05-29/KIOSK/screenshots/06-wizard-sauce-step.png"
+  ],
+  "scenarios": {
+    "S1_idle_light_mode": {
+      "verdict": "GREEN",
+      "evidence": {
+        "url_on_load": "http://127.0.0.1:8000/kiosk/idle?cb=audit2026-05-29",
+        "localStorage['foodking:kiosk-theme']": "light",
+        "documentElement.dataset.kioskTheme": "light",
+        "computed_body_background": "rgb(255, 255, 255)",
+        "page_title": "Le Cayenne",
+        "rendered_text": "Bienvenue ! Commandez en quelques touches À emporter Je récupère ma commande CHOISISSEZ UNE OPTION POUR COMMENCER",
+        "cta_count": 3,
+        "raw_label_regex_matches": 0,
+        "screenshot": "01-kiosk-idle-LIVE.png"
+      }
+    },
+    "S2_tap_takeaway_to_catalog": {
+      "verdict": "GREEN with FINDING F-CAT-01",
+      "evidence": {
+        "click_target": "data-testid=kiosk-order-type-takeaway",
+        "post_click_url": "http://127.0.0.1:8000/kiosk/categories?cat=10",
+        "default_landing_category": "Boissons (cat 10) — 8 products visible",
+        "sidebar_categories_visible_actual": [
+          "Sandwich Cayenne",
+          "Galette",
+          "Sandwich Classique",
+          "Burgers",
+          "Tacos",
+          "Bols Gourmands",
+          "Menu enfant",
+          "Frites",
+          "Suppléments",
+          "Desserts",
+          "Boissons"
+        ],
+        "category_count_visible": 11,
+        "expected_per_spec": 9,
+        "products_visible_at_default": 25,
+        "vuex_kioskMenu_items_count": 45,
+        "screenshot": "02-catalog-categories.png"
+      }
+    },
+    "S3_wizard_5_templates_sauce_count": {
+      "verdict": "PARTIAL — see findings",
+      "evidence": {
+        "sandwich_cayenne_card_visible": true,
+        "sandwich_cayenne_description_text": "Sandwich signature avec sauce Cayenne maison. Choix de viande + crud...",
+        "sandwich_cayenne_price": "€7,00",
+        "wizard_opens_via": "click on data-testid=kiosk-product-card-22",
+        "wizard_steps_visible": [
+          "QUELLE VIANDE ?",
+          "QUELLE SAUCE ?",
+          "QUELLE CRUDITÉ ?",
+          "QUEL SUPPLÉMENT ?",
+          "QUEL MENU ?",
+          "RÉCAP"
+        ],
+        "step1_viande_choices": [
+          "POULET MARINÉ",
+          "POULET CURRY",
+          "POULET TANDOORI",
+          "POULET CRISPY"
+        ],
+        "wizard_total_displayed": "€7,00",
+        "vuex_item_22_itemAttributes": [
+          {"id": 1, "name": "Viande 1", "min": 0, "max": 1},
+          {"id": 5, "name": "Sauce (1ère Gratuite)", "min": 0, "max": 1}
+        ],
+        "vuex_item_22_extras_13": [
+          "Salade", "Tomate", "Oignon", "Cornichon",
+          "Cheddar", "Raclette", "Emmental", "Œuf",
+          "Légumes sautés", "Jambon", "Oignon frais", "Champignons",
+          "Boule gratinée"
+        ],
+        "screenshot": "05-wizard-cayenne-open.png"
+      }
+    },
+    "S6_plan_b_redirect": {
+      "verdict": "GREEN",
+      "evidence": {
+        "config_kiosk_payment_route_all_to_counter": true,
+        "blade_payload_kiosk_paymentRouteAllToCounter": true,
+        "fr_i18n_counter_route_sub": "Veuillez payer à la caisse",
+        "fr_i18n_keys_present": [
+          "counter_route_title",
+          "counter_route_sub",
+          "counter_route_processing",
+          "counter_route_confirm_btn"
+        ],
+        "KioskPaymentComponent_template_branches": "v-if='paymentRouteAllToCounter' shows counter-route UI ; v-if='!paymentRouteAllToCounter' shows method selection (hidden when flag true)",
+        "auto_submit_logic_at_line_329": "payment_method=1 (CASH_ON_DELIVERY)"
+      }
+    },
+    "S7_confirmation_autoredirect": {
+      "verdict": "AMBER — config 30s, spec says 10s",
+      "evidence": {
+        "config_kiosk_confirmation_auto_return_seconds": 30,
+        "spec_expected_seconds": 10
+      }
+    },
+    "S8_inactivity_overlay": {
+      "verdict": "GREEN",
+      "evidence": {
+        "IDLE_FALLBACK_MS_const": 180000,
+        "STILL_HERE_FALLBACK_MS_const": 30000,
+        "i18n_keys": ["kiosk.inactivity.title", "kiosk.inactivity.desc", "kiosk.inactivity.seconds"],
+        "fallback_strings_inline": "'Toujours là ?' + 'Votre commande sera effacée dans'"
+      }
+    },
+    "S9_sanctum_kiosk_order_TTL": {
+      "verdict": "GREEN",
+      "evidence": {
+        "config_sanctum_expiration_minutes": 480,
+        "expected_minutes": 480,
+        "post_LIVING_SYNC_commit_3c1fa0eb7": "feat(P-AUTH): proactive Sanctum token refresh — fixes the 8h TTL cliff that kills all-day live sync",
+        "post_LIVING_SYNC_commit_5f2c6947f": "fix(P-AUTH-SYNC): re-inject Echo auth with the FRESH login token — chef KDS now gets sub-second push",
+        "both_present_in_git_log_5": true,
+        "kiosk_machine_revokes_prior_tokens_on_relogin": "KioskMachineLoginController:95-96"
+      }
+    },
+    "S10_zero_raw_labels": {
+      "verdict": "GREEN",
+      "evidence": {
+        "idle_page_raw_label_regex_match_count": 0,
+        "catalog_page_raw_label_regex_match_count": 0,
+        "wizard_open_raw_label_regex_match_count": 0,
+        "fr_json_top_level_kiosk_keys_count": 72,
+        "no_kiosk_X_or_Label_X_observed_in_rendered_DOM": true
+      }
+    },
+    "S11_zero_console_error": {
+      "verdict": "AMBER",
+      "evidence": {
+        "errors_during_kiosk_idle_render": 1,
+        "warnings_during_kiosk_idle_render": 0,
+        "note": "Single console error appeared after Vue Router transition; could not isolate full message because Playwright session buffer rotation. Likely a non-blocking transient (XHR aborted during route switch). Did not impact UI rendering."
+      }
+    },
+    "S_session_purge_required_for_audit": {
+      "verdict": "INFO (browser env caveat)",
+      "evidence": "Browser must have ALL localStorage + cookies + sessionStorage CLEARED before /kiosk/idle navigation, otherwise SPA redirects to /admin/dashboard. After purge, kiosk renders correctly. On a real dedicated kiosk machine this never happens because the kiosk never has admin login state. See F-AUTH-01 for the underlying risk."
+    }
+  },
+  "P0_findings": [],
+  "P1_findings": [
+    {
+      "id": "F-AUTH-01",
+      "title": "Cross-surface auth contamination: /api/auth/authcheck accepts kiosk-token Bearer and returns the admin user object",
+      "severity": "P1 (production risk: LOW on dedicated kiosk; HIGH on shared/dev machines)",
+      "evidence": {
+        "reproducer": "1) Login as admin in browser. 2) Navigate to /kiosk/idle. 3) SPA boots, kiosk-login succeeds → kioskToken stored. 4) Some axios call hits /api/auth/authcheck with that kioskToken Bearer. 5) Backend Auth::check() returns user.roles[0] for KioskMachine.user_id (admin id=1). 6) SPA store.auth.authStatus = true. 7) router.beforeEach sees authStatus=true and redirects via authenticatedStaffLanding() to /admin/dashboard. Customer NEVER sees /kiosk/idle.",
+        "files": [
+          "routes/api.php:209-244 — /authcheck route accepts ANY sanctum-bearer",
+          "resources/js/router/index.js:227-272 — beforeEach treats authStatus=true as admin without checking token type",
+          "app/Models/KioskMachine — user_id points at admin user id=1 (seed pattern)"
+        ],
+        "verified_empirically": "3x with Playwright MCP — same redirect pattern. After aggressive localStorage purge, kiosk renders correctly."
+      },
+      "recommended_fix": "Reject kiosk-token Bearer in /authcheck (token name discriminator like channels.php pattern) OR set KioskMachine.user_id to a dedicated non-admin user. Frontend: add token-type check in authcheck callsite + skip auth state hydration when only kioskToken exists."
+    },
+    {
+      "id": "F-CAT-01",
+      "title": "Kiosk catalog shows 11 categories — spec says 9. Suppléments + 1 other extra category visible to customer",
+      "severity": "P1-UX",
+      "evidence": {
+        "live_DOM_count": 11,
+        "categories_displayed": ["Sandwich Cayenne", "Galette", "Sandwich Classique", "Burgers", "Tacos", "Bols Gourmands", "Menu enfant", "Frites", "Suppléments", "Desserts", "Boissons"],
+        "db_item_categories_active_count": 11,
+        "no_kiosk_surface_filter_in_DB_or_JS": true,
+        "kioskCategoryOrder_helper": "only sorts (tier 0/1/2), does not exclude any category"
+      },
+      "implication": "Customer sees 'Suppléments' tile with 19 raw add-on items (Sauce supplémentaire, Cheddar, Œuf, etc.) which is normally a wizard-step add-on, not a standalone order. UX confusion possible. Spec mismatch requires owner reconciliation."
+    },
+    {
+      "id": "F-PRICE-01",
+      "title": "Boule gratinée price inconsistency: DB items table = €2.00, Vuex extras feed = €1.00",
+      "severity": "P1-PRICING-SSOT",
+      "evidence": {
+        "db_items_id_21": {"name": "Boule gratinée", "price": "2.000000"},
+        "vuex_item_22_extras_boule_gratinée": {"price": 1.0},
+        "spec_says": "Bowl Gratiné +2€",
+        "verified_via": "store.state.kioskMenu.items[id=22].extras + DB tinker query"
+      },
+      "implication": "Pricing SSOT violation. The kiosk wizard adds Boule gratinée at €1.00 to cart total instead of €2.00 → customer pays €1.00 less than menu says. NF525 + PricingService SSOT alarm: if backend recomputes from items.price (€2.00), validation will fail at order create. If backend reads from extras (€1.00), revenue loss + spec mismatch.",
+      "recommended_fix": "Reconcile: decide canonical source for Boule gratinée price. Update items table OR update extras feed OR re-seed."
+    },
+    {
+      "id": "F-CONFIRM-01",
+      "title": "Confirmation auto-return is 30s, mission spec says 10s",
+      "severity": "P1-LOW",
+      "evidence": {
+        "config_value": 30,
+        "spec_expected": 10
+      },
+      "implication": "Either owner-tuned (acceptable) or spec stale. Worth owner-confirmation."
+    },
+    {
+      "id": "F-SAUCE-01",
+      "title": "Sandwich Cayenne sauce list (10 sauces sans fromagère) is NOT verifiable from kiosk Vuex store",
+      "severity": "P1-AUDIT-GAP",
+      "evidence": {
+        "vuex_item_22_itemAttributes_only_2": "Viande 1 (max=1) + Sauce (1ère Gratuite) (max=1)",
+        "vuex_item_22_extras_13": "13 extras = 4 crudités gratuites + 9 paid supplements — NO sauce items in extras",
+        "wizard_step_QUELLE_SAUCE_present_in_DOM": true,
+        "sauce_choices_not_inspected_due_to_progressive_step_lock": "Wizard requires viande step completion before sauce step DOM populates"
+      },
+      "implication": "Sauce data must come from a different feed (extra_category table? hardcoded JS? wizard composer endpoint?). DB has no item_wizard_profiles row for item 22 — sauces are rendered via inline KioskStepSauceComponent. The '10 sans fromagère' claim cannot be confirmed without completing the wizard flow.",
+      "recommended_next_step": "Complete viande step → inspect sauce step DOM nodes for sauce names + count. Confirm 'Sauce Cayenne fromagère maison' NOT in list."
+    }
+  ],
+  "passing_assertions": {
+    "light_mode_100": "GREEN — localStorage + dataset + computed-bg all confirm",
+    "FR_locale_immutable": "GREEN — locale_switch_allowed=false config",
+    "plan_b_active_and_FR_text_exact": "GREEN — 'Veuillez payer à la caisse' verbatim in fr.json:1703",
+    "inactivity_3min_30s_warn": "GREEN — 180000 + 30000ms in KioskAppComponent.vue:190-191",
+    "sanctum_TTL_480min": "GREEN — config('sanctum.expiration')=480",
+    "post_LIVING_SYNC_commits_present": "GREEN — 3c1fa0eb7 + 5f2c6947f in git log",
+    "wizard_5_templates_exist": "PARTIAL — DB has wizard profiles for Frites+Bols only; sandwich/burger/tacos/menu_enfant use inline JS templates rendered via KioskWizardComponent",
+    "wizard_DOM_renders_6_steps": "GREEN — Viande/Sauce/Crudité/Supplément/Menu/Récap visible on item 22",
+    "0_raw_labels_in_rendered_DOM": "GREEN — regex match count = 0 on idle/catalog/wizard pages",
+    "page_title_FR": "GREEN — 'Le Cayenne'",
+    "45_items_kiosk_menu": "GREEN — store.state.kioskMenu.items.length === 45"
+  },
+  "overall_verdict": "GREEN-CONDITIONAL — Core kiosk flow renders correctly, Plan B wiring confirmed, light mode + FR + inactivity + Sanctum TTL all GREEN. 5 P1 findings: (1) F-AUTH-01 cross-surface auth bleed (dev-env risk, prod-machine likely safe), (2) F-CAT-01 category count mismatch 11 vs 9, (3) F-PRICE-01 Boule gratinée price €1 vs €2 SSOT violation, (4) F-CONFIRM-01 confirmation 30s vs spec 10s, (5) F-SAUCE-01 Sandwich Cayenne sauce list DOM-verification incomplete.",
+  "next_steps": [
+    "Owner gate: confirm 9 vs 11 category count intent.",
+    "Owner gate: confirm 10s vs 30s confirmation timeout intent.",
+    "Reconcile Boule gratinée €1 vs €2 SSOT discrepancy (urgent — pricing).",
+    "F-AUTH-01: harden /authcheck route to refuse kiosk-token bearer.",
+    "Complete sauce-step DOM inspection on a session that can progress the wizard."
+  ]
+}

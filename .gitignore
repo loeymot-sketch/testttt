@@ -59,3 +59,20 @@ missions/**/output_codex.json
 # Memory tooling outputs (CI/local; commit only when establishing a baseline)
 /reports/memory/verify_snapshot.json
 /reports/memory/jsonl_manifest.json
+
+# [GOAL-HEAL-SEC-001 2026-05-23] Firebase Admin SDK service-account JSON
+# (and any credential-bearing file shapes) must never live in public/.
+# Real file is now stored on the firebase_private disk
+# (storage/app/firebase/...). These globs are belt-and-braces against
+# operator mistakes re-introducing the B3.2-001 vector.
+/public/file/service-account-file.json
+/public/file/*.json
+/public/file/*.pem
+/public/file/*.key
+/public/file/*.p12
+/public/file/*.pkcs12
+/public/file/*.crt
+/public/file/*.cer
+/public/file/*.ppk
+# Allow .htaccess inside public/file/ (defense-in-depth deny rule).
+!/public/file/.htaccess

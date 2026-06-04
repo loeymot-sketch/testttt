@@ -9,11 +9,15 @@ import { KdsSyncService } from '../../resources/js/services/KdsSyncService';
 describe('KdsSyncService dedupe map', () => {
     beforeEach(() => {
         vi.useFakeTimers();
+        // [GOAL-2026-05-29] Seed Sanctum token so forceSync() passes the auth-guard
+        // (a46ec7df7) and the dedupe/eviction path actually runs. See kdsVersionGate test-1.
+        localStorage.setItem('vuex', JSON.stringify({ auth: { authToken: 'staff-token' } }));
     });
 
     afterEach(() => {
         vi.restoreAllMocks();
         vi.useRealTimers();
+        localStorage.clear();
     });
 
     it('never exceeds 256 entries and evicts oldest ids', async () => {

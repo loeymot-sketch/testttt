@@ -1,0 +1,160 @@
+{
+  "agent": "B1-S2-P1",
+  "mission": "GAP-HUNTER POS x Chef-rush",
+  "framing": "Si je suis chef en plein rush, qu'est-ce que la caisse devrait me dire/donner que NF FoodKing V1 POS ne livre PAS aujourd'hui ?",
+  "date": "2026-05-25",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "surface_audited": {
+    "main_files": [
+      "resources/js/components/admin/pos/PosComponent.vue (4874 LOC)",
+      "resources/js/components/admin/pos/PosCounterCollectModal.vue (768 LOC, M-POS-2 SSOT modal)",
+      "resources/js/components/admin/pos/PaymentComponent.vue (1478 LOC, FROZEN read-only)",
+      "resources/js/components/admin/pos/ItemComponent.vue (catalog grid)",
+      "resources/js/components/admin/pos/ParkedOrdersComponent.vue",
+      "resources/js/components/admin/pos/ReceiptComponent.vue",
+      "resources/js/components/admin/pos/ReceiptRemboursementMarker.vue",
+      "resources/js/components/admin/cash/PosCashDrawerSessionDialog.vue (Sprint 1A)",
+      "resources/js/components/admin/pos/v5/* (PosV5Numpad, PosV5TrancheRow FROZEN, etc.)"
+    ],
+    "functionality_mapped": [
+      "Vente directe — cart + payment via PaymentComponent",
+      "Encaisser commande borne — kiosk-cash panel + PosCounterCollectModal SSOT",
+      "V5 split-tranche — PaymentComponent flow (FROZEN), counter-collect single-tender only (V1.0.2 deferred for multi-tranche on borne)",
+      "Refund — RefundWithCounterEntryService backend, ReceiptRemboursementMarker visible on receipts",
+      "Cash drawer — PosCashDrawerSessionDialog (fond / mouvements / cloture), no-sale drawer-open",
+      "Parked orders (substitute pause) — park CTA + ParkedOrdersComponent",
+      "Tracker / shortcuts — Prêt à livrer (PREPARED) + À encaisser borne panels on main page (Wave X X2)",
+      "Loyalty redeem CTA in operator bar",
+      "Discount + reason input (mandatory 3+ chars)",
+      "Offline banner + queue depth chip"
+    ]
+  },
+  "gaps": [
+    {
+      "id": "G-POS-CHEF-01",
+      "title": "Cart line lacks chef-instruction input (POS direct sale)",
+      "chef_question": "Si le client dit 'sans oignons / bien cuit / cuisson saignant', le caissier a-t-il un moyen de le transmettre au chef ?",
+      "evidence": "OrderItem.instruction column EXISTS in DB (app/Models/OrderItem.php:79 fillable, RefundWithCounterEntryService.php:153 prefixes 'RTN:'). Kiosk cash detail view RENDERS item.instruction (PosComponent.vue:1230-1232). But the POS direct-sale cart (pos-v5-cart-item lines 763-859) has NO instruction input UI per line — only edit-via-wizard. The wizard popup writes composition, not free-text instructions. Backend payload at L3628 reads `instruction: row.instruction || ''` from cart row — that key has no setter in the cart UI.",
+      "severity": "P1",
+      "scope": "POS direct sale → KDS instruction propagation",
+      "fix_sketch": "Add per-line note icon-button on each .pos-v5-cart-item that opens a quick textarea modal (max 80 chars, like the existing kiosk wizard `customizeWithText`); write to cart row `instruction` field already wired backend-side.",
+      "frozen_zone_risk": "low (PaymentComponent + PosV5TrancheRow + pos-wizard.js untouched)"
+    },
+    {
+      "id": "G-POS-CHEF-02",
+      "title": "No urgency / rush-priority flag on order",
+      "chef_question": "Le chef peut-il voir 'cette commande est urgente, sert d'abord' ? Le caissier peut-il pre-marquer ?",
+      "evidence": "Zero hits on grep `priority|rush|urgent|expedite|is_rush|priority_level` in PosComponent.vue, OrderItem.php, Order.php, migrations/. No column, no UI, no broadcast field. Operator bar exposes loyalty + cash session + tracker but no 'mark urgent' affordance. KDS receives orders in creation-order only.",
+      "severity": "P1",
+      "scope": "POS → Order.priority field → KDS sort/highlight",
+      "fix_sketch": "Add `orders.priority` enum column (normal | rush) + small icon button next to encaisser CTA; KDS subscribes and sorts/highlights rush tickets at top with red border.",
+      "frozen_zone_risk": "medium — migration touches Order schema (NF525-adjacent table, append-only column is safe)"
+    },
+    {
+      "id": "G-POS-CHEF-03",
+      "title": "Allergen observation at counter — no capture path",
+      "chef_question": "Le client dit 'je suis allergique aux arachides' au comptoir. Le caissier observe une réaction. Caisse signale au chef ?",
+      "evidence": "PosComponent.vue:1234-1236 displays `item.allergens_snapshot` ONLY in the kiosk-cash panel detail view (read-only echo of what the kiosk customer declared). Direct-sale cart has NO allergen field. No 'allergie observée' UI. No order-level customer_allergens column in Order.php.",
+      "severity": "P1",
+      "scope": "POS direct sale → KDS allergen warning banner",
+      "fix_sketch": "Add `orders.customer_allergens` JSON column + an 'Allergies déclarées' chip with 8-12 common allergens (gluten, lactose, fruits à coque, arachides, œufs, soja, poisson, crustacés, sésame) in cart header; broadcast in KDS ticket header with red banner.",
+      "frozen_zone_risk": "low (new column, new chip UI, no PaymentComponent touch)"
+    },
+    {
+      "id": "G-POS-CHEF-04",
+      "title": "No stock-critical alert TO chef from caisse",
+      "chef_question": "Le caissier voit qu'un produit va manquer (ex: dernier paquet de buns). Caisse pre-alert chef avant rupture ?",
+      "evidence": "PosComponent.vue:51-71 has `pos-availability-banner` for ruptures already broadcast from backend, and ItemComponent.vue:31 shows `pos.item_86_d` overlay. BUT it's UNI-DIRECTIONAL (backend → cashier). No 'signaler stock critique' button in cart or item tile. No mechanism for cashier (who sees the physical stock when staff says 'plus que 3') to broadcast a heads-up to chef before the auto-86 trigger fires.",
+      "severity": "P2",
+      "scope": "POS → KDS pre-rupture heads-up",
+      "fix_sketch": "Add a discreet 'Stock critique observé' button on rupture banner OR per-item card; emit a websocket event that KDS displays as 'Caissier signale 2-3 unités restantes sur {item}' for 5 minutes. No DB column needed if ephemeral.",
+      "frozen_zone_risk": "none"
+    },
+    {
+      "id": "G-POS-CHEF-05",
+      "title": "Livreur coordination absent in POS",
+      "chef_question": "Une commande livraison vient d'être encaissée. Quand le livreur arrive, le caissier saura-t-il l'orienter ? Le chef peut-il dire 'la commande de livreur X est prête' ?",
+      "evidence": "Zero hits on `delivery_boy|DeliveryBoy|livreur|courier` in PosComponent.vue (the file imports nothing about delivery dispatch). Order type radiogroup has a 'Livraison' segment with inline address form (lines 656-738), but no UI to: (a) see which livreur is assigned, (b) assign one inline, (c) call/contact them, (d) see who's online/free. Tracker shortcut PREPARED panel says 'Livré' button but there is no row indicating 'En attente livreur' state.",
+      "severity": "P1",
+      "scope": "POS Livraison → DeliveryBoy assignment + status",
+      "fix_sketch": "Add a 'Livreurs en service' compact strip below 'Prêt à livrer' panel showing online livreurs with active-orders count + quick assign on PREPARED kiosk/delivery tickets; data already exists via DeliveryBoyCashSession.",
+      "frozen_zone_risk": "low (new component, no payment touch)"
+    },
+    {
+      "id": "G-POS-CHEF-06",
+      "title": "No pause-screen / assistance-client mode",
+      "chef_question": "Le caissier doit aider un client en salle (5-10 min). Peut-il verrouiller la caisse sans perdre le panier ?",
+      "evidence": "Park-order CTA exists (PosComponent.vue:553-561) which is a workaround (save & resume), but: (a) it commits to a Pos parked-order record — overkill for 'je reviens dans 2 min', (b) screen stays unlocked (next staff/customer can see cart + customer name + total), (c) no PIN/lock screen. Search grep `lock_screen|pause|verrouill|hold.*screen` returned 0 hits.",
+      "severity": "P2",
+      "scope": "POS session lock (UX, not security)",
+      "fix_sketch": "Add a 'Mode assistance' toggle in operator bar that overlays a soft lock-screen (PIN to dismiss, cart preserved in memory); separate from park-order which persists DB-side.",
+      "frozen_zone_risk": "none"
+    },
+    {
+      "id": "G-POS-CHEF-07",
+      "title": "No prep-time estimate visible to cashier",
+      "chef_question": "Le client demande 'combien de temps ?' au comptoir. Le caissier doit deviner. Aucun signal de la cuisine.",
+      "evidence": "PosComponent.vue uses `activeOrdersStats.ready / active` for badge tone but no estimate (mean prep time, current queue depth in minutes, current cuisine throughput). Greps for `prep_time|preparation_time|estimate|delay|delai|temps_prep` in PosComponent.vue all returned 0 hits.",
+      "severity": "P2",
+      "scope": "KDS → POS prep-time estimate broadcast",
+      "fix_sketch": "Backend KDS service emits a rolling 5-min mean preparation time per category; POS operator bar adds a small chip 'Cuisine: ~8 min' (auto-updated) for cashier to quote customers.",
+      "frozen_zone_risk": "none"
+    },
+    {
+      "id": "G-POS-CHEF-08",
+      "title": "No quick recall (re-fire) for chef-side complaint",
+      "chef_question": "Chef envoie un plat brûlé / mauvais → caissier doit refaire vite. Caisse a-t-elle un 'recall + refire' rapide ?",
+      "evidence": "Refund path exists (RefundWithCounterEntryService) and prefixes new item with 'RTN: ' prefix in instruction. But that's a fiscal refund (NF525 chained). No 'recall this item, send it again to KDS as priority' shortcut. The cashier today must (a) refund the line, (b) re-add it to a new order, (c) hope KDS picks it up — no 'this is a recook' tag for chef.",
+      "severity": "P1",
+      "scope": "POS recall → KDS recook flag",
+      "fix_sketch": "On any line of a PAID order in PosOrderShowComponent, add 'Refaire (cuisine)' action that creates a zero-price companion line on a NEW order with `is_recook=true` flag visible in KDS; no refund needed if comp is owner-approved (separate authz gate).",
+      "frozen_zone_risk": "medium — touches OrderItem schema (additive column safe) and KDS dispatch"
+    },
+    {
+      "id": "G-POS-CHEF-09",
+      "title": "Customer-message field at order header level absent",
+      "chef_question": "Le client dit 'C'est pour Marie, joyeux anniversaire'. Cashier note ?",
+      "evidence": "Per-line `instruction` exists DB-side (see G-01) but NO order-level customer message column. Order.php has no `customer_message|note|comment` field. The receipt could carry it for kitchen+bag but the cart has no place to type it.",
+      "severity": "P2",
+      "scope": "POS → Order customer_message",
+      "fix_sketch": "Add `orders.customer_message` varchar(160) + an optional input under customer selector ('Message client / anniversaire / etc.') visible to KDS + printed on bag receipt.",
+      "frozen_zone_risk": "low"
+    },
+    {
+      "id": "G-POS-CHEF-10",
+      "title": "No 'pause cuisine' signal from chef visible at caisse",
+      "chef_question": "Chef demande 5 min de pause pour rattraper rush. Caissier devrait STOP de prendre commandes hot/grill.",
+      "evidence": "PosComponent.vue:51-71 banner is for AVAILABILITY (rupture stock). No banner/toast for 'cuisine en sur-charge'. No category-level pause (e.g. 'pause grillades 5 min'). KDS-side pause-cuisine event would need to be added.",
+      "severity": "P2",
+      "scope": "KDS → POS cuisine-pause banner",
+      "fix_sketch": "Backend pause-cuisine endpoint (chef PIN required) emits broadcast; POS adds banner 'Cuisine: pause grillades 5 min — proposer d'autres catégories' and visually dims affected category pills.",
+      "frozen_zone_risk": "none"
+    }
+  ],
+  "top_3_priority": [
+    {
+      "rank": 1,
+      "gap_id": "G-POS-CHEF-01",
+      "why": "OrderItem.instruction column EXISTS, KDS displays it (per kiosk cash panel echo) — but POS direct-sale cart has NO setter UI. Zero-risk additive fix, immediate chef value, schema already in place. The lowest-cost, highest-value gap."
+    },
+    {
+      "rank": 2,
+      "gap_id": "G-POS-CHEF-03",
+      "why": "Allergen capture is a regulatory + safety surface. Kiosk handles it (allergens_snapshot displayed) but POS direct-sale has no path to record an allergen observed at counter. Single new column + simple chip UI."
+    },
+    {
+      "rank": 3,
+      "gap_id": "G-POS-CHEF-05",
+      "why": "Livraison surface is the most under-served in POS today. Order-type radio includes 'Livraison' with address but ZERO livreur coordination. In a rush this becomes a phone-call mess. DeliveryBoyCashSession data already exists — UI strip is a low-risk wire-up."
+    }
+  ],
+  "verdict": {
+    "summary": "POS V1 is well-engineered for cash handling, idempotency and NF525 fiscal flow, but it treats the caisse as a payment terminal rather than a chef-coordination hub. 10 gaps identified, 4 P1 (direct chef impact) + 5 P2 (UX/operational comfort) + 1 P1 marked as recall surface. The schema layer (Order, OrderItem) already supports per-line instructions — only the cart UI is missing. Allergen capture and livreur coordination are the next two zero-frozen-zone wins.",
+    "scope_summary": "10 gaps across 4 axes : kitchen-instruction (3), urgency/priority (2), stock+pause coordination (2), livreur+lock+message (3)",
+    "frozen_zone_safety": "All 10 fixes can be designed scope-minimal: NONE require touching PaymentComponent.vue, PosV5TrancheRow.vue, pos-wizard.js, FiscalSequenceService, ZReportService, or AuditLogService.",
+    "v1_v1_0_2_split_recommendation": "G-POS-CHEF-01 (cart instruction input) + G-POS-CHEF-03 (allergen chip) shippable as V1.0.1 quick-wins. G-POS-CHEF-02 (priority) + G-POS-CHEF-05 (livreur strip) + G-POS-CHEF-08 (recall) deserve V1.0.2 with broader KDS coordination plan."
+  },
+  "files_inspected_count": 22,
+  "loc_inspected_estimated": 7120,
+  "n_gaps": 10
+}

@@ -334,7 +334,13 @@ class FiscalArchiveCommand extends Command
 
     private function orderQuery(int $branchId, ?Carbon $from, Carbon $to): Builder
     {
-        $q = Order::withoutGlobalScopes()
+        // [Z6-P1-WGS 2026-05-19] NF525 6-year retention archive MUST include
+        // soft-deleted orders for forensic completeness — a soft-deleted
+        // Order may still hold a fiscal_sequence_no, audit trail, payment
+        // breakdown. Singular bypass + ->withTrashed() is explicit; mirrors
+        // ZReportService:337-338 canonical NF525 pattern.
+        $q = Order::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
+            ->withTrashed()
             ->where('branch_id', $branchId)
             ->where('created_at', '<=', $to);
         if ($from) {

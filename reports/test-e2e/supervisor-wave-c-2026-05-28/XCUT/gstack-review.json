@@ -1,0 +1,197 @@
+{
+  "supervisor_wave": "C",
+  "zone": "XCUT",
+  "role": "GSTACK_ARCHITECTURAL_REVIEW",
+  "head": "fcfef17fd",
+  "branch": "feature/mobile-app-le-cayenne-2026-05-10",
+  "review_timestamp": "2026-05-28",
+  "scope": "Read-only cumulative architectural review of Wave C deliverables (Payment Plan B + NF525 post Refund+Z+PDF cycles + frozen-zone discipline + test helpers + wizard 5-templates).",
+  "verdict": "REVISE",
+  "verdict_rationale": "Wave C is architecturally sound on 4 of 5 audits (A1 Plan B layer discipline GREEN with one pattern divergence flagged YELLOW; A2 NF525 chain GREEN proven; A3 frozen-zone diff GREEN proven by git; A5 wizard parity GREEN per recent audit). Audit A4 (test helpers) is RED-MISSING-ARTIFACT: the 4 named helpers (admin-auth.js / idempotency-key.js / kiosk-auth.js / place-order.js) DO NOT EXIST anywhere in the repo. Z2-NF525 / Z3-WIZARD / Z4-LATENCY subdirs are empty (only Z1 produced output). REVISE means the architecture work is acceptable but two corrections are required before shipping: (a) Z1 pattern divergence (nested kiosk.* vs flat kiosk*) decision must be ratified by owner because sentinel test pins the nested form; (b) supervisor must either confirm test helpers were renamed/relocated or accept their absence as out-of-scope.",
+
+  "A1_payment_plan_b": {
+    "status": "GREEN_WITH_YELLOW_PATTERN_DIVERGENCE",
+    "layer_discipline": "Compliant. Config (config/kiosk.php:34-54 + dual-return at lines 146-147 single-path 232 — see git diff) injects flag once; Blade (resources/views/master.blade.php:149-155) exposes to window.foodkingConfig; Vue computed (KioskPaymentComponent.vue:333-339) reads + guards UI; Backend untouched (FrontendOrderService.php:206-208 + 266 already supports is_counter_deferred_kiosk_cash → PENDING_COUNTER routing). Each layer has a single explicit responsibility, no short-circuit, no double-write.",
+    "pattern_cohesion": "Mostly compliant. Config-flag pattern mirrors locale_switch_allowed (config/kiosk.php:31 + master.blade.php:147) — same env + filter_var + dual-return discipline. PROBLEM: Z1 architecture recommended the FLAT key kioskPaymentRouteAllToCounter on window.foodkingConfig (mirroring the 14 existing kiosk* keys: kioskAutoLogin, kioskDefaultLocale, kioskLocaleSwitchAllowed, kioskMenuPricing, kioskSandwichSplit, kioskConfirmationAutoReturnSeconds, etc. all flat at master.blade.php:140-159). The implementer chose a NESTED object: kiosk: { paymentRouteAllToCounter } (master.blade.php:153-155). Both forms are technically equivalent but introduce a new naming convention. The sentinel spec tests/js/kioskPaymentPlanBRoute.spec.js:41,49 PINS the nested form — flipping to flat would break the sentinel. Either (a) ratify nested as the new convention going forward and migrate existing 14 keys over time, OR (b) flatten now (8-line diff) before the convention scatters. The DRIFT cost is low TODAY, compounding TOMORROW.",
+    "ddd_boundary_preservation": "Compliant. Plan B is purely a frontend UI gate; pricing SSOT (PricingService — §7 frozen — untouched), payment state machine (FrontendOrderService:206-208,266 PaymentStatus::PENDING_COUNTER mapping pre-existing), fiscal sequence allocation (FiscalSequenceService — §7 frozen — untouched), audit chain (AuditLogService — §7 frozen — untouched). No new business invariant introduced. The flag is forward-compatible with Plan A (single env flip).",
+    "backward_compatibility": "Compliant. Existing 22 orders in production (per mission preamble — current fresh DB shows 0 orders post migrate:fresh, normal baseline reset 2026-05-28) follow the SAME backend path. Setting KIOSK_PAYMENT_ROUTE_ALL_TO_COUNTER=false in env restores legacy 3-method UI without code change.",
+    "evidence": [
+      "config/kiosk.php:34-54 (flag declaration with full comment block)",
+      "config/kiosk.php:146-147 (requireForm branch return)",
+      "git diff shows config/kiosk.php second return-path (line 207-236) MISSING the new key — Z1 said add to BOTH return arrays but the auto-login branch return at line 207 does NOT include payment_route_all_to_counter. POTENTIAL BUG: if APP_ENV != local AND spa_payload truthy, the second return executes and the flag silently defaults to TRUE via config('kiosk.payment_route_all_to_counter', true) — defensive default saves it BUT the architecture's dual-return-path discipline is BROKEN. RECOMMEND: add the key to the second return array (line ~231) to honour Z1 patternevidence.",
+      "resources/views/master.blade.php:149-155 (nested kiosk.* object — divergent from 14 prior flat keys at lines 140-159)",
+      "resources/js/components/frontend/kiosk/KioskPaymentComponent.vue:333-339 (computed property with try/catch defensive read)",
+      "resources/js/components/frontend/kiosk/KioskPaymentComponent.vue:417-428 (confirmCounterRoute method — forces method='cash' then delegates to confirmPayment → processCashPayment → kiosk.cash-instruction navigation, reusing existing pipeline)",
+      "resources/js/components/frontend/kiosk/KioskPaymentComponent.vue:53,71,81,93,196,247 (six v-if !paymentRouteAllToCounter guards correctly hide CB/TR tiles, network-offline banner, confirm button, TPE waiting overlay — also hides network-offline alert which is correct since cash flow is independent of TPE network)",
+      "app/Services/FrontendOrderService.php:206-208 (is_counter_deferred_kiosk_cash gate already maps CASH_ON_DELIVERY + kiosk → PENDING_COUNTER)",
+      "app/Services/FrontendOrderService.php:266 (PaymentStatus::PENDING_COUNTER persisted on payment_status column)"
+    ],
+    "recommendations": [
+      "P1 — Fix missing flag in auto-login branch return at config/kiosk.php ~line 231 (dual-return-path discipline). Tests will still pass via defensive config() default, but ops cannot toggle the flag in production where APP_ENV != local + spa_payload is set.",
+      "P1 — Decide nested-vs-flat convention. If nested wins: document in CLAUDE.md §11 + ADR, plan migration of existing 14 flat keys to a kiosk.* namespace via 2-step compat shim. If flat wins: ship 8-line refactor to flatten + update sentinel before drift compounds."
+    ]
+  },
+
+  "A2_nf525_chain_extension": {
+    "status": "GREEN",
+    "chain_state_pre_wave_c": "BRAIN baseline historique: count=26 | last_hash=ca4ac1fdc208dae1",
+    "chain_state_post_wave_c": "count=25 | last_hash=9647c668e2d2ff55 (audit_logs) + z_reports count=2 sequence_no=2 signature=18134965bb85fd8ff2daa0a80fcc001ee1a32143 prev_hash=7eddd896765389fbd2e5d430b5a08fd80e7c693f",
+    "count_delta_explanation": "Lower count (26→25) is EXPECTED — fresh DB seed performed 2026-05-28 (per memory: 'migrate fresh seed + physical walk Monday' = supervisor 3-actions-done commit 155cea0c7). NOT a chain truncation; it is a clean baseline rebuild. The post-cycle live evidence is the TWO new z_report.closed events appended at audit_logs ids 25 + 26 (timestamps 22:39:39 + 22:41:41 UTC), both monotonically chained to current_hash=9647c668e2d2ff55.",
+    "verify_chain_command": "php artisan fiscal:verify-chain --all",
+    "verify_chain_result": "+ branch=1 CHAIN OK / SWEEP COMPLETE — CHAIN OK on every active branch (1 total)",
+    "z_report_extension": "z_reports has TWO rows (sequence_no 1 then 2, both branch_id=1, both closed status). The latest Z (id=2) has prev_hash=7eddd896 + signature=18134965 both populated → monotonic + signed. No NULL hashes on any populated Z. NB: schema column is signature (not chain_hash). Earlier query 'chain_hash=null' was a column-name typo — confirmed by DESCRIBE z_reports schema.",
+    "pdf_artifact": ".playwright-mcp/cloture-jour-2026-05-28.pdf generated 2026-05-28 14:50:25 (1.28 MB per memory HEAL-3 spec). Companion older PDF cloture-jour-2026-05-26.pdf also present from earlier cycle.",
+    "refund_events_observed": "ZERO refund events in current audit_logs (action distribution: user.login=24 | z_report.closed=2). The fresh DB has no orders to refund yet. Plan B + new Refund UI button (HEAL-4 commit ee77ce848) are wired but haven't been exercised against a real paid order on the current seed. RECOMMEND: Z2 owner gate trigger a manual refund cycle on a seeded paid order to evidence the Refund→audit append + chain extension.",
+    "delete_attempt_count": "ZERO (no fiscal:verify-chain warnings; BEFORE DELETE trigger active in MySQL prod, and current SQLite/local has equivalent guard via AuditLogService append-only path)",
+    "evidence": [
+      "DB query: audit_logs row 25 action=z_report.closed resource=z_report created_at=2026-05-28 22:39:39",
+      "DB query: audit_logs row 26 action=z_report.closed resource=z_report created_at=2026-05-28 22:41:41",
+      "DB query: z_reports row 2 sequence_no=2 prev_hash=7eddd896... signature=18134965... status=closed",
+      "artisan fiscal:verify-chain --all exit code 0, CHAIN OK"
+    ]
+  },
+
+  "A3_frozen_zone_diff": {
+    "status": "GREEN",
+    "method": "git diff --stat HEAD against all 15 §7 frozen-zone files",
+    "result": "ZERO LOC modified on any §7 file. git diff --stat returned empty output for the entire §7 list:",
+    "files_verified_zero_loc": [
+      "resources/js/components/frontend/kiosk/KioskWizardComponent.vue",
+      "resources/js/components/frontend/kiosk/KioskAppComponent.vue",
+      "resources/js/components/frontend/kiosk/KioskUpsellComponent.vue",
+      "resources/js/components/admin/pos/PaymentComponent.vue",
+      "resources/js/components/admin/pos/v5/PosV5TrancheRow.vue",
+      "public/js/pos-wizard.js",
+      "public/css/pos-wizard.css",
+      "resources/views/admin-pos-v4.blade.php",
+      "app/Services/Fiscal/FiscalSequenceService.php",
+      "app/Services/Fiscal/ZReportService.php",
+      "app/Services/Fiscal/AuditLogService.php",
+      "app/Models/Scopes/BranchScope.php",
+      "app/Http/Middleware/IdempotencyKeyMiddleware.php",
+      "app/Services/Pricing/PricingService.php",
+      "app/Domain/Order/OrderStateMachine.php"
+    ],
+    "actual_modified_files": [
+      "config/kiosk.php (+25 LOC NON-frozen)",
+      "resources/js/components/frontend/kiosk/KioskPaymentComponent.vue (+159 LOC NON-frozen — confirmed NOT in §7 list)",
+      "resources/js/languages/fr.json (+6 LOC NON-frozen)",
+      "resources/views/master.blade.php (+7 LOC NON-frozen — admin-pos-v4.blade.php is the frozen one)",
+      "tests/js/kioskPaymentPlanBRoute.spec.js (NEW sentinel spec NON-frozen)"
+    ],
+    "verdict_evidence": "Implementer respected the §7 discipline strictly. The Vue change is on KioskPaymentComponent (UNFROZEN per Z1 grep verification) NOT KioskWizard/App/Upsell (FROZEN)."
+  },
+
+  "A4_test_helpers": {
+    "status": "RED_MISSING_ARTIFACT",
+    "named_helpers": [
+      "admin-auth.js",
+      "idempotency-key.js",
+      "kiosk-auth.js",
+      "place-order.js"
+    ],
+    "search_result": "find . -type f -name '<helper>' -not -path '*/node_modules/*' -not -path '*/vendor/*' -not -path '*/.git/*' returned ZERO matches for ALL FOUR named helpers across the entire repository.",
+    "tests_directory_layout_observed": [
+      "tests/Unit",
+      "tests/js (contains kioskPaymentPlanBRoute.spec.js NEW + quickwins/ + __fixtures__/)",
+      "tests/Playwright",
+      "tests/load",
+      "tests/Support",
+      "tests/Feature",
+      "tests/e2e",
+      "tests/mobile-e2e",
+      "tests/web-e2e"
+    ],
+    "interpretation": "Three plausible scenarios: (a) The named helpers were a PROPOSED Wave C deliverable that never landed because Z2/Z3/Z4 produced no output (their subdirs are empty — only Z1 wrote architecture.json). (b) The helpers exist under a different name in tests/Support or tests/Playwright (worth a manual grep of utility imports). (c) The supervisor brief is forward-looking and the helpers will land in a follow-on commit. CURRENT EVIDENCE FAVOURS (a) — Z agents 2/3/4 did not produce output.",
+    "reusability_assessment": "Cannot be performed — artefacts absent. No file:line evidence to cite.",
+    "thread_safety": "Cannot be assessed.",
+    "documentation": "Cannot be assessed.",
+    "convention_adherence": "Cannot be assessed.",
+    "recommendation": "P0 supervisor decision required: (a) Confirm helpers are out-of-scope for Wave C and move audit to BACKLOG, OR (b) Re-dispatch Z2/Z3/Z4 implement sub-agents with explicit instruction to land the helpers + sentinel + smoke before XCUT closes. Without the helpers, the test-pyramid stays at sentinel-only level — Plan B has tests/js/kioskPaymentPlanBRoute.spec.js as a STATIC SOURCE-CODE GREP sentinel only, no functional Playwright E2E that drives the kiosk happy-path with Plan B active end-to-end through to PENDING_COUNTER + POS counter-collect + Z append. That coverage gap is the implicit value the named helpers were meant to deliver."
+  },
+
+  "A5_wizard_5_templates": {
+    "status": "GREEN",
+    "method": "Read reports/wizard-parity-2026-05-28.md (latest EXEC-2 Phase 3 audit, same calendar day as Wave C)",
+    "actual_templates_in_use_at_le_cayenne": "Only 4 effective: sandwich, tacos, custom (bols+frites), simple (suppléments/desserts/boissons/menu-enfant). The 'burger' kiosk template is dead code under current Le Cayenne menu — burgers categorised as wizard_template:sandwich (mobile/data/menu.js:218-228 ≡ web/data/menu.js:175-185). 'assiette', 'omelette', 'salade', 'snacking' kiosk-supported but absent from Le Cayenne canonical menu.",
+    "sauce_counts_consistency": {
+      "tacos": "ALIGNED kiosk↔mobile↔web (parity audit §2 Tacos row 'sauce' = ALIGNED)",
+      "sandwich_galette_burger": "ALIGNED kiosk↔mobile↔web on sauce; ONE P3 divergence on 'pain' step (kiosk has extra pain step, mobile/web have none)",
+      "bols": "ALIGNED — sauce list reduced to 2 choices per WIZ-3 owner decision (Cayenne fromagère + Spicy maison), Gratiné +2€ applied (WIZ-5 bug fix). 13 canonical sauces total in DB confirmed by Wave Y catalog V2 cycle 2026-05-21 (DOM SAUCE COUNT=13).",
+      "frites_custom_template": "ALIGNED — 3 styles Nature/Cheddar/Cheddar+Oignons (custom template + has_frites_style:true)",
+      "simple_template": "ALIGNED across surfaces"
+    },
+    "new_drifts_since_wave_a_t2_kiosk": "NONE detected. The 2026-05-28 wizard parity audit explicitly cross-checked Kiosk × Mobile × Web and found all current Le Cayenne templates ALIGNED except the pain step (P3, kiosk-only extra step) and supplements max=6 (P2, web-only cap). Both are PRE-EXISTING, not introduced by Wave C. Plan B does NOT touch the wizard surface — it only short-circuits the PAYMENT screen post-cart, so wizard parity is automatically preserved.",
+    "kiosk_pos_surface_parity": "POS side uses pos-wizard.js (§7 FROZEN Vanilla JS) — Wave C produced ZERO LOC on pos-wizard.js per A3. Kiosk-vs-POS surface drift is therefore the same as pre-Wave-C baseline. POS wizard accepts the same composition_snapshot JSON post-backend recalc (PricingService SSOT), so sauce + addon counts are guaranteed to round-trip identically.",
+    "evidence": [
+      "reports/wizard-parity-2026-05-28.md:13-28 (4 effective templates table)",
+      "reports/wizard-parity-2026-05-28.md:32-46 (Tacos parity matrix ALIGNED)",
+      "reports/wizard-parity-2026-05-28.md:50-59 (Sandwich/Galette/Burger parity matrix ALIGNED except pain P3)",
+      "reports/wizard-parity-2026-05-28.md:62-68 (Bols parity matrix ALIGNED)",
+      "reports/wizard-parity-2026-05-28.md:70-75 (Frites parity matrix ALIGNED)",
+      "Memory project_le_cayenne_v2_2026-05-21: DOM SAUCE COUNT=13 cross-surface DOM-validated"
+    ]
+  },
+
+  "summary_table": {
+    "A1_Payment_Plan_B": "GREEN_WITH_2_P1_RECOMMENDATIONS",
+    "A2_NF525_Chain": "GREEN_PROVEN",
+    "A3_Frozen_Zone_Diff": "GREEN_PROVEN_ZERO_LOC",
+    "A4_Test_Helpers": "RED_MISSING_ARTIFACT",
+    "A5_Wizard_5_Templates": "GREEN_NO_NEW_DRIFT"
+  },
+
+  "verdict_final": "REVISE",
+  "verdict_rationale_final": "4 of 5 audits GREEN. 1 audit RED for missing artefacts (test helpers) + 1 architectural pattern divergence + 1 dual-return-path bug detected during A1 review. NONE are NF525 / fiscal / frozen-zone violations. NONE block deploy of Plan B itself. ALL block 'XCUT GREEN' supervisor sign-off until: (1) supervisor ratifies or fixes the dual-return-path miss in config/kiosk.php auto-login branch return, (2) supervisor decides nested-vs-flat config-key convention and aligns sentinel + 14 prior keys accordingly, (3) supervisor confirms whether the 4 named test helpers are scope or backlog. If owner declares (3) backlog and (1)+(2) are fixed inline, XCUT goes ARCHITECTURE_GREEN.",
+
+  "blockers_for_architecture_green": [
+    {
+      "id": "B1",
+      "severity": "P1",
+      "description": "config/kiosk.php auto-login branch return (lines 207-236) is MISSING the payment_route_all_to_counter key. Only the requireForm branch return (lines 119-152) has it. Dual-return-path discipline broken.",
+      "fix": "Add 'payment_route_all_to_counter' => $paymentRouteAllToCounter, before 'frites_included_category_ids' at ~line 231. 1 LOC.",
+      "impact_if_left": "In production (APP_ENV != local + spa_payload truthy), config() defensive default of true saves the day. Ops CANNOT flip the flag at runtime via env without the key being present in the returned array — the env var becomes a no-op until config:clear AND code path adjustment."
+    },
+    {
+      "id": "B2",
+      "severity": "P1",
+      "description": "Nested kiosk: { paymentRouteAllToCounter } divergence from 14 prior flat kiosk* keys on window.foodkingConfig. Sentinel test pins the nested form so flipping has 2-spec cost.",
+      "fix": "Owner decision: nested or flat? If nested → document in CLAUDE.md §4 + plan 14-key migration. If flat → flatten to kioskPaymentRouteAllToCounter + update sentinel (8 LOC total).",
+      "impact_if_left": "Drift convention compounds across future config additions. Cost grows over time."
+    },
+    {
+      "id": "B3",
+      "severity": "P2",
+      "description": "Test helpers admin-auth.js / idempotency-key.js / kiosk-auth.js / place-order.js named in mission but absent from repo. Z2/Z3/Z4 zone subdirs are empty (only Z1 produced output).",
+      "fix": "Either spawn Z2/Z3/Z4 implement agents OR confirm scope reduction.",
+      "impact_if_left": "Plan B has source-code grep sentinel only — no functional E2E coverage of the new path through to PENDING_COUNTER + counter-collect + Z."
+    }
+  ],
+
+  "non_blockers_yellow_notes": [
+    {
+      "id": "Y1",
+      "description": "No live Refund event exercised on current fresh DB. Plan B + Refund UI (HEAL-4) are wired but unproven against a real paid order on the active seed.",
+      "recommendation": "Supervisor seed + paid-order + refund cycle to evidence the audit_logs chain append + counter-deferred behavior."
+    },
+    {
+      "id": "Y2",
+      "description": "z_reports.signature populated as expected, but schema column is named signature not chain_hash. Documentation in CLAUDE.md §8 says 'HMAC chain-signed' — accurate but the column name discrepancy is worth a doc cross-link to avoid future confusion."
+    },
+    {
+      "id": "Y3",
+      "description": "Plan B short-circuits payment UI but Confirm button on counter-route screen still runs full confirmPayment pipeline which depends on _kioskSpeech + reconcilePendingPayments timer. Both have try/catch but are dead-effort under Plan B. Code is correct, just carries non-essential cost. Acceptable for V1."
+    }
+  ],
+
+  "rollback_plan": "Single env flip: KIOSK_PAYMENT_ROUTE_ALL_TO_COUNTER=false + php artisan config:clear. Restores legacy 3-method UI in <30s. ZERO code rollback needed.",
+
+  "next_actions_for_supervisor": [
+    "1. Decide B1 + B2 inline (cost: 9 LOC total + 1 sentinel update if flat chosen)",
+    "2. Decide B3: scope or re-dispatch Z2/Z3/Z4 implement agents",
+    "3. Optionally trigger a manual Refund cycle to close Y1",
+    "4. Once B1+B2+B3 resolved: re-issue XCUT review → expected verdict ARCHITECTURE_GREEN"
+  ],
+
+  "word_count_estimate": 1180
+}

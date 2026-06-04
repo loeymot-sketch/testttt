@@ -1,0 +1,228 @@
+{
+  "supervisor_wave": "C",
+  "zone": "XCUT",
+  "artifact": "numeric-ledger-extended",
+  "timestamp_utc_initial_snapshot": "2026-05-28T22:42:30+02:00",
+  "timestamp_utc_revalidated_snapshot": "2026-05-28T22:46:30+02:00",
+  "head": "fcfef17fd74caa3a7b8e92ddae285260e34eeee1",
+  "branch": "feature/mobile-app-le-cayenne-2026-05-10",
+  "method_notes": {
+    "wave_c_window_basis": "Wave C agent dirs (XCUT, Z1-PAYMENT, Z2-NF525, Z3-WIZARD, Z4-LATENCY) were mtime-created at 22:36:xx local time. Cutoff used: created_at >= '2026-05-28 22:36:00'.",
+    "pre_wave_c_snapshot_basis": "Reconstructed from earliest sibling-agent activity (dir mtime). Last DB state before that cutoff is treated as pre-Wave-C baseline.",
+    "revalidation_note": "Initial snapshot at 22:42:30 saw 0 new orders and 7 new audit_logs. A revalidation at 22:46:30 (after peer XCUT siblings + Z2-NF525 completed) captured 2 NEW orders (#226 + #227) + 11 new audit_logs total + 2 additional z_reports (#3 + #4). This file reflects the REVALIDATED state. Per advisor freshness rule: a third revalidation may be required if downstream agents (Z3-WIZARD wizard order creation, Z4-LATENCY post-write measurements) continue past 22:46:30.",
+    "ledger_chain_targets_validated": [
+      "backend.order.total (orders.total decimal(19,6))",
+      "audit_log.payload.total / .total_ttc / .amount (audit_logs.payload JSON)",
+      "composition_snapshot presence (order_items.composition_snapshot JSON)",
+      "fiscal_sequence_no allocation (orders.fiscal_sequence_no nullable bigint)",
+      "order_payments.amount (real cash payment ledger)"
+    ],
+    "ledger_chain_targets_not_captured_this_wave": {
+      "cart_FE": "Wave C sibling agents did not log front-end cart capture JSON. New orders #226 + #227 were created via direct service calls (RefundWithCounterEntryService for #227; #226 was inserted as the parent fixture for the refund S1 scenario per Z2-NF525/refund.json). NO front-end cart was involved. cart_FE marked 'not_applicable_service_path' rather than 'not_captured'.",
+      "receipt_pdf_total": "storage/app/ has no receipts/ subdir; no *.pdf in storage/app. Z2-NF525 produced eod-real-2026-05-28.pdf (1.28 MB) which is the DAILY Z PDF, not a per-order receipt. V1 LOCAL prints via thermal driver (orders.receipt_print_count column tracks). Per-order receipt PDFs are out of scope; daily Z PDF verified present.",
+      "kds_card_total": "KDS broadcasts via Pusher branch.X channel — not stored. Orders #226 + #227 status=13 (PAID) and =22 (refund_completed) which do NOT broadcast to KDS V2 grid (only ACCEPT/PREPARING/PREPARED transitions broadcast). Marked 'not_in_kds_pipeline_by_design'.",
+      "oss_card_amount": "Same broadcast-only constraint; status 13/22 not displayed on OSS preparing/ready columns."
+    },
+    "wave_b_artifact_inheritance": "Wave B numeric ledger flagged 4 'P0' classified as TEST_ARTIFACT (synthetic seeds with composition_snapshot NULL, fiscal_sequence_no NULL, sequential total=2.00, transaction_id NULL). This Wave-C ledger correctly excludes orders 200-224 as the same TEST_ARTIFACT family. Orders 226 + 227 are TEST_HELPER (service-path direct insertion for S1 refund validation), distinct from synthetic seeds — they DO have fiscal_sequence_no allocated and DO chain into Z #4 + audit_logs HMAC."
+  },
+  "pre_wave_c": {
+    "cutoff_at": "2026-05-28 22:36:00",
+    "orders": 147,
+    "audit_logs": 22,
+    "last_hash": "95edba8835ca70ec20ba26557e07a2ec82b26117fa7325616ba148e367d7432a",
+    "z_reports": 0,
+    "max_fiscal_sequence_no": 37
+  },
+  "post_wave_c": {
+    "snapshot_at": "2026-05-28 22:46:30",
+    "orders": 149,
+    "audit_logs": 40,
+    "last_hash": "b8ed19d716cbea02327a3424646b0b7b61cecc179f9805f9afd8fd7f95f3ef0f",
+    "z_reports": 4,
+    "max_fiscal_sequence_no": 39
+  },
+  "deltas": {
+    "orders_created": 2,
+    "audit_logs_appended": 18,
+    "z_reports_appended": 4,
+    "fiscal_sequence_no_advanced": 2,
+    "chain_link_preserved": true,
+    "frozen_zone_diff_loc": 0,
+    "snapshot_completeness_caveat": "If consumer reads this after 22:50 and any peer Z dir (especially Z3-WIZARD or Z4-LATENCY) has gained additional JSON or PDF artifacts after 22:46:30, re-run: SELECT COUNT(*),MAX(id) FROM orders; SELECT COUNT(*),MAX(id),(SELECT current_hash FROM audit_logs ORDER BY id DESC LIMIT 1) FROM audit_logs; — and compare against post_wave_c above."
+  },
+  "new_orders": [
+    {
+      "order_id": 226,
+      "source": "Z2-NF525_S1_parent_fixture",
+      "source_evidence": "Z2-NF525/refund.json baseline.orders_count=142 (pre-S1) and target_order id=6. The S1 scenario in refund.json then creates a SEALED fixture #226 to test post-Z refund path. Inserted via direct service insertion (not PricingService SSOT), but DOES allocate fiscal_sequence_no=38 and DOES emit order_payments row (id=1, amount=11.00, mode=1=cash).",
+      "source_surface": "pos",
+      "payment_method": 1,
+      "payment_status": 5,
+      "status": 13,
+      "fiscal_sequence_no": 38,
+      "cart_FE": "not_applicable_service_path",
+      "backend_db_total": 11.00,
+      "backend_db_subtotal": 10.00,
+      "backend_db_total_tax": 1.00,
+      "order_payments_amount": 11.00,
+      "order_payments_tendered": 15.00,
+      "order_payments_change": 4.00,
+      "receipt_pdf_total": "not_captured_no_per_order_pdf",
+      "kds_card_total": "not_in_kds_pipeline_status13",
+      "audit_log_payload_total_ttc_via_Z4": 11.00,
+      "oss_card_amount": "not_in_oss_pipeline_status13",
+      "totals_compared": [
+        {"source": "orders.total", "value": 11.00},
+        {"source": "order_payments.amount", "value": 11.00},
+        {"source": "z_report.id=4.total_ttc", "value": 11.00},
+        {"source": "audit_logs.id=33.payload.total_ttc", "value": 11.00}
+      ],
+      "all_equal": true,
+      "composition_snapshot_present": false,
+      "composition_snapshot_note": "order_items #161 (item_id=1, qty=1) has composition_snapshot=NULL because the order was created via the S1 fixture path, not via PricingService. This is a known TEST_HELPER pattern, not an integrity defect — the Z #4 close still captured the total correctly and the chain links cleanly. Production kiosk/POS-wizard orders DO populate composition_snapshot (verified historically in real-live-flow-2026-05-28 capture)."
+    },
+    {
+      "order_id": 227,
+      "source": "Z2-NF525_S1_refund_mirror_via_RefundWithCounterEntryService",
+      "source_evidence": "Z2-NF525/refund.json scenarios.S1.result indicates the mirror order created via App\\Services\\Order\\RefundWithCounterEntryService. audit_logs id=37 (order.refund.counter_entry) payload {mirror_total:-11, parent_order_id:226, parent_fiscal_sequence_no:38, mirror_fiscal_sequence_no:39} confirms the linkage. cash_drawer cashback movement audit_logs id=36 emitted concurrently (amount=11 direction=out).",
+      "source_surface": "pos",
+      "payment_method": 1,
+      "payment_status": 20,
+      "status": 22,
+      "fiscal_sequence_no": 39,
+      "parent_order_id": 226,
+      "cart_FE": "not_applicable_refund_service_path",
+      "backend_db_total": -11.00,
+      "backend_db_subtotal": -10.00,
+      "backend_db_total_tax": -1.00,
+      "order_payments_amount": -11.00,
+      "order_payments_tendered": -15.00,
+      "order_payments_change": -4.00,
+      "receipt_pdf_total": "not_captured_refund_mirror",
+      "kds_card_total": "not_in_kds_pipeline_refund_status22",
+      "audit_log_payload_total_ttc": "NULL — refund mirror is NOT in any z_report (created post-Z #4 close, will roll into Z #5)",
+      "audit_log_payload_amount_via_cash_movement": 11.00,
+      "oss_card_amount": "not_in_oss_pipeline",
+      "totals_compared": [
+        {"source": "orders.total", "value": -11.00},
+        {"source": "order_payments.amount (signed mirror)", "value": -11.00},
+        {"source": "audit_logs.id=36.payload.amount (unsigned cash-out)", "value": 11.00, "sign_note": "audit_logs records ABSOLUTE cash-out direction=out (always positive amount with direction field), order_payments mirrors the parent SIGNED total. Both representations are consistent."},
+        {"source": "audit_logs.id=37.payload.mirror_total", "value": -11.00}
+      ],
+      "all_equal": true,
+      "composition_snapshot_present": false,
+      "composition_snapshot_note": "Mirror order inherits parent fixture path — composition_snapshot NULL on order_items #162. Same TEST_HELPER classification as parent #226.",
+      "nf525_chain_extension_proof": "Both parent (Z #4) and mirror (audit_logs #37) link into the prev_hash chain that began at pre-Wave-C tail 95edba88 and ends at post-Wave-C tail b8ed19d7. Z #4 prev_hash matches Z #3 signature (224a72ff...). RefundWithCounterEntryService correctly emitted 2 audit events (cash movement + counter_entry) chained sequentially. Invariant intact."
+    }
+  ],
+  "excluded_synthetic_pre_wave_c": {
+    "range_id": "200-224",
+    "count": 25,
+    "pattern_signature": {
+      "total": "2.000000 (uniform)",
+      "transaction_id": "NULL on all",
+      "fiscal_sequence_no": "NULL on all",
+      "queue_number": "sequential synthetic 9997xxxx",
+      "composition_snapshot": "NULL on all 10 order_items rows checked (215-224)",
+      "source": "1 or 5 (kiosk shape but synthetic)"
+    },
+    "classification": "TEST_ARTIFACT — same pattern as Wave B (rush-hour-50x50-2026-05-10/round-1) AUDIT-RUSH-B seed family. Composition snapshots empty + fiscal allocation skipped = direct DB seed path, not the PricingService + FrontendOrderService production path. Per Wave B classification doctrine (task #203 completed): not integrity violations.",
+    "owner_action_required": "None. These remain in DB as historical fixtures for Wave B reproducibility."
+  },
+  "mismatches": [],
+  "integrity_proofs": {
+    "audit_chain_prev_hash_linkage_wave_c": {
+      "method": "SQL session-variable cursor: SET @prev := pre-Wave-C tail '95edba88...'; iterate audit_logs id>=23 ORDER BY id; assert each row.prev_hash == @prev; reassign @prev := current_hash.",
+      "verified_links": 18,
+      "failed_links": 0,
+      "tail_pre_wave_c": "95edba8835ca70ec20ba26557e07a2ec82b26117fa7325616ba148e367d7432a",
+      "tail_post_wave_c": "b8ed19d716cbea02327a3424646b0b7b61cecc179f9805f9afd8fd7f95f3ef0f",
+      "result": "ALL_GREEN — chain extends cleanly across 18 new audit entries (ids 23-40)."
+    },
+    "z_report_payload_internal_chain": {
+      "z1_signature": "7eddd896765389fbd2e5d430b5a08fd80e7c693f726fe790184a493c252bd8c0",
+      "z2_payload_prev_hash": "7eddd896765389fbd2e5d430b5a08fd80e7c693f726fe790184a493c252bd8c0",
+      "z2_signature": "18134965bb85fd8ff2daa0a80fcc001ee1a32143867614607bfcb18146a63d61",
+      "z3_payload_prev_hash_via_z_reports_table": "18134965bb85fd8ff2daa0a80fcc001ee1a32143867614607bfcb18146a63d61",
+      "z3_signature": "224a72ff9cde4ebc89a7162249ce14f8c00296ddf00e66765c79dc87f7b33208",
+      "z4_payload_prev_hash": "224a72ff9cde4ebc89a7162249ce14f8c00296ddf00e66765c79dc87f7b33208",
+      "z4_signature": "45049dd9480fe59564673c43d0c9dbe36d9ebfce4512aa78bc2f261069002f61",
+      "all_links_match": true,
+      "result": "Z #2.prev=Z #1.sig, Z #3.prev=Z #2.sig, Z #4.prev=Z #3.sig. NF525 z_report internal chain DOUBLE-LINKED (in addition to audit_logs HMAC chain). 4/4 z_reports chain correctly."
+    },
+    "fiscal_sequence_monotonicity": {
+      "pre_max": 37,
+      "post_max": 39,
+      "new_allocations_count": 2,
+      "new_fsns_allocated": [38, 39],
+      "gaps": [],
+      "monotonic": true,
+      "result": "Monotonic, gap-free across the +2 new allocations (37 → 38 → 39)."
+    },
+    "frozen_zone_diff_check": {
+      "method": "git status --porcelain (snapshot); none of CLAUDE.md §7 frozen files in the modified set; Z2-NF525 used existing services without modifying them.",
+      "frozen_files_touched": 0,
+      "result": "Zero frozen-zone modifications during Wave C window. §7 invariant preserved."
+    },
+    "z4_capture_of_order_226": {
+      "order_226_total": 11.00,
+      "z4_total_ttc": 11.00,
+      "z4_order_count": 1,
+      "z4_total_ht": 10.00,
+      "z4_total_tva": 1.00,
+      "order_226_ht_tva_breakdown": "HT=10.00 + TVA=1.00 = TTC=11.00 (TVA 10% restauration sur place)",
+      "all_match": true,
+      "result": "Z #4 captures order #226 exactly. Cross-link integrity verified between orders + z_reports + audit_logs.payload."
+    }
+  },
+  "verdict": "ALL_INTEGRITY_GREEN — 2 REAL Wave C orders ledgered (#226 parent fixture + #227 refund mirror, both via Z2-NF525 service-path test). All numeric fields cross-reconcile across orders.total, order_payments.amount, z_reports.total_ttc, and audit_logs.payload.total_ttc / .amount / .mirror_total. NF525 chain (audit_logs HMAC + z_reports double-link) extends cleanly across the +18 audit entries and +4 z_reports. Fiscal sequence monotonic gap-free (37 → 39). composition_snapshot is NULL on both order_items (#161 + #162) — flagged as TEST_HELPER service-path artifact, NOT integrity drift (production kiosk/POS-wizard path DOES populate composition_snapshot per real-live-flow-2026-05-28 baseline).",
+  "verdict_schema_extension": "Mission spec defined verdict as 'ALL_INTEGRITY_GREEN | DETECTED_DRIFT'. Initial snapshot at 22:42:30 had hit a third state NO_REAL_ORDERS_CREATED_DURING_WAVE_C — that state was REVALIDATED AWAY by the 22:46:30 re-snapshot which captured 2 new orders + 11 new audit entries from peer agents that completed after the initial snapshot. Final verdict aligns with the spec's primary GREEN value.",
+  "blocking_findings": [],
+  "advisory_findings": [
+    {
+      "id": "ADV-01",
+      "severity": "INFO",
+      "scope": "Test-helper service path on orders #226 + #227",
+      "finding": "Wave C new orders #226 + #227 were created via service-path direct insertion (Z2-NF525 refund S1 fixture + RefundWithCounterEntryService) and bypass the standard PricingService + FrontendOrderService creation flow. As a result, order_items.composition_snapshot is NULL on both. This is by design for the refund integration test (Z2-NF525/refund.json explicitly documents the S1 scenario as a sealed-order refund path test).",
+      "recommendation": "Acceptable. composition_snapshot NULL on test-helper orders is consistent with Wave B doctrine. For future Wave D 'live-orders' supervisor that drives kiosk wizard happy-path, composition_snapshot WILL be populated and that wave's ledger should assert composition_snapshot_present=true on every new order."
+    },
+    {
+      "id": "ADV-02",
+      "severity": "INFO",
+      "scope": "Z2-NF525 Z-close cycle",
+      "finding": "Z2-NF525 closed 4 z_reports in sequence: Z #1 (empty), Z #2 (empty), Z #3 (empty), Z #4 (captures order #226 — 11 TTC). The first 3 empty Z closes are validation cycles for the NF525 chain-extension path; only Z #4 captured real fiscal data.",
+      "recommendation": "Documented intent (z-close-pdf.json verdict='Z_LIVE_VERIFIED'). No action."
+    },
+    {
+      "id": "ADV-03",
+      "severity": "INFO",
+      "scope": "Audit payload schema heterogeneity",
+      "finding": "audit_logs.payload field names vary by action: z_report.closed uses 'total_ttc' + 'order_count' + 'signature' + 'prev_hash'; cash.movement.recorded uses 'amount' + 'direction' + 'movement_id'; order.refund.counter_entry uses 'mirror_total' + 'parent_fiscal_sequence_no'. Mission spec asked for unified 'audit_log.payload.total' — that field name does NOT exist canonically.",
+      "recommendation": "Future XCUT ledger schemas should map per-action: order.created.payload.total | z_report.closed.payload.total_ttc | cash.movement.recorded.payload.amount | order.refund.counter_entry.payload.mirror_total. No code change needed; document the field map."
+    },
+    {
+      "id": "ADV-04",
+      "severity": "INFO",
+      "scope": "Snapshot freshness discipline",
+      "finding": "Initial snapshot at 22:42:30 missed orders #226 + #227 (created at 22:44:11 and 22:46:09 respectively). Without the 22:46:30 revalidation triggered by advisor freshness rule, this ledger would have falsely reported NO_REAL_ORDERS_CREATED_DURING_WAVE_C.",
+      "recommendation": "Future XCUT supervisors should snapshot AFTER all peer Z dirs contain at least one artifact file, OR snapshot twice with ≥4-min gap. Codify in supervisor playbook."
+    }
+  ],
+  "evidence_citations": {
+    "schema_orders": "DESCRIBE orders — total decimal(19,6), fiscal_sequence_no bigint nullable, transaction_id varchar(191) nullable, source varchar(191) nullable, queue_number varchar(20), composition_snapshot lives on order_items, not orders. parent_order_id UNIQUE — refund mirrors enforce 1:1.",
+    "schema_order_items": "DESCRIBE order_items — composition_snapshot json nullable. Verified 12/12 NULL on order_id 215-227 (Wave B synthetic + Wave C TEST_HELPER).",
+    "schema_audit_logs": "DESCRIBE audit_logs — payload json nullable, prev_hash char(64), current_hash char(64). HMAC-chained per FiscalSequenceService / AuditLogService (frozen §7).",
+    "schema_z_reports": "DESCRIBE z_reports — total_ttc decimal(15,2), total_ht decimal(15,2), total_tva decimal(15,2), prev_hash char(64), signature char(64), sequence_no bigint. Double-chained: z_reports.prev_hash mirrors the previous z_reports.signature; audit_logs.payload (for action=z_report.closed) ALSO carries prev_hash + signature for cross-validation.",
+    "schema_order_payments": "DESCRIBE order_payments — amount decimal(10,2), tendered decimal(10,2), change_amount decimal(10,2), mode tinyint. mode=1=cash.",
+    "chain_link_proof_query": "SET @prev := '95edba88...' COLLATE utf8mb4_unicode_ci; SELECT prev_hash = @prev AS prev_links, @prev := current_hash FROM audit_logs WHERE id >= 23 ORDER BY id; (18/18 returned prev_links=1)",
+    "wave_c_dir_artifacts_at_22_46": "Z1-PAYMENT: architecture.json (planning). Z2-NF525: eod-real-2026-05-28.pdf (1.28MB) + z-close-pdf.json + refund.json. Z3-WIZARD: bowl-gratine.json + burger-others.json + sandwich-tacos.json (audit only — no order creation). Z4-LATENCY: auth-helper.json + measurements.json + raw-samples.json + screenshots/ (read-only sync measurements). XCUT siblings: this file + gstack-review.json + red-visual.json.",
+    "frozen_zone_list": "CLAUDE.md §7 — FiscalSequenceService.php / ZReportService.php / AuditLogService.php all frozen; this ledger writes ONLY to reports/test-e2e/supervisor-wave-c-2026-05-28/XCUT/ — zero §7 touch.",
+    "z2_refund_artifact": "reports/test-e2e/supervisor-wave-c-2026-05-28/Z2-NF525/refund.json — scenario S1 documents parent fixture creation + RefundWithCounterEntryService mirror creation.",
+    "z2_z_close_artifact": "reports/test-e2e/supervisor-wave-c-2026-05-28/Z2-NF525/z-close-pdf.json — verdict Z_LIVE_VERIFIED, BM user id=11 branch_id=1 with pos-manage-fiscal permission used for Z open/close (admin user id=1 branch_id=0 cannot per ZReportController::resolveBranchId)."
+  },
+  "budget_used": {
+    "wall_clock_minutes_estimate": 28,
+    "word_count_estimate_under_cap": true,
+    "revalidations_performed": 1
+  }
+}

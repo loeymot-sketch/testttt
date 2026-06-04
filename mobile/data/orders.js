@@ -8,6 +8,14 @@
 //   reorder         ↔ POST /api/v1/frontend/order avec composition_snapshot
 //
 // Status values alignés App\Enums\OrderStatus : in_progress, ready, delivered, cancelled.
+//
+// [ANTI-FICTION HEAL 2026-05-18 — Impl D Round 2] All `item_id` values are now
+// canonical members of `mobile/data/menu.js` (101/102/202/301/302/401/501/502/
+// 602/608/701/702/902/1001/1002). Pre-MENU-RESET fictional ids 1001/2001/2002/
+// 2003/4001/5001/7001/8001/9002 + product names (Box Nashville/Familiale/Solo,
+// Le Cheese Smash, Bowl Cheesy, Wrap Poulet, Cookie XL, Frites M, Coca-Cola)
+// purged. `line_total` arithmetic now matches the canonical unit price from
+// menu.js; `total` recomputed for each order. Sentinel test enforces parity.
 
 (function () {
   'use strict';
@@ -25,16 +33,17 @@
       branch_id: 1,
       branch_name: 'Le Cayenne',
       branch_city: 'Hénin-Beaumont',
-      total: 33.00,
+      total: 29.80,                   // 9.50 + 7.90 + 10.90 + 1.50
       payment_status: 'pending',      // pending | paid
       payment_method: 'cash_at_counter', // cash_at_counter | card_at_counter | stripe
       pickup_code: 'C-1234',
       qr_value: 'LECAY-ORDER-1234-abc123',
-      items_summary: 'Box Nashville · Le Cheese · Bowl Cheesy',
+      items_summary: 'Big Cayenne · Tacos L · Bowl Frites Curry · Coca-Cola',
       items: [
-        { id: 1, item_id: 2002, name: 'Box Nashville',  qty: 1, line_total: 17.00, extras_summary: 'Oignon caramélisé · Cheddar' },
-        { id: 2, item_id: 1001, name: 'Le Cheese Smash', qty: 1, line_total: 9.50, extras_summary: '' },
-        { id: 3, item_id: 4001, name: 'Bowl Cheesy',     qty: 1, line_total: 11.50, extras_summary: '' },
+        { id: 1, item_id: 102,  name: 'Big Cayenne',              qty: 1, line_total: 9.50,  extras_summary: 'Cheddar · Œuf · Jambon' },
+        { id: 2, item_id: 502,  name: 'Tacos L',                  qty: 1, line_total: 7.90,  extras_summary: '2 viandes · Sauce fromagère' },
+        { id: 3, item_id: 602,  name: 'Bowl Frites Poulet curry', qty: 1, line_total: 10.90, extras_summary: 'Boule gratinée +2,00 €' },
+        { id: 4, item_id: 1001, name: 'Coca-Cola 33cl',           qty: 1, line_total: 1.50,  extras_summary: '' },
       ],
       points_earned_estimate: 33,
     },
@@ -45,61 +54,63 @@
       id: 'C-1212', number: 1212, status: 'delivered', status_label: 'Récupérée',
       created_at: '2026-05-09T19:47:00+02:00',
       branch_id: 1, branch_name: 'Le Cayenne', branch_city: 'Hénin-Beaumont',
-      total: 29.00, payment_status: 'paid', payment_method: 'cash_at_counter',
-      items_summary: 'Box Familiale',
+      total: 13.00, payment_status: 'paid', payment_method: 'cash_at_counter',
+      items_summary: 'Sandwich Cayenne · Grande Frites · Coca-Cola',
       items: [
-        { id: 1, item_id: 2003, name: 'Box Familiale', qty: 1, line_total: 29.00, extras_summary: '4 smash · 4 boissons' },
+        { id: 1, item_id: 101,  name: 'Sandwich Cayenne',  qty: 1, line_total: 7.50, extras_summary: 'Poulet mariné · Sauce Cayenne' },
+        { id: 2, item_id: 702,  name: 'Grande Frites',     qty: 1, line_total: 4.00, extras_summary: 'Nature' },
+        { id: 3, item_id: 1001, name: 'Coca-Cola 33cl',    qty: 1, line_total: 1.50, extras_summary: '' },
       ],
-      points_earned: 29,
+      points_earned: 13,
     },
     {
       id: 'C-1208', number: 1208, status: 'delivered', status_label: 'Récupérée',
       created_at: '2026-05-09T13:21:00+02:00',
       branch_id: 1, branch_name: 'Le Cayenne', branch_city: 'Hénin-Beaumont',
-      total: 21.00, payment_status: 'paid', payment_method: 'card_at_counter',
-      items_summary: 'Smash Cheese × 2 · Frites',
+      total: 16.30, payment_status: 'paid', payment_method: 'card_at_counter',
+      items_summary: 'Chicken Burger × 2 · Petite Frites',
       items: [
-        { id: 1, item_id: 1001, name: 'Le Cheese Smash', qty: 2, line_total: 19.00, extras_summary: '' },
-        { id: 2, item_id: 7001, name: 'Frites M',        qty: 1, line_total: 3.50, extras_summary: '' },
+        { id: 1, item_id: 401, name: 'Chicken Burger', qty: 2, line_total: 13.80, extras_summary: '' },
+        { id: 2, item_id: 701, name: 'Petite Frites',  qty: 1, line_total: 2.50,  extras_summary: 'Nature' },
       ],
-      points_earned: 21,
+      points_earned: 16,
     },
     {
       id: 'C-1190', number: 1190, status: 'delivered', status_label: 'Récupérée',
       created_at: '2026-04-30T18:05:00+02:00',
       branch_id: 1, branch_name: 'Le Cayenne', branch_city: 'Hénin-Beaumont',
-      total: 22.00, payment_status: 'paid', payment_method: 'cash_at_counter',
-      items_summary: 'Wrap Poulet · Bowl Cheesy',
+      total: 17.40, payment_status: 'paid', payment_method: 'cash_at_counter',
+      items_summary: 'Galette Cayenne · Bowl Riz Crispy · Coca Zero',
       items: [
-        { id: 1, item_id: 5001, name: 'Wrap Poulet', qty: 1, line_total: 8.50, extras_summary: '' },
-        { id: 2, item_id: 4001, name: 'Bowl Cheesy', qty: 1, line_total: 11.50, extras_summary: '' },
-        { id: 3, item_id: 8001, name: 'Coca-Cola',   qty: 1, line_total: 2.50, extras_summary: '' },
+        { id: 1, item_id: 202,  name: 'Galette Cayenne',          qty: 1, line_total: 7.00, extras_summary: 'Poulet mariné · Sauce Cayenne' },
+        { id: 2, item_id: 608,  name: 'Bowl Riz Poulet crispy',   qty: 1, line_total: 8.90, extras_summary: 'Sauce fromagère' },
+        { id: 3, item_id: 1002, name: 'Coca-Cola Zero 33cl',      qty: 1, line_total: 1.50, extras_summary: '' },
       ],
-      points_earned: 22,
+      points_earned: 17,
     },
     {
       id: 'C-1142', number: 1142, status: 'delivered', status_label: 'Récupérée',
       created_at: '2026-04-24T20:12:00+02:00',
       branch_id: 1, branch_name: 'Le Cayenne', branch_city: 'Hénin-Beaumont',
-      total: 18.00, payment_status: 'paid', payment_method: 'cash_at_counter',
-      items_summary: 'Box Nashville · Coca',
+      total: 8.50, payment_status: 'paid', payment_method: 'cash_at_counter',
+      items_summary: 'Sandwich Classique · Coca-Cola',
       items: [
-        { id: 1, item_id: 2002, name: 'Box Nashville', qty: 1, line_total: 15.00, extras_summary: '' },
-        { id: 2, item_id: 8001, name: 'Coca-Cola',     qty: 1, line_total: 2.50, extras_summary: '' },
+        { id: 1, item_id: 301,  name: 'Sandwich Classique', qty: 1, line_total: 7.00, extras_summary: 'Poulet curry · Sauce blanche' },
+        { id: 2, item_id: 1001, name: 'Coca-Cola 33cl',     qty: 1, line_total: 1.50, extras_summary: '' },
       ],
-      points_earned: 18,
+      points_earned: 9,
     },
     {
       id: 'C-1100', number: 1100, status: 'delivered', status_label: 'Récupérée',
       created_at: '2026-04-20T14:30:00+02:00',
       branch_id: 1, branch_name: 'Le Cayenne', branch_city: 'Hénin-Beaumont',
-      total: 15.00, payment_status: 'paid', payment_method: 'card_at_counter',
-      items_summary: 'Box Solo (Cheese Smash)',
+      total: 12.80, payment_status: 'paid', payment_method: 'card_at_counter',
+      items_summary: 'Big Classique · Tarte Daim',
       items: [
-        { id: 1, item_id: 2001, name: 'Box Solo', qty: 1, line_total: 13.50, extras_summary: 'Cheese Smash · Frite M · Coca' },
-        { id: 2, item_id: 9002, name: 'Cookie XL', qty: 1, line_total: 3.50, extras_summary: '' },
+        { id: 1, item_id: 302, name: 'Big Classique', qty: 1, line_total: 9.00, extras_summary: 'Poulet crispy · Sauce algérienne · Cheddar + Œuf + Jambon inclus' },
+        { id: 2, item_id: 902, name: 'Tarte Daim',    qty: 1, line_total: 3.80, extras_summary: '' },
       ],
-      points_earned: 25,  // 15 + welcome bonus
+      points_earned: 38,  // 13 + welcome bonus 25
     },
   ];
 

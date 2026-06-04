@@ -109,14 +109,18 @@
   // reward must visually check the redemption screen displays a reward name —
   // there is NO server-side reward_id audit chain.
   // ───────────────────────────────────────────────────────────────────────
+  // [ANTI-FICTION HEAL 2026-05-18 — Impl D Round 2] payload item_id/category_id
+  // values now point to canonical menu.js. Removed fictional ids 2001 (Box Solo) +
+  // 2003 (Box Familiale) + 7001 (Frites M variation). Fixed reward 5 category_id
+  // mismatch (2=Galette ≠ Burger label → 4=Burgers).
   const REWARDS = Object.freeze([
-    { id: 1, name: 'Frites M offertes',          points_cost: 100,  type: 'free_item',         payload: { item_id: 7001, variation_id: 70011 }, icon: '🍟' },
-    { id: 2, name: '−1 € de réduction',          points_cost: 100,  type: 'discount',          payload: { amount: 1.00 },                       icon: '💶' },
-    { id: 3, name: '−2,50 € sur ta commande',    points_cost: 250,  type: 'discount',          payload: { amount: 2.50 },                       icon: '💶' },
-    { id: 4, name: '−5 € sur ta commande',       points_cost: 500,  type: 'discount',          payload: { amount: 5.00 },                       icon: '💶' },
-    { id: 5, name: 'Burger gratuit (au choix)',  points_cost: 1000, type: 'free_item',         payload: { category_id: 2 },                     icon: '🍔' },
-    { id: 6, name: 'Box Solo offerte',           points_cost: 1500, type: 'free_item',         payload: { item_id: 2001 },                      icon: '🥡' },
-    { id: 7, name: 'Box Familiale −50%',         points_cost: 2000, type: 'percent_discount',  payload: { item_id: 2003, percent: 50 },          icon: '🥡' },
+    { id: 1, name: 'Petite Frites offerte',      points_cost: 100,  type: 'free_item',         payload: { item_id: 701 },                       icon: '🍟' },
+    { id: 2, name: '−1 € de réduction',          points_cost: 100,  type: 'discount',          payload: { amount: 1.00 },                       icon: '🎁' },
+    { id: 3, name: '−2,50 € sur ta commande',    points_cost: 250,  type: 'discount',          payload: { amount: 2.50 },                       icon: '🎁' },
+    { id: 4, name: '−5 € sur ta commande',       points_cost: 500,  type: 'discount',          payload: { amount: 5.00 },                       icon: '🎁' },
+    { id: 5, name: 'Burger gratuit (au choix)',  points_cost: 1000, type: 'free_item',         payload: { category_id: 4 },                     icon: '🍔' },
+    { id: 6, name: 'Tacos M offert',             points_cost: 1500, type: 'free_item',         payload: { item_id: 501 },                       icon: '🌮' },
+    { id: 7, name: 'Big Cayenne −50 %',          points_cost: 2000, type: 'percent_discount',  payload: { item_id: 102, percent: 50 },          icon: '🌶️' },
     { id: 8, name: 'Repas complet à 1 €',        points_cost: 3000, type: 'flat_price',        payload: { amount: 1.00 },                       icon: '🎉' },
   ]);
 
@@ -138,13 +142,17 @@
     last_qr_preference: 'qr',          // 'qr' | 'barcode' — UI preference, persisted localStorage
   };
 
+  // [ANTI-FICTION HEAL 2026-05-18 — Impl D Round 2] descriptions now reference
+  // canonical menu.js item names matching the order summaries in mobile/data/orders.js.
+  // Removed fictional refs: Box Nashville, Wrap Poulet, Smash Cheese, Le Gourmet,
+  // "Box Nashville −50%".
   const DEFAULT_HISTORY = [
-    { id: 1001, date: '2026-05-08', type: 'earn',       points: +25,  description: 'Box Nashville',                        order_id: 'C-1234', source_surface: 'mobile' },
-    { id: 1002, date: '2026-05-05', type: 'earn',       points: +12,  description: 'Smash Cheese',                         order_id: 'C-1212', source_surface: 'mobile' },
-    { id: 1003, date: '2026-05-02', type: 'redeem',     points: -500, description: 'Burger gratuit (Box Nashville −50%)', order_id: null,     source_surface: 'mobile', reward_id: 5 },
-    { id: 1004, date: '2026-04-30', type: 'earn',       points: +22,  description: 'Wrap Poulet · Bowl',                   order_id: 'C-1190', source_surface: 'kiosk' },
-    { id: 1005, date: '2026-04-28', type: 'earn',       points: +15,  description: 'Le Gourmet',                           order_id: 'C-1180', source_surface: 'pos' },
-    { id: 1006, date: '2026-04-24', type: 'earn',       points: +18,  description: 'Box Nashville',                        order_id: 'C-1142', source_surface: 'kiosk' },
+    { id: 1001, date: '2026-05-08', type: 'earn',       points: +30,  description: 'Big Cayenne · Tacos L · Bowl Frites',  order_id: 'C-1234', source_surface: 'mobile' },
+    { id: 1002, date: '2026-05-05', type: 'earn',       points: +13,  description: 'Sandwich Cayenne · Grande Frites',     order_id: 'C-1212', source_surface: 'mobile' },
+    { id: 1003, date: '2026-05-02', type: 'redeem',     points: -1000, description: 'Burger gratuit (Big Chicken)',         order_id: null,     source_surface: 'mobile', reward_id: 5 },
+    { id: 1004, date: '2026-04-30', type: 'earn',       points: +17,  description: 'Galette Cayenne · Bowl Riz',           order_id: 'C-1190', source_surface: 'kiosk' },
+    { id: 1005, date: '2026-04-28', type: 'earn',       points: +15,  description: 'Sandwich Classique',                   order_id: 'C-1180', source_surface: 'pos' },
+    { id: 1006, date: '2026-04-24', type: 'earn',       points: +9,   description: 'Sandwich Classique · Coca-Cola',       order_id: 'C-1142', source_surface: 'kiosk' },
     { id: 1007, date: '2026-04-20', type: 'manual_add', points: +25,  description: 'Bienvenue · Bonus inscription',        order_id: null,     source_surface: 'mobile_welcome' },
   ];
 

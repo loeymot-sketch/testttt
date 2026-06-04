@@ -42,10 +42,21 @@ function isKioskPath() {
  * en EN ferait basculer le POS en EN (cf. RED-R1 CS1 : aria-label "Add Customer"
  * vs placeholder FR). Conséquence directe du bug detectLocale qui suivait
  * navigator.language sans contexte de surface.
+ *
+ * [Wave P R2 KDS-i18n 2026-05-20] Étendu à `/kds` et `/order-status-screen` :
+ * le router Vue redirige `/kds` → `/admin/kitchen-display-system` côté client
+ * MAIS i18n.js est évalué AVANT le router (module-load time), donc le pathname
+ * lu est encore `/kds` → fallback navigator.language. Conséquence Wave P R1 P-3 :
+ * KDS CTA rendu "Ready" au lieu de "Prêt" sur Playwright headless (navigator FR-FR
+ * absent). Même cause potentielle pour OSS (`/order-status-screen` est aussi
+ * une surface staff/cuisine FR-only V1 Le Cayenne).
  */
 function isAdminPath() {
-    return typeof window !== 'undefined' &&
-           /^\/admin/.test(window.location.pathname || '');
+    if (typeof window === 'undefined') return false;
+    const p = window.location.pathname || '';
+    return /^\/admin/.test(p) ||
+           /^\/kds(\/|$)/.test(p) ||
+           /^\/order-status-screen(\/|$)/.test(p);
 }
 
 /**

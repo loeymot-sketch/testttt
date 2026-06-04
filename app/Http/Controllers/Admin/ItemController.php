@@ -69,8 +69,39 @@ class ItemController extends AdminController
         // Same heuristic as forcePosRuntimeBranchScope(). Client-provided surface wins.
         $this->applyDefaultPosSurfaceForPosRuntimeUser($request);
 
+        // [MISSION FIX D4 2026-05-21] Admin catalog (no explicit branch_id) must
+        // honour per-branch ItemBranchAvailability so `/admin/items` and
+        // `/admin/stock-rupture-dashboard` show identical state. Without this,
+        // simpleList's applyBranchAvailabilityOverlay() short-circuits (branchId<1)
+        // and the listing reports global is_available only — admin sees "Actif"
+        // while the dashboard correctly flags "RUPTURE". Mirror the
+        // StockRuptureDashboardController::scopedBranches() admin fallback (first
+        // active branch). Staff users already have $user->branch_id>0 piped
+        // through forcePosRuntimeBranchScope or future explicit selection.
+        if ($branchId === null) {
+            $user = $request->user();
+            if ($user && (int) $user->branch_id === 0
+                && ($user->hasRole('Admin') || $user->hasRole('Tenant Admin'))) {
+                $defaultBranchId = (int) \App\Models\Branch::query()
+                    ->whereNull('deleted_at')
+                    ->whereIn('status', [\App\Enums\Status::ACTIVE, 1])
+                    ->orderBy('id')
+                    ->value('id');
+                if ($defaultBranchId > 0) {
+                    $branchId = $defaultBranchId;
+                    $request->merge(['branch_id' => $branchId]);
+                    $request->query->set('branch_id', (string) $branchId);
+                }
+            }
+        }
+
         try {
-            return SimpleItemResource::collection($this->itemService->simpleList($request));
+            $paginator = $this->itemService->simpleList($request);
+            $meta = $this->itemService->availabilityCounts($branchId);
+
+            return SimpleItemResource::collection($paginator)->additional([
+                'meta' => $meta,
+            ]);
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }

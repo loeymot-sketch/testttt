@@ -415,6 +415,19 @@ export default {
   text-align: center;
 }
 
+/* abuse-e2e A-001: dark scrim so cream text reaches WCAG AA >=4.5:1 on the light idle gradient (flat color survives AAA background-image:none); proven 5.12:1 worst-case / 17.7:1 dark-fallback. */
+.kiosk-idle-content::before {
+  content: '';
+  position: absolute;
+  inset: -4% -6%;
+  z-index: -1;
+  background-color: rgba(15, 12, 10, 0.62);
+  border-radius: 40px;
+  -webkit-mask-image: radial-gradient(ellipse 75% 70% at 50% 50%, #000 55%, transparent 100%);
+          mask-image: radial-gradient(ellipse 75% 70% at 50% 50%, #000 55%, transparent 100%);
+  pointer-events: none;
+}
+
 .kiosk-idle-brand-block {
   display: flex;
   flex-direction: column;
@@ -473,7 +486,12 @@ export default {
   font-size: clamp(20px, 2.6vw, 28px);
   line-height: 1.35;
   font-weight: var(--kiosk-font-weight-medium, 500);
-  color: rgba(255, 245, 232, 0.88);
+  color: #FFF5E8;
+  /* abuse-e2e A-001 — opaque cream over the .kiosk-idle-content::before dark
+     scrim (rgba(15,12,10,.62)) reaches WCAG AA >=4.5:1 on the light idle
+     gradient (worst stop 5.12:1) and 17.7:1 on the dark fallback. text-shadow
+     kept as belt-and-braces; was rgba(255,245,232,0.88) (~1.0:1 pre-scrim). */
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.65), 0 1px 4px rgba(0, 0, 0, 0.45);
   margin: 0;
 }
 

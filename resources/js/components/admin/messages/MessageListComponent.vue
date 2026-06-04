@@ -10,7 +10,7 @@
                         <button type="submit">
                             <i class="lab lab-search-normal lab-font-size-16"></i>
                         </button>
-                        <input type="text" id="name" v-model="props.search.name" placeholder="Search Customer"
+                        <input type="text" id="name" v-model="props.search.name" :placeholder="$t('label.search_customer')"
                             class="w-full h-full rounded-r-lg ml-3">
                         <button @click.prevent="resetName" type="button" v-if="props.search.name"
                             class="text-sm text-red-500 fa-regular fa-circle-xmark !ml-2 mr-1"></button>
@@ -37,8 +37,9 @@
                 <div class="py-3 px-4 flex items-center gap-3 border-t sm:border-t-0 border-b border-[#D9DBE9]">
                     <img v-if="user.image" class="flex-shrink-0 w-9 rounded" :src="user.image" alt="avatar">
                     <h4 class="text-sm font-medium leading-4 capitalize">{{ user.name }}
+                        <!-- [UR1-002 V1.0.2 Wave B1] phoneDisplay SSOT -->
                         <span class="block mt-2 text-xs font-normal leading-[14px] text-paragraph">{{
-                            user.phone
+                            safePhone(user.phone)
                             }}</span>
                     </h4>
                 </div>
@@ -96,7 +97,7 @@
                         </label>
                         <div class="chat-footer-data">
                             <ul @click.prevent="deleteImage" class="chat-footer-data-list hidden"></ul>
-                            <input type="text" v-model="props.form.text" placeholder="Type a message"
+                            <input type="text" v-model="props.form.text" :placeholder="$t('label.type_a_message')"
                                 class="chat-footer-data-input">
                         </div>
                         <button type="submit" class="chat-footer-sent">
@@ -117,6 +118,8 @@ import PaginationSMBox from "../components/pagination/PaginationSMBox";
 import appService from "../../../services/appService";
 import TableLimitComponent from "../components/TableLimitComponent";
 import askEnum from "../../../enums/modules/askEnum";
+// [UR1-002 V1.0.2 Wave B1] phoneDisplay SSOT — mirrors App\Support\PhoneDisplay::safe
+import { safePhone } from "../../../helpers/phoneDisplay";
 
 
 export default {
@@ -189,6 +192,10 @@ export default {
         },
     },
     methods: {
+        // [UR1-002 V1.0.2 Wave B1] phoneDisplay SSOT proxy for template access.
+        safePhone(phone) {
+            return safePhone(phone);
+        },
         floatNumber(e) {
             return appService.floatNumber(e);
         },

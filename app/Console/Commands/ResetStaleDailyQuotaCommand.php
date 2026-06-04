@@ -33,7 +33,28 @@ class ResetStaleDailyQuotaCommand extends Command
 
     public function handle(): int
     {
-        $today = Carbon::today();
+        // [WH-3 bug_003 2026-05-19] `daily_reset_at` is a DATE column
+        // (`$table->date(...)` in migration 2026_04_15_230100). DATE columns
+        // store plain Y-m-d strings with NO timezone semantics in MySQL.
+        // The predicate `whereDate('daily_reset_at', '<', $today)` is a
+        // lexical Y-m-d compare on both driver families (MySQL + SQLite).
+        //
+        // Earlier Wave 3c heal applied TIMESTAMP-style TZ conversion
+        // (`->setTimezone('UTC')`) to the predicate side while keeping a
+        // plain Paris Y-m-d on the write side. That inversion shifted the
+        // predicate literal back one day (Paris '2026-01-15' → UTC
+        // '2026-01-14 23:00' → Eloquent formats with INSTANCE TZ → bound
+        // '2026-01-14'), so the cron at 00:05 Paris on day-N+1 failed to
+        // pick up rows whose `daily_reset_at='2026-N'` (yesterday Paris).
+        // Real-world impact: items hitting `max_daily_qty` stay
+        // 86-rupture-flagged ONE FULL BUSINESS DAY longer than intended.
+        //
+        // Heal: resolve "today" once in app.timezone (Paris) as a plain
+        // Y-m-d string and use the SAME variable for predicate AND write.
+        // Mirrors the canonical pattern in
+        // `AvailabilityService::decrementForOrder()` and ::toggle().
+        // Sentinel: tests/Feature/Sentinels/ResetStaleDailyQuotaTzCorrectSentinelTest.php
+        $today = Carbon::today(config('app.timezone'))->toDateString();
         $dryRun = (bool) $this->option('dry-run');
 
         $query = DB::table('item_branch_availability')
@@ -62,7 +83,7 @@ class ResetStaleDailyQuotaCommand extends Command
 
         Log::info('foodking.availability.reset_stale_quota', [
             'rows_reset' => $updated,
-            'reset_at'   => $today->toDateString(),
+            'reset_at'   => $today,
         ]);
 
         $this->info("Reset {$updated} stale daily quota rows.");

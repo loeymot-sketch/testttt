@@ -1,0 +1,1 @@
+{"status":false,"message":"Commande d\u00e9j\u00e0 encaiss\u00e9e par un autre caissier.","error_code":"payment_already_collected","order_id":75,"collected_by_user_id":19,"collected_at":"2026-05-27T15:53:22+02:00"}

@@ -28,7 +28,7 @@ const fs = require('fs');
 const path = require('path');
 
 const SCREEN_DIR = path.join(__dirname, '__screenshots__/test-e2e-mobile-realignment-2026-05-16');
-const MOBILE_URL = 'http://127.0.0.1:8081/index.html';
+const MOBILE_URL = process.env.MOBILE_URL || 'http://127.0.0.1:8087/index.html';
 
 if (!fs.existsSync(SCREEN_DIR)) fs.mkdirSync(SCREEN_DIR, { recursive: true });
 
@@ -379,6 +379,192 @@ test('I — Cart line composition for Bowl includes base + meat + sauce + supps 
   expect(lineItem.composition_summary).toContain('Curry');         // sauce
   expect(lineItem.composition_summary).toContain('Boule gratinée');
   expect(lineItem.composition_summary).toContain('Coca-Cola 33cl');
+});
+
+// ============================================================================
+// J — [RED heal P0-4] Cart round-trip preserves bolSupplementIds + bolDrinkId
+// ============================================================================
+test('J — Cart round-trip preserves bol fields through localStorage', async ({ page }) => {
+  await bootMobile(page);
+  const result = await page.evaluate(() => {
+    const m = window.LC.menu;
+    const bowl = m.findItem('bowl-frites-curry');
+    const selections = {
+      meatIds: [], sauceIds: ['s-curry'], cruditeIds: m.defaultCruditeIds(),
+      supplementIds: [], bolSupplementIds: ['sb-boule-gratinee', 'sb-jambon'], bolDrinkId: 'd-coca',
+      menuChoice: 'none', drinkId: undefined, fritesStyleId: undefined,
+      fritesSauceIds: [], qty: 2,
+    };
+    const lineItem = window.buildLineItem(bowl, selections);
+    // Round-trip through storage
+    const storage = window.LC.storage;
+    storage.clearCart();
+    storage.setCart([lineItem]);
+    const restored = storage.getCart();
+    return {
+      hasOneLine: restored.length === 1,
+      preservedBolSups: restored[0] && restored[0].bolSupplementIds,
+      preservedBolDrink: restored[0] && restored[0].bolDrinkId,
+      preservedUnitPrice: restored[0] && restored[0].unitPrice,
+      preservedLineTotal: restored[0] && restored[0].lineTotal,
+      preservedSummary: restored[0] && restored[0].composition_summary,
+    };
+  });
+  expect(result.hasOneLine).toBe(true);
+  expect(result.preservedBolSups).toEqual(['sb-boule-gratinee', 'sb-jambon']);
+  expect(result.preservedBolDrink).toBe('d-coca');
+  // 8.90 base + 2.00 gratiné + 0.90 jambon + 1.50 coca = 13.30
+  expect(result.preservedUnitPrice).toBeCloseTo(13.30, 2);
+  expect(result.preservedLineTotal).toBeCloseTo(26.60, 2);
+  expect(result.preservedSummary).toContain('Boule gratinée');
+  expect(result.preservedSummary).toContain('Coca-Cola');
+});
+
+// ============================================================================
+// K — [RED heal P1-6] Frites Nature pre-selected (user not blocked at first step)
+// ============================================================================
+test('K — Frites wizard pre-selects Nature so user can advance immediately', async ({ page }) => {
+  await bootMobile(page);
+  const result = await page.evaluate(() => {
+    const m = window.LC.menu;
+    const petite = m.findItem('petite-frites');
+    // Simulate the initial selections shape the wizard would produce
+    // (mirrors useState init in ScreenItemWizard with new pre-select logic)
+    const lcMenu = window.LC.menu;
+    const init = {
+      meatIds: [], sauceIds: [], cruditeIds: lcMenu.defaultCruditeIds(),
+      supplementIds: [], bolSupplementIds: [], bolDrinkId: undefined,
+      menuChoice: undefined, drinkId: undefined, fritesStyleId: undefined,
+      fritesSauceIds: [], qty: 1,
+    };
+    if (petite.bol_sauce_default) {
+      const s = lcMenu.sauces.find(x => x.name === petite.bol_sauce_default);
+      if (s) init.sauceIds = [s.id];
+    }
+    if (petite.has_frites_style) {
+      const def = lcMenu.fritesStyles.find(fs => fs.is_default);
+      if (def !== undefined) init.fritesStyleId = def.id;
+    }
+    // Mirrors the heal in ScreenItemWizard useState (lines 791-810)
+    return {
+      fritesStyleIdInit: init.fritesStyleId,            // should be null (Nature)
+      canAdvanceImmediately: window.canAdvance('fritesStyle', init, petite),
+    };
+  });
+  expect(result.fritesStyleIdInit, 'Nature pre-selected (id=null)').toBeNull();
+  expect(result.canAdvanceImmediately, 'User can advance from frites step without picking').toBe(true);
+});
+
+// ============================================================================
+// L — [MASSIVE-LOGIC 2026-05-17] Allergen aggregation (FIC 1169/2011)
+// ============================================================================
+test('L — Aggregated allergens include selected supplements + drinks', async ({ page }) => {
+  await bootMobile(page);
+  const result = await page.evaluate(() => {
+    const m = window.LC.menu;
+    const sandwich = m.findItem('sandwich-classique-faluche'); // base allergens = ['gluten']
+    // Simulate the recap allergen aggregation logic (same as in screens-item-steps.jsx)
+    const selections = {
+      supplementIds: ['sup-cheddar', 'sup-oeuf'], // lactose + oeuf expected
+      bolSupplementIds: [],
+      bolDrinkId: null,
+      drinkId: null,
+    };
+    const set = new Set(sandwich.allergens || []);
+    // SUPPLEMENTS pool IDs (sup-*) distinct from catalog item slugs (supp-*)
+    (selections.supplementIds || []).forEach(id => {
+      const s = m.supplements.find(x => x.id === id);
+      ((s && s.allergens) || []).forEach(a => set.add(a));
+    });
+    return Array.from(set).sort();
+  });
+  expect(result).toContain('gluten');   // from item
+  expect(result).toContain('lactose');  // from cheddar
+  expect(result).toContain('oeuf');     // from œuf
+});
+
+// ============================================================================
+// M — [MASSIVE-LOGIC 2026-05-17] Multi-sauce extra pricing edge cases
+// ============================================================================
+test('M — Multi-sauce pricing (1 free, 0.50€ each extra)', async ({ page }) => {
+  await bootMobile(page);
+  const result = await page.evaluate(() => {
+    const m = window.LC.menu;
+    const galette = m.findItem('galette-normale'); // 6.50€
+    return {
+      zero: m.priceFor(galette, { sauceIds: [], qty: 1 }),
+      one:  m.priceFor(galette, { sauceIds: ['s-mayo'], qty: 1 }),
+      two:  m.priceFor(galette, { sauceIds: ['s-mayo', 's-ketchup'], qty: 1 }),
+      three:m.priceFor(galette, { sauceIds: ['s-mayo', 's-ketchup', 's-curry'], qty: 1 }),
+    };
+  });
+  expect(result.zero).toBeCloseTo(6.50, 2);   // no negative price bug
+  expect(result.one).toBeCloseTo(6.50, 2);    // 1 sauce free
+  expect(result.two).toBeCloseTo(7.00, 2);    // +0.50€ for 2nd
+  expect(result.three).toBeCloseTo(7.50, 2);  // +1.00€ for 2nd+3rd
+});
+
+// ============================================================================
+// N — [MASSIVE-LOGIC 2026-05-17] Bol sauce default fallback when name lookup fails
+// ============================================================================
+test('N — Bol sauce default fallback works when lookup fails', async ({ page }) => {
+  await bootMobile(page);
+  const result = await page.evaluate(() => {
+    const m = window.LC.menu;
+    // Simulate a bol with bol_sauce_default that doesn't exist in SAUCES
+    const fakeItem = { slug: 'fake-bowl', category_id: 6 };
+    const fakeProfile = m.buildBolComposerProfile(fakeItem, { bol_sauce_default: 'NonExistentSauce' });
+    // Should fall back to first sauce, not crash, not return null id
+    return {
+      hasDefault: !!fakeProfile.steps[0].default_choice_id,
+      defaultId: fakeProfile.steps[0].default_choice_id,
+    };
+  });
+  expect(result.hasDefault).toBe(true);
+  expect(result.defaultId).toBeTruthy(); // first sauce id (s-mayo)
+});
+
+// ============================================================================
+// O — [MASSIVE-LOGIC 2026-05-17] Sandwich Cayenne sauce_locked skips SAUCE step
+// ============================================================================
+test('O — Sandwich Cayenne sauce_locked produces correct step sequence', async ({ page }) => {
+  await bootMobile(page);
+  const steps = await page.evaluate(() => {
+    const m = window.LC.menu;
+    const cayenne = m.findItem('sandwich-cayenne-classique');
+    const init = { meatIds: [], sauceIds: [], cruditeIds: m.defaultCruditeIds(),
+      supplementIds: [], bolSupplementIds: [], bolDrinkId: undefined,
+      menuChoice: undefined, drinkId: undefined, fritesStyleId: undefined, fritesSauceIds: [], qty: 1 };
+    return window.computeActiveSteps(cayenne, init);
+  });
+  // sauce_locked → no 'sauce' step; viandes + crudites + supplements + menu + recap
+  expect(steps).not.toContain('sauce');
+  expect(steps).toContain('viandes');
+  expect(steps).toContain('crudites');
+  expect(steps).toContain('supplements');
+  expect(steps).toContain('menu');
+  expect(steps).toContain('recap');
+});
+
+// ============================================================================
+// P — [MASSIVE-LOGIC 2026-05-17] viande_count enforcement (Big Cayenne = 2)
+// ============================================================================
+test('P — Big Cayenne requires exactly 2 viandes to advance', async ({ page }) => {
+  await bootMobile(page);
+  const result = await page.evaluate(() => {
+    const m = window.LC.menu;
+    const big = m.findItem('big-cayenne');
+    return {
+      viandeCount: big.viande_count,
+      zeroAdvance: window.canAdvance('viandes', { meatIds: [] }, big),                          // false
+      oneAdvance:  window.canAdvance('viandes', { meatIds: ['m-marine'] }, big),               // false
+      twoAdvance:  window.canAdvance('viandes', { meatIds: ['m-marine', 'm-curry'] }, big),    // true
+    };
+  });
+  expect(result.viandeCount).toBe(2);
+  expect(result.zeroAdvance).toBe(false);
+  expect(result.oneAdvance).toBe(false);
+  expect(result.twoAdvance).toBe(true);
 });
 
 // ============================================================================

@@ -9,6 +9,7 @@ use App\Models\Item;
 use App\Models\User;
 use App\Models\Order;
 use App\Enums\TaxType;
+use App\Enums\Source;
 use App\Models\Address;
 use App\Enums\OrderType;
 use App\Models\OrderDiscountLog;
@@ -48,6 +49,7 @@ use App\Libraries\QueryExceptionLibrary;
 use Smartisan\Settings\Facades\Settings;
 use App\Http\Requests\OrderStatusRequest;
 use App\Http\Requests\PaymentStatusRequest;
+use App\Domain\Order\AutoPrepareOnPaidPolicy;
 use App\Domain\Order\OrderStateMachine;
 use App\Http\Requests\TableOrderTokenRequest;
 use App\Services\Fiscal\AuditLogService;
@@ -77,7 +79,14 @@ class OrderService
         'payment_status',
         'status',
         'delivery_boy_id',
-        'source'
+        'source',
+        // [GOAL-CAISSE-UNIFIED W-HIST 2026-05-30] Origin filter for the unified
+        // /admin/historique page. source_surface ('kiosk'|'pos'|'web'|'app') is
+        // the RELIABLE origin signal (order_type carries legacy/dirty values on
+        // this deployment, e.g. 30/4, and kiosk orders are TAKEAWAY-typed). Read
+        // path only; applied via applyOrderFilter (LIKE) — surfaces are distinct
+        // substrings so no cross-match. No write/business-rule change.
+        'source_surface'
     ];
 
     protected array $exceptFilter = [
@@ -130,13 +139,33 @@ class OrderService
                 'user'
             ])->where(function ($query) use ($requests) {
                 if (!empty($requests['from_date']) && !empty($requests['to_date'])) {
-                    $first_date = Date('Y-m-d', strtotime($requests['from_date']));
-                    $last_date = Date('Y-m-d', strtotime($requests['to_date']));
-                    $query->whereDate('order_datetime', '>=', $first_date)->whereDate(
-                        'order_datetime',
-                        '<=',
-                        $last_date
-                    );
+                    // [GOAL-G2-HEAL-04 2026-05-23] TZ-generation alignment to
+                    // Wave T R5 Paris bounds (commit 27d95e066). User-input
+                    // dates are Y-m-d Paris-local (front-end picker). The
+                    // Wave 3c heal (commit 4905138fa, 2026-05-18) converted
+                    // them to UTC ASSUMING MySQL session_tz=UTC — empirically
+                    // FALSE on this deployment (session_tz=SYSTEM=Paris
+                    // because config/database.php connections.mysql.timezone
+                    // is NULL and PDO inherits OS local). UTC bind literals
+                    // were re-interpreted as Paris-local under session_tz=
+                    // Paris, shifting the report window backward by 2h →
+                    // sales report dropped the last ~2h of every Paris day.
+                    //
+                    // Correct heal: bind Paris-local Carbon directly so
+                    // MySQL session_tz=Paris interprets at face value.
+                    // Sentinel: SisterServicesTzAwareV2Test (inverted).
+                    //
+                    // INVARIANT DEPENDENCY: assumes session_tz=OS-local
+                    // (Paris). Future connections.mysql.timezone => '+00:00'
+                    // MUST re-evaluate.
+                    $appTz = config('app.timezone');
+                    $fromParis = Carbon::parse($requests['from_date'], $appTz)
+                        ->startOfDay();
+                    $toParisExclusive = Carbon::parse($requests['to_date'], $appTz)
+                        ->addDay()
+                        ->startOfDay();
+                    $query->where('order_datetime', '>=', $fromParis)
+                          ->where('order_datetime', '<', $toParisExclusive);
                 }
                 foreach ($requests as $key => $request) {
                     if (in_array($key, $this->orderFilter)) {
@@ -155,6 +184,32 @@ class OrderService
                             } else {
                                 $query->where('pos_payment_method', abs((int) $request));
                             }
+                        } else if ($key === 'source') {
+                            // [SALES-PAR-03 heal 2026-06-01] `source` is an int enum — EXACT match
+                            // (parity with salesReportOverview), NOT the generic LIKE which would
+                            // over-match (e.g. '%5%' matching 5 and 15/50). source_surface stays LIKE.
+                            $query->where('source', (int) $request);
+                        } else if ($key === 'source_surface' && (string) $request === 'web') {
+                            // [TRAP-1 HIST-04 heal 2026-06-04] source_surface=web is the online
+                            // sentinel the Historique "En ligne" filter emits — the ONLY value the
+                            // UI sends for that button (HistoriqueListComponent.vue:337; 'app'/'mobile'
+                            // are never sent by the UI, so they stay literal LIKE matches). Applied as
+                            // the generic LIKE '%web%', it SILENTLY DROPPED legacy online orders whose
+                            // source_surface is NULL (they predate the surface tag) — yet the badge
+                            // labels them "En ligne" via the legacy `source` fallback
+                            // (HistoriqueListComponent.vue:304-311: source WEB|APP → En ligne).
+                            // Mirror the badge EXACTLY so the filter returns the same online set: any
+                            // web/app/mobile surface, OR a NULL surface whose legacy source is WEB/APP.
+                            // The web/app/mobile surface set is kept in the predicate body so a future
+                            // real app/mobile-surface row is still included when the user clicks
+                            // En-ligne. kiosk/pos surfaces (non-NULL, not online tokens) are excluded.
+                            $query->where(function ($q) {
+                                $q->whereIn('source_surface', ['web', 'app', 'mobile'])
+                                  ->orWhere(function ($qq) {
+                                      $qq->whereNull('source_surface')
+                                         ->whereIn('source', [Source::WEB, Source::APP]);
+                                  });
+                            });
                         } else {
                             $this->applyOrderFilter($query, $key, $request);
                         }
@@ -269,7 +324,15 @@ class OrderService
             $orderType = $this->sanitizeOrderDirection((string) ($request->get('order_by') ?? 'desc'));
             $branchId = (int) (Auth::user()?->branch_id ?? 0);
 
-            return Order::with('transaction', 'orderItems', 'branch', 'user')
+            // [WAVE-H-2026-05-19 bug_005 heal] Eager-load `orderItems.orderItem`
+            // (dotted) so SimpleDeliveryBoyOrderResource::resolveItemsForDriver
+            // can read `$line->orderItem?->name` without firing one
+            // `SELECT * FROM items WHERE id=?` per order_item line. The
+            // resource's `relationLoaded('orderItems')` guard only protected
+            // the FIRST hop — the inner belongsTo(Item) was still lazy and
+            // produced ~50 extra queries per 10-order × 5-item index page.
+            // Guarded by tests/Feature/Sentinels/DeliveryBoyOrderIndexNoN1SentinelTest.
+            return Order::with(['transaction', 'orderItems.orderItem', 'branch', 'user'])
                     ->where('order_type', "!=", OrderType::POS)
                     ->where('delivery_boy_id', Auth::user()->id)
                     ->when($branchId > 0, fn ($query) => $query->where('branch_id', $branchId))
@@ -341,6 +404,14 @@ class OrderService
                     $realSubtotal = $res->accumulatedSubtotal;
                     $totalTax = $res->totalTax;
                     $calculatedDiscount = $res->discount;
+                    // [GOAL-GOLIVE-VAT10 / F1-dormancy 2026-05-31 r4] The SSOT branch is
+                    // the V1 DEFAULT (pricing.use_ssot_service=true). PricingService
+                    // computes a non-zero COUPON discount here from coupon_id; the gate
+                    // in the non-SSOT else (line ~519) does NOT cover this path. Without
+                    // this call a coupon-discounted web order persists + signs a
+                    // fiscally-incorrect NF525 Z at 10% VAT (frozen F1 split). Mirrors
+                    // posOrderStore's in-SSOT gate (~813). [round-4 bypass-hunt P0]
+                    $this->assertDiscretionaryDiscountAllowed((float) $calculatedDiscount);
                     if (!blank($itemsArray)) {
                         OrderItem::insert($itemsArray);
                     }
@@ -478,6 +549,9 @@ class OrderService
                             (int) Auth::id()
                         );
                         $calculatedDiscount = $this->couponService->calculateDiscountAmount($coupon, (float) $realSubtotal);
+                        // [GOAL-GOLIVE-VAT10 / F1-dormancy 2026-05-30] Coupon discount
+                        // hits the same frozen F1 split at 10% VAT → refuse in V1.
+                        $this->assertDiscretionaryDiscountAllowed((float) $calculatedDiscount);
                     }
                 }
 
@@ -522,21 +596,43 @@ class OrderService
                     ]);
                 }
 
+                // [F-9 OBS RED-RED1 V1.0.1 quick win — 2026-05-19]
+                // Drop the customer name from ActionLog.details (RGPD 5(1)(c)
+                // minimisation). user_id is already persisted on this row and
+                // is the canonical forensic lookup key.
+                // Source: reports/audit/foundation-2026-05-18/round-1/F-9-OBS/STATUS.md §HEAL RED-RED1
+                // Sentinel: tests/Feature/Sentinels/ActionLogPiiRedactionSentinelTest.php
                 \App\Models\ActionLog::create([
                     'user_id'  => Auth::check() ? Auth::id() : null,
                     'action'   => 'Nouvelle commande Web/App',
                     'resource' => 'Commande #' . $this->order->order_serial_no,
                     'details'  => sprintf(
-                        'Auteur: %s | Total: %s€ | Taxe: %s€ | Remise: %s€',
-                        Auth::check() ? Auth::user()->name : 'Client anonyme',
+                        'Total: %s€ | Taxe: %s€ | Remise: %s€',
                         number_format($this->order->total, 2),
                         number_format($totalTax, 2),
                         number_format($calculatedDiscount, 2)
                     ),
                 ]);
+
+                // [Wave M / Heal Z2 P1 — 2026-05-19] OrderCreated::dispatch moved
+                // INSIDE the closure so the DispatchableAfterCommit trait
+                // (`app/Events/Concerns/DispatchableAfterCommit.php:31-39`)
+                // engages: transactionLevel()>0 → registers via afterCommit().
+                // Net runtime semantics are equivalent to the previous
+                // outside-closure pattern (broadcast fires after commit), but
+                // they are now ENFORCED by the trait instead of by control
+                // flow — locking the rollback-safety guarantee advertised in
+                // `app/Events/OrderCreated.php:14-17`. Sentinel:
+                // `tests/Feature/Sync/OrderCreatedDispatchPlacementSentinelTest`.
+                // Audit reference: RED-Z2 §B P1.
+                \App\Events\OrderCreated::dispatch($this->order);
             });
 
-            // [BUG-C1 FIX] Dispatch notifications AFTER transaction commit — prevents ghost KDS orders on rollback
+            // Notifications (mail / SMS / push queue jobs) remain post-commit
+            // via control flow — their dispatch is dropped if the closure
+            // above throws (we never reach this block). The OrderCreated
+            // broadcast event is now dispatched INSIDE the closure for
+            // afterCommit() enforcement (see Wave M heal note inside).
             try {
                 SendOrderMail::dispatch(['order_id' => $this->order->id, 'status' => OrderStatus::PENDING]);
                 SendOrderSms::dispatch(['order_id' => $this->order->id, 'status' => OrderStatus::PENDING]);
@@ -544,8 +640,6 @@ class OrderService
                 SendOrderGotMail::dispatch(['order_id' => $this->order->id]);
                 SendOrderGotSms::dispatch(['order_id' => $this->order->id]);
                 SendOrderGotPush::dispatch(['order_id' => $this->order->id]);
-                // [PHASE-E] Broadcast via Soketi WebSockets
-                \App\Events\OrderCreated::dispatch($this->order);
             } catch (\Exception $e) {
                 Log::warning('Notifications post-commande Web/App échouées pour order #' . $this->order->id . ': ' . $e->getMessage());
             }
@@ -589,7 +683,11 @@ class OrderService
                 10
             );
             $idempotencyLock->block(5);
-            $existing = $this->findExistingOrderForIdempotencyRecovery($idempotencyKey, $targetBranchId);
+            // [H2-HEAL-01] Pass customer_id as $userId so recovery is scoped
+            // (branch, customer, key) — closes cross-customer collision case.
+            // Empty/0 → null so anonymous walk-ins keep (branch, key) recovery.
+            $recoveryCustomerId = ((int) ($request->customer_id ?? 0)) ?: null;
+            $existing = $this->findExistingOrderForIdempotencyRecovery($idempotencyKey, $targetBranchId, $recoveryCustomerId);
             if ($existing) {
                 $idempotencyLock?->release();
                 return $existing;
@@ -611,6 +709,22 @@ class OrderService
                     $validated['idempotency_key'] = substr($idempotencyKey, 0, 64);
                 }
 
+                // [GOAL-CAISSE-UNIFIED delta-(B) 2026-05-30] Walk-in → counter
+                // collection routing. When pos.walkin_route_to_counter is ON (or
+                // the request opts in per-order), the POS walk-in order is created
+                // DEFERRED — identical markers to the kiosk Plan B cash-at-counter
+                // path (FrontendOrderService:266-267): PENDING_COUNTER +
+                // COUNTER_DEFERRED + CASH_ON_DELIVERY. It then joins the unified
+                // /admin/encaissement queue and is sealed (PAID + fiscal_sequence_no
+                // allocated, gap-free) ONLY via PaymentService::confirmCounterPayment
+                // at collection — NEVER here. Default OFF preserves inline-paid POS.
+                $deferToCounter = config('pos.walkin_route_to_counter') === true
+                    || $request->boolean('defer_to_counter');
+                if ($deferToCounter) {
+                    $validated['payment_method'] = \App\Enums\PaymentGateway::CASH_ON_DELIVERY;
+                    $validated['pos_payment_method'] = \App\Enums\PosPaymentMethod::COUNTER_DEFERRED;
+                }
+
                 // [AUDIT-P1-A] Validate branch_id ownership: cashier can only create orders for their own branch.
                 // Only a real global Admin (Admin role + branch_id=0) can create orders for any branch.
                 $authUser = \Illuminate\Support\Facades\Auth::user();
@@ -623,12 +737,50 @@ class OrderService
                     );
                 }
 
+                // [Wave S-1 — P-OWNER 2026-05-20] POS direct sale (cash or
+                // TPE) is always paid + created at the same moment, so the
+                // legacy `status = ACCEPT` is the perfect hook for the
+                // owner's "auto-prepare on paid" decision. The policy
+                // resolves to PREPARING when `pos.auto_prepare_on_paid=true`
+                // (default), or ACCEPT when env-overridden to false for
+                // emergency rollback. No S-5 exception applies here —
+                // POS direct sales never use the kiosk cash-at-counter
+                // (counter-deferred) path.
+                //
+                // Setting the final status at creation avoids an extra
+                // save() + UPDATE round-trip and ensures OrderCreated
+                // (dispatched at line 1088 inside the same tx) encodes
+                // the correct status payload for KDS.
+                // [GOAL-CAISSE-UNIFIED delta-(B) 2026-05-30] When deferring to the
+                // counter, this is a counter-collect order (kitchen prepares before
+                // pay, per W-D1) — same policy input the kiosk cash-at-counter path
+                // uses, so the order still auto-promotes to PREPARING.
+                $posInitialStatus = AutoPrepareOnPaidPolicy::shouldPromote(
+                    surface: 'pos',
+                    posPaymentMethod: null,
+                    isCounterCollect: $deferToCounter,
+                )
+                    ? AutoPrepareOnPaidPolicy::nextStatus()
+                    : OrderStatus::ACCEPT;
+
                 $this->order = Order::create(
                     $validated + [
                         'user_id' => $request->customer_id,
-                        'status' => OrderStatus::ACCEPT,
+                        // [H.1 P1 AMBER 2026-05-24 / H2-HEAL-02] NF525 6-year
+                        // traceability: orders.user_id stores the customer
+                        // (Walking Customer id=2 for anonymous POS), NOT the
+                        // cashier. Persist the operator on creator_id so
+                        // "which cashier opened order X?" is answerable from
+                        // a persisted column (in addition to the audit_logs
+                        // 'order.created.pos' event written below for the
+                        // tamper-evident HMAC chain).
+                        'creator_id' => Auth::check() ? (int) Auth::id() : null,
+                        'status' => $posInitialStatus,
                         'token' => $request->token,
-                        'payment_status' => PaymentStatus::PAID,
+                        // [GOAL-CAISSE-UNIFIED delta-(B)] PENDING_COUNTER when the
+                        // walk-in is routed to the unified collection queue; PAID
+                        // for the legacy inline-paid-at-creation flow (default).
+                        'payment_status' => $deferToCounter ? PaymentStatus::PENDING_COUNTER : PaymentStatus::PAID,
                         'order_datetime' => date('Y-m-d H:i:s'),
                         'preparation_time' => (int) (Settings::group('order_setup')->get('order_setup_food_preparation_time') ?? 15),
                         'total'    => 0,
@@ -636,6 +788,28 @@ class OrderService
                         'discount' => 0,
                     ]
                 );
+
+                // [Wave S-1] Record the auto-prepare transition for the
+                // OrderStatusTransition audit trail. The order was created
+                // directly in PREPARING (no intermediate ACCEPT row), so we
+                // mirror the conceptual PENDING → ACCEPT → PREPARING ladder
+                // by recording PENDING → PREPARING — the same single-row
+                // collapsing pattern used at line ~599 of myOrderStore for
+                // the auto-accept variant (PENDING → ACCEPT). The reason
+                // field tags this as auto-prepare so downstream reconciliation
+                // can distinguish from a chef-tap PREPARING. Best-effort:
+                // recordTransition swallows its own DB exceptions (see
+                // OrderStateMachine line 156-158) and is safe to call here.
+                if ($posInitialStatus === OrderStatus::PREPARING) {
+                    OrderStateMachine::recordTransition(
+                        Order::class,
+                        (int) $this->order->id,
+                        OrderStatus::PENDING,
+                        OrderStatus::PREPARING,
+                        Auth::check() ? (int) Auth::id() : null,
+                        'auto_prepare_on_paid (Wave S-1 POS direct sale)',
+                    );
+                }
 
                 $requestItems = $this->safeJsonDecode($request->items);
                 $requestItems = is_array($requestItems) ? $requestItems : [];
@@ -666,6 +840,12 @@ class OrderService
                             (string) $request->discount_reason
                         );
                     }
+                    // [GOAL-GOLIVE-VAT10 / F1-dormancy 2026-05-30] Catch the COUPON
+                    // discount path too (it skips assertPosManualDiscountAllowed
+                    // above). ANY non-zero discount at 10% VAT triggers the frozen
+                    // F1 split defect → fiscally-incorrect signed Z. The V1 gate
+                    // refuses every discretionary discount source.
+                    $this->assertDiscretionaryDiscountAllowed((float) $calculatedDiscount);
                     // [POS-9.4.BL.1] Persist immutable allergen snapshot on each
                     // order_item row for NF525 fiscal traceability (must be frozen
                     // at order time, not read through a live FK join later).
@@ -838,6 +1018,9 @@ class OrderService
                             (int) ($request->customer_id ?? 0)
                         );
                         $calculatedDiscount = $this->couponService->calculateDiscountAmount($coupon, (float) $realSubtotal);
+                        // [GOAL-GOLIVE-VAT10 / F1-dormancy 2026-05-30] Coupon discount
+                        // → same frozen F1 split at 10% VAT → refuse in V1.
+                        $this->assertDiscretionaryDiscountAllowed((float) $calculatedDiscount);
                     } elseif ($request->discount > 0) {
                         // [AUDIT-FIX P1-3] Manual cashier discount — validated server-side, will be logged below
                         $manualDiscount = (float) $request->discount;
@@ -919,8 +1102,21 @@ class OrderService
                     // transaction rolls back, no sequence number is effectively
                     // "consumed" (next call sees the same MAX again). NF525 requires
                     // strictly monotonic gap-free numbering per branch.
-                    $this->order->fiscal_sequence_no = app(FiscalSequenceService::class)
-                        ->next((int) $this->order->branch_id);
+                    //
+                    // [GOAL-CAISSE-UNIFIED delta-(B) 2026-05-30] DEFER the allocation
+                    // for the counter-collect path: a deferred walk-in (PENDING_COUNTER
+                    // + COUNTER_DEFERRED) is NOT a sale yet, so it must NOT consume a
+                    // fiscal number here — the seq is allocated once, at collection,
+                    // by PaymentService::confirmCounterPayment (mirrors kiosk Plan B).
+                    // Allocating here would burn a number for a sale that may be
+                    // cancelled before payment → NF525 gap. Recomputed locally from
+                    // the same config/request signal used above (inner closure).
+                    $deferToCounterFiscal = config('pos.walkin_route_to_counter') === true
+                        || $request->boolean('defer_to_counter');
+                    if (! $deferToCounterFiscal) {
+                        $this->order->fiscal_sequence_no = app(FiscalSequenceService::class)
+                            ->next((int) $this->order->branch_id);
+                    }
                 }, 'pos');
 
                 // [BUG-C3 FIX] Create OrderCoupon record for POS orders — tracks coupon usage per order
@@ -998,6 +1194,38 @@ class OrderService
                     ]);
                 }
 
+                // [H.1 P1 AMBER 2026-05-24 / H2-HEAL-02] NF525 6-year traceability:
+                // append cashier attribution event on the HMAC chain. Phase H.1
+                // audit caught audit_logs delta=0 after POS order create POSTs —
+                // making it impossible to answer "which cashier opened order X?"
+                // tamper-evidently. Written INSIDE the same DB::transaction as
+                // Order::create + OrderItem::insert so either everything commits
+                // (order + chain row in lockstep) or everything rolls back. Same
+                // call-site shape as the discount audit above. Frozen AuditLogService
+                // is called via the public write() API — its code is unchanged.
+                app(AuditLogService::class)->write([
+                    'branch_id'   => (int) $this->order->branch_id,
+                    'user_id'     => Auth::check() ? (int) Auth::id() : null,
+                    'action'      => 'order.created.pos',
+                    'resource'    => 'order',
+                    'resource_id' => (int) $this->order->id,
+                    'payload'     => [
+                        'order_id'           => (int) $this->order->id,
+                        'order_serial_no'    => (string) $this->order->order_serial_no,
+                        'cashier_id'         => Auth::check() ? (int) Auth::id() : null,
+                        'cashier_name'       => Auth::check() ? (string) (Auth::user()->name ?? '') : null,
+                        'branch_id'          => (int) $this->order->branch_id,
+                        'customer_id'        => (int) ($this->order->user_id ?? 0),
+                        'order_type'         => (int) $this->order->order_type,
+                        'pos_payment_method' => (int) ($this->order->pos_payment_method ?? 0),
+                        'payment_status'     => (int) $this->order->payment_status,
+                        'status'             => (int) $this->order->status,
+                        'total'              => round((float) $this->order->total, 2),
+                        'subtotal'           => round((float) $this->order->subtotal, 2),
+                        'discount'           => round((float) $this->order->discount, 2),
+                    ],
+                ]);
+
                 // [F-SPLIT-PAYMENT-001] Persist multi-tender breakdown when provided.
                 //
                 // - Strictly additive : legacy `pos_payment_method` + `pos_received_amount`
@@ -1039,16 +1267,24 @@ class OrderService
                 }
 
                 $order = $this->order;
+
+                // [Wave M / Heal Z2 P1 — 2026-05-19] OrderCreated::dispatch moved
+                // INSIDE the closure so DispatchableAfterCommit engages
+                // (transactionLevel()>0 → afterCommit). On rollback the
+                // broadcast is dropped — KDS never observes a ghost order
+                // (POS cash close path). Sentinel:
+                // `tests/Feature/Sync/OrderCreatedDispatchPlacementSentinelTest`.
+                \App\Events\OrderCreated::dispatch($order);
             });
-            
-            // Dispatcher notifications APRÈS transaction (hors transaction)
+
+            // Notifications (mail / SMS / push queue jobs) remain post-commit
+            // via control flow. OrderCreated broadcast was moved INSIDE the
+            // closure (Wave M heal) for trait-mediated afterCommit().
             if ($order) {
                 try {
                     SendOrderGotMail::dispatch(['order_id' => $order->id]);
                     SendOrderGotSms::dispatch(['order_id' => $order->id]);
                     SendOrderGotPush::dispatch(['order_id' => $order->id]);
-                    // [PHASE-E] Broadcast via Soketi WebSockets (no-op if BROADCAST_DRIVER=null)
-                    \App\Events\OrderCreated::dispatch($order);
                 } catch (\Exception $e) {
                     Log::warning('Notification KDS échouée pour order #' . $order->id . ': ' . $e->getMessage());
                 }
@@ -1074,7 +1310,12 @@ class OrderService
             // Return the existing order gracefully instead of a 500 error.
             if ($qe->getCode() === '23000' && $idempotencyKey) {
                 $targetBranchId = (int) ($request->branch_id ?: 0); // allow: idempotency recovery scope only
-                $existing = $this->findExistingOrderForIdempotencyRecovery($idempotencyKey, $targetBranchId);
+                // [H2-HEAL-01] Pass customer_id as $userId — matches the new
+                // (branch_id, user_id, idempotency_key) UNIQUE so the race
+                // recovery resolves to the correct row when a different
+                // customer collided on the same key.
+                $recoveryCustomerId = ((int) ($request->customer_id ?? 0)) ?: null;
+                $existing = $this->findExistingOrderForIdempotencyRecovery($idempotencyKey, $targetBranchId, $recoveryCustomerId);
                 if ($existing) {
                     Log::info('[POS Idempotency] Duplicate key caught at DB level — returning existing order #' . $existing->id);
                     return $existing;
@@ -1094,6 +1335,19 @@ class OrderService
      */
     public function tableOrderStore(TableOrderRequest $request): object
     {
+        // [GOAL-2026-05-29 SEC-P1 QR-DISCOUNT] The table-order endpoint
+        // (POST /api/.../dining-order/) is UNAUTHENTICATED (QR code, apiKey only).
+        // The POS paths gate manual discounts via assertPosManualDiscountAllowed
+        // (which fails-closed without an authenticated staff user), but the table
+        // path had NO such gate — an anonymous customer could self-apply an
+        // arbitrary manual discount up to 100% of subtotal (pricing-SSOT
+        // authorization bypass; the under-priced total can reach the signed
+        // NF525 Z-report if the order is later counter-paid). A QR customer can
+        // never authorize a staff discount, so we neutralize the request-supplied
+        // manual discount at the source. Coupons (coupon_id, server-validated by
+        // CouponService) are unaffected — only the staff-only manual discount.
+        $request->merge(['discount' => 0]);
+
         try {
             DB::transaction(function () use ($request) {
                 $validated = $request->validated();
@@ -1132,6 +1386,13 @@ class OrderService
                     $realSubtotal = $tableSsotPricingResult->accumulatedSubtotal;
                     $totalTax = $tableSsotPricingResult->totalTax;
                     $calculatedDiscount = $tableSsotPricingResult->discount;
+                    // [GOAL-GOLIVE-VAT10 / F1-dormancy 2026-05-31 r4] SSOT branch = V1
+                    // DEFAULT. The manual discount is zeroed at method entry, but a
+                    // COUPON discount (coupon_id) is still computed here and was NOT
+                    // gated — the gate at line ~1514 lives in the non-SSOT else. Refuse
+                    // it so a coupon-discounted table order cannot sign a fiscally-
+                    // incorrect Z. Mirrors posOrderStore's in-SSOT gate (~813). [round-4 P0]
+                    $this->assertDiscretionaryDiscountAllowed((float) $calculatedDiscount);
                     if (!blank($itemsArray)) {
                         OrderItem::insert($itemsArray);
                     }
@@ -1290,6 +1551,9 @@ class OrderService
                             (int) ($request->customer_id ?? 0)
                         );
                         $calculatedDiscount = $this->couponService->calculateDiscountAmount($coupon, (float) $realSubtotal);
+                        // [GOAL-GOLIVE-VAT10 / F1-dormancy 2026-05-30] Coupon discount
+                        // → same frozen F1 split at 10% VAT → refuse in V1.
+                        $this->assertDiscretionaryDiscountAllowed((float) $calculatedDiscount);
                     } elseif ($request->discount > 0) {
                         // [AUDIT-FIX P1-3] Manual cashier discount — validated server-side, will be logged below
                         $manualDiscount = (float) $request->discount;
@@ -1350,15 +1614,23 @@ class OrderService
                     'resource' => 'Commande #' . $this->order->order_serial_no,
                     'details'  => sprintf('Créée via QR Code Dine-in | Total: %s€ | %s', number_format($this->order->total, 2), $discountDetail),
                 ]);
+
+                // [Wave M / Heal Z2 P1 — 2026-05-19] OrderCreated::dispatch moved
+                // INSIDE the closure so DispatchableAfterCommit engages
+                // (transactionLevel()>0 → afterCommit). On rollback the
+                // broadcast is dropped — KDS never observes a ghost order
+                // (dine-in QR path). Sentinel:
+                // `tests/Feature/Sync/OrderCreatedDispatchPlacementSentinelTest`.
+                \App\Events\OrderCreated::dispatch($this->order);
             });
 
-            // [BUG-C1 FIX] Dispatch notifications AFTER transaction commit — prevents ghost KDS orders on rollback
+            // Notifications (mail / SMS / push queue jobs) remain post-commit
+            // via control flow. OrderCreated broadcast was moved INSIDE the
+            // closure (Wave M heal) for trait-mediated afterCommit().
             try {
                 SendOrderGotMail::dispatch(['order_id' => $this->order->id]);
                 SendOrderGotSms::dispatch(['order_id' => $this->order->id]);
                 SendOrderGotPush::dispatch(['order_id' => $this->order->id]);
-                // [PHASE-E] Broadcast via Soketi WebSockets
-                \App\Events\OrderCreated::dispatch($this->order);
             } catch (\Exception $e) {
                 Log::warning('Notifications post-commande Table échouées pour order #' . $this->order->id . ': ' . $e->getMessage());
             }
@@ -1512,7 +1784,16 @@ class OrderService
             // Notifications + OrderStatusChanged broadcast are deferred to
             // afterCommit so listeners (OSS, KDS, loyalty) never observe a
             // half-written state nor fire if the transaction rolls back.
-            DB::transaction(function () use (&$order, $oldStatus, $newStatus) {
+            //
+            // [GOAL-2026-05-18 P0-LIV-02 / P0-LIV-03] Cash collection at the
+            // doorstep MUST leave an NF525 audit_log trail, and a corrupt
+            // `payment_method` MUST NOT silently flip the row to PAID (double
+            // charge risk). Both guards execute INSIDE the locked transaction
+            // so the row read is the truth-of-record and the audit row commits
+            // atomically with the status mutation.
+            $cashEscrowWritten = false;
+            $cashEscrowMeta    = null;
+            DB::transaction(function () use (&$order, $oldStatus, $newStatus, &$cashEscrowWritten, &$cashEscrowMeta) {
                 $locked = Order::query()->whereKey($order->id)->lockForUpdate()->firstOrFail();
 
                 // Idempotent: if a concurrent caller already applied the
@@ -1522,9 +1803,96 @@ class OrderService
                     return;
                 }
 
+                // [GOAL-2026-05-29 F3] Race guard: re-validate the transition against
+                // the FRESH locked status. The pre-lock check (line 1670) used the
+                // possibly-stale $order->status; a concurrent transition could have
+                // moved the row, making the originally-valid edge illegal.
+                if (!(new \App\Rules\ValidStatusTransition((int) $locked->status))->passes('status', $newStatus)) {
+                    throw new Exception(trans('all.message.invalid_status_transition'), 422);
+                }
+
                 $transaction = Transaction::where('order_id', $locked->id)->first();
-                if (!$transaction && $locked->payment_status == PaymentStatus::UNPAID) {
-                    $locked->payment_status = PaymentStatus::PAID;
+                $wasUnpaidCash = (! $transaction)
+                    && (int) $locked->payment_status === (int) PaymentStatus::UNPAID;
+
+                if ($wasUnpaidCash) {
+                    // [P0-LIV-03] Guard payment_method against silent double-charge.
+                    // Only the recognised PaymentGateway constants (1..5) may
+                    // trigger the auto-flip to PAID. A corrupt / null / out-of-
+                    // range value is treated as a data-integrity failure and the
+                    // whole transition aborts (HttpException 422 so the caller
+                    // surfaces the actual problem instead of silently corrupting
+                    // financials).
+                    $pm = $locked->payment_method;
+                    $allowed = [
+                        \App\Enums\PaymentGateway::CASH_ON_DELIVERY,
+                        \App\Enums\PaymentGateway::E_WALLET,
+                        \App\Enums\PaymentGateway::PAYPAL,
+                        \App\Enums\PaymentGateway::CARD,
+                        \App\Enums\PaymentGateway::TICKET_RESTAURANT,
+                    ];
+                    if ($pm === null || ! is_numeric($pm) || ! in_array((int) $pm, $allowed, true)) {
+                        abort(422, 'Refusing to auto-mark order PAID: payment_method is missing or out of the allowed enum range.');
+                    }
+
+                    // [WH-2 bug_002 / 2026-05-19] Gate the payment_status →
+                    // PAID flip on the canonical legal anchor.
+                    //
+                    // BEFORE: $locked->payment_status flipped to PAID
+                    // UNCONDITIONALLY on every transition that hit
+                    // $wasUnpaidCash. On the canonical 2-step driver flow
+                    // (PREPARED→OFD then OFD→DELIVERED) the flip fired at
+                    // call 1 (OFD), so on call 2 (DELIVERED) the order was
+                    // already PAID, $wasUnpaidCash was false, and the
+                    // inner `if (CASH_ON_DELIVERY && DELIVERED)` block —
+                    // which contains the audit row capture — was skipped
+                    // entirely. Net: ZERO `delivery.cash_collected_escrow`
+                    // rows on the canonical 2-step flow, violating NF525.
+                    //
+                    // AFTER: for CASH_ON_DELIVERY we delay the PAID flip
+                    // until newStatus === DELIVERED. This is the
+                    // legally-correct anchor — cash is collected at the
+                    // doorstep, not at pickup — AND it ensures the audit
+                    // row capture downstream fires on the SAME locked
+                    // transaction that performs the flip, so the chain
+                    // gains exactly one row per cash delivery regardless
+                    // of single-jump or 2-step path.
+                    //
+                    // For non-COD methods (E_WALLET / PAYPAL / CARD /
+                    // TICKET_RESTAURANT) that somehow reached the driver
+                    // still UNPAID (an unusual but observed edge case —
+                    // e.g. card auth captured late), the prior flip-at-
+                    // OFD-or-DELIVERED behaviour is preserved verbatim.
+                    // Those flows never wrote an escrow row anyway.
+                    $isCod = ((int) $pm === (int) \App\Enums\PaymentGateway::CASH_ON_DELIVERY);
+                    $atDelivered = ((int) $newStatus === (int) OrderStatus::DELIVERED);
+
+                    if ($isCod) {
+                        if ($atDelivered) {
+                            $locked->payment_status = PaymentStatus::PAID;
+
+                            // [P0-LIV-02] Record the cash-collection event
+                            // for NF525. The escrow row is the audit-trail
+                            // anchor between "collected at doorstep" and
+                            // "deposited at branch".
+                            $cashEscrowWritten = true;
+                            $cashEscrowMeta = [
+                                'branch_id' => (int) $locked->branch_id,
+                                'order_id'  => (int) $locked->id,
+                                'driver_id' => Auth::check() ? (int) Auth::id() : null,
+                                'amount'    => round((float) $locked->total, 2),
+                                'serial'    => $locked->order_serial_no,
+                            ];
+                        }
+                        // CASH_ON_DELIVERY at OFD: leave payment_status =
+                        // UNPAID. The flip + audit row will fire on the
+                        // next call (OFD → DELIVERED), which re-enters
+                        // this branch with $wasUnpaidCash still true.
+                    } else {
+                        // Non-COD methods preserve the legacy flip semantics
+                        // (flip at OFD-or-DELIVERED, no escrow row).
+                        $locked->payment_status = PaymentStatus::PAID;
+                    }
                 }
 
                 $locked->status = $newStatus;
@@ -1541,6 +1909,82 @@ class OrderService
 
                 $order = $locked;
             });
+
+            if ($cashEscrowWritten && is_array($cashEscrowMeta)) {
+                // [P0-LIV-02] Append AFTER the transaction commits so the chain
+                // tail is read against the persisted state. AuditLogService has
+                // its own Cache::lock + DB::transaction inside write() (see
+                // POS-9-H.2.2 / F-C3 doc-block), so calling it post-commit
+                // keeps the HMAC chain ordering deterministic.
+                try {
+                    app(AuditLogService::class)->write([
+                        'branch_id'   => $cashEscrowMeta['branch_id'],
+                        'user_id'     => $cashEscrowMeta['driver_id'],
+                        'action'      => 'delivery.cash_collected_escrow',
+                        'resource'    => 'order',
+                        'resource_id' => $cashEscrowMeta['order_id'],
+                        'payload'     => [
+                            'order_id'           => $cashEscrowMeta['order_id'],
+                            'order_serial_no'    => $cashEscrowMeta['serial'],
+                            'amount_collected'   => $cashEscrowMeta['amount'],
+                            'delivery_boy_id'    => $cashEscrowMeta['driver_id'],
+                            'payment_method'     => (int) \App\Enums\PaymentGateway::CASH_ON_DELIVERY,
+                            'collected_at'       => now()->toIso8601String(),
+                            'event'              => 'doorstep_cash_collection',
+                        ],
+                    ]);
+                } catch (\Throwable $auditError) {
+                    // Never let an audit write error cascade into a billing
+                    // rollback — NF525 chain breakage is surfaced via
+                    // verifyChain() + ops alerting, not via a customer-facing
+                    // 5xx mid-delivery. Log + continue.
+                    Log::warning('[DeliveryBoy] cash-collection audit_log write failed: ' . $auditError->getMessage(), [
+                        'order_id' => $cashEscrowMeta['order_id'],
+                    ]);
+                }
+
+                // [R2-P1-LIV-DELIVERED-HOOK 2026-05-28] Mirror cash-collection
+                // into DeliveryBoyCashSession when driver has an open shift.
+                // ZReportCashEnrichmentService:489 cross-checks audit_logs
+                // action='cash.delivery.movement.recorded' against
+                // delivery_boy_cash_movements rows; without this call the
+                // count_mismatch / movement_missing_audit_row drift surfaces
+                // on every COD DELIVERED. Best-effort (non-strict) — if no
+                // open shift, skip silently so DELIVERED stays unblocked.
+                try {
+                    if (! empty($cashEscrowMeta['driver_id'])) {
+                        $svc = app(\App\Services\Delivery\DeliveryBoyCashSessionService::class);
+                        $openSession = $svc->findOpenSessionForDeliveryBoy(
+                            (int) $cashEscrowMeta['branch_id'],
+                            (int) $cashEscrowMeta['driver_id'],
+                        );
+                        if ($openSession) {
+                            $svc->recordMovement(
+                                (int) $openSession->id,
+                                \App\Models\DeliveryBoyCashMovement::TYPE_ORDER_COLLECT,
+                                (float) $cashEscrowMeta['amount'],
+                                \App\Models\DeliveryBoyCashMovement::DIRECTION_IN,
+                                (int) $cashEscrowMeta['order_id'],
+                                null,
+                                false,
+                            );
+                        }
+                    }
+                } catch (\Throwable $movementError) {
+                    // [R3-RD-03 2026-05-28] Severity bumped warning→error per
+                    // RED-team dispute: 422 race (session closed between find
+                    // + recordMovement) silently drifts audit_logs vs
+                    // delivery_boy_cash_movements. ZReportCashEnrichmentService
+                    // cross-check surfaces it end-of-day; error log + payload
+                    // give ops earlier signal without blocking DELIVERED.
+                    Log::error('[DeliveryBoy] cash-session recordMovement drift (non-blocking): ' . $movementError->getMessage(), [
+                        'order_id'  => $cashEscrowMeta['order_id'],
+                        'driver_id' => $cashEscrowMeta['driver_id'],
+                        'branch_id' => $cashEscrowMeta['branch_id'],
+                        'amount'    => $cashEscrowMeta['amount'],
+                    ]);
+                }
+            }
 
             // Dispatch notifications + broadcast AFTER the transaction has
             // committed so jobs and listeners always read the persisted state.
@@ -1593,6 +2037,14 @@ class OrderService
                             return [$locked, (int) $locked->status, true];
                         }
                         $previousStatus = (int) $locked->status;
+                        // [GOAL-2026-05-29 F3] Race guard: re-validate the transition
+                        // against the FRESH locked status (the pre-lock check at line
+                        // 1909 used the possibly-stale route-bound $order->status; a
+                        // concurrent transition could have moved the row, making the
+                        // originally-valid edge illegal — e.g. DELIVERED->CANCELED).
+                        if (!(new \App\Rules\ValidStatusTransition($previousStatus))->passes('status', $targetStatus)) {
+                            throw new Exception(trans('all.message.invalid_status_transition'), 422);
+                        }
                         if ($request->reason) {
                             $locked->reason = $request->reason;
                         }
@@ -1645,20 +2097,53 @@ class OrderService
                 }
             } else {
                 // [CYCLE-002b] Atomic branch check, cashback, status save + ActionLog; notifications after commit.
+                // [GOAL-K2-HEAL-02 2026-05-24 K.2 H5 P1] Re-fetch order with
+                // lockForUpdate inside the transaction to prevent multi-cashier
+                // POS Livré race. Without this, 2 cashiers clicking Livré on
+                // the same PREPARED order both read the same in-memory
+                // route-bound model, both passed the idempotent gate, and
+                // both wrote `order_status_transitions` + `action_logs` rows
+                // → ambiguous "who delivered" attribution. Mirrors the
+                // existing self-cancel pattern at lines 1871-1901 in this
+                // same method + PaymentService::confirmCounterPayment:219-249
+                // + KitchenDisplaySystemOrderService::changeStatus:257-261.
+                //
+                // After the closure mutates $locked, we sync attributes back
+                // to the route-bound $order via setRawAttributes() so the
+                // post-tx SendOrderMail/Sms/Push + OrderStatusChanged +
+                // OrderCanceled dispatches at lines 2049-2068 read fresh
+                // persisted state, not stale pre-lock attributes.
                 $oldStatusForBroadcast = null;
                 DB::transaction(function () use ($order, $request, $targetStatus, &$oldStatusForBroadcast) {
+                    $locked = Order::query()->whereKey($order->id)->lockForUpdate()->firstOrFail();
+
                     // [AUDIT-FIX P0-2 / POS-9-H.1.1] Branch isolation: non-Admin staff can only modify orders of their branch.
                     // Use abort() so the 403 is a real HttpException and bubbles untouched through the generic catch below.
                     if (Auth::check() && !Auth::user()->hasRole('Admin')) {
                         $userBranch = Auth::user()->branch_id ?? null;
-                        if ($userBranch && (int) $userBranch !== (int) $order->branch_id) {
+                        if ($userBranch && (int) $userBranch !== (int) $locked->branch_id) {
                             abort(403, 'Accès refusé : cette commande appartient à une autre succursale.');
                         }
                     }
 
                     $toStatus = $targetStatus;
-                    if ((int) $order->status === $toStatus) {
+                    if ((int) $locked->status === $toStatus) {
+                        // Idempotent: another concurrent request already won.
+                        // Sync route-bound model so caller observes the
+                        // already-persisted state and post-tx code short-
+                        // circuits via the $oldStatusForBroadcast===null guard.
+                        $order->setRawAttributes($locked->getAttributes(), true);
                         return;
+                    }
+
+                    // [GOAL-2026-05-29 F3] Race guard: re-validate the transition
+                    // against the FRESH locked status. The pre-lock check (line 1909)
+                    // used the route-bound $order->status; a concurrent transition may
+                    // have superseded it before we acquired the lock — persisting the
+                    // originally-valid transition could write an illegal state-machine
+                    // edge (e.g. CANCELED->DELIVERED, DELIVERED->OUT_FOR_DELIVERY).
+                    if (!(new \App\Rules\ValidStatusTransition((int) $locked->status))->passes('status', $toStatus)) {
+                        throw new Exception(trans('all.message.invalid_status_transition'), 422);
                     }
 
                     // [P3] RETURNED — même barrière motif / contrepartie que CANCELED & REJECTED.
@@ -1675,15 +2160,15 @@ class OrderService
                         if ($toStatus === OrderStatus::RETURNED) {
                             try {
                                 app(\App\Services\Order\SealedOrderGuard::class)
-                                    ->assertMutable($order, 'changeStatus → RETURNED');
+                                    ->assertMutable($locked, 'changeStatus → RETURNED');
                             } catch (\App\Exceptions\OrderSealedException $sealedEx) {
                                 try {
                                     app(\App\Services\Fiscal\AuditLogService::class)->write([
-                                        'branch_id'   => (int) $order->branch_id,
+                                        'branch_id'   => (int) $locked->branch_id,
                                         'user_id'     => Auth::check() ? (int) Auth::id() : null,
                                         'action'      => 'pos.refund.post_z_blocked',
                                         'resource'    => 'order',
-                                        'resource_id' => (int) $order->id,
+                                        'resource_id' => (int) $locked->id,
                                         'payload'     => [
                                             'attempted_transition' => 'RETURNED',
                                             'sealed_by_z_id'       => $sealedEx->sealedByZReportId,
@@ -1698,25 +2183,25 @@ class OrderService
                         }
 
                         if ($request->reason) {
-                            $order->reason = $request->reason;
+                            $locked->reason = $request->reason;
                         }
-                        if ($order->transaction) {
+                        if ($locked->transaction) {
                             app(PaymentService::class)->cashBack(
-                                $order,
+                                $locked,
                                 'credit',
                                 'TXN-' . \Illuminate\Support\Str::random(12)
                             );
                         }
-                        app(LoyaltyService::class)->refundPoints($order, 'pos');
+                        app(LoyaltyService::class)->refundPoints($locked, 'pos');
                     }
 
-                    $oldStatusForBroadcast = $order->status;
-                    $order->status = $request->status;
-                    $order->save();
+                    $oldStatusForBroadcast = $locked->status;
+                    $locked->status = $request->status;
+                    $locked->save();
 
                     OrderStateMachine::recordTransition(
                         Order::class,
-                        (int) $order->id,
+                        (int) $locked->id,
                         (int) $oldStatusForBroadcast,
                         (int) $request->status,
                         Auth::check() ? (int) Auth::id() : null,
@@ -1726,7 +2211,7 @@ class OrderService
                     \App\Models\ActionLog::create([
                         'user_id'  => Auth::check() ? Auth::user()->id : null,
                         'action'   => 'Changement de statut',
-                        'resource' => 'Commande #' . $order->order_serial_no,
+                        'resource' => 'Commande #' . $locked->order_serial_no,
                         'details'  => sprintf(
                             'Nouveau statut: %s | Par: %s (branch_id=%s)',
                             trans('all.order.status.' . $request->status),
@@ -1743,22 +2228,28 @@ class OrderService
                                 ? 'order.rejected'
                                 : 'order.returned');
                         app(AuditLogService::class)->write([
-                            'branch_id'   => (int) $order->branch_id,
+                            'branch_id'   => (int) $locked->branch_id,
                             'user_id'     => Auth::check() ? (int) Auth::id() : null,
                             'action'      => $action,
                             'resource'    => 'order',
-                            'resource_id' => (int) $order->id,
+                            'resource_id' => (int) $locked->id,
                             'payload'     => [
-                                'order_serial_no' => $order->order_serial_no,
+                                'order_serial_no' => $locked->order_serial_no,
                                 'from_status'     => (int) $oldStatusForBroadcast,
                                 'to_status'       => (int) $request->status,
                                 'reason'          => $request->reason,
-                                'total'           => round((float) $order->total, 2),
-                                'payment_status'  => (int) $order->payment_status,
-                                'fiscal_sequence_no' => $order->fiscal_sequence_no,
+                                'total'           => round((float) $locked->total, 2),
+                                'payment_status'  => (int) $locked->payment_status,
+                                'fiscal_sequence_no' => $locked->fiscal_sequence_no,
                             ],
                         ]);
                     }
+
+                    // [GOAL-K2-HEAL-02] Sync route-bound model so post-tx
+                    // broadcasts (SendOrderMail/Sms/Push + OrderStatusChanged
+                    // + OrderCanceled dispatched at lines 2049-2068) read
+                    // the persisted state — not the pre-lock attributes.
+                    $order->setRawAttributes($locked->getAttributes(), true);
                 });
 
                 if ($oldStatusForBroadcast === null) {
@@ -1901,19 +2392,40 @@ class OrderService
             DB::transaction(function () use (
                 $order,
                 $request,
-                $oldPaymentStatus,
                 $targetPaymentStatus
             ): void {
-                $order->payment_status = $request->payment_status;
-                $order->save();
+                // [GOAL-2026-05-29 F2] Re-fetch the row WITH lockForUpdate so two
+                // concurrent staff requests (distinct idempotency keys) cannot BOTH
+                // flip the same order — which previously produced a double-PAID effect
+                // plus duplicate ActionLog + AuditLog + OrderPaymentStatusChanged
+                // (double outbox/KDS/Z impact). The route-bound $order is stale; we
+                // serialize on the locked row. Mirrors the auth self-service path
+                // above + changeStatus/deliveryBoyOrderChangeStatus.
+                $locked = Order::query()->whereKey($order->id)->lockForUpdate()->firstOrFail();
+                $freshOld = (int) $locked->payment_status;
+
+                // Idempotent: a concurrent request already reached the target. Sync the
+                // route model so the caller observes the persisted state, and skip the
+                // (already-emitted) side effects — no double log/audit/dispatch.
+                if ($freshOld === $targetPaymentStatus) {
+                    $order->setRawAttributes($locked->getAttributes(), true);
+                    return;
+                }
+
+                // Re-validate the transition against the FRESH locked status — the
+                // pre-lock guard used the possibly-superseded route status.
+                \App\Domain\Order\PaymentStateMachine::assertCanTransition($freshOld, $targetPaymentStatus);
+
+                $locked->payment_status = $request->payment_status;
+                $locked->save();
 
                 \App\Models\ActionLog::create([
                     'user_id'  => Auth::check() ? Auth::id() : null,
                     'action'   => 'Statut paiement modifié',
-                    'resource' => 'Commande #' . $order->order_serial_no,
+                    'resource' => 'Commande #' . $locked->order_serial_no,
                     'details'  => sprintf(
                         'Statut paiement: %d → %d | Par: %s (branch_id=%s)',
-                        $oldPaymentStatus,
+                        $freshOld,
                         $targetPaymentStatus,
                         Auth::check() ? Auth::user()->name : 'Système',
                         Auth::check() ? (Auth::user()->branch_id ?? 'admin') : '?'
@@ -1925,17 +2437,17 @@ class OrderService
                 // impact Z report totals — but blocked under Option B by the
                 // state machine guard above).
                 app(AuditLogService::class)->write([
-                    'branch_id'   => (int) $order->branch_id,
+                    'branch_id'   => (int) $locked->branch_id,
                     'user_id'     => Auth::check() ? (int) Auth::id() : null,
                     'action'      => 'order.payment_status_changed',
                     'resource'    => 'order',
-                    'resource_id' => (int) $order->id,
+                    'resource_id' => (int) $locked->id,
                     'payload'     => [
-                        'order_serial_no'      => $order->order_serial_no,
-                        'from_payment_status'  => $oldPaymentStatus,
+                        'order_serial_no'      => $locked->order_serial_no,
+                        'from_payment_status'  => $freshOld,
                         'to_payment_status'    => $targetPaymentStatus,
-                        'total'                => round((float) $order->total, 2),
-                        'fiscal_sequence_no'   => $order->fiscal_sequence_no,
+                        'total'                => round((float) $locked->total, 2),
+                        'fiscal_sequence_no'   => $locked->fiscal_sequence_no,
                     ],
                 ]);
 
@@ -1943,10 +2455,14 @@ class OrderService
                 // DispatchableAfterCommit defers the dispatch until commit, so
                 // a rollback of any earlier statement above drops the event.
                 \App\Events\OrderPaymentStatusChanged::dispatch(
-                    $order,
-                    $oldPaymentStatus,
+                    $locked,
+                    $freshOld,
                     $targetPaymentStatus
                 );
+
+                // Sync the route-bound model so the outer `return $order` + cache
+                // marker reflect the persisted state.
+                $order->setRawAttributes($locked->getAttributes(), true);
             });
 
             // [F-VERIFY-09-01 P13] Persist Idempotency-Key replay marker (TTL 24h).
@@ -2004,29 +2520,97 @@ class OrderService
 
     /**
      * @throws Exception
+     *
+     * [GOAL-2026-05-18 P0-LIV-01] Multi-tenant + role guard.
+     *
+     * Before any assignment, the target user is verified to (a) actually have
+     * Role::DELIVERY_BOY and (b) belong to the same branch as the order. The
+     * check runs OUTSIDE the try/catch so abort(403)/abort(422) propagate as
+     * HttpException instead of being swallowed and re-thrown as a generic 422
+     * (codebase-wide pattern, cf. selectDeliveryBoy callers PosOrderController
+     * + OnlineOrderController). Without this guard a branch-A admin could
+     * silently assign a branch-B driver, breaking BranchScope semantics on the
+     * livreur's `index` query at line 262-298.
      */
     public function selectDeliveryBoy(Order $order, Request $request, bool $auth = false): Order|array
     {
-        try {
-            if ($auth) {
-                if ($order->user_id == Auth::user()->id) {
-                    $order->delivery_boy_id = $request->delivery_boy_id;
-                    $order->save();
-                    SendOrderDeliveryBoyMail::dispatch(['order_id' => $order->id, 'status' => 101]);
-                    SendOrderDeliveryBoySms::dispatch(['order_id' => $order->id, 'status' => 101]);
-                    SendOrderDeliveryBoyPush::dispatch(['order_id' => $order->id, 'status' => 101]);
-                    return $order;
-                } else {
-                    abort(403, 'Access denied: you do not have permission to modify this order.');
-                }
-            } else {
-                $order->delivery_boy_id = $request->delivery_boy_id;
-                $order->save();
-                SendOrderDeliveryBoyMail::dispatch(['order_id' => $order->id, 'status' => 101]);
-                SendOrderDeliveryBoySms::dispatch(['order_id' => $order->id, 'status' => 101]);
-                SendOrderDeliveryBoyPush::dispatch(['order_id' => $order->id, 'status' => 101]);
-                return $order;
+        // ─── Authz preflight (HttpException must propagate, NOT be wrapped) ───
+
+        if ($auth) {
+            // Customer self-service path — ownership check first.
+            if ($order->user_id != Auth::user()?->id) {
+                abort(403, 'Access denied: you do not have permission to modify this order.');
             }
+        }
+
+        $targetId = $request->delivery_boy_id ?? null;
+        if (! is_numeric($targetId) || (int) $targetId <= 0) {
+            abort(422, 'delivery_boy_id is required and must be a positive integer.');
+        }
+
+        // Spatie role scope + branch fence. Use withoutGlobalScope so an Admin
+        // calling from branch_id=0 still sees the target row in its own branch.
+        //
+        // [WAVE-H bug_001 heal — 2026-05-19] Mirror the 5 sibling heals
+        // (DeliveryBoyService:45, AdministratorService:46, ChefService:43,
+        // CustomerService:43, WaiterService:44). Spatie's `->role($int)` calls
+        // `findById($int, $guard)` (HasRoles trait L84). Passing
+        // EnumRole::DELIVERY_BOY (=3) breaks on fresh-seeded envs where the
+        // roles table AUTO_INCREMENT has skipped past 3 — `findById(3, ...)`
+        // then throws RoleDoesNotExist and every legitimate driver assignment
+        // 500s. The stable identity is the role NAME + guard, not the legacy
+        // enum integer. See `database/seeders/SpatieRoleLookup.php` for the
+        // same rationale.
+        $target = User::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
+            ->role('Delivery Boy', 'sanctum')
+            ->where('id', (int) $targetId)
+            ->first();
+
+        if ($target === null) {
+            abort(403, 'Target user is not a delivery boy.');
+        }
+
+        if ((int) $target->branch_id !== (int) $order->branch_id) {
+            abort(403, 'Cross-branch delivery boy assignment denied.');
+        }
+
+        // ─── Mutation (wrapped — generic Exception is acceptable here) ───
+
+        try {
+            $order->delivery_boy_id = (int) $targetId;
+            $order->save();
+
+            // [P0-LIV-01 trace] Audit-log the assignment so the same chain
+            // also records WHO assigned WHICH driver to WHICH order. Mirrors
+            // the cash escrow trace symmetry. Best-effort — never cascade an
+            // audit failure into a 5xx for the operator.
+            try {
+                app(AuditLogService::class)->write([
+                    'branch_id'   => (int) $order->branch_id,
+                    'user_id'     => Auth::check() ? (int) Auth::id() : null,
+                    'action'      => 'order.delivery_boy_assigned',
+                    'resource'    => 'order',
+                    'resource_id' => (int) $order->id,
+                    'payload'     => [
+                        'order_id'        => (int) $order->id,
+                        'order_serial_no' => $order->order_serial_no,
+                        'delivery_boy_id' => (int) $targetId,
+                        'order_branch_id' => (int) $order->branch_id,
+                        'actor_id'        => Auth::check() ? (int) Auth::id() : null,
+                        'path'            => $auth ? 'customer_self_service' : 'admin_assign',
+                        'assigned_at'     => now()->toIso8601String(),
+                    ],
+                ]);
+            } catch (\Throwable $auditError) {
+                Log::warning('[DeliveryBoy] driver-assignment audit_log write failed: ' . $auditError->getMessage(), [
+                    'order_id' => $order->id,
+                ]);
+            }
+
+            SendOrderDeliveryBoyMail::dispatch(['order_id' => $order->id, 'status' => 101]);
+            SendOrderDeliveryBoySms::dispatch(['order_id' => $order->id, 'status' => 101]);
+            SendOrderDeliveryBoyPush::dispatch(['order_id' => $order->id, 'status' => 101]);
+            return $order;
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
@@ -2145,13 +2729,17 @@ class OrderService
 
             $orders = Order::with('transaction', 'orderItems')->where(function ($query) use ($requests) {
                 if (!empty($requests['from_date']) && !empty($requests['to_date'])) {
-                    $first_date = Date('Y-m-d', strtotime($requests['from_date']));
-                    $last_date = Date('Y-m-d', strtotime($requests['to_date']));
-                    $query->whereDate('order_datetime', '>=', $first_date)->whereDate(
-                        'order_datetime',
-                        '<=',
-                        $last_date
-                    );
+                    // [GOAL-G2-HEAL-04 2026-05-23] TZ-generation alignment to
+                    // Wave T R5 Paris bounds — sibling of list() above, keep
+                    // byte-identical. See list() comment for full rationale.
+                    $appTz = config('app.timezone');
+                    $fromParis = Carbon::parse($requests['from_date'], $appTz)
+                        ->startOfDay();
+                    $toParisExclusive = Carbon::parse($requests['to_date'], $appTz)
+                        ->addDay()
+                        ->startOfDay();
+                    $query->where('order_datetime', '>=', $fromParis)
+                          ->where('order_datetime', '<', $toParisExclusive);
                 }
                 foreach ($requests as $key => $request) {
                     if (in_array($key, $this->orderFilter)) {
@@ -2186,13 +2774,30 @@ class OrderService
                         }
                     }
                 }
+
+                // [SALES-PAR-05 heal 2026-06-01] Honour exceptSource for parity with list() —
+                // the overview cards previously ignored it, diverging from the table/PDF/Excel.
+                if (isset($requests['exceptSource'])) {
+                    $query->where('source', '!=', $requests['exceptSource']);
+                }
             })->orderBy($orderColumn, $orderType)->get();
             $salesReportArray = [];
 
+            // [GOAL-2026-05-30 H-03] Revenue figures must be PAID-only so the sales report
+            // agrees with cash-overview (paid-only) and the signed Z. Previously total_earnings
+            // summed `total` over ALL orders incl. UNPAID/PENDING_COUNTER (now common since the
+            // kitchen prepares before encashment) → over-reported revenue. total_orders stays the
+            // placed-volume count (a separate metric); only the MONEY figures filter to PAID.
+            // [SALES-NET-01 heal 2026-06-01, owner "net, agree with the Z"] Money figures use the
+            // net realized set (Order::isRealizedRevenueRow): drop cancelled-but-paid orders and
+            // include the negative refund counter-entry mirrors so a refunded sale nets to ~0 —
+            // agrees with the dashboard (scopeRealizedRevenue) and the signed Z. total_orders stays
+            // the placed-volume count.
+            $paidOrders = $orders->filter(fn ($o) => \App\Models\Order::isRealizedRevenueRow($o));
             $salesReportArray['total_orders'] = $orders->count();
-            $salesReportArray['total_earnings'] = AppLibrary::currencyAmountFormat($orders->sum('total'));
-            $salesReportArray['total_discounts'] = AppLibrary::currencyAmountFormat($orders->sum('discount'));
-            $salesReportArray['total_delivery_charges'] = AppLibrary::currencyAmountFormat($orders->sum('delivery_charge'));
+            $salesReportArray['total_earnings'] = AppLibrary::currencyAmountFormat($paidOrders->sum('total'));
+            $salesReportArray['total_discounts'] = AppLibrary::currencyAmountFormat($paidOrders->sum('discount'));
+            $salesReportArray['total_delivery_charges'] = AppLibrary::currencyAmountFormat($paidOrders->sum('delivery_charge'));
 
             return $salesReportArray;
         } catch (Exception $exception) {
@@ -2245,10 +2850,45 @@ class OrderService
         }
     }
 
+    /**
+     * [GOAL-GOLIVE-VAT10 / F1-dormancy 2026-05-30] Single fiscal-correctness gate
+     * for ANY discretionary discount (manual, coupon, loyalty redeem). At a
+     * non-zero VAT rate the frozen PricingService/ZReportService compute per-line
+     * TVA on the PRE-discount base, so a discounted order signs a fiscally-
+     * incorrect NF525 Z (the F1 defect, dormant only at 0% VAT). Until F1 is
+     * fixed under a lock-plan, every discount source is refused in V1
+     * (pos.manual_discount_enabled=false — the master discretionary-discount
+     * flag, covering manual/coupon/loyalty). Non-discounted orders are unaffected.
+     */
+    private function assertDiscretionaryDiscountAllowed(float $discount): void
+    {
+        if ($discount > 0.0 && config('pos.manual_discount_enabled') !== true) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'discount' => "Les remises (manuelle, coupon, fidélité) sont désactivées en V1 (correction fiscale TVA/HT en attente). Contactez le responsable.",
+            ]);
+        }
+    }
+
     private function assertPosManualDiscountAllowed(float $discount, float $backendSubtotal, ?User $user, ?string $reason = null): void
     {
         if ($discount <= 0.0) {
             return;
+        }
+
+        // [GOAL-GOLIVE-VAT10 / F1-dormancy 2026-05-30] V1 manual-discount gate.
+        // At 10% VAT the discount→HT/TVA split in the FROZEN ZReportService/
+        // PricingService is wrong (TVA computed on the PRE-discount base → the
+        // signed Z is fiscally incorrect — the F1 defect, dormant only at 0%
+        // VAT). Until F1 is fixed under a lock-plan, ANY non-zero manual POS
+        // discount is refused so no discounted order can sign a wrong Z. The
+        // customer's paid TOTAL on a non-discounted order is already correct.
+        // Default OFF for V1 (config/pos.php manual_discount_enabled=false).
+        // Re-enable only after F1 is fixed + a behavioral Z test proves the
+        // discounted-order TVA is computed on the NET base.
+        if (config('pos.manual_discount_enabled') !== true) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'discount' => "Les remises manuelles sont désactivées en V1 (correction fiscale TVA/HT en attente). Contactez le responsable.",
+            ]);
         }
 
         if (strlen(trim((string) $reason)) < 3) {
@@ -2401,7 +3041,29 @@ class OrderService
             );
     }
 
-    protected function findExistingOrderForIdempotencyRecovery(?string $idempotencyKey, int $branchId): ?Order
+    /**
+     * [H2-HEAL-01 / H.1 P0 RED 2026-05-24] Branch + user scoped idempotency
+     * recovery (defense-in-depth backstop for FROZEN §7 HTTP middleware).
+     *
+     * Scope MUST mirror CLAUDE.md §9 IdempotencyKey contract:
+     * (branch_id, user_id, hash(key)).
+     *
+     * Note: `orders.user_id` semantically stores the CUSTOMER id (see
+     * posOrderStore: `'user_id' => $request->customer_id`). Passing a
+     * customer_id here CLOSES the cross-customer collision case (two
+     * different customers sharing a key on the same branch). For anonymous
+     * walk-ins (customer = null/0) the caller passes null so the filter
+     * is skipped and (branch, key) recovery still rescues legitimate
+     * retries — anonymous protection is the L7 middleware's job.
+     *
+     * $userId is OPTIONAL (default null) for backward compatibility with
+     * existing sentinels (IdempotencyRecoveryBranchScoped,
+     * IdempotencyMiddlewareSentinel, F006PosIdempotencyParity) that invoke
+     * the method with 2 args. The WHERE clause order is preserved
+     * (idempotency_key → branch_id → user_id) to satisfy the F-006
+     * regex sentinel.
+     */
+    protected function findExistingOrderForIdempotencyRecovery(?string $idempotencyKey, int $branchId, ?int $userId = null): ?Order
     {
         if (blank($idempotencyKey) || $branchId <= 0) {
             return null;
@@ -2410,6 +3072,7 @@ class OrderService
         return Order::query()
             ->where('idempotency_key', $idempotencyKey)
             ->where('branch_id', $branchId)
+            ->when($userId !== null, fn ($q) => $q->where('user_id', $userId))
             ->first();
     }
 

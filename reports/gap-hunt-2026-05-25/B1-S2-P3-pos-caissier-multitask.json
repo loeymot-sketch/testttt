@@ -1,0 +1,239 @@
+{
+  "agent": "S2-P3 POS x Caissier-multitask",
+  "scope": "POS Caisse v5 (resources/js/components/admin/pos/) + backend POS (app/Http/Controllers/Admin/Pos, app/Services/PosParkedOrderService, OrderService, PosOrderController). Wizard popup POS Vanilla JS (public/js/pos-wizard.js) frozen per CLAUDE.md sec 7 - not in scope of UI changes.",
+  "date": "2026-05-25",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+
+  "owner_implicit_gaps_verified": {
+    "refund_ui_button": {
+      "status": "ABSENT",
+      "severity": "P0",
+      "title": "Refund / Annulation vente deja encaissee = backend pret, UI inexistante",
+      "evidence_backend_present": [
+        "routes/api.php:961 -> POST /api/admin/pos-order/{order}/refund-with-counter-entry name=admin.posOrder.refundWithCounterEntry",
+        "tests/Feature/Refund/RefundWithCounterEntryRefundsLoyaltyPointsTest.php (full coverage)",
+        "tests/Feature/Refund/RefundCounterEntryUniqueParentTest.php (idempotency + unique parent constraint)",
+        "tests/Feature/Sentinels/FiscalSealedZSentinelTest.php:48-51 (route existence locked)",
+        "tests/Feature/Sentinels/RefundCounterEntryRequiresSealedParentSentinelTest.php (NF525 invariants tested)",
+        "app/Models/Order.php fillable includes parent_order_id (P11-FZH / F-VERIFY-08-02 mirror order)",
+        "resources/js/components/admin/pos/ReceiptRemboursementMarker.vue (visual marker EXISTS for printed refund receipts, NF525 visual distinction)"
+      ],
+      "evidence_ui_absent": [
+        "grep -rn 'refundWithCounterEntry|refund-with-counter-entry' resources/ public/js/ -> 0 matches (test files only)",
+        "resources/js/components/admin/posOrders/* -> no refund button on order detail page",
+        "resources/js/components/admin/pos/ReceiptComponent.vue -> displays REMBOURSEMENT marker but offers no trigger to CREATE a refund",
+        "PosOrderShowComponent.vue -> no refund / annul / remboursement action button"
+      ],
+      "impact_daily": "Cashier cannot legally refund a customer at the till. To process a refund the operator must currently call backend manually (curl/Postman) or wait for a developer. NF525-compliant refund infrastructure (sealed-parent guard, mirror order, audit chain APPEND) was shipped P11-FZH but the cashier-facing button never landed. Real daily blocker: card declined post-print, wrong item rung, customer changes mind after sealed Z."
+    },
+
+    "pause_caisse": {
+      "status": "ABSENT",
+      "severity": "P1",
+      "title": "Pause caisse pendant absence = no session-lock / screen-lock concept",
+      "evidence": [
+        "grep -rn 'pause|lock.*caisse|drawer.*lock|cash.*lock|lock-screen|pause_session|session_pause|cashier_pause' resources/js/components/admin/ routes/ app/ -> 0 hits in POS code (only kiosk auto-lock unrelated)",
+        "app/Http/Controllers/Admin/Pos/CashDrawerSessionController.php exposes only open() / close() / current() - binary states, no pause/resume",
+        "PosComponent.vue: no @click handler routes to a lock-screen or pause modal. Only logout (route-level Auth)",
+        "Result: cashier who walks away must either (a) leave the till unlocked physically (PII / fond leak risk) or (b) close the drawer session via /close which forces a counted closing_amount + Z-cycle - which CANNOT be reopened on the same business_date by NF525 invariant (one Z per branch per day)"
+      ],
+      "impact_daily": "Cashier toilet break / phone call -> till stays unlocked OR drawer must be closed (lourd). Pattern competitors (Toast, Square) implement: PIN-lock screen + cashier-context preserved (cart in-flight intact, drawer session intact, ticks PII guard while preserving NF525 single-session-per-day). Absent."
+    },
+
+    "transfer_commande": {
+      "status": "ABSENT",
+      "severity": "P1",
+      "title": "Transferer commande a autre caissier = parked orders are STRICTLY per-user, no handover endpoint",
+      "evidence": [
+        "app/Http/Controllers/Admin/Pos/ParkedOrderController.php:18,48,61 -> index/show/destroy all call resolveOperatorContext() which forces (authId, branchId) match -> only the owner can list/recall their parked orders",
+        "app/Services/PosParkedOrderService.php lines 27,56,65,77,199 -> every query filters ->where('user_id', $userId) -> parked orders invisible cross-cashier",
+        "ParkedOrderController:74-78 -> abort_unless((int)$requestUser->id === (int)$authId, 403) -> no admin override, no reassign endpoint",
+        "Comment P0-POS-04 GOAL round-2 2026-05-18 explicitly mandates per-user scoping as branch-isolation guard",
+        "Routes: no transferParkedOrder / reassign / handover route exists. Only FloorplanController has transfer() but for TABLES not orders/cashiers",
+        "creator_id on orders.* (H.1 P1 AMBER 2026-05-24 heal) is set once at Order::create() inside OrderService::posOrderStore - NEVER mutated after"
+      ],
+      "impact_daily": "Cashier A parks order for client en attente (was 3eme rang), is called away. Cashier B arrives, cannot recall A's parked order. Client must wait OR restart from scratch. Daily worst-case: shift handover at noon -> outgoing cashier parked orders ALL lost (cannot be recalled by night-team)."
+    },
+
+    "customer_history": {
+      "status": "ABSENT",
+      "severity": "P2",
+      "title": "Voir client historique au POS = customer_id selectable but no history panel surfaced",
+      "evidence_partial_data_present": [
+        "PosComponent.vue:534 -> customer_id dropdown selectable from customers Vuex store (checkoutProps.form.customer_id)",
+        "PosLoyaltyRedeemModal.vue exists -> shows loyalty BALANCE (points) but not order history",
+        "PosComponent.vue:1164-1172 -> 'pos.orders.history' link exists BUT routes to admin.pos-orders.list (GLOBAL filtered list, NOT customer-scoped from POS context)",
+        "Backend: grep 'Order::query.*customer_id|customer_id.*orders' app/Http/Controllers/Admin/ -> no dedicated /api/admin/customers/{id}/orders endpoint surfaced for POS context"
+      ],
+      "evidence_absent": [
+        "No 'Past orders for this customer' panel in checkout drawer once customer_id set",
+        "PosLoyaltyRedeemModal shows balance but not last_order_at / total_visits / favorite_items / avg_basket",
+        "No 'customer with allergy X' alert flagging from prior orders",
+        "resources/js/components/admin/customers/CustomerOrderDetailsComponent.vue exists -> standalone customer screen, not embedded in POS cart side panel"
+      ],
+      "impact_daily": "Cashier scanning loyalty / selecting customer cannot see at a glance: 'this is your 12th visit / your favorite is Le Cayenne + Coca / last visit you ordered without onions'. Repeat-customer recognition is invisible. Especially salty for Le Cayenne V1 - small-merchant intimacy expected, currently 0% surfaced."
+    },
+
+    "note_transaction": {
+      "status": "ABSENT",
+      "severity": "P2",
+      "title": "Note interne sur transaction = no generic internal note column on orders",
+      "evidence": [
+        "app/Models/Order.php fillable (lines 21-67) -> contains pos_payment_note but no internal_note / cashier_note / staff_note / order_note column",
+        "app/Http/Requests/PosOrderRequest.php:117 -> pos_payment_note is CONSTRAINED: required+min4+max4 digits for CARD, 200-char free text only for MOBILE_BANKING/OTHER/TICKET_RESTAURANT, NULLABLE otherwise. Not a free-form internal note - it's payment-method metadata (last 4 digits, terminal TX ID)",
+        "PaymentService.php:330,614 reuses pos_payment_note as a refund-reason scratchpad which OVERWRITES the original payment note -> dual-use anti-pattern, fragile",
+        "OrderItem.php:79 exposes 'instruction' (per-line free text 'no onions') - exists, surfaced in receipts/KDS - BUT it is per-LINE, not per-ORDER, and not visible as 'internal cashier-only note'",
+        "Grep 'internal_note|cashier_note|order_note|order.notes|special_request' app/ -> 0 hits"
+      ],
+      "impact_daily": "Cashier cannot leave a cross-cycle note: 'customer claims TPE declined 2x, retry tomorrow', 'sauce pesto refusee', 'demande tableservice apres encaissement' WITHOUT polluting line-item instruction (which prints on KDS ticket -> wrong audience). No order-level internal channel."
+    }
+  },
+
+  "gaps_found": [
+    {
+      "id": "G-S2P3-01",
+      "owner_implicit": "refund_ui_button",
+      "severity": "P0",
+      "title": "POST /refund-with-counter-entry not surfaced anywhere in posOrders detail or POS shell",
+      "files": [
+        "resources/js/components/admin/posOrders/PosOrderShowComponent.vue (no refund button)",
+        "resources/js/components/admin/pos/ReceiptComponent.vue (REMBOURSEMENT marker only displayed for already-mirrored orders)",
+        "routes/api.php:958-963 (backend endpoint orphaned UI-side)"
+      ],
+      "blocker_for": "Daily refund operations. NF525 sealed-parent guard active = manual DB / curl path leaves no traceable button-click context."
+    },
+    {
+      "id": "G-S2P3-02",
+      "owner_implicit": "pause_caisse",
+      "severity": "P1",
+      "title": "No PIN-lock / session-pause screen — only binary drawer open/close",
+      "files": [
+        "app/Http/Controllers/Admin/Pos/CashDrawerSessionController.php (only open/close/current)",
+        "resources/js/components/admin/pos/PosComponent.vue (no lock-screen modal)"
+      ],
+      "blocker_for": "GDPR/PII protection during cashier short absence. NF525 'one Z per business_date' means closing the drawer = no reopen same day."
+    },
+    {
+      "id": "G-S2P3-03",
+      "owner_implicit": "transfer_commande",
+      "severity": "P1",
+      "title": "Parked orders strictly user-scoped — shift handover breaks all in-flight tickets",
+      "files": [
+        "app/Http/Controllers/Admin/Pos/ParkedOrderController.php (per-user gate, no admin override)",
+        "app/Services/PosParkedOrderService.php (every query forces user_id match)"
+      ],
+      "blocker_for": "Shift handover at busy hours (12:00 → 14:00 / 18:00 → 20:00). Currently outgoing cashier loses all parked orders to incoming cashier."
+    },
+    {
+      "id": "G-S2P3-04",
+      "owner_implicit": "customer_history",
+      "severity": "P2",
+      "title": "Customer selected at checkout but no recent-orders / favorite-items / allergen-history surfaced",
+      "files": [
+        "resources/js/components/admin/pos/PosComponent.vue:534 (only customer_id select, no embedded history)",
+        "resources/js/components/admin/pos/PosLoyaltyRedeemModal.vue (loyalty BALANCE only)"
+      ],
+      "blocker_for": "Repeat-customer intimacy, allergy reminder, upsell hint based on past behavior. Soft P2 — daily nice-to-have."
+    },
+    {
+      "id": "G-S2P3-05",
+      "owner_implicit": "note_transaction",
+      "severity": "P2",
+      "title": "No internal_note / staff_note column on orders — cashier has no order-scoped free-form channel",
+      "files": [
+        "app/Models/Order.php (fillable lines 21-67 — pos_payment_note is payment-method metadata, not internal note)",
+        "app/Http/Requests/PosOrderRequest.php:117 (validation enforces pos_payment_note as last-4-digits or 200-char terminal TX ID per payment method, not free-form)",
+        "app/Services/PaymentService.php:330,614 (refund-reason currently OVERWRITES original pos_payment_note — dual-use anti-pattern, would also break NF525 6-year traceability of the original payment note if a refund is later issued)"
+      ],
+      "blocker_for": "Cross-shift handover context, retry hints, 'customer issue' flags. Currently abusing line-item.instruction (wrong scope — prints on KDS)."
+    },
+    {
+      "id": "G-S2P3-06",
+      "owner_implicit": null,
+      "severity": "P1",
+      "title": "BONUS — pos_payment_note dual-use as refund-reason creates NF525 audit silent overwrite",
+      "files": [
+        "app/Services/PaymentService.php:330 (refund-mark path overwrites pos_payment_note with reason)",
+        "app/Services/PaymentService.php:614 (refund flow overwrites pos_payment_note with reason)"
+      ],
+      "blocker_for": "NF525 6-year traceability — original last-4-digit card stub or terminal TX ID is LOST when a refund is reverse-posted. The audit_logs chain remains intact (append-only) but the live order row no longer carries the original payment proof. Discovered during scan of S2-P3 note-transaction gap."
+    },
+    {
+      "id": "G-S2P3-07",
+      "owner_implicit": null,
+      "severity": "P2",
+      "title": "BONUS — cart cancel-last-line is the ONLY destructive op pre-payment, no remove-arbitrary-line",
+      "files": [
+        "resources/js/components/admin/pos/PosComponent.vue:585-596 (data-testid pos-cancel-last-line) only undoes LAST add"
+      ],
+      "blocker_for": "Cashier rang item #1 wrong but added 3 more items on top → must cancel all 4 lines + re-add 3 correct ones. UX friction at busy hour."
+    },
+    {
+      "id": "G-S2P3-08",
+      "owner_implicit": null,
+      "severity": "P2",
+      "title": "BONUS — no 'switch cashier' / 'change operator' mid-shift workflow",
+      "files": [
+        "grep 'switchCashier|change.*operator|operator.*switch' resources/ app/ → 0 hits"
+      ],
+      "blocker_for": "Manager taking over a problem ticket (refund dispute, complex discount) — currently the only way is full Auth logout/login which loses cart state."
+    },
+    {
+      "id": "G-S2P3-09",
+      "owner_implicit": null,
+      "severity": "P2",
+      "title": "BONUS — no telephone-interrupt / hold-cart shortcut (Toast pattern Quick-Park)",
+      "files": [
+        "PosComponent.vue parked-orders flow requires confirmation modal, label entry, idempotency — too heavy for 'phone is ringing, hold this'"
+      ],
+      "blocker_for": "Daily real-world friction: phone rings mid-checkout, cashier needs sub-3-second pause+resume. Currently must commit to full park ceremony."
+    }
+  ],
+
+  "workflow_scenarios_tested": {
+    "scenario_A_client_paying_client_B_waits": {
+      "current_behavior": "Cashier must FINALIZE client A (sealed Z) before being able to ring client B. Cannot 'quick-park' A's payment while talking to B about wait time.",
+      "gap_root_cause": "Parked orders supported PRE-payment (cart), not DURING payment flow. PaymentComponent has no Pause/Resume hook."
+    },
+    "scenario_B_two_simultaneous_carts": {
+      "current_behavior": "Cashier rings A's cart, parks it (modal + label + confirmation 4 clicks), starts B's cart, recalls A. Works BUT only same cashier.",
+      "gap_root_cause": "G-S2P3-03 + G-S2P3-09 - per-user scope and heavy ceremony."
+    },
+    "scenario_C_phone_interrupt": {
+      "current_behavior": "No quick-hold. Cashier either (a) keeps cart on-screen unsecured (PII risk), (b) parks via heavy modal, (c) abandons.",
+      "gap_root_cause": "G-S2P3-02 + G-S2P3-09 absence."
+    }
+  },
+
+  "top_3_blocker_daily": [
+    {
+      "rank": 1,
+      "id": "G-S2P3-01",
+      "title": "Refund UI button missing — backend NF525-ready, cashier cannot trigger",
+      "why_daily": "Le Cayenne fast-food: card declines, wrong items rung, customer complaints daily. Without refund button, cashier escalates to manager + curl/Postman. 100% manual gap.",
+      "estimated_effort": "S — refund button on PosOrderShowComponent + confirmation modal + reason input + POST refundWithCounterEntry. Backend already ships sealed-parent guard, mirror order, audit-chain append, sentinel coverage."
+    },
+    {
+      "rank": 2,
+      "id": "G-S2P3-03",
+      "title": "Parked orders user-locked — shift handover destroys context",
+      "why_daily": "Le Cayenne lunch service 12h-14h handover, dinner 18h-20h handover. Each handover currently loses N parked orders silently.",
+      "estimated_effort": "M — backend: relax ParkedOrderController gate to (admin OR cashier within branch), add transfer-to-cashier endpoint with audit log. UI: cashier-picker on parked drawer. Branch-scope guard must stay (P0-POS-04 GOAL invariant)."
+    },
+    {
+      "rank": 3,
+      "id": "G-S2P3-02",
+      "title": "No pause-caisse / PIN lock — cashier walks away unsafely",
+      "why_daily": "Every shift has bathroom/phone breaks. Currently choice = leave unlocked (PII leak) OR full drawer close (NF525 one-Z-per-day blocker). Both bad.",
+      "estimated_effort": "M — frontend lock-screen modal + PIN re-prompt + cart-state preserved in Vuex (already idempotent). Backend: optional audit row 'pos.session.paused/resumed' but no NF525 invariant impact since drawer stays OPEN."
+    }
+  ],
+
+  "frozen_zone_protection_observed": {
+    "pos_wizard_js_untouched": "public/js/pos-wizard.js — Vanilla JS popup, owner-frozen per CLAUDE.md sec 7. Analysis confined to Vue layer (PosComponent.vue / PaymentComponent.vue / PosCounterCollectModal.vue) and backend controllers/services. Audit READ-ONLY.",
+    "payment_component_vue_untouched": "PaymentComponent.vue — V1 protected file, BRAIN sec 2. Read-only inspection only.",
+    "nf525_chain_unaffected": "All recommended fixes (refund button, parked-order transfer, lock-screen) consume EXISTING backend APIs and append to audit chain via standard PaymentService / OrderService paths. No NF525 invariant disturbed."
+  },
+
+  "verdict": "P0 BLOCKER for V1 production = refund UI button absent (backend NF525-ready, sentinel-tested, just no cashier-facing trigger). P1 daily-pain = no parked-order transfer between cashiers + no session-pause / lock-screen. P2 nice-to-have = customer history panel + internal order note + cancel-arbitrary-line + switch-cashier + quick-hold pattern. Total 5 owner-implicit gaps verified, 4 additional bonus gaps surfaced. Recommendation: ship G-S2P3-01 (refund UI) as V1 P0 before NF525 production cutover. Bonus G-S2P3-06 (pos_payment_note dual-use as refund-reason overwriting card stub) is a hidden NF525 6-year-traceability hazard worth elevating to P1 audit and decoupling refund_reason into its own column."
+}

@@ -1,0 +1,51 @@
+{
+  "zone": "PLOY-2-REDEEM-FLOW",
+  "role": "DBA",
+  "scope": "Redeem ledger schema, UNIQUE-NULL gap, lockForUpdate semantics, pending-redeem GC, refund constraints",
+  "findings": [
+    {
+      "id": "PLOY-2-DBA-01",
+      "severity": "P1",
+      "title": "UNIQUE(user_id, order_id=NULL, type) is NULL-permissive — cannot block double-pending-redeem",
+      "cross_ref": "PLOY-1-DBA-01 (same constraint, redeem-side impact)",
+      "files": ["database/migrations/2026_03_26_075919_add_unique_to_loyalty_transactions.php", "app/Http/Controllers/Frontend/LoyaltyController.php:312"],
+      "finding": "MySQL treats NULL as distinct in UNIQUE. Two concurrent /api/loyalty/redeem calls each insert a row with (user_id=42, order_id=NULL, type='redeem') and both succeed. App-layer lockForUpdate at LoyaltyController line 274 serializes them, but the balance-check at line 298 is recomputed per transaction — so if balance covers BOTH, both insert successfully. The UNIQUE provides no defense.",
+      "remediation": "Pattern A (preferred): introduce `dedup_key` VARCHAR(64) NOT NULL DEFAULT '' on loyalty_transactions, computed at insert as sha256(user_id|order_id|type|nonce_window). UNIQUE(dedup_key). For pre-order redeem, nonce_window = floor(time/30) so within a 30s window the same user+type collides. Pattern B: replace pre-order redeem with reservation token (no points deducted until order is finalized, server holds a 'reserved_points' counter on users)."
+    },
+    {
+      "id": "PLOY-2-DBA-02",
+      "severity": "P2",
+      "title": "FrontendOrderService::createKioskLoyaltyRedeemLedger relies on QueryException(23000) catch — DB-driver-dependent",
+      "files": ["app/Services/FrontendOrderService.php:880-902"],
+      "finding": "On UNIQUE collision, FrontendOrderService catches QueryException, inspects errorInfo[0]==='23000' (SQLSTATE integrity constraint violation), re-reads the existing row, returns it. This relies on (a) MySQL/Postgres returning 23000 (sqlite returns the same SQLSTATE per PDO mapping — verified by Laravel's behavior). (b) The UNIQUE INDEX matching the redeem row exactly — UNIQUE(user_id, order_id, type). When order_id is NOT NULL (post-order path), this works. When pre-order path inserts with order_id=NULL, UNIQUE never fires (PLOY-2-DBA-01), so 23000 never triggers, and catch-block path is unreachable.",
+      "remediation": "Once PLOY-2-DBA-01 dedup_key is in place, the 23000 catch becomes a proper defense layer. Until then, document that this catch path is exercised ONLY on post-order ledger writes (createKioskLoyaltyRedeemLedger with $this->frontendOrder->id NOT NULL)."
+    },
+    {
+      "id": "PLOY-2-DBA-03",
+      "severity": "P2",
+      "title": "No GC for orphaned pre-order redeem rows (order_id NULL > 10 minutes)",
+      "cross_ref": "PLOY-2-A-02",
+      "files": ["app/Http/Controllers/Frontend/LoyaltyController.php:312", "app/Services/FrontendOrderService.php:818-829"],
+      "finding": "FrontendOrderService searches for pending redeem within 10-minute window. Rows older than 10 minutes are no longer attachable AND were never replenished — points are gone from users.loyalty_points but no order_id binds them. No reconciliation cron found.",
+      "remediation": "Add LoyaltyOrphanRedeemReconcileCommand scheduled hourly: `WHERE type='redeem' AND order_id IS NULL AND created_at < now() - INTERVAL 30 MINUTE` → write manual_add reversal (+points) + UPDATE original redeem with description += ' [reconciled-orphan]' + mark with reversed_at."
+    },
+    {
+      "id": "PLOY-2-DBA-04",
+      "severity": "P2",
+      "title": "Refund (LoyaltyService::refundPoints) writes type='manual_add' instead of type='refund' — schema enum gap",
+      "files": ["app/Services/LoyaltyService.php:62-71", "database/migrations/2026_03_26_075918_create_loyalty_transactions_table.php:25"],
+      "finding": "type ENUM is ('earn','redeem','manual_add','manual_deduct','expire'). Refund/reversal uses 'manual_add' — same enum value as admin staff manual credit. Analytics cannot distinguish 'refunded on cancel' from 'staff goodwill credit'.",
+      "remediation": "ALTER TABLE loyalty_transactions MODIFY COLUMN type ENUM('earn','redeem','manual_add','manual_deduct','expire','refund','reversal'). Update LoyaltyService::refundPoints to write type='refund'. Backfill via SQL: UPDATE loyalty_transactions SET type='refund' WHERE type='manual_add' AND description LIKE 'Remboursement%'."
+    },
+    {
+      "id": "PLOY-2-DBA-05",
+      "severity": "P3",
+      "title": "No FK constraint loyalty_transactions.order_id → orders.id (cross-ref PLOY-1-DBA-04)",
+      "finding": "Same as PLOY-1-DBA-04. Order hard-delete leaves orphan ledger rows. order_id NULL is intentional for pre-order pattern but post-order rows lack FK enforcement.",
+      "remediation": "If FK added, must be ON DELETE SET NULL (not CASCADE — preserve audit trail)."
+    }
+  ],
+  "verdict": "FAIL",
+  "blocker_for_v1": false,
+  "notes": "PLOY-2-DBA-01 + PLOY-2-DBA-03 together are the structural debt: NULL-permissive UNIQUE + no orphan GC = silent customer-money-loss path under race. Recommend dedup_key + GC cron in V1.0.2 sprint."
+}

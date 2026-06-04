@@ -1,0 +1,196 @@
+{
+  "zone": "POS-Caisse",
+  "mission": "goal-functional-validation-2026-05-28",
+  "agent": "GStack E2E specialist (POS)",
+  "mode": "AUDIT-ONLY",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head": "2bb6f1113",
+  "run_at": "2026-05-28T19:23:48+02:00",
+  "spec": "tests/e2e/goal-functional-pos-2026-05-28.spec.js",
+  "playwright_result": "7/7 PASSED (after fix from initial selector miss)",
+  "nf525_baseline": {
+    "pre_audit": {
+      "audit_logs_count": 101,
+      "last_audit_id": 101,
+      "last_audit_hash": "14d8f790d8ac0aea42c6e5757167f55c0f4c771c0bb5c77360f63fabc506f081",
+      "orders_count": 85,
+      "last_fiscal_seq": 37
+    },
+    "post_audit": {
+      "audit_logs_count": 126,
+      "last_audit_id": 126,
+      "last_audit_hash": "d12d206e5fcc6a4fecc7a60aaeb87715a0a335b12fc45b8bb13b047674659a84",
+      "orders_count": 86,
+      "last_fiscal_seq": 37,
+      "note": "Chain extended by +25 audit_logs but fiscal_sequence_no unchanged. Order #113 created by concurrent KIOSK/CROSS agent (NOT this POS spec — confirmed by spec content: audit-only, no order create). Chain extension consistent with admin login/navigation audit events (Sanctum token issuance + admin-page visits)."
+    },
+    "frozen_zone_diff": "0 lines changed across public/js/pos-wizard.js, public/css/pos-wizard.css, resources/views/admin-pos-v4.blade.php, app/Services/Pricing/PricingService.php, app/Services/Fiscal/* — confirmed via git diff --stat"
+  },
+  "db_state_observations": {
+    "items_total": 11,
+    "items_present": "Only suppléments + base options (Menu/Frites/Boisson/Sauce/Fromage/Jambon/Boursin/Raclette/Œuf/Galette/Salade)",
+    "items_missing_per_mission": "Sandwich Cayenne, Big Cayenne, Tacos, Bols, Burgers — DB does NOT contain mission-spec products. Mission CASH 10.40€ scenario tied to Sandwich Cayenne is non-reproducible against current DB seed.",
+    "payment_terminals_total": 0,
+    "implication_for_card_scenario": "P0 — No payment_terminals row exists for branch 1. CARD scenario with terminal_id is UNTESTABLE end-to-end; SPLIT scenario likewise blocked. PosSplitPaymentPhantomCard sentinel must be verified at unit-test level only.",
+    "open_cash_drawer_sessions_at_start": 2
+  },
+  "findings": [
+    {
+      "id": "POS-FIND-01",
+      "severity": "P0",
+      "title": "Silent HTML masquerade — /admin/cash-drawer-overview returns 200 text/html but renders 404 'Page Non Trouvée!'",
+      "type": "route+ux",
+      "file_line": "routes/web.php SPA catchall + CashDrawerSessionController",
+      "evidence": {
+        "http_status": 200,
+        "content_type": "text/html; charset=UTF-8",
+        "visual": "screenshots/04-cash-drawer-overview.png — 'Page Non Trouvée!' + 'Compte' button (de-authenticated)",
+        "route_list_check": "No `admin/cash-drawer-overview` UI route exists in php artisan route:list. Only `api/admin/pos/cash-drawer/*` (API) and `admin/pos-v4/{any?}` (SPA wildcard)."
+      },
+      "impact": "Caissier loses auth context AND cannot reach cash-drawer overview UI. Mission step 'open cash drawer session opening_amount=50€' not reachable via documented URL.",
+      "verification_command": "curl -s -I http://127.0.0.1:8000/admin/cash-drawer-overview | head -3",
+      "red_dispute_attempt": "Could be CLAUDE.md feedback `feedback_silent_html_masquerade.md` pattern — confirmed by Content-Type=text/html for non-existent route. Not a hallucination."
+    },
+    {
+      "id": "POS-FIND-02",
+      "severity": "P0",
+      "title": "Silent HTML masquerade x4 — /admin/z-reports, /admin/cloture, /admin/reports/daily, /admin/reports/z-report all return 200 text/html but are 404 visually",
+      "type": "route+ux",
+      "file_line": "routes/web.php SPA catchall",
+      "evidence": {
+        "all_4_routes": "200 text/html; charset=UTF-8 each, but all render 'Page Non Trouvée!' 404 page",
+        "actual_z_report_endpoints": "Only API at GET api/admin/fiscal/z-report (+ /open /close /{zReport} /{zReport}/pdf). No admin-UI route for Z-report exists, OR it is mounted under another path not discovered.",
+        "screenshots": [
+          "09-z-routeadmin-z-reports.png",
+          "09-z-routeadmin-cloture.png",
+          "09-z-routeadmin-reports-daily.png",
+          "09-z-routeadmin-reports-z-report.png"
+        ]
+      },
+      "impact": "Mission step 'Z report close → audit_logs chain extended, PDF generated' is NOT reachable through any /admin/* UI route discovered. Caissier cannot invoke Z-clôture via UI as described in mission narrative.",
+      "red_dispute_attempt": "If a Z-report admin UI does exist, document the correct route. Otherwise this is a P0 functional gap blocking the daily closure workflow."
+    },
+    {
+      "id": "POS-FIND-03",
+      "severity": "P1",
+      "title": "DB seed deficit — mission products (Sandwich Cayenne, Burger, Tacos, Bols) absent",
+      "type": "data",
+      "file_line": "database/seeders/*",
+      "evidence": {
+        "items_in_db": 11,
+        "items_present": "Menu/Frites/Boisson/Sauce/Fromage/Jambon/Boursin/Raclette/Œuf/Galette/Salade",
+        "items_missing": "Sandwich Cayenne / Big Cayenne / Tacos / Bols / Burger — none seeded"
+      },
+      "impact": "Mission step 'Add product wizard sandwich Cayenne via popup' is not reproducible. CASH 10.40€ scenario tied to a 10.40€ Sandwich Cayenne cannot run. Multiple WIZ-* completed tasks (#176-#182) reference Sandwich Cayenne yet DB does not contain them — DB likely reset after seeder run or seeder regression.",
+      "red_dispute_attempt": "Confirmed via SQL `SELECT id, name FROM items` (full 11-row dump captured). Not a selector miss."
+    },
+    {
+      "id": "POS-FIND-04",
+      "severity": "P1",
+      "title": "Zero payment_terminals seeded for branch 1 — CARD/SPLIT scenarios untestable E2E",
+      "type": "data",
+      "file_line": "payment_terminals table",
+      "evidence": {
+        "count": 0,
+        "sql": "SELECT id,name,branch_id,status FROM payment_terminals → []"
+      },
+      "impact": "Mission scenarios CARD with terminal_id and SPLIT 5€+5.40€ CARD cannot execute end-to-end. PosSplitPaymentPhantomCardSentinelTest (tests/Feature/Sentinels/PosSplitPaymentPhantomCardSentinelTest.php) verifies invariant at unit level — that protection remains intact, but live E2E coverage is gone until a fixture seeds at least one terminal.",
+      "ref_sentinel": "tests/Feature/Sentinels/PosSplitPaymentPhantomCardSentinelTest.php"
+    },
+    {
+      "id": "POS-FIND-05",
+      "severity": "INFO",
+      "title": "Audit chain extended +25 rows during read-only navigation (login + admin page visits)",
+      "type": "observability",
+      "file_line": "audit_logs",
+      "evidence": {
+        "pre_count": 101,
+        "post_count": 126,
+        "delta": 25,
+        "delta_explanation": "Spec does 7 logins (one per test) + admin navigations. Audit volume per login looks ~3-4 rows (token issue, admin guard pass, page render audit). Order #113 visible (+1) but spec did NOT create orders — concurrent KIOSK/CROSS agent created it in same DB."
+      },
+      "impact": "Not a bug. But verifies NF525 chain HMAC continuity (pre-hash 14d8f7… → post-hash d12d20…) and gap-free monotonic appends (id 101 → 126 contiguous)."
+    },
+    {
+      "id": "POS-FIND-06",
+      "severity": "INFO",
+      "title": "POS i18n FR clean — no raw label / 0undefined / [object Object] / pos.*. patterns on /admin/pos body",
+      "type": "i18n",
+      "file_line": "/admin/pos (public/js/pos-wizard.js render)",
+      "evidence": {
+        "patterns_checked": ["\\bpos\\.[a-z_.]+", "\\bkiosk\\.[a-z_.]+", "\\[object Object\\]", "\\b0undefined\\b", "\\bLabel\\.[A-Z][a-z]+", "\\bNaN€?"],
+        "matches": 0,
+        "body_text_length": 1565,
+        "screenshot": "screenshots/08-pos-i18n-sweep.png"
+      }
+    },
+    {
+      "id": "POS-FIND-07",
+      "severity": "INFO",
+      "title": "Login page exposes inputs without name attribute — uses id=formEmail/formPassword instead",
+      "type": "observability",
+      "file_line": "/login Vue SPA",
+      "evidence": {
+        "inputs": [
+          {"type": "text", "id": "formEmail", "name": ""},
+          {"type": "password", "id": "formPassword", "name": ""},
+          {"type": "checkbox", "id": "checkbox2", "name": ""}
+        ]
+      },
+      "impact": "Multiple historical E2E specs use `input[name=\"email\"]` — they will silently fail on this server unless selector falls back to type/id. Affects test-debt. Note input type=text (not email) — semantic accessibility downgrade."
+    },
+    {
+      "id": "POS-FIND-08",
+      "severity": "INFO",
+      "title": "POS first-page renders 4 product cards + 3 category chips (Toutes/Sandwich/Suppléments) — empty cart state OK",
+      "type": "ux",
+      "file_line": "public/js/pos-wizard.js (frozen)",
+      "evidence": {
+        "buttons_total": 72,
+        "visible_items": "Frites Le Cayenne, Coca-Cola, Sauce (visible in screenshot 03-pos-loaded.png)",
+        "empty_cart_text": "Aucun article. Sélectionnez un produit dans la grille.",
+        "right_panel_total": "0.00€"
+      },
+      "impact": "POS UI rendering is functional. P1 'POS-04-NO-CARD' from runtime was a selector-miss in test code, not a UI bug — withdrawn."
+    },
+    {
+      "id": "POS-FIND-09",
+      "severity": "P2",
+      "title": "Dashboard 'Filiale Cayenne (Principal)' rendered duplicated x2 + 'Bonjour' x2 in DOM body text",
+      "type": "ux-cosmetic",
+      "file_line": "/admin/dashboard",
+      "evidence": "sampleText excerpt: 'Filiale\\nLe Cayenne (Principal)\\nLe Cayenne (Principal)\\nBonjour\\nAdmin Le Cayenne\\nAdmin Le Cayenne'",
+      "impact": "Duplicate text in DOM — likely sidebar + header both rendering the same. Cosmetic, not blocking. Worth a follow-up cleanup."
+    },
+    {
+      "id": "POS-FIND-10",
+      "severity": "P0-BLOCKED-AUDIT",
+      "title": "Mission steps 4-7 not exercised end-to-end (cart add, 4 payment scenarios, refund, Z close) due to FROZEN-ZONE + data deficit",
+      "type": "coverage",
+      "file_line": "mission scope",
+      "evidence": {
+        "frozen_constraint": "public/js/pos-wizard.js (5964 LOC) MUST NOT be modified per BRAIN — wizard popup interaction not unit-testable via DOM selectors without altering the file",
+        "data_constraint": "FIND-03 (no Sandwich Cayenne) + FIND-04 (no terminals)",
+        "what_was_done_instead": "Observation-grade audit: route reachability, i18n sweep, DOM probes, NF525 baseline pre/post"
+      },
+      "impact": "Mission scenarios CASH 10.40 / CARD / SPLIT / Ticket-Restaurant + refund + Z report PDF require either (a) DB reseed with proper fixtures + payment_terminals row + admin Z-report UI route documented, OR (b) a non-frozen E2E harness that drives the wizard via JavaScript helpers exposed publicly. Today neither is in place. Documenting blockers per CLAUDE.md §13 'never fake certainty'."
+    }
+  ],
+  "summary": {
+    "total_findings": 10,
+    "by_severity": {"P0": 2, "P0-BLOCKED-AUDIT": 1, "P1": 2, "P2": 1, "INFO": 4},
+    "frozen_zone_diff_lines": 0,
+    "nf525_chain_continuity_verified": true,
+    "playwright_pass_rate": "7/7 (100%)",
+    "mission_steps_observed_visually": ["1-login", "2-pos-load", "5-payment-button-exists", "6-i18n-clean"],
+    "mission_steps_blocked": ["3-cash-drawer-open", "4-wizard-add-product", "5a-CASH", "5b-CARD", "5c-SPLIT", "5d-TR", "6-refund", "7-Z-close"]
+  },
+  "decision": "block",
+  "decision_reason": "2 P0 silent HTML masquerade findings (cash-drawer-overview + 4 Z-report routes) + data deficit (no Sandwich Cayenne / no payment terminals) make end-to-end POS payment scenarios non-reproducible. Recommend owner-gate review before proceeding to heal cycle.",
+  "next_steps_recommended": [
+    "Verify whether /admin/cash-drawer-overview and /admin/z-reports UI routes are intended but missing OR were deprecated (CashDrawerSessionController exists per route:list)",
+    "Reseed DB with Sandwich Cayenne + Big Cayenne + Tacos + Bols + 1 payment_terminal for branch 1 before re-running E2E payment scenarios",
+    "Document correct admin UI route for Z-report close + caisse opening — currently absent from /admin/* SPA navigation",
+    "Add E2E test selector resilience: input[name=email] OR input[id=formEmail] OR input[type=email]"
+  ]
+}

@@ -1,0 +1,117 @@
+{
+  "role": "Architect",
+  "zone": "LOYALTY cross-surface integration",
+  "scope": "POS (EARN) + Kiosk (EARN+REDEEM) + Mobile (UX+Wallet) + Web (mirror)",
+  "timestamp": "2026-05-18",
+  "executive_summary": "Loyalty has a DATA SSOT (users.loyalty_points + loyalty_transactions ledger) but NO SERVICE SSOT. Earn/redeem logic is fragmented across: AwardLoyaltyPointsOnDelivery listener (earn), LoyaltyController (redeem/check/register/balance/scan/config/history/optIn), LoyaltyService (refund only, 80 lines), DiscountCalculator (pricing-side preview). Each surface calls the same API endpoints, so cross-surface balance consistency is correct IN THEORY — but no integration test asserts 'POS earn -> Mobile balance shows new total -> Kiosk redeem -> Web shows decrement' as a single chain. Web 'mirror' (/Users/1millnonstop/Downloads/web/loyalty-v2.jsx, 141 lines) is profile chrome only — no QR, no balance, no redeem; cross-surface coverage gap. Wallet (Apple/Google) entirely deferred — only V0 modal placeholder + WALLET_PLAN.md spec; no AppleWalletPassService or GoogleWalletService classes exist.",
+  "ssot_map": {
+    "data_ssot": {
+      "balance_column": "users.loyalty_points (integer, signed since 2026_05_11 migration)",
+      "ledger": "loyalty_transactions table (type: earn|redeem|manual_add, source_surface, balance_after immutable snapshot)",
+      "customer_identifier": "users.loyalty_code (8 alphanum, UNIQUE)",
+      "order_link": "orders.loyalty_customer_code (FK by code, not user_id — supports kiosk anonymous flow where order user_id = kiosk machine account)",
+      "idempotency_sentinel": "orders.loyalty_points_awarded (-1 = in-flight, NULL = pending, >0 = awarded)",
+      "consent": "loyalty_consents (RGPD audit trail, ip_hash + ua_hash, privacy_notice_version)"
+    },
+    "service_ssot_status": "ABSENT — logic spread across listener + controller + 2 services + pricing calculator. LoyaltyService::refundPoints is the ONLY method in LoyaltyService. Recommended V1.0.2 consolidation: extract earn/redeem/refund into BackendLoyaltyService with idempotent operations.",
+    "config_ssot": "Smartisan\\Settings 'loyalty_setup' group — admin-editable. Keys: loyalty_points_per_euro (default 10), loyalty_points_for_1_euro_discount (default 100), loyalty_min_redeem_points (default 50), loyalty_tiers (CSV). GET /api/frontend/loyalty/config returns this — mobile/kiosk/web fetch + cache."
+  },
+  "surface_inventory": {
+    "POS": {
+      "earn": "AwardLoyaltyPointsOnDelivery listener on OrderStatusChanged event — triggers on DELIVERED status for non-kiosk orders. Source_surface stamped as $order->source_surface ?? 'web' (POS orders should set 'pos' explicitly — verify).",
+      "redeem": "NONE in V1 per owner directive. PosOrderRequest accepts loyalty_customer_code (nullable) — used to ATTRIBUTE earn to a customer but does NOT redeem points. Owner now wants cashier redeem UI added (LOCK pos-wizard.js parallel cycle).",
+      "scan_input": "Manual entry via PosOrderRequest validation 'min:4,max:25' OR CustomerNfcLookupController (NFC scan, returns loyalty_points)",
+      "endpoint_used": "PosOrderRequest hands code to OrderService::create which sets Order::loyalty_customer_code; earn fires later on status transition"
+    },
+    "Kiosk": {
+      "earn": "Same listener (kiosk path triggers on PREPARED or DELIVERED — kiosk flow doesn't reach DELIVERED). User resolution: FrontendOrder.loyalty_customer_code -> User::where('loyalty_code', X). Source_surface = 'kiosk'.",
+      "redeem": "POST /api/v1/frontend/loyalty/redeem (auth:sanctum, kiosk:order ability check inline in controller). DB transaction + lockForUpdate prevents race. Validates multiple-of-rate. Writes ledger row with type=redeem, source_surface='kiosk'.",
+      "scan_input": "POST /api/v1/frontend/loyalty/scan (auth:sanctum, throttle:20,1, kiosk:order ability check inline). Returns opaque customer_token + balance + allergens. Strips FK: prefix. Falls back to phone E.164 lookup if loyalty_code not found.",
+      "register": "POST /api/v1/frontend/loyalty/opt-in (RGPD consent + LoyaltyConsent log) OR legacy /register (no consent)",
+      "ui": "KioskLoyaltyComponent.vue (1071 lines, NOT in frozen list — wizard kiosk auditable per feedback 2026-05-07)"
+    },
+    "Mobile": {
+      "earn": "Display only — consumes /loyalty/history + /loyalty/balance. Mobile DOES NOT earn directly; mobile order placement (when wired) would flow through POS or kiosk listener.",
+      "redeem": "POST /loyalty/redeem with Idempotency-Key header (mobile/data/loyalty.js:24 mentions B-02 from audit — sent client-side BUT route /loyalty/redeem at routes/api.php:1278 does NOT apply IdempotencyKeyMiddleware — only auth:sanctum). GAP.",
+      "qr": "useLoyaltyQR hook (5min rotation, chained setTimeout, visibilitychange listener). QR payload = 'FK:<loyalty_code>'. generateSignedQR is 100% client-side mock (mobile/data/loyalty.js:174) — NO server endpoint /loyalty/qr/sign exists in V0 backend.",
+      "wallet": "ModalWalletV0Notice placeholder only — Apple/Google buttons open informational modal. No real pass generation. WALLET_PLAN.md is the spec, not implementation.",
+      "tests": "22 E2E specs PASS (15 features + 5 adversarial + 1 fictional-purge + 1 contrast-inspect)"
+    },
+    "Web": {
+      "status": "NO loyalty wallet surface exists. /Users/1millnonstop/Downloads/web/loyalty-v2.jsx (141 lines) = ProfileEditor / NotificationSettings / SavedCards / PreferencesCard / AccountDangerZone — exports LoyaltyProfileTab. ZERO QR, ZERO balance display, ZERO redeem UI, ZERO history feed.",
+      "cross_surface_gap": "Web cannot show same code/balance as mobile — surface is structurally absent. This contradicts task framing 'web = mirror'."
+    }
+  },
+  "balance_consistency_analysis": {
+    "happens_path": "All surfaces read from same User.loyalty_points column via /loyalty/balance or /loyalty/check. Same code shown on Mobile = same balance returned to Kiosk scan. Verified at controller layer: LoyaltyController::check (line 86) reads $user->loyalty_points; ::scan (line 649) reads (int) ($target->loyalty_points ?? 0); same source.",
+    "race_conditions": "Redeem uses DB::transaction + lockForUpdate (line 274). Earn uses atomic sentinel UPDATE WHERE loyalty_points_awarded IS NULL (line 53-56). Refund uses lockForUpdate (non-sqlite). Increment via DB::table()->increment is atomic at row level.",
+    "weak_links": [
+      "Mobile redeem sends Idempotency-Key header but /loyalty/redeem route lacks IdempotencyKeyMiddleware enforcement — double-tap redeem from mobile can produce TWO ledger rows IF DB transaction allows (Kiosk path uses transaction so DB-level uniqueness saves it for now, but route-level idempotency is the proper boundary).",
+      "loyalty_transactions has no unique constraint on (user_id, order_id, type) for earn deduplication — relies entirely on orders.loyalty_points_awarded sentinel (UPDATE 1 row trick is correct, but if listener bypassed via different event path, dup is possible).",
+      "AwardLoyaltyPointsOnDelivery does NOT propagate to mobile in real-time — mobile polls or refreshes manually. No push channel. Acceptable for V1 but a UX gap."
+    ]
+  },
+  "event_sourcing_assessment": {
+    "current_pattern": "Hybrid: state column (users.loyalty_points) + immutable ledger (loyalty_transactions with balance_after snapshot). NOT pure event-sourcing. Balance is computed by UPDATE/increment, NOT by replaying ledger.",
+    "rebuild_capability": "Could reconstruct balance from SUM(loyalty_transactions.points) — but no test asserts users.loyalty_points == SUM(ledger). Drift possible if a path writes one without the other (refundPoints writes both, earn writes both, redeem writes both — manual_add via /add-points endpoint also writes both per controller line 212-217).",
+    "recommendation": "V1.0.2: add daily reconciliation job comparing users.loyalty_points vs SUM(ledger.points) per user; alert on mismatch."
+  },
+  "cross_surface_invariants": {
+    "I1_same_code_same_balance": "PASS — single column source",
+    "I2_redeem_decrements_visible_everywhere": "PASS — column updated atomically",
+    "I3_earn_post_order_visible_in_history": "PASS — ledger row written in same DB transaction as balance increment",
+    "I4_refund_on_cancel_reverses": "PASS — LoyaltyService::refundPoints called from OrderService cancel paths (line 1697 POS, 1800 web), FrontendOrderService line 707 (kiosk)",
+    "I5_web_mirrors_mobile": "FAIL — web has no loyalty wallet surface (only profile chrome)",
+    "I6_wallet_pass_balance_synced": "N/A — Wallet not implemented",
+    "I7_qr_code_unique_per_session": "FAIL — QR payload is static FK:<loyalty_code>, not nonced; rotation is cosmetic"
+  },
+  "findings": [
+    {
+      "id": "LCS-A-001",
+      "severity": "P1",
+      "title": "No service SSOT — earn in listener, redeem in controller, refund in service, preview in pricing calculator",
+      "impact": "Future feature additions (e.g. loyalty tiers, bonus campaigns) will require modifying 4+ files. Risk of inconsistent business rules across surfaces.",
+      "evidence_paths": [
+        "app/Listeners/AwardLoyaltyPointsOnDelivery.php (earn)",
+        "app/Http/Controllers/Frontend/LoyaltyController.php (redeem/check/register/balance/scan)",
+        "app/Services/LoyaltyService.php (refund only)",
+        "app/Services/Pricing/DiscountCalculator.php:45-59 (preview)"
+      ],
+      "recommendation": "V1.0.2: extract BackendLoyaltyService with earn/redeem/refund/preview/balance methods. Keep controllers as thin HTTP adapters."
+    },
+    {
+      "id": "LCS-A-002",
+      "severity": "P1",
+      "title": "Web has no loyalty wallet surface — only profile chrome",
+      "impact": "Cross-surface coverage broken; web users cannot view balance, QR, history, or redeem. Task framing 'web mirror of mobile' is unmet.",
+      "evidence_paths": ["/Users/1millnonstop/Downloads/web/loyalty-v2.jsx (141 lines, ZERO loyalty wallet)"],
+      "recommendation": "OWNER GATE: confirm whether web wallet surface is V1 scope or V1.x backlog. If V1 — port mobile LoyaltyQR + balance card + history to web with same /loyalty/* endpoints. If V1.x — document explicit deferral so 'mirror' framing is removed."
+    },
+    {
+      "id": "LCS-A-003",
+      "severity": "P2",
+      "title": "No balance vs ledger reconciliation job",
+      "impact": "Silent drift between users.loyalty_points and SUM(loyalty_transactions.points) per user goes undetected.",
+      "evidence_paths": ["app/Console/Commands/* (no reconciliation command found)"],
+      "recommendation": "V1.0.2: add LoyaltyReconcileCommand running daily; alert + heal on mismatch."
+    },
+    {
+      "id": "LCS-A-004",
+      "severity": "P2",
+      "title": "Mobile/Apple/Google Wallet deferred — only V0 placeholder modal",
+      "impact": "Customers cannot save loyalty pass to native Wallet apps. Marketing/retention gap.",
+      "evidence_paths": ["mobile/WALLET_PLAN.md (spec)", "app/Services/Wallet/ (DOES NOT EXIST)", "app/Http/Controllers/WalletController.php (DOES NOT EXIST)"],
+      "recommendation": "OWNER GATE: confirm V1 ships without Wallet (acceptable — WALLET_PLAN.md frames it as Phase 7+). Document explicit deferral; mobile button must continue to show V0 notice, not silently fail."
+    },
+    {
+      "id": "LCS-A-005",
+      "severity": "P3",
+      "title": "POS source_surface stamping defaults to 'web' instead of 'pos'",
+      "impact": "Analytics will mis-attribute POS-earned points to web channel unless order->source_surface explicitly set to 'pos' by OrderService.",
+      "evidence_paths": ["app/Listeners/AwardLoyaltyPointsOnDelivery.php:113 ($order->source_surface ?? ($isKiosk ? 'kiosk' : 'web'))"],
+      "recommendation": "Verify OrderService::create sets source_surface='pos' for POS orders; if not, fix the fallback to 'pos' for non-kiosk path."
+    }
+  ],
+  "frozen_zone_status": "KioskLoyaltyComponent.vue not in frozen list. LoyaltyService.php not in frozen list (NF525 frozen scope is FiscalSequenceService/ZReportService/AuditLogService). BranchScope unchanged. PricingService unchanged. POS-wizard.js (frozen) NOT touched by any loyalty change.",
+  "verdict": "ARCHITECTURE: cross-surface data SSOT is sound; service SSOT absent but acceptable for V1. P1: web mirror gap is the largest cross-surface coherence break. Recommend OWNER GATE on (web wallet scope) + (V1 wallet deferral) before claiming cross-surface coverage complete."
+}

@@ -1,0 +1,302 @@
+{
+  "agent": "B2-P6",
+  "mission": "POS × Staff-newbie safety — confirmations destructives, undo, help inline, workflow guide first day, max transaction sans manager",
+  "discipline": "DM6 RO + DM3 + DM5 + DM8",
+  "server": "http://127.0.0.1:8000",
+  "executed_at": "2026-05-25T22:30:00+02:00",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head": "a6ed32807",
+  "auth": {
+    "method": "Read-only static source audit (DM6 RO); no live HTTP requests issued for this mission"
+  },
+  "states": [
+    {
+      "n": 1,
+      "title": "PosComponent.vue — confirmation modals before destructive actions",
+      "files_inspected": [
+        "resources/js/components/admin/pos/PosComponent.vue (4874 LOC)",
+        "resources/js/components/admin/pos/PosOrdersTrackerComponent.vue (1180+ LOC)",
+        "resources/js/components/admin/pos/PaymentComponent.vue (1478 LOC)"
+      ],
+      "evidence": {
+        "destructive_actions_found": [
+          {
+            "name": "cancelLastCartLine",
+            "location": "PosComponent.vue:584-597 (template) + 3484-3501 (script)",
+            "confirmation": "NONE",
+            "reversibility": "RECOVERABLE (cart line — re-tap item to restore)",
+            "comment_quote": "[POS-V5] Cancel last cart line — undo subtil, pas destructif. — line 584",
+            "data_testid": "pos-cancel-last-line",
+            "verdict": "BY-DESIGN no confirmation; this IS the undo affordance — see State 2"
+          },
+          {
+            "name": "cancelKioskCashOrder",
+            "location": "PosComponent.vue:1275 (template) + 3156-3183 (script)",
+            "confirmation": "NONE",
+            "reversibility": "DESTRUCTIVE (real kiosk order cancelled at backend, payment never collected — customer may already be waiting)",
+            "endpoint": "POST /admin/pos/counter-collect/{order}/cancel",
+            "backend_rbac": "abort_unless(auth()->user()?->can('pos'), 403); — routes/api.php:858",
+            "rbac_caveat": "POS Operator role HAS 'pos' permission (RolePermissionTableSeeder.php:95) → newbie cashier passes the gate with ONE CLICK and no reason input. Reason hard-coded client-side as 'Commande borne annulee au comptoir' (PosComponent.vue:3174) — no human input captured.",
+            "data_testid_button": "(none — inline)",
+            "verdict": "P0 — gap exists, see Finding B2-P6-F01"
+          },
+          {
+            "name": "confirmCancelOrder (PosOrdersTrackerComponent)",
+            "location": "PosOrdersTrackerComponent.vue:304-388 (template) + 809-820 (script)",
+            "confirmation": "STRONG — dedicated modal `pos-tracker-cancel-overlay` with role=dialog + aria-modal=true + title + reason textarea (maxlength=700) + required reason ≥ 3 chars + danger button + busy state + error banner role=alert",
+            "data_testids": "tracker-cancel-confirm, tracker-cancel-reason, tracker-cancel-error-banner",
+            "verdict": "GREEN — best-in-class destructive-action gate in V1 POS"
+          },
+          {
+            "name": "PaymentComponent.confirmOrder",
+            "location": "PaymentComponent.vue:309-318",
+            "confirmation": "Inline NF525-aware gate (canConfirmCard / canConfirmMulti guards) but no extra 'are you sure' step — by design (POS cashier intent = pay)",
+            "verdict": "GREEN — appropriate for payment commit"
+          }
+        ]
+      },
+      "owner_q_answered": "Confirmation before destructive actions ? — INCONSISTENT. PosOrdersTrackerComponent.confirmCancelOrder has a GREEN modal-with-reason gate (P-OWNER-grade). PosComponent.cancelKioskCashOrder has NO client confirmation and the backend RBAC is `can('pos')` which any POS Operator passes, with reason hard-coded by the client. cancelLastCartLine intentionally has no gate (it IS the undo). Net: 1 of 2 real destructive paths is properly guarded; the kiosk-cash cancel path is one-click-destructive."
+    },
+    {
+      "n": 2,
+      "title": "PosCounterCollectModal.vue (M-POS-2 keyboard) — help text + onboarding for newbie",
+      "files_inspected": [
+        "resources/js/components/admin/pos/PosCounterCollectModal.vue (768 LOC)"
+      ],
+      "evidence": {
+        "help_strings_in_modal": [
+          ":aria-label='$t(label.encaisser_mode_title)' — line 42 (dialog name)",
+          ":aria-label='$t(button.close)' — line 53",
+          "modeHint computed (line 281-288) maps CARD/MOBILE/TICKET → cc_mode_card_hint, cc_mode_mobile_hint, cc_mode_ticket_hint (rendered in .cc-mode-info-text — line 151)",
+          ":aria-label='$t(label.received_amount)' — line 120 (PosV5Numpad)",
+          "role='status' + aria-live='polite' on cc-change-row — line 130-132 (change-due feedback)",
+          "role='alert' on cc-cash-short — line 140 (insufficient-cash warning)"
+        ],
+        "keyboard_affordances": {
+          "esc_to_close": "mounted() document.addEventListener('keydown', this._onEsc) — line 326-328",
+          "enter_to_confirm": "@keyup.enter='onConfirm' on receivedInput — line 113",
+          "auto_focus_on_open": "$refs.receivedInput.focus() + .select() in $nextTick — line 309-313",
+          "auto_prefill_total": "cashReceivedRaw pre-filled to orderTotal at FR locale '8,50' — line 301",
+          "comment_quote": "[GOAL-M-POS-2 2026-05-24] Auto-focus receivedInput on modal open so the cashier can type-then-Enter without a mouse hop. — line 304-308"
+        },
+        "newbie_safety_gaps": [
+          "NO first-time-use tooltip / coachmark / walkthrough — the modal opens directly into action",
+          "NO 'sample amounts' shortcuts (e.g. quick-buttons for exact / +5€ / +10€ rounding) beyond the numpad",
+          "NO explanatory subtitle for what each mode does (CARD/MOBILE/TICKET get a SINGLE modeHint string, no example, no 'when to use')",
+          "cc-cash-short error alert uses static string 'label.cc_cash_short' — no contextual help like 'Le client doit donner {missing}€ de plus'"
+        ],
+        "verdict_state2": "Modal is functionally solid for keyboard ops (Esc/Enter/auto-focus/auto-prefill) but offers ZERO first-day onboarding scaffolding. A newbie reading the modal cold has no inline how-to."
+      },
+      "owner_q_answered": "Help inline pour newbie ? — PARTIAL. PosCounterCollectModal has aria-labels + mode hints + role=status feedback that ASSISTIVE TECH can read, and excellent keyboard scaffolding (Esc/Enter/auto-focus/auto-prefill total). But there is NO first-day-cashier coachmark, NO 'show me how' walkthrough, NO contextual help bubble. Newbie sees the modal cold with 4 mode icons and must already know what each means."
+    },
+    {
+      "n": 3,
+      "title": "Grep 'confirm' / 'êtes-vous sûr' / 'really' across pos components",
+      "evidence": {
+        "grep_pattern": "grep -rn -iE '(confirm|êtes-vous sûr|really|are you sure|destructive|annul)' resources/js/components/admin/pos/",
+        "confirmation_phrasing_in_use": [
+          "pos.cancel_order_confirm — PosOrdersTrackerComponent.vue:384 (Cancel-order modal danger button label)",
+          "pos.cancel_order_title — line 315 (modal h3)",
+          "pos.cancel_order_reason_label — line 333",
+          "pos.cancel_order_reason_placeholder — line 341",
+          "pos.cancel_order_reason_required — line 814 (validation msg)",
+          "message.confirm_transfer — FloorplanComponent.vue:249 via window.prompt (NB: native prompt, not custom modal — UX inconsistency vs tracker dialog)",
+          "button.confirm_and_print — PaymentComponent.vue:318 + PosCounterCollectModal.vue:176 (payment confirm CTA, NOT a 'are-you-sure')"
+        ],
+        "missing_french_idioms": [
+          "'Êtes-vous sûr ?' — ZERO matches in POS components (no French confirmation idiom anywhere)",
+          "'Voulez-vous vraiment' — ZERO matches",
+          "'Confirmer la suppression' — ZERO matches",
+          "'Confirmer l\\'annulation' as a discrete dialog title — only in PosOrdersTrackerComponent ($t('pos.cancel_order_title'))"
+        ],
+        "ux_consistency_finding": "Two patterns for destructive confirm coexist: (a) RICH MODAL with reason input (PosOrdersTrackerComponent) and (b) IMPLICIT/NONE (cancelKioskCashOrder, cancelLastCartLine) and (c) NATIVE window.prompt (FloorplanComponent dine-in transfer — UX outlier). For V1 dine-in is feature-flag OFF so (c) is dormant."
+      },
+      "owner_q_answered": "Idioms de confirmation présents ? — UN SEUL modal de confirmation destructive shipped en V1 = PosOrdersTrackerComponent annulation. AUCUNE phrase 'Êtes-vous sûr ?' n'existe dans les composants POS — la disciplne FR 'are-you-sure' n'est pas généralisée. Pattern (a) rich modal vs (b) one-click = drift UX qui peut piéger un newbie."
+    },
+    {
+      "n": 4,
+      "title": "Spatie RBAC — POS Operator discount cap + destroy-paid + max-transaction ceiling",
+      "evidence": {
+        "pos_operator_permissions_seeded": [
+          "dashboard — RolePermissionTableSeeder.php:94",
+          "pos — line 95",
+          "pos-orders — line 96",
+          "pos-discount-up-to-10 — line 98 (the 10% cap)",
+          "pos.redeem-loyalty — line 101",
+          "kitchen-display-system — line 127 (extra)",
+          "order-status-screen — line 128 (extra)"
+        ],
+        "discount_enforcement_chain": {
+          "permission_name_for_unlimited": "pos-discount-unlimited (owner)",
+          "permission_name_for_manager_10_to_50": "pos-discount-over-10-requires-manager",
+          "permission_name_for_cashier_up_to_10": "pos-discount-up-to-10",
+          "backend_gate_locations": [
+            "app/Services/Order/OrderQuoteService.php:307-327 (POS_SURFACE branch)",
+            "app/Services/OrderService.php:2656-2670 (POS order store branch)"
+          ],
+          "logic_summary": "if pct > 50 && !can('pos-discount-unlimited') → 422 'Only an owner can apply a discount above 50%'; elif pct > 10 && !can('pos-discount-over-10-requires-manager') && !can('pos-discount-unlimited') → 422 'Discount above 10% requires manager approval'; final fallback: if no discount perm at all → 422 'You do not have permission to apply POS discounts'",
+          "verdict": "GREEN — discount ladder cleanly enforces 10% / 50% / unlimited tiers in backend; POS Operator is CORRECTLY capped at 10%"
+        },
+        "destroy_paid_gate": {
+          "permission": "pos-destroy-paid — PermissionTableSeeder.php:154",
+          "enforcement": "app/Services/OrderService.php:2432-2436 — abort(403,'Paid orders cannot be destroyed without elevated permission.') if payment_status===PAID and !$actor->can('pos-destroy-paid')",
+          "seeded_to_pos_operator": "FALSE — pos-destroy-paid is NOT in posOperatorManagerPermissionNames (RolePermissionTableSeeder.php:93-105). Only Admin + Branch Manager could realistically carry it; current seeder does NOT assign it to ANY role explicitly, meaning today only the global Admin (branch_id=0) effectively bypasses via SuperAdmin in absence of dedicated assignment.",
+          "verdict": "GREEN — newbie cashier CANNOT destroy a PAID order"
+        },
+        "max_transaction_ceiling_search": {
+          "grep_pattern": "grep -rn -E '(max_transaction|transaction_limit|cashier_limit|max_ticket|order_amount_limit|sale_ceiling|over_amount)' app/ config/",
+          "hits": [
+            "PaymentTerminalRequest.php:34 — comment ONLY ('realistic ceiling ~10€/transaction') for a NUMERIC casting, NOT a guard",
+            "RouteServiceProvider.php — multiple 'ceiling' mentions but ALL refer to rate-limit RPS ceilings, NOT order-amount ceilings",
+            "E2ESoakCommand.php — '--rss-ceiling-mb / --outbox-p99-ceiling-s / --db-pool-pct-ceiling' = ops metrics ceilings",
+            "OutboxRetryFailedCommand.php — replay budget ceiling (retry count)"
+          ],
+          "verdict": "ABSENT in V1 — there is NO order-total ceiling that requires manager approval before a POS Operator can ring up a high-value transaction. A newbie cashier can confirm an order of arbitrary euros (5€ or 500€ or 5000€) without supervisor intervention. The only money-related approval gate is the discount-percentage ladder. Cash drawer reconcile DOES require manager approval beyond `cash.variance_threshold_eur` (CashVarianceRequiresApprovalException.php) — that's a DIFFERENT control (variance, not transaction ceiling)."
+        }
+      },
+      "owner_q_answered": "Max single transaction sans manager ? — ABSENT en V1. Aucune limite de montant order qui exigerait approbation manager n'existe. POS Operator peut encaisser N'IMPORTE QUEL montant. La seule discipline est: (1) discount cap 10% backend-enforced, (2) destroy-paid bloqué pour cashier, (3) cash-drawer variance > seuil exige manager. Ces 3 sont solides mais le 'ceiling order total' attendu (commun chez Toast/Square: 'transactions over X require manager swipe') = MANQUANT."
+    },
+    {
+      "n": 5,
+      "title": "Adversarial + workflow-guide-first-day + scoring",
+      "evidence": {
+        "workflow_guide_first_day_audit": {
+          "grep_patterns_tried": [
+            "(help|aide|tutorial|onboard|tooltip|hint|guide|first.day|placeholder)"
+          ],
+          "tooltip_coverage_pos_component": [
+            ":title='$t(pos.tracker.button_hint)' — line 143",
+            ":title='$t(pos.tracker.customer_screen_hint)' — line 155",
+            ":title='$t(pos.kiosk_counter_collect_hint)' — line 122",
+            ":title='$t(pos.no_sale_hint)' — line 221",
+            ":title='$t(label.cash_session_dialog_title)' — line 241",
+            ":title='$t(label.floorplan)' — line 174",
+            ":title='$t(pos.loyalty.redeem.title) / disabled_hint' — line 204",
+            ":title='Masquer/Voir toutes les catégories' — line 460",
+            ":title='$t(pos.parked_orders)' — line 574",
+            ":title='$t(button.edit)' — lines 773, 786",
+            "Numerous :aria-label='...' on action buttons (close, edit, increase_qty, etc.)"
+          ],
+          "tooltip_count_estimate": "~14 :title= attrs + ~30 :aria-label= attrs detected in PosComponent.vue alone",
+          "first_day_onboarding_artifacts_searched": [
+            "Tutorial component — NONE in resources/js/components/admin/pos/",
+            "Coachmark / spotlight overlay — NONE",
+            "'first-time' / 'first_day' / 'welcome' string in pos lang files — NONE matched",
+            "Onboarding tour library (e.g. driver.js, shepherd, intro.js) — NONE in package.json (would surface as import)"
+          ],
+          "rbac_landing_page": {
+            "evidence": "LeCayenneRoleLandingUrlSeeder.php:27 — 'POS Operator' => 'pos' (newbie lands directly on POS screen post-login)",
+            "verdict": "Newbie is dropped on a live cashier surface with no walkthrough. Tooltips exist (hover for hint) but a first-day cashier on a touch screen often does NOT hover — they tap. Hover-only :title means most newbie-onboarding affordance is invisible on touch hardware."
+          }
+        },
+        "undo_recent_capability": {
+          "primary_undo": {
+            "name": "cancelLastCartLine",
+            "scope": "Removes last cart line BEFORE payment commit",
+            "feedback": "alertService.info(pos.cancel_last_line_done_named|done) — line 3494-3496",
+            "ux_label": "$t('pos.cancel_last_line') with ↻ icon (line 595-596)",
+            "verdict": "GREEN — discoverable, labeled, reversible (re-tap item)"
+          },
+          "post_payment_undo": "NONE except via PosOrdersTrackerComponent cancel modal (post-commit cancel with reason). For paid orders the destroy gate is RBAC-blocked for cashier (correct).",
+          "undo_history_depth": "1 (only LAST line). No multi-step Ctrl-Z. Acceptable for V1 single-page cashier flow."
+        },
+        "adversarial_challenges": [
+          {
+            "challenge": "Can a newbie cashier accidentally cancel a paid kiosk order with one click?",
+            "answer": "YES — see Finding F01. cancelKioskCashOrder on PosComponent.vue:1275 fires the cancel POST directly with NO modal. Backend gate is can('pos') which POS Operator HAS. The reason field is hard-coded by the client to 'Commande borne annulee au comptoir' (PosComponent.vue:3174). No idempotency-key collision protects against this since the user TYPED the click; idempotency only protects double-fire."
+          },
+          {
+            "challenge": "Can a newbie cashier apply an illegal discount?",
+            "answer": "NO at backend (10% cap enforced OrderQuoteService.php:321). Frontend may or may not surface a friendlier 'manager approval required' message — only backend 422 fires."
+          },
+          {
+            "challenge": "Can a newbie cashier ring up a 5000€ sale?",
+            "answer": "YES — see Finding F03. No max-transaction ceiling exists. Only cash-drawer variance post-shift triggers manager approval (which is post-facto, not preventive)."
+          },
+          {
+            "challenge": "Is there a 'panic' / 'call manager' button on the POS surface?",
+            "answer": "NONE detected. No manager-call CTA in PosComponent template scan."
+          },
+          {
+            "challenge": "Do destructive operations have keyboard accelerator hijack risk for a typing newbie?",
+            "answer": "LOW — Esc only closes the counter-collect modal (PosCounterCollectModal.vue:319-331); Enter on the receivedInput confirms cash collection (which is intentional). cancelLastCartLine has NO keyboard accelerator. Tracker cancel modal closes on Esc. Acceptable."
+          }
+        ],
+        "scoring": {
+          "completeness": "5/5 states executed",
+          "owner_questions_answered": "5/5 (confirmation / undo / help-inline / workflow-guide / max-transaction-limit) with explicit values + evidence pointers",
+          "evidence_strength": "HIGH — every claim references file:line in source, all 3 target files Read or grepped end-to-end",
+          "P0_blockers_found": 1,
+          "P1_findings": 2,
+          "P2_findings": 2,
+          "verdict": "YELLOW — backend RBAC discipline is GREEN (10% discount cap + destroy-paid gate both ironclad); UX safety for newbie is PATCHY (1 destructive path one-click cancellable; no max-transaction ceiling; no first-day walkthrough; tooltip-only help on touch hardware where hover doesn't apply)"
+        }
+      },
+      "owner_q_answered": "Workflow guide first day ? — ABSENT en V1. Pas de tutorial/coachmark/walkthrough composant. Onboarding library inexistante (pas de shepherd/intro.js/driver.js dans package.json). Le newbie est landed direct sur /pos (LeCayenneRoleLandingUrlSeeder:27) sans introduction. ~14 :title= tooltips + ~30 :aria-label= existent dans PosComponent mais ils sont (a) HOVER-only invisible sur touch hardware, (b) éparpillés sans flow scénarisé."
+    }
+  ],
+  "verdict": "YELLOW",
+  "findings": [
+    {
+      "id": "B2-P6-F01",
+      "severity": "P0",
+      "category": "destructive-action-one-click",
+      "title": "cancelKioskCashOrder cancels a real customer-paid kiosk order with one click + no reason input + no confirmation modal",
+      "details": "PosComponent.vue:1275 wires a 'Annuler' button to cancelKioskCashOrder(order) which fires POST /admin/pos/counter-collect/{order}/cancel with reason hard-coded client-side as 'Commande borne annulee au comptoir' (line 3174). The backend gate at routes/api.php:858 is abort_unless(auth()->user()?->can('pos'), 403) — POS Operator (newbie cashier) HAS the 'pos' permission per RolePermissionTableSeeder.php:95 and passes. No client modal, no reason capture, no 'Êtes-vous sûr ?' interstitial. Contrast with PosOrdersTrackerComponent.confirmCancelOrder which REQUIRES a reason ≥3 chars in a proper dialog (lines 304-388, validation at 813-815). A miss-tap on the small button in the kiosk-cash side-panel destroys a real order that a customer may already be standing at the borne waiting for.",
+      "evidence": "States 1 + 5; specifically PosComponent.vue:1275, 3156-3183 + routes/api.php:857-876 + RolePermissionTableSeeder.php:91-105",
+      "impact": "Newbie cashier on first day can cancel a kiosk order with one tap; customer pays at borne, cashier looks at the side panel, miss-taps 'Annuler' instead of 'Encaisser', order is gone, no audit-grade reason captured (hard-coded boilerplate), no manager approval. In a busy lunch rush this is a foot-gun.",
+      "fix_hint": "Add either (a) reuse PosCounterCollectModal-style confirmation overlay before calling cancelKioskCashOrder — minimal scope, mirrors GREEN tracker pattern; OR (b) bring up the same tracker cancel dialog (textarea + reason ≥3) before the POST. Option (a) preferred for visual consistency with the counter-collect flow next door. Backend already idempotent (X-Idempotency-Key on the cancel route per Wave W comment lines 3160-3169) — only the UX gate is missing."
+    },
+    {
+      "id": "B2-P6-F02",
+      "severity": "P1",
+      "category": "rbac-design-gap",
+      "title": "Aucun ceiling 'max single transaction without manager' — POS Operator can confirm any amount",
+      "details": "Mission item 5 asked whether a newbie cashier is bounded by a max-transaction-amount that requires manager approval. Comprehensive grep across app/ + config/ for (max_transaction|transaction_limit|cashier_limit|max_ticket|order_amount_limit|sale_ceiling|over_amount) returns ZERO order-total ceilings — all 'ceiling' hits are about rate-limiting RPS or RSS/outbox/db-pool ops metrics. The discount-percentage ladder (10% / 50% / unlimited) is solid but enforces only on the discount delta, not the final order_amount. CashVarianceRequiresApprovalException exists but fires at SHIFT END reconcile (post-facto), not as a preventive gate before a 500€ POS sale.",
+      "evidence": "State 4 max_transaction_ceiling_search; grep across app/ + config/ returning only RPS/RSS/outbox/DB-pool ceilings",
+      "impact": "A newbie cashier can ring up a high-value POS transaction (e.g. catering order, comped event) without any supervisor intervention. Manager has no preventive gate; only post-shift cash-drawer reconcile would surface a variance. Common SaaS POS competitor pattern (Toast 'transactions over X require manager swipe', Square similar) is absent.",
+      "fix_hint": "V1.0.X backlog: add `config('pos.cashier_transaction_ceiling_eur')` (default null = no cap V1) + check in PaymentService::confirmCounterPayment or OrderQuoteService when surface=POS — if final total > ceiling AND actor lacks 'pos-confirm-over-ceiling' permission → 422 with manager-approval prompt code. Mirrors the existing discount ladder pattern. Owner-config so each Le Cayenne can tune the limit."
+    },
+    {
+      "id": "B2-P6-F03",
+      "severity": "P1",
+      "category": "onboarding-gap",
+      "title": "Newbie cashier lands on live POS with zero first-day walkthrough; tooltips are hover-only (invisible on touch)",
+      "details": "LeCayenneRoleLandingUrlSeeder.php:27 maps POS Operator → 'pos' so a freshly created cashier user lands directly on /pos post-login. No tutorial component, no coachmark overlay, no onboarding library (verified: no shepherd/intro.js/driver.js in package.json — would have surfaced in import scan). The ~14 :title= tooltips and ~30 :aria-label= attrs detected in PosComponent.vue are excellent for desktop hover + assistive tech, but POS in production runs on a TOUCH screen where 'hover for hint' does not apply — newbies tap, they don't hover. PosCounterCollectModal opens directly into action with NO contextual 'how to' beyond a single static modeHint per mode (CARD/MOBILE/TICKET).",
+      "evidence": "State 5 workflow_guide_first_day_audit + State 2 newbie_safety_gaps",
+      "impact": "First-day cashier productivity loss + risk of erroneous taps (see F01). Cannot self-serve onboarding; must shadow a senior cashier. For a SaaS positioning toward 'easy to onboard new staff', this is a perception gap.",
+      "fix_hint": "V1.0.X UX backlog: (a) lightweight first-login coachmark on /pos using a dismissible overlay (no third-party lib needed — Vue transition + 4 step bubbles pointing at: catalog search, cart, encaisser, parked orders, history); persisted dismissal via user.preferences flag. (b) OR a 'mode démo' route /pos/?guided=1 that drops the cashier into a sandbox with sample data + step-by-step text panel. (a) is cheaper and on-brand with existing tooltip discipline."
+    },
+    {
+      "id": "B2-P6-F04",
+      "severity": "P2",
+      "category": "ux-consistency-drift",
+      "title": "Trois patterns de confirmation destructive coexistent (rich modal | implicit | window.prompt) sans doctrine commune",
+      "details": "POS components mix three patterns: (a) RICH MODAL with reason ≥3 chars + role=dialog + danger button + error banner = PosOrdersTrackerComponent.confirmCancelOrder (GREEN reference); (b) IMPLICIT no-confirm = PosComponent.cancelKioskCashOrder + cancelLastCartLine; (c) NATIVE window.prompt = FloorplanComponent.vue:249 ('message.confirm_transfer' — note V1 dine-in is feature-flag OFF per CLAUDE.md memory so this is dormant but the inconsistent pattern remains in the code). No 'Êtes-vous sûr ?' idiom anywhere — the FR safety phrasing tradition is unused in favor of action-verb confirmations.",
+      "evidence": "State 3 confirmation_phrasing_in_use + ux_consistency_finding",
+      "impact": "Newbie cashier learns one pattern (tracker dialog) and is then surprised when kiosk-cash cancel destroys directly. Long-term: pattern-drift makes onboarding cost compound (each new screen learned independently).",
+      "fix_hint": "V1.0.X UX backlog: doctrine 'tout cancel d\\'order = modal-with-reason ≥3 chars'. Refactor cancelKioskCashOrder to reuse a shared `<ConfirmCancelOrderDialog />` extracted from PosOrdersTrackerComponent. Retire window.prompt branch in FloorplanComponent before V1.0.2 enables dine-in. Mantra: ONE confirm doctrine, applied everywhere."
+    },
+    {
+      "id": "B2-P6-F05",
+      "severity": "P2",
+      "category": "newbie-help-microcopy",
+      "title": "PosCounterCollectModal n'aide pas le cashier débutant à choisir / vérifier — feedback minimal",
+      "details": "Le modal expose 4 modes (CASH/CARD/MOBILE/TICKET) avec icône + label + optionally une sub-key (cc_mode_card_hint pour les non-CASH modes). MAIS: (a) pas d'exemple 'CASH = espèces / billets reçus en main', (b) cc_cash_short alert dit juste 'label.cc_cash_short' générique sans préciser combien manque (e.g. devrait dire 'Il manque 2,50€'), (c) le rendu (cashChange) s'affiche bien avec ✨ icon et role=status + aria-live=polite (très bien!) mais aucune indication 'donner ce montant au client en pièces/billets' — newbie ne sait pas que rendu = donner monnaie. Les keyboard shortcuts (Esc/Enter/auto-focus/auto-prefill total) sont excellents mais invisibles tant qu'on ne les a pas vus une fois.",
+      "evidence": "State 2 help_strings_in_modal + newbie_safety_gaps + State 2 keyboard_affordances",
+      "impact": "Augmente le temps d'apprentissage modal pour un newbie; risque mineur d'erreur (e.g. donner trop de monnaie si rendu mal lu). Modal est solide mais 'paufiné' pour expert, pas 'guidant' pour débutant.",
+      "fix_hint": "V1.0.X microcopy backlog: (a) ajouter `Il manque {{ formatPrice(orderTotal - cashReceivedNumber) }}` à la place de label.cc_cash_short statique; (b) ajouter une ligne hint 'À rendre au client : {{ formatPrice(cashChange) }}' (déjà calculé par cashChange computed); (c) micro-tooltip first-use 'Astuce: appuyez Entrée pour valider' au-dessus du Numpad ; persistée dismissed."
+    }
+  ],
+  "scores": {
+    "completeness": "5/5 states",
+    "owner_questions": "5/5 answered with evidence + caveats",
+    "evidence_strength": "HIGH — every claim source-cited (file:line)",
+    "verdict_short": "YELLOW — Backend RBAC GREEN (10% discount cap + destroy-paid gate ironclad). UX safety newbie PATCHY (1 P0 one-click cancel + 2 P1 gaps + 2 P2 drift)."
+  },
+  "top_3_findings_summary": [
+    "P0 B2-P6-F01: cancelKioskCashOrder cancels a real customer-paid kiosk order with ONE CLICK — no modal, no reason capture, backend RBAC is just can('pos') which POS Operator has. Newbie miss-tap = destroyed customer order. Fix: reuse tracker-style modal + reason ≥3.",
+    "P1 B2-P6-F02: No 'max single transaction without manager' ceiling — POS Operator can confirm any amount (5€ or 5000€). Only discount %ge ladder + post-shift variance gate exist. Common SaaS competitor pattern missing.",
+    "P1 B2-P6-F03: Newbie cashier lands on live /pos with ZERO first-day walkthrough; ~14 tooltips + ~30 aria-labels are hover-only and invisible on touch hardware where POS actually runs."
+  ]
+}

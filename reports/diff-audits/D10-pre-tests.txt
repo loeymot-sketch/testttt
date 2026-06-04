@@ -1,0 +1,40 @@
+  [32;1m✓[39;22m[39m [2mexplicitly none items are empty array not null[22m[39m
+  [32;1m✓[39;22m[39m [2mssot cache consistency holds post seed[22m[39m
+
+  [2m---[22m
+
+  [31;1m• Tests\Feature\Sentinels\AllergenCoverageSentinelTest [39;22m> [31;1mcoverage meets eu 1169 minimum threshold[39;22m
+[39;1m  EU 1169/2011 FIC coverage below threshold: 0.0% (0/24 items with allergen_flags). Run `php artisan db:seed --class=LeCayenneAllergenSeeder --force` to heal.
+  Failed asserting that 0.0 is equal to 80.0 or is greater than 80.0.[39;22m
+
+  at [32mtests/Feature/Sentinels/AllergenCoverageSentinelTest.php[39m:[32m165[39m
+    161▕ 
+    162▕         $this->assertGreaterThan(0, $total, 'Expected the test catalogue to be seeded.');
+    163▕ 
+    164▕         $pct = ($covered / $total) * 100.0;
+  ➜ 165▕         $this->assertGreaterThanOrEqual(
+    166▕             self::MIN_COVERAGE_PCT,
+    167▕             $pct,
+    168▕             sprintf(
+    169▕                 'EU 1169/2011 FIC coverage below threshold: %.1f%% (%d/%d items with allergen_flags). '
+
+  [31;1m• Tests\Feature\Sentinels\AllergenCoverageSentinelTest [39;22m> [31;1mrequired allergens are set per signature item[39;22m
+[39;1m  Item 'sandwich-cayenne-classique' MUST declare allergen 'gluten' in allergen_flags JSON cache (EU FIC).
+  Failed asserting that an array contains 'gluten'.[39;22m
+
+  at [32mtests/Feature/Sentinels/AllergenCoverageSentinelTest.php[39m:[32m191[39m
+    187▕             $flags = (array) ($item->allergen_flags ?? []);
+    188▕             $pivot = $item->allergens()->pluck('code')->all();
+    189▕ 
+    190▕             foreach ($required as $code) {
+  ➜ 191▕                 $this->assertContains(
+    192▕                     $code,
+    193▕                     $flags,
+    194▕                     "Item '{$slug}' MUST declare allergen '{$code}' in allergen_flags JSON cache (EU FIC).",
+    195▕                 );
+
+
+  [37;1mTests:  [39;22m[31;1m2 failed[39;22m[39m, [39m[32;1m2 passed[39;22m
+  [37;1mTime:   [39;22m[39m0.77s[39m
+
+

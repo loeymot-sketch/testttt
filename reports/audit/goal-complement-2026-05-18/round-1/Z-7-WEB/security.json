@@ -1,0 +1,44 @@
+{
+  "zone": "Z-7-WEB",
+  "role": "Security",
+  "round": 1,
+  "audited_at": "2026-05-18T09:01:00Z",
+  "scope": {
+    "concern": "Web standalone XSS, localStorage tamper, input sanitization, leak across pages, secrets exposure"
+  },
+  "summary": "Pure React render via JSX (auto-escaped). No dangerouslySetInnerHTML anywhere. No eval. No new innerHTML calls. localStorage NOT used (verified via grep — sole hit is README docs reference). Cart + auth state purely React. No secrets/keys/tokens in source. CDN scripts (react/react-dom/babel) have SRI integrity hashes (line index.html:14-16). Promo input + notes textarea + OTP code = controlled inputs, value rendered directly through React (escaped). All buttons/links use static href except a few hard-coded contact/social placeholders ('#').",
+  "findings_p0": [],
+  "findings_p1": [],
+  "findings_p2": [
+    {
+      "id": "Z-7-SEC-P2-1",
+      "anchor": "/Users/1millnonstop/Downloads/web/screens.jsx:284",
+      "title": "Anchor href='#' without rel='noopener noreferrer' for @lecayenne_ external link",
+      "evidence": "screens.jsx:284 <a className=\"lc-btn lc-btn--ink\" target=\"_blank\" href=\"#\">@lecayenne_ — target=_blank without rel=noopener leaks window.opener if # becomes a real URL",
+      "recommendation": "Add rel=\"noopener noreferrer\" to any future <a target=\"_blank\">. Currently href=\"#\" so risk is theoretical, but defensive default.",
+      "scope_minimal": true,
+      "backlog_v101": "W-NOOPENER-DEFENSIVE"
+    },
+    {
+      "id": "Z-7-SEC-P2-2",
+      "anchor": "/Users/1millnonstop/Downloads/web/funnel.jsx:238",
+      "title": "Demo card data hardcoded in payment form state (PaymentPage initial useState)",
+      "evidence": "funnel.jsx:238 useState({ num: '4242 4242 4242 4242', exp: '12/28', cvc: '123', name: 'IKYES BENZAID' }) — sample Stripe test card visible in source. Not a secret but bad UX habit if cloned to prod with real card.",
+      "recommendation": "Replace defaults with empty strings + placeholder attrs only. Demo PII (name) → 'NOM PRENOM'.",
+      "scope_minimal": true,
+      "backlog_v101": "W-CLEAN-DEMO-CARD"
+    }
+  ],
+  "findings_p3": [
+    {
+      "id": "Z-7-SEC-P3-1",
+      "anchor": "/Users/1millnonstop/Downloads/web/index.html:14",
+      "title": "Babel-standalone in production = 1MB+ JIT compile each load",
+      "evidence": "index.html loads @babel/standalone CDN. Acceptable for standalone preview; not production hardening but should be flagged for V1.1 build pipeline (Vite).",
+      "recommendation": "Defer to V1.1 build pipeline (per README). No action this cycle.",
+      "scope_minimal": false
+    }
+  ],
+  "verdict": "SEC OK. Zero P0/P1. JSX-only rendering = automatic XSS escape. SRI on CDN. Two P2 cosmetic (demo card + noopener) flagged backlog. No secrets in source.",
+  "evidence_artifacts": []
+}

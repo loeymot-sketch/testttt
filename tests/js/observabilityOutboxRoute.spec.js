@@ -122,7 +122,9 @@ describe('[CV1-OBSERVABILITY-OUTBOX-001] Outbox dashboard SPA wiring', () => {
         expect(wrapper.find('[data-testid="outbox-failed-jobs"]').exists()).toBe(true);
         expect(wrapper.find('[data-testid="outbox-health"]').exists()).toBe(true);
         // mounted() must have called the read endpoint at least once.
-        expect(fakeAxios.get).toHaveBeenCalledWith('/api/admin/observability/outbox');
+        // [GOAL-2026-05-29] baseURL '/api' is supplied by axios-setup (commit c8e1d97b6
+        // stripped the call-site '/api' to fix a real /api/api/ 404). Assert the relative path.
+        expect(fakeAxios.get).toHaveBeenCalledWith('/admin/observability/outbox');
         wrapper.unmount();
         // eslint-disable-next-line no-undef
         delete globalThis.axios;

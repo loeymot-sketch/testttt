@@ -21,6 +21,7 @@ import pushNotificationRoutes from "./modules/pushNotificationRoutes";
 import customerRoutes from "./modules/customerRoutes";
 import administratorRoutes from "./modules/administratorRoutes";
 import deliveryBoyRoutes from "./modules/deliveryBoyRoutes";
+import deliveryBoyCashSessionRoutes from "./modules/deliveryBoyCashSessionRoutes";
 import employeeRoutes from "./modules/employeeRoutes";
 import frontendRoutes from "./modules/frontendRoutes";
 import salesReportRoutes from "./modules/salesReportRoutes";
@@ -29,8 +30,12 @@ import posRoutes from "./modules/posRoutes";
 import messageRoutes from "./modules/messageRoutes";
 import profileRoutes from "./modules/profileRoutes";
 import posOrderRoutes from "./modules/posOrderRoutes";
+import historiqueRoutes from "./modules/historiqueRoutes";
+import encaissementRoutes from "./modules/encaissementRoutes";
 import transactionRoutes from "./modules/transactionRoutes";
 import creditBalanceReportRoutes from "./modules/creditBalanceReportRoutes";
+import cashSessionReportRoutes from "./modules/cashSessionReportRoutes";
+import cashOverviewRoutes from "./modules/cashOverviewRoutes";
 import tableOrderRoutes from "./modules/tableOrderRoutes";
 import adminTableOrderRoutes from "./modules/adminTableOrderRoutes";
 import diningTableRoutes from "./modules/diningTableRoutes";
@@ -116,6 +121,12 @@ const baseRoutes = [
         redirect: { name: "admin.kitchen-display-system" },
     },
     {
+        // Wave Y C-002 — /admin root URL was rendering Vue SPA 404 even when
+        // authenticated. Redirect to admin.dashboard mirrors the /kds pattern.
+        path: "/admin",
+        redirect: { name: "admin.dashboard" },
+    },
+    {
         path: "/delivery",
         redirect: { name: "admin.delivery-boys" },
     },
@@ -166,6 +177,7 @@ export const routes = baseRoutes.concat(
     waiterRoutes,
     chefRoutes,
     deliveryBoyRoutes,
+    deliveryBoyCashSessionRoutes,
     administratorRoutes,
     employeeRoutes,
     salesReportRoutes,
@@ -174,8 +186,12 @@ export const routes = baseRoutes.concat(
     profileRoutes,
     posRoutes,
     posOrderRoutes,
+    historiqueRoutes,
+    encaissementRoutes,
     transactionRoutes,
     creditBalanceReportRoutes,
+    cashSessionReportRoutes,
+    cashOverviewRoutes,
     tableOrderRoutes,
     adminTableOrderRoutes,
     diningTableRoutes,
@@ -209,7 +225,7 @@ const PUBLIC_FRIENDLY_AUTH_ROUTES = new Set([
 const isPublicFriendlyAuthRoute = (to) => {
     if (to && to.name && PUBLIC_FRIENDLY_AUTH_ROUTES.has(to.name)) return true;
     const path = (to && to.path) || "";
-    return path === "/admin/order-status-screen" || path === "/order-status";
+    return path === "/admin/order-status-screen" || path === "/order-status-screen" || path === "/order-status";
 };
 
 router.beforeEach((to, from, next) => {

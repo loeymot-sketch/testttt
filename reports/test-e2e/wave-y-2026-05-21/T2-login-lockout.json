@@ -1,0 +1,16 @@
+{
+  "cap": 500,
+  "seed_hits": 499,
+  "attempts": [
+    {
+      "attempt": 1,
+      "total_hit_count": 500,
+      "status": 400
+    },
+    {
+      "attempt": 2,
+      "total_hit_count": 501,
+      "status": 429
+    }
+  ]
+}

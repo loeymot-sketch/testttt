@@ -1,0 +1,410 @@
+{
+  "agent": "I.2 Soft-delete + FK cascade",
+  "date": "2026-05-24",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "scope_summary": "Static audit of 173 migrations + 79 Eloquent models for soft-delete usage, FK cascade declarations, forceDelete callsites, Schema::drop migrations, and NF525 cascade safety.",
+  "method": "code-static only (grep + Read on migrations/models/services). No DB runtime exercise.",
+
+  "models_audited": 79,
+
+  "soft_delete_models": [
+    {"model": "Order",         "table": "orders",          "trait_loc": "app/Models/Order.php:17",         "migration_loc": "database/migrations/2026_04_15_230200_v1_soft_deletes_and_deletion_log.php"},
+    {"model": "FrontendOrder", "table": "orders",          "trait_loc": "app/Models/FrontendOrder.php",    "note": "Same orders table as Order; deleted_at column added once"},
+    {"model": "OrderItem",     "table": "order_items",     "trait_loc": "app/Models/OrderItem.php:13",     "migration_loc": "database/migrations/2026_04_15_230200_v1_soft_deletes_and_deletion_log.php"},
+    {"model": "Branch",        "table": "branches",        "trait_loc": "app/Models/Branch.php:12",        "migration_loc": "database/migrations/2026_04_15_230200_v1_soft_deletes_and_deletion_log.php"},
+    {"model": "ItemCategory",  "table": "item_categories", "trait_loc": "app/Models/ItemCategory.php",     "migration_loc": "database/migrations/2026_04_15_230200_v1_soft_deletes_and_deletion_log.php"},
+    {"model": "User",          "table": "users",           "trait_loc": "app/Models/User.php:31",          "migration_loc": "database/migrations/2023_07_19_135307_add_soft_delete_column_to_users_table.php"},
+    {"model": "Item",          "table": "items",           "trait_loc": "app/Models/Item.php"},
+    {"model": "ItemVariation", "table": "item_variations", "trait_loc": "app/Models/ItemVariation.php"},
+    {"model": "ItemExtra",     "table": "item_extras",     "trait_loc": "app/Models/ItemExtra.php"},
+    {"model": "ItemAddon",     "table": "item_addons",     "trait_loc": "app/Models/ItemAddon.php"},
+    {"model": "KioskPromo",    "table": "kiosk_promos",    "trait_loc": "app/Models/KioskPromo.php"},
+    {"model": "UpsellRule",    "table": "upsell_rules",    "trait_loc": "app/Models/UpsellRule.php"}
+  ],
+
+  "models_explicitly_not_soft_delete_intentional": [
+    {"model": "AuditLog",  "reason": "NF525 append-only — DB trigger + model booted() throw on delete/update; never gains SoftDeletes"},
+    {"model": "ZReport",   "reason": "NF525 fiscal close — DB trigger BEFORE DELETE blocks all deletion post-close"},
+    {"model": "OrderPayment", "reason": "Multi-tender breakdown is fiscal evidence; protected by restrictOnDelete + trigger via 2026_05_10_010000_secure_fiscal_audit_trail_immutability.php"},
+    {"model": "CashMovement", "reason": "Cash drawer audit trail; restrictOnDelete + DELETE trigger via 2026_05_10_010000"},
+    {"model": "CashDrawerSession", "reason": "Fiscal session; DELETE trigger via 2026_05_10_010000"},
+    {"model": "StockMovement", "reason": "Audit evidence for stock decisions; restrictOnDelete + trigger via 2026_05_18_140000_add_stock_movements_immutability_triggers.php"},
+    {"model": "DeliveryBoyCashMovement", "reason": "Delivery cash audit evidence; restrictOnDelete + no-delete trigger via 2026_05_18_120300"},
+    {"model": "LoyaltyTransaction", "reason": "Loyalty ledger — cascadeOnDelete (user_id) is a known GDPR vector, see gdpr_concerns"}
+  ],
+
+  "cascade_findings": [
+    {
+      "parent": "Order",
+      "table": "orders",
+      "delete_type": "softDelete",
+      "soft_delete_propagates_to_children": "NO (Laravel default)",
+      "hard_delete_behavior": "BLOCKED at multiple layers — see below",
+      "fk_protections_when_hard_delete_attempted": [
+        {"child_table": "order_items",     "fk_constraint": "DEFAULT (RESTRICT) via $table->foreignId('order_id')->constrained('orders') — line 18 in 2022_11_17_110832", "blocks_parent_delete": true},
+        {"child_table": "order_payments",  "fk_constraint": "restrictOnDelete + BEFORE DELETE trigger 'order_payments_no_delete' via 2026_05_10_010000_secure_fiscal_audit_trail_immutability.php:88-95,131-141", "blocks_parent_delete": true, "nf525_critical": true},
+        {"child_table": "webhook_events",  "fk_constraint": "nullOnDelete via 2026_05_18_120000_add_webhook_events_order_id_fk.php:21", "blocks_parent_delete": false, "child_orphans_to_null": true},
+        {"child_table": "orders (self-ref parent_order_id)", "fk_constraint": "nullOnDelete via 2026_05_06_200000_add_parent_order_id_to_orders.php:24 — refund counter-entry NOT cascaded", "blocks_parent_delete": false, "answers_hunt": "H7"},
+        {"child_table": "order_quotes",    "fk_constraint": "nullOnDelete (consumed_order_id) via 2026_04_25_190000_create_order_quotes_table.php:37"}
+      ],
+      "nf525_safe": true,
+      "intentional": true,
+      "notes": "Hard delete of an Order is effectively prevented in prod: (a) DB trigger order_payments_no_delete fires even before FK eval if a payment row exists; (b) restrictOnDelete then blocks; (c) NO ->forceDelete() callsite anywhere in app/. Soft delete is also safe — order_items + order_payments + audit_logs all keep their references because Laravel does not cascade SoftDeletes."
+    },
+    {
+      "parent": "Branch",
+      "table": "branches",
+      "delete_type": "softDelete",
+      "soft_delete_propagates_to_children": "NO",
+      "hard_delete_behavior": "PARTIAL CASCADE if branch row hard-deleted (BLOCKED in practice by NF525-critical children)",
+      "fk_protections_when_hard_delete_attempted": [
+        {"child_table": "orders",                "fk_constraint": "DEFAULT (RESTRICT) — constrained('branches') line 25 in 2022_11_17_110810", "blocks_parent_delete": true},
+        {"child_table": "order_items",           "fk_constraint": "DEFAULT (RESTRICT) line 19 in 2022_11_17_110832", "blocks_parent_delete": true},
+        {"child_table": "kiosk_machines",        "fk_constraint": "DEFAULT (RESTRICT) line 20 in 2025_02_21_110459", "blocks_parent_delete": true},
+        {"child_table": "dining_tables",         "fk_constraint": "DEFAULT (RESTRICT) in 2023_09_05_133748", "blocks_parent_delete": true},
+        {"child_table": "stock_levels",          "fk_constraint": "cascadeOnDelete in 2026_04_27_143120:14 — WOULD CASCADE if Branch ever hard-deleted past the RESTRICT chain"},
+        {"child_table": "stock_movements",       "fk_constraint": "restrictOnDelete (post-trigger migration 2026_05_18_140000) — blocks", "nf525_audit_evidence": true},
+        {"child_table": "kiosk_promos",          "fk_constraint": "cascadeOnDelete in 2026_04_18_120005:28"},
+        {"child_table": "upsell_rules",          "fk_constraint": "cascadeOnDelete in 2026_04_18_120004:30"},
+        {"child_table": "printers",              "fk_constraint": "cascadeOnDelete in 2026_04_20_210000:27"},
+        {"child_table": "pos_parked_orders",     "fk_constraint": "cascadeOnDelete in 2026_04_20_200000:29"},
+        {"child_table": "order_quotes",          "fk_constraint": "cascadeOnDelete in 2026_04_25_190000:33"},
+        {"child_table": "cash_movements",        "fk_constraint": "NOT DECLARED as FK (branch_id is index-only per comment in 2026_05_10_010000:44) — protected by trigger only"},
+        {"child_table": "item_branch_availability", "fk_constraint": "cascadeOnDelete in 2026_04_18_140001:37"},
+        {"child_table": "audit_logs",            "fk_constraint": "NO FK DECLARED — branch_id is unsignedBigInteger index only (2026_04_22_000002:36). Cascade CANNOT reach.", "nf525_safe": true},
+        {"child_table": "z_reports",             "fk_constraint": "NO FK DECLARED — branch_id is unsignedBigInteger index only (2026_04_22_000003:30). Cascade CANNOT reach.", "nf525_safe": true},
+        {"child_table": "users",                 "fk_constraint": "NO FK DECLARED — branch_id is unsignedBigInteger nullable default 0 (2014_10_12_000000:28). No cascade.", "answers_hunt": "H2"}
+      ],
+      "nf525_safe": true,
+      "intentional": "PARTIALLY — see concern_2 below: stock_levels/kiosk_promos/upsell_rules/printers cascade is harmless (those are operational data), but the lack of a Branch hard-delete blocker test is a small risk. In practice RESTRICT on orders + audit_logs cannot-be-reached protects evidence.",
+      "notes": "BranchScope coverage ensures soft-deleted branches are scoped out of queries. NO ->forceDelete() on Branch anywhere in app/."
+    },
+    {
+      "parent": "User",
+      "table": "users",
+      "delete_type": "softDelete",
+      "soft_delete_propagates_to_children": "NO",
+      "hard_delete_behavior": "MIXED — see below",
+      "fk_protections_when_hard_delete_attempted": [
+        {"child_table": "orders",                "fk_constraint": "DEFAULT (RESTRICT) via constrained('users') in 2022_11_17_110810:24 (orders.user_id)", "blocks_parent_delete": true, "answers_hunt": "H3"},
+        {"child_table": "orders (creator_id)",   "fk_constraint": "NO FK — creator_type/creator_id is polymorphic bigInteger, no FK enforcement. Stays as dangling reference (acceptable per audit-trail pattern)."},
+        {"child_table": "audit_logs",            "fk_constraint": "NO FK — user_id is unsignedBigInteger nullable index only (2026_04_22_000002:37). Cascade CANNOT reach.", "nf525_safe": true},
+        {"child_table": "kiosk_machines",        "fk_constraint": "DEFAULT (RESTRICT) constrained('users') 2025_02_21_110459:19", "blocks_parent_delete": true},
+        {"child_table": "loyalty_transactions",  "fk_constraint": "onDelete('cascade') in 2026_03_26_075918:32 — DELETES rows", "concern": "GDPR + audit_logs.payload retention; see gdpr_concerns"},
+        {"child_table": "loyalty_consents",      "fk_constraint": "cascadeOnDelete in 2026_04_18_120008:31 — INTENTIONAL per comment 'cascade les consentements'"},
+        {"child_table": "action_logs",           "fk_constraint": "onDelete('set null') in 2026_03_06_182733:17 — preserves audit row, anonymises user", "intentional": true},
+        {"child_table": "pos_parked_orders",     "fk_constraint": "cascadeOnDelete in 2026_04_20_200000:30"},
+        {"child_table": "order_quotes (actor/customer/consumed_by)", "fk_constraint": "nullOnDelete in 2026_04_25_190000:34-36"},
+        {"child_table": "personal_access_tokens","fk_constraint": "NO FK — uses morphs('tokenable') polymorphic in 2019_12_14_000001:5. Tokens orphan when user deleted (cron cleanup recommended)."}
+      ],
+      "nf525_safe": true,
+      "intentional": "MIXED — RESTRICT on orders is correct; loyalty_transactions CASCADE is a GDPR convenience but logically inconsistent with action_logs SET NULL pattern. See concern_3.",
+      "notes": "NO ->forceDelete() on User in app/. SoftDelete is safe — Sanctum personal_access_tokens are orphaned but inactive (no user to authenticate)."
+    },
+    {
+      "parent": "Customer",
+      "table": "users (Customer is single-table inheritance via guard / Branch scope exempt)",
+      "delete_type": "depends on User strategy",
+      "hard_delete_behavior": "same as User",
+      "notes": "Customer extends users table; no separate cascade chain. GDPR concerns identical to User row.",
+      "answers_hunt": "H4"
+    },
+    {
+      "parent": "Item",
+      "table": "items",
+      "delete_type": "softDelete (Item uses SoftDeletes)",
+      "soft_delete_propagates_to_children": "Service-level cascade via App\\Services\\ItemService::destroy() — calls $item->variations()->delete() / extras()->delete() / addons()->delete() (soft-delete cascade because ItemVariation/Extra/Addon also use SoftDeletes)",
+      "hard_delete_behavior": "GATED — see protections below",
+      "fk_protections_when_hard_delete_attempted": [
+        {"child_table": "order_items",           "fk_constraint": "DEFAULT (RESTRICT) — constrained('items') line 20 in 2022_11_17_110832", "blocks_parent_delete": true, "answers_hunt": "H5"},
+        {"child_table": "item_branch_availability","fk_constraint": "cascadeOnDelete in 2026_04_18_140001:32"},
+        {"child_table": "item_wizard_profiles",  "fk_constraint": "cascadeOnDelete in 2026_04_27_143100:13"},
+        {"child_table": "item_wizard_steps",     "fk_constraint": "cascadeOnDelete (via profile cascade) in 2026_04_27_143110:14"},
+        {"child_table": "item_allergen",         "fk_constraint": "cascadeOnDelete (pivot) in 2026_04_18_120003:23"},
+        {"child_table": "upsell_rules.suggested_item_id", "fk_constraint": "cascadeOnDelete in 2026_04_18_120004:35"}
+      ],
+      "nf525_safe": true,
+      "intentional": true,
+      "force_delete_callsite": {
+        "location": "app/Services/ItemService.php:418-480",
+        "guard": "config('catalog_v15.item_deletion.protect_force_delete_when_referenced', true) — at line 423, BLOCKS forceDelete with 409 if OrderItem references exist; only relaxes FK in app()->environment('testing')",
+        "verdict": "SAFE — production never reaches forceDelete past the guard; historical orders are preserved"
+      },
+      "notes": "composition_snapshot column (added by 2026_04_22_000020) freezes item_id + name + variations + extras + price into order_items.composition_snapshot JSON at order creation. Even if cascadeOnDelete somehow fired (it cannot, due to guard + RESTRICT), historical orders would still render correctly from the snapshot."
+    },
+    {
+      "parent": "PendingPaymentConfirmation",
+      "table": "pending_payment_confirmations",
+      "delete_type": "model has no SoftDeletes — hard delete only",
+      "fk_columns": [
+        {"column": "branch_id", "declared_as": "unsignedBigInteger", "fk_constraint": "NONE (no foreign() / constrained() call)", "behavior": "no cascade; dangling reference possible if branch hard-deleted (which is blocked anyway)"},
+        {"column": "order_id",  "declared_as": "unsignedBigInteger", "fk_constraint": "NONE (no foreign() / constrained() call)", "behavior": "no cascade; dangling reference possible if order hard-deleted (blocked by NF525 chain)"}
+      ],
+      "as_child_of_any_cascade": "NO — unreachable by any cascade chain",
+      "intentional": true,
+      "nf525_safe": true
+    },
+    {
+      "parent": "PushNotification",
+      "table": "push_notifications",
+      "delete_type": "model has no SoftDeletes — hard delete only",
+      "fk_columns": [
+        {"column": "role_id",   "declared_as": "foreignId().nullable() WITHOUT constrained()", "fk_constraint": "NONE", "behavior": "no FK enforcement (foreignId alone only sets column type + index)"},
+        {"column": "user_id",   "declared_as": "foreignId().nullable() WITHOUT constrained()", "fk_constraint": "NONE", "behavior": "no FK enforcement"},
+        {"column": "branch_id", "declared_as": "unsignedBigInteger nullable default 0", "fk_constraint": "NONE", "behavior": "no FK enforcement"}
+      ],
+      "as_child_of_any_cascade": "NO — unreachable by any cascade chain",
+      "intentional": true,
+      "nf525_safe": true,
+      "minor_note": "FK omission is consistent with notification pattern (transient push log). Worth a backlog item to add nullOnDelete for user_id/role_id post-cloud cutover."
+    },
+    {
+      "parent": "PaymentTerminal",
+      "table": "payment_terminals",
+      "delete_type": "soft via status=5 ARCHIVED (per migration docstring) — no SoftDeletes trait, just enum",
+      "fk_columns": [
+        {"column": "branch_id", "declared_as": "unsignedBigInteger + foreign(...)->references('id')->on('branches')->cascadeOnDelete()", "fk_constraint": "CASCADE", "behavior": "cascades from branch hard delete (which is blocked by orders RESTRICT in practice)"}
+      ],
+      "as_child_of_any_cascade": "from branches only (cascadeOnDelete)",
+      "as_parent_in_cascade_chain": [
+        {"child_table": "order_payments.terminal_id", "fk_constraint": "cascadeOnDelete via 2026_05_16_120001_add_terminal_id_to_order_payments_table.php (per file path)"}
+      ],
+      "intentional": true,
+      "nf525_safe": true,
+      "minor_note": "order_payments.terminal_id cascadeOnDelete is borderline — if a terminal is hard-deleted (only possible if branch is also force-deleted) the fiscal payment row would be touched. BUT order_payments has its own BEFORE DELETE trigger (order_payments_no_delete), so the cascade DELETE would be rejected at trigger level before the cascade completes. Defence-in-depth holds."
+    },
+    {
+      "parent": "DiningTable",
+      "table": "dining_tables",
+      "delete_type": "model has no SoftDeletes",
+      "fk_columns": [
+        {"column": "branch_id", "declared_as": "foreignId().constrained('branches')", "fk_constraint": "DEFAULT (RESTRICT)", "behavior": "blocks branch hard delete"}
+      ],
+      "as_child_of_any_cascade": "blocks parent",
+      "as_parent_in_cascade_chain": [
+        {"child_table": "dining_table_audit_logs", "fk_constraint": "see 2026_04_20_210100"}
+      ],
+      "intentional": true,
+      "nf525_safe": true
+    },
+    {
+      "parent": "DeliveryBoyCashSession",
+      "table": "delivery_boy_cash_sessions",
+      "delete_type": "no SoftDeletes — DB-level immutability via no-delete trigger from 2026_05_18_120300",
+      "fk_columns": [
+        {"column": "branch_id",            "declared_as": "unsignedBigInteger", "fk_constraint": "NONE declared in create migration",          "behavior": "no cascade; defended by trigger"},
+        {"column": "delivery_boy_id",      "declared_as": "unsignedBigInteger", "fk_constraint": "NONE declared",                              "behavior": "no cascade; survives user delete"},
+        {"column": "opened_by_user_id",    "declared_as": "unsignedBigInteger", "fk_constraint": "NONE declared",                              "behavior": "no cascade"},
+        {"column": "closed_by_user_id",    "declared_as": "unsignedBigInteger nullable", "fk_constraint": "NONE declared",                     "behavior": "no cascade"},
+        {"column": "reconciled_by_user_id","declared_as": "unsignedBigInteger nullable", "fk_constraint": "NONE declared",                     "behavior": "no cascade"}
+      ],
+      "as_parent_in_cascade_chain": [
+        {"child_table": "delivery_boy_cash_movements.cash_drawer_session_id", "fk_constraint": "restrictOnDelete via 2026_05_18_120100:57", "behavior": "blocks any delete attempt"}
+      ],
+      "as_child_of_any_cascade": "NO — unreachable",
+      "intentional": true,
+      "nf525_safe": true,
+      "notes": "FK absence on branch_id/user_id is intentional — sessions are fiscal evidence that must outlive personnel/branch lifecycle changes. The delete trigger does the heavy lifting."
+    },
+    {
+      "parent": "AuditLog",
+      "table": "audit_logs",
+      "delete_type": "BLOCKED",
+      "model_protection": "AuditLog::booted() throws RuntimeException on updating/deleting at app/Models/AuditLog.php:42-58",
+      "db_protection": "BEFORE UPDATE + BEFORE DELETE triggers 'audit_logs_no_update' / 'audit_logs_no_delete' raise SQLSTATE 45000 (MySQL/MariaDB) or RAISE ABORT (SQLite) — installed via 2026_04_22_000002:96-135",
+      "down_migration_protection": "RuntimeException at line 70-76 of 2026_04_22_000002 if APP_ENV=production attempts to drop the table",
+      "nf525_safe": true,
+      "answers_hunt": "H1 (no audit_logs callsite reachable from any parent cascade)"
+    },
+    {
+      "parent": "ZReport",
+      "table": "z_reports",
+      "delete_type": "BLOCKED (post-close)",
+      "model_protection": "no booted() but service ZReportService::close marks immutable",
+      "db_protection": "BEFORE DELETE trigger 'z_reports_no_delete' raises SQLSTATE 45000 via 2026_05_09_160000_add_z_reports_delete_trigger_immutability.php:51-58",
+      "nf525_safe": true,
+      "answers_hunt": "H1 (z_reports CANNOT be reached by Branch cascade — no FK declared)"
+    }
+  ],
+
+  "force_delete_callsites": [
+    {
+      "file": "app/Services/ItemService.php",
+      "lines": "445-456",
+      "model_targets": ["Item", "ItemVariation", "ItemExtra", "ItemAddon"],
+      "guard": "protect_force_delete_when_referenced config (default true) — blocks if any OrderItem references the item",
+      "exposes_route": "DELETE /admin/items/{id}?force=true (ItemController:168-171)",
+      "permission_required": "settings via Spatie middleware",
+      "verdict": "SAFE — guard prevents reaching forceDelete when historical orders exist; can only be force-deleted on a fresh item with zero order history"
+    }
+  ],
+
+  "drop_table_migrations": {
+    "total_count": 84,
+    "nf525_critical_drops_in_down_only": [
+      {"migration": "2026_04_22_000002_create_audit_logs_table.php", "method": "down()", "guard": "throws RuntimeException if APP_ENV=production", "safe": true},
+      {"migration": "2026_04_22_000003_create_z_reports_table.php",  "method": "down()", "guard": "none — relies on operational discipline not to roll back in prod", "safe_in_prod": "DEPENDS_ON_DEPLOY_DISCIPLINE", "minor_concern": "could add same APP_ENV=production guard for symmetry with audit_logs"},
+      {"migration": "2022_11_17_110810_create_orders_table.php",     "method": "down()", "guard": "none", "safe_in_prod": "DEPENDS_ON_DEPLOY_DISCIPLINE", "minor_concern": "rolling back this would drop orders → fiscal_sequence_no gone"}
+    ],
+    "mid_migration_drops": [
+      "ALL Schema::drop / dropIfExists callsites are in down() rollback methods. NO migration drops a NF525-critical table in its up() path. Verified by grep."
+    ],
+    "verdict": "All drops are scoped to rollback. NF525 audit_logs has explicit production guard. z_reports + orders rely on operational discipline (no rollback in prod) — minor backlog item to add identical guard."
+  },
+
+  "nf525_violations_potential": [],
+
+  "gdpr_concerns": [
+    {
+      "id": "G1",
+      "topic": "loyalty_transactions.user_id cascadeOnDelete",
+      "file": "database/migrations/2026_03_26_075918_create_loyalty_transactions_table.php:32",
+      "behavior": "If a User is hard-deleted (cannot happen in practice — RESTRICT on orders.user_id blocks) the loyalty ledger would CASCADE delete. SoftDelete on User does NOT cascade.",
+      "verdict": "LOW RISK — only affects hypothetical hard-delete of a user with no orders (impossible in NF525-critical scenarios). However the asymmetry vs action_logs (SET NULL) is inconsistent.",
+      "recommendation": "V1.0.2 BACKLOG — switch to nullOnDelete + add `customer_anonymised_at` for GDPR right-to-be-forgotten flow"
+    },
+    {
+      "id": "G2",
+      "topic": "audit_logs.payload may contain customer phone/email/name JSON",
+      "file": "audit chain is INSERT-only — cannot be cleaned for GDPR",
+      "behavior": "GDPR right-to-be-forgotten cannot delete audit_logs rows due to NF525 6y retention mandate.",
+      "verdict": "BY DESIGN — NF525 takes precedence over GDPR for fiscal evidence; customer must be informed via privacy policy.",
+      "recommendation": "Document in privacy policy; consider payload pseudonymisation (hash phone, store hash + secret separately) — V1.0.X backlog"
+    },
+    {
+      "id": "G3",
+      "topic": "personal_access_tokens orphaned on user delete",
+      "file": "Sanctum table uses morphs('tokenable') polymorphic — no FK enforcement",
+      "behavior": "Deleted user leaves orphan tokens (no row to authenticate against — tokens become inert)",
+      "verdict": "LOW RISK — tokens are inert without their tokenable row, but rows clutter the table over time",
+      "recommendation": "Add a Sanctum cleanup cron (V1.0.2)"
+    }
+  ],
+
+  "specific_hunt_results": {
+    "H1_order_softdelete_cascade": {
+      "soft_delete_cascade_to_order_items": "NO — Laravel does not cascade SoftDeletes. order_items rows keep their order_id reference.",
+      "force_delete_on_order_in_app_code": "NONE — verified by grep -rn 'forceDelete' across app/ — only ItemService.php hits, none on Order",
+      "drop_table_orders_without_backup": "NONE — drop only in down() of create_orders migration; would fail on existing rows due to FK from order_items/order_payments anyway",
+      "fiscal_sequence_no_preservation": "SAFE — even soft-deleted, the order row retains fiscal_sequence_no + composition_snapshot; hard delete is blocked by trigger on order_payments (a fiscal order will always have a payment) + RESTRICT on order_items",
+      "verdict": "GREEN"
+    },
+    "H2_branch_deletion_cascade": {
+      "audit_logs_unreachable": "CONFIRMED — branch_id is unsignedBigInteger index only, no FK declared (2026_04_22_000002:36). Cascade chain CANNOT reach audit_logs.",
+      "z_reports_unreachable": "CONFIRMED — branch_id is unsignedBigInteger index only, no FK declared (2026_04_22_000003:30). Cascade chain CANNOT reach z_reports.",
+      "orders_block_branch_hard_delete": "CONFIRMED — orders.branch_id is constrained('branches') with default RESTRICT.",
+      "cascading_children_when_force_unblocked": ["stock_levels", "kiosk_promos", "upsell_rules", "printers", "pos_parked_orders", "order_quotes", "item_branch_availability"],
+      "verdict": "GREEN — fiscal evidence isolated by absence of FK; operational data cascade is expected"
+    },
+    "H3_user_deletion_cascade": {
+      "audit_logs_user_id_no_fk": "CONFIRMED — user_id index only, no FK (2026_04_22_000002:37). Cascade unreachable.",
+      "orders_creator_id_no_fk": "CONFIRMED — creator_id is bigInteger nullable, no FK enforcement (polymorphic creator_type/creator_id pattern in 2022_11_17_110810:41-42). Recently extended via heal/cms-pr1-quickwins H2-HEAL-02; no FK added (deliberate to keep historical reference dangling-but-stable).",
+      "sanctum_personal_access_tokens": "ORPHANS but inert — morphs('tokenable') is polymorphic without FK; cron cleanup recommended",
+      "loyalty_transactions_cascade_delete": "PRESENT (cascadeOnDelete) — see gdpr_concern G1",
+      "verdict": "AMBER (low) — G1 GDPR + Sanctum cron are V1.0.2 backlog"
+    },
+    "H4_customer_deletion_gdpr": {
+      "customer_is_users_row": "CONFIRMED — Customer model extends users table per BRAIN §9 exemption (no BranchScope)",
+      "right_to_be_forgotten": "audit_logs payload retention is mandatory per NF525 — see gdpr_concern G2",
+      "recommendation": "Privacy policy disclosure + payload pseudonymisation backlog",
+      "verdict": "AMBER (documented design tradeoff between NF525 and GDPR)"
+    },
+    "H5_item_deletion_cascade": {
+      "historical_orders_preserved": "CONFIRMED — order_items.item_id is constrained('items') default RESTRICT (2022_11_17_110832:20). Plus composition_snapshot freezes name/price/variations/extras into order_items at creation time (2026_04_22_000020).",
+      "force_delete_guard": "CONFIRMED — config('catalog_v15.item_deletion.protect_force_delete_when_referenced') blocks at ItemService.php:422-433 with 409 'Cet item est référencé par N commandes historiques. Suppression douce uniquement.'",
+      "fk_relax_only_in_testing": "CONFIRMED — Schema::disableForeignKeyConstraints only when app()->environment('testing') AND guard config disabled",
+      "verdict": "GREEN"
+    },
+    "H6_migration_drop_table": {
+      "all_drops_in_down_only": "CONFIRMED via grep — 84 dropIfExists/drop callsites, all inside down() methods of their own create_* migrations",
+      "audit_logs_down_blocked_in_production": "CONFIRMED — RuntimeException at 2026_04_22_000002:70-76",
+      "z_reports_down_unblocked": "MINOR — no APP_ENV guard, relies on operational discipline",
+      "orders_down_unblocked": "MINOR — same as z_reports",
+      "verdict": "GREEN (with minor backlog item to add symmetric APP_ENV guards)"
+    },
+    "H7_refund_counter_entry_cascade": {
+      "parent_order_id_fk": "nullOnDelete via 2026_05_06_200000_add_parent_order_id_to_orders.php:24",
+      "behavior_when_parent_soft_deleted": "Soft-delete does not fire DB FK trigger; mirror order keeps parent_order_id pointing to soft-deleted row (which audit_logs.payload.parent_order_id can still resolve forensically)",
+      "behavior_when_parent_hard_deleted": "BLOCKED by order_payments restrictOnDelete + trigger. If somehow forced, the mirror's parent_order_id is set to NULL (forensic recovery via audit_logs payload still works)",
+      "audit_chain_preserved": "YES — audit_logs.payload contains parent_order_id for forensic recovery",
+      "verdict": "GREEN — explicit design per 2026_05_06_200000 docstring"
+    }
+  },
+
+  "top_3_concerns": [
+    {
+      "rank": 1,
+      "severity": "LOW (V1.0.2 backlog, NOT blocking V1 ship)",
+      "concern": "loyalty_transactions.user_id uses onDelete('cascade')",
+      "where": "database/migrations/2026_03_26_075918_create_loyalty_transactions_table.php:32",
+      "impact": "Inconsistent with action_logs pattern (SET NULL). If a user is ever hard-deleted (currently blocked by orders RESTRICT), loyalty ledger would be wiped — minor GDPR signal but not NF525-critical (loyalty is not in fiscal scope).",
+      "recommendation": "V1.0.2: change to nullOnDelete + add `customer_anonymised_at` flag"
+    },
+    {
+      "rank": 2,
+      "severity": "LOW (V1.0.2 backlog)",
+      "concern": "z_reports + orders down() migrations lack APP_ENV=production RuntimeException guard",
+      "where": "2026_04_22_000003_create_z_reports_table.php:68-71 + 2022_11_17_110810_create_orders_table.php:54-57",
+      "impact": "Accidental migrate:rollback in production would drop fiscal data. audit_logs has the guard; orders/z_reports rely on operational discipline.",
+      "recommendation": "Add identical RuntimeException pattern from audit_logs to z_reports + orders down() methods. Cheap symmetry."
+    },
+    {
+      "rank": 3,
+      "severity": "LOW (V1.0.X cloud-prep backlog)",
+      "concern": "personal_access_tokens (Sanctum) uses morphs('tokenable') without FK — leaves orphan rows when user deleted",
+      "where": "database/migrations/2019_12_14_000001_create_personal_access_tokens_table.php:5",
+      "impact": "Orphan tokens are inert (no user to auth as) but accumulate in the table over time. Multi-instance cloud cutover may slow due to bloat.",
+      "recommendation": "V1.0.2: add a Sanctum prune cron — `php artisan sanctum:prune-expired --hours=24` OR a custom cleanup keyed on missing tokenable_id"
+    }
+  ],
+
+  "nf525_cascade_safety_attestation": {
+    "audit_logs_reachable_via_any_cascade_chain": false,
+    "z_reports_reachable_via_any_cascade_chain": false,
+    "audit_logs_db_level_protection": "BEFORE DELETE + BEFORE UPDATE triggers raise SQLSTATE 45000 (MySQL) / RAISE ABORT (SQLite) — installed at 2026_04_22_000002:96-135",
+    "audit_logs_model_level_protection": "AuditLog::booted() throws RuntimeException on updating/deleting at app/Models/AuditLog.php:45-57",
+    "audit_logs_down_migration_blocked_in_production": "RuntimeException at 2026_04_22_000002:70-76",
+    "z_reports_db_level_protection": "BEFORE DELETE trigger 'z_reports_no_delete' raises SQLSTATE 45000 (MySQL only — SQLite no-op acknowledged) via 2026_05_09_160000:51-58",
+    "order_payments_protection": "restrictOnDelete + BEFORE DELETE trigger (MySQL/MariaDB only) via 2026_05_10_010000:88-95,131-141. SQLite: trigger NOT installed by 2026_05_10_010000 (driver guard line 101); rely on application-layer order workflow + no callsite that hard-deletes payments.",
+    "cash_movements_protection": "BEFORE DELETE trigger via 2026_05_10_010000:107-117 (MySQL/MariaDB only) + SQLite parity trigger 'cash_movements_no_delete' via 2026_05_16_130000_add_cash_movements_delete_trigger_sqlite.php:45-52 (RAISE ABORT for PHPUnit RefreshDatabase coverage).",
+    "cash_drawer_sessions_protection": "BEFORE DELETE trigger via 2026_05_10_010000:119-129 (MySQL/MariaDB only) + SQLite parity trigger 'cash_drawer_sessions_no_delete' via 2026_05_16_130000:55-62 (RAISE ABORT).",
+    "stock_movements_protection": "restrictOnDelete (MySQL) + BEFORE DELETE trigger via 2026_05_18_140000. SQLite: per docstring lines 35-50, FK-RESTRICT is no-op (PRAGMA foreign_keys default OFF in test) and triggers also skipped — test-time coverage relies on Eloquent-layer assertion only.",
+    "delivery_boy_cash_movements_protection": "restrictOnDelete + no-delete trigger via 2026_05_18_120300_add_delivery_boy_cash_no_delete_triggers_sqlite.php (filename indicates SQLite parity present).",
+    "forceDelete_callsites_targeting_fiscal_models": "NONE (only ItemService.php and well-guarded)",
+    "truncate_bypass_mitigation": "GRANT REVOKE on TRUNCATE — Ansible task CVP0-1 documented in CLAUDE.md §8 — out of migration scope but verified in deploy doc",
+    "verdict": "NF525 CASCADE SAFETY: ATTESTED GREEN"
+  },
+
+  "verdict": "GREEN",
+  "verdict_justification": "Zero NF525 cascade reachability — audit_logs and z_reports have no FK from any parent, are protected by 2-layer (model+DB-trigger) immutability, and their down() migrations refuse to run in production. Hard delete of Order/Branch/User is blocked end-to-end by RESTRICT chains + DELETE triggers on order_payments/cash_movements/cash_drawer_sessions. The single forceDelete callsite (ItemService) is properly guarded by historical-reference check + transaction. Three minor GDPR/cloud-prep items deferred to V1.0.2 backlog (loyalty cascade asymmetry, z_reports/orders down() guard symmetry, Sanctum token prune cron). Frozen-zone diff = 0 (audit-only, no code modified).",
+
+  "files_audited": {
+    "migrations_total": 173,
+    "models_total": 79,
+    "key_migrations_read": [
+      "database/migrations/2014_10_12_000000_create_users_table.php",
+      "database/migrations/2022_11_17_110125_create_branches_table.php",
+      "database/migrations/2022_11_17_110810_create_orders_table.php",
+      "database/migrations/2022_11_17_110832_create_order_items_table.php",
+      "database/migrations/2025_02_21_110459_create_kiosk_machines_table.php",
+      "database/migrations/2026_03_06_182733_create_action_logs_table.php",
+      "database/migrations/2026_03_26_075918_create_loyalty_transactions_table.php",
+      "database/migrations/2026_04_15_230200_v1_soft_deletes_and_deletion_log.php",
+      "database/migrations/2026_04_22_000002_create_audit_logs_table.php",
+      "database/migrations/2026_04_22_000003_create_z_reports_table.php",
+      "database/migrations/2026_05_06_180000_create_order_payments_table.php",
+      "database/migrations/2026_05_06_200000_add_parent_order_id_to_orders.php",
+      "database/migrations/2026_05_09_160000_add_z_reports_delete_trigger_immutability.php",
+      "database/migrations/2026_05_10_010000_secure_fiscal_audit_trail_immutability.php",
+      "database/migrations/2026_05_18_120000_add_webhook_events_order_id_fk.php",
+      "database/migrations/2026_05_18_140000_add_stock_movements_immutability_triggers.php"
+    ],
+    "key_models_read": [
+      "app/Models/AuditLog.php",
+      "app/Models/ZReport.php"
+    ],
+    "key_services_read": [
+      "app/Services/ItemService.php (lines 410-480 — destroy method)"
+    ]
+  }
+}

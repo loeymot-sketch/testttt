@@ -1,5 +1,30 @@
 <template>
   <!--
+    [Wave X3 2026-05-21] KDS Historique du jour — read-only V1 day-history.
+    Trigger button renders above both V2 and legacy layouts so chef can open
+    the history drawer regardless of which grid mode is active. Wave U
+    "Récemment servies" strip in KdsV2Grid remains independent (short-term
+    recents in active grid vs. full-day history viewer in drawer).
+  -->
+  <div class="kds-history-trigger-row">
+    <button
+      type="button"
+      class="kds-history-trigger"
+      :aria-label="$t('label.kds_history_button_aria')"
+      data-testid="kds-history-button"
+      @click="historyDrawerOpen = true"
+    >
+      <span aria-hidden="true">📚</span>
+      <span class="kds-history-trigger__label">{{ $t('label.kds_history_button') }}</span>
+    </button>
+  </div>
+  <KdsHistoryDrawer
+    :open="historyDrawerOpen"
+    :dir="direction"
+    @close="historyDrawerOpen = false"
+    @recalled="onKdsOrderRecalled"
+  />
+  <!--
     [kds/sprint-2 V-5] Feature-flagged V2 layout. When useV2Layout is true
     (URL ?v2=1, localStorage 'kds.v2_enabled', or future settings flag), the
     new single-FIFO 4×2 grid renders. Otherwise the legacy 4-column layout
@@ -12,10 +37,11 @@
     :dir="direction"
     :offline-since="v2OfflineSince"
     :list-at-cap="kdsOrderListAtCap"
-    :fallback-mode="!wsConnected && !kdsHideFallbackBannerInLocalDev"
+    :fallback-mode="!wsConnected && !kdsSuppressFallbackBanner"
     :admin-polling-hint="kdsIsCentralAdmin"
     :bump-local-only-notice="!kdsHideBumpInfo"
     :auto-transition-enabled="v2AutoTransitionEnabled"
+    :recall-active-ids="recallActiveIds"
     @change-status="onV2ChangeStatus"
     @auto-promote="onV2AutoPromote"
   />
@@ -41,7 +67,7 @@
     keep passing in CI Playwright (which runs APP_ENV=local) via the sync
     stamp / aria-live / grid alternatives.
   -->
-  <div v-if="!wsConnected && !kdsHideFallbackBannerInLocalDev" class="ws-reconnect-banner" data-testid="kds-sync-mode-banner">
+  <div v-if="!wsConnected && !kdsSuppressFallbackBanner" class="ws-reconnect-banner" data-testid="kds-sync-mode-banner">
     {{ $t('label.kds_fallback_banner') }}
   </div>
   <!--
@@ -328,13 +354,14 @@
                       <span aria-hidden="true">&#128100;</span>
                       <span>{{ dineinOrder.customer.name }}</span>
                     </p>
+                    <!-- [UR1-002 V1.0.2 Wave B1] phoneDisplay SSOT -->
                     <a
-                      v-if="dineinOrder.customer && dineinOrder.customer.phone"
-                      :href="`tel:${dineinOrder.customer.phone}`"
+                      v-if="dineinOrder.customer && safePhone(dineinOrder.customer.phone)"
+                      :href="`tel:${safePhone(dineinOrder.customer.phone)}`"
                       class="text-xs leading-snug text-[#0F766E] font-bold flex items-center gap-1 hover:underline keep-latin"
                     >
                       <span aria-hidden="true">&#128241;</span>
-                      <span>{{ dineinOrder.customer.phone }}</span>
+                      <span>{{ safePhone(dineinOrder.customer.phone) }}</span>
                     </a>
                   </div>
                   <!-- [iter15-mega-fix B-002 2026-05-10] Chevron now exposes
@@ -516,13 +543,14 @@
                       <span aria-hidden="true">&#128100;</span>
                       <span>{{ onlineOrder.customer.name }}</span>
                     </p>
+                    <!-- [UR1-002 V1.0.2 Wave B1] phoneDisplay SSOT -->
                     <a
-                      v-if="onlineOrder.customer && onlineOrder.customer.phone"
-                      :href="`tel:${onlineOrder.customer.phone}`"
+                      v-if="onlineOrder.customer && safePhone(onlineOrder.customer.phone)"
+                      :href="`tel:${safePhone(onlineOrder.customer.phone)}`"
                       class="text-xs leading-snug text-[#0F766E] font-bold flex items-center gap-1 hover:underline keep-latin"
                     >
                       <span aria-hidden="true">&#128241;</span>
-                      <span>{{ onlineOrder.customer.phone }}</span>
+                      <span>{{ safePhone(onlineOrder.customer.phone) }}</span>
                     </a>
                   </div>
                   <!-- [iter15-mega-fix B-002 2026-05-10] aria-expanded for SR. -->
@@ -689,13 +717,14 @@
                       <span aria-hidden="true">&#128100;</span>
                       <span>{{ takeawayOrder.customer.name }}</span>
                     </p>
+                    <!-- [UR1-002 V1.0.2 Wave B1] phoneDisplay SSOT -->
                     <a
-                      v-if="takeawayOrder.customer && takeawayOrder.customer.phone"
-                      :href="`tel:${takeawayOrder.customer.phone}`"
+                      v-if="takeawayOrder.customer && safePhone(takeawayOrder.customer.phone)"
+                      :href="`tel:${safePhone(takeawayOrder.customer.phone)}`"
                       class="text-xs leading-snug text-[#0F766E] font-bold flex items-center gap-1 hover:underline keep-latin"
                     >
                       <span aria-hidden="true">&#128241;</span>
-                      <span>{{ takeawayOrder.customer.phone }}</span>
+                      <span>{{ safePhone(takeawayOrder.customer.phone) }}</span>
                     </a>
                   </div>
                   <!-- [iter15-mega-fix B-002 2026-05-10] aria-expanded for SR. -->
@@ -858,13 +887,14 @@
                       <span aria-hidden="true">&#128100;</span>
                       <span>{{ kioskOrder.customer.name }}</span>
                     </p>
+                    <!-- [UR1-002 V1.0.2 Wave B1] phoneDisplay SSOT -->
                     <a
-                      v-if="kioskOrder.customer && kioskOrder.customer.phone"
-                      :href="`tel:${kioskOrder.customer.phone}`"
+                      v-if="kioskOrder.customer && safePhone(kioskOrder.customer.phone)"
+                      :href="`tel:${safePhone(kioskOrder.customer.phone)}`"
                       class="text-xs leading-snug text-[#0F766E] font-bold flex items-center gap-1 hover:underline keep-latin"
                     >
                       <span aria-hidden="true">&#128241;</span>
-                      <span>{{ kioskOrder.customer.phone }}</span>
+                      <span>{{ safePhone(kioskOrder.customer.phone) }}</span>
                     </a>
                   </div>
                   <!-- [iter15-mega-fix B-002 2026-05-10] aria-expanded for SR. -->
@@ -1056,8 +1086,12 @@ import {
 import { kdsInstructionVisualClass } from "../../../helpers/kdsLineSemantics";
 import { orderHasAllergens as kdsOrderHasAllergens, sortedAllergens as kdsSortedAllergens } from "../../../helpers/kdsAllergens";
 import { ORDER_STATUS } from "../../../helpers/kdsState";
+// [UR1-002 V1.0.2 Wave B1] phoneDisplay SSOT — mirrors App\Support\PhoneDisplay::safe
+import { safePhone } from "../../../helpers/phoneDisplay";
 // [kds/sprint-2 V-5] V2 layout components — feature-flagged single FIFO 4×2 grid.
 import KdsV2Grid from "./KdsV2Grid.vue";
+// [Wave X3 2026-05-21] KDS Historique du jour — read-only day-history drawer.
+import KdsHistoryDrawer from "./KdsHistoryDrawer.vue";
 
 // [Phase-7 / T13–T14] Fil cuisine : stations, filtre, bump / statut, timers
 // d’attente (kdsDisplay), son — ne pas mélanger avec de la logique de caisse
@@ -1071,6 +1105,7 @@ export default {
     Swiper,
     SwiperSlide,
     KdsV2Grid,
+    KdsHistoryDrawer,
   },
   data() {
     return {
@@ -1137,6 +1172,22 @@ export default {
       // [Lot 2.C / F-07] Throttle new-order chime when many orders land at once.
       _kdsLastNewOrderSoundAt: 0,
       kdsOverflowDetected: false,
+      // [Wave X3 2026-05-21] KDS Historique du jour drawer — open state.
+      historyDrawerOpen: false,
+      // [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B compensating action]
+      // Local cache of orders recalled by this branch in the last 60s. Populated
+      // by the @recalled emit from KdsHistoryDrawer (the chef who clicked) AND
+      // by the `KdsOrderRecalled` Echo handler (other stations of the same branch).
+      // KdsV2Grid reads `recallActiveIds` (a computed array of currently-active
+      // ids) and applies the RAPPELÉ badge accordingly. Entries auto-expire 60s
+      // after `recalledAt` via the computed (no setInterval needed — the global
+      // `now` ticker in KdsV2Grid drives reactivity downstream).
+      kdsRecalledMap: {},
+      // Companion ticker for the 60s recall TTL — independent of the grid's
+      // own ticker so this component can compute `recallActiveIds` without
+      // reading into the child. Cleared in beforeUnmount.
+      _kdsRecallNow: Date.now(),
+      _kdsRecallTickerId: null,
       // [CV1-KDS-A11Y-RICH-001] Polite aria-live message that announces
       // ACCEPT → PREPARING → PREPARED transitions to assistive technology.
       // Updated by `kdsAnnounceTransition`; rendered in the dedicated
@@ -1158,14 +1209,40 @@ export default {
       // Owner GO confirmed 2026-05-11. Activation:
       //   - URL `?v2=1` (per-session preview)
       //   - localStorage `kds.v2_enabled` = '1' (per-device opt-in)
-      // Auto-transition is on by default per RESEARCH §4.3 (V1 single-chef).
+      // [Wave Q-2 2026-05-20] Auto-transition forced OFF. Owner override of the
+      // RESEARCH §4.3 single-chef heuristic: when two paid tickets land, the
+      // first auto-promoted to PREPARING and the second stayed in ACCEPT,
+      // creating an inconsistent suivi page (one in PRÉPARATION, one in
+      // CONFIRMÉE). Owner expects ALL tickets to follow CONFIRMÉE → EN
+      // PRÉPARATION → PRÊT under explicit chef action. The chef now taps Prêt
+      // twice on a fresh ticket (advance, then ready) — single-step ladder
+      // matches the server `OrderStateMachine::allows` rule.
       v2OfflineSince: null,
-      v2AutoTransitionEnabled: true,
+      v2AutoTransitionEnabled: false,
     };
   },
   computed: {
     direction() {
       return this.$store.getters['frontendLanguage/show'].display_mode === displayModeEnum.RTL ? 'rtl' : 'ltr';
+    },
+    // [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B compensating action]
+    // Currently-active recall ids (RAPPELÉ badge window still open). Derived
+    // from `kdsRecalledMap` + the 60s TTL using `_kdsRecallNow` so the badge
+    // auto-disappears at expiry without an explicit cleanup pass. Passed down
+    // to `KdsV2Grid` via `recall-active-ids` and to the legacy 4-col layout
+    // via the same prop.
+    recallActiveIds() {
+      const ttlMs = 60 * 1000;
+      const now = this._kdsRecallNow;
+      const ids = [];
+      const map = this.kdsRecalledMap || {};
+      for (const key of Object.keys(map)) {
+        const at = map[key];
+        if (typeof at === 'number' && (now - at) < ttlMs) {
+          ids.push(parseInt(key, 10));
+        }
+      }
+      return ids;
     },
     // [kds/sprint-2 V-5 / Sprint 3C 2026-05-16 / Sprint H4 Z3-NEW-006 2026-05-17]
     // V2 layout = PRODUCTION DEFAULT since 2026-05-16. The original gated rollout
@@ -1221,29 +1298,71 @@ export default {
         return true;
       }
     },
-    // [iter15-mega-fix C-008 run-3 2026-05-10] Supersedes the run-1/run-2
-    // decision to keep the KDS fallback banner in dev. Wave B/C run-3 evidence
-    // (states 01/07/09 in iter15-mega-kiosk + iter15-mega-lifecycle) showed it
-    // is permanently visible in local dev because Pusher/Soketi is not running
-    // — pure noise. We now gate on appEnv === 'local' only, mirroring the
-    // ConnectionStatusBanner.vue / PosOrdersTrackerComponent.vue gates. The
-    // gate intentionally excludes 'testing' so any CI suite using
-    // APP_ENV=testing still renders the banner. Existing Playwright specs that
-    // reference data-testid="kds-sync-mode-banner" all use OR-fallback locators
-    // (audit-kds-cycle1 D1-05 → stamp||banner, red-team-r4 R4-12 → soft record,
-    // 04-kds-status → kds-aria-live OR grid OR banner with .first()), so they
-    // keep passing in CI Playwright (.github/workflows/playwright.yml uses
-    // APP_ENV=local) via the alternative branches.
-    kdsHideFallbackBannerInLocalDev() {
+    // [PR-02 core-bulletproof 2026-06-04] Sync degradation must NEVER be silent
+    // (owner mandate "silencieux = grave"). The real Le Cayenne box runs
+    // APP_ENV=local, so the previous "hide whenever appEnv==='local'" gate left
+    // the kitchen with NO visual cue when soketi dropped to ~30-60s polling.
+    //
+    // FAIL-SAFE-TO-VISIBLE opt-out design (NOT opt-in): suppress the fallback
+    // banner ONLY when (a) we are in local dev AND (b) an explicit opt-out flag
+    // window.FK_KDS_SHOW_FALLBACK_BANNER === false is set. The box never sets
+    // the flag → it stays undefined → `=== false` is false → NOT suppressed →
+    // banner VISIBLE. A dev who wants silence (soketi intentionally off in dev)
+    // adds KDS_SHOW_FALLBACK_BANNER=false to .env. The dangerous state (silent
+    // degradation) is opt-out, never opt-in.
+    //
+    // Renamed from kdsHideFallbackBannerInLocalDev → kdsSuppressFallbackBanner:
+    // the old name implied "hide in local dev" which is no longer the contract.
+    //
+    // The `env === 'local'` check stays FIRST so && short-circuits before
+    // touching window.FK_* (SSR-safe). The catch falls back to `false`
+    // (fail-safe-to-visible). 'testing' is intentionally excluded (env !==
+    // 'local') so any CI suite using APP_ENV=testing always renders the banner.
+    //
+    // Config contract documented in config/kds.php ('show_fallback_banner',
+    // default true). NOTE: wiring the config through master.blade.php into
+    // window.FK_KDS_SHOW_FALLBACK_BANNER is deferred to avoid colliding with a
+    // parallel session editing master.blade.php — until then the box default
+    // (flag undefined → VISIBLE) already satisfies the mandate.
+    //
+    // Existing Playwright specs referencing data-testid="kds-sync-mode-banner"
+    // are unaffected: abuse-C-kds:369 toHaveCount(0) runs in V2 (legacy testid
+    // never mounts) AND with WS connected (v-if !wsConnected is false anyway);
+    // all other refs are OR-locators / soft .count() records.
+    kdsSuppressFallbackBanner() {
       try {
         const env = (typeof window !== 'undefined' && window.foodkingConfig?.appEnv) || '';
-        return env === 'local';
+        return env === 'local' && window.FK_KDS_SHOW_FALLBACK_BANNER === false;
       } catch (_e) {
         return false;
       }
     },
+    // [Wave T R1 F3 WT-B-R1-007 2026-05-20] Gate the "Compte central" polling
+    // hint on (a) admin/central role (branch_id<=0) AND (b) multi-branch
+    // install (branchCount>1). On single-branch installs like Le Cayenne the
+    // banner copy "Compte central (multi-succursales) : le flux en direct
+    // n'est pas abonné" is misleading — there is no multi-branch context AND
+    // the wording "n'est pas abonné" reads as a real-time sync failure to a
+    // chef. We hide the banner entirely when only one branch exists; the
+    // central admin still sees the standard sync stamp + fallback banner if
+    // the WS is actually down. branchCount is exposed by master.blade.php
+    // (cached 5min) so this is a zero-network check.
     kdsIsCentralAdmin() {
-      return this.authBranchId() <= 0;
+      const isCentralRole = this.authBranchId() <= 0;
+      if (!isCentralRole) {
+        return false;
+      }
+      try {
+        const count = parseInt(
+          (typeof window !== 'undefined' && window.foodkingConfig?.branchCount) || 0,
+          10
+        );
+        // Multi-branch install only — single-branch (or unknown count) hides.
+        return Number.isFinite(count) && count > 1;
+      } catch (_e) {
+        // Fail-safe: if config probe throws, do NOT show the misleading banner.
+        return false;
+      }
     },
     /** 45–49: backend plafond 50 — avertir avant d’atteindre la limite d’affichage */
     kdsOrderApproachingCap() {
@@ -1374,6 +1493,13 @@ export default {
     window.addEventListener('realtime-order-update', this.refreshOrderList);
     this.subscribeEcho();
     this._bindWsService();
+    // [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B compensating action]
+    // 1s ticker that drives `recallActiveIds` expiry. Independent of
+    // KdsV2Grid's own ticker so this orchestrator owns the SSOT for the
+    // RAPPELÉ-badge lifecycle.
+    this._kdsRecallTickerId = window.setInterval(() => {
+      this._kdsRecallNow = Date.now();
+    }, 1000);
     // [iter15-mega-fix C-017 2026-05-10] Self-heal the KDS surface when a
     // status transition POST succeeds. Production case: Pusher dev WS dies,
     // chef clicks "prêt", backend persists (202), but no broadcast → board
@@ -1434,6 +1560,31 @@ export default {
     this._kdsSyncStampTimer = setInterval(() => { this.syncNowTick = Date.now(); }, 1000);
   },
   methods: {
+    // [UR1-002 V1.0.2 Wave B1] phoneDisplay SSOT proxy for template access.
+    safePhone(phone) {
+      return safePhone(phone);
+    },
+    // [2026-05-18 PR-C T2 reframe heal] JS-side filter for OrderStatusChanged.
+    // Mirrors `KitchenReleaseRule::visibleStatuses` (ACCEPT / PREPARING /
+    // PREPARED). A status change affects the KDS board when EITHER the
+    // previous OR the next status is in that set:
+    //   - Entry transitions (PENDING→ACCEPT, ACCEPT→PREPARING, etc.)
+    //   - Exit transitions  (PREPARED→DELIVERED, ACCEPT→CANCELED)
+    //   - Same-board mutations (ACCEPT→PREPARING bump)
+    // Pure transitions outside the KDS board (e.g. DELIVERED→REFUNDED,
+    // CANCELED→RETURNED) no longer trigger an unnecessary debounced refresh.
+    _statusChangeAffectsKds(parsed) {
+      const KDS_VISIBLE = [4, 7, 8]; // ACCEPT, PREPARING, PREPARED (mirror KitchenReleaseRule)
+      const payload = parsed && parsed.payload ? parsed.payload : (parsed || {});
+      const oldStatus = Number(payload.old_status);
+      const newStatus = Number(payload.new_status);
+      // Missing payload (legacy / unparsed event) → fall back to refresh
+      // rather than risk swallowing a real transition.
+      if (!Number.isFinite(oldStatus) && !Number.isFinite(newStatus)) {
+        return true;
+      }
+      return KDS_VISIBLE.includes(oldStatus) || KDS_VISIBLE.includes(newStatus);
+    },
     // [Sprint 2A DEL-3 2026-05-16] Legacy template delivery-block helpers.
     // Mirror the V2 KdsOrderCard `isDeliveryOrder` + `deliveryAddressLine`
     // computed logic for the rollback path (?v2=0 / kds.v2_enabled='0').
@@ -1736,6 +1887,12 @@ export default {
       if (this._onWsDisconnected) ws.off('disconnected', this._onWsDisconnected);
     },
     _pollingInterval() {
+      // [HEAL B.3 2026-05-19] KDS polling cadence is intentionally hardcoded
+      // per-surface (not config-driven). 5000ms when WS down protects the
+      // kitchen-staleness budget (orders must surface within ~5s of payment).
+      // 60000ms when WS up because Echo handles the live push and polling
+      // becomes a passive sanity-check. NOT a config-read miss — see
+      // config/broadcasting.php for the per-surface SoT note (RED-Z3 §B-6).
       return this.wsConnected ? 60000 : 5000;
     },
     _restartPolling() {
@@ -1759,7 +1916,17 @@ export default {
       this.unsubscribeEcho();
       try {
         this._eventSub = onEvents(branchId, [
-          { broadcastAs: 'OrderStatusChanged', handler: () => { this._debouncedRefresh(); } },
+          // [2026-05-18 PR-C T2 reframe heal] Filter OrderStatusChanged JS-side:
+          // refresh only when from OR to is in the KDS-visible status set
+          // (ACCEPT=4 / PREPARING=7 / PREPARED=8 — mirror KitchenReleaseRule).
+          // Before this guard, every status flip (DELIVERED→REFUNDED, CANCELED,
+          // RETURNED, etc.) triggered a debounced full refresh even though
+          // none of those affect the KDS board → wasted backend calls + flicker.
+          { broadcastAs: 'OrderStatusChanged', handler: (parsed) => {
+              if (this._statusChangeAffectsKds(parsed)) {
+                this._debouncedRefresh();
+              }
+          } },
           { broadcastAs: 'OrderCreated', handler: () => { this._debouncedRefresh(); } },
           { broadcastAs: 'OrderPaidAtCounter', handler: () => { this._debouncedRefresh(); } },
           // [SYNC-001 + CV1-KDS-INFLIGHT-OOS-MARKER-001] KDS now also receives
@@ -1774,6 +1941,26 @@ export default {
           {
             broadcastAs: 'OrderTableChanged',
             handler: (payload) => { this._handleTableChanged(payload); },
+          },
+          // [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B]
+          // Chef on station A recalls an order → all other stations of the
+          // same branch get the event here and re-inject the card with the
+          // RAPPELÉ badge for 60s without polling. The handler delegates to
+          // onKdsOrderRecalled which sets the local `recallActiveMap` entry;
+          // KdsV2Grid reads it via the `recall-active-ids` prop.
+          {
+            broadcastAs: 'KdsOrderRecalled',
+            handler: (parsed) => {
+              const orderId = parsed?.payload?.order_id || parsed?.payload?.orderId;
+              if (orderId) {
+                this.onKdsOrderRecalled({
+                  orderId: parseInt(orderId, 10),
+                  queueNumber: parsed?.payload?.queue_number || null,
+                  recalledAt: Date.now(),
+                  payload: parsed?.payload || null,
+                });
+              }
+            },
           },
         ]);
         // [P13_LOG_HYGIENE] console.log(`[KDS] Echo subscribed to branch.${branchId}`);
@@ -2142,9 +2329,16 @@ export default {
             // region (kds-aria-live) carries the same message for screen readers.
             try {
               const itemName = payload.name || payload.item_name || ('#' + itemId);
-              const label = reason
-                ? `${itemName} indisponible — ${reason}`
-                : `${itemName} indisponible`;
+              // [HEAL-2 V102-03 2026-05-26] i18n FR/EN/AR via pos.stock_rupture_alert
+              // (was hardcoded FR concat with raw reason enum — caused mixed-locale
+              // labels in EN/AR). reason suffix dropped per owner mission spec
+              // "Stock épuisé : {item_name}".
+              let label;
+              try {
+                label = this.$t('pos.stock_rupture_alert', { name: itemName });
+              } catch (_t) {
+                label = `Stock épuisé : ${itemName}`;
+              }
               this.kdsAriaLiveMessage = label;
               alertService.warning(label);
             } catch (_e) { /* defensive */ }
@@ -2247,9 +2441,42 @@ export default {
       }
     },
 
+    // [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B compensating action]
+    // Handler shared by:
+    //   (a) `KdsHistoryDrawer` `@recalled` emit — fires synchronously after the
+    //       chef clicks "↶ Annuler bump" on the originating station (instant
+    //       local feedback);
+    //   (b) `KdsOrderRecalled` Echo broadcast handler — fires on OTHER stations
+    //       of the same branch (cross-poste sync, see subscribeEcho).
+    // We store the timestamp in `kdsRecalledMap` so the computed
+    // `recallActiveIds` exposes the order to KdsV2Grid for the 60s window.
+    // Also bumps an aria-live message for screen-reader users.
+    onKdsOrderRecalled(payload) {
+      if (!payload || !payload.orderId) {
+        return;
+      }
+      const id = parseInt(payload.orderId, 10);
+      const at = typeof payload.recalledAt === 'number' ? payload.recalledAt : Date.now();
+      this.kdsRecalledMap = { ...this.kdsRecalledMap, [id]: at };
+      this.kdsAriaLiveMessage = this.$t('label.kds_recall_badge_aria', {
+        queue: payload.queueNumber || id,
+      });
+      // Trigger a debounced list refresh so the card actually re-appears on
+      // the board (the order's `updated_at` may have aged out of the active
+      // grid even though it's still PREPARED). The recall row in the DB
+      // doesn't change `orders.updated_at`, so without a refresh the FIFO
+      // sort would not re-insert it.
+      this._debouncedRefresh();
+    },
+
   },
   beforeUnmount() {
     this.stopAutoRefresh();
+    // [Heal-5] Stop the recall TTL ticker.
+    if (this._kdsRecallTickerId) {
+      window.clearInterval(this._kdsRecallTickerId);
+      this._kdsRecallTickerId = null;
+    }
     if (this._kdsWaitInterval) {
       clearInterval(this._kdsWaitInterval);
       this._kdsWaitInterval = null;
@@ -2285,6 +2512,38 @@ export default {
 </script>
 
 <style scoped>
+/* [Wave X3 2026-05-21] KDS Historique du jour trigger. */
+.kds-history-trigger-row {
+  display: flex;
+  justify-content: flex-end;
+  padding: 8px 12px 0 12px;
+  width: 100%;
+}
+.kds-history-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #111111;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 120ms ease, outline 120ms ease;
+}
+.kds-history-trigger:hover {
+  background: #d40000;
+}
+.kds-history-trigger:focus-visible {
+  outline: 2px solid #ffd400;
+  outline-offset: 2px;
+}
+.kds-history-trigger__label {
+  font-variant-numeric: tabular-nums;
+}
+
 .kds-instruction {
   line-height: 1.5;
   border-left: 3px solid #e0e0e0;

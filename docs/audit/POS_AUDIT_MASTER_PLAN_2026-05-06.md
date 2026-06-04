@@ -48,7 +48,7 @@
   - `ChoiceAvailabilityResolver::snapshotForItems()` — dispo variations/extras/addons
   - `IngredientAvailabilityService::toggle()` — cascade par nom + event
   - `EscPosPrinterService` + `PrinterTransport` — hardware
-  - `ReceiptDataService::buildForOrder()` — assemble payload ticket
+  - `ReceiptDataService::buildForOrder(int $orderId)` / `buildForOrderModel(Order $order)` — SSOT for the six NF525-receipt fields (fiscal_sequence_no, register_id, siret, vat_intra, legal_footer, operator_name). Consumed by `OrderDetailsResource` (delegation, see `ReceiptDataServiceWireInTest`) so the HTTP resource and the JS-side `posReceiptBuilder` converge on a single source of truth.
   - `AuditLogService::write()` — audit NF525 best-effort
   - `ZReportService::open / close` — Z fiscal HMAC chainé
 - **FormRequests** : `PosOrderRequest` (token, branch_id, order_type, items JSON, pos_payment_method, etc.)
@@ -122,7 +122,7 @@
 | 20 | Méthode NFC | NDEFReader | `posNfc` service | — | `posNfc.spec.js` |
 | 21 | Ticket-restaurant | TR UI | `PosTicketRestaurantPaymentTest.php` | — | feature OK |
 | 22 | Ouverture tiroir caisse | `kioskHardware.openDrawer` | `CashDrawerController@open` + ESC/POS | hardware | `posCashDrawerOpen.spec.js` |
-| 23 | Génération ticket caisse | `ReceiptComponent` + `posReceiptBuilder` | `ReceiptDataService::buildForOrder` | — | `posReceiptBuilder.spec.js`, `PosReceiptTaxLinesTest.php` |
+| 23 | Génération ticket caisse | `ReceiptComponent` + `posReceiptBuilder` | `ReceiptDataService::buildForOrderModel` ⇐ delegated by `OrderDetailsResource` (NF525 wire-in 2026-05-18) | audit `pos.receipt.print` chained | `posReceiptBuilder.spec.js`, `PosReceiptTaxLinesTest.php`, `ReceiptDataServiceWireInTest.php` |
 | 24 | Impression ticket | `PosV5Button` print | `PosReceiptPrintController@increment` + ESC/POS | audit `pos.receipt.print` | `posReceiptPrintFlow.spec.js`, `EscPosOpenDrawerTest.php` |
 | 25 | Duplicata ticket | `ReceiptDuplicataMarker` | `receipt_print_count >= 2` | audit `pos.receipt.reprint` | `posReceiptDuplicataMarker.spec.js` |
 | 26 | Envoi cuisine (KDS) | — | `OrderCreated` event → outbox → KDS subscribe | Pusher `private-branch.{id}` | `KDSFlowTest.php`, `audit-pos-multiproduct-kds-journey.spec.js` |

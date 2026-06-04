@@ -8,6 +8,8 @@ use App\Enums\Source;
 use App\Models\Branch;
 use App\Models\Order;
 use App\Models\User;
+use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -21,6 +23,24 @@ class DashboardBranchScopeMatrixTest extends TestCase
 
         $this->seedMinimalSettings();
         $this->seedSpatieRoles();
+
+        // [Wave 3c KDS-ADV3C-01 P0 2026-05-18] DashboardService is now
+        // TZ-aware: `Carbon::today($appTz)->setTimezone('UTC')->toDateString()`.
+        // On SQLite test driver (no session TZ) `order_datetime` is stored
+        // as Paris-formatted string (Eloquent serializes Carbon in app TZ).
+        // If the test runs at Paris-morning, UTC-today yields yesterday's
+        // Y-m-d while order_datetime rows show today-Paris → mismatch.
+        // Pin "now" to Paris midday so Paris-today and UTC-today agree.
+        $pinned = CarbonImmutable::parse('2026-05-18 12:00:00', 'Europe/Paris');
+        Carbon::setTestNow($pinned);
+        CarbonImmutable::setTestNow($pinned);
+    }
+
+    protected function tearDown(): void
+    {
+        Carbon::setTestNow();
+        CarbonImmutable::setTestNow();
+        parent::tearDown();
     }
 
     public function test_dashboard_permission_is_required(): void
@@ -48,7 +68,10 @@ class DashboardBranchScopeMatrixTest extends TestCase
         $this->actingAs($manager, 'sanctum')
             ->getJson('/api/admin/dashboard/total-orders')
             ->assertOk()
-            ->assertJsonPath('data.total_orders', 2);
+            // [DASH-01 2026-06-01] total_orders now = all PLACED branchA orders (DELIVERED
+            // A0001 + PREPARING A0002 + customer order), not DELIVERED-only. Branch scope
+            // intact: branchA = 3, NOT branchA+branchB = 6.
+            ->assertJsonPath('data.total_orders', 3);
 
         $this->actingAs($manager, 'sanctum')
             ->getJson('/api/admin/dashboard/realtime-report')

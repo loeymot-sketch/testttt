@@ -1,0 +1,84 @@
+{
+  "specialist": "Architect",
+  "task": "WE-1 POS Cashier Loyalty CTA — main page placement architectural review",
+  "mode": "read-only",
+  "scope": [
+    "resources/js/components/admin/pos/PosComponent.vue",
+    "resources/js/components/admin/pos/PaymentComponent.vue",
+    "resources/js/components/admin/pos/PosLoyaltyRedeemModal.vue",
+    "resources/js/components/admin/posOrders/PosOrderShowComponent.vue",
+    "app/Services/Loyalty/PosRedemptionService.php"
+  ],
+  "findings": {
+    "summary": "Main-page CTA wire-up is feasible via the existing `order:confirmed` event already emitted by PaymentComponent. Modal is permission-gated server-side. Two architecturally clean placement options exist; recommend Option B (sibling to floorplan link, gated by !dineInEnabled) to preserve V2 dine-in upgrade path.",
+    "architecture_invariants_check": {
+      "frozen_zone": {
+        "status": "PASS",
+        "evidence": "PosComponent.vue + PaymentComponent.vue + PosLoyaltyRedeemModal.vue are NOT in CLAUDE.md §7 frozen list. Only `public/js/pos-wizard.js`, `public/css/pos-wizard.css`, `resources/views/admin-pos-v4.blade.php` are frozen (POS Vanilla JS wizard). FloorplanComponent.vue itself is on a separate route (`/admin/pos/floorplan`) and is NOT touched by this task."
+      },
+      "nf525": {
+        "status": "PASS",
+        "evidence": "PosRedemptionService rejects PAID/terminal orders (PosRedemptionService.php:228-252). No fiscal sequence allocation in redemption path. composition_snapshot untouched. Backend remains source of truth for discount math (rate-based integer division of points)."
+      },
+      "branch_isolation": {
+        "status": "PASS",
+        "evidence": "All loyalty endpoints scoped via existing PosLoyaltyController + BranchScope on Order model. UI doesn't bypass scope."
+      },
+      "permission_gate": {
+        "status": "PASS",
+        "evidence": "Backend `pos.redeem-loyalty` permission enforced on `POST /api/admin/pos-order/{orderId}/redeem-loyalty` via FormRequest. UI hiding CTA is a UX optimization, not a security boundary."
+      }
+    },
+    "data_flow": {
+      "current_order_source": "PaymentComponent emits `order:confirmed` with `this.order` payload (PaymentComponent.vue:994). PosComponent currently handles via `triggerSuccessFlash` (PosComponent.vue:906, 1920-1927). We extend that handler to also store `currentLoyaltyOrderId` + `currentLoyaltyOrderState`.",
+      "order_payload_shape": "OrderDetailsResource → `{ id, payment_status, status, order_items, ... }` (set in PaymentComponent.vue:895-901).",
+      "reset_semantics": [
+        {"trigger": "PaymentComponent emits order:confirmed → if order.payment_status === PAID OR terminal status → currentLoyaltyOrderId stays but CTA hidden via computed gate (mirrors PosOrderShowComponent.canShowLoyaltyRedeem). For non-PAID non-terminal orders → CTA visible.",
+         "rationale": "Per owner direction: 'loyalty applies during this order; on completion → reset'. Computed gate naturally hides CTA the moment order transitions terminal."},
+        {"trigger": "Cart manually reset via resetCart() (PosComponent.vue:2890) → also clear currentLoyaltyOrderId.",
+         "rationale": "Cashier starts a fresh order; previous order id no longer relevant."},
+        {"trigger": "resetPaymentForm() fires on `payment-form:reset` (PosComponent.vue:2582) → also clear currentLoyaltyOrderId.",
+         "rationale": "Form reset implies order success cycle completed; previous order id stale."}
+      ]
+    },
+    "placement_options": [
+      {
+        "option": "A. Replace floorplan router-link with loyalty button",
+        "pros": ["Clean — exactly the 'where floorplan would be' space owner described."],
+        "cons": ["Loses V2 dine-in upgrade path (cashier can't reach floorplan if dineInEnabled toggled true in future).", "Requires breaking `posFloorplan.spec.js` test (loyalty button replaces link).", "FloorplanComponent.vue is still functional and reachable via direct URL — UI inconsistency."],
+        "recommend": false
+      },
+      {
+        "option": "B. Sibling button: floorplan link gated by `v-if=\"dineInEnabled\"`, new loyalty button gated by `v-if=\"!dineInEnabled && canShowLoyaltyCta\"`",
+        "pros": ["Zero regression on V2 dine-in path.", "Same screen real estate (mutually exclusive render).", "Owner intent preserved: when dine-in is OFF (V1), the slot becomes Loyalty Redeem.", "Floorplan tests untouched.", "Reversible — flip dine_in_enabled in admin settings and the button swaps back."],
+        "cons": ["Slightly more conditional logic."],
+        "recommend": true
+      }
+    ],
+    "anti_drift_checks": {
+      "ssot_pricing": "Discount amount comes from server response `data.discount_eur` (PosLoyaltyRedeemModal.vue:311). Frontend never computes pricing. PASS.",
+      "idempotency": "Modal already builds `X-Idempotency-Key` (PosLoyaltyRedeemModal.vue:266-271). PASS.",
+      "permission_403": "Backend 403 surfaces via translateErrorCode → permission_denied i18n key (PosLoyaltyRedeemModal.vue:325). PASS.",
+      "double_emit_risk": "If `applied` event fires twice (network retry), modal `lastResponse` is overwritten but cumulative discount risk is server-side (already_redeemed error_code rejects double redemption). PASS — backend is defensive.",
+      "cart_reset_race": "If cashier clicks Loyalty CTA → modal opens → cart resetCart called concurrently → modal still holds stale orderId. Mitigation: emit close when carts.length transitions 0. Recommended addition in build phase."
+    },
+    "test_strategy": [
+      "Vitest unit: PosComponent renders loyalty CTA when (a) dineInEnabled=false AND (b) currentLoyaltyOrderId !== null AND (c) order non-terminal.",
+      "Vitest unit: CTA hidden when dineInEnabled=true (V2 floorplan instead).",
+      "Vitest unit: CTA hidden when order is PAID.",
+      "Vitest unit: resetCart clears currentLoyaltyOrderId.",
+      "Vitest unit: order:confirmed handler stores order info.",
+      "Vitest unit: applied event from modal triggers state refresh (totals + balance).",
+      "PHPUnit: no new tests needed (backend unchanged). Verify PosLoyaltyRedeemTest 6/6 still PASS.",
+      "Playwright: capture POS main page with cart empty (CTA hidden), with cart filled but no order id (CTA hidden), simulate post-payment non-PAID state (CTA visible)."
+    ],
+    "known_limitation": {
+      "issue": "CASH-via-wizard flow creates order with payment_status=PAID immediately. Backend PosRedemptionService rejects PAID orders. Therefore the main-page CTA is ALSO unreachable for CASH orders unless cashier opens the CTA BEFORE confirming payment.",
+      "scope_correct_interpretation": "Owner's 'CASH-via-wizard creates PAID immediately, current order-show CTA unreachable for cash. New main-page CTA fixes this trade-off' likely means: the main-page CTA reduces friction for OTHER payment methods (CARD/TPE/PARK) where the order is created but not yet PAID. The cashier no longer needs to navigate to PosOrderShow to apply loyalty for non-CASH unpaid orders.",
+      "remaining_gap": "True CASH loyalty redeem requires backend change: support pre-checkout staging (apply loyalty to a transient cart state, materialize in order save payload). This is OUT of mission scope ('no backend changes needed').",
+      "recommendation": "Document this limitation in STATUS.md. Defer to V1.0.2 backlog as 'PosLoyaltyPreCheckoutStaging'."
+    }
+  },
+  "verdict": "GO with Option B placement. Wire-up is straightforward, zero frozen-zone touch, zero backend touch. Existing event `order:confirmed` is the natural data hook. Reset semantics covered by 3 hooks: order:confirmed (terminal gating via computed), resetCart, resetPaymentForm.",
+  "word_count": "approx 850"
+}

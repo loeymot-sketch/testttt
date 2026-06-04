@@ -15,7 +15,12 @@ class Kernel extends HttpKernel
      * @var array<int, class-string|string>
      */
     protected $middleware = [
-        // \App\Http\Middleware\TrustHosts::class,
+        // [Wave 2c P1 SYNC-ADV3B-01 2026-05-18] Defense vs Host spoof —
+        // TrustProxies::$proxies='*' (Wave 2b) trusts X-Forwarded-Host /
+        // X-Forwarded-Proto from any upstream. TrustHosts pins host to
+        // APP_URL subdomains + 127.0.0.1 + localhost to prevent URL
+        // generation poisoning. No-op under runningUnitTests() / local.
+        \App\Http\Middleware\TrustHosts::class,
         \App\Http\Middleware\TrustProxies::class,
         \Illuminate\Http\Middleware\HandleCors::class,
         \App\Http\Middleware\PreventRequestsDuringMaintenance::class,
@@ -133,5 +138,11 @@ class Kernel extends HttpKernel
         // [F-VERIFY-09-02 / PLAN_P11] HTTP-level idempotency guard. Opt-in
         // per-route via routes/api.php; flag-gated via IDEMPOTENCY_MIDDLEWARE_ENABLED.
         'idempotency' => \App\Http\Middleware\IdempotencyKeyMiddleware::class,
+        // [GOAL-J2-HEAL-02 2026-05-24] Phase J-ADV-6 PATH-1 RED P0 closer.
+        // Blocks Sanctum tokens carrying the kiosk:order ability from reaching
+        // /api/admin/* routes regardless of the underlying user's Spatie
+        // permissions. Applied to both admin route groups in routes/api.php.
+        // See BlockKioskTokenFromAdminRoutes::handle() for full rationale.
+        'block_kiosk_token_admin' => \App\Http\Middleware\BlockKioskTokenFromAdminRoutes::class,
     ];
 }

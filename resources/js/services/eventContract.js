@@ -11,6 +11,8 @@ export const EVENT_TYPES = {
     STOCK_LOW: 'stock.low',
     // [PROMO-DASH-2026-05-06] Coupon mutations broadcast (Dashboard cycle 6).
     COUPON_CHANGED: 'promo.coupon_changed',
+    // [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B compensating action]
+    KDS_ORDER_RECALLED: 'kds.order_recalled',
 };
 
 export const BROADCAST_MAP = {
@@ -22,6 +24,8 @@ export const BROADCAST_MAP = {
     CatalogChanged: EVENT_TYPES.CATALOG_CHANGED,
     // [PROMO-DASH-2026-05-06] Coupon mutations broadcast.
     CouponChanged: EVENT_TYPES.COUPON_CHANGED,
+    // [Heal-5] Kitchen recall — emitted by the chef "↶ Annuler bump" path.
+    KdsOrderRecalled: EVENT_TYPES.KDS_ORDER_RECALLED,
 };
 
 function warnValidation(reason, data) {
@@ -257,21 +261,33 @@ function evictCorrelationCapacity() {
 
 loadCorrelationDedupeFromStorage();
 
-function correlationDedupeKey(correlationId, eventType = null, branchId = null) {
+function correlationDedupeKey(correlationId, eventType = null, branchId = null, aggregateId = null) {
     const branchKey = branchId === null || branchId === undefined || branchId === ''
         ? null
         : `branch:${branchId}`;
-    if (!eventType || typeof eventType !== 'string') {
-        return branchKey ? `${branchKey}:${correlationId}` : correlationId;
-    }
-    return branchKey ? `${eventType}:${branchKey}:${correlationId}` : `${eventType}:${correlationId}`;
+    // [GOAL-2026-05-29 F4] Include the event's aggregate id when present so a SINGLE
+    // request/correlation that legitimately emits one event PER ENTITY — e.g. a
+    // multi-item auto-86 emitting ItemAvailabilityChanged for each item, all sharing
+    // one correlationId+type+branch — is NOT collapsed to the first event (which kept
+    // the 2nd..Nth depleted items sellable). A genuine re-delivery (WS+poll) carries
+    // the SAME aggregate id, so it still dedups. Backward-compatible: when aggregateId
+    // is null the key is byte-identical to the previous format.
+    const aggKey = aggregateId === null || aggregateId === undefined || aggregateId === ''
+        ? null
+        : `agg:${aggregateId}`;
+    const parts = [];
+    if (eventType && typeof eventType === 'string') parts.push(eventType);
+    if (branchKey) parts.push(branchKey);
+    if (aggKey) parts.push(aggKey);
+    parts.push(correlationId);
+    return parts.join(':');
 }
 
-export function isDuplicateCorrelation(correlationId, eventType = null, branchId = null) {
+export function isDuplicateCorrelation(correlationId, eventType = null, branchId = null, aggregateId = null) {
     if (!correlationId || typeof correlationId !== 'string') {
         return false;
     }
-    const dedupeKey = correlationDedupeKey(correlationId, eventType, branchId);
+    const dedupeKey = correlationDedupeKey(correlationId, eventType, branchId, aggregateId);
     const now = Date.now();
     evictExpiredCorrelations(now);
     if (seenCorrelationIds.has(dedupeKey)) {
@@ -356,7 +372,10 @@ export function onEvents(branchId, bindings) {
                     });
                 }
 
-                if (isDuplicateCorrelation(parsed.correlationId, parsed.type || expectedType || broadcastAs, parsed.branchId)) {
+                // [GOAL-2026-05-29 F4] Pass the aggregate id so per-entity events of one
+                // request/correlation (multi-item auto-86) aren't collapsed; a true
+                // re-delivery (same aggregate) still dedups.
+                if (isDuplicateCorrelation(parsed.correlationId, parsed.type || expectedType || broadcastAs, parsed.branchId, parsed.aggregateId)) {
                     return;
                 }
 

@@ -68,17 +68,38 @@ class PushNotificationService
                 $pushNotification->addMediaFromRequest('image')->toMediaCollection('pushNotifications');
             }
 
+            // [Foundation F-8-RED-001 / 2026-05-18] Tenant isolation on fan-out.
+            //
+            // Before: role_id=0 / user_id=0 broadcasts (and role-scoped fan-out)
+            // selected ALL users across ALL branches, ignoring the branch_id
+            // stored on the push_notifications row. A branch manager creating
+            // a "store closing in 1h" push reached staff of OTHER restaurants.
+            //
+            // After: when push.branch_id != 0 (branch-scoped sender), the User
+            // fan-out is filtered to that branch. When push.branch_id == 0
+            // (admin global broadcast), behaviour is unchanged. Single-user
+            // path (user_id != 0) was already isolated.
+            $pushBranchId = (int) $pushNotification->branch_id;
+
             if ($pushNotification->role_id == 0 && $pushNotification->user_id == 0) {
-                $fcmWebDeviceToken    = User::whereNotNull('web_token')->pluck('web_token')->toArray();
-                $fcmMobileDeviceToken = User::whereNotNull('device_token')->pluck('device_token')->toArray();
+                $webQuery    = User::whereNotNull('web_token');
+                $mobileQuery = User::whereNotNull('device_token');
+                if ($pushBranchId !== 0) {
+                    $webQuery->where('branch_id', $pushBranchId);
+                    $mobileQuery->where('branch_id', $pushBranchId);
+                }
+                $fcmWebDeviceToken    = $webQuery->pluck('web_token')->toArray();
+                $fcmMobileDeviceToken = $mobileQuery->pluck('device_token')->toArray();
             } else {
                 if ($pushNotification->role_id !== 0 && $pushNotification->user_id == 0) {
-                    $fcmWebDeviceToken    = User::role(
-                        $pushNotification->role_id
-                    )->whereNotNull('web_token')->pluck('web_token')->toArray();
-                    $fcmMobileDeviceToken = User::role(
-                        $pushNotification->role_id
-                    )->whereNotNull('device_token')->pluck('device_token')->toArray();
+                    $webQuery    = User::role($pushNotification->role_id)->whereNotNull('web_token');
+                    $mobileQuery = User::role($pushNotification->role_id)->whereNotNull('device_token');
+                    if ($pushBranchId !== 0) {
+                        $webQuery->where('branch_id', $pushBranchId);
+                        $mobileQuery->where('branch_id', $pushBranchId);
+                    }
+                    $fcmWebDeviceToken    = $webQuery->pluck('web_token')->toArray();
+                    $fcmMobileDeviceToken = $mobileQuery->pluck('device_token')->toArray();
                 } else {
                     $fcmWebDeviceToken    = User::where(['id' => $pushNotification->user_id])->whereNotNull(
                         'web_token'
@@ -90,7 +111,7 @@ class PushNotificationService
             }
 
             $fcmTokenArray = array_merge($fcmWebDeviceToken, $fcmMobileDeviceToken);
-            $firebase      = new FirebaseService();
+            $firebase      = app(FirebaseService::class);
             $firebase->sendNotification($pushNotification, $fcmTokenArray, "promotion");
             return $pushNotification;
         } catch (Exception $exception) {

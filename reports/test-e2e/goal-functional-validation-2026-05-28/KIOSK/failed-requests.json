@@ -1,0 +1,72 @@
+[
+  {
+    "label": "real-flow",
+    "url": "http://127.0.0.1:8000/api/frontend/branch?vuex=false",
+    "failure": "net::ERR_ABORTED"
+  },
+  {
+    "label": "real-flow",
+    "url": "http://127.0.0.1:8000/api/frontend/kiosk-event",
+    "failure": "net::ERR_ABORTED"
+  },
+  {
+    "label": "real-flow",
+    "url": "http://127.0.0.1:8000/api/frontend/setting",
+    "failure": "net::ERR_ABORTED"
+  },
+  {
+    "label": "real-flow",
+    "url": "http://127.0.0.1:8000/api/frontend/setting?vuex=false",
+    "failure": "net::ERR_ABORTED"
+  },
+  {
+    "label": "real-flow",
+    "url": "https://fonts.gstatic.com/s/fraunces/v38/6NU78FyLNQOQZAnv9bYEvDiIdE9Ea92uemAk_WBq8U_9v0c2Wa0KxC9TeA.woff2",
+    "failure": "net::ERR_ABORTED"
+  },
+  {
+    "label": "real-flow",
+    "url": "http://127.0.0.1:8000/themes/default/fonts/typography/rubik/Rubik-SemiBold.ttf",
+    "failure": "net::ERR_ABORTED"
+  },
+  {
+    "label": "real-flow",
+    "url": "https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7.woff2",
+    "failure": "net::ERR_ABORTED"
+  },
+  {
+    "label": "api-capture",
+    "url": "http://127.0.0.1:8000/api/frontend/branch?vuex=false",
+    "failure": "net::ERR_ABORTED"
+  },
+  {
+    "label": "api-capture",
+    "url": "http://127.0.0.1:8000/api/frontend/kiosk-event",
+    "failure": "net::ERR_ABORTED"
+  },
+  {
+    "label": "api-capture",
+    "url": "http://127.0.0.1:8000/api/frontend/setting",
+    "failure": "net::ERR_ABORTED"
+  },
+  {
+    "label": "api-capture",
+    "url": "http://127.0.0.1:8000/api/frontend/setting?vuex=false",
+    "failure": "net::ERR_ABORTED"
+  },
+  {
+    "label": "api-capture",
+    "url": "https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7.woff2",
+    "failure": "net::ERR_ABORTED"
+  },
+  {
+    "label": "api-capture",
+    "url": "https://fonts.gstatic.com/s/fraunces/v38/6NU78FyLNQOQZAnv9bYEvDiIdE9Ea92uemAk_WBq8U_9v0c2Wa0KxC9TeA.woff2",
+    "failure": "net::ERR_ABORTED"
+  },
+  {
+    "label": "api-capture",
+    "url": "http://127.0.0.1:8000/themes/default/fonts/typography/rubik/Rubik-SemiBold.ttf",
+    "failure": "net::ERR_ABORTED"
+  }
+]

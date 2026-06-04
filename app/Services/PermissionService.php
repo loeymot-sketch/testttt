@@ -39,6 +39,23 @@ class PermissionService
     public function update(PermissionRequest $request, Role $role) : Role
     {
         try {
+            // [GOAL-CMS-2026-05-18 M-R3-P0-D heal] R3 T-2.2.1 Sec S-2:
+            // Self-permission-sync escalation. PermissionService::update calls
+            // $role->syncPermissions(WRITE, not merge) with no guard against
+            // the caller modifying their OWN role. Combined with the legacy
+            // PermissionRequest::authorize() return-true (closed by parallel
+            // BUILD-6 to require permission:settings), an admin with `settings`
+            // could grant themselves the FULL permission set in 2 HTTP calls.
+            // Now forbid syncing permissions on a role the caller holds.
+            $caller = $request->user();
+            if ($caller && $caller->roles->contains('id', $role->id)) {
+                throw new Exception(
+                    'Cannot modify permissions on your own role — privilege-escalation guard '
+                    . '(R3 T-2.2.1 Sec S-2).',
+                    403
+                );
+            }
+
             return $role->syncPermissions(Permission::whereIn('id', $request->get('permissions'))->get());
         } catch (Exception $exception) {
             Log::info($exception->getMessage());

@@ -60,10 +60,12 @@ class ItemExtra extends Model
         }
 
         if ($filename && file_exists(public_path("{$basePath}/{$filename}"))) {
-            return asset("{$basePath}/{$filename}");
+            $hash = @filemtime(public_path("{$basePath}/{$filename}")) ?: 0;
+            return asset("{$basePath}/{$filename}") . "?v={$hash}";
         }
         if (file_exists(public_path("{$basePath}/{$defaultFile}"))) {
-            return asset("{$basePath}/{$defaultFile}");
+            $hash = @filemtime(public_path("{$basePath}/{$defaultFile}")) ?: 0;
+            return asset("{$basePath}/{$defaultFile}") . "?v={$hash}";
         }
         return null;
     }

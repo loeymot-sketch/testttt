@@ -37,6 +37,14 @@ class OrderItemResource extends JsonResource
             'allergens_snapshot'               => $this->safeJsonDecode($this->allergens_snapshot),
             'item_variation_currency_total'    => AppLibrary::currencyAmountFormat($this->item_variation_total),
             'item_extra_currency_total'        => AppLibrary::currencyAmountFormat($this->item_extra_total),
+            // [WT-D-R1-F4 2026-05-20] Raw numeric line `total_price` for the
+            // canonical `formatPrice()` admin renderer (mirrors
+            // SimpleOrderResource shape). `total_convert_price` already
+            // returns a float but rounded via `number_format(..., '.', '')`,
+            // which on some locales surfaces as a string in JSON — we ship
+            // an unambiguous float to feed Intl.NumberFormat without parse
+            // surprises.
+            'total_price'                      => round((float) ($this->total_price ?? 0), 2),
             'total_convert_price'              => AppLibrary::convertAmountFormat($this->total_price),
             'total_currency_price'             => AppLibrary::currencyAmountFormat($this->total_price),
             'instruction'                      => $this->instruction,

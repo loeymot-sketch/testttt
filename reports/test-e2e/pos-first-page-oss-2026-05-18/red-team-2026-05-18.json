@@ -1,0 +1,58 @@
+[
+  {
+    "id": "R-1",
+    "priority": "P0",
+    "title": "PosMenuProjection unified mode silently strips `featured` — feature dies the moment FK_CATALOG_UNIFIED_PROJECTION_ENABLED flips to true",
+    "file": "app/Services/Menu/PosMenuProjection.php:189-197",
+    "evidence": "PosCategoryController.php:157-164 routes the response through `app(PosMenuProjection::class)->forBranch($posRuntimeBranchId, ...)` whenever `posRuntimeBranchId !== null` (the real cashier path: user with `pos` permission, not `items_show`, not Branch Manager). In `mode()='unified'` the `adaptUnifiedToLegacyShape()` rebuilds each row with an explicit literal map (lines 189-197): `['id', 'name', 'slug', 'description', 'status', 'thumb', 'cover']` — NO `featured` key is copied. Same in shadow_compare path (line 133). Config `config/catalog_v15.php:42` defaults `enabled=false` so production is safe TODAY, but the flag is owner-flippable via env `FK_CATALOG_UNIFIED_PROJECTION_ENABLED`. Endpoint test PosFeaturedCategoriesEndpointTest.php:44-46 deliberately uses an Admin (branch_id=0) which skips the projection path entirely — the test passes while the cashier-runtime path silently no-ops in unified mode. Frontend `displayedCategories` (PosComponent.vue:1455-1458) then falls back to `all` because no category carries `featured===true`.",
+    "recommendation": "(a) Add `'featured' => $category['featured'] ?? true` to the literal map at PosMenuProjection.php:189-197 (and to virtualAllItemsCategory at line 254-263). (b) Re-test endpoint with a non-Admin cashier (branch_id>0 + `pos` permission only, no `items_show`) so the projection path is exercised in CI. (c) Add a sentinel `PosCategoryProjectionFeaturedParityTest` asserting featured survives all three modes (legacy / shadow_compare / unified). Without (a)+(b) this is a latent post-flag regression."
+  },
+  {
+    "id": "R-2",
+    "priority": "P1",
+    "title": "Hardcoded FR strings + emoji glyphs on the Toutes/Réduire toggle — EN/AR locales render French",
+    "file": "resources/js/components/admin/pos/PosComponent.vue:268-275",
+    "evidence": "Lines 268, 273, 275 use literal FR: `'Masquer les catégories non-essentielles'`, `'Voir toutes les catégories'`, `'Réduire'`, `'Toutes'`, plus `➕`/`➖` emoji as the only visual. `grep \"all_categories\" resources/js/languages/*.json` shows the i18n key `label.all_categories=\"Toutes les catégories\"` ALREADY EXISTS in fr.json:1970 and en.json:2094 — it was simply not used. Same component uses `$t('label.search_by_menu_item')` everywhere else; this one button is the outlier. CLAUDE.md §6 Visual Test Mandate forbids raw labels on user-facing UI; en.json/de.json/ar locale rendering will display French to non-FR cashiers.",
+    "recommendation": "Replace lines 268/275 with `$t('label.all_categories')` (existing key) for the collapsed state, add new keys `pos.featured_collapse` / `pos.featured_expand_title` / `pos.featured_collapse_title` for the reduce variant + title attrs across fr/en/ar/de/bn. Replace `➕`/`➖` glyph with a CSS chevron or `<i class=\"fa-solid fa-plus|minus\">` consistent with other POS pill icons (header line 175 uses Font Awesome). Reference: i18n discipline ZSentinel — recent V1.0.1 sweep healed 22 raw FR keys (memory project_v1_0_1_hardening_2026-05-17.md)."
+  },
+  {
+    "id": "R-3",
+    "priority": "P1",
+    "title": "OSS DELIVERY exclusion is enum-specific: POS / DINING_TABLE / unknown future OrderType values with a non-null token still leak through the `whereNotNull('token')` OR-branch",
+    "file": "app/Services/OrderStatusScreenOrderService.php:45-59 + app/Enums/OrderType.php:5-12",
+    "evidence": "OrderType enum: DELIVERY=5, TAKEAWAY=10, POS=15, DINING_TABLE=20, KIOSK=25. The fix at line 59 adds only `where('order_type','!=', DELIVERY)`. The first OR-branch `whereNotNull('token')` (line 46) admits any order with a token regardless of type — a POS order or a DINING_TABLE order that somehow carries a token would still surface on the public customer wall. V1 mitigations: dine-in is feature-flagged off (PosComponent.vue:1434-1442 `dineInEnabled`) and POS orders typically don't get tokens, BUT the filter is brittle to enum additions and the change comment at line 53-58 explicitly states 'DELIVERY orders never surface on the customer-facing wall — they ride the staff workflow' as the design — same invariant should apply to POS+DINING_TABLE.",
+    "recommendation": "Replace `where('order_type','!=', DELIVERY)` with a positive allowlist matching the design intent: `whereIn('order_type', [OrderType::KIOSK, OrderType::TAKEAWAY])`. Then the first OR-clause `whereNotNull('token')` becomes a redundant safety filter rather than the primary admission rule. This is the same pattern the existing test `test_pending_and_accept_orders_are_hidden` codifies on the status axis — apply it consistently to order_type. Extends the existing F-5 test with a `test_pos_order_with_token_is_excluded` + `test_dining_table_order_with_token_is_excluded` case (currently uncovered)."
+  },
+  {
+    "id": "R-4",
+    "priority": "P1",
+    "title": "Visual leakage: 'Toutes' escape-hatch toggle pill is NOT visible in the default-filtered POS landing screenshot — strip cuts off at the last featured category",
+    "file": "/tmp/foodking-pos-first-page-oss-2026-05-18/00-pos-landing-default-filtered.png + 01-pos-landing-after-toutes.png + resources/js/components/admin/pos/PosComponent.vue:262-276",
+    "evidence": "Screenshot 00 (Read by RED): category strip shows the 'Toutes les...' (id=0) sentinel + 6 featured pills (Sandwich..., Galette, Sandwich..., Tacos, Bols Gourm..., Frites, Burgers) — the rightmost pill is truncated 'Bols Gourm...' visually, and the `➕ Toutes` toggle button (template lines 262-276) is NOT visible in the captured viewport. Same in screenshot 01 (after click): visible pills end at 'Burgers' truncated at right edge — no `➖ Réduire` either. The toggle button IS rendered (verified by `hasNonFeaturedCategories` computed at line 1460 returning true when a non-featured category exists), but it sits OFF-SCREEN to the right of the horizontal strip on this viewport. The strip has `pos-menu-category-scroll` (line 232) implying horizontal scroll, but the toggle is the LAST element — discoverability fails entirely when the strip overflows on the default viewport. Cashier has zero affordance to find the escape hatch unless they happen to horizontal-scroll a strip that has no visible scroll indicator.",
+    "recommendation": "(a) Render the toggle BEFORE the rest of the strip, or as a sticky-right pinned button (CSS `position: sticky; right: 0`) so it remains visible regardless of strip width. (b) Add a visible scroll-affordance (gradient mask + arrow) on the right edge of the strip when overflow exists. (c) Re-capture the screenshot on 1280x720 + 1920x1080 to confirm the toggle is visible across cashier display matrix. (d) Add a Playwright assertion `await expect(page.locator('[data-testid=\"pos-category-toggle-all\"]')).toBeInViewport()` to lock the regression."
+  },
+  {
+    "id": "R-5",
+    "priority": "P2",
+    "title": "Env parsing of `POS_FEATURED_CATEGORY_IDS` silently swallows malformed entries — `'abc,344'` becomes `[344]` (intval('abc')=0 then array_filter drops the 0)",
+    "file": "config/pos.php:58-61",
+    "evidence": "`array_values(array_filter(array_map('intval', explode(',', (string) env('POS_FEATURED_CATEGORY_IDS', '344,...')))))`. Test cases: env=`'abc,344'` → intval→[0,344] → array_filter→[344]; env=`'344,-5,0,348'` → [344,-5,0,348] → array_filter→[344,-5,348] (negative survives, 0 dropped); env=`'344;345;346'` → intval→[0] → []. The empty result then triggers the controller's `$featuredSet=null` branch (PosCategoryController.php:118-120) which marks EVERY category featured (zero-filter fallback). Misconfiguration is silent — no log, no Sentry, no admin banner — and the cashier sees the WRONG behaviour (full strip instead of curated) with no diagnostic.",
+    "recommendation": "(a) In config/pos.php, add a Log::warning(`[pos.featured]` invalid env value `$raw` → falling back to default) when the parsed list is empty AND env was set (i.e., distinguish explicit-empty from unset). (b) Reject negative ids: `array_filter(..., fn ($id) => $id > 0)`. (c) Add tests covering each malformed input to `PosFeaturedCategoriesEndpointTest`. Low severity since misconfig only degrades to safe default, but discoverability is poor."
+  },
+  {
+    "id": "R-6",
+    "priority": "P2",
+    "title": "OssCustomerScreenFilterTest::test_authed_list_also_excludes_delivery covers only the global-Admin (branch_id=0) path — the branch-scoped staff resolution through resolveBranchScope() is uncovered",
+    "file": "tests/Feature/OSS/OssCustomerScreenFilterTest.php:170-196 + app/Services/OrderStatusScreenOrderService.php:200-218",
+    "evidence": "The single `list()` test (line 170-196) acts as Admin with branch_id=0 and `request()->query->set('branch_id', $this->branch->id)`. The `resolveBranchScope()` helper (service lines 200-218) has TWO non-trivial branches: (a) global-Admin path (line 202-206) — covered; (b) staff path (line 208-217) which can `abort(403)` on cross-branch access AND honors the staff's own branch_id. Neither branch is asserted. A staff user with branch_id=1 hitting list() with no query-string MUST scope to branch 1 AND still exclude DELIVERY — uncovered. Same staff with `?branch_id=2` must 403 — uncovered. Same for the `userBranchId<=0` invalid-scope abort (line 209-211).",
+    "recommendation": "Add three sister tests to OssCustomerScreenFilterTest: `test_staff_list_scopes_to_own_branch_and_excludes_delivery` (asserts branch isolation + DELIVERY exclusion together — the F-5 fix MUST stack with branch-scope, not replace it), `test_staff_list_aborts_on_cross_branch_query_param` (assertStatus 403), `test_staff_with_zero_branch_id_aborts` (assertStatus 403). These also act as multi-tenant sentinels protecting CLAUDE.md §9 branch isolation invariant."
+  },
+  {
+    "id": "R-7",
+    "priority": "P2",
+    "title": "Featured-allowlist is global config, not per-branch — every Branch sharing the deployment sees the same 6 categories regardless of menu specificity",
+    "file": "config/pos.php:58-61 + app/Http/Controllers/Admin/PosCategoryController.php:117-120",
+    "evidence": "`config('pos.featured_category_ids', [])` returns the SAME array for every request. The controller's only per-branch logic is `posRuntimeBranchId` for the items-availability whereHas filter (lines 80-106) — the featured-flag map runs after, branch-agnostic, at lines 117-144. For Le Cayenne single-branch V1.0.1 this is harmless. For V1.0.2+ SaaS multi-branch (different branches sell different bestsellers), Branch B inherits Branch A's allowlist with no override. Not a P0/P1 today per memory project_v1_0_1_hardening_2026-05-17.md scope (Le Cayenne only).",
+    "recommendation": "Document as V1.0.2 backlog in `docs/decisions/DEFERRED_*.md` (mirror DEFERRED_AUTO_DISPATCH_V1_0_2.md). When SaaS multi-branch lands, migrate to a `featured_categories` join table (branch_id, category_id, sort) and switch the controller to a per-branch query. NO action required for V1.0.1 ship — but flag in the V1.0.1 → V1.0.2 handoff doc so the next cycle picks it up before the multi-tenant onboarding."
+  }
+]

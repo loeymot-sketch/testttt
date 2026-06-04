@@ -34,6 +34,10 @@ class PosSubtotalForgerySentinelTest extends TestCase
         Config::set('app.api_key', 'test-api-key');
         Config::set('broadcasting.default', 'log');
         Config::set('fiscal.audit_secret', str_repeat('a', 48));
+        // [GOAL-GOLIVE-VAT10 / F1-dormancy 2026-05-30] This sentinel forges a
+        // discount to prove backend-subtotal is used; enable the discount flag
+        // (V1 default OFF) so the forgery path runs rather than the V1 gate.
+        Config::set('pos.manual_discount_enabled', true);
     }
 
     public function test_pos_discount_permission_uses_backend_subtotal_not_forged_client_subtotal(): void

@@ -121,6 +121,57 @@ class SyncOverviewControllerTest extends TestCase
             ->assertJsonPath('recent_failures.0.last_error', 'boom');
     }
 
+    private function insertFailedEvent(int $branchId, int $attempts, \Illuminate\Support\Carbon $createdAt, string $corr): int
+    {
+        return (int) DB::table('domain_events')->insertGetId([
+            'event_type'     => 'OrderUpdated',
+            'aggregate_type' => 'order',
+            'aggregate_id'   => 1,
+            'branch_id'      => $branchId,
+            'payload'        => json_encode([]),
+            'channel'        => 'orders',
+            'broadcast_as'   => 'order.updated',
+            'correlation_id' => $corr,
+            'occurred_at'    => $createdAt,
+            'dispatched_at'  => null,
+            'attempts'       => $attempts,
+            'last_error'     => 'boom',
+            'created_at'     => $createdAt,
+            'updated_at'     => $createdAt,
+        ]);
+    }
+
+    /**
+     * [GOAL-2026-05-29 F5 / v2] "Retry failed" bounds infinite resurrection by an
+     * AGE window (not an attempts cap): recent failures — INCLUDING exhausted ones
+     * (attempts=5), which is the legitimate "admin fixed the infra, retry now" case
+     * locked by OutboxOverviewControllerTest — are reset+retried; rows older than
+     * the window age out and are left for the prune/escalation lane (untouched).
+     */
+    public function test_retry_failed_retries_recent_including_exhausted_but_ages_out_old(): void
+    {
+        \Illuminate\Support\Facades\Bus::fake();
+        $admin = $this->makeAdmin();
+        $branchId = $admin->branch_id ?: 1;
+
+        $recentLow  = $this->insertFailedEvent($branchId, 2, now(), '11111111-1111-1111-1111-111111111111');       // recent low-attempts -> retried
+        $recentExh  = $this->insertFailedEvent($branchId, 5, now(), '22222222-2222-2222-2222-222222222222');       // recent EXHAUSTED -> retried (legit)
+        $ancient    = $this->insertFailedEvent($branchId, 1, now()->subDays(8), '33333333-3333-3333-3333-333333333333'); // too old -> aged out, NOT retried
+
+        $this->actingAs($admin, 'sanctum')
+            ->postJson('/api/admin/observability/outbox/retry-failed')
+            ->assertOk()
+            ->assertJsonPath('requeued', 2);
+
+        // Both recent rows reset (retried); the ancient one untouched (aged out -> escalate/prune).
+        $this->assertSame(0, (int) DB::table('domain_events')->where('id', $recentLow)->value('attempts'));
+        $this->assertNull(DB::table('domain_events')->where('id', $recentLow)->value('last_error'));
+        $this->assertSame(0, (int) DB::table('domain_events')->where('id', $recentExh)->value('attempts'));
+        $this->assertNull(DB::table('domain_events')->where('id', $recentExh)->value('last_error'));
+        $this->assertSame(1, (int) DB::table('domain_events')->where('id', $ancient)->value('attempts'));
+        $this->assertSame('boom', DB::table('domain_events')->where('id', $ancient)->value('last_error'));
+    }
+
     public function test_client_metrics_endpoint_accepts_valid_batch_returns_202(): void
     {
         $admin = $this->makeAdmin();

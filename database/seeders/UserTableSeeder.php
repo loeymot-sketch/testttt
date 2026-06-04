@@ -46,18 +46,18 @@ class UserTableSeeder extends Seeder
         if ($envService->getValue('DEMO')) {
             Address::create([
                 'label'     => 'Domicile',
-                'address'   => 'Paris, France',
-                'apartment' => rand(0, 999) . ', Rue de Rivoli',
-                'latitude'  => '48.8566',
-                'longitude' => '2.3522',
+                'address'   => 'Hénin-Beaumont, France',
+                'apartment' => rand(0, 999) . ', Rue Élie Gruyelle',
+                'latitude'  => '50.4200',
+                'longitude' => '2.9530',
                 'user_id'   => $admin->id,
             ]);
             Address::create([
                 'label'     => 'Travail',
-                'address'   => 'Paris, France',
-                'apartment' => rand(0, 999) . ', Avenue des Champs-Élysées',
-                'latitude'  => '48.8698',
-                'longitude' => '2.3075',
+                'address'   => 'Hénin-Beaumont, France',
+                'apartment' => rand(0, 999) . ', Avenue des Fusillés',
+                'latitude'  => '50.4250',
+                'longitude' => '2.9600',
                 'user_id'   => $admin->id,
             ]);
         }
@@ -118,18 +118,18 @@ class UserTableSeeder extends Seeder
         if ($envService->getValue('DEMO')) {
             Address::create([
                 'label'     => 'Domicile',
-                'address'   => 'Paris, France',
-                'apartment' => rand(0, 999) . ', Boulevard Haussmann',
-                'latitude'  => '48.8738',
-                'longitude' => '2.3312',
+                'address'   => 'Hénin-Beaumont, France',
+                'apartment' => rand(0, 999) . ', Rue de la République',
+                'latitude'  => '50.4180',
+                'longitude' => '2.9480',
                 'user_id'   => $customer->id,
             ]);
             Address::create([
                 'label'     => 'Travail',
-                'address'   => 'Paris, France',
-                'apartment' => rand(0, 999) . ', Rue de la Paix',
-                'latitude'  => '48.8689',
-                'longitude' => '2.3302',
+                'address'   => 'Hénin-Beaumont, France',
+                'apartment' => rand(0, 999) . ', Rue Pasteur',
+                'latitude'  => '50.4230',
+                'longitude' => '2.9510',
                 'user_id'   => $customer->id,
             ]);
         }

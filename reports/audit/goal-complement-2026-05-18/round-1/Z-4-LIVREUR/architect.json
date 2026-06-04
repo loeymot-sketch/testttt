@@ -1,0 +1,88 @@
+{
+  "role": "Architect",
+  "zone": "Z-4-LIVREUR",
+  "round": 1,
+  "timestamp": "2026-05-18",
+  "files_audited": [
+    "app/Services/Delivery/DeliveryFeeService.php",
+    "app/Services/Delivery/DeliveryQuoteService.php",
+    "app/Http/Requests/OrderRequest.php",
+    "app/Http/Requests/PosOrderRequest.php",
+    "app/Http/Controllers/Admin/DeliveryBoyController.php",
+    "app/Http/Controllers/Admin/DeliveryBoyOrderController.php",
+    "app/Http/Controllers/Admin/DeliveryBoyAddressController.php",
+    "app/Http/Controllers/Frontend/DeliveryBoyOrderController.php",
+    "app/Listeners/SendOrderDeliveryBoyPushNotification.php",
+    "app/Listeners/SendOrderDeliveryBoyMailNotification.php",
+    "app/Listeners/SendOrderDeliveryBoySmsNotification.php"
+  ],
+  "findings": [
+    {
+      "severity": "P0",
+      "id": "LIVREUR-Z4-ARCH-01",
+      "file": "app/Services/Delivery/DeliveryQuoteService.php",
+      "line": 63,
+      "title": "Branch-aware delivery fee config is DEAD CODE on the customer quote path",
+      "description": "Sprint H3 DEL-5 added per-branch delivery_fee_base/per_km/minimum columns (migration 2026_05_18_100000) and extended DeliveryFeeService::fromDistanceKm to accept a second arg `?Branch $branch`. However the customer-facing entry point (DeliveryQuoteService::quoteForAddress, line 31-65) loads the Branch model at line 39 but DROPS it at the only fromDistanceKm call site, line 63: `$this->deliveryFeeService->fromDistanceKm($distanceKm)` (no branch). Every customer DELIVERY quote returns the legacy `max(5, ceil(d/5)*5)` regardless of branch configuration. The DEL-5 sprint is functionally inert on the production happy path. Only the direct unit/feature test (DeliveryFeeConfigurableTest, calling the service signature directly) exercises the branch-aware code.",
+      "reproduction": "Read tool /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Services/Delivery/DeliveryQuoteService.php line 39 + line 63. Compare to DeliveryFeeServiceTest expectations.",
+      "evidence": "DeliveryQuoteService.php:39 loads `$branch = Branch::query()->find($branchId)` ; DeliveryQuoteService.php:63 calls fromDistanceKm($distanceKm) WITHOUT $branch argument.",
+      "recommendation": "Pass $branch as second arg: `$this->deliveryFeeService->fromDistanceKm($distanceKm, $branch)`. Backward-compatible signature (default null preserved). Add regression test that creates a branch with configured fee columns and asserts quoteForAddress returns the configured fee (not the legacy fallback)."
+    },
+    {
+      "severity": "P0",
+      "id": "LIVREUR-Z4-ARCH-02",
+      "file": "app/Http/Requests/OrderRequest.php",
+      "line": 117,
+      "title": "OrderRequest legacy fallback also drops branch context for the fee call",
+      "description": "The customer order submit path also bypasses branch-aware fees. OrderRequest.php:101-120 sets up two paths: (a) quote-based (delegates to DeliveryQuoteService — also broken per LIVREUR-Z4-ARCH-01); (b) elseif legacy fallback at line 115-120 calls fromDistanceKm($distance) without the branch. Even when branch_id is filled on the request (line 103), no Branch lookup is performed.",
+      "reproduction": "Read OrderRequest.php line 115-120 (elseif branch). branch_id is filled in `$this->input('branch_id')` but Branch::find is not invoked here.",
+      "evidence": "OrderRequest.php:117-119 → fromDistanceKm($this->input('delivery_distance_km')) — no branch arg.",
+      "recommendation": "Fetch Branch::find($branchId) and pass to fromDistanceKm in the elseif branch. Same pattern."
+    },
+    {
+      "severity": "P0",
+      "id": "LIVREUR-Z4-ARCH-03",
+      "file": "app/Http/Requests/PosOrderRequest.php",
+      "line": 28,
+      "title": "POS path also drops branch context for the fee call",
+      "description": "PosOrderRequest.php prepareForValidation (line 26-31) calls fromDistanceKm without branch. Walk-in POS DELIVERY orders therefore also bypass per-branch config — confirmed by reading DeliveryFeeForgePosTest.php which asserts the legacy 10.0 value for distance=5.01 (the V1 fallback).",
+      "reproduction": "Read PosOrderRequest.php line 26-31.",
+      "evidence": "PosOrderRequest.php:28-29 → fromDistanceKm($this->input('delivery_distance_km')) — no branch arg.",
+      "recommendation": "Resolve branch from $this->input('branch_id') and pass to fromDistanceKm. Same pattern."
+    },
+    {
+      "severity": "P1",
+      "id": "LIVREUR-Z4-ARCH-04",
+      "file": "app/Http/Controllers/Frontend/DeliveryBoyOrderController.php",
+      "line": 58,
+      "title": "Frontend deliveryBoyOrderChangeStatus has no enum range validation",
+      "description": "The Frontend controller only validates `'status' => ['required','integer']`. Out-of-range integer values flow to OrderService which delegates to ValidStatusTransition rule. While the downstream check fires, the contract should fail at the request boundary with a 422 enum violation, mirroring KDS/POS conventions (e.g. KitchenDisplayController status whitelist).",
+      "reproduction": "Read Frontend/DeliveryBoyOrderController.php line 55-68.",
+      "evidence": "Line 58-60: $request->validate(['status' => ['required','integer']]). No `in:1,2,3,…` rule.",
+      "recommendation": "Add explicit enum whitelist matching driver-permitted transitions: PREPARED→OUT_FOR_DELIVERY→DELIVERED→RETURNED only. Per the OrderStatus enum, allowed: [PREPARED=3, OUT_FOR_DELIVERY=4, DELIVERED=5, RETURNED=7]. Create sentinel `DeliveryStatusTransitionWhitelistTest`."
+    },
+    {
+      "severity": "P2",
+      "id": "LIVREUR-Z4-ARCH-05",
+      "file": "app/Listeners/SendOrderDeliveryBoyPushNotification.php",
+      "line": 12,
+      "title": "Listeners lack idempotency — duplicate sends on queue retry",
+      "description": "All three SendOrderDeliveryBoy{Push,Sms,Mail}Notification listeners silently catch+log exceptions (line 19-21 push, similar mail/sms). They do not implement ShouldQueue with retry-after-throw nor a dedup key. If the queue worker retries the job, duplicate notifications fire to the driver.",
+      "reproduction": "Read SendOrderDeliveryBoyPushNotification.php — no idempotency key, no DB sentinel.",
+      "evidence": "Files: SendOrderDeliveryBoy{Push,Sms,Mail}Notification.php — synchronous, no UNIQUE constraint.",
+      "recommendation": "V1.0.2 backlog: implement webhook_events-style sentinel table OR add atomic Cache::lock keyed on (order_id, status, channel). Documented in deferred-heal/Z-4-LIVREUR/findings.json. Not gating §5.2 acceptance per GOAL contract."
+    },
+    {
+      "severity": "P3",
+      "id": "LIVREUR-Z4-ARCH-06",
+      "file": "app/Http/Controllers/Admin/DeliveryBoyController.php",
+      "line": 38,
+      "title": "Generic 422 leaks internal exception messages",
+      "description": "All admin DeliveryBoy* controllers use the pattern `response(['status'=>false,'message'=>$exception->getMessage()], 422)` which can leak internal SQL/database exception details. Consistent with codebase, but not aligned with §11 (no fake certainty + ops doctrine).",
+      "reproduction": "Read DeliveryBoyController.php line 40-42 (and siblings).",
+      "evidence": "Returns raw $exception->getMessage() as user-facing string.",
+      "recommendation": "V1.0.2 backlog: replace with generic 'Operation failed' + Log::error for ops. Not gating V1."
+    }
+  ],
+  "summary": "1 P0 systemic finding (branch-aware fee dead code across 3 entry points — same root cause LIVREUR-Z4-ARCH-01/02/03 must be healed together), 1 P1 (Frontend status whitelist), 2 deferred-heal (idempotency, error leak). Heal scope bounded to anchors per preflight (OrderService.php DIRTY — explicit advisor guidance — not touched)."
+}

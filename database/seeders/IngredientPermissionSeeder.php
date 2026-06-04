@@ -11,19 +11,25 @@ class IngredientPermissionSeeder extends Seeder
 {
     public function run(): void
     {
-        $permission = Permission::firstOrCreate([
-            'name' => 'ingredients_manage',
-            'guard_name' => 'sanctum',
-        ]);
+        // [HEAL 2026-05-27] grant on BOTH guards (sanctum API + web session).
+        // Vue admin pages call /api/admin/ingredients via fetch() which uses the
+        // browser session cookie (web guard). Sanctum-only grant caused 403 on
+        // /admin/ingredients page reported by owner (« Impossible de charger »).
+        foreach (['sanctum', 'web'] as $guard) {
+            $permission = Permission::firstOrCreate([
+                'name' => 'ingredients_manage',
+                'guard_name' => $guard,
+            ]);
 
-        foreach (['Admin', 'Tenant Admin', 'Manager', 'Branch Manager'] as $roleName) {
-            $role = Role::query()
-                ->where('name', $roleName)
-                ->where('guard_name', 'sanctum')
-                ->first();
+            foreach (['Admin', 'Tenant Admin', 'Manager', 'Branch Manager'] as $roleName) {
+                $role = Role::query()
+                    ->where('name', $roleName)
+                    ->where('guard_name', $guard)
+                    ->first();
 
-            if ($role) {
-                $role->givePermissionTo($permission);
+                if ($role) {
+                    $role->givePermissionTo($permission);
+                }
             }
         }
 

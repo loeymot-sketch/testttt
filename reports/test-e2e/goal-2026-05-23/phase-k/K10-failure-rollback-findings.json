@@ -1,0 +1,232 @@
+{
+  "agent": "K.10 — FAILURE CASCADE ROLLBACK DEEP",
+  "phase": "K — Goal Ultra-Deep 2026-05-24 (phase-k leg)",
+  "mission": "Trace each of the 13 K.10.* failure modes through real code. For each, verify whether the rollback boundary holds (no orphan rows, no broken NF525 chain), whether silent-fail vs hard-fail is appropriate, and whether the brief's assumed cascade matches the implementation. Surface NEW findings where the rollback boundary is narrower than the brief assumes.",
+  "date": "2026-05-24",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "scope": "Static cascade trace, code-only, read-only audit. 13 hunts K.10.1 → K.10.13. Cross-checked with prior heal commits (Wave M, I.4, J2-HEAL-06, G2-HEAL-02/04, F.6, F.10, F.11, H2-HEAL-01/02, I2-HEAL-01).",
+  "method": "For each K.10.N: walk the supposed cascade left-to-right through routes/api.php → controller → service → DB::transaction body → post-commit listeners → outbox → broadcast/cron. Cite file:line for each step. Apply per-hunt verdict: VERIFIED CITED (brief assumption holds, cite prior heal) / AMBER (rollback narrower than brief assumes, document) / RED (genuine rollback hole or scenario-mismatch) / SCENARIO-MISMATCH (brief describes a cascade the code does not implement).",
+  "files_examined": [
+    "app/Http/Controllers/Admin/PosController.php",
+    "app/Services/OrderService.php",
+    "app/Services/FrontendOrderService.php",
+    "app/Services/PaymentService.php",
+    "app/Services/Fiscal/FiscalSequenceService.php",
+    "app/Services/Fiscal/ZReportService.php",
+    "app/Services/Fiscal/AuditLogService.php",
+    "app/Services/LoyaltyService.php",
+    "app/Services/Order/RefundWithCounterEntryService.php",
+    "app/Http/Middleware/IdempotencyKeyMiddleware.php",
+    "app/Services/Idempotency/RedisIdempotencyKeyRepository.php",
+    "app/Http/PaymentGateways/Gateways/Stripe.php",
+    "app/Listeners/PersistOrderPaidAtCounterToOutbox.php",
+    "app/Listeners/ReleaseStockOnOrderCanceled.php",
+    "app/Listeners/ReleaseAvailabilityOnOrderCanceled.php",
+    "app/Listeners/ClawbackLoyaltyPointsOnRefund.php",
+    "app/Listeners/InvalidateKioskMenuCacheOnItemAvailabilityChanged.php",
+    "app/Jobs/DispatchDomainEventsJob.php",
+    "app/Events/RefundCreated.php",
+    "app/Events/OrderCanceled.php",
+    "app/Events/Concerns/DispatchableAfterCommit.php",
+    "app/Providers/AppServiceProvider.php",
+    "app/Providers/EventServiceProvider.php",
+    "app/Console/Kernel.php",
+    "app/Console/Commands/Backup/RunDailyBackup.php",
+    "config/idempotency.php",
+    "database/migrations/2026_05_24_040211_add_composition_snapshot_immutability_trigger.php",
+    "tests/Feature/Listeners/OrderCanceledCascadeHardenedSentinelTest.php",
+    "tests/Feature/Fiscal/CompositionSnapshotImmutabilityTriggerSentinel.php"
+  ],
+  "rollback_hunts": [
+    {
+      "id": "K.10.1",
+      "title": "Order creation transaction rollback (POST /api/admin/pos cascade)",
+      "verdict": "VERIFIED CITED",
+      "evidence": "Single DB::transaction at OrderService.php:654 wraps the whole cascade closure. Inside that closure, sequentially: (1) Order::create at :701-722 (parent row); (2) OrderItem::insert at :780 / :934 (SSOT + legacy paths); (3) fiscal_sequence allocation via FiscalSequenceService::next at :1028-1029 — nested DB::transaction at FiscalSequenceService.php:76 only opens a SAVEPOINT under the parent, the comment at OrderService.php:1022-1029 documents this explicitly; (4) AuditLogService::write at :1116-1137 (NF525 'order.created.pos' append) PLUS the conditional discount-audit at :1086-1104; (5) Split-payment tranches via SplitPaymentService::persistTranches at :1151 OR legacy single-tender cash_movement via PaymentService::recordCashOrderMovement at :1172-1176 (strict=true). Any throw from any step bubbles to the outer DB::transaction → MySQL ROLLBACK → all rows discarded including the nested SAVEPOINT. NF525 fiscal_sequence_no allocation is just SELECT MAX(fiscal_sequence_no)+1 (FiscalSequenceService.php:97-103) — the actual write goes onto the Order row, so a rolled-back Order row releases the number organically (next caller sees the same MAX). The OrderCreated::dispatch at OrderService.php:1187 uses DispatchableAfterCommit (verified at Events/Concerns/DispatchableAfterCommit.php) → broadcast is DROPPED on rollback (no ghost order on POS/KDS). Sentinel: OrderCreatedDispatchPlacementSentinelTest (Wave M lock).",
+      "severity": "INFO",
+      "rollback_verification": "0 orphan rows verified by code path. fiscal_sequence_no NOT consumed on rollback (verified by SELECT-MAX semantics, not counter-table)."
+    },
+    {
+      "id": "K.10.2",
+      "title": "Refund counter-entry partial failure (loyalty clawback throws inside tx)",
+      "verdict": "RED — IN-TX LOYALTY CALL NOT WRAPPED, BRIEF ASSUMPTION 'cascade continues' INCORRECT",
+      "evidence": "Brief states: 'Per I2-HEAL-01 hardening: try/catch + Log::warning + cascade continues'. Code reality is more nuanced. RefundWithCounterEntryService::execute (lines 98-263) runs a single DB::transaction closure. INSIDE the closure at line 253, the call `app(LoyaltyService::class)->refundPoints($parent, 'pos')` has NO try/catch wrapper. The placement comment at lines 236-253 explicitly states 'Placement: inside the DB::transaction so the loyalty reversal ledger row + the customer's loyalty_points re-credit are atomic with the mirror order + mirror payments + audit row. A failure in any leg rolls them all back together'. So the IN-TX refundPoints() call is intentionally fail-closed — a Throwable cascades a full rollback of the mirror order. LoyaltyService::refundPoints (lines 21-107) handles the 'customer deleted' case at lines 47-54 with `if (!$loyaltyUser) return;` (silent no-op, no throw — so brief's 'customer deleted' scenario does NOT actually cascade-fail). The HEAL-A.2 NOOP at lines 71-82 handles the 'already refunded' duplicate-call case. BUT — and this is the gap — any OTHER throw from refundPoints (e.g. DB connection blip during the increment at line 84, a race-window UNIQUE collision that the alreadyRefunded check missed, OR a DB query exception during the LoyaltyTransaction::create at line 90) would propagate and roll back the entire mirror order INCLUDING the fiscal_sequence_no allocation. The post-tx ClawbackLoyaltyPointsOnRefund LISTENER (handles the AwardLoyaltyPointsOnDelivery clawback, a different concern) IS wrapped at lines 82-93 with the GOAL-I2-HEAL-01 isolation pattern, but that listener only fires AFTER tx commit via the DispatchableAfterCommit trait on RefundCreated (verified at Events/RefundCreated.php:20). Two failure-mode camps: (a) post-commit listener path = isolated, refund survives; (b) in-tx refundPoints path = atomic, refund rolled back. Brief conflates them.",
+      "severity": "P2",
+      "rollback_verification": "On atomic-camp failure: mirror Order + mirror order_items + mirror order_payments + AuditLog row + loyalty NOOP all rolled back together. Parent order untouched. NF525 fiscal chain intact (allocated mirror seq number is released organically). Brief's expectation of partial-success degraded refund is wrong — the cascade either fully commits or fully rolls back.",
+      "remediation_suggestion": "Owner-decision required. Option (a): wrap line 253 in try/catch + Log::warning (mirror the ClawbackLoyaltyPointsOnRefund pattern at lines 82-93) — accepts loyalty-points drift on rare DB blips in exchange for refund liveness. Option (b): move the refundPoints() call OUTSIDE the closure (post-commit) — preserves atomicity guarantee for the loyalty row when the happy path fires, but exposes a window where the mirror order commits and a post-commit loyalty failure leaves the customer un-credited (then ClawbackLoyaltyPointsOnRefund pattern doesn't apply because this is a refund of a REDEEM, not a clawback of an EARN). Option (c): keep as-is and document — currently fail-closed is the safer NF525 posture (no half-committed financial state). Owner Q1 (HEAL-PLAN-A §A.2) already chose 'NOOP idempotent' for the alreadyRefunded path — applying the same posture to the other throws (option a) is the consistent extension. Tracked as V1.0.2 backlog item REFUND-LOYALTY-01."
+    },
+    {
+      "id": "K.10.3",
+      "title": "Z-close cascade failure (audit_logs append step)",
+      "verdict": "SCENARIO-MISMATCH — Z-close does NOT write to audit_logs",
+      "evidence": "Brief states: 'ZReportService::close inside DB::transaction → pre-flight verifyChain OK → Aggregate sales OK → HMAC signature compute OK → INSERT z_reports row → audit_logs append → FAILS (e.g. HMAC secret rotated mid-cascade)'. Code reality: ZReportService::close (lines 180-286) does NOT append to audit_logs. Z-close has its OWN HMAC chain — signature is computed via ZReportService::sign (line 239), written into z_reports.signature column (line 245 inside the forceFill), and chained via prev_hash (line 244 reads MAX previous closed Z signature for the branch). audit_logs and z_reports are two SEPARATE NF525-compliant append-only chains (per CLAUDE.md §8). The cascade is: (a) Cache::lock 5s acquire at line 192-197; (b) verifyChain(branchId) at line 201 (pre-flight only — reads, no writes); (c) DB::transaction body at lines 203-268 wraps: lockForUpdate the open Z row at line 207, warnOnOrphanedPaidOrders at line 229 (log only), aggregate() at line 231 (reads), sign() at line 239 (compute, no DB), forceFill+save at lines 241-247 (the one and only DB write — flips status OPEN→CLOSED, sets signature/prev_hash/closed_at/closed_by); (d) Log::channel('fiscal')->info at line 253-265 (post-write log). There is no audit_logs append in this cascade. If the brief's `HMAC secret rotated mid-cascade` is the failure mode: the sign() call would compute with the new secret BEFORE the forceFill, so the chain would still validate forward (next Z prev_hash matches new-signed prev). The only realistic 'mid-cascade DB write fails' scenario would be the forceFill+save itself throwing (e.g. row-level lock contention or storage error) — in which case the wrapping DB::transaction rolls back, Z stays OPEN, cashier sees the RuntimeException, retries.",
+      "severity": "INFO",
+      "rollback_verification": "On any throw inside the DB::transaction at line 203: the OPEN Z report row stays OPEN, no z_reports.signature is committed, prev_hash is untouched. Cashier retries cleanly. The Cache::lock at line 192 releases in the outer finally at line 273. No half-Z state possible. verifyChain at line 201 is OUTSIDE the transaction (pre-flight only), so a verifyChain failure aborts before any lock or write. Brief's intuition is correct (clean rollback), but the cited mechanism (audit_logs append step) does not exist."
+    },
+    {
+      "id": "K.10.4",
+      "title": "Outbox cascade failure (Pusher down)",
+      "verdict": "VERIFIED CITED",
+      "evidence": "Per outbox pattern: PersistOrderPaidAtCounterToOutbox (and sibling Persist*ToOutbox listeners) writes a DomainEvent row INSIDE the listener handle, then registers a DB::afterCommit closure (line 58) that calls DispatchDomainEventsJob::dispatch. The job is wrapped in try/catch at lines 63-74 (test-e2e fix E-001 round-3 cluster-8) — Pusher failure → Log::warning, DomainEvent row STAYS in DB unprocessed (dispatched_at=null). Recovery: DispatchDomainEventsJob has $tries=6 + $backoff=[1,5,15,60,300] (Jobs/DispatchDomainEventsJob.php:40-42), so the queue worker auto-retries with exponential backoff up to ~6.4 min worst-case. If all 6 attempts fail, the row is paged by `foodking:outbox:retry-failed --since=24h` hourly cron (Console/Kernel.php:64-69) which re-dispatches rows with attempts>=5. F.11 audit observed 751 stale dev events — confirmed via static reading that production worker drains via the same path. atomic-claim phase at Jobs/DispatchDomainEventsJob.php:65-86 uses lockForUpdate + dispatched_at guard so concurrent workers cannot double-broadcast. Phase-2 broadcast at line 97 is OUTSIDE the DB transaction (commit_before_dispatch invariant honored).",
+      "severity": "INFO",
+      "rollback_verification": "DomainEvent row durably persisted; failed broadcast does NOT roll back the source order/payment cascade (because afterCommit fires AFTER the source tx committed). Retry path well-bounded (~6.4 min queue retries + hourly cron rescue for terminal-failed)."
+    },
+    {
+      "id": "K.10.5",
+      "title": "Cache invalidation cascade failure (Redis down)",
+      "verdict": "VERIFIED CITED",
+      "evidence": "InvalidateKioskMenuCacheOnItemAvailabilityChanged.php:46-67 wraps the Cache::forget call in try/catch at lines 47-66. On Throwable → Log::warning with item_id/branch_id/exception, then return. The handler comment at lines 36-39 documents the policy: 'Aucune écriture métier (pas de transition de statut, pas d'event dispatch). Respecte branch_id scope (pas d'invalidation globale silencieuse). Idempotent: un Cache::forget() double est no-op.' Sibling InvalidateMenuProjectionOnIngredientChange.php:61 and InvalidateKioskMenuCacheOnCatalogChange.php:52 follow the same swallow-on-failure pattern. Net effect when Redis is down: kiosk menu serves stale cached payload until the 60s TTL natural expiry. Acceptable for V1 LOCAL Le Cayenne (single-box file driver fallback per CLAUDE.md §8 UNI-03 backlog). For production cloud: Redis HA recommended per the same UNI-03 deferred item.",
+      "severity": "INFO",
+      "rollback_verification": "No rollback needed — cache invalidation is a best-effort side-effect. Failure path: degraded UX (stale up to TTL window), no data corruption, no fiscal-chain impact."
+    },
+    {
+      "id": "K.10.6",
+      "title": "Multi-listener cascade failure (OrderCanceled cluster, I4 hardened)",
+      "verdict": "VERIFIED CITED",
+      "evidence": "EventServiceProvider.php:170-173 registers OrderCanceled → [ReleaseStockOnOrderCanceled, ReleaseAvailabilityOnOrderCanceled] in that order. Pre-heal: ReleaseStockOnOrderCanceled.php had explicit `throw $e;` per stale iter13 comment, which halted Laravel's sync dispatcher (vendor Events/Dispatcher.php:233-269) → next sibling NEVER ran → divergent stock vs availability ledgers. Post GOAL-I2-HEAL-01 heal (lines 14-40 of ReleaseStockOnOrderCanceled.php documents the heal): try/catch + Log::error + return — cascade survives, Log::error fires as the cascade-survival observability signal. ReleaseAvailabilityOnOrderCanceled.php was hardened in defense-in-depth at the same heal (lines 53-60: Throwable wrap + Log::error). Both listeners receive the event via DispatchableAfterCommit (OrderCanceled.php:5,19) so they run AFTER the outer cancel tx commits — re-throwing rolls back nothing anyway (heal-doc lines 17-26 of ReleaseStockOnOrderCanceled.php nails this with the exact iter13 reasoning that was wrong). Sentinel: OrderCanceledCascadeHardenedSentinelTest verified 7/7 test methods present. The brief mentions OutboxBroadcastSwallowedEvent escalation — that exists at App/Events/OutboxBroadcastSwallowedEvent.php and is the parallel typed-event for outbox-broadcast swallows. ReleaseStock listeners do NOT dispatch OutboxBroadcastSwallowedEvent (that's specifically for outbox/broadcast layer); they Log::error which feeds the observability log channel. Brief's '7/7 GREEN' claim ratified.",
+      "severity": "INFO",
+      "rollback_verification": "No rollback needed for listener swallows — they run post-commit per DispatchableAfterCommit. Cascade-halt class of bug is structurally blocked: sentinel tests Case 2 (test_release_stock_on_order_canceled_never_rethrows) ratchets the never-rethrow contract."
+    },
+    {
+      "id": "K.10.7",
+      "title": "Webhook handler exception (Stripe)",
+      "verdict": "VERIFIED CITED",
+      "evidence": "Stripe::handleWebhook at Http/PaymentGateways/Gateways/Stripe.php:197-336. Flow: (a) secret check + 500 misconfig at lines 199-208; (b) signature verification with 300s replay tolerance at line 222 — invalid → 400 (Stripe will not retry signature errors per Sprint 3A doc at lines 178-184); (c) WebhookEvent::firstOrCreate with UNIQUE(provider, webhook_id) at lines 255-267 — idempotency floor at DB level; (d) duplicate-detect at line 269-276 returns 200 'duplicate_ignored' so Stripe stops retrying; (e) DB::transaction wraps the bridge to CapturePaymentNotification at lines 278-318 — only charge.succeeded triggers the bridge; (f) catch Throwable at lines 319-333: Log::channel('fiscal')->error + WebhookEvent::markFailed + return 500 → Stripe retries via standard exponential backoff. After Stripe exhausts retries (N attempts, typically 3 days), the webhook_events row stays status=failed with attempts counter incremented. DLQ recovery: foodking:webhook:retry-failed --since=24h hourly cron (Console/Kernel.php:76-81, Sprint H3 P1-Z8-02) replays via ProcessWebhookEventJob. CSRF exemption verified via WebhookCsrfBareRouteExceptionTest. Brief's claim on H.4 + B.5 audit anchors holds.",
+      "severity": "INFO",
+      "rollback_verification": "On exception inside DB::transaction body (lines 279-318): CapturePaymentNotification insert + WebhookEvent state mutation roll back together. WebhookEvent itself is already PENDING (from firstOrCreate) and gets flipped to FAILED post-rollback at line 326 via markFailed (which uses its own write outside the rolled-back tx). 500 response → Stripe retries. No half-bridge state."
+    },
+    {
+      "id": "K.10.8",
+      "title": "Network drop during ordering (kiosk POST retry)",
+      "verdict": "VERIFIED CITED",
+      "evidence": "Kiosk offline queue v2 (Wave 5G + C7) at helpers/kioskOfflineQueue.js. Replay path at lines 543-577: re-POSTs with original Idempotency-Key (line 552: `headers: { 'X-Idempotency-Key': entry.localKey }`), idempotency_key also in body at line 543. IdempotencyKeyMiddleware (post H2-HEAL-01 commit 2c5b07c5e) scopes by (branch_id, user_id, sha256(key)) at line 77-82 — replay collapses correctly via Phase-1 cache replay at IdempotencyKeyMiddleware.php:86-96. Replay returns cached 2xx response with X-Idempotency-Replayed: true header at line 240. The DB-level UNIQUE(branch_id, idempotency_key) (now extended to user_id) is the defense-in-depth floor. POS-side findExistingOrderForIdempotencyRecovery at OrderService.php:644-649 + the 23000 catch at lines 1216-1232 provide third-layer recovery if the middleware bypasses (e.g. simulation mode).",
+      "severity": "INFO",
+      "rollback_verification": "Replay is at-most-once at the cached-response level. If the original request was PARTIALLY committed (extremely rare — would require server crash mid-tx), MySQL auto-rollback at connection drop releases all in-flight writes; the next replay sees no existing order and re-creates cleanly. Worst case: customer charged twice if the original tx committed AND the cache was wiped before retry — defended by Phase-2 atomic-acquire (IdempotencyKeyMiddleware.php:99-124) returning 425 in-flight to block parallel duplicates."
+    },
+    {
+      "id": "K.10.9",
+      "title": "PHP-FPM SIGKILL mid-cascade",
+      "verdict": "VERIFIED CITED",
+      "evidence": "Two-layer defense. (1) DB layer: MySQL auto-rolls back any uncommitted transaction when the client connection drops (standard InnoDB invariant, no project code needed). PHP-FPM SIGKILL severs the PDO connection; MySQL kernel rolls back the in-flight tx atomically. NF525 fiscal_sequence_no allocation that was inside the rolled-back tx releases organically (next SELECT MAX returns same value). (2) Idempotency placeholder layer: PENDING placeholder has its own short TTL (30s default, config/idempotency.php:30 IDEMPOTENCY_PENDING_TTL_SECONDS) decoupled from the COMPLETED TTL (24h default). Per G2-HEAL-04, RedisIdempotencyKeyRepository.php:68-79 documents the decoupling: 'SIGKILL/PHP-FPM restart between Phase-2 acquire() and Phase-3 complete() must NOT trap the key for 24h returning 425'. So a SIGKILL'd request leaves a PENDING placeholder that self-expires in 30s; the cashier can retry within that window and gets a 425 in-flight response (correctly waits or retries), and beyond 30s the key is freed. The Phase-3 release path at IdempotencyKeyMiddleware.php:140-143 fires on Throwable to release the key immediately — covers the graceful-exception path; the TTL covers the SIGKILL/connection-drop path.",
+      "severity": "INFO",
+      "rollback_verification": "DB tx rolled back by MySQL kernel on connection drop. PENDING placeholder self-expires within 30s. No orphan rows. No fiscal-sequence consumption. No stuck-cashier UX (worst case: 30s retry window)."
+    },
+    {
+      "id": "K.10.10",
+      "title": "DB lock timeout (innodb_lock_wait_timeout=5s per G2-HEAL-02)",
+      "verdict": "VERIFIED CITED",
+      "evidence": "AppServiceProvider.php:225-243 implements the GOAL-F2-HEAL-02 heal. Boot-time SET SESSION innodb_lock_wait_timeout = ? (env DB_LOCK_WAIT_TIMEOUT, default 5) at line 233-235. Comment lines 225-231 document the threat: 'MySQL default 50s × worker pool = realistic DoS surface' for fiscal_sequence + Idempotency-Key + OrderStateMachine lockForUpdate hot rows. SQLite ignores per the guard at line 232 (driver-name check). Per-session = applies to every PHP-FPM worker boot. Failure path: hot-row contention on fiscal_sequence.lockForUpdate at FiscalSequenceService.php:97-101 → MySQL raises 'Lock wait timeout exceeded' SQLSTATE 1205 after 5s → OrderService's outer DB::transaction body throws → rollback → outer try/catch at OrderService.php:1216-1239 catches QueryException → returns 422 with message 'Une erreur s'est produite, réessayez svp.' Cashier sees error toast, retries. Brief's 'Pool starvation prevented' upheld.",
+      "severity": "INFO",
+      "rollback_verification": "Lock-wait timeout → transactional rollback. No partial commit. No fiscal sequence number consumed (allocation was inside the rolled-back tx). Cashier-friendly retry path. Sub-5s feedback prevents PHP-FPM worker hold-time from cascading into pool exhaustion."
+    },
+    {
+      "id": "K.10.11",
+      "title": "Disk full during cascade",
+      "verdict": "VERIFIED CITED",
+      "evidence": "Two scenarios. (a) Backup script: Console/Commands/Backup/RunDailyBackup.php uses Symfony Process for mysqldump with a partial-then-rename atomicity pattern (doc lines 41-48: 'mysqldump writes to <final>.partial; on success we rename() to <final>. A crash mid-dump leaves only a .partial (cleaned up on next run via prepareDailyTarget()), never a corrupted valid-named file that fools the rotation logic'). Failure marker written to storage/backups/.last-failure on any failure path (doc lines 50-55). Hard-fail threshold at < 1KB (doc lines 56-60). H2-HEAL-03 backup-before-migrate guard is the upstream defense. (b) Order creation MySQL write: standard InnoDB invariant — if disk full during INSERT or COMMIT, MySQL returns SQLSTATE HY000 errno 28 / SQLSTATE 41000 / similar; OrderService's outer DB::transaction body catches via QueryException at lines 1216-1235 → returns 422 to cashier. NF525 chain untouched (failed write never committed). Backups from prior 30 daily + 12 monthly + 24 quarterly tier remain restorable (NF525 6y retention per RunDailyBackup.php doc lines 27-34).",
+      "severity": "INFO",
+      "rollback_verification": "MySQL kernel rolls back failed-disk transactions (standard invariant, no project code). Backup script atomicity prevents valid-named-but-corrupt files. Cashier sees 422 toast, retries (cleanup of disk is ops concern, not project code)."
+    },
+    {
+      "id": "K.10.12",
+      "title": "composition_snapshot trigger failure (J2-HEAL-06)",
+      "verdict": "VERIFIED CITED",
+      "evidence": "Migration 2026_05_24_040211_add_composition_snapshot_immutability_trigger.php installs BEFORE UPDATE triggers on order_items. MySQL trigger at lines 85-102 raises SIGNAL SQLSTATE '45000' with message 'NF525: composition_snapshot is immutable after creation (J2-HEAL-06)' when NEW.composition_snapshot != OLD.composition_snapshot (both non-null) OR when NEW IS NULL and OLD IS NOT NULL (nulling blocked). SQLite parity at lines 107-134 with RAISE(ABORT). down() migration refuses in production at lines 138-143 (NF525 immutability is one-way). Sentinel: CompositionSnapshotImmutabilityTriggerSentinel covers TWO defense layers — Layer 1 (DB trigger) + Layer 2 (Eloquent guard at OrderItem::booted updating callback). Sentinel doc lines 33-37 lists 6 covered cases: INSERT allowed, non-snapshot UPDATE allowed, snapshot UPDATE via Eloquent BLOCKED (L2), snapshot UPDATE via raw DB BLOCKED (L1), NULL→JSON backfill allowed, JSON→NULL BLOCKED. Bypass mitigation: TRUNCATE bypasses triggers (doc lines 60-61), addressed via GRANT-level REVOKE on prod DB user (same Ansible task pattern as audit_logs / z_reports per CLAUDE.md §8).",
+      "severity": "INFO",
+      "rollback_verification": "Raw UPDATE attempted on composition_snapshot → SIGNAL SQLSTATE 45000 → MySQL aborts the statement → caller's wrapping DB::transaction (if any) rolls back the entire batch. App-layer Eloquent guard fires earlier in the call stack for save()-based mutations, giving developer-friendly stack traces. NF525 invariant: evidence is structurally un-mutable post-INSERT."
+    },
+    {
+      "id": "K.10.13",
+      "title": "Idempotency key Cache::lock acquire fails (storage unavailable)",
+      "verdict": "VERIFIED CITED",
+      "evidence": "Per F.6 audit finding F-6-6-FIND-04 P2 (config/idempotency.php:12 doc), IDEMPOTENCY_FAIL_OPEN defaults to false at config/idempotency.php:32 (fail_open => env('IDEMPOTENCY_FAIL_OPEN', false)). IdempotencyKeyMiddleware.php:125-135 catches IdempotencyStorageUnavailableException, logs warning, then branches on config: fail_open=true → bypass middleware via $next($request) (relies on app-layer UNIQUE for defense-in-depth); fail_open=false (default) → return 503 with code IDEMPOTENCY_STORAGE_UNAVAILABLE. F.12 audit doc cited 'defense-in-depth': fail-closed default + app-layer UNIQUE (orders.branch_id+user_id+idempotency_key) + OrderService::findExistingOrderForIdempotencyRecovery + 23000 catch + Phase-1 cache replay = quad-layer. The 'storage unavailable' path is genuinely fail-closed for production safety.",
+      "severity": "INFO",
+      "rollback_verification": "On fail-closed (default): request rejected with 503 BEFORE any DB write. Zero side-effects. Cashier sees error, retries. On fail-open (opt-in env): request proceeds; DB UNIQUE constraint catches double-submit at INSERT time, recovery via 23000 catch returns the existing order."
+    }
+  ],
+  "data_integrity_attestation": {
+    "nf525_chain_under_rollback": "INTACT — audit_logs HMAC chain extension is inside the wrapping DB::transaction at all 5 production write sites (OrderService.php:1086-1104 + :1116-1137, FrontendOrderService.php same pattern, PaymentService.php:309-321 confirmCounterPayment, RefundWithCounterEntryService.php:207-222). On rollback the chain entry is dropped atomically with the order/payment row — no gap, no double-extension. Frozen FiscalSequenceService + AuditLogService + IdempotencyKeyMiddleware UNCHANGED in this audit.",
+    "fiscal_sequence_under_rollback": "INTACT — FiscalSequenceService::next is a SELECT MAX+1 inside a SAVEPOINT (nested under caller's transaction at FiscalSequenceService.php:76). The 'allocation' is purely the returned int; the actual write is the caller setting $order->fiscal_sequence_no and calling save(). On outer rollback, no number is consumed (next call to next() sees the same MAX). Strict monotonic gap-free invariant preserved.",
+    "double_charge_prevention_under_rollback": "INTACT — IdempotencyKeyMiddleware Phase-1 replay + Phase-2 atomic-acquire + Phase-3 conditional cache (cache only on 2xx, release on Throwable per lines 138-153). Combined with DB UNIQUE + OrderService::findExistingOrderForIdempotencyRecovery + 23000 catch = quad-layer defense. SIGKILL window covered by PENDING_TTL=30s decoupling.",
+    "loyalty_under_rollback": "MIXED — Two distinct callers: (a) RefundWithCounterEntryService.php:253 IN-TX, fail-closed (K.10.2 P2 RED above); (b) ClawbackLoyaltyPointsOnRefund listener (post-commit, isolated via try/catch at lines 82-93). Brief's expectation of uniform isolation does not hold in camp (a).",
+    "outbox_under_rollback": "DEGRADED-BUT-RECOVERABLE — DomainEvent row IS persisted INSIDE the listener handle (PersistOrderPaidAtCounterToOutbox.php:25-45 firstOrCreate); afterCommit dispatch fires post-tx and is try/catch-wrapped at lines 63-74. On listener-handle throw the source transaction rolls back (no DomainEvent row written, no broadcast). On afterCommit-dispatch throw the DomainEvent row stays (recoverable via queue retry + hourly cron). Worst-case latency 5s (Echo polling fallback) → 6.4min (queue backoff) → 1h (cron rescue).",
+    "trigger_blocked_writes_under_rollback": "INTACT — composition_snapshot SIGNAL SQLSTATE 45000 (J2-HEAL-06), audit_logs/z_reports BEFORE DELETE triggers (CLAUDE.md §8) all abort the offending SQL statement → outer DB::transaction rolls back → no corruption. TRUNCATE bypass mitigated via GRANT-level REVOKE (deploy ops, not project code)."
+  },
+  "rollback_boundary_analysis": [
+    {
+      "scenario": "K.10.1 POS order creation",
+      "atomic_scope": "Order + order_items + audit_logs append + cash_movement (strict) + split tranches + fiscal_sequence_no",
+      "post_commit_side_effects": "OrderCreated broadcast (via DispatchableAfterCommit), notification dispatches (SendOrderGotMail/Sms/Push) at OrderService.php:1193-1208 wrapped in try/catch (best-effort)",
+      "rollback_coverage": "100% for atomic scope, post-commit side-effects are best-effort and isolated"
+    },
+    {
+      "scenario": "K.10.2 Refund counter-entry",
+      "atomic_scope": "Mirror Order + mirror order_items + mirror order_payments + audit_logs + LoyaltyService::refundPoints (in-tx, fail-closed)",
+      "post_commit_side_effects": "RefundCreated broadcast (DispatchableAfterCommit) → ReleaseStockOnRefundCreated + ReleaseAvailabilityOnRefundCreated + ClawbackLoyaltyPointsOnRefund (last is isolated via try/catch)",
+      "rollback_coverage": "100% for atomic scope (over-strict per K.10.2 finding — owner-decision on relaxing refundPoints to isolated). Post-commit listeners isolated."
+    },
+    {
+      "scenario": "K.10.3 Z-close",
+      "atomic_scope": "z_reports row flip OPEN→CLOSED + signature + closed_at + closed_by (single forceFill+save, line 247)",
+      "post_commit_side_effects": "Log::channel('fiscal')->info (line 253), Cache::lock release (line 273 finally)",
+      "rollback_coverage": "100% — single-write atomic scope; brief's audit_logs append step does NOT exist in code"
+    },
+    {
+      "scenario": "K.10.4 OrderPaidAtCounter Outbox",
+      "atomic_scope": "DomainEvent firstOrCreate (idempotent via UNIQUE)",
+      "post_commit_side_effects": "DispatchDomainEventsJob queue (Pusher broadcast)",
+      "rollback_coverage": "DomainEvent durably persisted on listener-handle commit; recovery via 6-retry queue + hourly cron"
+    },
+    {
+      "scenario": "K.10.7 Stripe webhook",
+      "atomic_scope": "WebhookEvent firstOrCreate (BEFORE tx) + CapturePaymentNotification insert + WebhookEvent state mutation (INSIDE tx)",
+      "post_commit_side_effects": "200/500 response; failed → Stripe retries",
+      "rollback_coverage": "100% for in-tx scope; WebhookEvent always persisted (firstOrCreate is BEFORE tx) so DLQ row exists"
+    }
+  ],
+  "verdict": "AMBER",
+  "verdict_rationale": "12 of 13 hunts are VERIFIED CITED (rollback boundaries match brief assumption + prior heals). ONE NEW finding (K.10.2 P2 RED) — RefundWithCounterEntryService.php:253 IN-TX loyalty call NOT wrapped, contradicting brief assumption 'cascade continues'. Code reality is fail-closed: refund rolls back fully on loyalty throw. Owner-decision required to relax to isolated (option a — consistent with HEAL-A.2 NOOP posture) vs keep atomic (option c — safer NF525 posture). Additionally, ONE SCENARIO-MISMATCH (K.10.3) — brief assumes Z-close writes audit_logs, code shows Z has its own chain. NF525 fiscal chain integrity, double-charge prevention, fiscal sequence monotonicity, trigger immutability ALL intact under rollback. V1 ship-ready for Le Cayenne single-cashier use; K.10.2 P2 backlog tracked for V1.0.2 hardening.",
+  "top_5_failure_modes_ranked": [
+    "K.10.2 (P2 RED) — RefundWithCounterEntryService.php:253 unwrapped LoyaltyService::refundPoints IN-TX. Cascade-fail on any non-NOOP loyalty throw rolls back entire mirror refund INCLUDING fiscal_sequence_no allocation. Brief assumed 'cascade continues'; code is fail-closed. Owner-decision required (relax to isolated like ClawbackLoyaltyPointsOnRefund, or keep atomic and document).",
+    "K.10.10 (INFO VERIFIED) — innodb_lock_wait_timeout=5s default at AppServiceProvider.php:233. Lock-wait timeout → tx rollback → 422 to cashier. F2-HEAL-02 prevents pool starvation under fiscal_sequence + Idempotency contention.",
+    "K.10.9 (INFO VERIFIED) — PHP-FPM SIGKILL leaves PENDING idempotency placeholder. G2-HEAL-04 decouples PENDING_TTL=30s from COMPLETED_TTL=24h so SIGKILL'd request does NOT trap the key. MySQL kernel auto-rolls back in-flight tx on connection drop.",
+    "K.10.4 (INFO VERIFIED) — Outbox listener afterCommit-dispatch isolated via try/catch (test-e2e fix E-001 round-3). Recovery path: 6-retry queue (~6.4min) → hourly cron (foodking:outbox:retry-failed). F.11 stale-events observed in dev only — prod worker drains via the same path.",
+    "K.10.3 (INFO SCENARIO-MISMATCH) — Z-close does NOT cascade to audit_logs. Brief assumed it does. z_reports has its own HMAC chain (separate from audit_logs). Clean rollback semantics on any step failure inside the wrapping DB::transaction at ZReportService.php:203-268."
+  ],
+  "delta_t_chain_measured": "STATIC AUDIT — no empirical timing. Rollback latency dominated by MySQL ROLLBACK statement (typically <50ms for the order-create scope), Cache::lock release (<5ms), and the catch-handler 422/500 response render (<10ms). Worst-case cascading rollback path (K.10.1 outer + nested SAVEPOINT discard): <100ms wall-clock. Outbox recovery (K.10.4 if all 6 queue retries fail): ~6.4min queue backoff + up to 60min cron rescue = ~66min worst-case observability delay.",
+  "frozen_zone_diff": "ZERO — no files modified. Read-only static audit. PaymentService.php, FiscalSequenceService.php, AuditLogService.php, ZReportService.php, IdempotencyKeyMiddleware.php, PaymentComponent.vue, BranchScope.php, OrderStateMachine.php all untouched. CLAUDE.md §7 frozen-zones respected.",
+  "nf525_integrity_attestation": "All rollback scenarios preserve the NF525 invariants per CLAUDE.md §8: (1) audit_logs HMAC chain extension is INSIDE the wrapping DB::transaction at all production write sites → atomic with the source row; (2) fiscal_sequence_no allocation is a SAVEPOINT'd SELECT MAX+1 → released organically on outer rollback (no gap, no double-allocation); (3) composition_snapshot J2-HEAL-06 trigger blocks post-INSERT mutation at DB level (SIGNAL SQLSTATE 45000) AND app level (OrderItem::booted updating); (4) z_reports own HMAC chain unaffected by audit_logs failures (separate chain per K.10.3 finding); (5) cash_movement strict=true at OrderService.php:1170-1176 forces rollback on no-open-session (Sprint 1B NF525 cash-trail enforcement). Frozen-zone files UNCHANGED.",
+  "prior_phase_anchors_validated": {
+    "GOAL-I2-HEAL-01 (cascade isolation pattern)": "VERIFIED at ReleaseStockOnOrderCanceled.php:14-40 + ReleaseAvailabilityOnOrderCanceled.php:53-60 + ClawbackLoyaltyPointsOnRefund.php:82-93. Sentinel OrderCanceledCascadeHardenedSentinelTest 7/7 methods present.",
+    "GOAL-J2-HEAL-06 (composition_snapshot immutability)": "VERIFIED at migration 2026_05_24_040211 + CompositionSnapshotImmutabilityTriggerSentinel.",
+    "GOAL-F2-HEAL-02 (innodb_lock_wait_timeout=5s)": "VERIFIED at AppServiceProvider.php:225-243.",
+    "G2-HEAL-04 (PENDING_TTL=30s decoupling)": "VERIFIED at config/idempotency.php:30 + RedisIdempotencyKeyRepository.php:68-79.",
+    "F.6 (IDEMPOTENCY_FAIL_OPEN default=false)": "VERIFIED at config/idempotency.php:32 + IdempotencyKeyMiddleware.php:125-135.",
+    "F.10 (NF525 15/15 invariants)": "Frozen-zone diff=0; rollback boundaries preserve all invariants.",
+    "F.11 (outbox worker drain)": "Confirmed via static reading — Console/Kernel.php:64-69 cron + Jobs/DispatchDomainEventsJob.php:40-42 backoff curve.",
+    "H2-HEAL-01 (user_id scope on idempotency)": "VERIFIED at IdempotencyKeyMiddleware.php:77-82.",
+    "H2-HEAL-02 (creator_id NF525 6y traceability)": "VERIFIED at OrderService.php:712 + audit_logs 'order.created.pos' append at :1116-1137.",
+    "I2-HEAL-01 (listener isolation pattern)": "VERIFIED — applied to OrderCanceled + RefundCreated + ClawbackLoyalty listener clusters.",
+    "Wave M (OrderCreated dispatch placement)": "VERIFIED at OrderService.php:1187 inside closure + DispatchableAfterCommit at Events/Concerns/DispatchableAfterCommit.php."
+  },
+  "new_findings_summary": [
+    {
+      "id": "K10-NEW-01",
+      "title": "RefundWithCounterEntryService.php:253 unwrapped LoyaltyService::refundPoints IN-TX",
+      "severity": "P2",
+      "rollback_impact": "Cascade-fail on any non-NOOP loyalty throw rolls back the entire mirror refund (mirror Order + mirror order_items + mirror order_payments + AuditLog + fiscal_sequence_no allocation). Brief assumed 'cascade continues'; code reality is fail-closed.",
+      "file_line": "app/Services/Order/RefundWithCounterEntryService.php:253",
+      "remediation": "Owner-decision: (a) wrap in try/catch + Log::warning to match ClawbackLoyaltyPointsOnRefund pattern; OR (b) move post-commit; OR (c) document fail-closed posture as intentional. HEAL-A.2 NOOP for 'alreadyRefunded' suggests option (a) is the consistent extension.",
+      "backlog_tag": "V1.0.2 REFUND-LOYALTY-01"
+    },
+    {
+      "id": "K10-NEW-02",
+      "title": "Brief K.10.3 cascade misdescription — Z-close does NOT write to audit_logs",
+      "severity": "INFO",
+      "rollback_impact": "Brief documented a cascade step that does not exist. Actual Z-close has its own HMAC chain (z_reports.signature) separate from audit_logs. Rollback semantics intact under the simpler atomic scope.",
+      "file_line": "app/Services/Fiscal/ZReportService.php:180-286",
+      "remediation": "Documentation-only — update brief to reflect Z's own chain. No code change needed.",
+      "backlog_tag": "doc-only"
+    }
+  ]
+}

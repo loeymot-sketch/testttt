@@ -47,6 +47,10 @@ return [
         'online_orders'     => 'الطلبات عبر الإنترنت',
         'sales_report'      => 'تقرير المبيعات',
         'items_report'      => 'تقرير العناصر',
+        // [V102-08 HEAL-3 2026-05-26] One-click EOD PDF synthesis button on Admin Dashboard.
+        'eod_pdf_button'    => 'PDF إقفال اليوم',
+        'eod_pdf_error'     => 'فشل تنزيل PDF. حاول مرة أخرى أو تحقق من صلاحياتك.',
+        'downloading'       => 'جارٍ التنزيل…',
         'stock_low_alerts' => 'تنبيهات المخزون المنخفض',
         'last_z_report'    => 'آخر تقرير Z',
         'view_all_alerts'  => 'عرض الكل',
@@ -104,6 +108,28 @@ return [
         ],
         'view_product'      => 'عرض المنتج',
         'continue'          => 'متابعة',
+        // [Wave X3 2026-05-21] KDS Historique du jour — read-only V1.
+        'kds_history_button'      => 'السجل',
+        'kds_history_button_aria' => 'فتح سجل طلبات اليوم',
+        'kds_history_close_aria'  => 'إغلاق',
+        'kds_history_title'       => 'سجل اليوم',
+        'kds_history_empty'       => 'لا توجد طلبات سجلية اليوم',
+        'kds_history_loading'     => 'جارٍ التحميل…',
+        'kds_history_error'       => 'فشل التحميل',
+        'kds_history_retry'       => 'إعادة المحاولة',
+        'kds_state_prepared'      => 'جاهز',
+        'kds_state_out'           => 'قيد التوصيل',
+        'kds_state_delivered'     => 'تم التسليم',
+        // [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B compensating action]
+        'kds_recall_button'        => '↶ إلغاء التأكيد',
+        'kds_recall_button_aria'   => 'إلغاء تأكيد الطلب رقم {queue} — متاح لمدة 60 ثانية',
+        'kds_recall_badge'         => 'تم الاسترداد',
+        'kds_recall_badge_aria'    => 'تم استرداد الطلب رقم {queue} إلى المطبخ',
+        'kds_recall_confirm_title' => 'إلغاء حالة "جاهز" هذه؟',
+        'kds_recall_warning_60s'   => 'متاح لمدة 60 ثانية بعد التأكيد',
+        'kds_recall_success'       => 'تم استرداد الطلب ✓',
+        'kds_recall_too_late'      => 'انقضت مهلة 60 ثانية — اتصل بأمين الصندوق',
+        'kds_recall_already_recalled' => 'تم استرداد هذا الطلب بالفعل',
     ],
     'studio' => [
         'eyebrow' => 'كتالوج مركزي',
@@ -126,6 +152,11 @@ return [
         // [test-e2e fix E-004 round-3] Translated exception messages — replaces
         // raw English strings previously hardcoded in app/Exceptions/Handler.php.
         'order_not_found'             => 'الطلب غير موجود.',
+        // [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B] backend abort() copies.
+        'kds_recall_invalid_state'     => 'يمكن استرداد الطلبات الجاهزة فقط.',
+        'kds_recall_window_expired'    => 'انقضت مهلة 60 ثانية — اتصل بأمين الصندوق للإلغاء يدويًا.',
+        'kds_recall_already_recalled'  => 'تم استرداد هذا الطلب بالفعل.',
+        'kds_recall_success'           => 'تم استرداد الطلب إلى المطبخ.',
         'unauthorized'                => 'ليس لديك الصلاحيات اللازمة.',
         'method_not_supported'        => 'الطريقة غير مدعومة لهذا المسار.',
         'url_not_found'               => 'لم يتم العثور على عنوان URL المحدد.',

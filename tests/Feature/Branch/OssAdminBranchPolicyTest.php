@@ -34,6 +34,13 @@ class OssAdminBranchPolicyTest extends TestCase
         $customer = User::factory()->create(['branch_id' => $branch->id]);
         $misconfiguredChef = User::factory()->create(['branch_id' => 0]);
         $misconfiguredChef->assignRole('Chef');
+        // [V1.0.2 BUILD-6] PosOrderRequest::authorize() now requires can('pos') as
+        // defense-in-depth (mirrors PosController constructor middleware). Grant
+        // the role permission so we can reach the OrderService::posOrderStore branch
+        // policy check — which is what this test is actually exercising. Without
+        // this, the assertion would short-circuit at the FormRequest layer and we
+        // would no longer cover the branch_id=0 non-admin global-bypass guard.
+        $misconfiguredChef->givePermissionTo('pos');
 
         $this->actingAs($misconfiguredChef, 'sanctum');
 

@@ -77,7 +77,7 @@
             <div class="pos-v5-operator-bar__brand">
                 <div class="pos-v5-operator-bar__crown" aria-hidden="true">👑</div>
                 <div class="pos-v5-operator-bar__identity min-w-0 flex-1">
-                    <p class="pos-v5-operator-bar__eyebrow pos-v4-eyebrow">Caisse FoodKing</p>
+                    <p class="pos-v5-operator-bar__eyebrow pos-v4-eyebrow">Caisse Le Cayenne</p>
                     <h1 class="pos-v5-operator-bar__title pos-v4-title">Commande rapide</h1>
                     <div class="pos-v5-operator-bar__live pos-v4-status-row">
                         <PosV5StatChip
@@ -157,7 +157,15 @@
                     <template #icon>🖥️</template>
                     <span class="hidden lg:inline">{{ $t('pos.tracker.customer_screen') }}</span>
                 </PosV5Button>
+                <!-- [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19 wave-E-1] When V2
+                     dine-in is enabled, render the floorplan link (legacy
+                     V2 upgrade path). When V1 default (`pos.dine_in_enabled=
+                     false`) — the only V1 production mode — render the
+                     loyalty redeem CTA in the same slot. Mutually exclusive
+                     so the operator-bar layout stays stable (one button
+                     wide). -->
                 <PosV5Button
+                    v-if="dineInEnabled"
                     variant="ghost"
                     size="md"
                     as="router-link"
@@ -167,6 +175,38 @@
                 >
                     <template #icon>🪑</template>
                     <span class="hidden lg:inline">{{ $t('label.floorplan') }}</span>
+                </PosV5Button>
+                <!-- [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19 wave-E-1] Main-page
+                     loyalty redeem CTA — V1 only (dine-in disabled). Visible
+                     when a non-terminal, non-PAID order is in flight; tone
+                     shifts to "ready" so the cashier sees the affordance
+                     light up the moment an order is created (server-side
+                     `pos.redeem-loyalty` permission gate remains the
+                     authoritative authz check; this UI gating only hides
+                     the visual entry point when redeem would always 422/409).
+                     The canonical CTA on PosOrderShowComponent stays in
+                     place — defense in depth, both paths reachable. -->
+                <!--
+                  [Wave Q-5 2026-05-20] Disabled-state tooltip improvement.
+                  Owner reported "Appliquer une réduction fidélité greyed
+                  out / inaccessible" — the LOCK_POS_LOYALTY_REDEEM_UI gate
+                  is intentional (CTA only after an order is in flight), so
+                  the heal is a clearer hint, not a logic change.
+                -->
+                <PosV5Button
+                    v-else
+                    variant="ghost"
+                    size="md"
+                    class="pos-v4-loyalty-main-cta"
+                    data-testid="pos-loyalty-redeem-main-cta-open"
+                    :disabled="!canShowLoyaltyMainCta"
+                    :tone="canShowLoyaltyMainCta ? 'ready' : 'neutral'"
+                    :title="canShowLoyaltyMainCta ? $t('pos.loyalty.redeem.title') : $t('pos.loyalty.redeem.disabled_hint')"
+                    :aria-label="canShowLoyaltyMainCta ? $t('pos.loyalty.redeem.title') : $t('pos.loyalty.redeem.disabled_hint')"
+                    @click="openLoyaltyMainModal"
+                >
+                    <template #icon>🎁</template>
+                    <span class="hidden lg:inline">{{ $t('pos.loyalty.redeem.title') }}</span>
                 </PosV5Button>
                 <!--
                   [POS-V5] No-sale / open drawer — variant ghost neutral (pas de halo).
@@ -206,6 +246,158 @@
                 </PosV5Button>
             </nav>
         </header>
+
+        <!--
+          [Wave X X2 P-OWNER 2026-05-21] POS main-page shortcut notifications.
+          Owner verbatim: "Caissier ne doit PAS naviguer vers /admin/pos-orders-
+          tracker pour valider commandes prêtes ou encaisser borne. Sur page
+          principale POS, 2 zones notifications compactes."
+          ──────────────────────────────────────────────────────────────────
+          - Left panel  : "Prêt à livrer" (status=PREPARED) ⇒ 1-click Livré
+          - Right panel : "À encaisser borne" (cash-pending kiosk) ⇒ 1-click Encaisser
+          Max 4 rows each + "Voir plus" link to tracker / panel for overflow.
+
+          [Q10 P-OWNER 2026-05-21] Always-render variant: previously the root
+          v-if hid both panels when both lists were empty. Cashier could not
+          distinguish a calm period from a WebSocket / polling outage. The
+          panels now always render. When their list is empty, a subtle copy
+          + "Mis à jour il y a Xs" timestamp signals "polling is alive but
+          nothing pending" — visible health beacon for the cashier.
+        -->
+        <div
+          class="pos-shortcuts"
+          data-testid="pos-shortcuts"
+        >
+          <!-- Prêt à livrer (PREPARED kiosk / takeaway orders) -->
+          <section
+            class="pos-shortcuts__panel pos-shortcuts__panel--ready"
+            :class="{ 'pos-shortcuts__panel--empty': readyOrders.length === 0 }"
+            data-testid="pos-shortcuts-ready"
+            :aria-label="$t('label.pos_shortcut_ready_title', { count: readyOrders.length })"
+          >
+            <header class="pos-shortcuts__head">
+              <h2 class="pos-shortcuts__title">
+                <span aria-hidden="true">🛎️</span>
+                {{ $t('label.pos_shortcut_ready_title', { count: readyOrders.length }) }}
+              </h2>
+            </header>
+            <ul
+              v-if="readyOrders.length > 0"
+              class="pos-shortcuts__list"
+              role="list"
+            >
+              <li
+                v-for="o in readyOrders.slice(0, 4)"
+                :key="o.id"
+                class="pos-shortcuts__item"
+                :data-testid="`pos-shortcut-ready-${o.id}`"
+              >
+                <span class="pos-shortcuts__num">N°{{ o.queue_number || o.order_serial_no || o.id }}</span>
+                <span class="pos-shortcuts__price">{{ formatKioskPrice(o.total ?? o.order_amount) }}</span>
+                <button
+                  type="button"
+                  class="pos-shortcuts__cta pos-shortcuts__cta--ready"
+                  :disabled="o._delivering"
+                  :data-testid="`pos-shortcut-deliver-${o.id}`"
+                  @click="markDelivered(o)"
+                >
+                  {{ o._delivering ? '…' : $t('label.pos_shortcut_delivered_cta') }}
+                </button>
+              </li>
+            </ul>
+            <!-- [Q10] Subtle empty-state copy when no PREPARED kiosk/takeaway. -->
+            <p
+              v-else
+              class="pos-shortcuts__empty"
+              data-testid="pos-shortcuts-ready-empty"
+            >
+              {{ $t('label.pos_shortcut_ready_empty') }}
+            </p>
+            <router-link
+              v-if="readyOrders.length > 4"
+              :to="{ name: 'admin.pos-orders.tracker' }"
+              class="pos-shortcuts__more"
+              data-testid="pos-shortcut-ready-more"
+            >
+              {{ $t('label.pos_shortcut_view_more', { count: readyOrders.length - 4 }) }}
+            </router-link>
+            <!-- [Q10] Last-refresh timestamp — visible health signal. -->
+            <p
+              v-if="readyLastRefreshLabel"
+              class="pos-shortcuts__refresh"
+              data-testid="pos-shortcuts-ready-refresh"
+              aria-live="off"
+            >
+              {{ readyLastRefreshLabel }}
+            </p>
+          </section>
+
+          <!-- À encaisser borne (cash-pending kiosk orders) -->
+          <section
+            class="pos-shortcuts__panel pos-shortcuts__panel--cash"
+            :class="{ 'pos-shortcuts__panel--empty': kioskCashOrders.length === 0 }"
+            data-testid="pos-shortcuts-cash"
+            :aria-label="$t('label.pos_shortcut_cash_title', { count: kioskCashOrders.length })"
+          >
+            <header class="pos-shortcuts__head">
+              <h2 class="pos-shortcuts__title">
+                <span aria-hidden="true">💰</span>
+                {{ $t('label.pos_shortcut_cash_title', { count: kioskCashOrders.length }) }}
+              </h2>
+            </header>
+            <ul
+              v-if="kioskCashOrders.length > 0"
+              class="pos-shortcuts__list"
+              role="list"
+            >
+              <li
+                v-for="o in kioskCashOrders.slice(0, 4)"
+                :key="o.id"
+                class="pos-shortcuts__item"
+                :data-testid="`pos-shortcut-cash-${o.id}`"
+              >
+                <span class="pos-shortcuts__num">N°{{ o.queue_number || o.order_serial_no || o.id }}</span>
+                <span class="pos-shortcuts__price">{{ formatKioskPrice(o.total ?? o.order_amount) }}</span>
+                <button
+                  type="button"
+                  class="pos-shortcuts__cta pos-shortcuts__cta--cash"
+                  :disabled="o._collecting || o._canceling"
+                  :data-testid="`pos-shortcut-encaisser-${o.id}`"
+                  @click="openCounterCollect(o)"
+                >
+                  {{ o._collecting ? '…' : $t('label.pos_shortcut_cash_cta') }}
+                </button>
+              </li>
+            </ul>
+            <!-- [Q10] Subtle empty-state copy when no cash-pending kiosk. -->
+            <p
+              v-else
+              class="pos-shortcuts__empty"
+              data-testid="pos-shortcuts-cash-empty"
+            >
+              {{ $t('label.pos_shortcut_cash_empty') }}
+            </p>
+            <button
+              v-if="kioskCashOrders.length > 4"
+              type="button"
+              class="pos-shortcuts__more"
+              data-testid="pos-shortcut-cash-more"
+              @click="showKioskCashPanel = true"
+            >
+              {{ $t('label.pos_shortcut_view_more', { count: kioskCashOrders.length - 4 }) }}
+            </button>
+            <!-- [Q10] Last-refresh timestamp — visible health signal. -->
+            <p
+              v-if="cashLastRefreshLabel"
+              class="pos-shortcuts__refresh"
+              data-testid="pos-shortcuts-cash-refresh"
+              aria-live="off"
+            >
+              {{ cashLastRefreshLabel }}
+            </p>
+          </section>
+        </div>
+
         <!-- [POS-V5] Search V5 — input large unifié, soumission par Enter. -->
         <PosV5SearchInput
             class="pos-v4-search"
@@ -222,15 +414,19 @@
           [POS-V5] Categories strip warm — pills avec photos rondes 56px
           (mirror direct du stepper visual du wizard kiosk). L'active est marquée
           par un anneau rouge brand 2px + ring soft 4px (mirror exact wizard).
+          [2026-05-18 F-4] First-page filter: by default, only featured
+          categories render. The trailing "Toutes les catégories" pill
+          toggles the strip to full view. Backend signals featured via
+          `category.featured === true` on the /admin/pos-category response.
         -->
         <nav
-            v-if="categories.length > 1"
+            v-if="displayedCategories.length > 1"
             class="pos-v5-category-strip pos-menu-category-scroll pos-v4-category-strip"
             ref="categoryScrollStrip"
             role="tablist"
             aria-label="Catégories"
         >
-            <template v-for="(category, index) in categories" :key="category.id || index">
+            <template v-for="(category, index) in displayedCategories" :key="category.id || index">
                 <button
                     type="button"
                     role="tab"
@@ -252,6 +448,24 @@
                     <span class="pos-v5-category__label">{{ category.name }}</span>
                 </button>
             </template>
+            <!-- [2026-05-18 F-4] Escape hatch: reveal all categories. Only
+                 shown when the backend marked some as non-featured (i.e.
+                 the allowlist is active). -->
+            <button
+                v-if="hasNonFeaturedCategories"
+                type="button"
+                class="pos-v5-category pos-v4-category-pill pos-v5-category--toggle"
+                :class="{ 'is-active': showAllCategories }"
+                :aria-pressed="showAllCategories ? 'true' : 'false'"
+                :title="showAllCategories ? 'Masquer les catégories non-essentielles' : 'Voir toutes les catégories'"
+                data-testid="pos-category-toggle-all"
+                @click="toggleShowAllCategories"
+            >
+                <span class="pos-v5-category__visual">
+                    <span class="pos-v5-category__visual-fallback" aria-hidden="true">{{ showAllCategories ? '➖' : '➕' }}</span>
+                </span>
+                <span class="pos-v5-category__label">{{ showAllCategories ? 'Réduire' : 'Toutes' }}</span>
+            </button>
         </nav>
 
         <div aria-live="polite" aria-relevant="additions"
@@ -259,7 +473,7 @@
             class="pos-menu-products-region">
             <SkeletonGrid v-if="loadingItems" :count="12" />
             <template v-else>
-                <ItemComponent ref="posItemComponent" :items="items" :drinks-catalog="drinksCatalog" />
+                <ItemComponent ref="posItemComponent" :items="displayedItems" :drinks-catalog="drinksCatalog" />
 
                 <div class="my-12" v-if="items.length === 0 && !props.search.name">
                     <div class="max-w-[350px] mx-auto">
@@ -345,14 +559,24 @@
                         <template #icon>⏸</template>
                         {{ $t('pos.park') }}
                     </PosV5Button>
+                    <!--
+                      [Wave Q-5 2026-05-20] Short label "En attente" inside
+                      the 2-col grid pill (icon 📦 + badge + label all in a
+                      40px-high button). Full string "Commandes en attente"
+                      moves to the title/aria-label so the canonical label
+                      stays discoverable (assistive tech + tooltip).
+                    -->
                     <PosV5Button
                         variant="ghost-counter"
                         size="md"
+                        class="pos-v5-btn--park-toggle"
                         :badge="parkedOrdersCount"
+                        :title="$t('pos.parked_orders')"
+                        :aria-label="$t('pos.parked_orders')"
                         @click="openParkedOrders"
                     >
                         <template #icon>📦</template>
-                        {{ $t('pos.parked_orders') }}
+                        {{ $t('pos.parked_orders_short') }}
                     </PosV5Button>
                 </div>
             </div>
@@ -873,6 +1097,7 @@
     <PosCashDrawerSessionDialog
         :open="showCashSessionDialog"
         :initial-mode="cashSessionInitialMode"
+        :branch-id="cashSessionBranchId"
         @close="closeCashSessionDialog"
         @session-opened="onCashSessionOpened"
         @session-closed="onCashSessionClosed"
@@ -882,6 +1107,18 @@
         @payment-form:patch="patchPaymentForm"
         @payment-form:reset="resetPaymentForm"
         @order:confirmed="triggerSuccessFlash"
+    />
+    <!-- [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19 wave-E-1] Main-page loyalty
+         redeem modal — 2nd surface (canonical surface lives on
+         PosOrderShowComponent). Mounted here so the operator-bar CTA can
+         open it without the cashier navigating away. Defense in depth:
+         backend `pos.redeem-loyalty` permission + PosRedemptionService
+         terminal/PAID guards remain authoritative regardless of UI path. -->
+    <PosLoyaltyRedeemModal
+        :open="loyaltyRedeemMainOpen"
+        :order-id="currentLoyaltyOrder ? currentLoyaltyOrder.id : null"
+        @close="closeLoyaltyMainModal"
+        @applied="onLoyaltyMainApplied"
     />
     <!-- [POS-V5 WAVE 3] Overlay success flash après confirm payment (700ms) -->
     <div v-if="successFlashing" class="pos-v5-success-flash" aria-hidden="true"></div>
@@ -933,7 +1170,7 @@
                     <i class="fa-solid fa-list-ul" aria-hidden="true"></i>
                     <span>{{ $t('pos.orders.history') }}</span>
                 </router-link>
-                <button class="kiosk-cash-panel-close" @click="showKioskCashPanel = false">✕</button>
+                <button class="kiosk-cash-panel-close" type="button" :aria-label="$t('button.close')" @click="showKioskCashPanel = false">✕</button>
             </div>
           </div>
           <div class="kiosk-cash-panel-body">
@@ -1016,17 +1253,27 @@
                   <i class="fa-solid fa-eye" aria-hidden="true"></i>
                   {{ $t('pos.orders.detail_short') }}
                 </router-link>
+                <!--
+                  [Wave X X1 P-OWNER 2026-05-21] Encaisser opens the SSOT
+                  PosCounterCollectModal (sibling of PaymentComponent) so
+                  all collection surfaces (POS direct, borne, future
+                  driver) converge to the same visual portal. Wave W
+                  picker is replaced by the modal mounted at the section
+                  root above.
+                -->
                 <button
                   class="kiosk-cash-collect-btn"
                   :disabled="order._collecting || order._canceling"
-                  @click="collectKioskCashOrder(order)"
+                  :data-testid="`kiosk-cash-collect-${order.id}`"
+                  @click="openCounterCollect(order)"
                 >
                   {{ order._collecting ? '…' : '✓ Encaisser' }}
                 </button>
                 <button
                   class="kiosk-cash-cancel-btn"
                   :disabled="order._collecting || order._canceling"
-                  @click="cancelKioskCashOrder(order)"
+                  data-testid="kiosk-cash-cancel-open"
+                  @click="openCancelKioskCashDialog(order)"
                 >
                   {{ order._canceling ? '…' : 'Annuler' }}
                 </button>
@@ -1039,6 +1286,118 @@
         </div>
       </div>
     </transition>
+
+    <!--
+      [HEAL B2-P6-F01 2026-05-26] Confirmation dialog before destructive
+      cancel of a kiosk-cash counter-collect order. Mirrors the
+      PosOrdersTrackerComponent cancel-with-reason pattern (role=dialog
+      + aria-modal + required textarea ≥3 chars + danger button) so a
+      single-click on the "Annuler" button never reaches the backend
+      without operator-typed reason. Owner mandate: "ajouter
+      confirmation avant action destructive irréversible".
+    -->
+    <div
+      v-if="cancelKioskCashDialog.open"
+      class="pos-kiosk-cash-cancel-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="pos-kiosk-cash-cancel-title"
+      data-testid="kiosk-cash-cancel-dialog"
+      @click.self="closeCancelKioskCashDialog"
+      @keydown.esc="closeCancelKioskCashDialog"
+    >
+      <div class="pos-kiosk-cash-cancel-card">
+        <header class="pos-kiosk-cash-cancel-head">
+          <h3 id="pos-kiosk-cash-cancel-title">{{ $t('pos.cancel_kiosk_cash.title') }}</h3>
+          <button
+            type="button"
+            class="pos-kiosk-cash-cancel-close"
+            :aria-label="$t('button.close')"
+            :disabled="cancelKioskCashDialog.busy"
+            @click="closeCancelKioskCashDialog"
+          >
+            <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+          </button>
+        </header>
+        <div class="pos-kiosk-cash-cancel-body">
+          <p class="pos-kiosk-cash-cancel-warning" role="alert">
+            <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+            {{ $t('pos.cancel_kiosk_cash.warning') }}
+          </p>
+          <p class="pos-kiosk-cash-cancel-target" v-if="cancelKioskCashDialog.order">
+            <strong>
+              {{ cancelKioskCashDialog.order.queue_number
+                ? 'N° ' + cancelKioskCashDialog.order.queue_number
+                : '#' + (cancelKioskCashDialog.order.order_serial_no || cancelKioskCashDialog.order.id) }}
+            </strong>
+            <span> — {{ formatKioskPrice(
+              cancelKioskCashDialog.order.total
+                ?? cancelKioskCashDialog.order.total_amount_price
+                ?? cancelKioskCashDialog.order.order_amount
+            ) }}</span>
+          </p>
+          <label for="pos-kiosk-cash-cancel-reason" class="pos-kiosk-cash-cancel-label">
+            {{ $t('pos.cancel_kiosk_cash.reason_required') }}
+          </label>
+          <textarea
+            id="pos-kiosk-cash-cancel-reason"
+            ref="cancelKioskCashReasonInput"
+            v-model="cancelKioskCashDialog.reason"
+            rows="3"
+            maxlength="700"
+            class="pos-kiosk-cash-cancel-textarea"
+            data-testid="kiosk-cash-cancel-reason"
+          ></textarea>
+          <div
+            v-if="cancelKioskCashDialog.error"
+            class="pos-kiosk-cash-cancel-error"
+            role="alert"
+            aria-live="assertive"
+          >
+            <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i>
+            <span>{{ cancelKioskCashDialog.error }}</span>
+          </div>
+        </div>
+        <footer class="pos-kiosk-cash-cancel-foot">
+          <button
+            type="button"
+            class="pos-kiosk-cash-cancel-btn pos-kiosk-cash-cancel-btn--ghost"
+            :disabled="cancelKioskCashDialog.busy"
+            data-testid="kiosk-cash-cancel-back"
+            @click="closeCancelKioskCashDialog"
+          >
+            {{ $t('pos.cancel_kiosk_cash.back_btn') }}
+          </button>
+          <button
+            type="button"
+            class="pos-kiosk-cash-cancel-btn pos-kiosk-cash-cancel-btn--danger"
+            :disabled="cancelKioskCashDialog.busy"
+            :aria-busy="cancelKioskCashDialog.busy"
+            data-testid="kiosk-cash-cancel-confirm"
+            @click="confirmCancelKioskCashOrder"
+          >
+            <i v-if="cancelKioskCashDialog.busy" class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i>
+            {{ $t('pos.cancel_kiosk_cash.confirm_btn') }}
+          </button>
+        </footer>
+      </div>
+    </div>
+
+    <!--
+      [Wave X X1 P-OWNER 2026-05-21] Counter-collect SSOT modal — replaces
+      Wave W mode-picker (commit eb43fa180). Same 4-mode parity but with
+      hero total + V5 numpad for CASH received amount + rendu calc + visual
+      parity with PaymentComponent. Sibling pattern preserves
+      PaymentComponent.vue CLAUDE.md §7 frozen state (sentinel
+      paymentComponentEmitsJsdocList.spec.js unchanged).
+      Multi-tranche split deferred to V1.0.2 — see modal header comment for
+      the backend-extension rationale.
+    -->
+    <PosCounterCollectModal
+      :order="counterCollectOrder"
+      @confirmed="onCounterCollectConfirmed"
+      @cancel="onCounterCollectCancel"
+    />
     </section>
 </template>
 <script>
@@ -1063,11 +1422,41 @@ import alertService from "../../../services/alertService";
 // hardware_event server-side in production for audit trail.
 import { openDrawer as kioskHardwareOpenDrawer } from "../../../services/kioskHardware";
 import PaymentComponent from "./PaymentComponent.vue";
+// [Wave X X1 P-OWNER 2026-05-21] Counter-collect SSOT sibling modal.
+// Replaces Wave W mode-picker template-block + methods (eb43fa180).
+// PaymentComponent.vue is CLAUDE.md §7 frozen — sibling preserves
+// paymentComponentEmitsJsdocList.spec.js sentinel green.
+import PosCounterCollectModal from "./PosCounterCollectModal.vue";
 import ParkedOrdersComponent from "./ParkedOrdersComponent.vue";
 import posPaymentMethodEnum from "../../../enums/modules/posPaymentMethodEnum";
+import paymentStatusEnum from "../../../enums/modules/paymentStatusEnum";
 import CustomerAddressCreateComponent from "../customers/address/CustomerAddressCreateComponent.vue";
 import CreateCustomerAddressComponent from "./CreateCustomerAddressComponent.vue";
 import labelEnum from "../../../enums/modules/labelEnum";
+// [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19 wave-E-1] Main-page loyalty redeem
+// CTA wire-up. The modal already exists and is mounted from
+// PosOrderShowComponent (canonical CTA). This adds a 2nd CTA on the POS
+// main page so the cashier doesn't need to navigate to order-show to apply
+// loyalty for non-CASH orders (CARD/TPE/PARK paths where the order id is
+// known post-creation but not yet PAID).
+//
+// Gating contract:
+//   - V1 default (`pos.dine_in_enabled=false`) → CTA replaces the floorplan
+//     router-link slot (mutually exclusive render).
+//   - Visible only when a non-terminal, non-PAID order has been tracked via
+//     the existing `order:confirmed` event chain.
+//   - Cleared on resetCart + resetPaymentForm so the next order starts
+//     fresh (per owner direction 2026-05-19 — "loyalty applies during this
+//     order; on completion → reset").
+//
+// Server-side `pos.redeem-loyalty` permission + PosRedemptionService
+// terminal/PAID guards remain authoritative; this UI gating only hides the
+// visual entry point for orders where redeem would always 422/409.
+import PosLoyaltyRedeemModal from "./PosLoyaltyRedeemModal.vue";
+import {
+    extractLoyaltyOrderInfo,
+    canShowLoyaltyMainCta as resolveCanShowLoyaltyMainCta,
+} from "../../../helpers/posLoyaltyMainCta";
 import {
     rowUnitBundled,
     mainOrderLineTotal,
@@ -1120,6 +1509,8 @@ export default {
         SkeletonGrid,
         ParkedOrdersComponent,
         PaymentComponent,
+        // [Wave X X1] SSOT counter-collect sibling modal.
+        PosCounterCollectModal,
         // [POS-V5-DESIGN-CONVERGENCE 2026-05-02] Primitives V5
         PosV5Button,
         PosV5Card,
@@ -1130,6 +1521,10 @@ export default {
         PosV5SearchInput,
         // [Sprint 1A] Cash drawer session dialog (admin/cash/).
         PosCashDrawerSessionDialog,
+        // [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19 wave-E-1] Main-page loyalty
+        // redeem modal — co-existing with the canonical CTA on
+        // PosOrderShowComponent (defense-in-depth, both paths reachable).
+        PosLoyaltyRedeemModal,
     },
     // [POS-OFFLINE-WIRE 2026-05-17] Composition-API bridge: expose the offline
     // composable refs (isOnline, queueDepth) and helpers (enqueueOrder,
@@ -1162,6 +1557,47 @@ export default {
             kioskCashOrders: [],
             kioskCashLoading: false,
             showKioskCashPanel: false,
+            // [HEAL B2-P6-F01 2026-05-26] Confirm-before-cancel dialog
+            // state for kiosk-cash (counter-collect) orders. Mirrors the
+            // PosOrdersTrackerComponent cancelDialog pattern so any
+            // destructive cancel requires operator-typed reason (≥3
+            // chars) before the backend POST fires.
+            cancelKioskCashDialog: {
+                open: false,
+                order: null,
+                reason: '',
+                error: '',
+                busy: false,
+            },
+            // [Wave X X1 P-OWNER 2026-05-21] Counter-collect SSOT modal trigger.
+            //
+            // When non-null, PosCounterCollectModal renders with this Order
+            // as its `order` prop and runs through the SSOT-flavored mode
+            // picker (CASH numpad + CARD/MOBILE/TICKET single-tap). Setting
+            // to `null` closes the modal. Replaces Wave W's encaisserModal
+            // state object (commit eb43fa180) — the new modal owns its own
+            // submitting state.
+            counterCollectOrder: null,
+            // [Wave X X2 P-OWNER 2026-05-21] Ready-to-deliver orders for
+            // the POS main-page notification shortcuts (above products grid).
+            // Loaded from OSS list + filtered to PREPARED + scoped to KIOSK
+            // and TAKEAWAY order_types (DELIVERY is excluded because those
+            // belong to the driver flow per Wave O direction). Refreshed
+            // by the same poll + Echo wiring as kioskCashOrders so the
+            // panels appear/disappear in real-time without manual reload.
+            readyOrders: [],
+            readyOrdersLoading: false,
+            // [Q10 P-OWNER 2026-05-21] Last-refresh timestamps for the X2
+            // shortcut panels. Updated at the end of each successful
+            // loadReadyOrders()/loadKioskCashOrders() call. Used by the
+            // empty-state copy to give the cashier a visible health signal
+            // (so a calm period vs a broken WebSocket are distinguishable).
+            // _lastRefreshTick is bumped every 5 s by _shortcutsRefreshTicker
+            // so the "Mis à jour il y a Xs" label re-renders without a poll.
+            lastReadyRefresh: null,
+            lastCashRefresh: null,
+            _lastRefreshTick: 0,
+            _shortcutsRefreshTicker: null,
             showParkedOrders: false,
             // [Sprint 1A 2026-05-16] Cash drawer session dialog state.
             // Auto-opened in mounted() after branch_id is resolved if no OPEN
@@ -1180,6 +1616,21 @@ export default {
             // no-sale button while the hardware bridge resolves (real till can
             // take ~200-500ms to physically open).
             noSaleBusy: false,
+            // [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19 wave-E-1] Main-page loyalty
+            // CTA state. `currentLoyaltyOrder` is the latest order object
+            // captured from the `order:confirmed` event (PaymentComponent →
+            // PosComponent). It carries id + payment_status + status; the
+            // computed `canShowLoyaltyMainCta` hides the CTA the moment the
+            // order transitions terminal/PAID. Cleared on resetCart +
+            // resetPaymentForm so the next cycle starts fresh.
+            currentLoyaltyOrder: null,
+            loyaltyRedeemMainOpen: false,
+            // [2026-05-18 F-4] POS first-page filter. False (default) = strip
+            // shows only featured categories per `config('pos.featured_category_ids')`.
+            // Toggled true via the "Toutes" pill (escape hatch). Persists for
+            // the lifetime of the SPA instance only — resets on reload so the
+            // cashier always lands on the curated set.
+            showAllCategories: false,
             parkingInFlight: false,
             // [POS-V5 WAVE 3 2026-05-02] Flags pour animations cart-bump et
             // total-flash. Toggled via watcher sur totalItems()/subtotal et
@@ -1334,6 +1785,22 @@ export default {
         setting: function () {
             return this.$store.getters['frontendSetting/lists'];
         },
+        // [Q10 P-OWNER 2026-05-21] Localized "Mis à jour il y a Xs" labels
+        // for the X2 shortcut panels' empty/idle state. Bound to
+        // `_lastRefreshTick` so the value re-renders every 5 s without
+        // depending on a fresh poll. < 5 s ⇒ "à l'instant"; < 60 s ⇒
+        // seconds; otherwise minutes. Returns an empty string before the
+        // first successful load so we don't show "il y a 0s" on a cold
+        // mount (the loader status itself signals "in flight").
+        readyLastRefreshLabel: function () {
+            // Reactive dep — DO NOT remove.
+            void this._lastRefreshTick;
+            return this._formatLastRefresh(this.lastReadyRefresh);
+        },
+        cashLastRefreshLabel: function () {
+            void this._lastRefreshTick;
+            return this._formatLastRefresh(this.lastCashRefresh);
+        },
         // [Sprint 1A 2026-05-16] Indicateur visuel — bouton "Caisse" en tone "ready"
         // si une session est OPEN pour le caissier courant.
         cashSessionActive: function () {
@@ -1342,6 +1809,31 @@ export default {
             } catch (_e) {
                 return false;
             }
+        },
+        // [Wave O / O-1 2026-05-20] Branch context propagated to the cash
+        // drawer dialog + load-current call. Mirrors the value that
+        // `applyPosBranchScope` writes when DefaultAccessService resolves
+        // the dropdown-selected filiale (admin) or the staff's own branch
+        // (branch-bound users). Falls back to authBranchId so any code path
+        // that bypasses applyPosBranchScope still works for staff. Admin
+        // without a resolved branch yields null — backend will respond 422
+        // which is the correct "select a filiale first" UX signal.
+        cashSessionBranchId: function () {
+            const candidates = [
+                this.checkoutProps?.form?.branch_id,
+                this.props?.search?.branch_id,
+                this.authBranchId(),
+            ];
+            for (const candidate of candidates) {
+                if (candidate === '' || candidate === null || typeof candidate === 'undefined') {
+                    continue;
+                }
+                const value = parseInt(candidate, 10);
+                if (Number.isFinite(value) && value > 0) {
+                    return value;
+                }
+            }
+            return null;
         },
         // [iter15-mega-fix D-003 2026-05-10] Reactive list of currently
         // unavailable catalog items used by the persistent rupture banner.
@@ -1412,11 +1904,78 @@ export default {
             if (t !== 'boolean' && t !== 'number' && t !== 'string') return false;
             return String(raw) === '1' || raw === true;
         },
+        /**
+         * [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19 wave-E-1] Main-page loyalty
+         * CTA visibility resolver. Delegates to the pure helper so the gate
+         * stays independently unit-testable (see tests/js/posLoyaltyMainPageCta.spec.js).
+         *
+         * Returns true ONLY when (a) V1 dine-in flag is off, (b) a current
+         * order is tracked via the `order:confirmed` event chain, and (c)
+         * the order has NOT yet reached a terminal state or PAID. Mirrors
+         * the `canShowLoyaltyRedeem` computed on PosOrderShowComponent for
+         * convergent semantics across both CTAs.
+         */
+        canShowLoyaltyMainCta: function () {
+            return resolveCanShowLoyaltyMainCta({
+                dineInEnabled: this.dineInEnabled,
+                currentOrder: this.currentLoyaltyOrder,
+                paidStatus: paymentStatusEnum.PAID,
+                terminalStatuses: [
+                    orderStatusEnum.DELIVERED,
+                    orderStatusEnum.CANCELED,
+                    orderStatusEnum.REJECTED,
+                    orderStatusEnum.RETURNED,
+                ],
+            });
+        },
         categories: function () {
             return this.$store.getters["posCategory/lists"];
         },
+        // [2026-05-18 F-4] First-page filter: when `showAllCategories=false`
+        // (default), render only categories the backend marked `featured===true`.
+        // The 'all-items' sentinel (id=0) carries `featured=true` so it always
+        // stays in front. Backend treats an empty allowlist as "no filter" and
+        // marks every category featured — strip then renders identical to the
+        // legacy unfiltered shape, preserving the safe default.
+        displayedCategories: function () {
+            const all = this.$store.getters["posCategory/lists"] || [];
+            if (this.showAllCategories) return all;
+            const featured = all.filter((c) => c && c.featured === true);
+            // Defensive fallback — if every entry is unfeatured (misconfig),
+            // fall back to showing all so the cashier is never stranded.
+            return featured.length > 0 ? featured : all;
+        },
+        hasNonFeaturedCategories: function () {
+            const all = this.$store.getters["posCategory/lists"] || [];
+            return all.some((c) => c && c.featured === false);
+        },
         items: function () {
             return this.$store.getters["item/lists"];
+        },
+        // [2026-05-18 F-4] First-page item grid filter — when the cashier
+        // is on the "Toutes les ..." sentinel (no explicit category selected)
+        // AND `showAllCategories=false`, show ONLY items belonging to
+        // featured categories. Search input continues to query the full
+        // catalogue (search.name flows through the backend, unaffected).
+        // Picking a specific category pill (featured or hidden via Toutes
+        // toggle) bypasses this filter — the cashier sees that category's
+        // full item list.
+        displayedItems: function () {
+            const allItems = this.$store.getters["item/lists"] || [];
+            const onLanding = (this.props.search.item_category_id === '' || Number(this.props.search.item_category_id) === 0)
+                && !this.props.search.name;
+            if (!onLanding || this.showAllCategories) return allItems;
+            const allCats = this.$store.getters["posCategory/lists"] || [];
+            const featuredIds = new Set(
+                allCats
+                    .filter((c) => c && c.featured === true && Number(c.id) > 0)
+                    .map((c) => Number(c.id)),
+            );
+            if (featuredIds.size === 0) return allItems;
+            return allItems.filter((it) => {
+                const cid = Number(it && (it.item_category_id != null ? it.item_category_id : it.category_id));
+                return featuredIds.has(cid);
+            });
         },
         // [iter15-mega-fix Vue-warn-cluster round-7 2026-05-10]
         // Alias `itemsRaw` -> same store-backed catalog list. The D-003 rupture
@@ -1502,7 +2061,14 @@ export default {
             return out;
         },
         customers: function () {
-            return this.$store.getters['user/lists'];
+            // [WT-R1-F2 2026-05-20] Defensive guard: vue-select internally calls
+            // .reduce/.some over options accessing `option.id`. If the Vuex store
+            // briefly contains a falsy entry (loading race, deleted customer
+            // payload), vendor.js throws `Cannot read properties of undefined
+            // (reading 'id')`. Filter to non-null entries with a valid `id`.
+            const list = this.$store.getters['user/lists'];
+            if (!Array.isArray(list)) return [];
+            return list.filter((u) => u && u.id != null);
         },
         carts: function () {
             return this.$store.getters['posCart/lists'];
@@ -1579,6 +2145,15 @@ export default {
         },
     },
     beforeUnmount() {
+        // [WT-R1-F2 2026-05-20] Mark instance as destroyed BEFORE any cleanup so
+        // late-firing async callbacks (echo/wsService reconnect handlers,
+        // in-flight axios resolves, debounced flushers) can early-out instead of
+        // mutating reactive state on a half-torn-down component. Without this
+        // guard, the Vue 3 patcher hits `shouldUpdateComponent` on a null
+        // child vnode and throws `Cannot read properties of null (reading
+        // 'emitsOptions')` repeatedly while the route transitions away from
+        // /admin/pos.
+        this._destroyed = true;
         if (this._debouncedListRefresh && this._debouncedListRefresh.cancel) {
             this._debouncedListRefresh.cancel();
         }
@@ -1599,7 +2174,16 @@ export default {
                 });
             } catch (_e) { /* defensive */ }
         }
-        if (this._kioskPollTimer) clearInterval(this._kioskPollTimer);
+        // [N-HEAL-04 M-POS-4 G-003 P2 2026-05-24] Self-recursive setTimeout
+        // (was setInterval) — clear with clearTimeout to cancel the next
+        // queued tick before it can re-arm the timer chain.
+        if (this._kioskPollTimer) clearTimeout(this._kioskPollTimer);
+        // [Q10 P-OWNER 2026-05-21] Stop the 5 s ticker that re-renders the
+        // X2 shortcut panels' "Mis à jour il y a Xs" labels.
+        if (this._shortcutsRefreshTicker) {
+            clearInterval(this._shortcutsRefreshTicker);
+            this._shortcutsRefreshTicker = null;
+        }
         // [POS-V5 WAVE 3] Cleanup animations timers
         if (this._cartBumpTimer) { clearTimeout(this._cartBumpTimer); this._cartBumpTimer = null; }
         if (this._totalFlashTimer) { clearTimeout(this._totalFlashTimer); this._totalFlashTimer = null; }
@@ -1612,6 +2196,17 @@ export default {
         this._posSyncBranchId = null;
         this._unsubscribeEcho();
         this._unbindWsService();
+        // [N-HEAL-03 M-POS-4 G-001+G-002 P3] Clear delivery-autocomplete debounce
+        // timer and close the AudioContext used for new-order beep. Both leak over
+        // long (5h+) cashier shifts otherwise (Google Maps debounce + Web Audio).
+        if (this._deliveryAcTimer) {
+            clearTimeout(this._deliveryAcTimer);
+            this._deliveryAcTimer = null;
+        }
+        if (this._audioCtx && typeof this._audioCtx.close === 'function') {
+            this._audioCtx.close().catch(() => {});
+            this._audioCtx = null;
+        }
     },
     mounted() {
         this._debouncedListRefresh = debounce(() => {
@@ -1657,8 +2252,21 @@ export default {
         }
         this.loadKioskCashOrders();
         this.loadActiveOrdersStats();
+        // [Wave X X2 P-OWNER 2026-05-21] Initial fetch for the "Prêt à livrer"
+        // shortcut panel above the products grid.
+        this.loadReadyOrders();
         this._subscribeEcho();
         this._startKioskPolling();
+        // [Q10 P-OWNER 2026-05-21] 5 s ticker bumps `_lastRefreshTick` so
+        // the X2 shortcut panels' "Mis à jour il y a Xs" labels re-render
+        // even when no poll completes (idle / WebSocket-only refresh). The
+        // ticker is a single setInterval, cleared on unmount.
+        if (!this._shortcutsRefreshTicker) {
+            this._shortcutsRefreshTicker = setInterval(() => {
+                if (this._destroyed) return;
+                this._lastRefreshTick += 1;
+            }, 5000);
+        }
         this._bindWsService();
         this._startPosSyncFallback();
         try {
@@ -1793,7 +2401,12 @@ export default {
             if (this._cashSessionAutoChecked) return;
             this._cashSessionAutoChecked = true;
             try {
-                this.$store.dispatch('cashDrawer/loadCurrentSession').then((session) => {
+                // [Wave O / O-1 2026-05-20] Forward branch context — admin
+                // needs an explicit branch_id query for /current to find the
+                // open session of the selected filiale.
+                this.$store.dispatch('cashDrawer/loadCurrentSession', {
+                    branchId: this.cashSessionBranchId,
+                }).then((session) => {
                     if (!session) {
                         // No session open → prompt cashier immediately.
                         this.cashSessionInitialMode = 'open';
@@ -1824,8 +2437,11 @@ export default {
             this._cashSessionAutoChecked = false;
             // Optionally re-load (not auto-open) so badge updates without
             // forcing the cashier into a new "open" flow immediately.
+            // [Wave O / O-1 2026-05-20] Forward branch context for admin.
             try {
-                this.$store.dispatch('cashDrawer/loadCurrentSession').catch(() => {});
+                this.$store.dispatch('cashDrawer/loadCurrentSession', {
+                    branchId: this.cashSessionBranchId,
+                }).catch(() => {});
             } catch (_e) { /* defensive */ }
         },
         // ────────────────────────────────────────────────────────────────────
@@ -1846,13 +2462,54 @@ export default {
                 this._totalFlashTimer = null;
             }, 360);
         },
-        triggerSuccessFlash() {
+        triggerSuccessFlash(orderPayload) {
             if (this._successFlashTimer) clearTimeout(this._successFlashTimer);
             this.successFlashing = true;
             this._successFlashTimer = setTimeout(() => {
                 this.successFlashing = false;
                 this._successFlashTimer = null;
             }, 720);
+
+            // [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19 wave-E-1] Capture the
+            // just-confirmed order so the main-page loyalty CTA gates
+            // correctly. PaymentComponent emits `order:confirmed` with
+            // `this.order` payload (PaymentComponent.vue:994); we extract
+            // id + payment_status + status. For CASH-via-wizard flows the
+            // order arrives PAID and `canShowLoyaltyMainCta` will hide the
+            // CTA — that's intentional (CASH path remains a backend follow-
+            // up, see STATUS.md known-limitation). For CARD / TPE / PARK
+            // flows that create the order non-PAID, the CTA lights up so
+            // the cashier can apply loyalty without navigating away.
+            this.currentLoyaltyOrder = extractLoyaltyOrderInfo(orderPayload);
+        },
+        /**
+         * [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19 wave-E-1] Open the
+         * main-page loyalty redeem modal from the operator-bar CTA. The
+         * computed `canShowLoyaltyMainCta` already gates the button, so
+         * this method only flips the open flag.
+         */
+        openLoyaltyMainModal() {
+            if (!this.canShowLoyaltyMainCta) return;
+            this.loyaltyRedeemMainOpen = true;
+        },
+        closeLoyaltyMainModal() {
+            this.loyaltyRedeemMainOpen = false;
+        },
+        /**
+         * [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19 wave-E-1] Modal `applied`
+         * handler. Updates the cached order's payment_status/status from
+         * the server payload so the CTA gate re-evaluates next tick. The
+         * canonical CTA on PosOrderShowComponent triggers a posOrder/show
+         * refresh; here we only need to refresh local computed state since
+         * the operator-bar CTA is the only UI surface on this page.
+         */
+        onLoyaltyMainApplied(payload) {
+            this.loyaltyRedeemMainOpen = false;
+            if (!payload || typeof payload !== 'object') return;
+            const refreshed = payload.order;
+            if (refreshed && refreshed.id != null) {
+                this.currentLoyaltyOrder = extractLoyaltyOrderInfo(refreshed);
+            }
         },
         // ────────────────────────────────────────────────────────────────────
 
@@ -2044,12 +2701,16 @@ export default {
             const ws = window._wsService;
             if (!ws) return;
             this._onWsConnected = () => {
+                // [WT-R1-F2 2026-05-20] Guard against late ws-reconnect firing
+                // after PosComponent unmounted (navigation to tracker/KDS).
+                if (this._destroyed) return;
                 this.loadKioskCashOrders();
                 this._restartKioskPolling();
                 // [V1.5C R2] Refresh catalogue after reconnect — Echo may have skipped pushes during outage.
                 try { this.itemList(1, { overlay: false }); } catch (e) { /* defensive */ }
             };
             this._onWsDisconnected = () => {
+                if (this._destroyed) return;
                 this._restartKioskPolling();
             };
             ws.on('connected', this._onWsConnected);
@@ -2062,17 +2723,47 @@ export default {
             if (this._onWsDisconnected) ws.off('disconnected', this._onWsDisconnected);
         },
         _kioskPollingInterval() {
+            // [GOAL-HEAL-SYNC-001 2026-05-23] C2 P1 fix: ensure ≤5s cadence
+            // even when Echo subscribed because Echo subscription can fail
+            // silently (CSP violation on /api/broadcasting/auth) without
+            // surfacing a console error. If readyOrders empty OR last refresh
+            // >30s ago, force 5s cadence regardless of Echo state.
+            const now = Date.now();
+            const lastRefresh = this.lastReadyRefresh || 0;
+            const isStale = (now - lastRefresh) > 30000;
+            const isEmpty = !this.readyOrders || this.readyOrders.length === 0;
+            if (isEmpty || isStale) {
+                return 5000;
+            }
             return window._wsService?.isConnected() ? 60000 : 5000;
         },
         _startKioskPolling() {
-            this._kioskPollTimer = setInterval(() => {
+            // [N-HEAL-04 M-POS-4 G-003 P2 2026-05-24] Self-recursive setTimeout
+            // re-evaluates _kioskPollingInterval() every tick. If Echo silently
+            // dies mid-shift (channel-auth fail with persistent ws socket up),
+            // cadence downshifts to 5s per call instead of staying stuck at 60s
+            // for the life of a setInterval. H-SYNC-001's pure-function fix
+            // alone only locked the decision tree; the running-clock integration
+            // needed this refactor to actually observe the downshift mid-shift.
+            const tick = () => {
+                // [WT-R1-F2 2026-05-20] No-op when teardown already started —
+                // prevents the trailing tick (queued before clearTimeout) from
+                // mutating reactive state on an unmounting component.
+                if (this._destroyed) return;
                 this.loadKioskCashOrders();
                 // [POS-V4-ORDERS-TRACKER 2026-05-02] Polling unifié pour le badge tracker.
                 this.loadActiveOrdersStats();
-            }, this._kioskPollingInterval());
+                // [Wave X X2 P-OWNER 2026-05-21] Same polling tick refreshes
+                // the "Prêt à livrer" shortcut so a freshly bumped order
+                // surfaces within ~15s even if the Echo subscription is down.
+                this.loadReadyOrders();
+                const nextIntervalMs = this._kioskPollingInterval();
+                this._kioskPollTimer = setTimeout(tick, nextIntervalMs);
+            };
+            tick();
         },
         _restartKioskPolling() {
-            if (this._kioskPollTimer) clearInterval(this._kioskPollTimer);
+            if (this._kioskPollTimer) clearTimeout(this._kioskPollTimer);
             this._startKioskPolling();
         },
         // ── Echo real-time subscription for kiosk cash orders ─────────────
@@ -2085,6 +2776,9 @@ export default {
                     {
                         broadcastAs: 'OrderCreated',
                         handler: (event) => {
+                            // [WT-R1-F2 2026-05-20] Guard: echo events can land
+                            // after unmount (unsubscribe is async on socket teardown).
+                            if (this._destroyed) return;
                             // [POS-9.1.11] Audible + visual notification for new POS orders.
                             // Audit POS-GA-F-55 — cashier had zero feedback on new
                             // kiosk-cash / online orders, only a silent list refresh.
@@ -2092,20 +2786,35 @@ export default {
                             this.loadKioskCashOrders();
                             // [POS-V4-ORDERS-TRACKER 2026-05-02] sync badge tracker
                             this.loadActiveOrdersStats();
+                            // [Wave X X2 2026-05-21] OrderCreated rarely lands in
+                            // PREPARED state directly, but defensive refresh keeps
+                            // the X2 panel coherent on rapid create→bump cycles.
+                            this.loadReadyOrders();
                         },
                     },
                     {
                         broadcastAs: 'OrderStatusChanged',
                         handler: () => {
+                            if (this._destroyed) return;
                             this.loadKioskCashOrders();
                             this.loadActiveOrdersStats();
+                            // [Wave X X2 P-OWNER 2026-05-21] OrderStatusChanged is the
+                            // primary trigger for a row appearing in / disappearing
+                            // from the "Prêt à livrer" shortcut (KDS bumped, cashier
+                            // marked Livré, refund returned, …).
+                            this.loadReadyOrders();
                         },
                     },
                     {
                         broadcastAs: 'OrderPaidAtCounter',
                         handler: () => {
+                            if (this._destroyed) return;
                             this.loadKioskCashOrders();
                             this.loadActiveOrdersStats();
+                            // [Wave X X2] Counter-collect may auto-promote ACCEPT→PREPARING
+                            // (Wave S-1). Refresh in case the order skips straight to
+                            // PREPARED via KDS soon after.
+                            this.loadReadyOrders();
                         },
                     },
                     // [POS-9.1.10] React live to admin 86 (item availability change)
@@ -2119,6 +2828,8 @@ export default {
             }
         },
         _onCatalogChanged(event) {
+            // [WT-R1-F2 2026-05-20] Echo handler — bail if PosComponent torn down.
+            if (this._destroyed) return;
             const payload = (event && event.payload) ? event.payload : event || {};
             const eventBranchId = parseInt(
                 event?.branchId ?? payload.branch_id ?? payload.branchId ?? 0,
@@ -2144,6 +2855,8 @@ export default {
          * Stock86 listener: { item_id, is_available, type, reason, price }.
          */
         _onItemAvailabilityChanged(event) {
+            // [WT-R1-F2 2026-05-20] Echo handler — bail if PosComponent torn down.
+            if (this._destroyed) return;
             const payload = (event && event.payload) ? event.payload : event || {};
             const itemId = parseInt(payload.item_id || payload.itemId || 0, 10);
             if (!itemId) return;
@@ -2233,13 +2946,20 @@ export default {
             }
             const debounced = idKey && this._availabilityToastTimers[idKey];
             const safeName = itemName || ('#' + itemId);
+            // [HEAL-2 V102-03 2026-05-26] i18n FR/EN/AR via pos.* keys
+            // (was hardcoded FR — owner clarification "stocks juste configurés
+            // par stock ou bien rupture"). reason suffix dropped per spec
+            // (owner mission: "Stock épuisé : {item_name}" — clean & translatable).
             let label;
-            if (isAvailable) {
-                label = `${safeName} de nouveau disponible`;
-            } else {
-                label = reason
-                    ? `${safeName} indisponible — ${reason}`
-                    : `${safeName} indisponible`;
+            try {
+                label = isAvailable
+                    ? this.$t('pos.item_back_available', { name: safeName })
+                    : this.$t('pos.stock_rupture_alert', { name: safeName });
+            } catch (_e) {
+                // Defensive fallback if i18n unavailable mid-init.
+                label = isAvailable
+                    ? `${safeName} de nouveau disponible`
+                    : `Stock épuisé : ${safeName}`;
             }
             // Update the aria-live region every time (no debounce) so screen
             // readers always reflect the latest state.
@@ -2395,6 +3115,24 @@ export default {
             }
         },
 
+        // [Q10 P-OWNER 2026-05-21] Format helper for the always-rendered
+        // X2 shortcut panels' "Mis à jour il y a Xs" timestamp. Used by
+        // readyLastRefreshLabel + cashLastRefreshLabel computed getters.
+        // Pure — no reactive side effects.
+        _formatLastRefresh(ts) {
+            if (!ts) return '';
+            const diffMs = Date.now() - ts;
+            const diffSec = Math.max(0, Math.floor(diffMs / 1000));
+            if (diffSec < 5) {
+                return this.$t('label.pos_shortcut_last_refresh_now');
+            }
+            if (diffSec < 60) {
+                return this.$t('label.pos_shortcut_last_refresh_sec', { seconds: diffSec });
+            }
+            const diffMin = Math.floor(diffSec / 60);
+            return this.$t('label.pos_shortcut_last_refresh_min', { minutes: diffMin });
+        },
+
         // ── Kiosk cash orders ──────────────────────────────────────────────
         async loadKioskCashOrders() {
             this.kioskCashLoading = true;
@@ -2403,6 +3141,11 @@ export default {
                 const all = res?.data?.data || [];
                 this.kioskCashOrders = all
                     .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+                // [Q10 P-OWNER 2026-05-21] Stamp the successful refresh so
+                // the always-rendered shortcut panel can show "Mis à jour
+                // il y a Xs" — visible health signal even when the list is
+                // empty (calm period vs polling failure).
+                this.lastCashRefresh = Date.now();
             } catch (_) {
                 this.kioskCashOrders = [];
             } finally {
@@ -2419,34 +3162,185 @@ export default {
             return !!this.expandedKioskCashOrders[orderId];
         },
 
-        async collectKioskCashOrder(order) {
-            if (order._collecting) return;
+        // [Wave X X1 P-OWNER 2026-05-21] SSOT counter-collect entry point.
+        // Replaces Wave W openEncaisserModal/confirmEncaisser/buildKiosk-
+        // CashIdempotencyKey trio (eb43fa180) — those lived inline because
+        // the picker was a sub-template of PosComponent. The new flow:
+        //   1. openCounterCollect(order) sets `counterCollectOrder = order`
+        //      ⇒ PosCounterCollectModal renders with full V5 visual parity
+        //      to PaymentComponent (hero total + mode grid + numpad +
+        //      rendu calc) and owns its own submitting state.
+        //   2. Modal POSTs to /admin/pos/counter-collect/{id}/confirm
+        //      with X-Idempotency-Key header (same minute-bucket formula
+        //      as Wave W).
+        //   3. On success emits `confirmed` → we refresh the lists.
+        //      On cancel emits `cancel` → we close + clear per-row guard.
+        // Multi-tranche split deferred to V1.0.2 (backend extension required).
+        openCounterCollect(order) {
+            if (!order || order._collecting || order._canceling) return;
+            // Flag the row immediately so a second click on the same row
+            // (during the brief render-tick) does not re-trigger the modal.
             order._collecting = true;
+            this.counterCollectOrder = order;
+        },
+        async onCounterCollectConfirmed(payload) {
+            // payload = { orderId, mode, modeInt, received, total }
+            // The modal already toasted the success message + computed
+            // the simulation copy. We refresh the lists so the row
+            // disappears from both the slide-in panel and the X2
+            // shortcut block (both bound to kioskCashOrders).
+            this.counterCollectOrder = null;
             try {
-                await axios.post(`admin/pos/counter-collect/${order.id}/confirm`, {
-                    mode: posPaymentMethodEnum.CASH,
-                    received: order.total ?? order.order_amount ?? 0,
-                    note: 'Encaissement borne au comptoir',
-                });
                 await this.loadKioskCashOrders();
-            } catch (err) {
-                const msg = err?.response?.data?.message || 'Erreur lors de l\'encaissement';
-                alertService.error(msg);
-                order._collecting = false;
+                await this.loadActiveOrdersStats();
+                await this.loadReadyOrders();
+            } catch (_) { /* silent — toast already raised */ }
+        },
+        onCounterCollectCancel() {
+            // Reset per-row guard so the cashier can re-open the modal on
+            // the same row if they changed their mind (mid-flow cancel,
+            // network hiccup, hardware re-connect, etc.).
+            if (this.counterCollectOrder) {
+                this.counterCollectOrder._collecting = false;
+            }
+            this.counterCollectOrder = null;
+        },
+
+        // [Wave X X2 P-OWNER 2026-05-21] Ready orders polling for the
+        // POS main-page "Prêt à livrer" shortcut.
+        //
+        // Source: same Vuex action `orderStatusScreenOrder/lists` used by
+        // loadActiveOrdersStats (the tracker badge). We filter PREPARED
+        // (status=8) AND order_type ∈ {KIOSK, TAKEAWAY} (DELIVERY is the
+        // driver flow per Wave O direction — separate driver UI).
+        //
+        // Polling is piggybacked on _kioskPollTimer (~10-15s) + Echo
+        // OrderStatusChanged so the shortcut appears/disappears in
+        // near-real-time when an order is bumped on KDS.
+        async loadReadyOrders() {
+            this.readyOrdersLoading = true;
+            try {
+                const res = await this.$store.dispatch('orderStatusScreenOrder/lists');
+                const list = (res?.data?.data) || this.$store.getters['orderStatusScreenOrder/lists'] || [];
+                const allowedTypes = new Set([orderTypeEnum.KIOSK, orderTypeEnum.TAKEAWAY, orderTypeEnum.POS]);
+                this.readyOrders = list
+                    .filter((o) => {
+                        const s = parseInt(o.status ?? o.order_status ?? 0, 10);
+                        const t = parseInt(o.order_type ?? 0, 10);
+                        return s === orderStatusEnum.PREPARED && allowedTypes.has(t);
+                    })
+                    // Oldest first — cashier should clear orders that have
+                    // been ready the longest. Mirrors kioskCashOrders sort.
+                    .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+                // [Q10 P-OWNER 2026-05-21] Stamp the successful refresh so
+                // the always-rendered shortcut panel can show "Mis à jour
+                // il y a Xs". When the list is empty we still tell the
+                // cashier polling is alive — distinguishes a calm period
+                // from a WebSocket/poll outage.
+                this.lastReadyRefresh = Date.now();
+            } catch (_) {
+                this.readyOrders = [];
+            } finally {
+                this.readyOrdersLoading = false;
             }
         },
-        async cancelKioskCashOrder(order) {
+        async markDelivered(order) {
+            if (!order || order._delivering) return;
+            order._delivering = true;
+            try {
+                // Reuse the canonical posOrder/changeStatus action — it
+                // builds an Idempotency-Key header per (orderId, status)
+                // payload hash, so a double-tap within the same minute
+                // replays the cached 2xx (CLAUDE.md §9 Idempotency).
+                await this.$store.dispatch('posOrder/changeStatus', {
+                    id: order.id,
+                    status: orderStatusEnum.DELIVERED,
+                });
+                await this.loadReadyOrders();
+                await this.loadActiveOrdersStats();
+                alertService.success(
+                    this.$t('label.pos_shortcut_delivered_toast', {
+                        order: order.queue_number || order.order_serial_no || order.id,
+                    })
+                );
+            } catch (e) {
+                const msg = e?.response?.data?.message || this.$t('message.something_wrong');
+                alertService.error(msg);
+                order._delivering = false;
+            }
+        },
+        // [HEAL B2-P6-F01 2026-05-26] Open confirm-before-cancel dialog
+        // instead of firing the destructive POST directly. Mirrors
+        // PosOrdersTrackerComponent.openCancelDialog pattern.
+        openCancelKioskCashDialog(order) {
+            if (!order || order._canceling) return;
+            this.cancelKioskCashDialog = {
+                open: true,
+                order,
+                reason: '',
+                error: '',
+                busy: false,
+            };
+            this.$nextTick(() => {
+                try { this.$refs.cancelKioskCashReasonInput?.focus(); } catch (_) { /* defensive */ }
+            });
+        },
+        closeCancelKioskCashDialog() {
+            if (this.cancelKioskCashDialog.busy) return;
+            this.cancelKioskCashDialog = {
+                open: false,
+                order: null,
+                reason: '',
+                error: '',
+                busy: false,
+            };
+        },
+        // [HEAL B2-P6-F01 2026-05-26] Confirm action — fires the actual
+        // backend cancel only after operator typed a reason (≥3 chars).
+        // Reason is sent on the POST payload (replacing the previous
+        // client-side hardcoded string) so the audit trail captures the
+        // real operator motive (NF525-friendly even though /cancel is
+        // not itself a fiscal write).
+        async confirmCancelKioskCashOrder() {
+            const dlg = this.cancelKioskCashDialog;
+            if (!dlg.open || !dlg.order || dlg.busy) return;
+            const reason = String(dlg.reason || '').trim();
+            if (reason.length < 3) {
+                this.cancelKioskCashDialog.error = this.$t('pos.cancel_kiosk_cash.reason_required');
+                return;
+            }
+            const order = dlg.order;
             if (order._canceling) return;
+            this.cancelKioskCashDialog.busy = true;
+            this.cancelKioskCashDialog.error = '';
             order._canceling = true;
             try {
-                await axios.post(`admin/pos/counter-collect/${order.id}/cancel`, {
-                    reason: 'Commande borne annulee au comptoir',
-                });
+                // [Wave W P-OWNER 2026-05-21] X-Idempotency-Key on cancel
+                // endpoint too — same Wave K Z7 IdempotencyKeyMiddleware
+                // requirement as /confirm (sibling 422 root-cause caught
+                // by advisor review). modeInt 0 is a sentinel here (no
+                // payment mode for cancel) so the key stays distinct from
+                // any /confirm key on the same order.
+                // [Wave X X1 2026-05-21] Inlined the idempotency-key formula
+                // (was buildKioskCashIdempotencyKey, removed with the Wave W
+                // encaisser modal block — the modal moved to
+                // PosCounterCollectModal.vue which owns its own keys).
+                const minuteBucket = Math.floor(Date.now() / 60000);
+                const idempotencyKey = `pos-counter-collect-${order.id}-0-${minuteBucket}`;
+                await axios.post(
+                    `admin/pos/counter-collect/${order.id}/cancel`,
+                    { reason },
+                    { headers: { 'X-Idempotency-Key': idempotencyKey } }
+                );
+                this.cancelKioskCashDialog.busy = false;
+                this.closeCancelKioskCashDialog();
                 await this.loadKioskCashOrders();
             } catch (err) {
-                const msg = err?.response?.data?.message || 'Erreur lors de l\'annulation';
-                alertService.error(msg);
+                this.cancelKioskCashDialog.busy = false;
                 order._canceling = false;
+                const msg = err?.response?.data?.message || 'Erreur lors de l\'annulation';
+                this.cancelKioskCashDialog.error = msg;
+                try { alertService.error(msg); } catch (_) { /* defensive */ }
             }
         },
         formatKioskPrice(amount) {
@@ -2531,6 +3425,12 @@ export default {
                 quote_token: null,
                 quote_signature: null,
             };
+            // [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19 wave-E-1] Clear any
+            // previously tracked order so the next order:confirmed event
+            // captures fresh state. PaymentComponent emits payment-form:reset
+            // BEFORE order:confirmed in its success path, so the new order
+            // payload arrives at triggerSuccessFlash on the next tick.
+            this.currentLoyaltyOrder = null;
         },
         openParkedOrders() {
             this.showParkedOrders = true;
@@ -2669,6 +3569,12 @@ export default {
             this.props.search.name = "";
             this.props.search.item_category_id = "";
             this.itemList(1, { overlay: false });
+        },
+        // [2026-05-18 F-4] Toggle the "Toutes les catégories" escape hatch.
+        // Showing all does NOT auto-clear the active category selection — the
+        // cashier can still keep their current pill active or pick a new one.
+        toggleShowAllCategories: function () {
+            this.showAllCategories = !this.showAllCategories;
         },
         closeSidebar: function () {
             this.$store.dispatch("globalState/set", { topSidebar: false });
@@ -2814,6 +3720,11 @@ export default {
             this.$store.dispatch('posCart/resetCart').then(res => {
                 this.checkoutProps.form.token = "";
                 this.resetDeliveryInline();
+                // [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19 wave-E-1] Clear the
+                // tracked order so the main-page loyalty CTA hides until the
+                // next order:confirmed event. Mirrors the owner direction
+                // "loyalty applies during this order; on completion → reset".
+                this.currentLoyaltyOrder = null;
                 alertService.success(this.$t('message.cart_reset') || 'Panier vidé.');
             }).catch();
         },
@@ -3635,6 +4546,171 @@ export default {
 }
 
 /* =============================================================================
+   7B. POS MAIN-PAGE SHORTCUTS — [Wave X X2 P-OWNER 2026-05-21]
+   -----------------------------------------------------------------------------
+   2 compact panels rendered ABOVE the search input + category strip when
+   either readyOrders or kioskCashOrders is non-empty. Goal: cashier never
+   has to leave /admin/pos to validate a "Prêt à livrer" or "Encaisser borne"
+   action — the click-targets are 1-tap inline on the main page.
+   - Max 4 rows per panel (slice).
+   - "Voir plus" link appears when count > 4 (overflow to tracker or panel).
+   - Zero footprint when both lists are empty (v-if root).
+   - Compact ~72-88px tall so the products grid stays the primary surface.
+   ============================================================================= */
+.pos-shortcuts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 10px 0 10px;
+  margin: 0;
+}
+.pos-shortcuts__panel {
+  flex: 1 1 320px;
+  min-width: 280px;
+  background: var(--pos-v5-surface, #fff);
+  border: 1px solid var(--pos-v5-border, #eadfd2);
+  border-radius: 10px;
+  padding: 8px 10px;
+  box-shadow: 0 1px 3px rgba(26, 26, 26, 0.05);
+}
+.pos-shortcuts__panel--ready {
+  border-left: 4px solid var(--pos-v5-success, #2c8c4a);
+}
+.pos-shortcuts__panel--cash {
+  border-left: 4px solid var(--pos-v5-brand-red, #cf3a3a);
+}
+.pos-shortcuts__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.pos-shortcuts__title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--pos-v5-text, #1a1a1a);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.pos-shortcuts__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.pos-shortcuts__item {
+  display: grid;
+  grid-template-columns: minmax(0, auto) minmax(0, auto) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  background: var(--pos-v5-surface-2, #faf6f1);
+  font-size: 13px;
+}
+.pos-shortcuts__num {
+  font-weight: 700;
+  color: var(--pos-v5-text, #1a1a1a);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pos-shortcuts__price {
+  font-variant-numeric: tabular-nums;
+  color: var(--pos-v5-muted, #555);
+  font-weight: 600;
+  text-align: right;
+  white-space: nowrap;
+}
+.pos-shortcuts__cta {
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  font-family: inherit;
+  transition: background 120ms ease, transform 80ms ease;
+}
+.pos-shortcuts__cta:hover:not(:disabled) { transform: translateY(-1px); }
+.pos-shortcuts__cta:active:not(:disabled) { transform: translateY(0); }
+.pos-shortcuts__cta:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.pos-shortcuts__cta--ready {
+  background: var(--pos-v5-success, #2c8c4a);
+  color: #fff;
+}
+.pos-shortcuts__cta--ready:hover:not(:disabled) {
+  background: var(--pos-v5-success-dark, #1f6437);
+}
+.pos-shortcuts__cta--cash {
+  background: var(--pos-v5-brand-red, #cf3a3a);
+  color: #fff;
+}
+.pos-shortcuts__cta--cash:hover:not(:disabled) {
+  background: var(--pos-v5-brand-red-dark, #b32f2f);
+}
+.pos-shortcuts__more {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--pos-v5-muted, #555);
+  text-decoration: underline;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  font-family: inherit;
+}
+.pos-shortcuts__more:hover {
+  color: var(--pos-v5-brand-red, #cf3a3a);
+}
+
+/* [Q10 P-OWNER 2026-05-21] Empty-state + last-refresh subtleties.
+   - .pos-shortcuts__empty : single faint italic line, centered, ~13px so
+     it does NOT take more visual space than the 4 filled rows would.
+   - .pos-shortcuts__refresh : 11px gray label, anchored under the empty
+     copy (or under the list when filled), giving the cashier a visible
+     "polling is alive" health signal even on a calm period.
+   - .pos-shortcuts__panel--empty : softer left border tint so an empty
+     panel is visually less assertive than a filled one (no red/green
+     alarm at idle). */
+.pos-shortcuts__empty {
+  margin: 6px 0 0 0;
+  padding: 6px 4px;
+  font-size: 13px;
+  font-style: italic;
+  color: var(--pos-v5-muted, #6b6b6b);
+  text-align: center;
+  background: transparent;
+}
+.pos-shortcuts__refresh {
+  margin: 4px 0 0 0;
+  font-size: 11px;
+  color: var(--pos-v5-muted-2, #9a9a9a);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.pos-shortcuts__panel--empty {
+  border-left-color: var(--pos-v5-border, #eadfd2);
+}
+
+@media (max-width: 640px) {
+  .pos-shortcuts { flex-direction: column; }
+  .pos-shortcuts__panel { flex: 1 1 auto; }
+}
+
+/* =============================================================================
    8. KIOSK CASH PANEL drawer (inline dans PosComponent — restyle V5)
    -----------------------------------------------------------------------------
    Refonte avec tokens V5 — palette warm cohérente, typo Inter, ombres warm.
@@ -3888,6 +4964,23 @@ export default {
 .slide-panel-leave-to .kiosk-cash-panel { transform: translateX(100%); }
 
 /* =============================================================================
+   ENCAISSER MODAL (Wave W) — REMOVED in Wave X X1.
+   The mode-picker template + .encaisser-modal-* / .encaisser-mode-* styles
+   moved into the standalone PosCounterCollectModal.vue sibling component
+   (resources/js/components/admin/pos/PosCounterCollectModal.vue) which
+   reuses the same V5 design language with hero total card + PosV5Numpad +
+   rendu calc. Visual continuity is preserved; CSS class names changed to
+   `.cc-*` (counter-collect) inside the new component, scoped via `<style
+   scoped>` so global selectors are clean. Wave W styles intentionally
+   deleted — keeping orphan classes would trip dead-CSS sentinels and dilute
+   the actual styling surface used by the new SSOT modal.
+   ============================================================================= */
+.fade-enter-active,
+.fade-leave-active { transition: opacity 160ms ease; }
+.fade-enter-from,
+.fade-leave-to { opacity: 0; }
+
+/* =============================================================================
    POS OFFLINE — banner + queue-depth badge ([POS-OFFLINE-WIRE 2026-05-17])
    -----------------------------------------------------------------------------
    Banner sticks at the top of the POS shell while !isOnline. Yellow (#FFD700)
@@ -3939,5 +5032,184 @@ export default {
   font-size: 12px;
   font-weight: 700;
   margin-left: 6px;
+}
+
+/* [HEAL B2-P6-F01 2026-05-26] Confirm-before-cancel dialog styles for
+   the kiosk-cash (counter-collect) destructive-action gate. Style
+   tokens mirror PosOrdersTrackerComponent .pos-tracker-cancel-* with a
+   distinct .pos-kiosk-cash-cancel-* prefix (scoped style cannot bleed
+   the tracker classes here). */
+.pos-kiosk-cash-cancel-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2500;
+  background: rgba(15, 23, 42, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.pos-kiosk-cash-cancel-card {
+  width: min(480px, 100%);
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 24px 48px rgba(15, 23, 42, 0.24);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.pos-kiosk-cash-cancel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e5e7eb;
+}
+.pos-kiosk-cash-cancel-head h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+}
+.pos-kiosk-cash-cancel-close {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  color: #64748b;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.pos-kiosk-cash-cancel-close:hover:not(:disabled) {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+.pos-kiosk-cash-cancel-close:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.pos-kiosk-cash-cancel-body {
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.pos-kiosk-cash-cancel-warning {
+  margin: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-left: 4px solid #dc2626;
+  border-radius: 8px;
+  color: #991b1b;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+.pos-kiosk-cash-cancel-warning i {
+  flex-shrink: 0;
+  color: #dc2626;
+  font-size: 16px;
+  line-height: 1.45;
+}
+.pos-kiosk-cash-cancel-target {
+  margin: 0;
+  font-size: 13px;
+  color: #64748b;
+}
+.pos-kiosk-cash-cancel-target strong {
+  color: #0f172a;
+  font-weight: 700;
+}
+.pos-kiosk-cash-cancel-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f172a;
+}
+.pos-kiosk-cash-cancel-textarea {
+  width: 100%;
+  min-height: 84px;
+  padding: 10px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 14px;
+  color: #0f172a;
+  background: #f9fafb;
+  resize: vertical;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.pos-kiosk-cash-cancel-textarea:focus {
+  outline: none;
+  border-color: #ef4444;
+  background: #fff;
+}
+.pos-kiosk-cash-cancel-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 12px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: #991b1b;
+  font-size: 13px;
+  font-weight: 600;
+}
+.pos-kiosk-cash-cancel-error i {
+  flex-shrink: 0;
+  color: #dc2626;
+}
+.pos-kiosk-cash-cancel-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 20px;
+  border-top: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
+.pos-kiosk-cash-cancel-btn {
+  height: 40px;
+  padding: 0 18px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.pos-kiosk-cash-cancel-btn--ghost {
+  background: #fff;
+  color: #0f172a;
+}
+.pos-kiosk-cash-cancel-btn--ghost:hover:not(:disabled) {
+  background: #f1f5f9;
+}
+.pos-kiosk-cash-cancel-btn--ghost:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.pos-kiosk-cash-cancel-btn--danger {
+  background: #dc2626;
+  border-color: #dc2626;
+  color: #fff;
+}
+.pos-kiosk-cash-cancel-btn--danger:hover:not(:disabled) {
+  background: #b91c1c;
+  border-color: #b91c1c;
+}
+.pos-kiosk-cash-cancel-btn--danger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 </style>

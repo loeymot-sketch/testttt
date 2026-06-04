@@ -105,8 +105,8 @@
     @endphp 
     <div class="container">
         <div class="report">
-            <p style="margin: 0px 0px 8px 0px;font-size: 16px;font-weight: bold">{{ App\Libraries\AppLibrary::textShortener($company['company_name'], 60) }}</p>
-            <p>{{ App\Libraries\AppLibrary::textShortener($company['company_address'],60) }}</p>
+            <p style="margin: 0px 0px 8px 0px;font-size: 16px;font-weight: bold">{{ App\Libraries\AppLibrary::textShortener($company['company_name'] ?? 'Le Cayenne', 60) }}</p>
+            <p>{{ App\Libraries\AppLibrary::textShortener($company['company_address'] ?? '', 60) }}</p>
             <p  style="color: #ff006b;margin: 0px 0px 8px 0px;font-size: 16px;font-weight: bold;">{{ trans('all.label.sales_report', [], 'en') }}</p>
             <table>
                 <thead>
@@ -123,9 +123,15 @@
                 <tbody>
                     @foreach ($orders as $order)
                         @php
-                            $total+= $order->total;
-                            $total_discount += $order->discount;
-                            $total_delivery_charge += $order->delivery_charge;
+                            // [SALES-NET-01 heal 2026-06-01] The Total row sums only NET realized
+                            // revenue (drop cancelled-but-paid, include negative refund mirrors) so
+                            // it agrees with the on-screen card and the signed Z. Rows are still
+                            // listed for every order; only the aggregate is netted.
+                            if (\App\Models\Order::isRealizedRevenueRow($order)) {
+                                $total += $order->total;
+                                $total_discount += $order->discount;
+                                $total_delivery_charge += $order->delivery_charge;
+                            }
                          @endphp
                         <tr>
                             <td>{{$order->order_serial_no}}</td>

@@ -101,11 +101,20 @@ const V1_PRIMARY_SIDEBAR_MENUS = Object.freeze([
     }),
     Object.freeze({ url: 'ingredients', language: 'ingredients', icon: 'lab lab-item-attributes' }),
     Object.freeze({ url: 'pos-orders', language: 'pos_orders', icon: 'lab lab-pos-orders' }),
+    // [GOAL-CAISSE-UNIFIED 2026-05-30] Unified history + collection surfaces.
+    Object.freeze({ url: 'historique', language: 'historique', icon: 'lab lab-pos-orders' }),
+    Object.freeze({ url: 'encaissement', language: 'encaissement', icon: 'lab lab-pos-orders' }),
+    Object.freeze({ url: 'cash-overview', language: 'cash_overview', icon: 'lab lab-pos-orders' }),
+    Object.freeze({ url: 'delivery-boy-cash-sessions', language: 'delivery_cash_sessions', icon: 'lab lab-pos-orders' }),
 ]);
 
 /** menu.url → clé `permission.url` Spatie (souvent identique ; exceptions ici). */
 const MENU_URL_TO_PERMISSION_URL = Object.freeze({
     ingredients: 'ingredients_manage',
+    // [GOAL-CAISSE-UNIFIED 2026-05-30] Unified history + collection reuse the
+    // pos-orders permission (admin + branch managers already hold it).
+    historique: 'pos-orders',
+    encaissement: 'pos-orders',
 });
 
 function permissionUrlForSidebarPath(menuUrl) {

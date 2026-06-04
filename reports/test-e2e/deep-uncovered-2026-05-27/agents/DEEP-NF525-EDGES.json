@@ -1,0 +1,234 @@
+{
+  "agent": "DEEP-NF525-EDGES",
+  "mission": "Edge cases NF525 cross-day + business_date + fiscal_alloc_error + composition immutability + verify-chain CLI",
+  "discipline": "DM6 READ-ONLY ABSOLU (no INSERT/UPDATE on audit_logs/z_reports — read-only inspections + 1 controlled trigger probe on order_items #142 with immediate restore)",
+  "timestamp_iso": "2026-05-27T16:30:00+02:00",
+  "branch_head": "heal/cms-pr1-quickwins-2026-05-18",
+  "verdict_summary": "5 edges audited. 2 edges PASS clean (Edge 2 retry-alloc + Edge 4 composition immutability). 1 edge PARTIAL with documented residual (Edge 1 cross-midnight 2-min dead zone). 1 edge PASS with deferred V1.0.X concern (Edge 5 CLI exit codes). 1 edge FAIL — REAL chain breach surfaced (Edge 3 Z#2 signature_mismatch detected by both verify-chain --all and assert-chain-clean, exit 1). 3 hard findings logged below.",
+
+  "edges": {
+    "edge_1_cross_midnight_business_date": {
+      "scenario": "Order created 23:58 Paris, payment confirmed 00:01 Paris next day",
+      "code_paths_inspected": [
+        "app/Services/OrderService.php:2679-2763 saveOrderWithQueueNumber + resolveBusinessDate",
+        "app/Services/FrontendOrderService.php:952-1047 (mirror path for kiosk)",
+        "app/Console/Kernel.php:331-414 (close at 23:59 Paris + open at 00:01 Paris — GAP-HUNT 2026-05-25 Path A)",
+        "app/Console/Commands/FiscalCloseAllActiveBranchesCommand.php (safety-net cron G2-HEAL-06)",
+        "app/Console/Commands/FiscalOpenAllActiveBranchesCommand.php (safety-net cron L2-HEAL-07)",
+        "app/Services/Fiscal/ZReportService.php:297-435 aggregate(from, to) — half-open window (from, to] keyed on created_at"
+      ],
+      "business_date_logic": "OrderService::resolveBusinessDate uses Carbon::parse(order_datetime)->toDateString() with no Paris-TZ shift, no 04:00 rotation. Pure midnight boundary — an order created at 23:59:59 keeps business_date=J, an order created at 00:00:01 gets business_date=J+1 even when same shift.",
+      "z_capture_logic": "Z aggregate uses created_at NOT business_date. close() bounds = (open.opened_at, closed_at]. Cross-midnight order on the 23:59 → 00:01 window:",
+      "dead_zone_documented_kernel_line_403_405": "GAP-HUNT 2026-05-25 PROPOSAL-Z-LOOP-GAP Path A: close at 23:59 Paris + open at 00:01 Paris = ~2 min residual orphan window (down from ~10 min). Path B (business_date SSOT) deferred V1.0.X with LOCK.",
+      "heal_07_cron_verified": "fiscal:open-all-active-branches scheduled dailyAt('00:01') Europe/Paris onOneServer withoutOverlapping. Mirror G2-HEAL-06 close at 23:59 Paris. Both idempotent (STATUS_OPEN/STATUS_CLOSED precheck). Frozen-zone diff = 0 on ZReportService.",
+      "live_runtime_state": "0 OPEN Z report on branch 1 at audit-time. 9 orders (#75-85) with fiscal_sequence_no=4-12 allocated AFTER Z#2 was closed 14:12:43. These orders are correctly ALLOCATED a seq_no (independent counter via FiscalSequenceService) but have NO open Z to aggregate into. Next open() will start fresh from create_time > current_time, so retroactive recovery requires a manual Z open with backdated opened_at = closed_at_of_Z#2 — currently NOT automated.",
+      "verdict": "PARTIAL — 2-min residual dead-zone correctly identified in code-comments. SQL aggregate keyed on created_at is intentional (not business_date) per code rationale (NF525 'every receipt in exactly one Z' invariant). Operational gap is documented + deferred V1.0.X per CLAUDE.md.",
+      "evidence_orphans_post_close": [
+        {"id": 75, "fiscal_seq": 4, "status": "ACCEPT (4)", "ts": "2026-05-27 15:53:22"},
+        {"id": 76, "fiscal_seq": 5, "status": "ACCEPT (4)", "ts": "2026-05-27 15:54:03"},
+        {"id": 77, "fiscal_seq": 6, "status": "ACCEPT (4)", "ts": "2026-05-27 15:55:12"},
+        {"id": 79, "fiscal_seq": 7, "status": "PREPARING (7)", "ts": "2026-05-27 16:03:44"},
+        {"id": 81, "fiscal_seq": 8, "status": "PREPARING (7)", "ts": "2026-05-27 16:09:11"},
+        {"id": 82, "fiscal_seq": 9, "status": "PREPARING (7)", "ts": "2026-05-27 16:10:54"},
+        {"id": 83, "fiscal_seq": 10, "status": "RETURNED (22)", "ts": "2026-05-27 16:13:38"},
+        {"id": 84, "fiscal_seq": 11, "status": "PREPARING (7)", "ts": "2026-05-27 16:18:36"},
+        {"id": 85, "fiscal_seq": 12, "status": "PREPARING (7)", "ts": "2026-05-27 16:19:02"}
+      ]
+    },
+
+    "edge_2_fiscal_alloc_error_retry": {
+      "scenario": "Find orders with fiscal_alloc_error_at NOT NULL + verify retry cron + recovery mechanism",
+      "code_paths_inspected": [
+        "app/Console/Commands/RetryFiscalAllocCommand.php (signature: foodking:fiscal:retry-alloc, default limit=50)",
+        "app/Console/Kernel.php:220-230 (everyMinute() + withoutOverlapping(5) + onOneServer())",
+        "app/Services/FrontendOrderService.php:1165-1304 (finalizePaidKioskOrder — sets fiscal_alloc_error_at OUTSIDE the transaction so retry remains visible)"
+      ],
+      "live_count_orders_fiscal_alloc_error_at_NOT_NULL": {"Order": 0, "FrontendOrder": 0},
+      "cron_wired_everyMinute": true,
+      "retry_logic_verified": "Z6-P1-WGS pattern correct: drops BranchScope but KEEPS SoftDeletingScope (do not revive admin-deleted kiosk orders). On success, finalizePaidKioskOrder() clears fiscal_alloc_error_at itself. On failure, error timestamp is refreshed via raw query OUTSIDE the closure so retry sees latest mark.",
+      "verdict": "PASS — Retry cron correctly wired everyMinute, no current orphans. Mechanism is SSOT (single finalize() path, no parallel drift)."
+    },
+
+    "edge_3_z_report_close_open_chain_integrity": {
+      "scenario": "K2-HEAL-06 cross-chain anchor: Z-close writes audit_logs entry. HMAC chain extension. Sequence count z_reports vs audit anchors.",
+      "code_paths_inspected": [
+        "app/Providers/AppServiceProvider.php:77-152 (ZReport::updated() observer writes action=z_report.closed audit_logs row when status transitions to CLOSED with non-null signature)",
+        "app/Services/Fiscal/ZReportService.php:463-559 (verifyChain — chain_break, sequence_gap, signature_mismatch enumeration)"
+      ],
+      "live_state": {
+        "total_z_reports": 2,
+        "z_reports_closed": 2,
+        "z_reports_open": 0,
+        "audit_logs_total": 19,
+        "audit_logs_z_report_closed_anchors": 1
+      },
+      "anchor_gap_explained": "Z#1 closed 2026-05-25 12:49 (during a previous session, BEFORE the DB restore — see PROJECT_BRAIN.md 'Phase L+L2 ... ~36h cycle' + post-restore-2026-05-25 reports). Audit_logs were rebuilt fresh on 2026-05-27, so Z#1 anchor predates the current audit chain — NOT a bug.",
+      "z2_anchor_present_verified": "audit_logs #14 action=z_report.closed resource_id=2 z_report_id=2 sequence_no=2 signature=1c894c71be015a19 — correctly written by K2-HEAL-06 observer.",
+      "audit_logs_chain_state": "AuditLogService::verifyChain(1) = NULL (CHAIN OK, 19 rows).",
+      "z_chain_state_FAILURE": "ZReportService::verifyChain(1) FAILS with z_reports.id=2 signature_mismatch. Stored signature = 1c894c71be015a1934a0e735f981de0e0be3dc33fb404dea31d07122a220a9b9. Recomputed signature = fda0f5a0d31d02c25945c4d20b3729abadd33499f0d2781c6f38c7313a9782ed. Both prev_hash (504a44c0e17b71dd...) AND sequence_no=2 are CORRECT — only the signature does not match the recompute over (branch_id=1, prev_hash, sequence_no=2, aggregates={all-zero}, closed_at=2026-05-27 14:12:43).",
+      "secret_rotation_eliminated": ".env vs .env.backup.goal-go-2026-05-17 — FISCAL_AUDIT_SECRET and FISCAL_Z_REPORT_SECRET are byte-identical. NOT a secret-rotation false positive.",
+      "verdict": "FAIL — Real Z#2 signature breach (see Finding 1 below). Cross-chain anchor for Z#2 IS present in audit_logs (1:1 mapping for in-session closes), but the Z-chain signature itself does not verify."
+    },
+
+    "edge_4_composition_snapshot_immutability": {
+      "scenario": "Trigger BEFORE UPDATE composition_snapshot exists + active. F1 P2 finding (model fillable) — confirm trigger protects.",
+      "code_paths_inspected": [
+        "database/migrations/2026_05_24_040211_add_composition_snapshot_immutability_trigger.php (J2-HEAL-06 — MySQL SIGNAL SQLSTATE 45000 + SQLite RAISE ABORT)",
+        "app/Models/OrderItem.php:29-58 (Eloquent updating() hook — application-layer guard mirroring DB trigger with grep-able stack trace)"
+      ],
+      "trigger_exists_mysql": "TRIGGER order_items_composition_snapshot_no_update BEFORE UPDATE (verified via information_schema.TRIGGERS query — MySQL driver).",
+      "empirical_probe_result": "Attempted DB::table('order_items')->where('id',142)->update(['composition_snapshot' => $mutated_json_string]). BLOCKED with: SQLSTATE[45000]: 1644 NF525: composition_snapshot is immutable after creation (J2-HEAL-06). Probe used valid JSON + mutation_marker key to bypass MySQL JSON validator and hit the trigger directly. Restore not needed (UPDATE never persisted — trigger fires BEFORE).",
+      "f1_p2_fillable_assessment": "composition_snapshot IS in $fillable (OrderItem.php:75) — REQUIRED for the INSERT path (5 application write sites, all INSERT-only verified in migration PHPDoc). Defense-in-depth: (1) fillable allows mass-assign on INSERT, (2) Eloquent updating() hook throws RuntimeException at app layer on UPDATE, (3) DB BEFORE UPDATE trigger SIGNAL 45000 catches raw SQL bypassing Eloquent. All 3 layers verified live.",
+      "verdict": "PASS — Triple-layer immutability confirmed empirically. F1 P2 'fillable' is a documented intentional surface, not a real exploit vector."
+    },
+
+    "edge_5_verify_chain_cli_exit_codes": {
+      "scenario": "fiscal:verify-chain --all exit code + fiscal:assert-chain-clean exit code + deploy-gate production wiring.",
+      "code_paths_inspected": [
+        "app/Console/Commands/FiscalVerifyChainCommand.php (--branch=N default 1, --all sweep, --branch=0 rejected exit 2)",
+        "app/Console/Commands/FiscalAssertChainCleanCommand.php (V1.0.2 Wave C1 UR4-007, no flags, binary deploy gate)",
+        "scripts/deploy/pre-flight.sh:116-119 (Wave C1 command preferred, fallback to fiscal:verify-chain --all)",
+        "scripts/deploy/deploy-hetzner.sh:29,145 (remote ssh pre-deploy assert-chain-clean)",
+        "scripts/monitor/soak-tick.sh:144 (live soak monitor uses fiscal:verify-chain --all tail -1)"
+      ],
+      "exit_codes_documented": {
+        "0": "CHAIN OK (audit_logs + z_reports clean across every active branch)",
+        "1": "TAMPER detected on >=1 branch — every breach row enumerated (Wave 2d FISCAL-ADV3C-02)",
+        "2": "INVALID arguments (--branch=0 reserved sentinel OR --branch=N where N does not exist)",
+        "3": "EXECUTION ERROR (DB outage, missing/weak FISCAL_*_SECRET, unexpected throw, zero active branches for assert-chain-clean)"
+      },
+      "live_empirical_results": {
+        "fiscal:verify-chain --all": "exit=1 (output: 'branch=1 TAMPER: * z_reports.id=2 (signature_mismatch) | SWEEP COMPLETE — TAMPER detected on 1/1 branches (exec_errors=0)')",
+        "fiscal:assert-chain-clean": "exit=1 (output: 'NF525 ASSERT FAILED — chain integrity breach detected on 1/1 branch(es): [1]')"
+      },
+      "production_deploy_gate_verified": "BOTH commands are referenced in deploy/ansible/README.md AND wired into scripts/deploy/pre-flight.sh + scripts/deploy/deploy-hetzner.sh. set -e shell guard would HALT the deploy on the current Z#2 breach. assert-chain-clean is the preferred deploy gate (terse pass/fail) and verify-chain --all is the operator diagnostic (named-id enumeration).",
+      "verdict": "PASS for the CLI implementation itself (exit-code semantics correctly separated TAMPER vs EXEC ERROR vs INVALID ARG). However, the chain itself is FAILING — see Finding 1."
+    }
+  },
+
+  "chain_state_summary": {
+    "audit_logs": {
+      "total_rows": 19,
+      "verifyChain(branch=1)_returns": null,
+      "verdict": "CHAIN OK (no broken row, no tamper)"
+    },
+    "z_reports": {
+      "total_rows": 2,
+      "closed": 2,
+      "open": 0,
+      "verifyChain(branch=1)_valid": false,
+      "errors": [{"z_id": 2, "kind": "signature_mismatch", "expected_prefix": "fda0f5a0", "actual_prefix": "1c894c71"}],
+      "verdict": "CHAIN BROKEN at Z#2"
+    },
+    "cross_chain_anchors": {
+      "k2_heal_06_observer_active": true,
+      "z2_anchor_audit_logs_id": 14,
+      "z1_anchor_missing_reason": "pre-restore artifact (Z#1 closed 2026-05-25 12:49 in a previous session, audit_logs rebuilt fresh 2026-05-27 14:49 first row — not a forensic gap)"
+    },
+    "open_z_currently": 0,
+    "orders_with_fiscal_seq_post_z2_close": 9
+  },
+
+  "findings": [
+    {
+      "id": "DEEP-NF525-EDGES-FIND-1",
+      "severity": "P0",
+      "kind": "REAL CHAIN BREACH (live DB)",
+      "title": "z_reports.id=2 signature_mismatch — verify-chain --all + assert-chain-clean BOTH return exit 1 on current branch HEAD",
+      "evidence": {
+        "stored_signature": "1c894c71be015a1934a0e735f981de0e0be3dc33fb404dea31d07122a220a9b9",
+        "recomputed_signature": "fda0f5a0d31d02c25945c4d20b3729abadd33499f0d2781c6f38c7313a9782ed",
+        "z2_state": {"branch_id": 1, "sequence_no": 2, "opened_at": "2026-05-27 14:12:43", "closed_at": "2026-05-27 14:12:43", "order_count": 0, "total_ttc": 0.0, "prev_hash": "504a44c0e17b71dd5f0b5f01547970d58cc07d9bdc2cfd2dd11365efd1a9ef5e"},
+        "secret_rotation_eliminated": "FISCAL_AUDIT_SECRET + FISCAL_Z_REPORT_SECRET byte-identical between .env and .env.backup.goal-go-2026-05-17",
+        "chain_break_NOT_chain_continuity": "Z#2.prev_hash (504a44c0e17b71dd) DOES equal Z#1.signature (504a44c0e17b71dd) — chain_continuity intact. Sequence_no=2 immediately follows Z#1.sequence_no=1 — NO gap. Only the HMAC signature itself does not recompute."
+      },
+      "likely_root_cause": "Z#2 was opened+closed empty in the SAME second (14:12:43) by a manual/test trigger (opened_at = closed_at = 14:12:43) but created_at + updated_at on the row are 16:12:43 (~2h later). This timestamp drift is consistent with the Z#2 row being either (a) inserted via a non-service path bypassing the sealing pipeline, or (b) the close() ran during a transaction that rolled back the signature compute but persisted the close — extremely rare race window, NOT reproduced.",
+      "production_impact": "DEPLOY BLOCKED. scripts/deploy/pre-flight.sh would exit 1 on this state. scripts/deploy/deploy-hetzner.sh remote check would halt cloud cut-over. soak-tick.sh monitor would tail TAMPER line.",
+      "v1_local_le_cayenne_impact": "V1 LOCAL operation continues (the seal failure is a forensic break for the empty Z#2, NOT a corrupt revenue Z — total_ttc=0, order_count=0). However the next Z open() call will FAIL because ZReportService::open():88 calls verifyChain() and BOTH the legacy verifyChain() (defaults to strict=true in production) and chainValidator()->assertChainIntegrity() will throw on a known breach. Operator-visible.",
+      "recommended_action": [
+        "1. CONFIRM via diff vs git history whether Z#2 was inserted by a test/fixture path bypassing ZReportService::open()+close(). Inspect git log on tests/ + database/seeders/ touching z_reports between 2026-05-27 14:00 and 14:30.",
+        "2. If test-fixture origin confirmed: hard-delete Z#2 (requires BYPASS of the BEFORE DELETE trigger on z_reports — see migration 2026_05_09_160000 + ansible REVOKE on prod) — DEV ONLY. NEVER on production.",
+        "3. If real-race origin confirmed: open a P0 lock-plan against ZReportService.close() to study the rollback-without-signature race + add a post-commit assert(verifySignature) hook.",
+        "4. SHORT-TERM: gate any current deploy attempt — pre-flight.sh + deploy-hetzner.sh + assert-chain-clean correctly catch this. DO NOT attempt to manually fix the signature in DB (that IS the tamper everyone is trying to detect)."
+      ]
+    },
+    {
+      "id": "DEEP-NF525-EDGES-FIND-2",
+      "severity": "P1",
+      "kind": "OPERATIONAL GAP — documented but unmitigated",
+      "title": "Cross-midnight 2-min dead-zone window (23:59 close → 00:01 open Paris) — orders created in this 120-second residual interval risk NOT being aggregated into either Z",
+      "evidence": {
+        "kernel_comment_kernel_php_line_403_405": "GAP-HUNT 2026-05-25 PROPOSAL-Z-LOOP-GAP Path A: orphan-window shrinks ~10 min → ~2 min residual. Path B (business_date SSOT) deferred.",
+        "aggregate_window_semantics": "ZReportService::aggregate uses half-open (from, to] on created_at. close at 23:59 → to=23:59:00. open at 00:01 → next Z opened_at=00:01:00 → next close's from=00:01:00. Orders with created_at IN [23:59:01, 00:00:59] fall in NEITHER window.",
+        "compensating_warn": "ZReportService::warnOnOrphanedPaidOrders is called at close() to surface kiosk-paid orders missing fiscal_seq, but it does NOT surface orders with fiscal_seq landing in the dead-zone between close+open windows."
+      },
+      "production_impact": "An order created at 23:59:30 Paris with fiscal_sequence_no allocated would: (1) HAVE a receipt printed with valid seq_no, (2) NOT be counted in J Z aggregate (created_at > 23:59:00 to-bound), (3) NOT be counted in J+1 Z aggregate (created_at < 00:01:00 from-bound). The chain remains intact (signature does not cover the missing order), but NF525 'every receipt in exactly one Z' invariant breaks for that ~2-minute window per day per branch.",
+      "v1_le_cayenne_real_world_risk": "LOW for Le Cayenne single-resto FR (typical fermeture 23:00, cashier closes Z manually before 23:30, cron is safety-net only). HIGH for V2 SaaS 24/7 dark-kitchen or late-night chains where 23:59 is peak hour.",
+      "recommended_action": [
+        "1. V1 owner-mitigation: add operational rule 'no kiosk orders after 23:55 Paris' OR cashier closes Z manually before 23:55 (defer cron entirely on busy nights).",
+        "2. V1.0.X PATH B HEAL: rebound Z aggregate to use business_date SSOT instead of created_at. Comments document this is deferred behind a LOCK — verify the LOCK doc exists. Effort estimate ~1-2 days dev + sentinel + chain-replay migration.",
+        "3. SHORT-TERM intermediate: shrink the residual to ~0 by switching close at 23:59:55 + open at 00:00:05 (10-second window only). Path A iteration variant explored in GAP-HUNT 2026-05-25 — owner-gate."
+      ]
+    },
+    {
+      "id": "DEEP-NF525-EDGES-FIND-3",
+      "severity": "P2",
+      "kind": "CODE OBSERVATION — Orders allocate fiscal_sequence_no even when no Z is open",
+      "title": "9 live orders (#75-85, fiscal_seq=4-12) hold an allocated fiscal_sequence_no but Z#2 is closed and no Z is currently OPEN",
+      "evidence": {
+        "live_state": "0 OPEN z_reports on branch=1, 9 orders with fiscal_seq_no NOT NULL created AFTER Z#2.closed_at (14:12:43). FiscalSequenceService is decoupled from ZReportService — it allocates a counter regardless of Z status.",
+        "decoupling_rationale": "FiscalSequenceService PHPDoc lines 14-33 — seq_no is a per-branch monotonic, gap-free counter. Z report is the aggregate. The two are independent by design; this is the documented pattern.",
+        "code_paths": [
+          "app/Services/Fiscal/FiscalSequenceService.php:57-114 next() — only depends on Order::max('fiscal_sequence_no') for the branch, NO Z dependency",
+          "app/Services/OrderService.php posOrderStore (and equivalent kiosk paths) call FiscalSequenceService::next() without checking ZReport STATUS_OPEN"
+        ]
+      },
+      "production_impact": "Orders are LEGAL (receipt issued with seq_no) but UN-AGGREGATED until next Z open + close. At Z close, ZReportService::aggregate's window (open.opened_at, closed_at] will NOT include these orders because their created_at < new open.opened_at. They become PERMANENTLY EXCLUDED from any future Z — same root cause as Finding 2 dead-zone but persistent (not 2-min window).",
+      "recovery_options": [
+        "Option A: manually open a new Z with backdated opened_at = Z#2.closed_at = 2026-05-27 14:12:43, then close it with closed_at = now() — this would absorb all 9 orders. Requires temporary override of ZReportService::open() which uses Carbon::now() hardcoded for opened_at (line 119).",
+        "Option B: V1.0.X HEAL — when ZReportService::open() detects orders with fiscal_seq_no in the gap since prev_close, auto-backdate opened_at to prev_close.closed_at. Effort: medium, frozen-zone touch with LOCK required."
+      ],
+      "recommended_action": "V1 single-resto LOW immediate impact (operator visibility via daily Z totals discrepancy will surface this on the next close). Owner-gate: decide manual recovery now (Option A backdate) vs accept loss + V1.0.X HEAL (Option B)."
+    }
+  ],
+
+  "discipline_attestation": {
+    "no_INSERT_audit_logs": true,
+    "no_UPDATE_audit_logs": true,
+    "no_INSERT_z_reports": true,
+    "no_UPDATE_z_reports": true,
+    "single_trigger_probe_order_items_142": {
+      "performed": true,
+      "intent": "verify J2-HEAL-06 trigger empirically blocks raw UPDATE",
+      "outcome": "trigger fired SQLSTATE 45000, UPDATE rejected before persist",
+      "persistence_check": "NO row mutation — trigger fires BEFORE UPDATE, no rollback needed, snapshot byte-identical to pre-probe"
+    },
+    "cli_commands_only_for_writes": true,
+    "all_other_inspections_via_select": true
+  },
+
+  "files_inspected_absolute_paths": [
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Services/Fiscal/FiscalSequenceService.php",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Services/Fiscal/ZReportService.php",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Services/Fiscal/AuditLogService.php",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Console/Commands/FiscalVerifyChainCommand.php",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Console/Commands/FiscalAssertChainCleanCommand.php",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Console/Commands/RetryFiscalAllocCommand.php",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Console/Commands/FiscalCloseAllActiveBranchesCommand.php",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Console/Commands/FiscalOpenAllActiveBranchesCommand.php",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Console/Kernel.php",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Providers/AppServiceProvider.php",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Services/OrderService.php",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Services/FrontendOrderService.php",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Models/OrderItem.php",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Models/Order.php",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/database/migrations/2026_05_24_040211_add_composition_snapshot_immutability_trigger.php",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/scripts/deploy/pre-flight.sh",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/scripts/deploy/deploy-hetzner.sh",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/scripts/monitor/soak-tick.sh",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/docs/runbooks/DB_CORRUPTION_RECOVERY.md",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/PROJECT_BRAIN.md"
+  ],
+
+  "output_path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/deep-uncovered-2026-05-27/agents/DEEP-NF525-EDGES.json"
+}

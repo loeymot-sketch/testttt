@@ -1,0 +1,445 @@
+{
+  "summary": "Whole-project from-the-roots multi-agent validation: GStack + adversarial + security lenses per system (central weighted heaviest), every P0/P1 finding adversarially verified (refute-by-default), → consolidated confirmed P0/P1 + GO/NO-GO synthesis. Read-only audit, no writes.",
+  "agentCount": 51,
+  "logs": [
+    "From-the-roots validation: 10 systems, central weighted heaviest. Each P0/P1 adversarially verified.",
+    "Audit complete. Raw findings 53 | confirmed P0=2 P1=8"
+  ],
+  "result": {
+    "counts": {
+      "rawFindings": 53,
+      "confirmedP0": 2,
+      "confirmedP1": 8
+    },
+    "verdict": {
+      "verdict": "NO_GO",
+      "summary": "NO_GO — the CENTRAL fiscal layer carries two confirmed P0 NF525 gap-free breaches on reachable V1 LOCAL paths, both verified against primary source. P0 #1 (OrderService.php:2285) was introduced TODAY by commit 1808f94946 — the very fix that closed the \"changePaymentStatus escape-Z\" sale-leak instead created a cross-window orphan: a UNPAID/PENDING_COUNTER order flipped PAID after its Z-window closes now ALLOCATES a real fiscal_sequence_no but lands in ZERO signed Z reports (ZReportService.aggregate windows strictly by created_at at :343-347, post-Z catch at :387-390 covers terminal-status rows only; 143/186 live orders sit in the precondition state). P0 #2 (ZReportService.php:355-402) is a separate confirmed breach: post-Z counter-entry refunds create a fresh-timestamped RETURNED mirror that is invisible to the signed total_ttc (applyOrderToTotals:632-637 reads $order->total / pos_payment_method, never order_payments — the negated payments only reach the additive cash-enrichment decorator), so every sealed-window refund overstates the signed daily Z by the full refund amount (empirical tinker repro: total_ttc=0 vs expected -55). Both files require a lock-plan + owner gate because ZReportService.php is §7 frozen and the cross-window settlement remediation is fiscal-policy-critical. Beyond the P0s, 7 deduplicated P1s remain (two fiscal-adjacent: dormant TVA/HT discount split + changePaymentStatus seq-gap concurrency), all clearly fixable but secondary to the fiscal blocker. The rest of the surface (POS, kiosk, KDS, OSS, livreur sync, money/auth/branch isolation) is sound — no money-loss, broken-surface, or auth/branch P0 was confirmed — but a numbered receipt absent from every signed Z is a categorical NF525 stop-ship that cannot pass to production.",
+      "p0_count": 2,
+      "p1_count": 7,
+      "blocking": [
+        "app/Services/OrderService.php:2285 — Cross-Z-window UNPAID/PENDING_COUNTER->PAID settlement allocates a fiscal_sequence_no but the PAID sale lands in ZERO signed Z reports (NF525 gap-free invariant breakage); introduced today by commit 1808f94946. Remediation (409 reject-late-settlement + counter-entry flow vs positive post-Z adjustment) is fiscal-critical — owner gate + regression test asserting cross-window paid-flip appears in exactly one Z. OrderService.php is NOT §7 frozen but any ZReportService adjustment variant needs a lock-plan.",
+        "app/Services/Fiscal/ZReportService.php:355-402 — Post-Z counter-entry refund mirror is invisible in the signed Z total_ttc/total_by_method (applyOrderToTotals reads $order->total, not order_payments); every sealed-window counter-entry refund overstates the signed daily Z by the full refunded amount. ZReportService.php IS §7 frozen — fix requires a lock-plan + owner gate (Option A aggregate-side netting or Option B mirror-marker) plus a regression test that closes a Z AFTER a counter-entry and asserts the negative is reflected."
+      ],
+      "completeness_gaps": [
+        "Neither P0 was live-fire reproduced end-to-end (both confidence 9): no actual post-Z-close flip of one of the 84 UNPAID rows + re-aggregate for P0 #1, and the refund-mirror repro was rolled-back in tinker rather than a full production close cycle for P0 #2. A follow-up wave should drive the live flow and assert Z membership.",
+        "eventContract.js:264 multi-item auto-86 dedup P1 is code-trace-only — DORMANT in dev (stock_levels=0, no per-item tracking rows) so it could not be live-reproduced. Follow-up should seed per-item stock tracking + a single order depleting >=2 tracked items to zero and confirm items 2..N stay sellable on connected-WS POS/Kiosk.",
+        "ZReportService.php:634 TVA/HT discount-split defect is latent (all 45 V1 items are tax_id=NULL or rate=0.000000 'No-VAT') — unobservable until a non-zero VAT rate is assigned; a follow-up must re-test the Z TVA split once any item gets a real VAT rate, BEFORE that config change ships.",
+        "NF525 numbered-but-unwindowed reconciliation has no compensating control anywhere (RetryFiscalAllocCommand targets NULL-seq only; warnOnOrphanedPaidOrders windows by created_at + keys on NULL seq). A standalone Z-membership reconciliation sentinel (every fiscally-numbered order appears in exactly one signed Z) is missing and should be built as a permanent guard.",
+        "Concurrency P1s on OrderService (changePaymentStatus :2266 missing lockForUpdate seq-gap; changeStatus :2014 missing in-lock allows() re-check) are static-trace + precondition-confirmed but the true sub-second TOCTOU race was not stress-reproduced; a two-actor same-order concurrency harness should be added."
+      ]
+    },
+    "confirmed": [
+      {
+        "sev": "P2",
+        "sys": "central-sync",
+        "file": "app/Console/Commands/OutboxRescueCommand.php:42-47",
+        "title": "Outbox rescue lane B re-broadcasts EVERY healthy already-dispatched event (no last_error discriminator) — violates the documented \"broadcaster never fires twice\" invariant and inflates the high queue lane",
+        "frozen": false,
+        "recommendation": "NOT frozen (OutboxRescueCommand.php is not in CLAUDE.md §7) — direct fix permissible after owner gate. Lane B needs a positive 'not yet successfully broadcast' discriminator. Cleanest: add a `broadcast_succeeded_at` column set in Phase-3a so lane B can require `broadcast_succeeded_at IS NULL` — the schema currently overloads `dispatched_at` to mean BOTH 'claimed' and 'broadcast OK', which is why success vs first-attempt-crash are indistinguishable. Minimal stop-gap (no migration): mirror MonitorOutboxStaleness H3's discriminator by adding `->whereNotNull('last_error')` to lane B's crashed-row closure — this stops re-broadcasting all healthy rows; the documented tradeoff is it misses the rare first-attempt hard-crash orphan whose last_error is NULL (that narrow case is anyway caught later by the staleness monitor pages once attempts climbs). Either way, ADD a regression test asserting `Bus::assertNotDispatched` for a `dispatched_at`-set, `last_error`-NULL, `attempts<5` row aged >10min, and FIX `test_rescue_picks_crash_claimed_row_past_threshold` to seed `last_error != NULL` so it actually represents a crash orphan rather than a healthy row.",
+        "reasoning": "REAL defect, but P1→P2 downgrade. The structural claim is fully verified: OutboxRescueCommand.php:42-47 lane B predicate is exactly `whereNotNull('dispatched_at') AND dispatched_at < now()-10min` with outer `attempts<5` (:47) and NO last_error discriminator. A healthy successfully-broadcast row is byte-identical to this shape: DispatchDomainEventsJob.php:80-83 sets dispatched_at in Phase 1, and Phase 3a (:153-155) clears last_error to NULL while leaving dispatched_at SET. MonitorOutboxStaleness.php:68-69 comment explicitly confirms \"Phase-3a clears last_error on success, so a healthy dispatched row never matches\" — i.e. healthy = dispatched_at SET + last_error NULL.\n\nEMPIRICAL REPRO (live dev DB via artisan tinker): total=417 domain_events; rescue lane B predicate matched 417/417; all 417 are healthy (last_error NULL); attempts distribution = {1:39, 2:378}, all under the <5 cap. So on the next everyMinute rescue tick (Kernel.php:40-43, confirmed scheduled everyMinute+withoutOverlapping+onOneServer) every dispatched event would be re-queued. Lane B first NULLs dispatched_at (:59-61) then re-dispatches (:64), so the new job's Phase-1 guard (:75) sees NULL → re-claims → re-broadcasts (a genuine second fire, not a silent-skip). The cited green test test_rescue_picks_crash_claimed_row_past_threshold seeds dispatched_at=15min-ago/attempts=2/last_error=NULL (healthy shape, seed helper :165) and asserts Bus::assertDispatched — PASSES (ran it), ratifying re-broadcast of a healthy-shaped row. The same-author MonitorOutboxStaleness uses 3 guards (last_error NOT NULL, attempts>=5, age :72-76) — proving the positive discriminator exists and was applied there but omitted in rescue lane B. The recommended stop-gap (mirror H3's whereNotNull('last_error')) is sound.\n\nWHY P2 NOT P1: severity hinges on the SINK, which I checked. Every OrderCreated Echo handler is idempotent: OSS this.list() (PreparingAndReadyComponent.vue:283), KDS _debouncedRefresh (KitchenDisplaySystemComponent.vue:1912), POS tracker fetchOrders (PosOrdersTrackerComponent.vue:692), Kiosk waiting ID-matched queueNumber assignment (KioskWaitingComponent.vue:278-280). All re-fetch authoritative server state or set the same value — NONE append/double-count/create duplicate tickets. So duplicate broadcasts cause redundant refetches + ~4× transient high-lane queue inflation per event (self-capped by attempts<5) + a possible brief false staleCount flicker between rescue null-out and re-claim — degraded efficiency/robustness, NOT data corruption, fiscal/NF525, money, auth/branch, or a broken surface. The claim's \"violates broadcaster-never-fires-twice invariant\" framing OVERSTATES: DispatchDomainEventsJob.php:54-58 scopes that invariant to concurrent-worker races (lockForUpdate guard), not a global exactly-once guarantee, and the code itself documents the rescue re-broadcast as \"one extra broadcast (visible re-render, no fiscal corruption — broadcasts are advisory).\" Reachable in V1 LOCAL (rescue is scheduled, single-box), file not in CLAUDE.md §7 frozen list, fixable after owner gate. Real, worth fixing, but P2."
+      },
+      {
+        "sev": "P1",
+        "sys": "central-sync",
+        "file": "resources/js/services/eventContract.js:264",
+        "title": "Consumer correlation-dedup drops 2nd..Nth ItemAvailabilityChanged of one request — multi-item auto-86 silently keeps depleted items sellable on POS/Kiosk",
+        "frozen": false,
+        "recommendation": "Include aggregate_id/item_id in the consumer dedup key for per-aggregate event types. In resources/js/services/eventContract.js correlationDedupeKey(), add the per-event discriminator (payload aggregate_id/item_id) for ItemAvailabilityChanged so events 2..N of the same request are no longer collapsed; pass parsed.payload.item_id through onEvents() rawHandler into isDuplicateCorrelation(). Mirror the backend idempotency_key which DOES include item_id (PersistItemAvailabilityChangedToOutbox.php:62-69) — the contract intent is per-(item,branch) uniqueness but the consumer dedup is coarser. eventContract.js is NOT in CLAUDE.md §7 frozen list, so a direct fix is allowed.",
+        "reasoning": "VERIFIED REAL — all five claimed links confirmed by Read, plus two extra checks that strengthen (not weaken) the finding.\n\n(1) Consumer dedup key is coarse: correlationDedupeKey() (eventContract.js:264-272) = `eventType:branch:correlationId` — item_id/aggregate_id is NOT in the key. onEvents() rawHandler calls isDuplicateCorrelation(parsed.correlationId, parsed.type, parsed.branchId) and returns early on first match (eventContract.js:363-365), BEFORE handler(parsed). parseEvent (line 59-73) shows `type` and `branchId` come from the envelope and are identical for every ItemAvailabilityChanged of one branch; only aggregate_id/payload.item_id differ — exactly the discriminators the key ignores.\n\n(2) Shared correlation_id confirmed: CorrelationIdMiddleware (lines 14-21) sets ONE request-stable id via Log::withContext. PersistItemAvailabilityChangedToOutbox::resolveCorrelationId (lines 121-137) reads that shared value. The event uses DispatchableAfterCommit (ItemAvailabilityChanged.php:23) and the listener is NOT ShouldQueue, so it runs synchronously in-process after commit — Log::sharedContext()/request() still hold the same id. EventContract::buildEnvelope (EventContract.php:81-90) propagates correlation_id into the broadcast envelope.\n\n(3) Backend creates DISTINCT rows per item (idempotency_key includes item_id, lines 62-69) — so the collapse is purely consumer-side, as claimed.\n\n(4) Multi-event emission path real: StockService::decrementForOrder loops requirements and collects one ItemAvailabilityChanged per depleted item, then dispatches each (StockService.php:140-159, dispatchAvailabilityChanged 149-160), invoked from DecrementStockOnOrderCreated:35 within the OrderCreated request.\n\n(5) Handlers are per-item incremental on BOTH affected surfaces — PosComponent _onItemAvailabilityChanged (2857-2914) reads payload.item_id, marks only that item, prunes only that item's cart lines; KioskAppComponent subscribes the same way (546-550). No full refetch inside the handler.\n\nSEVERITY = P1 (not P0, not P2):\n- Not P0: pricing stays backend-SSOT, NF525 chain untouched, money correct, surface not broken. It's an oversell of a depleted item.\n- Not P2 (bounded-staleness): I checked the out-of-band refetch. The regular POS poll (_startKioskPolling tick, PosComponent 2748-2762) refreshes only orders (loadKioskCashOrders/loadActiveOrdersStats/loadReadyOrders) — it does NOT call itemList(). The only catalogue refetch fallback is PosSyncService, which (a) only polls while WS is DISCONNECTED (_shouldPollForState true only when not connected; suspends on 'connected', lines 180-183/405-411) and (b) defaults disabled (runtimeConfig.enabled requires explicit true, line 150). In the normal CONNECTED-WS case — precisely when these events ARE delivered over Echo and dropped by dedup — there is NO bounded availability refetch. Items 2..N stay sellable until WS reconnect (_onWsConnected→itemList, 2710), branch change, a type:'full' admin event, or manual reload. Unbounded staleness. PosSyncService.js:51 even names this exact bug class (\"POS shows stale stock; items 86'd at KDS still sellable\").\n\nREACHABILITY: auto-86-by-stock is a documented V1 feature (CLAUDE.md §6 /admin/stock-rupture-dashboard; AvailabilityService). Dev DB has 0 stock_levels rows (artisan tinker: stock_levels=0, item-type on_hand>0 = 0), so the path is DORMANT-IN-DEV (cannot reproduce live, which is why the auditor's GROUP BY returned 0 — honestly disclosed) but not unreachable in V1: an owner who enables per-item stock tracking and whose single order depletes 2+ tracked items to zero triggers it.\n\nConfidence 7 (not higher) because the trigger is conjunctive (stock tracking enabled AND ≥2 items co-deplete in one order) and unobservable on the current seed — code-trace certain, live-repro impossible here. The recommended fix (add item_id to the consumer dedup discriminator for per-aggregate event types, mirroring the backend idempotency_key) is correct and eventContract.js is NOT in §7 frozen, so a direct fix is permissible."
+      },
+      {
+        "sev": "P1",
+        "sys": "central-sync",
+        "file": "app/Http/Controllers/Admin/Observability/SyncOverviewController.php:393-396",
+        "title": "Admin dashboard \"Retry failed\" button reintroduces a documented-P0 anti-pattern: wipes attempts→0 + last_error→NULL, orphaning chronically-failing outbox rows from the prune lane and destroying forensic trail",
+        "frozen": false,
+        "recommendation": "Make the HTTP path match the healed CLI command (OutboxRetryFailedCommand.php:102-156): preserve `attempts` monotonically (only re-null `dispatched_at`), preserve `last_error`, bound the query by `->where('attempts','<', OutboxRetryFailedCommand::REPLAY_MAX_ATTEMPTS)`, and ideally write an AuditLogService row per replay + hold the same Cache::lock. Simplest scope-minimal fix: change lines 384-396 to reuse the CLI command's lane (or call `Artisan::call('foodking:outbox:retry-failed')`) instead of the divergent inline forceFill. Also extend OutboxRetryFailedAttemptsPreservedTest to cover this controller action so the ratchet catches the HTTP path (currently it asserts only against the CLI command — tests/Feature/Outbox/OutboxRetryFailedAttemptsPreservedTest.php:48-120). Not a frozen file — direct edit permitted.",
+        "reasoning": "CONFIRMED REAL on a reachable V1 LOCAL path. Read SyncOverviewController.php:377-406: outboxRetryFailed() query (384-389) = whereNull('dispatched_at')->whereNotNull('last_error') with NO upper attempts bound, then forceFill(['attempts'=>0,'last_error'=>null])->save() at 393-396. This is the exact pre-heal anti-pattern. The canonical CLI command (OutboxRetryFailedCommand.php) was healed on 2026-05-19 (commit 7db47f022, Z3 B-2 P0): it only re-nulls dispatched_at (154-156), preserves attempts monotonically + last_error, bounds the lane via ->failed(5)->where('attempts','<',12)->where('created_at','>=',$cutoff) (102-108), holds Cache::lock (71), and writes an AuditLogService row per replay (121-135). The HTTP controller path does NONE of these. Orphaning is real: PruneOutboxCommand reclaims attempts>=6 AND created_at<cutoff (lines 56-57); a chronic-fail row reset to attempts=0 by the HTTP path can never reach the prune threshold and loses its forensic last_error each click. Reachability CONFIRMED end-to-end: route POST /api/admin/observability/outbox/retry-failed (routes/api.php:1176), gated role:Admin|Tenant Admin (controller __construct:52-56) + throttle:10,1, wired to a real UI button (OutboxOverviewComponent.vue:61-65 data-testid=outbox-retry-failed -> retryFailed() line 373 -> axios.post line 376); Admin role exists in V1 (admin@lecayenne.fr). Test ratchet gap CONFIRMED: OutboxRetryFailedAttemptsPreservedTest (48-124) exercises only Artisan::call(foodking:outbox:retry-failed), never the controller action, so the HTTP variant is unguarded. File is NOT in the §7 FROZEN list — direct edit permitted. Downgraded P0->P1: domain_events is sync/broadcast plumbing (not NF525 fiscal/audit data — controller comment and code confirm fiscal tables untouched), no money/auth/branch breakage, and the orphaned row still pages the operator via the staleness monitor (filters dispatched_at NULL). It is wrong behavior on a real clickable path + missing critical state (audit trail + monotonic attempts) + divergence from the explicitly-healed canonical lane + a coverage gap — a solid P1."
+      },
+      {
+        "sev": "P0",
+        "sys": "central-fiscal",
+        "file": "app/Services/OrderService.php:2285",
+        "title": "Cross-Z-window UNPAID→PAID settlement allocates a fiscal_sequence_no but lands the PAID sale in ZERO signed Z reports (NF525 gap-free invariant breakage)",
+        "frozen": false,
+        "recommendation": "Add a sealed/closed-Z-window membership guard on the PAID transition in OrderService::changePaymentStatus, symmetric to the existing REFUNDED SealedOrderGuard at line 2231: before allocating the sequence at 2285, detect whether the order's created_at falls before the current open Z's opened_at (i.e. a since-closed window) and either (a) reject the late settlement with a 409 directing the operator to a counter-entry/adjustment flow, or (b) record it as a positive post-Z adjustment in the current window's aggregate (extend ZReportService.php:384-402 to capture positive cross-window settlements keyed on the PAID transition's updated_at, mirroring the negative-adjustment logic). OrderService.php is NOT in the §7 frozen list, so this is a direct (non-frozen) fix — but it is NF525-fiscal-critical, so gate the chosen policy on owner sign-off + a regression test (cross-window paid-flip must appear in exactly one Z) before shipping. Do NOT touch the frozen ZReportService/FiscalSequenceService logic; the post-Z adjustment extension, if chosen, is a logic change there and would itself require a lock-plan + owner gate.",
+        "reasoning": "VERIFIED REAL — NF525 gap-free / \"every fiscally-sequenced receipt in exactly one Z\" breakage on a reachable V1 LOCAL path, introduced by today's commit 1808f94946 (2026-05-29 13:53, blame-confirmed on lines 2285-2289).\n\nCode trace, all read-confirmed:\n1. OrderService.php:2285-2289 — inside the changePaymentStatus write txn, on ANY transition where target==PAID && fiscal_sequence_no===null, it calls FiscalSequenceService::next() to allocate a sequence. Matches the claim verbatim.\n2. The only sealed-window guard upstream (OrderService.php:2231, SealedOrderGuard::assertMutable) fires for REFUNDED ONLY. The PAID transition has no sealed-window check.\n3. PaymentStateMachine.php:10-16 explicitly ALLOWS UNPAID->PAID and PENDING_COUNTER->PAID, so assertCanTransition (line 2258) does not block the flip.\n4. ZReportService::aggregate windows STRICTLY by created_at: line 343-347 (created_at <= $to, and if $from then created_at > $from where $from = currentOpenZ->opened_at). Line 340-341 base query: whereNotNull(fiscal_sequence_no) AND payment_status != UNPAID.\n5. The post-Z adjustment path (ZReportService.php:384-402) catches ONLY negative terminal-status rows (CANCELED/REJECTED/RETURNED, applied -1). There is NO positive UNPAID->PAID cross-window catch. Confirmed by Read.\n\nReachability: route online-order/change-payment-status/{order} (api.php:983, auth:sanctum + verify.api group) -> OnlineOrderController::changePaymentStatus (Admin/OnlineOrderController.php:103) delegates directly to OrderService::changePaymentStatus. PosOrderController + AdminTableOrderController share the same service method.\n\nTriggering-state EMPIRICALLY confirmed via artisan tinker against the live DB: 84 UNPAID delivery/takeaway (order_type 5/10) orders with null fiscal_sequence_no, plus 59 PENDING_COUNTER null-sequence orders — 143 of 186 total orders sit in the precondition state right now. A COD delivery/takeaway order left UNPAID at evening Z-close (excluded by line 340 null-seq + line 341 UNPAID), then flipped PAID next morning, gets a sequence at line 2287 but: created_at (yesterday) < this-morning's Z opened_at, so it FAILS created_at > $from and is excluded from the current Z; the previous closed Z already excluded it. Net: a PAID sale carrying a fiscal_sequence_no that appears in ZERO signed Z reports.\n\nNo compensating control exists: RetryFiscalAllocCommand (lines 66-68) targets payment_status=PAID AND fiscal_sequence_no IS NULL only — cannot catch a numbered orphan. warnOnOrphanedPaidOrders (ZReportService.php:586-597) ALSO windows by created_at (593-597) AND keys on whereNull(fiscal_sequence_no) — catches neither the cross-window case nor a numbered row. Grep found no Z-membership reconciliation for numbered-but-unwindowed orders.\n\nSentinel gap confirmed: FiscalSealedZSentinelTest.php:74-78 asserts the sealed guard is wired for 'changePaymentStatus -> REFUNDED' only; no test covers a cross-window UNPAID->PAID flip's Z membership.\n\nCorrection to the auditor's \"aggravator\" (kept honest): the claim \"pre-fix it would have been caught by warnOnOrphanedPaidOrders\" is FALSE for the cross-window case, because that warning also windows by created_at — it only catches same-window late-paid orders. The genuinely-new violation today's commit introduced: pre-fix this was a lost sale with NULL sequence (no number consumed); post-fix it allocates a real fiscal_sequence_no with no Z home — a numbered receipt absent from every signed Z. That is the NF525 breakage.\n\nSeverity P0 (fiscal/NF525 breakage). OrderService.php is NOT in the §7 frozen list, so a direct fix is permissible, but the remediation policy (reject late cross-window settlement with 409 + counter-entry flow, vs. positive post-Z adjustment) is fiscal-critical and must gate on owner sign-off + a regression test (cross-window paid-flip must appear in exactly one Z). Do NOT touch the frozen ZReportService/FiscalSequenceService for the adjustment variant without a lock-plan.\n\nConfidence 9 not 10: the live-fire reproduction (actually flipping one of the 84 rows post-Z-close and re-aggregating) was not executed read-only; the conclusion rests on a fully grounded static code trace + the empirical precondition count, which is decisive."
+      },
+      {
+        "sev": "P1",
+        "sys": "central-fiscal",
+        "file": "app/Services/Fiscal/ZReportService.php:634 (total_tva source) + app/Models/Order.php:112-118 (getTotalHtAttribute) + app/Services/Pricing/PricingService.php:331-355 (totalTax accumulated pre-discount)",
+        "title": "NF525 Z-report TVA/HT split is wrong on any discounted order (discount absorbed entirely into HT, TVA stays computed on pre-discount base) — dormant today only because all V1 items are 0% VAT",
+        "frozen": true,
+        "recommendation": "lock-plan + owner gate. The TVA figure originates from a FROZEN file (ZReportService.php:634 reads $order->total_tax) so this is not a direct edit. Surgical fix: introduce a non-frozen Order::getTotalTvaAttribute that prorates total_tax by the discount ratio (or derives TVA per tax_rate from the discounted TTC) so total_tva reflects VAT actually owed on the collected amount, then point ZReportService::applyOrderToTotals at that accessor (the line 634 change to read $order->total_tva instead of $order->total_tax touches the frozen ZReportService — requires LOCK_<id>.md + owner countersign). Add a regression test extending OrderTotalHtDecompositionTest to cover a discounted VAT-bearing order asserting total_tva == round(total - total/(1+rate/100),2). LOW operational urgency for the current 0%-VAT dataset; MUST be fixed before any non-zero VAT rate is configured on items, otherwise every discounted receipt seals an over-declared VAT into the immutable Z chain.",
+        "reasoning": "VERIFIED REAL as a latent NF525-correctness defect, but currently DORMANT (not active on any V1 order today). Every cited line says what's claimed:\n\n(1) PricingService.php:317 `$totalTax += $taxPrice` accumulates per-line tax INSIDE the item loop, BEFORE the discount is computed (331-344) and applied (351 tax-inclusive: `$rawTotal = $realSubtotal + $delivery - $calculatedDiscount`). The discount never touches tax. Confirmed by Read.\n(2) `total_tax` is persisted from the pre-discount `$pricing->totalTax` (OrderQuoteService.php:94), while `total` = post-discount finalTotal.\n(3) No `total_ht` column exists (Schema::hasColumn returned false), so ZReportService.php:633 uses the Order::getTotalHtAttribute accessor = `total - total_tax` (Order.php:115), and line 634 sums raw pre-discount `$order->total_tax` for total_tva. The per-rate breakdown (line 652) sums order_items.tax_amount = same pre-discount base. No compensating recomputation exists in the Z path.\n(4) Reproduced the math exactly in tinker: 11.50 TTC @ VAT10% inclusive, 4.00 discount -> stored total_tax=1.05, total=7.50; Z split HT=6.45/TVA=1.05/TTC=7.50 (identity holds) but legally-correct TVA on 7.50 collected = round(7.5 - 7.5/1.10,2)=0.68 -> TVA OVERSTATED by 0.37, discount dumped entirely into HT. Matches the claim precisely.\n(5) The lock test OrderTotalHtDecompositionTest.php only asserts no-discount cases (total=12.50/tax=2.50 and total=7.00/tax=0) — the discounted VAT split is genuinely uncovered. Confirmed by Read.\n(6) All three discount paths are real: POS manual (PricingService.php:339, context pos/table), coupon (332-338), kiosk loyalty.\n\nDECISIVE MASKING (auditor was honest and I independently confirmed): `Item::selectRaw('tax_id,count(*)')->groupBy()` returns 42 items tax_id=NULL + 3 items tax_id=1; taxes table id=1 is 'No-VAT' rate=0.000000. NO item uses tax_id 2/3/4/5 (the non-zero rates). With taxRate=0, taxPrice=0 always -> total_tax=0 -> HT=TTC -> NO split error is observable on ANY current order. PRICING_TAX_INCLUSIVE=true is set, matching the repro premise. So the ACTIVE exploit path is unreachable in V1 today — it activates only when a non-zero VAT rate (e.g. food 10%, tax_id=3 already seeded) is assigned to an item, a config/data change that has not occurred.\n\nSeverity kept at P1 (not rejected, not downgraded to P2): this is a verified fiscal-correctness defect that, once VAT is configured, seals an over-declared TVA into the immutable 6-year HMAC Z-chain — a high-stakes NF525 consequence one config flip away. It is not a style issue and not SaaS-only. But it is explicitly DORMANT, not an active V1-LOCAL bug today; recommendation correctly routes through lock-plan + owner gate since the fix touches FROZEN ZReportService.php:634 (introduce non-frozen Order::getTotalTvaAttribute prorating tax by the discount ratio / deriving per-rate TVA from discounted TTC, then point line 634 at it; extend the test to a discounted VAT-bearing order). Confidence 8: mechanics and dormancy both empirically proven; the only judgment call is severity labeling of a latent-but-fiscal defect."
+      },
+      {
+        "sev": "P0",
+        "sys": "central-fiscal",
+        "file": "app/Services/Fiscal/ZReportService.php:355-402",
+        "title": "Post-Z counter-entry refund mirror is INVISIBLE in the signed Z total_ttc — day revenue overstated by full refund amount (NF525 breach)",
+        "frozen": true,
+        "recommendation": "lock-plan + owner gate (ZReportService.php is CLAUDE.md §7 frozen). Do NOT direct-edit. The signed Z TTC must net the post-Z counter-entry refund. Option A (preferred, aggregate-side): in aggregate(), include current-window RETURNED orders that carry parent_order_id (i.e. counter-entry mirrors) in applyOrderToTotals with sign +1 (their total is already negated), distinct from the existing terminal-status exclusion which must stay for pre-Z voids. Option B (mirror-side, no frozen touch): give the mirror a dedicated non-terminal status/marker so it flows through the positive loop with its negative total while staying excluded from operational KDS/terminal filters. Either way add a regression test: open Z, create counter-entry mirror, close Z, assert total_ttc and total_by_method reflect the negative. Until fixed, every sealed (post-Z) refund silently inflates the signed, 6-year-archived Z report by the refunded amount.",
+        "reasoning": "CONFIRMED REAL via primary-source code + end-to-end empirical reproduction driving the actual RefundWithCounterEntryService and ZReportService::aggregate.\n\nCode trace (all read directly):\n- ZReportService.php:349-357 — positive loop does whereNotIn('status', [CANCELED,REJECTED,RETURNED]); the mirror has status=RETURNED → excluded. Correct.\n- ZReportService.php:387-390 — post-Z negative-adjustment query requires created_at<=$from AND updated_at>$from AND status=RETURNED. The service-created mirror has created_at=now() (in the CURRENT window, > $from) → fails the created_at<=$from predicate → excluded. The parent (created_at<=$from) is NOT transitioned to RETURNED (it stays DELIVERED, updated_at not bumped) → also excluded. So neither row contributes the -55.\n- RefundWithCounterEntryService.php:108-130 creates a NEW mirror row (status=RETURNED, total=-55, fresh created_at); audit comment at :245 explicitly keeps the parent immutable. Verified the parent is never transitioned.\n- applyOrderToTotals (ZReportService.php:630-638) computes total_ttc AND total_by_method from $order->total / $order->pos_payment_method — NOT from order_payments. So the mirror's negated order_payments (created at :190) only feed the cash-enrichment DECORATOR (ZReportCashEnrichmentService comment lines 20-30: additive post-signature columns, cannot touch signed total_* without breaking HMAC). They never reach the signed total_ttc.\n- close() at :231-241 calls this exact aggregate() then sign()s it and forceFills the aggregates into the immutable z_reports row → the gap flows into the signed, 6-year-archived Z.\n\nEmpirical reproduction (artisan tinker, real services, rolled back): sealed window 1 with a PAID 55€ POS order + closed Z; then RefundWithCounterEntryService::execute(); then aggregate(branch, prevZ.closed_at, now+1m). OBSERVED: total_ttc=0, order_count=0, refund_count=1, by_method=[]. EXPECTED if netted: total_ttc=-55, cash=-55. Exactly matches the auditor's claimed output. Mirror created_at=2026-05-29 (in window), parent stayed status=13 DELIVERED.\n\nTest-gap claim verified: the passing RefundPostZTest validates the OLD in-place transition model (same row, old created_at, bumped updated_at, POSITIVE total negated by sign -1 at :400) — structurally different from the mirror model the production service actually uses, so it does NOT cover this path. NF525ComplianceE2ETest::test_scenario_6 (:426-480) only asserts the mirror row exists with -55; it never closes a subsequent Z, so the aggregation never runs.\n\nReachability in V1 LOCAL: route POST /api/admin/pos-order/{order}/refund-with-counter-entry exists (routes/api.php:961) and is the canonical post-Z refund path — reachable in V1 Plan B (this is fiscal close logic, payment-provider-independent). Not a SaaS-only concern.\n\nSeverity P0: every sealed (post-Z) counter-entry refund silently inflates the signed daily Z total_ttc by the full refunded amount — a real NF525 breach on a reachable path. ZReportService.php is CLAUDE.md §7 frozen, so the fix needs a lock-plan + owner gate (the recommendation's Option A aggregate-side / Option B mirror-marker are both sound; either way add a regression test that closes a Z AFTER a counter-entry and asserts total_ttc/total_by_method reflect the negative). Confidence 9 not 10 only because I could not enumerate every observer/listener that might mutate the parent in a full production close cycle, but the direct service path + reproduction are conclusive."
+      },
+      {
+        "sev": "P1",
+        "sys": "central-orderflow",
+        "file": "app/Services/OrderService.php:2266-2292",
+        "title": "changePaymentStatus UNPAID→PAID allocates fiscal_sequence_no WITHOUT lockForUpdate — concurrent cross-user flip on same order creates an NF525 sequence gap",
+        "frozen": false,
+        "recommendation": "Wrap the changePaymentStatus non-auth body in DB::transaction + Order::query()->whereKey($order->id)->lockForUpdate()->firstOrFail(), recompute $oldPaymentStatus from the locked row, add the idempotent early-return + PaymentStateMachine::assertCanTransition re-check INSIDE the lock, and allocate fiscal_sequence_no only after the locked re-read — exactly mirroring PaymentService::confirmCounterPayment:219-323 and KitchenDisplaySystemOrderService::changeStatus:396-432. This file is NOT in §7 frozen list, so a direct scope-minimal patch is permitted; pair with a concurrency regression test (two users, same order, assert single fiscal_sequence_no allocation + no gap).",
+        "reasoning": "CONFIRMED REAL. Every cited line verified by Read.\n\nCODE FACTS (all confirmed):\n- OrderService.php:2266-2292 — the non-auth branch of changePaymentStatus opens DB::transaction that mutates the ROUTE-BOUND $order directly. Lines 2285-2288 ([GOAL-2026-05-29 FISCAL-P1], added today) allocate fiscal_sequence_no = FiscalSequenceService::next(branch) when $order->fiscal_sequence_no === null. There is NO Order::query()->whereKey($order->id)->lockForUpdate()->firstOrFail() re-read.\n- Contrast the SIBLING changeStatus branch in the SAME file at 2001-2002 which DOES lock+re-read ($locked = Order::query()->whereKey($order->id)->lockForUpdate()->firstOrFail()), added by commit 0579c0453 (K.2 H5 P1). And the canonical correct pattern PaymentService::confirmCounterPayment:220-323 which locks FIRST (220-223) then allocates fiscal_sequence_no on the LOCKED row (321-322). changePaymentStatus is the one PAID-sealing mutator that allocates on the UNLOCKED in-memory model.\n- FiscalSequenceService::next (FiscalSequenceService.php:65-104) holds Cache::lock('fiscal_seq_b{branch}') AND a lockForUpdate MAX()+1 SELECT — but it only serialises the SELECT; it does NOT lock the order row being mutated by the caller.\n- IdempotencyKeyMiddleware.php:77-82 scopedKey = idempotency:v1:{branchId}:{userId}:{hash(key)} — PER-USER. Two distinct staff bypass replay. Route 952-953 (POS change-payment-status) carries 'idempotency' middleware, confirming per-user gating only.\n- DB unique constraint orders_branch_fiscal_seq_unique on (branch_id, fiscal_sequence_no) exists (migration 2026_04_22_000001:37-40).\n\nMECHANISM (the subtle, correct part): The gap arises PRECISELY BECAUSE the cache lock works. Two distinct users hit the same UNPAID order; both route-bound $order instances are hydrated with fiscal_sequence_no=null; both pass the line-2286 null-guard (TOCTOU on the stale in-memory model — no lockForUpdate). Then the two next() calls serialise on Cache::lock: A gets N, B gets N+1. Both write to the SAME order.id row: A saves N then commits, B saves N+1 (overwriting N) then commits. Final row = N+1. N is allocated to no order = a GAP in the per-branch fiscal sequence. The unique constraint does NOT fire (N+1 is unique); the cache lock does NOT prevent it (it produced the distinct N/N+1 that creates the gap). This violates CLAUDE.md §8 gap-free monotonic NF525 invariant. Production cache driver is forced coherent (AppServiceProvider:294-300 forbids array/null → redis/memcached), so the lock works cross-worker — which is exactly what enables the gap.\n\nSEVERITY P1 (not P0): impact category is NF525 fiscal breakage (P0-tier) but the trigger is narrow — two DISTINCT authed staff, same order, overlapping request windows, on the order-detail \"Payé\" dropdown (PosOrderShowComponent.vue:143/571-575), a back-office/manager CORRECTION path. The primary high-volume POS checkout goes through confirmCounterPayment, which is ALREADY locked. The allocation was added today because real sales escaped the Z-report via this route (proves it carries real sales) but there is no evidence it is a high-concurrency path. Low probability + severe impact + secondary path = well-calibrated P1, matching the original auditor and the project's own precedent (K2 changeStatus race = P1, OrderStateMachine::apply = P0). Existing tests (ChangePaymentStatusTransactionalTest) are single-threaded and include NO concurrency case, confirming the race vector was unconsidered when the allocation was wired in.\n\nFIX: OrderService.php is NOT in §7 frozen → a direct scope-minimal patch is permitted. Wrap the body in lockForUpdate()->firstOrFail() (mirror confirmCounterPayment:220-223), recompute $oldPaymentStatus + re-check PaymentStateMachine + the null-guard allocation INSIDE the lock, sync back to route-bound $order via setRawAttributes; add a two-user same-order concurrency regression test asserting a single fiscal_sequence_no allocation + no gap."
+      },
+      {
+        "sev": "P1",
+        "sys": "central-orderflow",
+        "file": "app/Services/OrderService.php:1909-2074",
+        "title": "OrderService::changeStatus validates the transition against the STALE pre-lock status and never re-checks allows() inside the lock — a refunded/cancelled order can be illegally driven back into the kitchen",
+        "frozen": false,
+        "recommendation": "Inside the locked transaction (after the idempotent equality check at 2014, and similarly at deliveryBoyOrderChangeStatus after 1701) re-run OrderStateMachine::allows((int)$locked->status, $targetStatus, Auth::user()) and abort 409/422 if false — adopt the optimistic-lock pattern KitchenDisplaySystemOrderService::changeStatus:405,426 already uses. File is NOT §7 frozen (OrderStateMachine.php itself is frozen but OrderService.php is not), so a scope-minimal patch is permitted; add a two-actor concurrency regression test.",
+        "reasoning": "VERIFIED REAL on a reachable V1 path. Every structural claim checks out against the source:\n\n1. OrderService.php:1909 — pre-lock guard `(new ValidStatusTransition($order->status))->passes(...)` runs against the ROUTE-BOUND (stale) status. ValidStatusTransition.php:35 delegates to OrderStateMachine::allows($currentStatus, ...) using that stale value. Confirmed.\n2. The `else` (non-auth) branch opens DB::transaction at 2001, locks+re-reads `$locked` at 2002, but the ONLY in-lock guard is the idempotent equality check at 2014 `(int)$locked->status === $toStatus`. A grep of the entire method body (lines 1906-2160) returns NO `allows()`/`assertAllows()` call — there is no in-lock state-machine re-check before the write at 2072-2074. Confirmed.\n3. The reason/cashback barrier at 2024 fires only for targets in [REJECTED,CANCELED,RETURNED]; a PREPARING target skips it. recordTransition (OrderStateMachine.php:132-159) has NO legality validation — it logs whatever from→to it is handed. So the illegal CANCELED→PREPARING is persisted AND audited, then OrderStatusChanged dispatches to KDS at 2139. Confirmed.\n4. allows(CANCELED, PREPARING) returns false for non-Admin (OrderStateMachine.php:63-70). Contrast: OrderStateMachine::apply re-checks allows() in-lock (line 222) and KitchenDisplaySystemOrderService::changeStatus re-checks allows() in-lock (~line 426) + uses an optimistic expected_status→409 conflict. The OrderService else branch lacks both. Confirmed.\n5. Same gap in deliveryBoyOrderChangeStatus: pre-lock check 1670, in-lock idempotent check 1701, write 1790, NO in-lock allows() (grep 1655-1800 = NONE). Confirmed.\n6. Reachability: PosOrderController::changeStatus:197 and OnlineOrderController::changeStatus:97 both call orderService->changeStatus($order,$request) with $auth defaulting false → the vulnerable else branch. Real POS + Admin online-order paths in V1.\n7. The existing OrderServiceChangeStatusRaceSentinel only guards same-target idempotency (its behavioural test uses two cashiers both clicking DELIVERED, where 2014 short-circuits) and source-level lockForUpdate presence — it does NOT cover the cross-target (CANCELED vs PREPARING) illegal-transition race the auditor describes. So this is genuinely uncovered.\n8. OrderService.php is NOT in §7 frozen (only OrderStateMachine.php is) — a scope-minimal in-lock allows() re-check is permitted.\n\nDOWNGRADE rationale (P1, not P0): the harm requires a true sub-second TOCTOU concurrent-write race between two DISTINCT staff actions (cashier cancel+refund vs a second POS/online advance) on the same order within the lock window. It is not deterministic and not trivially reproducible at will. Critically, the KDS — the most natural 'advance to kitchen' surface — is already on the SAFE path (re-checks allows()), so the dangerous concurrent advancer must be a second POS/Admin session. On V1 LOCAL single-box Le Cayenne (typically one cashier, one TPE) the window is narrow but not impossible. The refund money itself is correct; the genuine harm is (a) NF525 order_status_transitions audit trail recording a state-machine-forbidden CANCELED→PREPARING and (b) kitchen prep for a refunded order. That is a real audit-integrity + operational defect on a reachable path = P1. Recommendation (in-lock allows() re-check mirroring KitchenDisplaySystemOrderService/apply, abort 409/422, plus a two-actor cross-target regression test) is correct and frozen-zone-permitted. NOT a SaaS-only concern; applies to V1 single-restaurant."
+      },
+      {
+        "sev": "P1",
+        "sys": "central-orderflow",
+        "file": "app/Services/OrderService.php:2014",
+        "title": "changeStatus / deliveryBoyOrderChangeStatus validate transition legality against the PRE-LOCK status, then never re-check inside the lock — concurrency can persist an illegal state-machine transition (e.g. DELIVERED→OUT_FOR_DELIVERY, CANCELED→REJECTED)",
+        "frozen": false,
+        "recommendation": "Caller-side fix only — do NOT touch the frozen OrderStateMachine.php. In OrderService::changeStatus (after line 2014 idempotent guard) and in deliveryBoyOrderChangeStatus (after line 1701 idempotent guard), add an inner re-validation against the freshly-locked status before mutating: `if (!OrderStateMachine::allows((int)$locked->status, $targetStatus, Auth::user())) { throw new Exception(trans('all.message.invalid_status_transition'), 422); }` — mirroring KitchenDisplaySystemOrderService::changeStatus:424-429. Alternatively route both call sites through OrderStateMachine::apply(), which already performs the lock+inner-allows()+audit atomically (OrderStateMachine.php:208-253). Optionally add an expected_status optimistic-lock 409 like the KDS path for a cleaner client UX. Add a concurrency regression test asserting that a second transition from an already-changed locked status is rejected, not silently applied.",
+        "reasoning": "VERIFIED REAL. I read all cited locations and the trace holds exactly as claimed.\n\nCONFIRMED:\n- OrderService::changeStatus gates legality PRE-LOCK at line 1909 against the route-model-bound `$order->status` (ValidStatusTransition → OrderStateMachine::allows, Rules/ValidStatusTransition.php:35). Inside the `else`/non-auth transaction (line 2001+) it acquires lockForUpdate (line 2002) and re-reads `$locked->status`, but the ONLY inner status guard is the idempotent equality at line 2014 (`(int)$locked->status === $toStatus`). There is NO `OrderStateMachine::allows($locked->status, $target)` re-validation before the mutate at lines 2072-2074. Confirmed by direct read.\n- deliveryBoyOrderChangeStatus has the identical shape: pre-lock gate at line 1670, lockForUpdate at line 1697, idempotent-only inner gate at line 1701, mutate at lines 1790-1791 with no inner allows() recheck.\n- OrderStateMachine.php (frozen, read-only): allows(CANCELED=16→REJECTED=19, non-admin) = FALSE (lines 63-70); allows(DELIVERED=13→OUT_FOR_DELIVERY=10) = FALSE (lines 60-61). Enum values confirmed in OrderStatus.php. So the two claimed illegal target transitions are indeed forbidden.\n- KDS reference pattern confirmed verbatim: KitchenDisplaySystemOrderService re-reads $fromLocked under lock (line 403) and re-validates OrderStateMachine::allows($fromLocked,...) at line 426 PLUS expected_status optimistic-lock 409 (lines 405-418). OrderService was NOT brought to that contract — proving the safe pattern was known and deliberately applied elsewhere.\n\nREACHABILITY (V1 LOCAL Plan B): the non-auth branch is reached by real admin routes — PosOrderController, OnlineOrderController, AdminTableOrderController change-status; delivery-boy path reached at routes/api.php:1364. Idempotency middleware does NOT block the reproduction: the route comment at api.php:946-948 states the key is a payload hash, so A→CANCELED and A→REJECTED yield DIFFERENT keys and both pass. The TOCTOU window is genuine (two concurrent distinct-target requests on the same order, e.g. POS PREPARED→DELIVERED racing a delivery dispatch PREPARED→OUT_FOR_DELIVERY, or a cancel racing a reject). Row lock serializes them so the loser reads the winner's committed status, fails only the idempotent-equality (not equal) and writes the forbidden transition.\n\nHONESTY / SEVERITY: the auditor's own downgrade to P1 is correct and I agree. Financial side-effects ARE idempotent and verified: PaymentService::cashBack early-returns on existing type='cash_back' Transaction (PaymentService.php:97-103) and LoyaltyService::refundPoints NOOPs on existing type='manual_add' (LoyaltyService.php:71-82); the row lock serializes the two txs, so no double cashback / double loyalty. This is NOT money-loss/NF525-chain (the HMAC audit_logs/z_reports chain is separate from order_status_transitions) → not P0. It IS a real state-machine-integrity defect: a forbidden transition is persisted to orders.status and recorded in the order_status_transitions ledger, corrupting the lifecycle invariant.\n\nEXISTING TEST does NOT cover it: tests/Feature/Orders/OrderServiceChangeStatusRaceSentinel.php only tests SAME-target races (both →DELIVERED, idempotent gate fires). It explicitly relies on the idempotent equality and never asserts an inner allows() recheck — confirming by omission that the distinct-target illegal-transition gap is unguarded.\n\nThe recommendation is sound and does NOT violate the frozen zone: it adds a caller-side inner allows() recheck in the NON-frozen OrderService.php (read-only use of OrderStateMachine::allows is fine), mirroring the KDS contract. Confidence 8 (not 10) only because the race requires concurrent distinct-target requests, which in single-cashier V1 LOCAL is uncommon though clearly reachable via POS+delivery or multi-staff."
+      },
+      {
+        "sev": "P2",
+        "sys": "kiosk",
+        "file": "resources/js/components/frontend/kiosk/KioskErrorPaymentRefusedComponent.vue:89-96",
+        "title": "Plan B: 'Payer en caisse' on payment-refused screen sends customer to cash-instruction for a PHANTOM (never-created) order — and the screen is reachable on the active V1 path despite a code comment claiming it is 'latent under Plan B'",
+        "frozen": false,
+        "recommendation": "On kiosk.error.payment-refused under Plan B, the only honest recovery is back to kiosk.payment (counter-route screen) to re-submit the cash order — same as retryPayment(), which IS recoverable because the cart is not reset on the catch path. payCounter()'s push to kiosk.cash-instruction is unsafe because no order exists; either (a) remove/hide the 'Payer en caisse' CTA when paymentRouteAllToCounter is true (it is redundant — the whole flow already routes to counter), or (b) add a beforeEnter guard on kiosk.cash-instruction that redirects to kiosk.idle (or kiosk.cart) when route.query.number is absent, mirroring requireOrderRef. Also correct the stale comment at lines 84-85. None of these files are in CLAUDE.md §7 frozen list (KioskErrorPaymentRefusedComponent.vue and kioskRoutes.js are NOT frozen; only KioskWizard/App/Upsell are) — scope-minimal direct edit is permissible.",
+        "reasoning": "REAL defect, verified end-to-end by static trace; downgraded P1 -> P2.\n\nCHAIN VERIFIED (all file:line confirmed via Read/grep):\n1. Plan B is LIVE on the active V1 path: config/kiosk.php:54 defaults payment_route_all_to_counter=true; master.blade.php:154 injects `kiosk: { paymentRouteAllToCounter: @json((bool) config(...,true)) }`; KioskPaymentComponent.vue:333-339 computed reads window.foodkingConfig.kiosk.paymentRouteAllToCounter -> renders the counter-route screen with a single Confirm button (template lines 5-49, v-if hides method-selection UI).\n2. Confirm -> confirmCounterRoute() (vue:421) sets method='cash' and calls confirmPayment().\n3. Any pre-creation throw inside confirmPayment's try (refreshQuote 422 on expired/absent token, lines 579-580 / 565-572; malformed order response 484-485; submitOrder network/5xx) lands in catch (508): paymentFailureCount += 1 (540), submitting=false (522), submitted=false (523) -> the Confirm button reappears (v-if !submitting && !submitted, line 41).\n4. confirmCounterRoute does NOT reset paymentFailureCount; the only reset sites are selectMethod (412 — DEAD under Plan B, method UI hidden) and post-threshold (546). So two consecutive Confirm failures -> paymentFailureCount >= MAX_PAYMENT_FAILURES(2) -> $router.push kiosk.error.payment-refused (541-555).\n5. On that screen, payCounter() (KioskErrorPaymentRefusedComponent.vue:89-96) does $router.push({name:'kiosk.cash-instruction'}) with NO query.\n6. kioskRoutes.js:244-257: kiosk.cash-instruction has NO beforeEnter guard (unlike waiting=requireOrderRef:216 and confirmation=requireConfirmationContext:223). Props default orderNumber='' / orderTotal=null.\n7. KioskCashInstructionComponent.vue:20 renders `#{{ orderNumber || '—' }}` -> \"#—\"; lines 26-32 KsPriceLine price=null. fr.json keys all resolve (verified: cash_instruction.title=\"Rendez-vous en caisse\", etc.). The payCounter comment (vue:92-94) claiming \"the cash-instruction route guard finds no order ref it safely redirects to idle\" is PROVABLY FALSE — no such guard exists. (Minor writeup nit: the \"Latent under Plan B\" stale comment is at lines 84-85 = retryPayment, not payCounter; substance unaffected.)\n\nSEVERITY DISCRIMINATOR (load-bearing): the error-refused screen is reached ONLY via PRE-creation throws. For cash, once submitOrder succeeds, navigation goes straight to kiosk.cash-instruction WITH a proper {number,total} query (vue:492-499). Therefore NO order is ever created when the #—/no-amount screen shows -> no orphan order, no money error, no NF525/fiscal exposure. That cleanly excludes P0.\n\nWhy P2 not P1: reachability is second-order — it requires (a) two consecutive backend/quote failures AND (b) the customer choosing the SECONDARY \"Payer en caisse\" CTA over the PRIMARY \"Réessayer le paiement\", which actually works (retryPayment -> kiosk.payment, cart not reset, the genuine recovery). The bad outcome still points the customer to the correct Plan B destination (the counter), only with degraded #—/no-amount info, and auto-redirects to idle after 45s. That is the P2 definition (degraded UX / robustness gap), not a broken or dead-end surface. Defensible as a weak P1, but per the adversarial-downgrade mandate P2 is the principled landing. Recommendation b (add a beforeEnter guard on kiosk.cash-instruction mirroring requireOrderRef, redirect to idle/cart when no order ref) plus correcting the false guard comment is the right, scope-minimal, non-frozen fix."
+      },
+      {
+        "sev": "P1",
+        "sys": "kds",
+        "file": "resources/js/components/admin/kitchenDisplaySystem/KdsHistoryDrawer.vue:430",
+        "title": "KDS \"Annuler bump\" (recall) button is dead in production — POST omits the X-Idempotency-Key header that its route requires, so it always 422s, then the catch block fakes a RAPPELÉ confirmation",
+        "frozen": false,
+        "recommendation": "In KdsHistoryDrawer.recall(), send the idempotency header on the POST, mirroring the change-status store path: `import { buildIdempotencyHeaders } from '../../../helpers/idempotencyHeaders'` then `axios.post(`admin/kds-order/recall/${order.id}`, {}, { headers: buildIdempotencyHeaders({}) })`. Separately: stop treating a 422 as a success-equivalent — only set recalledMap/show the RAPPELÉ badge on a genuine 200, and surface real failures via alertService.error (not the non-existent window.toastr). Update the JS sentinel kdsRecallButtonSentinel.spec.js:84 to require the header argument, and add an IDEMPOTENCY_MIDDLEWARE_ENABLED=true case to the PHP recall sentinel so the gate is actually tested. Note: KdsHistoryDrawer.vue is NOT in the CLAUDE.md §7 frozen list, so this is a direct edit (no lock-plan needed).",
+        "reasoning": "REAL P1, fully verified against primary source. Every node of the chain confirmed by Read/grep:\n\n1. Headerless POST: KdsHistoryDrawer.vue:430 — `await axios.post(`admin/kds-order/recall/${order.id}`)` with NO second/third arg. Confirmed.\n2. Shared interceptor injects ONLY x-api-key, Accept-Language, Authorization, x-localization — never X-Idempotency-Key (axios-setup.js:76-93). Confirmed.\n3. Recall route IS idempotency-required: config/idempotency.php:70 `'api/admin/kds-order/recall/*'` in required_routes; route routes/api.php:1159-1161 attaches `->middleware(['idempotency','throttle:kds-bump'])`. Confirmed.\n4. Middleware 422s when required+empty: IdempotencyKeyMiddleware.php:52-57 throws MissingIdempotencyKeyException; isRouteRequired (159-180) matches via `$request->is(pattern)`. Gate is LIVE: idempotency.enabled = env('IDEMPOTENCY_MIDDLEWARE_ENABLED', false), .env:87 sets =true, and AppServiceProvider:223 forces true-or-refuse-boot in prod. Confirmed.\n5. Status IS 422 (the load-bearing node): MissingIdempotencyKeyException.php — `private readonly int $status = 422`, implements HttpExceptionInterface, getStatusCode()=>422, render()=>JSON 422 code MISSING_IDEMPOTENCY_KEY. Confirmed.\n6. Catch fakes RAPPELÉ: KdsHistoryDrawer.vue:446-451 `if (status===409||422) recalledMap[order.id]=Date.now()` → wasRecentlyRecalled() (400-411) true → badge v-else-if renders at template lines 180-187 (`label.kds_recall_badge`). No `$emit('recalled')` (success-only, line 433) so no card re-injection/cross-station sync. window.toastr never registered (grep: zero `window.toastr =` assignments, no toastr plugin) so error falls to console.warn — silent. Confirmed.\n7. Test blind spots: PHP sentinel tests/Feature/KDS/KitchenRecallEndpointSentinelTest.php sends x-api-key but NEVER X-Idempotency-Key and never enables the gate (phpunit.xml has zero IDEMPOTENCY vars → enabled defaults false → middleware short-circuits at line 41-43), so the required-key gate is never exercised. JS sentinel kdsRecallButtonSentinel.spec.js:84 regex `axios\\.post(`admin\\/kds-order\\/recall\\/${order\\.id}`)` LOCKS IN the headerless shape. Confirmed.\n\nCounter-arguments ruled out: (a) Not handled elsewhere — sibling change-status (same `idempotency` middleware, same required list, config:63) works ONLY because the store calls buildIdempotencyHeaders manually (kitchenDisplaySystemOrder.js:40), proving there is no global header injection. (b) Not stale config — boot guard forces enabled in prod. (c) Not SaaS-only — this is the V1 LOCAL KDS chef path (the \"Annuler bump\" button at template line 162-173, reachable, gated by canRecall). (d) File not frozen — KdsHistoryDrawer.vue is NOT in CLAUDE.md §7.\n\nNet effect: chef clicks \"Annuler bump\", middleware 422s before the controller runs (no kitchen_recall transition appended, no cross-station broadcast), drawer shows a deceptive green RAPPELÉ badge, error swallowed to console. Dead button + false confirmation on a reachable V1 path.\n\nSeverity P1 (not P0): no data corruption, no NF525 chain breakage (recall is a compensating append-only transition that never even runs here — orders.status untouched server-side, so fiscal state is unaffected), no money/auth/branch issue. It is a dead button on a real path producing missing critical state + a misleading UI confirmation — squarely P1. Recommendation in the finding (send buildIdempotencyHeaders on the POST, only set the badge on a genuine 200, surface failures via alertService, tighten both sentinels) is correct and requires no frozen-zone touch. Confidence 9 (not 10) only because I did not execute a live HTTP request against a booted dev server with the order in PREPARED state — but the static chain is complete and unambiguous."
+      },
+      {
+        "sev": "P2",
+        "sys": "admin-cash",
+        "file": "app/Http/Controllers/Admin/Observability/SyncOverviewController.php:393-396",
+        "title": "Admin \"Retry failed\" button re-introduces the exact domain_events anti-pattern that the B.1 heal removed (resets attempts=0 + wipes last_error; no attempts/age caps)",
+        "frozen": false,
+        "recommendation": "Mirror the canonical OutboxRetryFailedCommand contract in outboxRetryFailed(): forceFill ONLY `['dispatched_at' => null]` (keep attempts monotonic, preserve last_error), and add the same `attempts < REPLAY_MAX_ATTEMPTS` + `created_at >= cutoff` guards so the dashboard button cannot replay a chronically-failing/expired event the console lane intentionally skips. Observability/ops correctness fix; NOT NF525 (domain_events is the broadcast/sync outbox, not the audit_logs/z_reports fiscal chain). Not a frozen-zone file.",
+        "reasoning": "VERIFIED REAL via Read on every link of the chain. The code divergence is exactly as claimed:\n\n1. CONTROLLER (SyncOverviewController.php:392-396): `outboxRetryFailed()` does `forceFill(['attempts' => 0, 'last_error' => null])->save()` for every matching row. Query at lines 384-389 is `whereNull('dispatched_at')->whereNotNull('last_error')->limit($batch)` with batch capped at 200 (lines 379-382), NO attempts cap and NO created_at window.\n\n2. CANONICAL CONSOLE LANE (OutboxRetryFailedCommand.php): the B.1 heal (commit 7db47f022, 2026-05-19) deliberately diverged. Lines 154-156 forceFill ONLY `['dispatched_at' => null]` (attempts MONOTONIC, last_error PRESERVED). Query bounded by `->where('attempts','<',REPLAY_MAX_ATTEMPTS=12)` (l.67,104) and `->where('created_at','>=',$cutoff)` (l.105). Docblock l.48-67 explicitly states the pre-heal `attempts=0`+wipe-last_error caused 'lost last_error forensic trail each cycle' and rows 'never crossed PruneOutboxCommand threshold'.\n\n3. REACHABILITY confirmed: route api.php:1176 POST /outbox/retry-failed → outboxRetryFailed, gated role:Admin|Tenant Admin + throttle:10,1. In V1 LOCAL Le Cayenne the owner IS Admin, so the 'Retry échouées' button (OutboxOverviewComponent.vue:61 data-testid, axios POST l.376) is fully reachable. NOT a SaaS-only concern.\n\n4. DispatchDomainEventsJob.php:80-82 re-increments attempts +1 per claim; PruneOutboxCommand.php:56-57 reclaims at `attempts>=6 AND created_at<cutoff`. CONFIRMED: the per-click attempts=0 wipe only DELAYS prune-eligibility (the job re-increments), it does not permanently break it. The deterministic harm is the per-click last_error forensic wipe + the missing created_at window (dashboard can replay an event the console lane intentionally skips).\n\n5. AGGRAVATING (strengthens 'real', not severity): the green controller test OutboxOverviewControllerTest.php:183-187 actively ASSERTS the pre-heal behavior (`attempts => 0, last_error => null`). The B.1 sentinel OutboxRetryFailedAttemptsPreservedTest only exercises the Artisan path. Textbook green-test != correct — explains why the heal touched only the console lane.\n\nSEVERITY DOWNGRADE P1→P2: the button performs its stated function (events requeue and re-dispatch — net outcome identical to console lane, NOT a dead button). Harm is delayed-not-permanent, NOT fiscal (domain_events = broadcast/sync outbox, not audit_logs/z_reports — auditor agrees), NOT auth/money/data-corruption. What remains is forensic last_error loss + missing attempts/created_at caps = robustness/observability degradation, which the rubric places at P2. Not a frozen-zone file.\n\nRECOMMENDATION (as auditor wrote it): mirror the console contract in outboxRetryFailed() — forceFill ONLY `['dispatched_at' => null]`, add `attempts < REPLAY_MAX_ATTEMPTS` + `created_at >= cutoff` guards, and update OutboxOverviewControllerTest.php:183-187 which currently pins the wrong behavior."
+      },
+      {
+        "sev": "P1",
+        "sys": "admin-cash",
+        "file": "app/Http/Controllers/Admin/CashOverviewController.php:198",
+        "title": "Cash overview summary totals (grand_total / by_source / by_mode) are silently truncated to the 500 most-recent rows — wrong reconciliation figures with no caveat on the summary cards",
+        "frozen": false,
+        "recommendation": "Compute summary aggregates (total, by_source, by_mode, count) with a SEPARATE uncapped SQL aggregate query (SUM/GROUP BY over the same whereBetween + type=payment + branch/source/mode filters), independent of the 500-row list cap. Keep the 500 cap only on the displayed row list. Alternatively, propagate `capped` into the summary payload and render an explicit 'totaux partiels' warning ON the summary cards. Read-only controller, not frozen — direct fix in scope.",
+        "reasoning": "VERIFIED REAL. Code trace confirmed line-for-line in app/Http/Controllers/Admin/CashOverviewController.php:\n- L70 const MAX_ROWS = 500; L146 ->limit(self::MAX_ROWS) on the Transaction query; L198 $transactions = $query->get() returns the capped collection; L202 $summary = $this->summarize($transactions).\n- summarize() L364-398 iterates `foreach ($transactions as $tx)` and sums total/by_source/by_mode over ONLY that capped collection. There is NO separate uncapped SUM()/GROUP BY query for the summary. So when a window has >500 type=payment rows, grand_total + by_source + by_mode understate the real encaissements.\n- Telling contrast: the author DID write a separate uncapped aggregate (drawerCashCollectedUnfiltered, L333-358) for the drawer reconciliation precisely to avoid filter/cap contamination — but did NOT do the same for the summary cards, confirming this is an oversight not an intentional design.\nFrontend confirmed: CashOverviewComponent.vue summary cards (L83-107, grand_total + per-source) carry NO caveat. The only cap notice is L278-284 INSIDE the transactions-table block, and the FR text (fr.json:1091 'cash_overview_capped_notice' = \"Plus de 500 transactions sur la période — affichez seulement les plus récentes...\") explicitly warns only that the LIST is partial, not the totals. meta.capped is computed (L252) and available but never propagated to a summary-card warning.\nReachability in V1 LOCAL: the date inputs (Vue L29-34) accept arbitrary from/to; the default is today-only but the controller header itself (L18-23) frames this surface for écart reconciliation, a per-period grain. A week/month window at a busy single restaurant readily exceeds 500 paid transactions, making the cap reachable on a normal admin reconciliation flow — not contrived. Existing test wave-x4-cash-overview.spec.js:256-279 only probes that the capped flag/notice renders; it does NOT assert summary totals stay correct when capped, so the defect is uncaught (green test != correct).\nCaveats lowering confidence from 10: dev DB has only 16 transactions so the cap is never hit there — this is a scale/logic defect, currently latent rather than firing on every load. No live reproduction possible without seeding >500 rows. The mandate to detect \"cash manquant\" is genuinely defeated when capped, but it's silent above a volume threshold, not on every render.\nSEVERITY: P1 confirmed (original). It is wrong money on a real reconciliation path with a misleading authoritative-looking total and a missing critical caveat — a P1 by definition. Not P0: no data corruption (only displayed aggregate is wrong, stored rows intact), no NF525/auth/branch breakage, surface fully functions below the 500 threshold, and it requires a high-volume window to manifest. Read-only non-frozen controller; the recommended fix (separate uncapped SUM/GROUP BY for summary, keep 500 cap on the list only) is in scope."
+      }
+    ],
+    "p2p3": [
+      {
+        "sev": "P2",
+        "sys": "central-sync",
+        "file": "app/Listeners/PersistOrderPaymentStatusChangedToOutbox.php:61",
+        "title": "Dead emitter: OrderPaymentStatusChanged is broadcast but has ZERO JS consumers — standalone payment_status flips never push-update any surface (polling-only)"
+      },
+      {
+        "sev": "P2",
+        "sys": "central-sync",
+        "file": "app/Console/Commands/OutboxRescueCommand.php:42",
+        "title": "outbox:rescue lane B re-broadcasts ALL healthy already-delivered events every cron tick — predicate lacks broadcast-success/last_error guard (~4x spurious re-broadcast per event)"
+      },
+      {
+        "sev": "P2",
+        "sys": "central-fiscal",
+        "file": "app/Services/Fiscal/ZReportService.php:632-664",
+        "title": "Z-report total_tva and total_by_tax_rate derive from two unreconciled sources; HMAC chain cannot detect divergence (NF525 ventilation-par-taux integrity gap)"
+      },
+      {
+        "sev": "P2",
+        "sys": "central-orderflow",
+        "file": "app/Services/OrderService.php:2266-2292",
+        "title": "changePaymentStatus non-auth path is the only status mutator without lockForUpdate — architectural inconsistency / defense-in-depth weakness independent of the fiscal-gap exploit"
+      },
+      {
+        "sev": "P3",
+        "sys": "central-orderflow",
+        "file": "app/Domain/Order/OrderStateMachine.php:87-127",
+        "title": "Dead duplicated kitchen-release helpers in frozen OrderStateMachine diverge from the live KitchenReleaseRule copy"
+      },
+      {
+        "sev": "P2",
+        "sys": "central-orderflow",
+        "file": "app/Services/FrontendOrderService.php:690",
+        "title": "Kiosk-token IDOR: any customer at a shared kiosk can cancel/view another customer's pending order (ownership check collapses to a shared machine user_id)"
+      },
+      {
+        "sev": "P2",
+        "sys": "central-orderflow",
+        "file": "app/Services/OrderService.php:2266",
+        "title": "changePaymentStatus seals fiscal_sequence_no without lockForUpdate — concurrent UNPAID→PAID can permanently gap the NF525 sequence"
+      },
+      {
+        "sev": "P2",
+        "sys": "central-orderflow",
+        "file": "app/Services/PaymentService.php:409",
+        "title": "Counter-collect: synchronous outbox listener's bare firstOrCreate INSERT can 500/422 the cashier AFTER the payment + fiscal seal already committed"
+      },
+      {
+        "sev": "P3",
+        "sys": "central-auth",
+        "file": "app/Http/Requests/OrderRequest.php:145",
+        "title": "branch_id on web/mobile order CREATE lacks exists:branches,id validation (single-tenant V1: FK fails closed, no exploit)"
+      },
+      {
+        "sev": "P3",
+        "sys": "central-auth",
+        "file": "app/Services/FrontendOrderService.php:662 (and :772)",
+        "title": "Authz denial on frontend order show()/changeStatus() returns HTTP 422 instead of 403 (status-code masking)"
+      },
+      {
+        "sev": "P2",
+        "sys": "pos-caisse",
+        "file": "app/Services/PosParkedOrderService.php:99",
+        "title": "Parked-order recall is a destructive read with no client ACK / idempotency — lost response = permanently lost cashier work"
+      },
+      {
+        "sev": "P3",
+        "sys": "pos-caisse",
+        "file": "app/Services/Loyalty/PosRedemptionService.php:69,98,189-228",
+        "title": "Loyalty POS redeem locks the customer row but never the order row (TOCTOU on order.discount/total/payment_status) — V1 non-blocking"
+      },
+      {
+        "sev": "P2",
+        "sys": "pos-caisse",
+        "file": "resources/js/components/admin/pos/ParkedOrdersComponent.vue:84",
+        "title": "\"Annuler/Discard\" parked-order button hard-deletes the basket with NO confirmation (only destructive action in the POS subsystem missing a guard)"
+      },
+      {
+        "sev": "P2",
+        "sys": "pos-caisse",
+        "file": "resources/js/components/admin/pos/PosRefundModal.vue:46",
+        "title": "POS modals declare aria-modal=\"true\" but do not trap Tab focus — Tab/Shift+Tab escapes the dialog to the page behind it (WCAG 2.4.3 / focus-containment gap), consistent across all three counter modals"
+      },
+      {
+        "sev": "P2",
+        "sys": "kiosk",
+        "file": "resources/js/components/frontend/kiosk/KioskErrorPaymentRefusedComponent.vue:95",
+        "title": "Plan B: payment-refused 'Payer en caisse' CTA routes to a phantom cash-instruction screen with no order (#—) and no backend order"
+      },
+      {
+        "sev": "P2",
+        "sys": "kiosk",
+        "file": "resources/js/components/frontend/kiosk/KioskErrorNetworkComponent.vue:54",
+        "title": "Dead CTA buttons on kiosk network + menu-unavailable error screens (emit reaches no listener, no $router fallback) — latent, deep-link-only today"
+      },
+      {
+        "sev": "P2",
+        "sys": "kiosk",
+        "file": "resources/js/components/frontend/kiosk/KioskErrorNetworkComponent.vue:54",
+        "title": "Dead 'Réessayer' + 'Prévenir l'équipe' buttons on network error route (emit reaches no listener, no router fallback) — same defect class fixed today on payment-refused but missed here + on menu-unavailable"
+      },
+      {
+        "sev": "P2",
+        "sys": "kiosk",
+        "file": "resources/js/components/frontend/kiosk/KioskErrorPaymentRefusedComponent.vue:89",
+        "title": "Plan B 'Payer en caisse' on payment-refused lands customer on a context-less cash-instruction screen (#— / no amount) for an order that was never created"
+      },
+      {
+        "sev": "P3",
+        "sys": "kiosk",
+        "file": "app/Http/Controllers/Frontend/PaymentReconcileController.php:151",
+        "title": "reconcile-pending promotes order to PAID with branch-only check, no per-order user_id ownership check (defense-in-depth asymmetry vs paymentConfirm; no V1 exploit target)"
+      },
+      {
+        "sev": "P2",
+        "sys": "kds",
+        "file": "app/Services/KitchenDisplaySystemOrderService.php:386-468",
+        "title": "KDS bump payment gate is UI-only — backend changeStatus never inspects payment_status; the documented \"server-side block\" does not exist"
+      },
+      {
+        "sev": "P2",
+        "sys": "kds",
+        "file": "resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue:165-177",
+        "title": "Recall-re-injected PREPARED card shows a live \"Prêt\" CTA that is a backend no-op and fires a false \"commande prête\" screen-reader announcement"
+      },
+      {
+        "sev": "P2",
+        "sys": "kds",
+        "file": "resources/js/services/KdsSyncService.js:298",
+        "title": "KDS adaptive polling cadence is dead in production — WebSocketService↔KdsSyncService contract mismatch (state property/casing + state_change payload keys), masked by a self-consistent unit test"
+      },
+      {
+        "sev": "P3",
+        "sys": "kds",
+        "file": "app/Services/KitchenDisplaySystemOrderService.php:338",
+        "title": "KDS recall (RAPPELÉ) is invisible to peer stations on the poll fallback and entirely invisible on an admin-operated KDS, because recall never bumps Order.updated_at and the only delivery channel is a branch-only Echo broadcast"
+      },
+      {
+        "sev": "P2",
+        "sys": "oss",
+        "file": "resources/js/components/admin/orderStatusScreen/PreparingAndReadyComponent.vue:369-386 (and mount at :110-115)",
+        "title": "False \"newly-ready\" flash storm on every OSS mount/reload — entire PRÊT column flashes + every ready card pulses as if just-readied"
+      },
+      {
+        "sev": "P3",
+        "sys": "oss",
+        "file": "resources/js/components/admin/orderStatusScreen/PreparingAndReadyComponent.vue:395-398",
+        "title": "Technical error toast (alertService.error) can surface on the public customer TV wall"
+      },
+      {
+        "sev": "P2",
+        "sys": "oss",
+        "file": "app/Services/OrderStatusScreenOrderService.php:132",
+        "title": "OSS 8h stale-prune is ANDed across the advance-order branch, defeating the documented [AUDIT-52-BUG1] zombie-prevention intent and diverging from KDS — an advance (next-day) order vanishes from the customer wall on its actual pickup day while still PREPARING/PREPARED"
+      },
+      {
+        "sev": "P3",
+        "sys": "oss",
+        "file": "resources/js/components/admin/orderStatusScreen/PreparingAndReadyComponent.vue:369-385",
+        "title": "First hydrate flashes/pulses the green PRÊT column for EVERY already-PREPARED order (no first-load guard)"
+      },
+      {
+        "sev": "P3",
+        "sys": "oss",
+        "file": "resources/js/components/admin/orderStatusScreen/PreparingAndReadyComponent.vue:40",
+        "title": "Empty-state placeholder dash has sub-AA contrast (#A0A3BD on white ≈ 2.5:1)"
+      },
+      {
+        "sev": "P2",
+        "sys": "livreur",
+        "file": "resources/js/components/admin/deliveryBoyCashSession/DeliveryBoyCashSessionShowComponent.vue:4",
+        "title": "Show page renders a fully blank screen on fetch 404 / error (no error or not-found state)"
+      },
+      {
+        "sev": "P3",
+        "sys": "livreur",
+        "file": "app/Http/Requests/DeliveryBoyCashSessionReconcileRequest.php:34",
+        "title": "Dead `notes` validation rule on reconcile (never read or persisted)"
+      },
+      {
+        "sev": "P3",
+        "sys": "livreur",
+        "file": "resources/js/components/layouts/backend/BackendMenuComponent.vue:105",
+        "title": "Sidebar menu maps cash-sessions to a non-existent permission key (fail-open, cosmetic only)"
+      },
+      {
+        "sev": "P2",
+        "sys": "livreur",
+        "file": "app/Services/Delivery/DeliveryBoyCashSessionService.php:193-273",
+        "title": "Delivery cash reconcile has no variance gate — controller's CashVarianceRequiresApprovalException catch is unreachable dead code; sibling POS path enforces it"
+      },
+      {
+        "sev": "P2",
+        "sys": "livreur",
+        "file": "app/Services/Delivery/DeliveryBoyCashSessionService.php:193-273",
+        "title": "Livreur cash reconcile has NO variance approval gate (controller catch is dead code; service comment falsely claims gate is 'reused from POS')"
+      },
+      {
+        "sev": "P2",
+        "sys": "admin-cash",
+        "file": "resources/js/components/admin/stock/StockRuptureDashboardComponent.vue:604-623",
+        "title": "Bulk extra/variation toggle: partial backend success is silently committed while the UI optimistic flip is fully rolled back (transient UI↔DB divergence)"
+      },
+      {
+        "sev": "P2",
+        "sys": "admin-cash",
+        "file": "resources/js/components/admin/observability/OutboxOverviewComponent.vue:57-66",
+        "title": "\"Retry failed\" button is enabled by failedJobs.count but the retry endpoint never touches the failed_jobs table — misleading near-dead action next to the Failed Jobs section"
+      },
+      {
+        "sev": "P2",
+        "sys": "admin-cash",
+        "file": "resources/js/components/admin/cashOverview/CashOverviewComponent.vue:387",
+        "title": "Cash overview silently renders \"empty\" state on a failed/forbidden load — mis-presents API error as \"no cash today\" on the écart-detection surface"
+      },
+      {
+        "sev": "P2",
+        "sys": "admin-cash",
+        "file": "resources/js/components/admin/observability/OutboxOverviewComponent.vue:358",
+        "title": "Outbox dashboard itself fails silently — loadAll/retryFailed/drainFailed have try/finally with NO catch, and there is no error UI; the component built to surface silent worker failures fails silently"
+      },
+      {
+        "sev": "P2",
+        "sys": "admin-cash",
+        "file": "resources/js/components/admin/observability/OutboxOverviewComponent.vue:382",
+        "title": "Destructive \"drain failed jobs\" action permanently DELETEs failed_jobs rows with no confirmation dialog"
+      },
+      {
+        "sev": "P2",
+        "sys": "admin-cash",
+        "file": "app/Http/Controllers/Admin/CashOverviewController.php:222",
+        "title": "Cash-drawer reconciliation 'Espèces encaissées aujourd'hui' / 'Espèces attendues au tiroir' sums the arbitrary multi-day UI window but adds it to a single open session's opening_amount and labels it 'today'"
+      },
+      {
+        "sev": "P2",
+        "sys": "admin-cash",
+        "file": "resources/js/components/admin/stock/StockRuptureDashboardComponent.vue:604",
+        "title": "Stock extra/variation cascade toggle is non-atomic despite an 'All-or-nothing' comment — a partial fan-out failure persists a hidden DB split-state that does not self-heal"
+      }
+    ],
+    "perSystemCounts": [
+      {
+        "sys": "central-sync",
+        "raw": 5,
+        "criticalVerified": 3
+      },
+      {
+        "sys": "central-fiscal",
+        "raw": 4,
+        "criticalVerified": 3
+      },
+      {
+        "sys": "central-orderflow",
+        "raw": 8,
+        "criticalVerified": 3
+      },
+      {
+        "sys": "central-auth",
+        "raw": 2,
+        "criticalVerified": 0
+      },
+      {
+        "sys": "pos-caisse",
+        "raw": 4,
+        "criticalVerified": 0
+      },
+      {
+        "sys": "kiosk",
+        "raw": 6,
+        "criticalVerified": 1
+      },
+      {
+        "sys": "kds",
+        "raw": 5,
+        "criticalVerified": 1
+      },
+      {
+        "sys": "oss",
+        "raw": 5,
+        "criticalVerified": 0
+      },
+      {
+        "sys": "livreur",
+        "raw": 5,
+        "criticalVerified": 0
+      },
+      {
+        "sys": "admin-cash",
+        "raw": 9,
+        "criticalVerified": 2
+      }
+    ]
+  }
+}

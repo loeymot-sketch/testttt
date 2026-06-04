@@ -26,4 +26,44 @@ return [
         FILTER_VALIDATE_BOOLEAN,
         FILTER_NULL_ON_FAILURE
     ) ?? true,
+
+    /*
+     * [PR-02 core-bulletproof 2026-06-04] KDS sync-degradation banner contract.
+     *
+     * Owner mandate: a silent degradation is GRAVE. When soketi drops and the
+     * KDS falls back to ~30-60s polling, the kitchen MUST see it. The real
+     * Le Cayenne box runs APP_ENV=local, so the old "hide in local" gate left
+     * the kitchen blind. This key makes the contract explicit and FAIL-SAFE:
+     *
+     *   - BOX DEFAULT = VISIBLE (true). No override → kitchen always warned.
+     *   - DEV OPT-OUT  = set KDS_SHOW_FALLBACK_BANNER=false in .env to silence
+     *     the permanent banner that appears when soketi is intentionally off
+     *     in development. The risky state is opt-OUT, never opt-in.
+     *
+     * Precedence in KitchenDisplaySystemComponent::kdsSuppressFallbackBanner:
+     *   suppress ONLY IF (appEnv === 'local' AND
+     *                     window.FK_KDS_SHOW_FALLBACK_BANNER === false)
+     *
+     * NOTE: the frontend currently reads window.FK_KDS_SHOW_FALLBACK_BANNER.
+     * Wiring THIS config value through master.blade.php into that global is
+     * DEFERRED to avoid a collision with a parallel session editing
+     * master.blade.php. Until that wiring lands, the box default (flag
+     * undefined → banner VISIBLE) already satisfies the mandate; this key
+     * documents the intended contract and is the .env knob's home.
+     *
+     * Override via `.env`:
+     *   KDS_SHOW_FALLBACK_BANNER=false
+     */
+    'show_fallback_banner' => filter_var(
+        env('KDS_SHOW_FALLBACK_BANNER', true),
+        FILTER_VALIDATE_BOOLEAN
+    ),
+
+    /*
+     * [Wave R-1 P-OWNER 2026-05-20] KDS bump CTA rate-limit per-minute ceiling.
+     * Owner mandate: chef chains multiple orders rapidly in fast-food kitchen.
+     * Local dev raises to 1000/min in `.env` (owner manual-test bursts).
+     * Production default 120/min — generous for any realistic kitchen pace.
+     */
+    'rate_limit_bump' => max(1, (int) env('KDS_RATE_LIMIT_BUMP', 120)),
 ];

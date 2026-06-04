@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GOAL — Le Cayenne · décisions ouvertes</title>
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#fafaf7;color:#1a1a1a;line-height:1.55;-webkit-font-smoothing:antialiased}
+  .container{max-width:980px;margin:0 auto;padding:32px 20px 220px}
+
+  /* HERO */
+  .hero{background:linear-gradient(135deg,#1a1a1a 0%,#2a1a1a 50%,#3a1f1f 100%);color:#fff;border-radius:28px;padding:52px 40px;margin-bottom:28px;position:relative;overflow:hidden}
+  .hero::before{content:"";position:absolute;top:-30%;right:-15%;width:500px;height:500px;background:radial-gradient(circle,rgba(244,80,30,0.30) 0%,transparent 65%);pointer-events:none}
+  .hero::after{content:"";position:absolute;bottom:-40%;left:-10%;width:400px;height:400px;background:radial-gradient(circle,rgba(255,193,7,0.15) 0%,transparent 65%);pointer-events:none}
+  .hero-content{position:relative;z-index:1}
+  .hero .tag{display:inline-block;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.2em;color:#FFC107;background:rgba(255,193,7,0.15);padding:6px 14px;border-radius:99px;margin-bottom:24px}
+  .hero h1{font-size:42px;font-weight:800;letter-spacing:-0.025em;margin-bottom:14px;line-height:1.08}
+  .hero h1 .red{color:#F4501E}
+  .hero p{font-size:17px;opacity:0.88;max-width:680px;font-weight:400;margin-bottom:8px}
+  .hero .small{font-size:13px;opacity:0.55;margin-top:14px;font-family:"SF Mono",Menlo,monospace}
+
+  /* PROGRESS */
+  .progress{background:#fff;border:1px solid #e5e5e0;border-radius:16px;padding:18px 24px;margin-bottom:24px;display:flex;align-items:center;gap:16px;position:sticky;top:16px;z-index:30;box-shadow:0 8px 24px rgba(0,0,0,0.05)}
+  .progress .lbl{font-size:13px;color:#666;font-weight:600;flex-shrink:0}
+  .progress .count{font-size:22px;font-weight:800;color:#F4501E;flex-shrink:0}
+  .progress-bar{flex:1;height:8px;background:#f0ede8;border-radius:99px;overflow:hidden}
+  .progress-fill{height:100%;background:linear-gradient(90deg,#F4501E,#FFC107,#22C55E);width:0%;transition:width 0.35s;border-radius:99px}
+
+  /* CATEGORY */
+  .category{margin-top:40px}
+  .cat-head{display:flex;align-items:center;gap:14px;margin-bottom:18px}
+  .cat-icon{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;flex-shrink:0;color:#fff}
+  .cat-icon.findings{background:linear-gradient(135deg,#F4501E,#d4400e)}
+  .cat-icon.deploy{background:linear-gradient(135deg,#3b82f6,#2563eb)}
+  .cat-icon.hardware{background:linear-gradient(135deg,#22C55E,#16A34A)}
+  .cat-icon.process{background:linear-gradient(135deg,#FFC107,#f59e0b)}
+  .cat-icon.backlog{background:linear-gradient(135deg,#a855f7,#9333ea)}
+  .cat-title{font-size:22px;font-weight:800;letter-spacing:-0.015em}
+  .cat-sub{font-size:13px;color:#666;margin-top:2px}
+  .cat-progress{background:#f4f1eb;border-radius:99px;padding:5px 12px;font-size:12px;font-weight:700;color:#666}
+
+  /* CARD */
+  .card{background:#fff;border-radius:20px;padding:26px 30px;margin-bottom:16px;border:1px solid #e8e6df;transition:all 0.2s ease;position:relative}
+  .card.critical{border-left:5px solid #F4501E}
+  .card.medium{border-left:5px solid #FFC107}
+  .card.low{border-left:5px solid #94a3b8}
+  .card.answered{border-color:#22C55E;background:linear-gradient(135deg,#f0fdf4 0%,#ffffff 30%)}
+
+  .card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:16px;flex-wrap:wrap}
+  .card-id{font-size:11px;font-weight:800;color:#999;text-transform:uppercase;letter-spacing:0.12em;font-family:"SF Mono",Menlo,monospace}
+  .card-title{font-size:19px;font-weight:800;line-height:1.3;margin-top:3px}
+  .card-priority{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;padding:5px 12px;border-radius:99px;flex-shrink:0}
+  .card-priority.critical{background:#FEE2E2;color:#991B1B}
+  .card-priority.medium{background:#FEF3C7;color:#92400E}
+  .card-priority.low{background:#F3F4F6;color:#374151}
+
+  .field{margin-bottom:14px}
+  .field-lbl{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;color:#666;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+  .field-lbl .ic{font-size:14px}
+  .field-content{font-size:15px;color:#1f2937;line-height:1.6}
+  .field-content code{background:#1a1a1a;color:#a3e635;padding:2px 8px;border-radius:5px;font-family:"SF Mono",Menlo,monospace;font-size:13px;font-weight:600}
+
+  .reason{background:#fff8f4;border-radius:12px;padding:14px 18px;margin-top:10px;border-left:3px solid #F4501E;font-size:14px;color:#1a1a1a;line-height:1.6}
+  .reason strong{color:#F4501E;font-weight:800}
+
+  .options{margin-top:20px;display:flex;flex-direction:column;gap:10px}
+  .option{display:flex;align-items:flex-start;gap:14px;padding:16px 20px;border:2px solid #e8e6df;border-radius:14px;cursor:pointer;transition:all 0.15s;background:#fff}
+  .option:hover{border-color:#FFC107;background:#fffdf6}
+  .option input[type="radio"]{accent-color:#F4501E;width:20px;height:20px;cursor:pointer;flex-shrink:0;margin-top:2px}
+  .option-text{flex:1;font-size:15px;font-weight:600;line-height:1.4}
+  .option-text .desc{display:block;font-size:13px;color:#666;font-weight:400;margin-top:4px}
+  .option.selected{border-color:#F4501E;background:#fff8f4}
+  .option.selected .option-text{font-weight:700}
+  .option .tag-rec{display:inline-block;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;color:#F4501E;background:#FEE2E2;padding:3px 8px;border-radius:99px;margin-left:8px;vertical-align:middle}
+
+  /* SUBMIT */
+  .submit-bar{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #e5e5e0;padding:18px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px;box-shadow:0 -4px 24px rgba(0,0,0,0.1);z-index:100}
+  .submit-bar-inner{max-width:980px;width:100%;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:16px}
+  .submit-status{font-size:14px;color:#666}
+  .submit-status strong{color:#1a1a1a;font-size:16px}
+  .btn-launch{background:linear-gradient(135deg,#F4501E,#d4400e);color:#fff;border:none;font-size:16px;font-weight:800;padding:16px 32px;border-radius:14px;cursor:pointer;transition:all 0.15s;letter-spacing:0.02em;text-transform:uppercase}
+  .btn-launch:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(244,80,30,0.4)}
+  .btn-launch:disabled{background:#ccc;cursor:not-allowed;transform:none;box-shadow:none}
+
+  /* MODAL */
+  .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;align-items:center;justify-content:center;padding:20px}
+  .modal.active{display:flex}
+  .modal-content{background:#fff;border-radius:24px;padding:36px;max-width:780px;width:100%;max-height:85vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,0.3)}
+  .modal-content h2{font-size:28px;font-weight:800;margin-bottom:8px;color:#F4501E}
+  .modal-content p{color:#666;margin-bottom:20px;font-size:15px}
+  .modal-code{background:#1a1a1a;color:#a3e635;padding:20px;border-radius:12px;font-family:"SF Mono",Menlo,monospace;font-size:13px;line-height:1.6;overflow-x:auto;white-space:pre-wrap;word-break:break-word;max-height:380px;overflow-y:auto}
+  .modal-actions{display:flex;gap:12px;margin-top:22px}
+  .btn-copy{background:#22C55E;color:#fff;border:none;font-size:14px;font-weight:800;padding:14px 26px;border-radius:10px;cursor:pointer;flex:1;letter-spacing:0.02em;text-transform:uppercase}
+  .btn-copy:hover{background:#16A34A}
+  .btn-copy.copied{background:#15803d}
+  .btn-close{background:#f4f1eb;color:#1a1a1a;border:none;font-size:14px;font-weight:700;padding:14px 26px;border-radius:10px;cursor:pointer}
+
+  /* GOAL TEASE */
+  .goal-tease{background:linear-gradient(135deg,#1a1a1a,#3a1f1f);color:#fff;border-radius:20px;padding:30px 36px;margin-top:36px;position:relative;overflow:hidden}
+  .goal-tease::before{content:"";position:absolute;top:-30%;right:-10%;width:300px;height:300px;background:radial-gradient(circle,rgba(244,80,30,0.30) 0%,transparent 70%);pointer-events:none}
+  .goal-tease h3{font-size:22px;font-weight:800;color:#FFC107;margin-bottom:10px;position:relative;text-transform:uppercase;letter-spacing:0.04em}
+  .goal-tease p{opacity:0.88;font-size:15px;line-height:1.6;position:relative;margin-bottom:8px}
+  .goal-tease ul{padding-left:0;list-style:none;margin-top:14px;position:relative}
+  .goal-tease li{padding:6px 0 6px 24px;position:relative;font-size:14px}
+  .goal-tease li::before{content:"→";position:absolute;left:0;color:#F4501E;font-weight:800}
+
+  @media (max-width:680px){
+    .container{padding:20px 14px 240px}
+    .hero{padding:36px 24px;border-radius:20px}
+    .hero h1{font-size:30px}
+    .card{padding:22px}
+    .card-title{font-size:17px}
+    .submit-bar-inner{flex-direction:column;align-items:stretch;gap:12px}
+    .btn-launch{width:100%}
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-content">
+      <span class="tag">🎯 Le Cayenne · GOAL Mode · 2026-05-23</span>
+      <h1>10 décisions ouvertes.<br>Tu choisis, je <span class="red">lance le GOAL</span>.</h1>
+      <p>Toutes les questions vraiment en attente de toi rassemblées ici. Pour chacune : recommandation + raisonnement avec mémoire maximum projet. Quand tu auras choisi → je passe en mode GOAL : fix tout, test jusqu'à ce que tout soit vert, sans bouger les zones protégées, sans rien casser.</p>
+      <div class="small">Branche heal/cms-pr1-quickwins-2026-05-18 · HEAD d601fdd34 · 0 frozen-zone touch · NF525 chain bit-identical</div>
+    </div>
+  </div>
+
+  <!-- PROGRESS -->
+  <div class="progress">
+    <div class="lbl">Choix faits</div>
+    <div class="count" id="cnt">0/10</div>
+    <div class="progress-bar"><div class="progress-fill" id="fill"></div></div>
+  </div>
+
+  <!-- ============ CATEGORY 1 — FINDINGS WAVE FINAL ============ -->
+  <div class="category">
+    <div class="cat-head">
+      <div class="cat-icon findings">🔍</div>
+      <div style="flex:1">
+        <div class="cat-title">Findings Wave Final (3 décisions)</div>
+        <div class="cat-sub">Les 3 items que les 7 sous-agents ont remontés et qu'ils n'ont pas appliqués sans ton autorisation</div>
+      </div>
+      <div class="cat-progress" id="p1">0/3</div>
+    </div>
+
+    <!-- D1 -->
+    <div class="card medium" data-q="d1">
+      <div class="card-head">
+        <div>
+          <div class="card-id">D1 · S1-002 P1</div>
+          <div class="card-title">Toast "Trop de requêtes" qui apparait sur la borne</div>
+        </div>
+        <span class="card-priority medium">Moyen</span>
+      </div>
+      <div class="field">
+        <div class="field-lbl"><span class="ic">⚠️</span>Problème actuel</div>
+        <div class="field-content">Sur la borne, l'endpoint télémétrique <code>POST /api/frontend/kiosk/event</code> a une limite de 30 requêtes/minute. Si le client clique vite, un toast rouge "Trop de requêtes — patientez 22s" apparait. C'est confus parce que la commande n'a pas vraiment échoué — c'est juste un envoi statistique anonyme.</div>
+      </div>
+      <div class="field">
+        <div class="field-lbl"><span class="ic">📉</span>Impact concret</div>
+        <div class="field-content">Le client à la borne voit un message d'erreur alors que sa commande est en cours. Confusion. Peut hésiter à continuer.</div>
+      </div>
+      <div class="reason">
+        <strong>Mon raisonnement</strong> — La correction touche <code>bootstrap.js</code> avec un blast-radius cross-surface (POS+KDS+admin partagent l'intercepteur axios). Sans ton autorisation explicite je n'ai pas voulu modifier ce fichier policy. La fix est ~10 LOC : ajouter une allowlist d'endpoints "telemetry-only" qui ne déclenchent PAS le toast user-facing 429.
+      </div>
+      <div class="options">
+        <label class="option"><input type="radio" name="d1" value="fix-now"><span class="option-text">Fix maintenant<span class="tag-rec">Recommandé</span><span class="desc">~10 LOC dans bootstrap.js avec allowlist endpoints telemetry. Test E2E vérifie POS/KDS toujours OK. 30 min.</span></span></label>
+        <label class="option"><input type="radio" name="d1" value="defer"><span class="option-text">Defer V1.0.2<span class="desc">Tu vis avec ce toast pour V1, on corrige plus tard. Tu peux dire à ton client "tape doucement" 😄</span></span></label>
+      </div>
+    </div>
+
+    <!-- D2 -->
+    <div class="card low" data-q="d2">
+      <div class="card-head">
+        <div>
+          <div class="card-id">D2 · S2-001 P2</div>
+          <div class="card-title">Format € manquant dans le popup "Encaisser borne"</div>
+        </div>
+        <span class="card-priority low">Faible</span>
+      </div>
+      <div class="field">
+        <div class="field-lbl"><span class="ic">⚠️</span>Problème actuel</div>
+        <div class="field-content">Quand tu cliques "Encaisser" sur une commande borne, le popup affiche le champ "Montant reçu" comme <code>8.50</code> au lieu de <code>8,50 €</code>. Point au lieu de virgule, pas de symbole €.</div>
+      </div>
+      <div class="field">
+        <div class="field-lbl"><span class="ic">📉</span>Impact concret</div>
+        <div class="field-content">Inconsistance visuelle vs le reste de l'app qui utilise <code>82,50 €</code>. Caissier peut se demander 1/2 seconde "c'est combien exactement". Pas grave mais ça pique l'œil.</div>
+      </div>
+      <div class="reason">
+        <strong>Mon raisonnement</strong> — Fix ~5 LOC, le composant <code>PosCounterCollectModal.vue</code> n'est PAS en zone protégée. Utiliser le helper <code>formatMoneyEuro</code> qui existe déjà (utilisé partout sur Cash Overview). Très scope-minimal.
+      </div>
+      <div class="options">
+        <label class="option"><input type="radio" name="d2" value="fix-now"><span class="option-text">Fix maintenant<span class="tag-rec">Recommandé</span><span class="desc">5 LOC, helper existe déjà, scope-minimal. 15 min.</span></span></label>
+        <label class="option"><input type="radio" name="d2" value="defer"><span class="option-text">Defer V1.0.2<span class="desc">Tu peux vivre avec.</span></span></label>
+      </div>
+    </div>
+
+    <!-- D3 -->
+    <div class="card critical" data-q="d3">
+      <div class="card-head">
+        <div>
+          <div class="card-id">D3 · S2-002 P3 FROZEN</div>
+          <div class="card-title">Même problème € sur le popup paiement direct (zone protégée)</div>
+        </div>
+        <span class="card-priority critical">Zone protégée</span>
+      </div>
+      <div class="field">
+        <div class="field-lbl"><span class="ic">⚠️</span>Problème actuel</div>
+        <div class="field-content">Le popup <code>PaymentComponent.vue</code> (popup paiement de la caisse POS direct) affiche le hero comme <code>4.90€</code> au lieu de <code>4,90 €</code>. Même bug que D2 mais sur un fichier protégé §7.</div>
+      </div>
+      <div class="field">
+        <div class="field-lbl"><span class="ic">📉</span>Impact concret</div>
+        <div class="field-content">Identique à D2 — cosmétique caissier. Mais le fichier est ZONE PROTÉGÉE absolue (V1 validé par toi 2026-05-06).</div>
+      </div>
+      <div class="reason">
+        <strong>Mon raisonnement</strong> — Tu m'as protégé ce fichier explicitement parce qu'il était "parfait selon toi". Pour le toucher j'ai besoin de TON GO EXPLICITE + écrire un document LOCK_PAY (~30 min) qui dit "owner countersign, je touche pour cette raison précise, voici le rollback". Si tu veux le laisser tranquille comme avant, c'est aussi très acceptable — c'est cosmétique.
+      </div>
+      <div class="options">
+        <label class="option"><input type="radio" name="d3" value="lock-fix"><span class="option-text">GO avec LOCK + countersign<span class="desc">J'écris le LOCK_PAY doc, tu signes, je modifie. ~45 min total.</span></span></label>
+        <label class="option"><input type="radio" name="d3" value="keep-frozen"><span class="option-text">Laisser intact<span class="tag-rec">Recommandé</span><span class="desc">Cosmétique non-bloquant, zone protégée respectée. V1.0.2 si vraiment besoin.</span></span></label>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ CATEGORY 2 — DEPLOY CLOUD ============ -->
+  <div class="category">
+    <div class="cat-head">
+      <div class="cat-icon deploy">☁️</div>
+      <div style="flex:1">
+        <div class="cat-title">Déploiement cloud + domaine (4 décisions)</div>
+        <div class="cat-sub">Pour que la borne / caisse / cuisine accèdent au système via ton domaine internet</div>
+      </div>
+      <div class="cat-progress" id="p2">0/4</div>
+    </div>
+
+    <!-- D4 -->
+    <div class="card medium" data-q="d4">
+      <div class="card-head">
+        <div>
+          <div class="card-id">D4 · domaine</div>
+          <div class="card-title">Quel nom de domaine pour ton resto ?</div>
+        </div>
+        <span class="card-priority medium">Décision toi</span>
+      </div>
+      <div class="field">
+        <div class="field-lbl"><span class="ic">⚠️</span>Le choix</div>
+        <div class="field-content">Tu dois acheter un nom de domaine (~12€/an chez OVH ou Gandi). Le serveur cloud sera accessible via ce domaine, et tes bornes/caisses ouvriront simplement <code>https://[ton-domaine]/kiosk</code>, <code>/admin/pos</code>, etc.</div>
+      </div>
+      <div class="reason">
+        <strong>Mon raisonnement</strong> — <code>lecayenne.fr</code> est le plus simple et reconnaissable. Si déjà pris : <code>lecayenne-app.fr</code> (suffixe app pour distinguer du site marketing futur) ou <code>caisse.lecayenne.fr</code> (sous-domaine si tu as déjà lecayenne.fr).
+      </div>
+      <div class="options">
+        <label class="option"><input type="radio" name="d4" value="lecayenne-fr"><span class="option-text">lecayenne.fr<span class="tag-rec">Recommandé</span><span class="desc">Premier choix si dispo. Court, clair, mémorable. À vérifier chez OVH.</span></span></label>
+        <label class="option"><input type="radio" name="d4" value="lecayenne-app-fr"><span class="option-text">lecayenne-app.fr<span class="desc">Si lecayenne.fr pris. Distingue de l'éventuel site marketing.</span></span></label>
+        <label class="option"><input type="radio" name="d4" value="other"><span class="option-text">Autre (je te dirai dans le chat)<span class="desc">Si tu as un nom différent en tête (caisse.lecayenne.fr, lecayenne-paris.fr, etc.)</span></span></label>
+      </div>
+    </div>
+
+    <!-- D5 -->
+    <div class="card medium" data-q="d5">
+      <div class="card-head">
+        <div>
+          <div class="card-id">D5 · cloud</div>
+          <div class="card-title">Quel fournisseur cloud (~5-10€/mois) ?</div>
+        </div>
+        <span class="card-priority medium">Décision toi</span>
+      </div>
+      <div class="field">
+        <div class="field-lbl"><span class="ic">⚠️</span>Le choix</div>
+        <div class="field-content">Le serveur où tournera Laravel + MySQL + WebSocket. Le système chargera depuis le cloud, accessible via ton domaine.</div>
+      </div>
+      <div class="reason">
+        <strong>Mon raisonnement</strong> — <strong>Hetzner CX22</strong> est le meilleur rapport perf/prix en Europe (RGPD OK, centre de données Allemagne/Finlande, performances équivalentes AWS pour 1/4 du prix). 4€/mois pour 2 vCPU + 4GB RAM + 40GB SSD. Largement suffisant pour 1 restaurant. <strong>OVH VPS Starter</strong> alternative française (5-6€/mois). <strong>Scaleway Stardust</strong> aussi français (~4€/mois). Évite DigitalOcean ($6) et AWS ($10+) qui sont 2-3× plus chers pour pas plus de perf à ton échelle.
+      </div>
+      <div class="options">
+        <label class="option"><input type="radio" name="d5" value="hetzner"><span class="option-text">Hetzner CX22 — 4€/mois<span class="tag-rec">Recommandé</span><span class="desc">Meilleur rapport perf/prix. Allemagne, RGPD OK, très stable.</span></span></label>
+        <label class="option"><input type="radio" name="d5" value="ovh"><span class="option-text">OVH VPS Starter — ~5€/mois<span class="desc">Si tu préfères 100% français. Légèrement plus cher, perf comparable.</span></span></label>
+        <label class="option"><input type="radio" name="d5" value="scaleway"><span class="option-text">Scaleway Stardust — ~4€/mois<span class="desc">Français aussi (Paris). Bon, mais moins de doc Laravel que Hetzner.</span></span></label>
+      </div>
+    </div>
+
+    <!-- D6 -->
+    <div class="card medium" data-q="d6">
+      <div class="card-head">
+        <div>
+          <div class="card-id">D6 · push GitHub</div>
+          <div class="card-title">Quand pousser le code sur GitHub ?</div>
+        </div>
+        <span class="card-priority medium">Décision toi</span>
+      </div>
+      <div class="field">
+        <div class="field-lbl"><span class="ic">⚠️</span>Le choix</div>
+        <div class="field-content">Pour déployer sur le cloud, le serveur clone le code depuis GitHub. Ton repo existe (<code>loeymot-sketch/testttt</code>). La branche <code>heal/cms-pr1-quickwins-2026-05-18</code> contient tous les fixes récents — il faut soit la pousser, soit merger sur <code>main</code>.</div>
+      </div>
+      <div class="reason">
+        <strong>Mon raisonnement</strong> — <strong>Push la branche heal/* maintenant</strong>, sans merge sur main. Comme ça GitHub a une copie sauvegardée immédiatement (sécurité). Le merge sur main on le fera une fois tout testé+validé en prod. Le serveur cloud peut déployer depuis n'importe quelle branche.
+      </div>
+      <div class="options">
+        <label class="option"><input type="radio" name="d6" value="push-now"><span class="option-text">Push la branche heal/* sur GitHub maintenant<span class="tag-rec">Recommandé</span><span class="desc">Sauvegarde immédiate. Merge main plus tard quand prod stable. 2 min.</span></span></label>
+        <label class="option"><input type="radio" name="d6" value="push-merged"><span class="option-text">Push ET merger sur main<span class="desc">Plus radical. Main devient l'état actuel. Si bug post-merge = revert main = douloureux.</span></span></label>
+        <label class="option"><input type="radio" name="d6" value="wait"><span class="option-text">Attendre, ne pas push encore<span class="desc">Risque : si crash disque local maintenant = travail perdu. Pas recommandé.</span></span></label>
+      </div>
+    </div>
+
+    <!-- D7 -->
+    <div class="card medium" data-q="d7">
+      <div class="card-head">
+        <div>
+          <div class="card-id">D7 · deploy timing</div>
+          <div class="card-title">Quand préparer le script de déploiement ?</div>
+        </div>
+        <span class="card-priority medium">Workflow</span>
+      </div>
+      <div class="field">
+        <div class="field-lbl"><span class="ic">⚠️</span>Le choix</div>
+        <div class="field-content">Le script <code>deploy.sh</code> + <code>server-setup.sh</code> installe automatiquement Laravel + MySQL + Nginx + HTTPS sur le serveur cloud. Idempotent et bulletproof.</div>
+      </div>
+      <div class="reason">
+        <strong>Mon raisonnement</strong> — Je peux préparer le script maintenant en parallèle de tes décisions D4/D5/D6, comme ça quand tu auras acheté le domaine + commandé le serveur, je peux déployer en 30 minutes le moment où tu me donnes les accès SSH. Pas d'action cloud = juste un script local prêt à l'emploi.
+      </div>
+      <div class="options">
+        <label class="option"><input type="radio" name="d7" value="prepare-now"><span class="option-text">Préparer le script maintenant<span class="tag-rec">Recommandé</span><span class="desc">Script prêt sur disque. Aucune action cloud lancée. ~45 min de prep.</span></span></label>
+        <label class="option"><input type="radio" name="d7" value="prepare-after-domain"><span class="option-text">Attendre que j'aie acheté domaine + serveur<span class="desc">Plus séquentiel. Plus lent globalement mais propre.</span></span></label>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ CATEGORY 3 — HARDWARE ============ -->
+  <div class="category">
+    <div class="cat-head">
+      <div class="cat-icon hardware">🖨️</div>
+      <div style="flex:1">
+        <div class="cat-title">Matériel réel (1 décision)</div>
+        <div class="cat-sub">Pour passer du mode simulation au paiement réel</div>
+      </div>
+      <div class="cat-progress" id="p3">0/1</div>
+    </div>
+
+    <!-- D8 -->
+    <div class="card medium" data-q="d8">
+      <div class="card-head">
+        <div>
+          <div class="card-id">D8 · TPE choix</div>
+          <div class="card-title">Quel TPE (terminal carte bancaire) prends-tu ?</div>
+        </div>
+        <span class="card-priority medium">Décision toi</span>
+      </div>
+      <div class="field">
+        <div class="field-lbl"><span class="ic">⚠️</span>Le choix</div>
+        <div class="field-content">Bloqueur pour passer en production réelle avec vrais paiements carte. Le code a déjà du scaffolding partiel pour Senangpay (français). Stripe Terminal est plus mature mais plus cher.</div>
+      </div>
+      <div class="reason">
+        <strong>Mon raisonnement</strong> — <strong>Senangpay</strong> : tarifs français, code partial existe (gain ~3-5 jours dev), conformité française intégrée. Coût TPE ~150-300€ one-shot + ~1.5-2% par transaction. <strong>Stripe Terminal</strong> : SDK très propre, multi-pays, frais clairs 1.4% + €0.25. TPE ~250-300€. Si tu vises 100% France pour V1, Senangpay. Si tu prévois croissance internationale, Stripe Terminal. Tu peux aussi commencer Senangpay + migrer plus tard si besoin.
+      </div>
+      <div class="options">
+        <label class="option"><input type="radio" name="d8" value="senangpay"><span class="option-text">Senangpay (français)<span class="tag-rec">Recommandé V1</span><span class="desc">Code partial existe → intégration ~3 jours. France-only OK pour V1.</span></span></label>
+        <label class="option"><input type="radio" name="d8" value="stripe-terminal"><span class="option-text">Stripe Terminal<span class="desc">SDK mature, multi-pays. Tarifs clairs. Intégration ~5 jours from scratch.</span></span></label>
+        <label class="option"><input type="radio" name="d8" value="decide-later"><span class="option-text">Décider plus tard (continue avec simulation)<span class="desc">On garde POS_SIMULATION_HARDWARE=true pour V1 cloud, hardware en V1.0.1.</span></span></label>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ CATEGORY 4 — PROCESS ============ -->
+  <div class="category">
+    <div class="cat-head">
+      <div class="cat-icon process">⚙️</div>
+      <div style="flex:1">
+        <div class="cat-title">Process (2 décisions)</div>
+        <div class="cat-sub">Petits trucs pour améliorer notre façon de travailler</div>
+      </div>
+      <div class="cat-progress" id="p4">0/2</div>
+    </div>
+
+    <!-- D9 -->
+    <div class="card low" data-q="d9">
+      <div class="card-head">
+        <div>
+          <div class="card-id">D9 · MCP Playwright</div>
+          <div class="card-title">Activer le MCP Playwright pour tests intelligents ?</div>
+        </div>
+        <span class="card-priority low">Faible</span>
+      </div>
+      <div class="field">
+        <div class="field-lbl"><span class="ic">⚠️</span>Le choix</div>
+        <div class="field-content">J'ai installé <code>.mcp.json</code> qui active Playwright MCP. Pour qu'il prenne effet il faut redémarrer Claude Code. Une fois actif, je peux piloter le navigateur en LIVE au lieu de scripter à l'aveugle.</div>
+      </div>
+      <div class="reason">
+        <strong>Mon raisonnement</strong> — On peut faire SANS pendant ce GOAL — les scripts Playwright marchent (la wave-final 7-système a tourné OK). Le MCP serait un bonus pour les futures sessions. Si tu préfères ne pas casser ta session actuelle, on continue avec scripts.
+      </div>
+      <div class="options">
+        <label class="option"><input type="radio" name="d9" value="restart-now"><span class="option-text">Je redémarre Claude Code maintenant<span class="desc">Je perds le contexte actuel mais futures sessions plus puissantes.</span></span></label>
+        <label class="option"><input type="radio" name="d9" value="keep-session"><span class="option-text">Garder cette session, MCP plus tard<span class="tag-rec">Recommandé</span><span class="desc">On continue avec scripts. Tu redémarreras une autre fois quand session moins critique.</span></span></label>
+      </div>
+    </div>
+
+    <!-- D10 -->
+    <div class="card low" data-q="d10">
+      <div class="card-head">
+        <div>
+          <div class="card-id">D10 · Q2 sentinel quick win</div>
+          <div class="card-title">Fix les 2 tests AllergenSentinel rouges au passage ?</div>
+        </div>
+        <span class="card-priority low">Quick win</span>
+      </div>
+      <div class="field">
+        <div class="field-lbl"><span class="ic">⚠️</span>Le choix</div>
+        <div class="field-content">Tu avais choisi Q2=skip dans tes décisions précédentes. Les 2 tests AllergenCoverageSentinel restent rouges en CI. Le fix est juste 3 lignes dans <code>phpunit.xml</code> pour exclure le tag <code>manual</code>. C'est connu, simple, rapide.</div>
+      </div>
+      <div class="reason">
+        <strong>Mon raisonnement</strong> — Tu avais skip parce que tu ne voulais pas attaquer ce sujet à ce moment-là. Maintenant qu'on passe en mode GOAL avec fix global, c'est un quick win de 15 min qui rend ton CI 100% vert. Sans ça, tu auras toujours 2 tests rouges visibles à chaque PR.
+      </div>
+      <div class="options">
+        <label class="option"><input type="radio" name="d10" value="fix-now"><span class="option-text">Fix maintenant<span class="tag-rec">Recommandé</span><span class="desc">3 LOC, 15 min, CI 100% vert. Tant qu'à faire un GOAL.</span></span></label>
+        <label class="option"><input type="radio" name="d10" value="skip-still"><span class="option-text">Toujours skip<span class="desc">Tu vis avec 2 tests rouges en CI. Pas bloquant.</span></span></label>
+      </div>
+    </div>
+  </div>
+
+  <!-- GOAL TEASE -->
+  <div class="goal-tease">
+    <h3>🚀 Une fois tes 10 choix faits, je lance le GOAL</h3>
+    <p>Mode totalement autonome avec discipline GStack + Superpowers + Adversarial. Pas de retour vers toi sauf décision architecturale critique qu'on n'a pas anticipée.</p>
+    <ul>
+      <li>Phase A — j'applique toutes les corrections que tu autorises (D1-D10), scope-minimal, frozen-zone respecté</li>
+      <li>Phase B — je lance un test E2E massif des 7 surfaces post-corrections, jusqu'à convergence GREEN stable</li>
+      <li>Phase C — si D7 = "prepare-now" : je prépare le script de déploiement Hetzner</li>
+      <li>Phase D — si D6 = "push-now" : je push la branche sur GitHub (sauvegarde sécurisée)</li>
+      <li>Phase E — rapport final unique avec toutes les preuves + prochaines actions terrain pour toi</li>
+    </ul>
+    <p style="margin-top:14px"><strong style="color:#FFC107">Boucle jusqu'au vert.</strong> Si un test échoue, je corrige et re-teste. Max 3 cycles auto-correct, sinon je m'arrête et te demande.</p>
+  </div>
+
+</div>
+
+<!-- SUBMIT BAR -->
+<div class="submit-bar">
+  <div class="submit-bar-inner">
+    <div class="submit-status"><strong id="status-count">0/10</strong> décisions prises</div>
+    <button class="btn-launch" id="btn-launch" disabled>🚀 Lancer le GOAL</button>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal" id="modal">
+  <div class="modal-content">
+    <h2>🎯 GOAL prêt à lancer</h2>
+    <p>Copie ce résumé et colle-le dans le chat. Je démarre immédiatement le GOAL Mode.</p>
+    <pre class="modal-code" id="code"></pre>
+    <div class="modal-actions">
+      <button class="btn-copy" id="btn-copy">📋 Copier et lancer le GOAL</button>
+      <button class="btn-close" id="btn-close">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const TOTAL = 10;
+const STORAGE = 'lecayenne-goal-decisions';
+const CAT = { 1:['d1','d2','d3'], 2:['d4','d5','d6','d7'], 3:['d8'], 4:['d9','d10'] };
+const TITLES = {
+  d1:'Toast 429 telemetry borne',
+  d2:'Format € popup Encaisser',
+  d3:'Format € PaymentComponent (LOCK)',
+  d4:'Nom de domaine',
+  d5:'Fournisseur cloud',
+  d6:'Push GitHub',
+  d7:'Préparer script deploy',
+  d8:'TPE matériel',
+  d9:'Activer MCP Playwright',
+  d10:'Fix Q2 AllergenSentinel'
+};
+
+const saved = JSON.parse(localStorage.getItem(STORAGE) || '{}');
+document.querySelectorAll('input[type="radio"]').forEach(i => {
+  if (saved[i.name] === i.value) {
+    i.checked = true;
+    i.closest('.option').classList.add('selected');
+    i.closest('.card').classList.add('answered');
+  }
+});
+
+function update() {
+  const answered = new Set();
+  document.querySelectorAll('input[type="radio"]:checked').forEach(i => answered.add(i.name));
+  const n = answered.size;
+  document.getElementById('cnt').textContent = `${n}/${TOTAL}`;
+  document.getElementById('status-count').textContent = `${n}/${TOTAL}`;
+  document.getElementById('fill').style.width = (n/TOTAL*100) + '%';
+  document.getElementById('btn-launch').disabled = n < TOTAL;
+  Object.entries(CAT).forEach(([k, ids]) => {
+    const done = ids.filter(id => answered.has(id)).length;
+    document.getElementById(`p${k}`).textContent = `${done}/${ids.length}`;
+  });
+}
+
+document.querySelectorAll('input[type="radio"]').forEach(i => {
+  i.addEventListener('change', e => {
+    const card = e.target.closest('.card');
+    card.classList.add('answered');
+    card.querySelectorAll('.option').forEach(o => o.classList.remove('selected'));
+    e.target.closest('.option').classList.add('selected');
+    const data = {};
+    document.querySelectorAll('input[type="radio"]:checked').forEach(i => data[i.name] = i.value);
+    localStorage.setItem(STORAGE, JSON.stringify(data));
+    update();
+  });
+});
+
+update();
+
+document.getElementById('btn-launch').addEventListener('click', () => {
+  const ans = {};
+  document.querySelectorAll('input[type="radio"]:checked').forEach(i => ans[i.name] = i.value);
+  let out = '🚀 GOAL MODE — Le Cayenne\n';
+  out += 'Owner choices ' + new Date().toLocaleString('fr-FR') + '\n';
+  out += '═══════════════════════════════════════════════\n\n';
+  for (let i = 1; i <= 10; i++) {
+    const k = 'd' + i;
+    out += `D${i} — ${TITLES[k]}\n  → ${ans[k] || '(no choice)'}\n\n`;
+  }
+  out += '═══════════════════════════════════════════════\n';
+  out += '🎯 LANCE LE GOAL : applique, teste, boucle jusqu\'au vert.\n';
+  document.getElementById('code').textContent = out;
+  document.getElementById('modal').classList.add('active');
+});
+
+document.getElementById('btn-copy').addEventListener('click', async () => {
+  const t = document.getElementById('code').textContent;
+  try {
+    await navigator.clipboard.writeText(t);
+    const b = document.getElementById('btn-copy');
+    b.textContent = '✅ Copié — colle dans le chat';
+    b.classList.add('copied');
+    setTimeout(() => { b.textContent = '📋 Copier et lancer le GOAL'; b.classList.remove('copied'); }, 2500);
+  } catch(e) { alert('Sélectionne le texte manuellement'); }
+});
+
+document.getElementById('btn-close').addEventListener('click', () => {
+  document.getElementById('modal').classList.remove('active');
+});
+
+document.getElementById('modal').addEventListener('click', e => {
+  if (e.target.id === 'modal') document.getElementById('modal').classList.remove('active');
+});
+</script>
+
+</body>
+</html>

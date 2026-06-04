@@ -5,7 +5,6 @@ namespace App\Models;
 
 use App\Enums\Activity;
 use App\Enums\Ask;
-use App\Enums\Status;
 use App\Models\Address;
 use App\Models\Scopes\BranchScope;
 use App\Traits\MultiTenantModelTrait;
@@ -122,10 +121,22 @@ class User extends Authenticatable implements HasMedia
             }
         });
 
+        // [GOAL-J2-HEAL-01 2026-05-24] Phase J-ADV-7 HC-001 P0:
+        // hardcoded id===1 super-admin auto-restore was a security
+        // back-door. Compromised credentials remained usable after
+        // disablement attempt (status forced back to ACTIVE on every
+        // save). Critical vector for insider attack OR account-takeover
+        // persistence. Removed — admins must be properly disabled via
+        // the standard disable flow.
+        //
+        // Original intent: prevent accidental lockout of root admin.
+        // Better defense: separate seed migration that creates a
+        // recovery user + documented recovery procedure in runbook.
+        // NO automatic status re-activation in model lifecycle.
+        //
+        // Sentinel: tests/Feature/Security/UserSuperAdminDisableHardenedSentinel.php
         static::updating(function ($user) {
-            if ($user->id === 1) {
-                $user->status = Status::ACTIVE;
-            }
+            // intentionally empty — see comment above
         });
     }
 

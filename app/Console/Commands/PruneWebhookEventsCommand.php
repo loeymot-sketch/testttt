@@ -23,7 +23,14 @@ use Illuminate\Support\Facades\Log;
  * The UNIQUE(provider, webhook_id) idempotency contract is unaffected by
  * pruning processed rows: provider replays older than the retention window
  * are reprocessed as fresh (acceptable behavior per Stripe/SenangPay docs;
- * 90d window exceeds any provider replay horizon).
+ * 180d window exceeds any provider replay horizon).
+ *
+ * [P1 V1 Cloud-Prep insights 2026-05-18] Retention bumped 90d → 180d to
+ * align with PCI-DSS dispute / chargeback lookback windows (Stripe + most
+ * card networks honour disputes up to 180d post-transaction). 90d was
+ * safe for provider replays but discarded webhook evidence still needed
+ * for fraud chargeback reconciliation. The `--older-than-days` flag remains
+ * overridable, so the Kernel schedule can still tune per environment.
  *
  * NF525 invariant: `webhook_events` is an OPERATIONAL ledger, NOT a fiscal
  * audit table. Fiscal payment evidence lives on `order_payments` +
@@ -34,7 +41,7 @@ use Illuminate\Support\Facades\Log;
 class PruneWebhookEventsCommand extends Command
 {
     protected $signature = 'foodking:webhook:prune'
-        . ' {--older-than-days=90 : Rows older than N days are eligible}'
+        . ' {--older-than-days=180 : Rows older than N days are eligible (PCI dispute window)}'
         . ' {--batch=1000 : Max rows deleted per chunk (lock-window control)}'
         . ' {--dry-run : Report counts without deleting}';
 

@@ -348,6 +348,14 @@ export default {
             default: 'auto',
             validator: (v) => ['auto', 'open', 'active', 'close', 'movements'].includes(v),
         },
+        // [Wave O / O-1 2026-05-20] Branch context for the open/current call.
+        // Required when the caller is a global Admin (auth branch_id=0) so the
+        // backend knows which filiale's drawer to operate. Branch-bound staff
+        // can omit this — backend will use auth.branch_id.
+        branchId: {
+            type: [Number, String, null],
+            default: null,
+        },
     },
     emits: ['close', 'session-opened', 'session-closed'],
     data() {
@@ -359,6 +367,9 @@ export default {
             varianceReasonTouched: false,
             increments: [5, 10, 20, 50],
             errorMessage: '',
+            // [B-001 abuse-e2e] guards the one-shot movement hydration in resolveMode()
+            // against the mounted + 3-watcher storm (load at most once per session id).
+            movementsLoadedForSession: null,
         };
     },
     computed: {
@@ -448,9 +459,21 @@ export default {
         resolveMode() {
             if (this.initialMode && this.initialMode !== 'auto') {
                 this.mode = this.initialMode;
-                return;
+            } else {
+                this.mode = this.session && this.session.status === 'open' ? 'active' : 'open';
             }
-            this.mode = this.session && this.session.status === 'open' ? 'active' : 'open';
+            // [B-001 abuse-e2e] Hydrate movements for any OPEN session so expectedTotal
+            // (shown in BOTH the active summary and the close/reconcile views) reflects
+            // real cash IN, not just the opening float. loadCurrentSession does NOT fetch
+            // movements — without this the cashier reconciles the drawer against
+            // opening-only (e.g. 50,00 € instead of 402,00 €). Backend reconcileSession
+            // stays authoritative; this only corrects the operator-facing number.
+            // Guarded to load at most once per session id (resolveMode fires in mounted
+            // + open/session/initialMode watchers).
+            if (this.session && this.session.status === 'open' && this.session.id !== this.movementsLoadedForSession) {
+                this.movementsLoadedForSession = this.session.id;
+                this.$store.dispatch('cashDrawer/loadMovements');
+            }
         },
         emitClose() {
             this.errorMessage = '';
@@ -471,7 +494,13 @@ export default {
             if (!this.canOpen) return;
             this.errorMessage = '';
             try {
-                const session = await this.$store.dispatch('cashDrawer/openSession', this.openingAmount);
+                // [Wave O / O-1 2026-05-20] Forward branchId so global Admin
+                // can operate the dropdown-selected filiale's drawer. Backend
+                // resolves staff branch_id from auth context when this is null.
+                const session = await this.$store.dispatch('cashDrawer/openSession', {
+                    openingAmount: this.openingAmount,
+                    branchId: this.branchId,
+                });
                 this.$emit('session-opened', session);
                 this.mode = 'active';
             } catch (err) {

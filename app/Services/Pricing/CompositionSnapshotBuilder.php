@@ -133,8 +133,22 @@ final class CompositionSnapshotBuilder
                 // the ratio'd value here ensures the immutable composition
                 // snapshot (NF525 §V) matches the customer-facing line and
                 // the order_items.total_price column.
-                $payloadRole = (string) ($this->payloadValue($addon, 'role') ?? ($dbAddon->role ?? ''));
-                $effectiveRole = $payloadRole !== '' ? $payloadRole : (string) ($dbAddon->role ?? '');
+                //
+                // [HEAL-PLAN-D.1 / RED-Z4 P0-Z4-01 2026-05-19] Defense-in-depth:
+                // the FormRequest layer (`ValidatesAddonRoles` trait) is the
+                // primary gate; this is the snapshot-time backstop in case a
+                // future internal caller (queue, console) bypasses the
+                // FormRequest. Honor the kiosk menu-formula payload role
+                // ('menu_full' / 'menu_frites' / 'menu_boisson') ONLY when
+                // the DB addon row carries role='menu_component' (the single
+                // DB role eligible for ratio reduction). For all other DB
+                // roles (drink/side/dessert/upsell) the payload role MUST
+                // match the DB role exactly. NULL DB role rejects any
+                // payload role -> the catalog price is sealed in the snapshot.
+                $payloadRoleRaw = $this->payloadValue($addon, 'role');
+                $payloadRole = strtolower(trim((string) ($payloadRoleRaw ?? '')));
+                $dbRole      = strtolower(trim((string) ($dbAddon->role ?? '')));
+                $effectiveRole = $this->resolveEffectiveAddonRole($payloadRole, $dbRole);
                 $unitPrice = $this->menuRoleAdjustedAddonPrice($effectiveRole, $catalogPrice);
                 $addons[] = [
                     'addon_id'      => (int) $dbAddon->id,
@@ -188,6 +202,44 @@ final class CompositionSnapshotBuilder
         }
 
         return round($fullPrice * $ratio, 2);
+    }
+
+    /**
+     * [HEAL-PLAN-D.1 / RED-Z4 P0-Z4-01 2026-05-19] Defense-in-depth role
+     * resolution at snapshot-build time. Mirrors the semantic gate from
+     * `App\Http\Requests\Concerns\ValidatesAddonRoles`. The FormRequest
+     * layer remains the primary defense (rejects malformed payloads with
+     * a 422); this method is the snapshot-time backstop ensuring any
+     * forged "menu_*" role does NOT seal a ratio'd price into the NF525
+     * composition_snapshot even if the FormRequest is bypassed by an
+     * internal caller.
+     *
+     * Output contract:
+     *  - returns one of {'', 'menu_full', 'menu_frites', 'menu_boisson',
+     *    'drink', 'side', 'dessert', 'menu_component', 'upsell'}
+     *  - returning '' = no ratio, full catalog price (the safe default)
+     */
+    private function resolveEffectiveAddonRole(string $payloadRole, string $dbRole): string
+    {
+        // Cheap path: no payload role -> follow DB. (NULL DB also fine
+        // here; downstream `menuRoleAdjustedAddonPrice` no-ops on '' or
+        // any non-`menu_*` role.)
+        if ($payloadRole === '') {
+            return $dbRole;
+        }
+
+        // Kiosk menu-formula ratio roles: honor ONLY if DB row is
+        // menu_component. Otherwise fall back to the (safe) DB role —
+        // catalog price seals in the snapshot.
+        if ($payloadRole === 'menu_full' || $payloadRole === 'menu_frites' || $payloadRole === 'menu_boisson') {
+            return $dbRole === 'menu_component' ? $payloadRole : $dbRole;
+        }
+
+        // Native DB-vocabulary payload role: must match the DB row.
+        // Mismatch (incl. NULL DB) -> fall back to DB. This guarantees
+        // the snapshot's `role` field reflects the catalog truth even
+        // on bypassed FormRequest.
+        return $payloadRole === $dbRole ? $payloadRole : $dbRole;
     }
 
     private function payloadValue($payload, string $key)

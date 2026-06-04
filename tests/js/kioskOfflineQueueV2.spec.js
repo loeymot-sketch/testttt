@@ -7,6 +7,12 @@ import axe from 'axe-core';
 import KioskAppComponent from '../../resources/js/components/frontend/kiosk/KioskAppComponent.vue';
 import KioskOfflineConflictModalComponent from '../../resources/js/components/frontend/kiosk/KioskOfflineConflictModalComponent.vue';
 
+// [GOAL-2026-05-29] The conflict modal renders every user-facing string via $t
+// (completed i18n migration — keys present in fr.json). A bare mount throws
+// "$t is not a function". Provide a $t stub for the conflict-modal mounts; the
+// component requiring callers to supply $t is correct framework behavior, not a bug.
+const conflictModalGlobal = { global: { mocks: { $t: (key) => key } } };
+
 vi.mock('../../resources/js/helpers/kioskAnalytics', () => ({
   track: vi.fn(),
 }));
@@ -484,6 +490,7 @@ describe('kioskOfflineQueue v2', () => {
 
   it('renders the conflict modal entries and emits cancel/force events', async () => {
     const wrapper = mount(KioskOfflineConflictModalComponent, {
+      ...conflictModalGlobal,
       attachTo: document.body,
       props: {
         modelValue: true,
@@ -504,6 +511,7 @@ describe('kioskOfflineQueue v2', () => {
 
   it('keeps focus trapped inside the conflict modal', async () => {
     const wrapper = mount(KioskOfflineConflictModalComponent, {
+      ...conflictModalGlobal,
       attachTo: document.body,
       props: {
         modelValue: true,
@@ -525,6 +533,7 @@ describe('kioskOfflineQueue v2', () => {
 
   it('is accessible to axe when opened', async () => {
     const wrapper = mount(KioskOfflineConflictModalComponent, {
+      ...conflictModalGlobal,
       attachTo: document.body,
       props: {
         modelValue: true,
@@ -542,6 +551,7 @@ describe('kioskOfflineQueue v2', () => {
 
   it('shows an empty state when there are no conflict entries', async () => {
     const wrapper = mount(KioskOfflineConflictModalComponent, {
+      ...conflictModalGlobal,
       props: {
         modelValue: true,
         entries: [],
@@ -554,6 +564,7 @@ describe('kioskOfflineQueue v2', () => {
 
   it('tracks modal opening via the emitted hook', async () => {
     const wrapper = mount(KioskOfflineConflictModalComponent, {
+      ...conflictModalGlobal,
       props: {
         modelValue: false,
         entries: [{ localKey: 'entry-4', savedAt: Date.now(), staleItems: [79] }],

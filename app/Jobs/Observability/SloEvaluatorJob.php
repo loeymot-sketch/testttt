@@ -2,6 +2,7 @@
 
 namespace App\Jobs\Observability;
 
+use App\Enums\Status;
 use App\Models\ActionLog;
 use App\Models\Branch;
 use App\Services\Observability\SloMetricCollector;
@@ -44,8 +45,17 @@ class SloEvaluatorJob implements ShouldQueue
 
     public function handle(SloMetricCollector $collector): void
     {
+        // [WJ-5 / WI-2 P1 2026-05-19] Status propagation gap heal — mirror
+        // Wave 2d FISCAL-ADV3C-01. The branches table straddles two "active"
+        // sentinels: legacy literal `1` (BranchFactory + prod seed) and
+        // canonical `Status::ACTIVE = 5` (post-enum services). The pending
+        // owner-flagged data migration `UPDATE branches SET status=5 WHERE
+        // status=1` would have silently no-op'd this every-5-min SLO sweep
+        // pre-heal (`where('status', 1)` returns empty post-migration).
+        // `whereIn` is safe pre- and post-migration. See
+        // Kernel::activeBranchIds() PHPDoc for the canonical rationale.
         $branches = Branch::query()
-            ->where('status', 1)
+            ->whereIn('status', [Status::ACTIVE, 1])
             ->get();
 
         foreach ($branches as $branch) {

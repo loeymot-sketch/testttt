@@ -41,6 +41,7 @@ use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\EmployeeController;
 use App\Http\Controllers\Admin\LanguageController;
 use App\Http\Controllers\Admin\PosOrderController;
+use App\Http\Controllers\Admin\OrderHistoryController;
 use App\Http\Controllers\Admin\TimeSlotController;
 use App\Http\Controllers\Admin\TimezoneController;
 use App\Http\Controllers\Admin\DashboardController;
@@ -60,6 +61,7 @@ use App\Http\Controllers\Frontend\ProfileController;
 use App\Http\Controllers\Frontend\SettingController;
 use App\Http\Controllers\Admin\ChefAddressController;
 use App\Http\Controllers\Admin\CountryCodeController;
+use App\Http\Controllers\Admin\DeliveryBoyCashSessionController;
 use App\Http\Controllers\Admin\DeliveryBoyController;
 use App\Http\Controllers\Admin\DiningTableController;
 use App\Http\Controllers\Admin\AvailabilityController;
@@ -121,6 +123,7 @@ use App\Http\Controllers\Frontend\CountryCodeController as FrontendCountryCodeCo
 use App\Http\Controllers\Frontend\ItemCategoryController as FrontendItemCategoryController;
 use App\Http\Controllers\Frontend\DeliveryBoyOrderController as FrontendDeliveryBoyOrderController;
 use App\Http\Controllers\HealthController;
+use App\Http\Controllers\HealthzController;
 
 
 /*
@@ -138,6 +141,12 @@ use App\Http\Controllers\HealthController;
 Route::get('/health', [HealthController::class, 'full']);
 Route::get('/health/live', [HealthController::class, 'live']);
 Route::get('/health/ready', [HealthController::class, 'ready']);
+
+// [GAP-HUNT 2026-05-25 Phase A.1 / OPS-GATE-1] Public uptime probe.
+// Compact JSON for UptimeRobot / Cronitor / Better Stack. Separate from
+// /api/health because /healthz is owner-friendly contract (db|redis|ws|
+// fiscal|queue_pending) and never exposes /api/health's verbose subsystems.
+Route::get('/healthz', HealthzController::class);
 
 Route::match(['get', 'post'], '/login', function () {
     return response()->json(['errors' => 'unauthenticated'], 401);
@@ -252,7 +261,17 @@ Route::prefix('profile')->name('profile.')->middleware(['installed', 'apiKey', '
 // Laravel additionne les middlewares throttle et la limite effective devient
 // min(30, 60) = 30/min, ce qui ne résout PAS le self-DoS. Récurrent RED-R3
 // → ORCHESTRATOR → B3.
-Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth:sanctum', 'localization', 'throttle:60,1'])->group(function () {
+// [GOAL Phase F.1 2026-05-23] Replaced hardcoded `throttle:60,1` with the named
+// `menu-availability` limiter (defined in RouteServiceProvider). Same 60/min
+// default for backwards compatibility, but now env-configurable
+// (MENU_AVAILABILITY_RATE_LIMIT). Local dev raises to 1000/min to absorb
+// bulk-86 fan-out from StockRuptureDashboard (manager toggling many items
+// at once during rush). NF525 chain unaffected — no fiscal write here.
+// [GOAL-J2-HEAL-02 2026-05-24] block_kiosk_token_admin inserted right after
+// auth:sanctum (token user resolved) and BEFORE localization + throttle so a
+// stolen kiosk token never pollutes the admin-mutation rate bucket. Closes
+// J-ADV-6 PATH-1 RED P0 (empirically verified — see middleware docblock).
+Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth:sanctum', 'block_kiosk_token_admin', 'localization', 'throttle:menu-availability'])->group(function () {
     Route::post('/menu/availability/toggle', [AvailabilityController::class, 'toggle'])
         ->name('menu.availability.toggle');
 
@@ -266,7 +285,14 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         ->name('menu.availability.variation.toggle');
 });
 
-Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth:sanctum', 'localization', 'throttle:admin-mutation'])->group(function () {
+// [GOAL-J2-HEAL-02 2026-05-24] block_kiosk_token_admin — same rationale as the
+// menu-availability group above. This is the BIG /api/admin/* group (POS,
+// catalog, settings, customers, cash drawer, etc.) and is the primary blast
+// radius of the J-ADV-6 PATH-1 RED P0 escalation. Order matters: after
+// auth:sanctum so $request->user() and currentAccessToken() are populated;
+// before localization so blocked kiosk requests don't consume admin-mutation
+// throttle quota.
+Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth:sanctum', 'block_kiosk_token_admin', 'localization', 'throttle:admin-mutation'])->group(function () {
     Route::prefix('default-access')->name('default-access.')->group(function () {
         Route::get('/', [DefaultAccessController::class, 'index']);
         Route::post('/', [DefaultAccessController::class, 'storeOrUpdate']);
@@ -288,6 +314,12 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         ->name('stock.scan-rupture.last-summary');
     Route::get('/stock/low-alerts', [StockRuptureDashboardController::class, 'lowAlerts'])
         ->name('stock.low-alerts');
+    // [Mission 1 — Stock-Rupture UI Simplification 2026-05-21]
+    // Unified read endpoint powering the "Produits & Stock" admin page
+    // (single SSOT view of categories + extras + variations with binary
+    // per-branch availability). Bulk-query, no N+1.
+    Route::get('/stock/catalog-overview', [StockRuptureDashboardController::class, 'catalogOverview'])
+        ->name('stock.catalog-overview');
     Route::post('/stock/scan-rupture/run', [StockRuptureDashboardController::class, 'run'])
         ->name('stock.scan-rupture.run');
 
@@ -570,7 +602,16 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
     });
 
     Route::prefix('my-order')->name('my-order.')->group(function () {
-        Route::get('/show/{user}/{order}', [MyOrderDetailsController::class, 'orderDetails']);
+        // [Admin S-1 P0 IDOR heal — 2026-05-18] MyOrderDetailsController has
+        // ZERO permission middleware at the controller level (unlike its 6
+        // consumer SPA peers Customer/Waiter/DeliveryBoy/Chef/Administrator/
+        // Employee, each of which gates `*_show`). Pre-heal, any authenticated
+        // user who guessed a valid (user_id, order_id) pair could read the
+        // full order payload (PII, addresses, payment). Apply alternation
+        // OR-gate covering ALL 6 consumer SPA flows. Sentinel:
+        // tests/Feature/Sentinels/MyOrderDetailsAuthzSentinelTest.php
+        Route::get('/show/{user}/{order}', [MyOrderDetailsController::class, 'orderDetails'])
+            ->middleware('permission:customers_show|waiters_show|delivery-boys_show|chefs_show|administrators_show|employees_show');
     });
 
     Route::prefix('employee')->name('employee.')->group(function () {
@@ -617,6 +658,36 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
             [DeliveryBoyAddressController::class, 'update']
         );
         Route::delete('/address/{deliveryBoy}/{address}', [DeliveryBoyAddressController::class, 'destroy']);
+    });
+
+    // [V1.0.2-LIVREUR-CASH] Delivery boy cash session — open/close/reconcile a
+    // livreur's float at the start/end of a shift. Mirrors the POS cash-drawer
+    // session pattern (L815) but scoped to the delivery_boy_id rather than the
+    // cashier user_id. Mutations carry idempotency middleware so retries from
+    // flaky tablets don't open multiple sessions for the same livreur.
+    // Controller: app/Http/Controllers/Admin/DeliveryBoyCashSessionController.php
+    // BUILD-1 (round-4 brief 2026-05-18).
+    // [RECONCILE 2026-05-18] BUILD-1 canonical contract : URL prefix = `cash-sessions` (plural),
+    // permissions enforced in DeliveryBoyCashSessionController::__construct via
+    // `permission:delivery-boys_show` (read) + `permission:delivery-boys` (mutations).
+    // Route-level middleware reduced to `idempotency` on POST only (avoid double permission gate).
+    Route::prefix('delivery-boy/cash-sessions')->name('delivery-boy.cash-sessions.')->group(function () {
+        Route::get('/', [DeliveryBoyCashSessionController::class, 'index'])
+            ->name('index');
+        Route::post('/open', [DeliveryBoyCashSessionController::class, 'open'])
+            ->middleware('idempotency')
+            ->name('open');
+        Route::get('/{session}', [DeliveryBoyCashSessionController::class, 'show'])
+            ->whereNumber('session')
+            ->name('show');
+        Route::post('/{session}/close', [DeliveryBoyCashSessionController::class, 'close'])
+            ->whereNumber('session')
+            ->middleware('idempotency')
+            ->name('close');
+        Route::post('/{session}/reconcile', [DeliveryBoyCashSessionController::class, 'reconcile'])
+            ->whereNumber('session')
+            ->middleware('idempotency')
+            ->name('reconcile');
     });
 
     Route::prefix('coupon')->name('coupon.')->group(function () {
@@ -729,10 +800,25 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::get('/counter-collect/pending', function () {
             abort_unless(auth()->user()?->can('pos'), 403);
 
+            // [GOAL-CAISSE-UNIFIED W-ENC + delta-(B) 2026-05-30] Unified collection
+            // queue: Borne (kiosk Plan B) AND Caisse walk-in routed through
+            // pos.walkin_route_to_counter. Both are PENDING_COUNTER; the Borne
+            // clause is byte-identical to the original (kiosk + KIOSK/TAKEAWAY type)
+            // so existing behavior is preserved, and the added clause surfaces
+            // pos-origin counter-deferred orders (source_surface='pos' +
+            // COUNTER_DEFERRED). With the flag OFF, no pos order is deferred so the
+            // result set is unchanged.
             $query = \App\Models\Order::with(['orderItems.orderItem'])
-                ->where('source_surface', 'kiosk')
-                ->whereIn('order_type', [\App\Enums\OrderType::KIOSK, \App\Enums\OrderType::TAKEAWAY])
                 ->where('payment_status', \App\Enums\PaymentStatus::PENDING_COUNTER)
+                ->where(function ($q) {
+                    $q->where(function ($k) {
+                        $k->where('source_surface', 'kiosk')
+                          ->whereIn('order_type', [\App\Enums\OrderType::KIOSK, \App\Enums\OrderType::TAKEAWAY]);
+                    })->orWhere(function ($p) {
+                        $p->where('source_surface', 'pos')
+                          ->where('pos_payment_method', \App\Enums\PosPaymentMethod::COUNTER_DEFERRED);
+                    });
+                })
                 ->orderBy('created_at');
 
             $branchId = (int) (auth()->user()?->branch_id ?? 0);
@@ -740,7 +826,14 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
                 $query->where('branch_id', $branchId);
             }
 
-            return \App\Http\Resources\OrderDetailsResource::collection($query->limit(50)->get());
+            // [abuse-e2e P3 heal 2026-05-30] Cap raised 50→200. Oldest-first
+            // (created_at ASC) is the correct FIFO collection order — collect the
+            // longest-waiting customer first. The old 50-cap silently hid orders
+            // beyond 50 (a real V1 single-box gap once a backlog builds: a
+            // waiting-to-pay customer became invisible to the cashier). 200 is far
+            // beyond any realistic single-restaurant uncollected backlog while
+            // staying bounded.
+            return \App\Http\Resources\OrderDetailsResource::collection($query->limit(200)->get());
         })->middleware('throttle:pos-order-update')->name('counter-collect.pending');
         Route::post('/counter-collect/{order}/confirm', function (\App\Models\Order $order, \Illuminate\Http\Request $request) {
             abort_unless(auth()->user()?->can('pos'), 403);
@@ -762,10 +855,28 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
                 throw $http;
             } catch (\Illuminate\Validation\ValidationException $validation) {
                 throw $validation;
+            } catch (\App\Exceptions\Payment\PaymentAlreadyCollectedException $alreadyCollected) {
+                // [GOAL-K2-HEAL-01 2026-05-24] Phase K.4 H9 P1 + J-CASCADE H9
+                // — typed catch MUST live above the generic Exception fallback
+                // so the 409 conversion happens before the 422 default. The
+                // exception extends \RuntimeException (not HttpException) on
+                // purpose; see PaymentAlreadyCollectedException docblock for
+                // the rationale (Handler.php:105-113 would otherwise downgrade
+                // any HttpException to 422). error_code lets the frontend
+                // modal branch on a stable identifier instead of parsing the
+                // (translated) message.
+                return response()->json([
+                    'status' => false,
+                    'message' => $alreadyCollected->getMessage(),
+                    'error_code' => 'payment_already_collected',
+                    'order_id' => $alreadyCollected->orderId,
+                    'collected_by_user_id' => $alreadyCollected->collectedByUserId,
+                    'collected_at' => $alreadyCollected->collectedAt,
+                ], 409);
             } catch (\Exception $exception) {
                 return response(['status' => false, 'message' => $exception->getMessage()], 422);
             }
-        })->middleware('throttle:pos-order-update')->name('counter-collect.confirm');
+        })->middleware(['throttle:pos-order-update', 'idempotency'])->name('counter-collect.confirm');
         Route::post('/counter-collect/{order}/cancel', function (\App\Models\Order $order, \Illuminate\Http\Request $request) {
             abort_unless(auth()->user()?->can('pos'), 403);
 
@@ -785,7 +896,7 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
             } catch (\Exception $exception) {
                 return response(['status' => false, 'message' => $exception->getMessage()], 422);
             }
-        })->middleware('throttle:pos-order-update')->name('counter-collect.cancel');
+        })->middleware(['throttle:pos-order-update', 'idempotency'])->name('counter-collect.cancel');
         Route::post('/collect-kiosk-cash/{order}', function (\App\Models\Order $order) {
             abort_unless(auth()->user()?->can('pos'), 403);
 
@@ -796,8 +907,8 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
             } catch (\Exception $exception) {
                 return response(['status' => false, 'message' => $exception->getMessage()], 422);
             }
-        })->middleware('throttle:pos-order-update')->name('collect-kiosk-cash');
-        Route::post('/orders/{order}/print-receipt', [PosReceiptPrintController::class, 'increment'])->name('orders.print-receipt');
+        })->middleware(['throttle:pos-order-update', 'idempotency'])->name('collect-kiosk-cash');
+        Route::post('/orders/{order}/print-receipt', [PosReceiptPrintController::class, 'increment'])->middleware('idempotency')->name('orders.print-receipt');
         Route::prefix('parked-orders')->name('parked-orders.')->group(function () {
             Route::get('/', [ParkedOrderController::class, 'index'])->name('index');
             Route::post('/', [ParkedOrderController::class, 'store'])->name('store');
@@ -848,13 +959,28 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::delete('/{payment_terminal}', [App\Http\Controllers\Admin\PaymentTerminalController::class, 'destroy'])->name('destroy');
     });
 
+    // [GOAL-CAISSE-UNIFIED W-HIST 2026-05-30] Unified read-only order history
+    // (/admin/historique) — Borne + Caisse + walk-in + delivery + online in ONE
+    // view. Thin read layer over OrderService::list; no source filter forced
+    // server-side. Distinct from pos-order (POS-source) and online-order (web).
+    Route::prefix('order-history')->name('orderHistory.')->group(function () {
+        Route::get('/', [OrderHistoryController::class, 'index'])->name('index');
+        Route::get('show/{order}', [OrderHistoryController::class, 'show'])->name('show');
+    });
+
     Route::prefix('pos-order')->name('posOrder.')->group(function () {
         Route::get('/', [PosOrderController::class, 'index']);
         Route::get('show/{order}', [PosOrderController::class, 'show']);
         Route::delete('/{order}', [PosOrderController::class, 'destroy']);
         Route::get('/export', [PosOrderController::class, 'export']);
+        // [V1.0.2-IDEMP-01] Idempotency added on change-status — see
+        // reports/test-e2e/goal-2026-05-18/round-4/build-5-routes-evidence.md.
+        // Status A→B transitions: middleware uses payload hash so A→B vs A→A
+        // produce different keys; replay of identical A→B is safe no-op via
+        // controller state-machine guards.
         Route::post('/change-status/{order}', [PosOrderController::class, 'changeStatus'])
-            ->middleware('throttle:pos-order-update');
+            ->middleware(['throttle:pos-order-update', 'idempotency'])
+            ->name('change-status');
         Route::post('/change-payment-status/{order}', [PosOrderController::class, 'changePaymentStatus'])
             ->middleware(['throttle:pos-order-update', 'idempotency']);
         Route::post('/select-delivery-boy/{order}', [PosOrderController::class, 'selectDeliveryBoy'])
@@ -867,6 +993,13 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::post('/{order}/refund-with-counter-entry', [PosOrderController::class, 'refundWithCounterEntry'])
             ->middleware(['throttle:pos-order-update', 'idempotency'])
             ->name('refundWithCounterEntry');
+        // [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19] V1 cashier loyalty redeem
+        // (Option B per plans/LOCK_POS_LOYALTY_REDEEM_UI_2026-05-18.md). New
+        // standalone controller (PosController.php is DIRTY — observe-only).
+        // Permission gate `pos.redeem-loyalty` enforced inside the FormRequest.
+        Route::post('/{order}/redeem-loyalty', [\App\Http\Controllers\Admin\PosLoyaltyController::class, 'redeem'])
+            ->middleware(['throttle:pos-order-update', 'idempotency'])
+            ->name('redeem-loyalty');
     });
 
     Route::prefix('online-order')->name('onlineOrder.')->group(function () {
@@ -875,7 +1008,10 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::delete('/{order}', [OnlineOrderController::class, 'destroy']);
         Route::get('/export', [OnlineOrderController::class, 'export']);
         Route::get('/pdf', [OnlineOrderController::class, 'pdf']);
-        Route::post('/change-status/{order}', [OnlineOrderController::class, 'changeStatus']);
+        // [V1.0.2-IDEMP-01] idempotency on online-order change-status — see L856 comment.
+        Route::post('/change-status/{order}', [OnlineOrderController::class, 'changeStatus'])
+            ->middleware('idempotency')
+            ->name('change-status');
         Route::post('/change-payment-status/{order}', [OnlineOrderController::class, 'changePaymentStatus'])->middleware('idempotency');
         Route::post('/select-delivery-boy/{order}', [OnlineOrderController::class, 'selectDeliveryBoy'])->middleware('idempotency');
     });
@@ -885,7 +1021,10 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::get('/show/{order}', [AdminTableOrderController::class, 'show']);
         Route::delete('/{order}', [AdminTableOrderController::class, 'destroy']);
         Route::get('/export', [AdminTableOrderController::class, 'export']);
-        Route::post('/change-status/{order}', [AdminTableOrderController::class, 'changeStatus']);
+        // [V1.0.2-IDEMP-01] idempotency on table-order change-status — see L856 comment.
+        Route::post('/change-status/{order}', [AdminTableOrderController::class, 'changeStatus'])
+            ->middleware('idempotency')
+            ->name('change-status');
         Route::post('/change-payment-status/{order}', [AdminTableOrderController::class, 'changePaymentStatus'])->middleware('idempotency');
         Route::post('/token-create/{order}', [AdminTableOrderController::class, 'tokenCreate']);
     });
@@ -943,6 +1082,10 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::get('/sla-alerts', [DashboardController::class, 'slaAlerts']);
         Route::get('/channel-statistics', [DashboardController::class, 'channelStatistics']);
         Route::get('/audit-trail', [DashboardController::class, 'auditTrail']);
+        // [V102-08 HEAL-3 2026-05-26] One-click EOD PDF synthesis for owner/
+        // accountant. POST (per spec) ; permission `pos-manage-fiscal` enforced
+        // in DashboardController::__construct (separate from :dashboard).
+        Route::post('/eod-pdf', [DashboardController::class, 'eodPdf']);
     });
 
     Route::prefix('sales-report')->name('sales-report.')->group(function () {
@@ -963,11 +1106,31 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::get('/export', [CreditBalanceReportController::class, 'export']);
     });
 
+    // [Wave O — O4 2026-05-20] Admin daily cash sessions read-only report.
+    // Owner request : « voir les caisses chaque jour, début + fin, et toutes
+    // les transactions de chaque jour ». Reuses pos-manage-fiscal permission
+    // (cohérent avec Z/X reports — cash drawer reconciliation EST fiscal data).
+    Route::prefix('cash-sessions-report')->name('cash-sessions-report.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\CashSessionReportController::class, 'index'])->name('index');
+    });
+
+    // [Wave X — X4 2026-05-21] Admin unified cash & transactions overview.
+    // Owner mandate : « toutes les commandes encaissées (POS direct, borne
+    // cash-collected, livreur) au MÊME ENDROIT en base ». Sibling to O4:
+    // O4 lists CashDrawerSession rows day-by-day; X4 lists every Transaction
+    // across all sources with derived source + mode buckets for daily écart
+    // reconciliation. Reuses the `cash-sessions-report` permission (same
+    // role gate — Admin + Branch Manager).
+    Route::prefix('cash-overview')->name('cash-overview.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\CashOverviewController::class, 'index'])->name('index');
+    });
+
     Route::prefix('message')->name('message.')->middleware(['auth:sanctum'])->group(function () {
         Route::get('/', [MessageController::class, 'index']);
         Route::get('/show/{message}', [MessageController::class, 'show']);
         Route::post('/', [MessageController::class, 'store']);
-        Route::match(['put', 'patch'], '/{message}', [MessageController::class, 'update']);
+        // [NC-MSG-UPDATE-DEAD heal 2026-06-01] Removed dead route — MessageController has no
+        // update() method (index/show/store/destroy/changeStatus only); PUT/PATCH 500'd.
         Route::delete('/{message}', [MessageController::class, 'destroy']);
         Route::get('/change-status/{message}/{customer}', [MessageController::class, 'changeStatus']);
     });
@@ -1004,10 +1167,31 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
     });
     Route::prefix('kds-order')->name('kdsOrder.')->group(function () {
         Route::get('/', [KitchenDisplaySystemController::class, 'index']);
-        Route::post('/change-status/{order}', [KitchenDisplaySystemController::class, 'changeStatus']);
+        // [V1.0.2-IDEMP-01] idempotency on kds change-status — see L856 comment.
+        // KDS already uses OrderStateMachine guards so replay is provably no-op
+        // when target == current (StateMachine throws InvalidTransition on dup).
+        Route::post('/change-status/{order}', [KitchenDisplaySystemController::class, 'changeStatus'])
+            ->middleware(['idempotency', 'throttle:kds-bump'])
+            ->name('change-status');
         Route::get('/items', [KitchenDisplaySystemController::class, 'orderItems']);
         // [F-03 / Lot 1.C] Adaptive polling fallback when WebSocket is degraded.
         Route::get('/sync', [KdsSyncController::class, 'sync']);
+        // [Wave X3 2026-05-21] KDS Historique du jour — read-only V1 day-history viewer.
+        // Returns today's PREPARED/OUT_FOR_DELIVERY/DELIVERED orders for the
+        // branch (admin sees all), sorted updated_at desc, capped 50. Revert
+        // (PREPARED → PREPARING) deferred V1.0.2 (OrderStateMachine §7 LOCK).
+        Route::get('/history-today', [KitchenDisplaySystemController::class, 'historyToday'])
+            ->middleware('throttle:60,1')
+            ->name('history-today');
+        // [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B] Chef
+        // "Annuler bump" within 60s. Compensating action — orders.status is
+        // NOT mutated. See KitchenDisplaySystemController::recall +
+        // KitchenDisplaySystemOrderService::recall for the NF525-safe append-only
+        // invariant proof. Mirrors `change-status` middleware so idempotent
+        // replays + per-bump rate-limiting apply identically.
+        Route::post('/recall/{order}', [KitchenDisplaySystemController::class, 'recall'])
+            ->middleware(['idempotency', 'throttle:kds-bump'])
+            ->name('recall');
     });
 
     // [NEW-04] Observability surface — non-blocking telemetry rollups + ingestion.
@@ -1129,7 +1313,10 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
         Route::get('/show/{frontendOrder}', [FrontendOrderController::class, 'show']);
         Route::post('/quote', [PosController::class, 'quote'])->middleware('throttle:kiosk-orders');
         Route::post('/', [FrontendOrderController::class, 'store'])->middleware(['throttle:kiosk-orders', 'idempotency']);
-        Route::post('/change-status/{frontendOrder}', [FrontendOrderController::class, 'changeStatus']);
+        // [V1.0.2-IDEMP-01] idempotency on frontend order change-status — see L856 comment.
+        Route::post('/change-status/{frontendOrder}', [FrontendOrderController::class, 'changeStatus'])
+            ->middleware('idempotency')
+            ->name('change-status');
         // [BORNE-WINDOWS] Confirm card payment from physical terminal — stores transaction_id
         Route::post('/{frontendOrder}/payment-confirm', [FrontendOrderController::class, 'paymentConfirm'])->middleware('idempotency');
     });
@@ -1206,7 +1393,10 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
         Route::get('/', [FrontendDeliveryBoyOrderController::class, 'index']);
         Route::get('/show/{order}', [FrontendDeliveryBoyOrderController::class, 'show']);
         Route::get('/count', [FrontendDeliveryBoyOrderController::class, 'orderCount']);
-        Route::post('/change-status/{order}', [FrontendDeliveryBoyOrderController::class, 'deliveryBoyOrderChangeStatus']);
+        // [V1.0.2-IDEMP-01] idempotency on delivery-boy change-status — see L856 comment.
+        Route::post('/change-status/{order}', [FrontendDeliveryBoyOrderController::class, 'deliveryBoyOrderChangeStatus'])
+            ->middleware('idempotency')
+            ->name('change-status');
     });
 
     // [SEC-CRIT FIX] Loyalty routes now require auth:sanctum — previously fully unauthenticated
@@ -1221,9 +1411,23 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
     });
     Route::prefix('loyalty')->name('loyalty.auth.')->middleware(['auth:sanctum'])->group(function () {
         Route::post('/add-points', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'addPoints']);
-        Route::post('/redeem', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'redeem']);
+        // [LCS-S-002 / 2026-05-19] Idempotency middleware on loyalty redeem.
+        // Mobile sends Idempotency-Key header per B-02 spec but server ignored
+        // it before this commit. Network retry = double-debit of points.
+        // Route added to config/idempotency.php required_routes simultaneously.
+        Route::post('/redeem', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'redeem'])
+            ->middleware('idempotency');
         Route::get('/balance', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'balance']);
         Route::get('/history', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'history']);
+
+        // [LCS-S-001 / 2026-05-19] Signed QR generation — authenticated customer
+        // mints a fresh `lqr.<payload>.<hmac>` token (5-min TTL + anti-replay
+        // nonce). Replaces the unsigned plaintext FK:<code> previously generated
+        // client-side. Throttle:30/min/user matches the natural 12 mints/hour
+        // (one every 5 min) with healthy retry headroom.
+        Route::post('/qr', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'generateQr'])
+            ->middleware('throttle:30,1')
+            ->name('qr.generate');
     });
 
     // [C6] Kiosk observability — structured event logging for operators

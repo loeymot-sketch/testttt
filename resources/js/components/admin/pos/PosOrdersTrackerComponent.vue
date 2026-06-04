@@ -11,7 +11,7 @@
 
         <header class="pos-tracker-bar">
             <div class="pos-tracker-bar-left min-w-0">
-                <p class="pos-tracker-eyebrow">Caisse FoodKing</p>
+                <p class="pos-tracker-eyebrow">Caisse Le Cayenne</p>
                 <h1 class="pos-tracker-title">{{ $t('pos.tracker.title') }}</h1>
                 <div class="pos-tracker-status-row">
                     <span>
@@ -105,10 +105,18 @@
                 :class="['pos-tracker-col', `pos-tracker-col--${col.tone}`, col.highlight && col.orders.length > 0 ? 'is-pulse' : '']"
             >
                 <header class="pos-tracker-col-head">
-                    <h2>
-                        <span class="pos-tracker-col-icon" aria-hidden="true">{{ col.icon }}</span>
-                        {{ col.label }}
-                    </h2>
+                    <div class="pos-tracker-col-head-titles">
+                        <h2>
+                            <span class="pos-tracker-col-icon" aria-hidden="true">{{ col.icon }}</span>
+                            {{ col.label }}
+                        </h2>
+                        <!--
+                          [Wave S-4 P-OWNER 2026-05-20] Lane subtitle clarifies
+                          the renamed "À encaisser" lane semantic for the
+                          cashier (kiosk paid-at-counter orders only).
+                        -->
+                        <p v-if="col.subtitle" class="pos-tracker-col-subtitle">{{ col.subtitle }}</p>
+                    </div>
                     <span class="pos-tracker-col-count" :aria-label="`${col.orders.length} ${col.label}`">
                         {{ col.orders.length }}
                     </span>
@@ -125,6 +133,21 @@
                             <header class="pos-tracker-card-head">
                                 <span class="pos-tracker-card-num">
                                     {{ order.queue_number ? 'N°' + order.queue_number : ('#' + (order.order_serial_no || order.id)) }}
+                                </span>
+                                <!--
+                                  [Wave S-4 P-OWNER 2026-05-20] Cash-pending
+                                  bell badge — visible only on cards in the
+                                  À encaisser lane. Same icon as the column
+                                  header (🔔) reinforces the cashier signal.
+                                -->
+                                <span
+                                    v-if="isCashPending(order)"
+                                    class="pos-tracker-card-cash-badge"
+                                    :title="$t('pos.tracker.cash_due_label')"
+                                    :data-testid="`tracker-cash-badge-${order.id}`"
+                                    aria-label="Commande à encaisser"
+                                >
+                                    🔔
                                 </span>
                                 <span :class="['pos-tracker-card-source', `pos-tracker-card-source--${sourceOf(order)}`]"
                                       :title="$t('pos.tracker.source_' + sourceOf(order))">
@@ -152,17 +175,60 @@
                             </ul>
                             <footer class="pos-tracker-card-foot">
                                 <!--
-                                  [iter15-mega-fix B-001/C-002 2026-05-10] Tracker cards used to read
-                                  `order.total` / `order.order_amount`, but `SimpleOrderResource`
-                                  (the projection feeding `admin/pos-order`) only exposes the
-                                  formatted strings `total_amount_price` (numeric "2.00") and
-                                  `total_currency_price` ("2.00€"). Both raw fields were undefined,
-                                  so `Number(undefined) || 0` → `0,00 €` on every card. We now
-                                  prefer `total_amount_price` (Number-parseable) and fall back to
-                                  the legacy raw fields if a future projection re-adds them.
+                                  [WT-D-R1-F4 2026-05-20] `order.total` is now
+                                  shipped raw by `SimpleOrderResource` (Wave T
+                                  R1 F4 heal). It's the SSOT we should prefer;
+                                  the `total_amount_price` / `order_amount`
+                                  fallbacks remain for callers that consume
+                                  the resource pre-WT (cache, legacy mirrors)
+                                  and to keep the existing failing-safe
+                                  pattern. The shared `formatPrice()` (from
+                                  `adminPriceMixin`) renders any of them as
+                                  the canonical "19,00 €".
+
+                                  Historical context (kept for archeology):
+                                  iter15-mega-fix B-001/C-002 2026-05-10
+                                  patched the `Number(undefined) || 0` →
+                                  `0,00 €` regression that the old projection
+                                  caused.
                                 -->
-                                <span class="pos-tracker-card-total">{{ formatPrice(order.total_amount_price ?? order.total ?? order.order_amount) }}</span>
+                                <span
+                                    :class="['pos-tracker-card-total', isCashPending(order) ? 'pos-tracker-card-total--cash' : '']"
+                                    :data-testid="`tracker-amount-${order.id}`"
+                                >
+                                    <!--
+                                      [Wave S-4 P-OWNER 2026-05-20] When the
+                                      card is cash-pending, the total carries
+                                      a "À encaisser" prefix so the cashier
+                                      sees the amount due, not just a price.
+                                    -->
+                                    <span v-if="isCashPending(order)" class="pos-tracker-card-total-prefix">
+                                        {{ $t('pos.tracker.cash_due_label') }} :
+                                    </span>
+                                    {{ formatPrice(order.cash_pending_amount ?? order.total ?? order.total_amount_price ?? order.order_amount) }}
+                                </span>
                                 <div class="pos-tracker-card-actions">
+                                    <!--
+                                      [Wave S-4 P-OWNER 2026-05-20] Encaisser
+                                      CTA — only on cash-pending cards. Wires
+                                      to Wave S-5 encaissement modal via a
+                                      window-level CustomEvent so the two
+                                      heals can ship independently. The card
+                                      stays clickable for details via the eye
+                                      link below; the encaisser CTA is the
+                                      primary action surface.
+                                    -->
+                                    <button
+                                        v-if="col.id === 'accept' && isCashPending(order)"
+                                        type="button"
+                                        class="pos-tracker-card-btn pos-tracker-card-btn--cash"
+                                        :title="$t('pos.tracker.cash_collect_cta')"
+                                        :data-testid="`tracker-encaisser-${order.id}`"
+                                        @click="openEncaissement(order)"
+                                    >
+                                        <i class="fa-solid fa-cash-register" aria-hidden="true"></i>
+                                        <span class="hidden xl:inline">{{ $t('pos.tracker.cash_collect_cta') }}</span>
+                                    </button>
                                     <router-link
                                         :to="{ name: 'admin.pos-orders.show', params: { id: order.id } }"
                                         class="pos-tracker-card-btn"
@@ -261,7 +327,7 @@
                         <strong>{{ cancelDialog.order.queue_number ? 'N°' + cancelDialog.order.queue_number : '#' + (cancelDialog.order.order_serial_no || cancelDialog.order.id) }}</strong>
                         <span v-if="customerLabel(cancelDialog.order)"> — {{ customerLabel(cancelDialog.order) }}</span>
                         <!-- [iter15-mega-fix B-001/C-002 2026-05-10] Same field-projection mismatch as the card total. -->
-                        <span> — {{ formatPrice(cancelDialog.order.total_amount_price ?? cancelDialog.order.total ?? cancelDialog.order.order_amount) }}</span>
+                        <span> — {{ formatPrice(cancelDialog.order.total ?? cancelDialog.order.total_amount_price ?? cancelDialog.order.order_amount) }}</span>
                     </p>
                     <label for="pos-tracker-cancel-reason" class="pos-tracker-cancel-label">
                         {{ $t('pos.cancel_order_reason_label') }}
@@ -328,6 +394,15 @@
           for the actual paper output.
         -->
         <ReceiptComponent v-if="reprintOrder && reprintOrder.id" :order="reprintOrder" />
+
+        <!-- [GOAL-2026-05-29 DEAD-BUTTON-FIX] Shared counter-collect modal so the
+             tracker's "Encaisser" CTA actually opens the encashment flow
+             (previously a dead button — un-listened CustomEvent only). -->
+        <PosCounterCollectModal
+            :order="encaisseOrder"
+            @confirmed="onEncaisseConfirmed"
+            @cancel="encaisseOrder = null"
+        />
     </section>
 </template>
 
@@ -339,6 +414,13 @@ import alertService from '../../../services/alertService';
 import appService from '../../../services/appService';
 import ConnectionStatusBanner from '../../common/ConnectionStatusBanner.vue';
 import ReceiptComponent from './ReceiptComponent.vue';
+// [GOAL-2026-05-29 DEAD-BUTTON-FIX] Shared counter-collect modal — the tracker
+// must be self-sufficient for encashment (its Encaisser CTA was previously a
+// dead button: it only dispatched an un-listened CustomEvent).
+import PosCounterCollectModal from './PosCounterCollectModal.vue';
+// [WT-D-R1-F4 2026-05-20] Shared admin FR EUR price formatter — canonical
+// "19,00 €" rendering shared with PosOrderList / PosOrderShow.
+import { adminPriceMixin } from '../../../helpers/formatPrice';
 
 const POLL_WS_MS = 60000;
 const POLL_NO_WS_MS = 8000;
@@ -353,7 +435,8 @@ const FRESH_HIGHLIGHT_MS = 6000;
  */
 export default {
     name: 'PosOrdersTrackerComponent',
-    components: { ConnectionStatusBanner, ReceiptComponent },
+    components: { ConnectionStatusBanner, ReceiptComponent, PosCounterCollectModal },
+    mixins: [adminPriceMixin],
     data() {
         return {
             loading: false,
@@ -383,6 +466,9 @@ export default {
                 error: '',
                 busy: false,
             },
+            // [GOAL-2026-05-29 DEAD-BUTTON-FIX] Order currently being encashed
+            // via the shared PosCounterCollectModal (null = modal closed).
+            encaisseOrder: null,
         };
     },
     computed: {
@@ -418,18 +504,56 @@ export default {
             });
         },
         ordersByStatus() {
-            const buckets = { accept: [], preparing: [], prepared: [], delivered: [] };
+            const buckets = { accept: [], preparing: [], prepared: [], onTheWay: [], delivered: [] };
             for (const o of this.filteredOrders) {
                 const s = parseInt(o.order_status ?? o.status ?? 0, 10);
-                if (s === orderStatusEnum.ACCEPT) buckets.accept.push(o);
+                // [Wave S-4 P-OWNER 2026-05-20] The ACCEPT lane is now reserved
+                // for cash-pending kiosk orders ONLY. With Wave S-1 auto-PREPA
+                // active, every paid order skips ACCEPT entirely and lands in
+                // PREPARING — so the only orders that legitimately remain at
+                // ACCEPT are kiosk paid-at-counter orders waiting for cashier
+                // collection. Backend exposes `is_cash_pending` via
+                // SimpleOrderResource (PENDING_COUNTER + COUNTER_DEFERRED).
+                // Anything else lingering at ACCEPT is dropped from the view
+                // to avoid muddying the cashier's "À encaisser" signal — those
+                // orders still appear in the EN PRÉPARATION column once
+                // S-1 auto-promotes them (which happens at payment time).
+                if (s === orderStatusEnum.ACCEPT) {
+                    if (this.isCashPending(o)) {
+                        buckets.accept.push(o);
+                    } else {
+                        // [GOAL-2026-05-29 TRACKER-CONTINUITY-FIX] A paid order
+                        // still at ACCEPT is the CASH counter-collect case: the
+                        // S-5 carve-out (AutoPrepareOnPaidPolicy::shouldPromote
+                        // === false for isCounterCollect+CASH) intentionally does
+                        // NOT auto-promote it to PREPARING — it waits for the chef
+                        // to bump it on the KDS, which DOES show it (KitchenRelease
+                        // Rule: PAID → released, "Prêt" action). The old code
+                        // assumed every paid order auto-promotes and silently
+                        // DROPPED this one → the paid order VANISHED from the
+                        // tracker board while the kitchen was still cooking it.
+                        // Surface it in the kitchen-active lane so the tracker
+                        // stays consistent with the KDS.
+                        buckets.preparing.push(o);
+                    }
+                }
                 else if (s === orderStatusEnum.PREPARING) buckets.preparing.push(o);
                 else if (s === orderStatusEnum.PREPARED) buckets.prepared.push(o);
+                // [Wave T R1 F1 P0 2026-05-20] EN LIVRAISON lane: any order at
+                // OUT_FOR_DELIVERY (status=10) — driver has picked it up and is
+                // in transit. Previously vanished from tracker for the 30+min
+                // delivery window. Lane is delivery-specific by domain (only
+                // DELIVERY orders transition through OUT_FOR_DELIVERY) but we
+                // filter on status alone — same approach as the other lanes —
+                // so any order arriving at this status surfaces here.
+                else if (s === orderStatusEnum.OUT_FOR_DELIVERY) buckets.onTheWay.push(o);
                 else if (s === orderStatusEnum.DELIVERED) buckets.delivered.push(o);
             }
             // Sort each bucket: oldest first for active queues, newest first for delivered.
             buckets.accept.sort((a, b) => this._tsOf(a) - this._tsOf(b));
             buckets.preparing.sort((a, b) => this._tsOf(a) - this._tsOf(b));
             buckets.prepared.sort((a, b) => this._tsOf(a) - this._tsOf(b));
+            buckets.onTheWay.sort((a, b) => this._tsOf(a) - this._tsOf(b));
             buckets.delivered.sort((a, b) => this._tsOf(b) - this._tsOf(a));
             return buckets;
         },
@@ -444,10 +568,22 @@ export default {
             // is harmonised in `pos.tracker.col_accept` (fr.json + en.json).
             return [
                 {
+                    // [Wave S-4 P-OWNER 2026-05-20] Renamed lane "Confirmées" →
+                    // "À encaisser". Wave S-1 auto-promotes all paid orders
+                    // ACCEPT → PREPARING, so this lane is now exclusively the
+                    // cashier's encaissement queue (kiosk paid-at-counter).
+                    // The accordion now carries a subtitle clarifying the
+                    // semantic, the count badge is the "fresh" pulsating tone
+                    // when ≥1 order awaits cash collection, and each card
+                    // shows the amount due + an "Encaisser" CTA. The 4-column
+                    // layout is preserved per owner directive — empty state
+                    // stays visible to signal "all clear".
                     id: 'accept',
                     label: this.$t('pos.tracker.col_accept'),
-                    icon: '🧾',
+                    subtitle: this.$t('pos.tracker.col_accept_subtitle'),
+                    icon: '🔔',
                     tone: 'amber',
+                    highlight: true,
                     orders: b.accept,
                     emptyIcon: '✓',
                     emptyLabel: this.$t('pos.tracker.empty_accept'),
@@ -470,6 +606,22 @@ export default {
                     orders: b.prepared,
                     emptyIcon: '—',
                     emptyLabel: this.$t('pos.tracker.empty_prepared'),
+                },
+                // [Wave T R1 F1 P0 2026-05-20] EN LIVRAISON lane inserted before
+                // LIVRÉS so the cashier keeps visibility on in-flight delivery
+                // orders during the 30+min driver window. Tone 'blue' separates
+                // it visually from PRÊTS (green) and LIVRÉS (muted). Backend
+                // status code is OrderStatus::OUT_FOR_DELIVERY (10) — set when
+                // the driver picks up via DeliveryBoyController, cleared when
+                // they tap "Livré" which flips to status=13.
+                {
+                    id: 'onTheWay',
+                    label: this.$t('pos.tracker.col_on_the_way'),
+                    icon: '🛵',
+                    tone: 'blue',
+                    orders: b.onTheWay,
+                    emptyIcon: '—',
+                    emptyLabel: this.$t('pos.tracker.empty_on_the_way'),
                 },
                 {
                     id: 'delivered',
@@ -735,6 +887,53 @@ export default {
                 try { alertService.error(msg); } catch (_) { /* defensive — never block dialog */ }
             }
         },
+        // [Wave S-4 P-OWNER 2026-05-20] Cash-pending detection. The backend
+        // `SimpleOrderResource` exposes `is_cash_pending` (PENDING_COUNTER +
+        // COUNTER_DEFERRED). We keep a defensive fallback on the canonical
+        // numeric enum constants in case an older projection ships through
+        // (e.g. cached Vuex payload pre-deploy). PaymentStatus::PENDING_COUNTER
+        // = 15, PosPaymentMethod::COUNTER_DEFERRED = 6 — see app/Enums/.
+        isCashPending(o) {
+            if (!o) return false;
+            if (o.is_cash_pending === true || o.is_cash_pending === 1) return true;
+            const ps = parseInt(o.payment_status, 10);
+            const ppm = parseInt(o.pos_payment_method, 10);
+            return ps === 15 && ppm === 6;
+        },
+        // [Wave S-4 P-OWNER 2026-05-20] Encaissement CTA — Wave S-5 owns the
+        // actual modal. We surface a window-level event so the parent shell
+        // (PosShell / global listener) can intercept, hydrate the order, and
+        // open the encaissement dialog. No direct coupling here — emitting a
+        // CustomEvent keeps the tracker decoupled while Wave S-5 lands in
+        // parallel. Fallback: deep-link to the POS payment screen.
+        openEncaissement(order) {
+            if (!order || !order.id) return;
+            // [GOAL-2026-05-29 DEAD-BUTTON-FIX] Previously this ONLY dispatched a
+            // `foodking:pos:open-encaissement` CustomEvent expecting a global
+            // listener (PosShell/PosComponent) — but nothing in the app ever
+            // listened for it, and on the standalone /admin/pos-orders-tracker
+            // page PosComponent is not mounted, so the Encaisser CTA was a DEAD
+            // BUTTON. We now open the shared PosCounterCollectModal locally; it
+            // POSTs admin/pos/counter-collect/{id}/confirm itself, and on
+            // @confirmed we refresh the board. The modal reads `order.total`, so
+            // we map the cash-pending amount onto it.
+            const amount = order.cash_pending_amount ?? order.total_amount_price ?? order.total ?? order.order_amount ?? 0;
+            this.encaisseOrder = { ...order, total: amount };
+            // Keep the decoupled CustomEvent (harmless) for any future global host.
+            try {
+                window.dispatchEvent(new CustomEvent('foodking:pos:open-encaissement', {
+                    detail: { orderId: order.id, amount },
+                }));
+            } catch (_e) { /* defensive — environment without CustomEvent */ }
+        },
+        // [GOAL-2026-05-29 DEAD-BUTTON-FIX] PosCounterCollectModal already POSTed
+        // the counter-collect; clear it + refresh so the now-paid order leaves
+        // the "À encaisser" lane (the OrderPaidAtCounter broadcast also triggers
+        // fetchOrders, but we refresh immediately for local responsiveness).
+        onEncaisseConfirmed() {
+            this.encaisseOrder = null;
+            this.fetchOrders();
+        },
         sourceOf(o) {
             const surface = String(o.source_surface || o._origin || '').toLowerCase();
             if (surface === 'kiosk') return 'kiosk';
@@ -767,14 +966,12 @@ export default {
             const items = Array.isArray(o.order_items) ? o.order_items : [];
             return Math.max(0, items.length - 3);
         },
-        formatPrice(v) {
-            const n = Number(v) || 0;
-            try {
-                return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(n);
-            } catch (e) {
-                return n.toFixed(2) + ' €';
-            }
-        },
+        // [WT-D-R1-F4 2026-05-20] `formatPrice()` is now provided by the
+        // shared `adminPriceMixin` (helpers/formatPrice.js) so every admin
+        // surface — tracker, orders list, detail page — renders the exact
+        // same "19,00 €" string for the same numeric input. Behaviour is
+        // byte-identical to the previous inline implementation (Intl
+        // fr-FR EUR with NBSP separator + fallback).
         formatTime(iso) {
             if (!iso) return '';
             try {
@@ -822,6 +1019,12 @@ export default {
     --pos-tracker-green: var(--pos-v5-success);
     --pos-tracker-green-soft: var(--pos-v5-success-soft);
     --pos-tracker-muted-soft: var(--pos-v5-bg-subtle);
+    /* [Wave T R1 F1 P0 2026-05-20] Blue tone for EN LIVRAISON lane.
+       Hardcoded blue (not V5 token) — V5 palette has no info/blue role.
+       Hue chosen high-contrast on white (≥4.5:1) and distinct from
+       primary-red / amber / green to keep cashier scan unambiguous. */
+    --pos-tracker-blue: #1d4ed8;
+    --pos-tracker-blue-soft: #dbeafe;
 
     min-height: 100dvh;
     background: var(--pos-tracker-bg);
@@ -1016,12 +1219,20 @@ export default {
 
 .pos-tracker-grid {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    /* [Wave T R1 F1 P0 2026-05-20] 5-column layout: À ENCAISSER / EN
+       PRÉPARATION / PRÊTS / EN LIVRAISON / LIVRÉS. Wave S-4 left the
+       grid at 4 cols; with the new on-the-way lane the cashier keeps
+       full caisse-to-delivered visibility on a single screen. Wide
+       breakpoints unchanged for laptops & vertical caisse displays. */
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 14px;
     align-items: start;
 }
 
-@media (max-width: 1280px) {
+@media (max-width: 1480px) {
+    .pos-tracker-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 1100px) {
     .pos-tracker-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 720px) {
@@ -1062,6 +1273,38 @@ export default {
 
 .pos-tracker-col-icon { font-size: 18px; }
 
+/* [Wave S-4 P-OWNER 2026-05-20] Lane subtitle (À encaisser semantic). */
+.pos-tracker-col-head-titles {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+.pos-tracker-col-subtitle {
+    margin: 0;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--pos-tracker-muted);
+    text-transform: none;
+    letter-spacing: 0;
+    line-height: 1.2;
+}
+
+/* [Wave S-4 P-OWNER 2026-05-20] Pulsing amber tint on the À encaisser
+ * column when ≥1 cash-pending order is present — matches the existing
+ * green pulse on PRÊTS À SERVIR for cross-lane visual consistency. */
+.pos-tracker-col--amber {
+    border-color: rgba(245, 158, 11, 0.4);
+    box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.10) inset;
+}
+.pos-tracker-col--amber.is-pulse {
+    animation: pos-tracker-col-amber-glow 2.6s ease-in-out infinite;
+}
+@keyframes pos-tracker-col-amber-glow {
+    0%, 100% { box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.12) inset; }
+    50%      { box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.32) inset, 0 0 18px rgba(245, 158, 11, 0.18); }
+}
+
 .pos-tracker-col-count {
     background: var(--pos-tracker-muted-soft);
     color: var(--pos-tracker-text);
@@ -1076,6 +1319,7 @@ export default {
 .pos-tracker-col--amber .pos-tracker-col-count { background: var(--pos-tracker-amber-soft); color: var(--pos-tracker-amber); }
 .pos-tracker-col--primary .pos-tracker-col-count { background: var(--pos-tracker-primary-soft); color: var(--pos-tracker-primary); }
 .pos-tracker-col--green .pos-tracker-col-count { background: var(--pos-tracker-green-soft); color: #166534; }
+.pos-tracker-col--blue .pos-tracker-col-count { background: var(--pos-tracker-blue-soft); color: var(--pos-tracker-blue); }
 .pos-tracker-col--muted .pos-tracker-col-count { background: var(--pos-tracker-muted-soft); color: var(--pos-tracker-muted); }
 
 .pos-tracker-col--green {
@@ -1142,6 +1386,7 @@ export default {
 .pos-tracker-card--amber { border-left: 4px solid var(--pos-tracker-amber); }
 .pos-tracker-card--primary { border-left: 4px solid var(--pos-tracker-primary); }
 .pos-tracker-card--green { border-left: 4px solid var(--pos-tracker-green); }
+.pos-tracker-card--blue { border-left: 4px solid var(--pos-tracker-blue); }
 .pos-tracker-card--muted { border-left: 4px solid var(--pos-v5-border-strong); opacity: 0.85; }
 
 .pos-tracker-card.is-fresh { animation: pos-tracker-card-pop 1.2s ease-out 1; border-color: var(--pos-tracker-green); }
@@ -1179,6 +1424,45 @@ export default {
 
 .pos-tracker-card-source--kiosk { background: #EEF2FF; }
 .pos-tracker-card-source--online { background: #ECFEFF; }
+
+/* [Wave S-4 P-OWNER 2026-05-20] Cash-pending bell badge — strong amber,
+ * gentle pulse to keep cashier attention without being aggressive. */
+.pos-tracker-card-cash-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+    background: var(--pos-tracker-amber-soft);
+    color: var(--pos-tracker-amber);
+    font-size: 14px;
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    animation: pos-tracker-cash-bell-pulse 2.2s ease-in-out infinite;
+}
+@keyframes pos-tracker-cash-bell-pulse {
+    0%, 100% { transform: scale(1); }
+    50%      { transform: scale(1.08); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .pos-tracker-card-cash-badge { animation: none; }
+}
+
+/* [Wave S-4 P-OWNER 2026-05-20] Cash-pending amount emphasis. */
+.pos-tracker-card-total--cash {
+    color: var(--pos-tracker-amber);
+    font-weight: 800;
+    display: inline-flex;
+    align-items: baseline;
+    gap: 6px;
+}
+.pos-tracker-card-total-prefix {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--pos-tracker-muted);
+}
 
 .pos-tracker-card-time {
     margin-left: auto;
@@ -1299,6 +1583,24 @@ export default {
 .pos-tracker-card-btn--primary:disabled {
     opacity: 0.6;
     cursor: not-allowed;
+}
+
+/* [Wave S-4 P-OWNER 2026-05-20] Encaisser CTA — amber primary action.
+ * Visually loud enough that the cashier can't miss it but stays within
+ * the existing V5 design token palette (warning tone, not error). */
+.pos-tracker-card-btn--cash {
+    background: var(--pos-tracker-amber);
+    border-color: var(--pos-tracker-amber);
+    color: #fff;
+}
+.pos-tracker-card-btn--cash:hover {
+    background: #d97706;
+    border-color: #d97706;
+    color: #fff;
+}
+.pos-tracker-card-btn--cash:focus-visible {
+    outline: 2px solid #fbbf24;
+    outline-offset: 2px;
 }
 
 /* [POS-V4-CASHIER-OPS 2026-05-02] danger variant for cancel-order */

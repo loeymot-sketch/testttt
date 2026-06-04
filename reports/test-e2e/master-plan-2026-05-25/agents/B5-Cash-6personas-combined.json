@@ -1,0 +1,350 @@
+{
+  "agent_id": "B5-Cash-6personas-combined",
+  "role": "Cash drawer surface × 6 personas consolidated (P1 Chef · P2 Client · P3 Caissier · P4 Owner-night · P5 Inspecteur · P6 Newbie)",
+  "discipline": [
+    "DM6 NF525 RO (read-only on audit_logs / z_reports / cash_movements / cash_drawer_sessions)",
+    "DM3 (state capture — code-driven + curl-driven; no Playwright in sub-agent)",
+    "DM5 (adversarial inline self-dispute)",
+    "DM8 (honest reporting — empirical gaps surfaced, not hidden)"
+  ],
+  "mission": "Cash drawer surface coverage 6 personas consolidated — verify cash-overview UI + CashDrawerService + Z-report dry-run state + K2-HEAL-06 cross-chain anchor + K2-HEAL-07 cash_movement on refund, then triangulate against 6 owner-personas concerns.",
+  "server": "http://127.0.0.1:8000",
+  "timestamp_local": "2026-05-25T22:35:00+02:00",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head_commit": "a6ed32807",
+  "baseline_drift_from_b1p5": {
+    "audit_logs_count_now": 73,
+    "audit_logs_count_b1p5": 67,
+    "delta_reason": "+6 audit_logs accumulated since B1-P5 inspection — all `user.login` churn from concurrent agent inspections; non-fiscal. Last_hash 8ab3ed351165fe4e (current) vs a59e47cbe474f799 (B1-P5). Chain continuity preserved; tamper id=34 still present and known."
+  },
+
+  "evidence_curl_curl_cash_overview": {
+    "url": "GET http://127.0.0.1:8000/api/admin/cash-overview",
+    "anon_response": {
+      "http_status": "200 OK (text/html)",
+      "body": "Meta refresh redirect → /api/login (correct unauthenticated-bounce pattern; route is auth-gated by middleware + abort_unless can('cash-sessions-report'))"
+    },
+    "controller_path": "app/Http/Controllers/Admin/CashOverviewController.php (491 LOC)",
+    "vue_path": "resources/js/components/admin/cashOverview/CashOverviewComponent.vue (539 LOC)",
+    "route_definition": "routes/api.php:1088-1090 — Route::prefix('cash-overview')->name('cash-overview.')->group(... GET → CashOverviewController@index)",
+    "vue_route_module": "resources/js/router/modules/cashOverviewRoutes.js:11-13 path=/admin/cash-overview meta.permissionUrl='cash-sessions-report' (Admin + Branch Manager)",
+    "permission_gate": "abort_unless(\\$user->can('cash-sessions-report'), 403) at controller line 84-88. Reuses Wave O O4 permission — no new permission seeded.",
+    "branch_isolation": "Admin (branch_id=0) bypasses BranchScope explicitly on Order whereHas; Branch Manager forced to own branch_id via resolveBranchFilter line 264-275; staff branch_id silently ignored to avoid leaking branch existence."
+  },
+
+  "evidence_db_state": {
+    "cash_drawer_sessions": {
+      "total": 1,
+      "open": 1,
+      "row": {
+        "id": 1,
+        "branch_id": 1,
+        "opened_by_user_id": 2,
+        "opened_at": "2026-05-25 12:32:25",
+        "opening_amount": "50.00",
+        "status": "open",
+        "closed_at": null,
+        "closing_amount": null,
+        "expected_closing_amount": null,
+        "variance": null
+      },
+      "interpretation": "Session 1 opened ~10h before inspection by admin@lecayenne.fr (user_id=2). Zero movements 10h later — looks test-induced (likely from B-series agent OPEN test or earlier E2E run), not a real cashier session. Non-blocking; mention for orchestrator awareness."
+    },
+    "cash_movements": {
+      "total": 0,
+      "verdict": "Empirical drawer reconciliation flow cannot be observed end-to-end from RO inspection: no movements => no signedAmount sum => `expected = opening + Σ(movements) = 50.00 + 0 = 50.00`. The cash-overview UI's `expected_in_drawer` will render 50,00 € from CashOverviewController::drawerCashCollectedUnfiltered which uses Transaction.amount (not cash_movements) — divergence flagged in F-002 below."
+    },
+    "transactions": {
+      "total": 0,
+      "verdict": "Zero rows. The `summary.total / by_source / by_mode` payload renders all zeros, the empty-state block (`data-testid=cash-overview-empty`) fires with the Wave Z Q6 illustration + ≥20-char copy + reset CTA. Empty-state UX is polished."
+    },
+    "audit_logs_cash_events": [
+      {
+        "id": 26,
+        "action": "cash.session.opened",
+        "resource": "cash_drawer_session",
+        "resource_id": 1,
+        "payload": "{\"session_id\":1, \"opening_amount\":50}",
+        "prev_hash_prefix16": "5c899ddc346a1f49",
+        "current_hash_prefix16": "6e0f7ec27d712ede",
+        "verdict": "OPEN event chained correctly. No cash.session.closed / cash.session.reconciled / cash.movement.recorded events observed — consistent with status=open + zero movements."
+      },
+      {
+        "id": 31,
+        "action": "z_report.closed",
+        "resource": "z_report",
+        "resource_id": 1,
+        "payload_summary": "z_report_id=1, sequence_no=1, signature=504a44c0e17b71dd..., closed_at=2026-05-25T12:49:39+02:00, total_ttc=0, order_count=0",
+        "prev_hash_prefix16": "007c7f6e10845915",
+        "current_hash_prefix16": "81277b1d2ea8d61c",
+        "verdict_K2_HEAL_06": "CROSS-CHAIN ANCHOR LIVE. K2-HEAL-06 verified: ZReport::updated observer at app/Providers/AppServiceProvider.php:107-152 wrote an audit_logs HMAC entry `z_report.closed` resource_id=1 carrying sequence_no + signature + prev_hash + total_ttc + order_count + closed_at. Forensic walker on audit_logs alone can now detect Z-close events + cross-reference z_reports table."
+      }
+    ],
+    "z_reports": {
+      "total": 1,
+      "row": {
+        "id": 1,
+        "branch_id": 1,
+        "sequence_no": 1,
+        "status": "closed",
+        "opened_at": "2026-05-25 12:49:29",
+        "closed_at": "2026-05-25 12:49:39",
+        "total_ttc": "0.00",
+        "order_count": 0
+      },
+      "verdict_FIX_5_dry_run_state": "FIX-5 baseline confirmed. z_reports has exactly 1 row, sequence_no=1, status=closed, total_ttc=0, order_count=0 — empty Z (open → close 10s gap, no orders aggregated). This is the dry-run state acknowledged in baseline.txt line 19. NOT a regression. Consistent with B1-P5-F-001 P1 finding: Z is CLOSED on the only active branch, so any borne traffic landing now would hit the degraded fiscal_alloc_error_at path until 00:01 auto-reopen cron OR manual `php artisan fiscal:open-all-active-branches`."
+    }
+  },
+
+  "evidence_K2_HEAL_07_cash_movement_on_refund": {
+    "verified_via_grep": [
+      "app/Services/Order/RefundWithCounterEntryService.php:248-298 — explicit `CashDrawerService::recordMovement` call with type=CashMovement::TYPE_CASHBACK + direction=CashMovement::DIRECTION_OUT, attached to mirror order_id (not parent), `strict: false` (best-effort).",
+      "app/Services/PaymentService.php:577 — TYPE_CASHBACK in pre-Z cashBack() refund path (PaymentService::cashBack → recordCashBackMovement), pre-heal-K2-HEAL-07 pattern.",
+      "app/Services/Cash/CashDrawerService.php:376 — TYPE_CASHBACK whitelisted in $allowedTypes for recordMovement."
+    ],
+    "audit_log_action_on_movement": "writeAuditLog('cash.movement.recorded', ...) at CashDrawerService.php:459-466 (INSIDE the DB::transaction at 422-469). cash_movements row + audit_logs row commit atomically (NF525 evidence chain).",
+    "fail_safe_pattern": "RefundWithCounterEntryService.php:256-263 silently skips cash_movement if no Auth::check() OR no findOpenSessionForUser → logs `[GOAL-K2-HEAL-07] cash_movement skipped` to fiscal channel. Mirror-order Z-chain (4-bis) still records the refund; drawer reconciliation gap surfaces in cron alert / log monitoring. NOT in cash-overview UI (see F-003 below).",
+    "verdict": "K2-HEAL-07 LIVE in code. Empirical observation not possible from RO inspection (zero refund flows in current DB) — recommend a sister agent drive a refund-with-counter-entry flow to re-verify cash_movements row + audit_logs chain entry end-to-end."
+  },
+
+  "evidence_frozen_zone_compliance": {
+    "files_checked": [
+      "app/Services/Fiscal/FiscalSequenceService.php",
+      "app/Services/Fiscal/ZReportService.php",
+      "app/Services/Fiscal/AuditLogService.php",
+      "app/Services/Pricing/PricingService.php",
+      "app/Models/Scopes/BranchScope.php"
+    ],
+    "git_status_working_tree": "clean (no modifications in this agent cycle)",
+    "diff_loc_last_5_commits": 0,
+    "verdict": "Frozen-zone discipline INTACT for this agent's RO inspection. Cumulative branch diff vs main is documented under prior LOCK exceptions (LOCK_FISCAL_WGS_Z6_P1 + LOCK_FISCAL_TEST_ANON + Wave M Z5 patterns) — gated, not regression."
+  },
+
+  "personas": [
+    {
+      "id": "P1",
+      "name": "Chef — KDS perspective on cash drawer",
+      "concern": "Cash visible from KDS? Does the chef see anything about drawer state / cash-pending?",
+      "verdict": "GREEN — correct separation of concerns",
+      "evidence": [
+        "resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue:278-281 — Wave S-2 P-OWNER 2026-05-20: cash-pending orders MUST NOT show a CTA in KDS; the bump button is replaced with a PASSIVE BADGE for cash-at-counter orders awaiting cashier encaissement.",
+        "Zero references to `drawer`, `encaisser`, `caisse` in the KDS Vue component tree (only `cash` as part of `cash-pending` status badge logic — Wave S-5).",
+        "Zero KDS access to cash_drawer_sessions / cash_movements / Transaction tables (verified by grep on /resources/js/components/admin/kitchenDisplaySystem/)."
+      ],
+      "architectural_assessment": "Architecturally CORRECT. Chef should NEVER see cash. KDS surface is task-focused (bump, ready, history). The passive 'cash-pending' BADGE is the only legitimate cross-pollination — it tells the chef 'do not promote this card while customer hasn't paid at counter' (Wave S-5 owner mandate). No leakage of drawer balance / variance / opening_amount to chef.",
+      "finding": "NONE — silence is the intended behavior. Documenting as positive verdict."
+    },
+    {
+      "id": "P2",
+      "name": "Client — receipt clarity at counter",
+      "concern": "When the cashier collects the cash at the counter (borne paid-at-counter flow), does the customer-facing receipt make the encaissement clear?",
+      "verdict": "GREEN-with-caveat",
+      "evidence": [
+        "PosCounterCollectModal.vue (resources/js/components/admin/pos/PosCounterCollectModal.vue, 768 LOC) — owner SSOT mandate respected verbatim: same look + same behavior (4 modes + numpad) as PaymentComponent. Frozen-zone respect: PaymentComponent.vue NOT modified, sibling mirror.",
+        "Idempotency key minute-bucket pattern: `pos-counter-collect-{orderId}-{modeInt}-{minuteBucket}` (PosCounterCollectModal.vue:369-378) — double-tap <60s replays cached 2xx via IdempotencyKeyMiddleware (Wave K Z7).",
+        "Race protection: 409 Conflict with error_code=payment_already_collected → toast FR + emit cancel for parent refresh (lines 452-475). Phantom drawer-open simulation eliminated.",
+        "FR locale: 8,50 € pre-fill + tolerant parseFloat on comma decimal separator (lines 250-256).",
+        "ReceiptRemboursementMarker.vue exists (104 LOC) — backend prints REMBOURSEMENT mirror counter-entry markers on the receipt for refunds (NF525 traceable).",
+        "Reprint button on each tracker card (`tracker-reprint-{id}` data-testid) — customer can ask for a reprint via cashier."
+      ],
+      "finding_carry_forward": "B1-P3-F-03 P3 — 'Encaisser modal: feedback latency sur 409 race ambigu pour le caissier'. On a 409 the modal closes immediately and the cashier loses context (mode, amount). The customer at the counter sees the cashier confused → minor UX friction. Cosmetic V1, V1.0.2 backlog: hydrate 409 response with collected_by/at/mode meta.",
+      "v1_scope_call": "Acceptable for V1 Le Cayenne single-resto."
+    },
+    {
+      "id": "P3",
+      "name": "Caissier — opening/close workflow + variance dialog (B1-P5 found Z CLOSED need reopen for borne)",
+      "verdict": "AMBER",
+      "evidence": [
+        "OPENING WORKFLOW: PosCashDrawerSessionDialog.vue (resources/js/components/admin/cash/) drives the open-session flow; CashDrawerService::openSession (CashDrawerService.php:52-118) enforces 3 defense layers (Cache::lock 5s + DB::transaction lockForUpdate + UNIQUE partial index status='open') — race-resistant TOCTOU hardening per iter15-P0-09. Audit entry cash.session.opened written via writeAuditLog (line 112-115).",
+        "CLOSE WORKFLOW: same dialog mode='close' presents 3 fields — closing_amount input + expected_amount + live_variance readout + variance_reason textarea (conditional v-if=varianceRequiresReason). Confirm CTA `cash-session-close-submit` is `--danger` styled and disabled while loading or varianceReasonMissing.",
+        "VARIANCE GATE: CashDrawerService::reconcileSession (lines 225-354) — if |variance|>threshold (default 2.00€) AND approval_required → CashVarianceRequiresApprovalException 422 with errorCode=CODE_REASON_REQUIRED or CODE_MANAGER_APPROVAL. Requires `cash.reconcile.variance.override` permission (Admin + Branch Manager). max_reason_length=255 enforced.",
+        "MANAGER GATE ROUTINE CLOSE: Sprint H2 F-11 — config('cash.manager_gate_routine_close') opt-in; default false for single-cashier Le Cayenne; flips true for multi-cashier / SaaS to require manager approval on ALL closes (CashDrawerService.php:131-160).",
+        "FORENSIC ACTOR IDs: closed_by_user_id + reconciled_by_user_id columns persisted on close + reconcile (Sprint H2 F-10, CashDrawerSession.php:44-46 + CashDrawerService.php:188 + 324).",
+        "CARRY B1-P5-F-001 P1 (BORNE-BLOCKING): Z_report on branch=1 is CLOSED (closed_at=2026-05-25 12:49:39, ~10h before now). Any borne-paid order arriving now would hit the closed-Z fiscal_alloc path. Defense exists (fiscal_alloc_error_at flag + retry cron every minute + 00:01 fiscal:open-all-active-branches cron), but for IMMEDIATE borne traffic tonight, the recommended remediation is `php artisan fiscal:open-all-active-branches` BEFORE clientelle resumes."
+      ],
+      "finding": "B5-F-A1 (P1) — Carry forward of B1-P5-F-001. Z=closed on branch=1; no open Z available for fiscal_sequence_no allocation on borne-paid orders right now. Manual remediation required before next borne shift.",
+      "v1_scope_call": "Blocking for borne traffic IMMEDIATELY. Not a V1 SHIP blocker (defense path exists in code); is a runtime ops gate."
+    },
+    {
+      "id": "P4",
+      "name": "Owner-night — variance analytics + PDF export (Gap-Hunt ABSENT)",
+      "verdict": "AMBER-MINUS — partial coverage, mission pre-flagged gap CONFIRMED",
+      "evidence_PDF_export_ABSENT": [
+        "grep -rn -E 'pdf|export|jsPDF|html2canvas|exportTo' resources/js/components/admin/cashOverview/ → ZERO matches.",
+        "The cash-overview UI has filters (from/to/source/mode) + summary cards + per-mode chips + transactions table (`data-testid=cash-overview-table-wrapper`) BUT NO export button (CSV/PDF/Excel). For night-end review the owner currently has only on-screen reading + manual screenshot.",
+        "Sibling /admin/cash-sessions-report (Wave O O4, CashSessionReportListComponent.vue) — same gap: no PDF/CSV button.",
+        "DeliveryBoyCashSession surface — same gap."
+      ],
+      "evidence_variance_analytics_PARTIAL": [
+        "Reconciliation card (CashOverviewComponent.vue:122-165) shows 3 honest values: opening_amount + cash_collected_today + expected_in_drawer (with `data-testid=cash-overview-reconciliation-{opening,collected,expected}`).",
+        "EXPLICITLY MISSING DIFF CELL: Wave X-C round-2 Fix C-013 (2026-05-21) REMOVED the misleading diff cell that was algebraically locked to `-opening_amount` (cashDiff = collected - (opening + collected) = -opening). Until V1.0.2 cashier physical-count input ships, page shows 3 values + amber-tone note `cash_drawer_count_pending_note` = 'Pour calculer l'écart, saisir le comptage physique du tiroir (à venir).' Honest non-feature.",
+        "by_source aggregation (caisse/borne/livreur) + by_mode aggregation (cash/card/mobile/ticket) computed server-side in CashOverviewController::summarize (single-pass O(n)) line 364-398 — owner can scan totals per source/mode.",
+        "Hard cap MAX_ROWS=500 with `cash-overview-cap-notice` amber chip when capped — owner is warned to narrow date range."
+      ],
+      "v1_scope_call": "Mission-flagged. For Le Cayenne V1 single-resto with owner present, PDF export is V1.0.2 backlog. The 3-value reconciliation card + per-mode/per-source totals are sufficient for nightly visual check. Manual screenshot or print-to-PDF via browser is the workaround until export ships.",
+      "finding": "B5-F-A2 (P2) — PDF/CSV export absent on /admin/cash-overview. Owner-night reconciliation relies on browser print + manual screenshot. V1.0.2 backlog. Cash-overview component is otherwise polished (Wave Z Q5/Q6/Q7/Q8 + Wave X-C round-1/2 heals)."
+    },
+    {
+      "id": "P5",
+      "name": "Inspecteur — NF525 cash movements append-only",
+      "verdict": "GREEN",
+      "evidence": [
+        "DB-LAYER IMMUTABILITY: migration 2026_05_10_010000 adds cash_movements_no_delete trigger + cash_drawer_sessions_no_delete trigger (referenced in CashDrawerService.php:536-538 comment). DELETE is signalled SQLSTATE '45000' (MySQL prod only; SQLite tests bypass).",
+        "APPLICATION-LAYER IMMUTABILITY: cash_movements has no `update()` method exposed in CashMovement model; CashDrawerService writes via Eloquent ::create() only (line 446-454). Closing/reconcile flips status enum on cash_drawer_session row but never deletes movements.",
+        "AUDIT BINDING: every NF525-significant event (open / close / reconcile / movement) writes an audit_logs HMAC chain entry via AuditLogService::write (Sprint 1D F-8). Verified: cash.session.opened at audit_logs.id=26, chain hash prefix 6e0f7ec27d712ede. Confirmed: cash.session.closed / cash.session.reconciled / cash.movement.recorded events would land in chain if they happened.",
+        "BEST-EFFORT FALLBACK: AuditLogService failure is downgraded to Log::warning + does NOT abort the operation (CashDrawerService.php:534-547). DB-layer immutability remains the source of truth even if HMAC chain temporarily unavailable.",
+        "K2-HEAL-06 CROSS-CHAIN ANCHOR: z_report.closed event observed at audit_logs.id=31 with signature + prev_hash + closed_at — forensic walker on audit_logs alone can detect Z-close events (verified above).",
+        "K2-HEAL-07 REFUND ANCHOR: refund-with-counter-entry triggers cash_movement TYPE_CASHBACK + DIRECTION_OUT + audit_logs cash.movement.recorded entry, ATOMICALLY inside DB::transaction (CashDrawerService.php:422-469). NF525 evidence pairing intact."
+      ],
+      "finding": "NONE (positive verdict). Inspector reading the chain post-mortem would see cash.session.opened → cash.movement.recorded* → cash.session.closed → cash.session.reconciled → z_report.closed sequence, all hash-chained via prev_hash → current_hash. cash_movements.amount + direction + type + cash_drawer_session_id are write-once-via-create, hardened by trigger.",
+      "v1_scope_call": "Production-grade for NF525. No P0/P1 inspector concerns."
+    },
+    {
+      "id": "P6",
+      "name": "Newbie — confirmation before destructive close",
+      "verdict": "GREEN",
+      "evidence": [
+        "PosCashDrawerSessionDialog.vue (resources/js/components/admin/cash/) mode='close' is a DEDICATED step, NOT a single-click destructive action.",
+        "Step shows the user 4 things BEFORE they confirm: (1) closing_amount input field (cashier must type), (2) expected_total readout (live computed via reconcile preview), (3) live variance display with positive/negative coloring (`cash-session-dialog__stat--variance-positive` / `--variance-negative`), (4) variance_reason textarea (mandatory if |variance|>threshold — gated by v-if=varianceRequiresReason).",
+        "Confirm CTA is `--danger` styled (red) and labeled `cash_session_confirm_close` — visual cue of destructive action.",
+        "DISABLED state guards: `:disabled=loading || varianceReasonMissing` — newbie cannot submit without providing required reason on large variance.",
+        "BACK BUTTON: `cash-session-dialog__btn--ghost` `@click=mode='active'` lets newbie back out at any time without firing the close.",
+        "BACKEND DEFENSE-IN-DEPTH: even if newbie bypasses the UI gate via raw POST, CashDrawerService::closeSession + reconcileSession enforce: (a) idempotency (already-closed returns no-op), (b) variance gate throws CashVarianceRequiresApprovalException 422 with explicit reason/manager-approval codes (CashDrawerService.php:276-312), (c) manager_gate_routine_close opt-in throws 403 if config flipped on without permission (line 151-160).",
+        "AUDIT TRAIL: close + reconcile events written to audit_logs chain (cash.session.closed / cash.session.reconciled with sequence_no + threshold + over_threshold + variance_reason + actor_id payload, line 198-202 + 339-346) — newbie's actions are forensically traceable."
+      ],
+      "finding": "NONE (positive verdict). The mode-based step UI + danger-styled CTA + variance-reason gate + back button is a SUFFICIENT confirmation pattern. No raw `window.confirm()` JS dialog, but the dedicated mode-2 state effectively IS the confirmation — and arguably better than a generic confirm dialog because it shows the variance and required reason in-place.",
+      "v1_scope_call": "Production-grade. Newbie cannot trivially destroy or corrupt drawer state."
+    }
+  ],
+
+  "findings": [
+    {
+      "id": "B5-F-A1",
+      "priority": "P1",
+      "title": "Z_report CLOSED on branch=1 — borne-paid orders arriving NOW would hit fiscal_alloc_error_at degraded path",
+      "carry_forward_from": "B1-P5-F-001",
+      "evidence": {
+        "z_reports_row": "id=1, branch_id=1, sequence_no=1, status=closed, closed_at=2026-05-25 12:49:39 (~10h before now)",
+        "open_z_count_active_branch": 0,
+        "audit_anchor_id": "audit_logs.id=31 (z_report.closed, current_hash 81277b1d2ea8d61c) — close event chain-anchored.",
+        "remediation_command": "php artisan fiscal:open-all-active-branches",
+        "auto_recovery": "00:01 daily cron fiscal:open-all-active-branches + foodking:fiscal:retry-alloc every minute",
+        "defense_path_in_code": "FrontendOrderService.php:1283-1320 writes fiscal_alloc_error_at via raw DB::table()->update() outside parent tx + try/catch — Wave M Z5 P1-C pattern. RetryFiscalAllocCommand filters fiscal_alloc_error_at IS NOT NULL."
+      },
+      "expected": "Every kiosk-paid order receives fiscal_sequence_no at create OR is flagged fiscal_alloc_error_at for cron retry — never silent gap.",
+      "actual": "Defense path EXISTS but Z=closed means immediate borne traffic would go through the degraded fiscal_alloc_error_at path until next 00:01 auto-reopen.",
+      "recommendation": "Operator action: run `php artisan fiscal:open-all-active-branches` BEFORE any borne shift tonight. Add health-check sentinel: alert if active_branch.latest_z.status='closed' AND now()<tomorrow's 00:01.",
+      "blocking_for_v1_ship": false,
+      "blocking_for_borne_traffic_tonight": true
+    },
+    {
+      "id": "B5-F-A2",
+      "priority": "P2",
+      "title": "Cash overview PDF/CSV export ABSENT — owner-night reconciliation relies on browser print + manual screenshot",
+      "category": "P4 owner-night reporting",
+      "evidence": {
+        "grep_pdf_export_in_cashOverview": "ZERO matches — no PDF/CSV/Excel export button in CashOverviewComponent.vue (539 LOC) or in sibling Wave O O4 CashSessionReportListComponent.vue.",
+        "current_export_path": "Manual: browser File > Print > Save as PDF. No structured CSV download.",
+        "owner_mandate_in_controller_comments": "CashOverviewController.php:18-23 — owner wants source/mode/total/écart visibility, NOT explicitly export. But night-end owner-review pattern implies durable record needed."
+      },
+      "v1_scope_call": "V1.0.2 backlog. The 3-value reconciliation card + per-source/per-mode aggregates are sufficient for visual nightly check. Browser print is the workaround.",
+      "remediation_hint": "New `Exporter` button in CashOverviewComponent header that POSTs current filter state to a new GET /api/admin/cash-overview/export endpoint returning CSV (server-side stream). Reuse CashOverviewController query + reformat. PDF can be CSV+css-print or jsPDF client-side. Frozen-zone: scope-minimal new method + new route, no touch of existing query path.",
+      "blocking_for_v1_ship": false
+    },
+    {
+      "id": "B5-F-A3",
+      "priority": "P3-info",
+      "title": "Reconciliation `expected_in_drawer` computed from Transactions, not from cash_movements — silent divergence possible if refund cash_movement skip happens (K2-HEAL-07 best-effort path)",
+      "category": "P5 inspector forensic completeness + P3 cashier reconciliation",
+      "evidence": {
+        "controller_method": "CashOverviewController::drawerCashCollectedUnfiltered (line 333-358) queries Transaction table where payment_method LIKE %cash% — NOT cash_movements.",
+        "rationale": "Transactions are the post-payment ledger; cash_movements are the drawer-level evidence. In normal flow they MUST match (PaymentService closes orders → Transaction row + CashDrawerService::recordMovement → cash_movement row).",
+        "divergence_scenario_K2_HEAL_07": "RefundWithCounterEntryService.php:256-274 — if Auth::check() is false OR findOpenSessionForUser returns null, cash_movement is SILENTLY SKIPPED (logged to fiscal channel, NOT surfaced in UI). But Transaction.amount = -mirror_refund_amount IS still written via PaymentService::deposit for the mirror order. So Transaction sum and cash_movements sum diverge — but cash-overview only reads Transaction. Cashier's drawer count would be the SOURCE OF TRUTH and reveal the gap, NOT the UI.",
+        "v1_LOCAL_impact": "Acceptable for V1 Le Cayenne (single cashier, single drawer, fiscal log monitored). For V2 SaaS multi-cashier scenarios where one cashier processes a refund while another's drawer is open, this could mislead the night reconciliation.",
+        "current_mitigation_layer": "Log::info / Log::warning to fiscal channel (line 257-262 + 291-297) — invisible to admin in cash-overview UI."
+      },
+      "verdict": "NOT a chain-escape; both Transaction and cash_movements chains are append-only. The risk is reconciliation DIVERGENCE invisible at the UI layer (admin reads Transactions; cashier reads physical drawer; cash_movements is forensic-only). For V1.0.2 SaaS: surface a 'reconciliation gap detected' chip when transactions_cash_sum ≠ cash_movements_sum_for_drawer.",
+      "recommendation": "V1.0.2 backlog: add a sentinel query at cash-overview render time comparing Transaction.cash and cash_movements.cash for the open drawer + flag delta visually if >0,50€. Cheap (one bounded query, already-indexed columns).",
+      "blocking_for_v1_ship": false
+    }
+  ],
+
+  "top_3_global": [
+    {
+      "id": "B5-F-A1",
+      "priority": "P1",
+      "summary": "Z_report CLOSED branch=1 — borne traffic tonight needs manual `php artisan fiscal:open-all-active-branches` before shift OR wait for 00:01 auto-reopen cron. Defense path exists in code (fiscal_alloc_error_at + retry cron) but immediate borne traffic would hit the degraded path. Carry-forward from B1-P5-F-001. Affects P3 Caissier + P5 Inspecteur + P4 Owner-night simultaneously."
+    },
+    {
+      "id": "B5-F-A2",
+      "priority": "P2",
+      "summary": "PDF/CSV export absent on cash-overview surface — owner-night reconciliation falls back to browser print/manual screenshot. V1.0.2 backlog. The 3-value reconciliation card (opening / collected_today / expected_in_drawer) per Wave X-C C-013 honesty heal is otherwise polished + production-grade."
+    },
+    {
+      "id": "B5-F-A3",
+      "priority": "P3-info",
+      "summary": "cash-overview `expected_in_drawer` computed from Transaction table, NOT cash_movements. K2-HEAL-07 silent-skip on refund (no auth or no open session) creates a possible Transaction-vs-cash_movements divergence that admin UI cannot see — only fiscal log + physical drawer count would reveal. Acceptable V1 single-cashier; V1.0.2 SaaS multi-cashier needs a 'reconciliation gap' sentinel chip."
+    }
+  ],
+
+  "chain_integrity_verdict": "CHAIN HMAC: 1 known/cleared tamper at audit_logs.id=34 (sentinel proof — action=tamper.attempt, hash=FAKE_HASH, baseline-acknowledged). 72 other rows expected continuous (verify-chain breaches=1). K2-HEAL-06 cross-chain anchor LIVE at audit_logs.id=31 (z_report.closed). K2-HEAL-07 cash_movement on refund LIVE in code (RefundWithCounterEntryService.php:277-285). Audit log count drifted 67 → 73 (+6 user.login) since B1-P5 inspection — non-fiscal churn. Last_hash 8ab3ed351165fe4e.",
+
+  "frozen_zone_compliance": {
+    "files_inspected_RO": [
+      "app/Services/Fiscal/FiscalSequenceService.php",
+      "app/Services/Fiscal/ZReportService.php",
+      "app/Services/Fiscal/AuditLogService.php",
+      "app/Services/Pricing/PricingService.php",
+      "app/Models/Scopes/BranchScope.php",
+      "app/Services/Cash/CashDrawerService.php (NOT in §7 — checked anyway)"
+    ],
+    "git_status_working_tree": "clean (no modifications in this agent cycle)",
+    "diff_loc_introduced_this_cycle": 0,
+    "verdict": "Frozen-zone discipline INTACT."
+  },
+
+  "honesty_caveats": [
+    "Discipline DM3 quartet captures: PARTIAL — curl evidence for /api/admin/cash-overview (HTTP 200 redirect → /api/login for unauth, expected behavior). Code-driven reading + DB tinker queries used for the rest. NO Playwright browser screenshots (sub-agent mode, no MCP). Same pattern as B2-P3 precedent.",
+    "Empirical drawer reconciliation END-TO-END cannot be observed from current DB sample (0 cash_movements, 0 transactions, 1 OPEN session 50€ opening, no movements 10h later). Code-level defense is verified but NOT empirically driven through a real cashier flow. Recommend a sister agent drive an open→movement→close→reconcile flow + a refund-with-counter-entry flow to fully validate.",
+    "OPEN session 1 (opened 2026-05-25 12:32 by admin@lecayenne.fr, no movements 10h later) looks test-induced rather than a real cashier session. Not escalating; orchestrator awareness only. If a real shift starts, the cashier may need to close-+-reopen this stale session, OR the existing iter15-P0-09 lockForUpdate guard will block a parallel open and they'll get a 409 — both paths are correct.",
+    "Audit_logs count has drifted 67 (B1-P5 baseline) → 73 (now), all user.login churn from concurrent agent inspections. Chain continuity preserved.",
+    "FIX-5 interpretation: not found as an explicit codebase marker — interpreted as the baseline.txt acknowledgment of `z_reports: 1` from dry-run + Wave X-C Fix C-013 misleading-diff-cell removal heal. Both verified above.",
+    "No new audit_logs / z_reports / cash_movements / cash_drawer_sessions row was written by this agent (DM6 RO respected)."
+  ],
+
+  "mission_status": "COMPLETE — read-only, no INSERT/UPDATE on fiscal tables, no order creation, no cash drawer mutation. 6 personas covered, 7 mission tasks executed (curl /admin/cash-overview, read 2 frontend Vue files, read 2 backend Service + Model files, verify FIX-5 z_report dry-run, verify K2-HEAL-06 cross-chain anchor live, verify K2-HEAL-07 refund cash_movement live).",
+
+  "tasks_executed": {
+    "1_curl_cash_overview_admin_auth": "DONE — HTTP 200 redirect (text/html meta-refresh → /api/login as expected for unauth bounce); controller + Vue route + permission gate all read.",
+    "2_read_CashOverview_Component_Controller": "DONE — Component 539 LOC + Controller 491 LOC + Wave X-C round-1/round-2 + Wave Z Q5/Q6/Q7/Q8 heals all traced.",
+    "3_read_CashDrawerService_CashDrawerSession": "DONE — Service 549 LOC + Model 90 LOC; openSession iter15-P0-09 3-layer TOCTOU defense + reconcileSession Sprint 1D F-4 variance gate + Sprint H2 F-10 actor IDs + F-11 manager_gate_routine_close all traced.",
+    "4_verify_FIX_5_z_report_dry_run": "DONE — z_reports.count=1 sequence_no=1 status=closed total_ttc=0 — matches baseline.txt acknowledgment.",
+    "5_verify_K2_HEAL_06_cross_chain_anchor_live": "DONE — audit_logs.id=31 z_report.closed entry observed with signature + prev_hash + closed_at + total_ttc + order_count + sequence_no payload, chain-anchored prev=007c7f6e10845915 cur=81277b1d2ea8d61c.",
+    "6_verify_K2_HEAL_07_cash_movement_on_refund": "DONE in code — RefundWithCounterEntryService.php:277-285 calls CashDrawerService::recordMovement(type=TYPE_CASHBACK, direction=DIRECTION_OUT, orderId=mirror) wrapped in try/catch best-effort. NOT empirically observed (zero refunds in DB).",
+    "7_six_personas_concerns_audit": "DONE — P1/P2/P3/P4/P5/P6 each covered with verdict + evidence + finding-or-positive-verdict + V1 scope call."
+  },
+
+  "outputs": {
+    "json_path": "reports/test-e2e/master-plan-2026-05-25/agents/B5-Cash-6personas-combined.json",
+    "personas_count": 6,
+    "personas_verdict": ["P1=GREEN", "P2=GREEN-with-caveat", "P3=AMBER", "P4=AMBER-MINUS", "P5=GREEN", "P6=GREEN"],
+    "findings_count": 3,
+    "findings_severity": ["P1", "P2", "P3-info"],
+    "global_verdict": "AMBER → GREEN once B5-F-A1 remediated (fiscal:open-all-active-branches before borne shift) — cash drawer SURFACE is production-grade with 2 V1.0.2 backlog items (PDF export + reconciliation divergence sentinel).",
+    "frozen_zone_diff_introduced_this_cycle": 0
+  },
+
+  "memory_for_next_agent": {
+    "cash_drawer_surface_state": "Cash drawer surface (cash-overview + cash-sessions-report + cash-drawer-session-dialog) is production-grade for V1 Le Cayenne. NF525 chain integrity is verified (K2-HEAL-06 + K2-HEAL-07 live). Race-resistant open/close/reconcile (iter15-P0-09 + Wave M Z5 patterns). Variance gate enforces reason+permission. Forensic actor IDs persisted.",
+    "open_items_v1_0_2_backlog": [
+      "B5-F-A2 P2 — PDF/CSV export on /admin/cash-overview + sibling /admin/cash-sessions-report",
+      "B5-F-A3 P3-info — Transaction-vs-cash_movements divergence sentinel chip when delta>0,50€",
+      "B1-P3-F-03 P3 (carry) — 409 race modal: hydrate response with collected_by/at/mode meta",
+      "Z auto-reopen on first paid kiosk if branch's latest_z is closed (currently relies on 00:01 cron OR manual command)"
+    ],
+    "immediate_ops_action_needed_before_borne_shift": "Run `php artisan fiscal:open-all-active-branches` to open Z for branch=1 (B5-F-A1 / B1-P5-F-001 carry).",
+    "no_p0_observed": true,
+    "frozen_zone_diff_introduced_this_cycle": 0,
+    "nf525_impact_this_cycle": "NONE — read-only inspection only."
+  }
+}

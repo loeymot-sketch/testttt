@@ -1,0 +1,2647 @@
+{
+    "summary": {
+        "started_at": "2026-05-23T23:53:46+00:00",
+        "finished_at": "2026-05-24T00:08:47+00:00",
+        "duration_s": 900.1,
+        "abort_reason": null,
+        "total_events_dispatched": 241,
+        "streams_intervals": {
+            "S1_POS_DIRECT_SALE": 15,
+            "S2_KIOSK_ORDER": 10,
+            "S3_KIOSK_CASH_COLLECT": 30,
+            "S4_KDS_BUMP": 15,
+            "S5_ADMIN_TOGGLE_AVAIL": 60
+        },
+        "warmup_s": 60,
+        "checkpoint_s": 180,
+        "audit_baseline": 69,
+        "audit_post": 97,
+        "audit_delta": 28,
+        "fiscal_baseline": 93,
+        "fiscal_post": 219,
+        "fiscal_delta": 126,
+        "ok_count": 241,
+        "rate_429_count": 0,
+        "rate_5xx_count": 0,
+        "other_4xx_count": 0,
+        "network_err_count": 0,
+        "per_stream": {
+            "S2_KIOSK_ORDER": {
+                "n": 86,
+                "ok": 86,
+                "codes": {
+                    "201": 86
+                }
+            },
+            "S1_POS_DIRECT_SALE": {
+                "n": 58,
+                "ok": 58,
+                "codes": {
+                    "201": 58
+                }
+            },
+            "S3_KIOSK_CASH_COLLECT": {
+                "n": 28,
+                "ok": 28,
+                "codes": {
+                    "200": 28
+                }
+            },
+            "S4_KDS_BUMP": {
+                "n": 55,
+                "ok": 55,
+                "codes": {
+                    "202": 55
+                }
+            },
+            "S5_ADMIN_TOGGLE_AVAIL": {
+                "n": 14,
+                "ok": 14,
+                "codes": {
+                    "200": 14
+                }
+            }
+        },
+        "latency_ms_min": 38.2,
+        "latency_ms_max": 4845.9,
+        "latency_ms_avg": 384.4
+    },
+    "events": [
+        {
+            "t": 10.084257125854492,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 0,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":759,\"order_serial_no\":\"240526759\",\"queue_number\":\"A0036\",\"token\":\"H3-KTK-0-e1507108\",\"parent_order_id\":null,\"subtotal\":25,\"discount\":0,\"total_tax\":0,\"total\":25,\"delivery_charge\":0,\"subto",
+            "batch_elapsed_ms": 100
+        },
+        {
+            "t": 15.296365022659302,
+            "stream": "S1_POS_DIRECT_SALE",
+            "idx": 1,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":760,\"order_serial_no\":\"240526760\",\"queue_number\":\"A0037\",\"token\":null,\"parent_order_id\":null,\"subtotal\":5,\"discount\":0,\"total_tax\":0,\"total\":5,\"delivery_charge\":0,\"subtotal_currency_pric",
+            "batch_elapsed_ms": 355.6
+        },
+        {
+            "t": 20.507127046585083,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 2,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":761,\"order_serial_no\":\"240526761\",\"queue_number\":\"A0038\",\"token\":\"H3-KTK-2-e1f64463\",\"parent_order_id\":null,\"subtotal\":30,\"discount\":0,\"total_tax\":0,\"total\":30,\"delivery_charge\":0,\"subto",
+            "batch_elapsed_ms": 93
+        },
+        {
+            "t": 30.72047519683838,
+            "stream": "S1_POS_DIRECT_SALE",
+            "idx": 3,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":762,\"order_serial_no\":\"240526762\",\"queue_number\":\"A0039\",\"token\":null,\"parent_order_id\":null,\"subtotal\":2.5,\"discount\":0,\"total_tax\":0,\"total\":2.5,\"delivery_charge\":0,\"subtotal_currency_",
+            "batch_elapsed_ms": 504.4
+        },
+        {
+            "t": 30.72047519683838,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 4,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":763,\"order_serial_no\":\"240526763\",\"queue_number\":\"A0040\",\"token\":\"H3-KTK-4-e29e77e3\",\"parent_order_id\":null,\"subtotal\":35,\"discount\":0,\"total_tax\":0,\"total\":35,\"delivery_charge\":0,\"subto",
+            "batch_elapsed_ms": 504.4
+        },
+        {
+            "t": 41.16309905052185,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 5,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":764,\"order_serial_no\":\"240526764\",\"queue_number\":\"A0041\",\"token\":\"H3-KTK-5-e3419bc6\",\"parent_order_id\":null,\"subtotal\":25,\"discount\":0,\"total_tax\":0,\"total\":25,\"delivery_charge\":0,\"subto",
+            "batch_elapsed_ms": 116.1
+        },
+        {
+            "t": 45.893779039382935,
+            "stream": "S1_POS_DIRECT_SALE",
+            "idx": 6,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":765,\"order_serial_no\":\"240526765\",\"queue_number\":\"A0042\",\"token\":null,\"parent_order_id\":null,\"subtotal\":2.5,\"discount\":0,\"total_tax\":0,\"total\":2.5,\"delivery_charge\":0,\"subtotal_currency_",
+            "batch_elapsed_ms": 320.1
+        },
+        {
+            "t": 51.56543302536011,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 7,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":766,\"order_serial_no\":\"240526766\",\"queue_number\":\"A0043\",\"token\":\"H3-KTK-7-e3e78856\",\"parent_order_id\":null,\"subtotal\":30,\"discount\":0,\"total_tax\":0,\"total\":30,\"delivery_charge\":0,\"subto",
+            "batch_elapsed_ms": 96
+        },
+        {
+            "t": 60.28192901611328,
+            "stream": "S3_KIOSK_CASH_COLLECT",
+            "idx": 8,
+            "status": 200,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 766
+            },
+            "body_excerpt": "{\"data\":{\"id\":766,\"order_serial_no\":\"240526766\",\"queue_number\":\"A0043\",\"token\":\"H3-KTK-7-e3e78856\",\"parent_order_id\":null,\"subtotal\":30,\"discount\":0,\"total_tax\":0,\"total\":30,\"delivery_charge\":0,\"subto",
+            "batch_elapsed_ms": 131.3
+        },
+        {
+            "t": 60.28192901611328,
+            "stream": "S4_KDS_BUMP",
+            "idx": 9,
+            "status": 202,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 765
+            },
+            "body_excerpt": "",
+            "batch_elapsed_ms": 131.3
+        },
+        {
+            "t": 60.28192901611328,
+            "stream": "S5_ADMIN_TOGGLE_AVAIL",
+            "idx": 10,
+            "status": 200,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"ok\":true,\"item_id\":2,\"branch_id\":1,\"is_available\":true,\"unavailable_reason\":null}",
+            "batch_elapsed_ms": 131.3
+        },
+        {
+            "t": 60.917604207992554,
+            "stream": "S1_POS_DIRECT_SALE",
+            "idx": 11,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":767,\"order_serial_no\":\"240526767\",\"queue_number\":\"A0044\",\"token\":null,\"parent_order_id\":null,\"subtotal\":7.5,\"discount\":0,\"total_tax\":0,\"total\":7.5,\"delivery_charge\":0,\"subtotal_currency_",
+            "batch_elapsed_ms": 324.5
+        },
+        {
+            "t": 62.05702018737793,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 12,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":768,\"order_serial_no\":\"240526768\",\"queue_number\":\"A0045\",\"token\":\"H3-KTK-12-e48e9a10\",\"parent_order_id\":null,\"subtotal\":30,\"discount\":0,\"total_tax\":0,\"total\":30,\"delivery_charge\":0,\"subt",
+            "batch_elapsed_ms": 103.6
+        },
+        {
+            "t": 72.2948350906372,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 13,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":769,\"order_serial_no\":\"240526769\",\"queue_number\":\"A0046\",\"token\":\"H3-KTK-13-e53346b6\",\"parent_order_id\":null,\"subtotal\":32.5,\"discount\":0,\"total_tax\":0,\"total\":32.5,\"delivery_charge\":0,\"",
+            "batch_elapsed_ms": 101.8
+        },
+        {
+            "t": 75.47498822212219,
+            "stream": "S4_KDS_BUMP",
+            "idx": 14,
+            "status": 202,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 767
+            },
+            "body_excerpt": "",
+            "batch_elapsed_ms": 79.5
+        },
+        {
+            "t": 76.06222009658813,
+            "stream": "S1_POS_DIRECT_SALE",
+            "idx": 15,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":770,\"order_serial_no\":\"240526770\",\"queue_number\":\"A0047\",\"token\":null,\"parent_order_id\":null,\"subtotal\":2.5,\"discount\":0,\"total_tax\":0,\"total\":2.5,\"delivery_charge\":0,\"subtotal_currency_",
+            "batch_elapsed_ms": 327.5
+        },
+        {
+            "t": 82.73966002464294,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 16,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":771,\"order_serial_no\":\"240526771\",\"queue_number\":\"A0048\",\"token\":\"H3-KTK-16-e5da2401\",\"parent_order_id\":null,\"subtotal\":27.5,\"discount\":0,\"total_tax\":0,\"total\":27.5,\"delivery_charge\":0,\"",
+            "batch_elapsed_ms": 106
+        },
+        {
+            "t": 90.46213912963867,
+            "stream": "S3_KIOSK_CASH_COLLECT",
+            "idx": 17,
+            "status": 200,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 771
+            },
+            "body_excerpt": "{\"data\":{\"id\":771,\"order_serial_no\":\"240526771\",\"queue_number\":\"A0048\",\"token\":\"H3-KTK-16-e5da2401\",\"parent_order_id\":null,\"subtotal\":27.5,\"discount\":0,\"total_tax\":0,\"total\":27.5,\"delivery_charge\":0,\"",
+            "batch_elapsed_ms": 92.5
+        },
+        {
+            "t": 91.05978012084961,
+            "stream": "S4_KDS_BUMP",
+            "idx": 18,
+            "status": 202,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 770
+            },
+            "body_excerpt": "",
+            "batch_elapsed_ms": 89.7
+        },
+        {
+            "t": 91.65818500518799,
+            "stream": "S1_POS_DIRECT_SALE",
+            "idx": 19,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":772,\"order_serial_no\":\"240526772\",\"queue_number\":\"A0049\",\"token\":null,\"parent_order_id\":null,\"subtotal\":5,\"discount\":0,\"total_tax\":0,\"total\":5,\"delivery_charge\":0,\"subtotal_currency_pric",
+            "batch_elapsed_ms": 323.1
+        },
+        {
+            "t": 92.7853651046753,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 20,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":773,\"order_serial_no\":\"240526773\",\"queue_number\":\"A0050\",\"token\":\"H3-KTK-20-e67b9140\",\"parent_order_id\":null,\"subtotal\":25,\"discount\":0,\"total_tax\":0,\"total\":25,\"delivery_charge\":0,\"subt",
+            "batch_elapsed_ms": 142.4
+        },
+        {
+            "t": 103.12118220329285,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 21,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":774,\"order_serial_no\":\"240526774\",\"queue_number\":\"A0051\",\"token\":\"H3-KTK-21-e720ee58\",\"parent_order_id\":null,\"subtotal\":27.5,\"discount\":0,\"total_tax\":0,\"total\":27.5,\"delivery_charge\":0,\"",
+            "batch_elapsed_ms": 104.6
+        },
+        {
+            "t": 106.32845211029053,
+            "stream": "S4_KDS_BUMP",
+            "idx": 22,
+            "status": 202,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 772
+            },
+            "body_excerpt": "",
+            "batch_elapsed_ms": 64.4
+        },
+        {
+            "t": 106.90047407150269,
+            "stream": "S1_POS_DIRECT_SALE",
+            "idx": 23,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":775,\"order_serial_no\":\"240526775\",\"queue_number\":\"A0052\",\"token\":null,\"parent_order_id\":null,\"subtotal\":7.5,\"discount\":0,\"total_tax\":0,\"total\":7.5,\"delivery_charge\":0,\"subtotal_currency_",
+            "batch_elapsed_ms": 308.2
+        },
+        {
+            "t": 113.572181224823,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 24,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":776,\"order_serial_no\":\"240526776\",\"queue_number\":\"A0053\",\"token\":\"H3-KTK-24-e7c7667d\",\"parent_order_id\":null,\"subtotal\":35,\"discount\":0,\"total_tax\":0,\"total\":35,\"delivery_charge\":0,\"subt",
+            "batch_elapsed_ms": 105.9
+        },
+        {
+            "t": 120.78181219100952,
+            "stream": "S3_KIOSK_CASH_COLLECT",
+            "idx": 25,
+            "status": 200,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 776
+            },
+            "body_excerpt": "{\"data\":{\"id\":776,\"order_serial_no\":\"240526776\",\"queue_number\":\"A0053\",\"token\":\"H3-KTK-24-e7c7667d\",\"parent_order_id\":null,\"subtotal\":35,\"discount\":0,\"total_tax\":0,\"total\":35,\"delivery_charge\":0,\"subt",
+            "batch_elapsed_ms": 102.4
+        },
+        {
+            "t": 120.78181219100952,
+            "stream": "S5_ADMIN_TOGGLE_AVAIL",
+            "idx": 26,
+            "status": 200,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"ok\":true,\"item_id\":2,\"branch_id\":1,\"is_available\":true,\"unavailable_reason\":null}",
+            "batch_elapsed_ms": 102.4
+        },
+        {
+            "t": 121.39256000518799,
+            "stream": "S4_KDS_BUMP",
+            "idx": 27,
+            "status": 202,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 775
+            },
+            "body_excerpt": "",
+            "batch_elapsed_ms": 103
+        },
+        {
+            "t": 122.00516819953918,
+            "stream": "S1_POS_DIRECT_SALE",
+            "idx": 28,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":777,\"order_serial_no\":\"240526777\",\"queue_number\":\"A0054\",\"token\":null,\"parent_order_id\":null,\"subtotal\":5,\"discount\":0,\"total_tax\":0,\"total\":5,\"delivery_charge\":0,\"subtotal_currency_pric",
+            "batch_elapsed_ms": 330
+        },
+        {
+            "t": 123.63265919685364,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 29,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":778,\"order_serial_no\":\"240526778\",\"queue_number\":\"A0055\",\"token\":\"H3-KTK-29-e8688ff1\",\"parent_order_id\":null,\"subtotal\":35,\"discount\":0,\"total_tax\":0,\"total\":35,\"delivery_charge\":0,\"subt",
+            "batch_elapsed_ms": 96.2
+        },
+        {
+            "t": 133.87195110321045,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 30,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":779,\"order_serial_no\":\"240526779\",\"queue_number\":\"A0056\",\"token\":\"H3-KTK-30-e90c32cb\",\"parent_order_id\":null,\"subtotal\":25,\"discount\":0,\"total_tax\":0,\"total\":25,\"delivery_charge\":0,\"subt",
+            "batch_elapsed_ms": 97.2
+        },
+        {
+            "t": 136.54862308502197,
+            "stream": "S4_KDS_BUMP",
+            "idx": 31,
+            "status": 202,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 777
+            },
+            "body_excerpt": "",
+            "batch_elapsed_ms": 71.8
+        },
+        {
+            "t": 137.132089138031,
+            "stream": "S1_POS_DIRECT_SALE",
+            "idx": 32,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":780,\"order_serial_no\":\"240526780\",\"queue_number\":\"A0057\",\"token\":null,\"parent_order_id\":null,\"subtotal\":7.5,\"discount\":0,\"total_tax\":0,\"total\":7.5,\"delivery_charge\":0,\"subtotal_currency_",
+            "batch_elapsed_ms": 318.8
+        },
+        {
+            "t": 144.33380722999573,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 33,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":781,\"order_serial_no\":\"240526781\",\"queue_number\":\"A0058\",\"token\":\"H3-KTK-33-e9b3e9b8\",\"parent_order_id\":null,\"subtotal\":32.5,\"discount\":0,\"total_tax\":0,\"total\":32.5,\"delivery_charge\":0,\"",
+            "batch_elapsed_ms": 94.9
+        },
+        {
+            "t": 151.0425980091095,
+            "stream": "S3_KIOSK_CASH_COLLECT",
+            "idx": 34,
+            "status": 200,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 781
+            },
+            "body_excerpt": "{\"data\":{\"id\":781,\"order_serial_no\":\"240526781\",\"queue_number\":\"A0058\",\"token\":\"H3-KTK-33-e9b3e9b8\",\"parent_order_id\":null,\"subtotal\":32.5,\"discount\":0,\"total_tax\":0,\"total\":32.5,\"delivery_charge\":0,\"",
+            "batch_elapsed_ms": 242.3
+        },
+        {
+            "t": 151.7913851737976,
+            "stream": "S4_KDS_BUMP",
+            "idx": 35,
+            "status": 202,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 782
+            },
+            "body_excerpt": "",
+            "batch_elapsed_ms": 321.7
+        },
+        {
+            "t": 152.6202380657196,
+            "stream": "S1_POS_DIRECT_SALE",
+            "idx": 36,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":784,\"order_serial_no\":\"240526784\",\"queue_number\":\"A0061\",\"token\":null,\"parent_order_id\":null,\"subtotal\":2.5,\"discount\":0,\"total_tax\":0,\"total\":2.5,\"delivery_charge\":0,\"subtotal_currency_",
+            "batch_elapsed_ms": 327.7
+        },
+        {
+            "t": 154.7792830467224,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 37,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":785,\"order_serial_no\":\"240526785\",\"queue_number\":\"A0062\",\"token\":\"H3-KTK-37-ea5a976e\",\"parent_order_id\":null,\"subtotal\":30,\"discount\":0,\"total_tax\":0,\"total\":30,\"delivery_charge\":0,\"subt",
+            "batch_elapsed_ms": 136.4
+        },
+        {
+            "t": 165.0533812046051,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 38,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":786,\"order_serial_no\":\"240526786\",\"queue_number\":\"A0063\",\"token\":\"H3-KTK-38-eb01ec94\",\"parent_order_id\":null,\"subtotal\":32.5,\"discount\":0,\"total_tax\":0,\"total\":32.5,\"delivery_charge\":0,\"",
+            "batch_elapsed_ms": 370.7
+        },
+        {
+            "t": 167.1451940536499,
+            "stream": "S4_KDS_BUMP",
+            "idx": 39,
+            "status": 202,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 788
+            },
+            "body_excerpt": "",
+            "batch_elapsed_ms": 110.6
+        },
+        {
+            "t": 167.76122212409973,
+            "stream": "S1_POS_DIRECT_SALE",
+            "idx": 40,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":789,\"order_serial_no\":\"240526789\",\"queue_number\":\"A0066\",\"token\":null,\"parent_order_id\":null,\"subtotal\":5,\"discount\":0,\"total_tax\":0,\"total\":5,\"delivery_charge\":0,\"subtotal_currency_pric",
+            "batch_elapsed_ms": 605.1
+        },
+        {
+            "t": 175.4191210269928,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 41,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":792,\"order_serial_no\":\"240526792\",\"queue_number\":\"A0069\",\"token\":\"H3-KTK-41-ebe4afbf\",\"parent_order_id\":null,\"subtotal\":27.5,\"discount\":0,\"total_tax\":0,\"total\":27.5,\"delivery_charge\":0,\"",
+            "batch_elapsed_ms": 111
+        },
+        {
+            "t": 181.0706422328949,
+            "stream": "S3_KIOSK_CASH_COLLECT",
+            "idx": 42,
+            "status": 200,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 792
+            },
+            "body_excerpt": "{\"data\":{\"id\":792,\"order_serial_no\":\"240526792\",\"queue_number\":\"A0069\",\"token\":\"H3-KTK-41-ebe4afbf\",\"parent_order_id\":null,\"subtotal\":27.5,\"discount\":0,\"total_tax\":0,\"total\":27.5,\"delivery_charge\":0,\"",
+            "batch_elapsed_ms": 141.1
+        },
+        {
+            "t": 181.0706422328949,
+            "stream": "S5_ADMIN_TOGGLE_AVAIL",
+            "idx": 43,
+            "status": 200,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"ok\":true,\"item_id\":2,\"branch_id\":1,\"is_available\":false,\"unavailable_reason\":null}",
+            "batch_elapsed_ms": 141.1
+        },
+        {
+            "t": 182.2268521785736,
+            "stream": "S4_KDS_BUMP",
+            "idx": 44,
+            "status": 202,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 791
+            },
+            "body_excerpt": "",
+            "batch_elapsed_ms": 58.7
+        },
+        {
+            "t": 182.7919020652771,
+            "stream": "S1_POS_DIRECT_SALE",
+            "idx": 45,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":793,\"order_serial_no\":\"240526793\",\"queue_number\":\"A0070\",\"token\":null,\"parent_order_id\":null,\"subtotal\":2.5,\"discount\":0,\"total_tax\":0,\"total\":2.5,\"delivery_charge\":0,\"subtotal_currency_",
+            "batch_elapsed_ms": 325.7
+        },
+        {
+            "t": 185.90827822685242,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 46,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":794,\"order_serial_no\":\"240526794\",\"queue_number\":\"A0071\",\"token\":\"H3-KTK-46-ec4ce97c\",\"parent_order_id\":null,\"subtotal\":27.5,\"discount\":0,\"total_tax\":0,\"total\":27.5,\"delivery_charge\":0,\"",
+            "batch_elapsed_ms": 99.5
+        },
+        {
+            "t": 196.16737413406372,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 47,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":795,\"order_serial_no\":\"240526795\",\"queue_number\":\"A0072\",\"token\":\"H3-KTK-47-ecf1da56\",\"parent_order_id\":null,\"subtotal\":30,\"discount\":0,\"total_tax\":0,\"total\":30,\"delivery_charge\":0,\"subt",
+            "batch_elapsed_ms": 108.9
+        },
+        {
+            "t": 197.3742232322693,
+            "stream": "S4_KDS_BUMP",
+            "idx": 48,
+            "status": 202,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 793
+            },
+            "body_excerpt": "",
+            "batch_elapsed_ms": 67
+        },
+        {
+            "t": 197.95042204856873,
+            "stream": "S1_POS_DIRECT_SALE",
+            "idx": 49,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":796,\"order_serial_no\":\"240526796\",\"queue_number\":\"A0073\",\"token\":null,\"parent_order_id\":null,\"subtotal\":5,\"discount\":0,\"total_tax\":0,\"total\":5,\"delivery_charge\":0,\"subtotal_currency_pric",
+            "batch_elapsed_ms": 324.4
+        },
+        {
+            "t": 206.64657020568848,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 50,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":797,\"order_serial_no\":\"240526797\",\"queue_number\":\"A0074\",\"token\":\"H3-KTK-50-ed98af6d\",\"parent_order_id\":null,\"subtotal\":25,\"discount\":0,\"total_tax\":0,\"total\":25,\"delivery_charge\":0,\"subt",
+            "batch_elapsed_ms": 91
+        },
+        {
+            "t": 211.32999515533447,
+            "stream": "S3_KIOSK_CASH_COLLECT",
+            "idx": 51,
+            "status": 200,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 797
+            },
+            "body_excerpt": "{\"data\":{\"id\":797,\"order_serial_no\":\"240526797\",\"queue_number\":\"A0074\",\"token\":\"H3-KTK-50-ed98af6d\",\"parent_order_id\":null,\"subtotal\":25,\"discount\":0,\"total_tax\":0,\"total\":25,\"delivery_charge\":0,\"subt",
+            "batch_elapsed_ms": 73.6
+        },
+        {
+            "t": 212.41556119918823,
+            "stream": "S4_KDS_BUMP",
+            "idx": 52,
+            "status": 202,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 796
+            },
+            "body_excerpt": "",
+            "batch_elapsed_ms": 77.1
+        },
+        {
+            "t": 213.00178909301758,
+            "stream": "S1_POS_DIRECT_SALE",
+            "idx": 53,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":798,\"order_serial_no\":\"240526798\",\"queue_number\":\"A0075\",\"token\":null,\"parent_order_id\":null,\"subtotal\":7.5,\"discount\":0,\"total_tax\":0,\"total\":7.5,\"delivery_charge\":0,\"subtotal_currency_",
+            "batch_elapsed_ms": 322.9
+        },
+        {
+            "t": 217.15129899978638,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 54,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":799,\"order_serial_no\":\"240526799\",\"queue_number\":\"A0076\",\"token\":\"H3-KTK-54-ee4127a2\",\"parent_order_id\":null,\"subtotal\":35,\"discount\":0,\"total_tax\":0,\"total\":35,\"delivery_charge\":0,\"subt",
+            "batch_elapsed_ms": 96.3
+        },
+        {
+            "t": 227.38297820091248,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 55,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":800,\"order_serial_no\":\"240526800\",\"queue_number\":\"A0077\",\"token\":\"H3-KTK-55-eee6b105\",\"parent_order_id\":null,\"subtotal\":25,\"discount\":0,\"total_tax\":0,\"total\":25,\"delivery_charge\":0,\"subt",
+            "batch_elapsed_ms": 356.7
+        },
+        {
+            "t": 228.43352723121643,
+            "stream": "S1_POS_DIRECT_SALE",
+            "idx": 56,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":802,\"order_serial_no\":\"240526802\",\"queue_number\":\"A0079\",\"token\":null,\"parent_order_id\":null,\"subtotal\":7.5,\"discount\":0,\"total_tax\":0,\"total\":7.5,\"delivery_charge\":0,\"subtotal_currency_",
+            "batch_elapsed_ms": 4743.4
+        },
+        {
+            "t": 228.43352723121643,
+            "stream": "S4_KDS_BUMP",
+            "idx": 57,
+            "status": 202,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 801
+            },
+            "body_excerpt": "",
+            "batch_elapsed_ms": 4743.4
+        },
+        {
+            "t": 237.58337807655334,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 58,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":803,\"order_serial_no\":\"240526803\",\"queue_number\":\"A0080\",\"token\":\"H3-KTK-58-ef87adf8\",\"parent_order_id\":null,\"subtotal\":32.5,\"discount\":0,\"total_tax\":0,\"total\":32.5,\"delivery_charge\":0,\"",
+            "batch_elapsed_ms": 98.3
+        },
+        {
+            "t": 241.25870323181152,
+            "stream": "S5_ADMIN_TOGGLE_AVAIL",
+            "idx": 59,
+            "status": 200,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"ok\":true,\"item_id\":2,\"branch_id\":1,\"is_available\":false,\"unavailable_reason\":null}",
+            "batch_elapsed_ms": 48.2
+        },
+        {
+            "t": 241.8097882270813,
+            "stream": "S3_KIOSK_CASH_COLLECT",
+            "idx": 60,
+            "status": 200,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 803
+            },
+            "body_excerpt": "{\"data\":{\"id\":803,\"order_serial_no\":\"240526803\",\"queue_number\":\"A0080\",\"token\":\"H3-KTK-58-ef87adf8\",\"parent_order_id\":null,\"subtotal\":32.5,\"discount\":0,\"total_tax\":0,\"total\":32.5,\"delivery_charge\":0,\"",
+            "batch_elapsed_ms": 63.7
+        },
+        {
+            "t": 243.88512802124023,
+            "stream": "S1_POS_DIRECT_SALE",
+            "idx": 61,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":804,\"order_serial_no\":\"240526804\",\"queue_number\":\"A0081\",\"token\":null,\"parent_order_id\":null,\"subtotal\":5,\"discount\":0,\"total_tax\":0,\"total\":5,\"delivery_charge\":0,\"subtotal_currency_pric",
+            "batch_elapsed_ms": 371.7
+        },
+        {
+            "t": 243.88512802124023,
+            "stream": "S4_KDS_BUMP",
+            "idx": 62,
+            "status": 202,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 802
+            },
+            "body_excerpt": "",
+            "batch_elapsed_ms": 371.7
+        },
+        {
+            "t": 248.08486318588257,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 63,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":805,\"order_serial_no\":\"240526805\",\"queue_number\":\"A0082\",\"token\":\"H3-KTK-63-f02f2529\",\"parent_order_id\":null,\"subtotal\":32.5,\"discount\":0,\"total_tax\":0,\"total\":32.5,\"delivery_charge\":0,\"",
+            "batch_elapsed_ms": 98
+        },
+        {
+            "t": 258.31266808509827,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 64,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":807,\"order_serial_no\":\"240526807\",\"queue_number\":\"A0084\",\"token\":\"H3-KTK-64-f0d6611a\",\"parent_order_id\":null,\"subtotal\":35,\"discount\":0,\"total_tax\":0,\"total\":35,\"delivery_charge\":0,\"subt",
+            "batch_elapsed_ms": 356
+        },
+        {
+            "t": 259.4123821258545,
+            "stream": "S1_POS_DIRECT_SALE",
+            "idx": 65,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":808,\"order_serial_no\":\"240526808\",\"queue_number\":\"A0085\",\"token\":null,\"parent_order_id\":null,\"subtotal\":7.5,\"discount\":0,\"total_tax\":0,\"total\":7.5,\"delivery_charge\":0,\"subtotal_currency_",
+            "batch_elapsed_ms": 365.4
+        },
+        {
+            "t": 259.4123821258545,
+            "stream": "S4_KDS_BUMP",
+            "idx": 66,
+            "status": 202,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 806
+            },
+            "body_excerpt": "",
+            "batch_elapsed_ms": 365.4
+        },
+        {
+            "t": 268.49417209625244,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 67,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":809,\"order_serial_no\":\"240526809\",\"queue_number\":\"A0086\",\"token\":\"H3-KTK-67-f1769ca0\",\"parent_order_id\":null,\"subtotal\":30,\"discount\":0,\"total_tax\":0,\"total\":30,\"delivery_charge\":0,\"subt",
+            "batch_elapsed_ms": 102.6
+        },
+        {
+            "t": 272.2009401321411,
+            "stream": "S3_KIOSK_CASH_COLLECT",
+            "idx": 68,
+            "status": 200,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 809
+            },
+            "body_excerpt": "{\"data\":{\"id\":809,\"order_serial_no\":\"240526809\",\"queue_number\":\"A0086\",\"token\":\"H3-KTK-67-f1769ca0\",\"parent_order_id\":null,\"subtotal\":30,\"discount\":0,\"total_tax\":0,\"total\":30,\"delivery_charge\":0,\"subt",
+            "batch_elapsed_ms": 118.2
+        },
+        {
+            "t": 274.84270310401917,
+            "stream": "S1_POS_DIRECT_SALE",
+            "idx": 69,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":810,\"order_serial_no\":\"240526810\",\"queue_number\":\"A0087\",\"token\":null,\"parent_order_id\":null,\"subtotal\":2.5,\"discount\":0,\"total_tax\":0,\"total\":2.5,\"delivery_charge\":0,\"subtotal_currency_",
+            "batch_elapsed_ms": 372.3
+        },
+        {
+            "t": 274.84270310401917,
+            "stream": "S4_KDS_BUMP",
+            "idx": 70,
+            "status": 202,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 808
+            },
+            "body_excerpt": "",
+            "batch_elapsed_ms": 372.3
+        },
+        {
+            "t": 278.54923820495605,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 71,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":811,\"order_serial_no\":\"240526811\",\"queue_number\":\"A0088\",\"token\":\"H3-KTK-71-f2175c48\",\"parent_order_id\":null,\"subtotal\":27.5,\"discount\":0,\"total_tax\":0,\"total\":27.5,\"delivery_charge\":0,\"",
+            "batch_elapsed_ms": 98.3
+        },
+        {
+            "t": 288.786612033844,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 72,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":812,\"order_serial_no\":\"240526812\",\"queue_number\":\"A0089\",\"token\":\"H3-KTK-72-f2bab0d1\",\"parent_order_id\":null,\"subtotal\":30,\"discount\":0,\"total_tax\":0,\"total\":30,\"delivery_charge\":0,\"subt",
+            "batch_elapsed_ms": 108.5
+        },
+        {
+            "t": 289.94971108436584,
+            "stream": "S1_POS_DIRECT_SALE",
+            "idx": 73,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":813,\"order_serial_no\":\"240526813\",\"queue_number\":\"A0090\",\"token\":null,\"parent_order_id\":null,\"subtotal\":5,\"discount\":0,\"total_tax\":0,\"total\":5,\"delivery_charge\":0,\"subtotal_currency_pric",
+            "batch_elapsed_ms": 374.7
+        },
+        {
+            "t": 289.94971108436584,
+            "stream": "S4_KDS_BUMP",
+            "idx": 74,
+            "status": 202,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 810
+            },
+            "body_excerpt": "",
+            "batch_elapsed_ms": 374.7
+        },
+        {
+            "t": 299.2072160243988,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 75,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":814,\"order_serial_no\":\"240526814\",\"queue_number\":\"A0091\",\"token\":\"H3-KTK-75-f361da49\",\"parent_order_id\":null,\"subtotal\":25,\"discount\":0,\"total_tax\":0,\"total\":25,\"delivery_charge\":0,\"subt",
+            "batch_elapsed_ms": 100.4
+        },
+        {
+            "t": 301.3665511608124,
+            "stream": "S5_ADMIN_TOGGLE_AVAIL",
+            "idx": 76,
+            "status": 200,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"ok\":true,\"item_id\":2,\"branch_id\":1,\"is_available\":true,\"unavailable_reason\":null}",
+            "batch_elapsed_ms": 57
+        },
+        {
+            "t": 302.42882800102234,
+            "stream": "S3_KIOSK_CASH_COLLECT",
+            "idx": 77,
+            "status": 200,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 814
+            },
+            "body_excerpt": "{\"data\":{\"id\":814,\"order_serial_no\":\"240526814\",\"queue_number\":\"A0091\",\"token\":\"H3-KTK-75-f361da49\",\"parent_order_id\":null,\"subtotal\":25,\"discount\":0,\"total_tax\":0,\"total\":25,\"delivery_charge\":0,\"subt",
+            "batch_elapsed_ms": 70.4
+        },
+        {
+            "t": 305.0243980884552,
+            "stream": "S1_POS_DIRECT_SALE",
+            "idx": 78,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":815,\"order_serial_no\":\"240526815\",\"queue_number\":\"A0092\",\"token\":null,\"parent_order_id\":null,\"subtotal\":2.5,\"discount\":0,\"total_tax\":0,\"total\":2.5,\"delivery_charge\":0,\"subtotal_currency_",
+            "batch_elapsed_ms": 355.3
+        },
+        {
+            "t": 305.0243980884552,
+            "stream": "S4_KDS_BUMP",
+            "idx": 79,
+            "status": 202,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 813
+            },
+            "body_excerpt": "",
+            "batch_elapsed_ms": 355.3
+        },
+        {
+            "t": 309.70770621299744,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 80,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":816,\"order_serial_no\":\"240526816\",\"queue_number\":\"A0093\",\"token\":\"H3-KTK-80-f409a42b\",\"parent_order_id\":null,\"subtotal\":25,\"discount\":0,\"total_tax\":0,\"total\":25,\"delivery_charge\":0,\"subt",
+            "batch_elapsed_ms": 87.1
+        },
+        {
+            "t": 319.9384970664978,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 81,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":817,\"order_serial_no\":\"240526817\",\"queue_number\":\"A0094\",\"token\":\"H3-KTK-81-f4ad0dd0\",\"parent_order_id\":null,\"subtotal\":27.5,\"discount\":0,\"total_tax\":0,\"total\":27.5,\"delivery_charge\":0,\"",
+            "batch_elapsed_ms": 90.5
+        },
+        {
+            "t": 320.5818440914154,
+            "stream": "S1_POS_DIRECT_SALE",
+            "idx": 82,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":818,\"order_serial_no\":\"240526818\",\"queue_number\":\"A0095\",\"token\":null,\"parent_order_id\":null,\"subtotal\":5,\"discount\":0,\"total_tax\":0,\"total\":5,\"delivery_charge\":0,\"subtotal_currency_pric",
+            "batch_elapsed_ms": 376.8
+        },
+        {
+            "t": 320.5818440914154,
+            "stream": "S4_KDS_BUMP",
+            "idx": 83,
+            "status": 202,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 815
+            },
+            "body_excerpt": "",
+            "batch_elapsed_ms": 376.8
+        },
+        {
+            "t": 330.3705701828003,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 84,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":819,\"order_serial_no\":\"240526819\",\"queue_number\":\"A0096\",\"token\":\"H3-KTK-84-f554720a\",\"parent_order_id\":null,\"subtotal\":35,\"discount\":0,\"total_tax\":0,\"total\":35,\"delivery_charge\":0,\"subt",
+            "batch_elapsed_ms": 90.2
+        },
+        {
+            "t": 332.5302622318268,
+            "stream": "S3_KIOSK_CASH_COLLECT",
+            "idx": 85,
+            "status": 200,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 819
+            },
+            "body_excerpt": "{\"data\":{\"id\":819,\"order_serial_no\":\"240526819\",\"queue_number\":\"A0096\",\"token\":\"H3-KTK-84-f554720a\",\"parent_order_id\":null,\"subtotal\":35,\"discount\":0,\"total_tax\":0,\"total\":35,\"delivery_charge\":0,\"subt",
+            "batch_elapsed_ms": 4845.9
+        },
+        {
+            "t": 337.88195514678955,
+            "stream": "S1_POS_DIRECT_SALE",
+            "idx": 86,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":821,\"order_serial_no\":\"240526821\",\"queue_number\":\"A0098\",\"token\":null,\"parent_order_id\":null,\"subtotal\":7.5,\"discount\":0,\"total_tax\":0,\"total\":7.5,\"delivery_charge\":0,\"subtotal_currency_",
+            "batch_elapsed_ms": 365.7
+        },
+        {
+            "t": 337.88195514678955,
+            "stream": "S4_KDS_BUMP",
+            "idx": 87,
+            "status": 202,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 820
+            },
+            "body_excerpt": "",
+            "batch_elapsed_ms": 365.7
+        },
+        {
+            "t": 340.5553500652313,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 88,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":822,\"order_serial_no\":\"240526822\",\"queue_number\":\"A0099\",\"token\":\"H3-KTK-88-f5f72200\",\"parent_order_id\":null,\"subtotal\":32.5,\"discount\":0,\"total_tax\":0,\"total\":32.5,\"delivery_charge\":0,\"",
+            "batch_elapsed_ms": 98.6
+        },
+        {
+            "t": 350.7929241657257,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 89,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":823,\"order_serial_no\":\"240526823\",\"queue_number\":\"A0100\",\"token\":\"H3-KTK-89-f69a9938\",\"parent_order_id\":null,\"subtotal\":35,\"discount\":0,\"total_tax\":0,\"total\":35,\"delivery_charge\":0,\"subt",
+            "batch_elapsed_ms": 84.8
+        },
+        {
+            "t": 352.926500082016,
+            "stream": "S1_POS_DIRECT_SALE",
+            "idx": 90,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":824,\"order_serial_no\":\"240526824\",\"queue_number\":\"A0101\",\"token\":null,\"parent_order_id\":null,\"subtotal\":2.5,\"discount\":0,\"total_tax\":0,\"total\":2.5,\"delivery_charge\":0,\"subtotal_currency_",
+            "batch_elapsed_ms": 375.8
+        },
+        {
+            "t": 352.926500082016,
+            "stream": "S4_KDS_BUMP",
+            "idx": 91,
+            "status": 202,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 821
+            },
+            "body_excerpt": "",
+            "batch_elapsed_ms": 375.8
+        },
+        {
+            "t": 361.1804540157318,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 92,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":825,\"order_serial_no\":\"240526825\",\"queue_number\":\"A0102\",\"token\":\"H3-KTK-92-f7418a38\",\"parent_order_id\":null,\"subtotal\":30,\"discount\":0,\"total_tax\":0,\"total\":30,\"delivery_charge\":0,\"subt",
+            "batch_elapsed_ms": 91.5
+        },
+        {
+            "t": 361.8307020664215,
+            "stream": "S5_ADMIN_TOGGLE_AVAIL",
+            "idx": 93,
+            "status": 200,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"ok\":true,\"item_id\":2,\"branch_id\":1,\"is_available\":false,\"unavailable_reason\":null}",
+            "batch_elapsed_ms": 40.1
+        },
+        {
+            "t": 362.8789792060852,
+            "stream": "S3_KIOSK_CASH_COLLECT",
+            "idx": 94,
+            "status": 200,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 825
+            },
+            "body_excerpt": "{\"data\":{\"id\":825,\"order_serial_no\":\"240526825\",\"queue_number\":\"A0102\",\"token\":\"H3-KTK-92-f7418a38\",\"parent_order_id\":null,\"subtotal\":30,\"discount\":0,\"total_tax\":0,\"total\":30,\"delivery_charge\":0,\"subt",
+            "batch_elapsed_ms": 104.3
+        },
+        {
+            "t": 368.0197551250458,
+            "stream": "S1_POS_DIRECT_SALE",
+            "idx": 95,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":826,\"order_serial_no\":\"240526826\",\"queue_number\":\"A0103\",\"token\":null,\"parent_order_id\":null,\"subtotal\":7.5,\"discount\":0,\"total_tax\":0,\"total\":7.5,\"delivery_charge\":0,\"subtotal_currency_",
+            "batch_elapsed_ms": 358
+        },
+        {
+            "t": 368.0197551250458,
+            "stream": "S4_KDS_BUMP",
+            "idx": 96,
+            "status": 202,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 824
+            },
+            "body_excerpt": "",
+            "batch_elapsed_ms": 358
+        },
+        {
+            "t": 371.682893037796,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 97,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":827,\"order_serial_no\":\"240526827\",\"queue_number\":\"A0104\",\"token\":\"H3-KTK-97-f7e944fb\",\"parent_order_id\":null,\"subtotal\":30,\"discount\":0,\"total_tax\":0,\"total\":30,\"delivery_charge\":0,\"subt",
+            "batch_elapsed_ms": 95.1
+        },
+        {
+            "t": 381.9221701622009,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 98,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":828,\"order_serial_no\":\"240526828\",\"queue_number\":\"A0105\",\"token\":\"H3-KTK-98-f88d3d02\",\"parent_order_id\":null,\"subtotal\":32.5,\"discount\":0,\"total_tax\":0,\"total\":32.5,\"delivery_charge\":0,\"",
+            "batch_elapsed_ms": 80.4
+        },
+        {
+            "t": 383.0912070274353,
+            "stream": "S1_POS_DIRECT_SALE",
+            "idx": 99,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":829,\"order_serial_no\":\"240526829\",\"queue_number\":\"A0106\",\"token\":null,\"parent_order_id\":null,\"subtotal\":2.5,\"discount\":0,\"total_tax\":0,\"total\":2.5,\"delivery_charge\":0,\"subtotal_currency_",
+            "batch_elapsed_ms": 360.3
+        },
+        {
+            "t": 383.0912070274353,
+            "stream": "S4_KDS_BUMP",
+            "idx": 100,
+            "status": 202,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 826
+            },
+            "body_excerpt": "",
+            "batch_elapsed_ms": 360.3
+        },
+        {
+            "t": 392.31995701789856,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 101,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":830,\"order_serial_no\":\"240526830\",\"queue_number\":\"A0107\",\"token\":\"H3-KTK-101-f933b693\",\"parent_order_id\":null,\"subtotal\":27.5,\"discount\":0,\"total_tax\":0,\"total\":27.5,\"delivery_charge\":0,",
+            "batch_elapsed_ms": 95.6
+        },
+        {
+            "t": 392.97729110717773,
+            "stream": "S3_KIOSK_CASH_COLLECT",
+            "idx": 102,
+            "status": 200,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 830
+            },
+            "body_excerpt": "{\"data\":{\"id\":830,\"order_serial_no\":\"240526830\",\"queue_number\":\"A0107\",\"token\":\"H3-KTK-101-f933b693\",\"parent_order_id\":null,\"subtotal\":27.5,\"discount\":0,\"total_tax\":0,\"total\":27.5,\"delivery_charge\":0,",
+            "batch_elapsed_ms": 55.8
+        },
+        {
+            "t": 398.5857501029968,
+            "stream": "S1_POS_DIRECT_SALE",
+            "idx": 103,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":832,\"order_serial_no\":\"240526832\",\"queue_number\":\"A0109\",\"token\":null,\"parent_order_id\":null,\"subtotal\":5,\"discount\":0,\"total_tax\":0,\"total\":5,\"delivery_charge\":0,\"subtotal_currency_pric",
+            "batch_elapsed_ms": 349.4
+        },
+        {
+            "t": 398.5857501029968,
+            "stream": "S4_KDS_BUMP",
+            "idx": 104,
+            "status": 202,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 831
+            },
+            "body_excerpt": "",
+            "batch_elapsed_ms": 349.4
+        },
+        {
+            "t": 403.42920207977295,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 105,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":833,\"order_serial_no\":\"240526833\",\"queue_number\":\"A0110\",\"token\":\"H3-KTK-105-f9e5329e\",\"parent_order_id\":null,\"subtotal\":25,\"discount\":0,\"total_tax\":0,\"total\":25,\"delivery_charge\":0,\"sub",
+            "batch_elapsed_ms": 91.5
+        },
+        {
+            "t": 413.6411361694336,
+            "stream": "S1_POS_DIRECT_SALE",
+            "idx": 106,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":834,\"order_serial_no\":\"240526834\",\"queue_number\":\"A0111\",\"token\":null,\"parent_order_id\":null,\"subtotal\":5,\"discount\":0,\"total_tax\":0,\"total\":5,\"delivery_charge\":0,\"subtotal_currency_pric",
+            "batch_elapsed_ms": 448.3
+        },
+        {
+            "t": 413.6411361694336,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 107,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":835,\"order_serial_no\":\"240526835\",\"queue_number\":\"A0112\",\"token\":\"H3-KTK-107-fa8cfa17\",\"parent_order_id\":null,\"subtotal\":30,\"discount\":0,\"total_tax\":0,\"total\":30,\"delivery_charge\":0,\"sub",
+            "batch_elapsed_ms": 448.3
+        },
+        {
+            "t": 413.6411361694336,
+            "stream": "S4_KDS_BUMP",
+            "idx": 108,
+            "status": 202,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 832
+            },
+            "body_excerpt": "",
+            "batch_elapsed_ms": 448.3
+        },
+        {
+            "t": 422.0042610168457,
+            "stream": "S5_ADMIN_TOGGLE_AVAIL",
+            "idx": 109,
+            "status": 200,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"ok\":true,\"item_id\":2,\"branch_id\":1,\"is_available\":false,\"unavailable_reason\":null}",
+            "batch_elapsed_ms": 51.6
+        },
+        {
+            "t": 423.0672791004181,
+            "stream": "S3_KIOSK_CASH_COLLECT",
+            "idx": 110,
+            "status": 200,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 835
+            },
+            "body_excerpt": "{\"data\":{\"id\":835,\"order_serial_no\":\"240526835\",\"queue_number\":\"A0112\",\"token\":\"H3-KTK-107-fa8cfa17\",\"parent_order_id\":null,\"subtotal\":30,\"discount\":0,\"total_tax\":0,\"total\":30,\"delivery_charge\":0,\"sub",
+            "batch_elapsed_ms": 83.5
+        },
+        {
+            "t": 423.6603841781616,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 111,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":836,\"order_serial_no\":\"240526836\",\"queue_number\":\"A0113\",\"token\":\"H3-KTK-111-fb28e2dc\",\"parent_order_id\":null,\"subtotal\":27.5,\"discount\":0,\"total_tax\":0,\"total\":27.5,\"delivery_charge\":0,",
+            "batch_elapsed_ms": 101.4
+        },
+        {
+            "t": 428.8586320877075,
+            "stream": "S1_POS_DIRECT_SALE",
+            "idx": 112,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":837,\"order_serial_no\":\"240526837\",\"queue_number\":\"A0114\",\"token\":null,\"parent_order_id\":null,\"subtotal\":5,\"discount\":0,\"total_tax\":0,\"total\":5,\"delivery_charge\":0,\"subtotal_currency_pric",
+            "batch_elapsed_ms": 360.6
+        },
+        {
+            "t": 428.8586320877075,
+            "stream": "S4_KDS_BUMP",
+            "idx": 113,
+            "status": 202,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 834
+            },
+            "body_excerpt": "",
+            "batch_elapsed_ms": 360.6
+        },
+        {
+            "t": 434.07960319519043,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 114,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":838,\"order_serial_no\":\"240526838\",\"queue_number\":\"A0115\",\"token\":\"H3-KTK-114-fbd05f86\",\"parent_order_id\":null,\"subtotal\":35,\"discount\":0,\"total_tax\":0,\"total\":35,\"delivery_charge\":0,\"sub",
+            "batch_elapsed_ms": 105.9
+        },
+        {
+            "t": 444.3465611934662,
+            "stream": "S1_POS_DIRECT_SALE",
+            "idx": 115,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":839,\"order_serial_no\":\"240526839\",\"queue_number\":\"A0116\",\"token\":null,\"parent_order_id\":null,\"subtotal\":5,\"discount\":0,\"total_tax\":0,\"total\":5,\"delivery_charge\":0,\"subtotal_currency_pric",
+            "batch_elapsed_ms": 444.4
+        },
+        {
+            "t": 444.3465611934662,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 116,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":840,\"order_serial_no\":\"240526840\",\"queue_number\":\"A0117\",\"token\":\"H3-KTK-116-fc7815a0\",\"parent_order_id\":null,\"subtotal\":27.5,\"discount\":0,\"total_tax\":0,\"total\":27.5,\"delivery_charge\":0,",
+            "batch_elapsed_ms": 444.4
+        },
+        {
+            "t": 444.3465611934662,
+            "stream": "S4_KDS_BUMP",
+            "idx": 117,
+            "status": 202,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 837
+            },
+            "body_excerpt": "",
+            "batch_elapsed_ms": 444.4
+        },
+        {
+            "t": 453.1754171848297,
+            "stream": "S3_KIOSK_CASH_COLLECT",
+            "idx": 118,
+            "status": 200,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 840
+            },
+            "body_excerpt": "{\"data\":{\"id\":840,\"order_serial_no\":\"240526840\",\"queue_number\":\"A0117\",\"token\":\"H3-KTK-116-fc7815a0\",\"parent_order_id\":null,\"subtotal\":27.5,\"discount\":0,\"total_tax\":0,\"total\":27.5,\"delivery_charge\":0,",
+            "batch_elapsed_ms": 4270.6
+        },
+        {
+            "t": 457.9559471607208,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 119,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":842,\"order_serial_no\":\"240526842\",\"queue_number\":\"A0119\",\"token\":\"H3-KTK-119-fd4d92e4\",\"parent_order_id\":null,\"subtotal\":35,\"discount\":0,\"total_tax\":0,\"total\":35,\"delivery_charge\":0,\"sub",
+            "batch_elapsed_ms": 95.2
+        },
+        {
+            "t": 459.6390380859375,
+            "stream": "S1_POS_DIRECT_SALE",
+            "idx": 120,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":843,\"order_serial_no\":\"240526843\",\"queue_number\":\"A0120\",\"token\":null,\"parent_order_id\":null,\"subtotal\":2.5,\"discount\":0,\"total_tax\":0,\"total\":2.5,\"delivery_charge\":0,\"subtotal_currency_",
+            "batch_elapsed_ms": 350.6
+        },
+        {
+            "t": 459.6390380859375,
+            "stream": "S4_KDS_BUMP",
+            "idx": 121,
+            "status": 202,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 841
+            },
+            "body_excerpt": "",
+            "batch_elapsed_ms": 350.6
+        },
+        {
+            "t": 468.35887908935547,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 122,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":844,\"order_serial_no\":\"240526844\",\"queue_number\":\"A0121\",\"token\":\"H3-KTK-122-fdf4298a\",\"parent_order_id\":null,\"subtotal\":30,\"discount\":0,\"total_tax\":0,\"total\":30,\"delivery_charge\":0,\"sub",
+            "batch_elapsed_ms": 98.8
+        },
+        {
+            "t": 475.06132316589355,
+            "stream": "S1_POS_DIRECT_SALE",
+            "idx": 123,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":845,\"order_serial_no\":\"240526845\",\"queue_number\":\"A0122\",\"token\":null,\"parent_order_id\":null,\"subtotal\":2.5,\"discount\":0,\"total_tax\":0,\"total\":2.5,\"delivery_charge\":0,\"subtotal_currency_",
+            "batch_elapsed_ms": 426
+        },
+        {
+            "t": 475.06132316589355,
+            "stream": "S4_KDS_BUMP",
+            "idx": 124,
+            "status": 202,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 843
+            },
+            "body_excerpt": "",
+            "batch_elapsed_ms": 426
+        },
+        {
+            "t": 478.8346920013428,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 125,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":846,\"order_serial_no\":\"240526846\",\"queue_number\":\"A0123\",\"token\":\"H3-KTK-125-fe9b5339\",\"parent_order_id\":null,\"subtotal\":25,\"discount\":0,\"total_tax\":0,\"total\":25,\"delivery_charge\":0,\"sub",
+            "batch_elapsed_ms": 94.9
+        },
+        {
+            "t": 482.4975390434265,
+            "stream": "S5_ADMIN_TOGGLE_AVAIL",
+            "idx": 126,
+            "status": 200,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"ok\":true,\"item_id\":2,\"branch_id\":1,\"is_available\":true,\"unavailable_reason\":null}",
+            "batch_elapsed_ms": 52.6
+        },
+        {
+            "t": 483.5604181289673,
+            "stream": "S3_KIOSK_CASH_COLLECT",
+            "idx": 127,
+            "status": 200,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 846
+            },
+            "body_excerpt": "{\"data\":{\"id\":846,\"order_serial_no\":\"240526846\",\"queue_number\":\"A0123\",\"token\":\"H3-KTK-125-fe9b5339\",\"parent_order_id\":null,\"subtotal\":25,\"discount\":0,\"total_tax\":0,\"total\":25,\"delivery_charge\":0,\"sub",
+            "batch_elapsed_ms": 87.2
+        },
+        {
+            "t": 489.193852186203,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 128,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":849,\"order_serial_no\":\"240526849\",\"queue_number\":\"A0126\",\"token\":\"H3-KTK-128-ff429adc\",\"parent_order_id\":null,\"subtotal\":32.5,\"discount\":0,\"total_tax\":0,\"total\":32.5,\"delivery_charge\":0,",
+            "batch_elapsed_ms": 106.6
+        },
+        {
+            "t": 490.41990303993225,
+            "stream": "S1_POS_DIRECT_SALE",
+            "idx": 129,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":851,\"order_serial_no\":\"240526851\",\"queue_number\":\"A0128\",\"token\":null,\"parent_order_id\":null,\"subtotal\":2.5,\"discount\":0,\"total_tax\":0,\"total\":2.5,\"delivery_charge\":0,\"subtotal_currency_",
+            "batch_elapsed_ms": 664.1
+        },
+        {
+            "t": 490.41990303993225,
+            "stream": "S4_KDS_BUMP",
+            "idx": 130,
+            "status": 202,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 850
+            },
+            "body_excerpt": "",
+            "batch_elapsed_ms": 664.1
+        },
+        {
+            "t": 499.2192120552063,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 131,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":853,\"order_serial_no\":\"240526853\",\"queue_number\":\"A0130\",\"token\":\"H3-KTK-131-fff95691\",\"parent_order_id\":null,\"subtotal\":27.5,\"discount\":0,\"total_tax\":0,\"total\":27.5,\"delivery_charge\":0,",
+            "batch_elapsed_ms": 94.4
+        },
+        {
+            "t": 505.8932161331177,
+            "stream": "S1_POS_DIRECT_SALE",
+            "idx": 132,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":854,\"order_serial_no\":\"240526854\",\"queue_number\":\"A0131\",\"token\":null,\"parent_order_id\":null,\"subtotal\":2.5,\"discount\":0,\"total_tax\":0,\"total\":2.5,\"delivery_charge\":0,\"subtotal_currency_",
+            "batch_elapsed_ms": 353.9
+        },
+        {
+            "t": 505.8932161331177,
+            "stream": "S4_KDS_BUMP",
+            "idx": 133,
+            "status": 202,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 852
+            },
+            "body_excerpt": "",
+            "batch_elapsed_ms": 353.9
+        },
+        {
+            "t": 509.5755121707916,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 134,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":855,\"order_serial_no\":\"240526855\",\"queue_number\":\"A0132\",\"token\":\"H3-KTK-134-00877e46\",\"parent_order_id\":null,\"subtotal\":35,\"discount\":0,\"total_tax\":0,\"total\":35,\"delivery_charge\":0,\"sub",
+            "batch_elapsed_ms": 88
+        },
+        {
+            "t": 513.7401320934296,
+            "stream": "S3_KIOSK_CASH_COLLECT",
+            "idx": 135,
+            "status": 200,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 855
+            },
+            "body_excerpt": "{\"data\":{\"id\":855,\"order_serial_no\":\"240526855\",\"queue_number\":\"A0132\",\"token\":\"H3-KTK-134-00877e46\",\"parent_order_id\":null,\"subtotal\":35,\"discount\":0,\"total_tax\":0,\"total\":35,\"delivery_charge\":0,\"sub",
+            "batch_elapsed_ms": 71.4
+        },
+        {
+            "t": 519.8587481975555,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 136,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":856,\"order_serial_no\":\"240526856\",\"queue_number\":\"A0133\",\"token\":\"H3-KTK-136-012bd76c\",\"parent_order_id\":null,\"subtotal\":27.5,\"discount\":0,\"total_tax\":0,\"total\":27.5,\"delivery_charge\":0,",
+            "batch_elapsed_ms": 96.3
+        },
+        {
+            "t": 521.0104970932007,
+            "stream": "S1_POS_DIRECT_SALE",
+            "idx": 137,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":857,\"order_serial_no\":\"240526857\",\"queue_number\":\"A0134\",\"token\":null,\"parent_order_id\":null,\"subtotal\":7.5,\"discount\":0,\"total_tax\":0,\"total\":7.5,\"delivery_charge\":0,\"subtotal_currency_",
+            "batch_elapsed_ms": 412
+        },
+        {
+            "t": 521.0104970932007,
+            "stream": "S4_KDS_BUMP",
+            "idx": 138,
+            "status": 202,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 854
+            },
+            "body_excerpt": "",
+            "batch_elapsed_ms": 412
+        },
+        {
+            "t": 530.2856891155243,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 139,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":858,\"order_serial_no\":\"240526858\",\"queue_number\":\"A0135\",\"token\":\"H3-KTK-139-01d32348\",\"parent_order_id\":null,\"subtotal\":35,\"discount\":0,\"total_tax\":0,\"total\":35,\"delivery_charge\":0,\"sub",
+            "batch_elapsed_ms": 84.8
+        },
+        {
+            "t": 536.4692530632019,
+            "stream": "S1_POS_DIRECT_SALE",
+            "idx": 140,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":859,\"order_serial_no\":\"240526859\",\"queue_number\":\"A0136\",\"token\":null,\"parent_order_id\":null,\"subtotal\":7.5,\"discount\":0,\"total_tax\":0,\"total\":7.5,\"delivery_charge\":0,\"subtotal_currency_",
+            "batch_elapsed_ms": 343
+        },
+        {
+            "t": 536.4692530632019,
+            "stream": "S4_KDS_BUMP",
+            "idx": 141,
+            "status": 202,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 857
+            },
+            "body_excerpt": "",
+            "batch_elapsed_ms": 343
+        },
+        {
+            "t": 540.6404252052307,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 142,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":861,\"order_serial_no\":\"240526861\",\"queue_number\":\"A0138\",\"token\":\"H3-KTK-142-0278a4d6\",\"parent_order_id\":null,\"subtotal\":30,\"discount\":0,\"total_tax\":0,\"total\":30,\"delivery_charge\":0,\"sub",
+            "batch_elapsed_ms": 396.1
+        },
+        {
+            "t": 542.6098952293396,
+            "stream": "S5_ADMIN_TOGGLE_AVAIL",
+            "idx": 143,
+            "status": 200,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"ok\":true,\"item_id\":2,\"branch_id\":1,\"is_available\":false,\"unavailable_reason\":null}",
+            "batch_elapsed_ms": 3664.3
+        },
+        {
+            "t": 546.7800991535187,
+            "stream": "S3_KIOSK_CASH_COLLECT",
+            "idx": 144,
+            "status": 200,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 861
+            },
+            "body_excerpt": "{\"data\":{\"id\":861,\"order_serial_no\":\"240526861\",\"queue_number\":\"A0138\",\"token\":\"H3-KTK-142-0278a4d6\",\"parent_order_id\":null,\"subtotal\":30,\"discount\":0,\"total_tax\":0,\"total\":30,\"delivery_charge\":0,\"sub",
+            "batch_elapsed_ms": 94.7
+        },
+        {
+            "t": 550.9120402336121,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 145,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":862,\"order_serial_no\":\"240526862\",\"queue_number\":\"A0139\",\"token\":\"H3-KTK-145-031ca8cf\",\"parent_order_id\":null,\"subtotal\":25,\"discount\":0,\"total_tax\":0,\"total\":25,\"delivery_charge\":0,\"sub",
+            "batch_elapsed_ms": 125.4
+        },
+        {
+            "t": 551.5976731777191,
+            "stream": "S1_POS_DIRECT_SALE",
+            "idx": 146,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":863,\"order_serial_no\":\"240526863\",\"queue_number\":\"A0140\",\"token\":null,\"parent_order_id\":null,\"subtotal\":7.5,\"discount\":0,\"total_tax\":0,\"total\":7.5,\"delivery_charge\":0,\"subtotal_currency_",
+            "batch_elapsed_ms": 338.1
+        },
+        {
+            "t": 551.5976731777191,
+            "stream": "S4_KDS_BUMP",
+            "idx": 147,
+            "status": 202,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 860
+            },
+            "body_excerpt": "",
+            "batch_elapsed_ms": 338.1
+        },
+        {
+            "t": 561.3768441677094,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 148,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":864,\"order_serial_no\":\"240526864\",\"queue_number\":\"A0141\",\"token\":\"H3-KTK-148-03c48e86\",\"parent_order_id\":null,\"subtotal\":32.5,\"discount\":0,\"total_tax\":0,\"total\":32.5,\"delivery_charge\":0,",
+            "batch_elapsed_ms": 83.6
+        },
+        {
+            "t": 567.0654861927032,
+            "stream": "S1_POS_DIRECT_SALE",
+            "idx": 149,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":865,\"order_serial_no\":\"240526865\",\"queue_number\":\"A0142\",\"token\":null,\"parent_order_id\":null,\"subtotal\":7.5,\"discount\":0,\"total_tax\":0,\"total\":7.5,\"delivery_charge\":0,\"subtotal_currency_",
+            "batch_elapsed_ms": 359.9
+        },
+        {
+            "t": 567.0654861927032,
+            "stream": "S4_KDS_BUMP",
+            "idx": 150,
+            "status": 202,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 863
+            },
+            "body_excerpt": "",
+            "batch_elapsed_ms": 359.9
+        },
+        {
+            "t": 571.7569901943207,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 151,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":866,\"order_serial_no\":\"240526866\",\"queue_number\":\"A0143\",\"token\":\"H3-KTK-151-046a60e7\",\"parent_order_id\":null,\"subtotal\":27.5,\"discount\":0,\"total_tax\":0,\"total\":27.5,\"delivery_charge\":0,",
+            "batch_elapsed_ms": 90.6
+        },
+        {
+            "t": 576.942526102066,
+            "stream": "S3_KIOSK_CASH_COLLECT",
+            "idx": 152,
+            "status": 200,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 866
+            },
+            "body_excerpt": "{\"data\":{\"id\":866,\"order_serial_no\":\"240526866\",\"queue_number\":\"A0143\",\"token\":\"H3-KTK-151-046a60e7\",\"parent_order_id\":null,\"subtotal\":27.5,\"discount\":0,\"total_tax\":0,\"total\":27.5,\"delivery_charge\":0,",
+            "batch_elapsed_ms": 86.2
+        },
+        {
+            "t": 582.0791871547699,
+            "stream": "S1_POS_DIRECT_SALE",
+            "idx": 153,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":867,\"order_serial_no\":\"240526867\",\"queue_number\":\"A0144\",\"token\":null,\"parent_order_id\":null,\"subtotal\":2.5,\"discount\":0,\"total_tax\":0,\"total\":2.5,\"delivery_charge\":0,\"subtotal_currency_",
+            "batch_elapsed_ms": 431.1
+        },
+        {
+            "t": 582.0791871547699,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 154,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":868,\"order_serial_no\":\"240526868\",\"queue_number\":\"A0145\",\"token\":\"H3-KTK-154-05147fff\",\"parent_order_id\":null,\"subtotal\":35,\"discount\":0,\"total_tax\":0,\"total\":35,\"delivery_charge\":0,\"sub",
+            "batch_elapsed_ms": 431.1
+        },
+        {
+            "t": 582.0791871547699,
+            "stream": "S4_KDS_BUMP",
+            "idx": 155,
+            "status": 202,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 865
+            },
+            "body_excerpt": "",
+            "batch_elapsed_ms": 431.1
+        },
+        {
+            "t": 592.442803144455,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 156,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":869,\"order_serial_no\":\"240526869\",\"queue_number\":\"A0146\",\"token\":\"H3-KTK-156-05b5856d\",\"parent_order_id\":null,\"subtotal\":27.5,\"discount\":0,\"total_tax\":0,\"total\":27.5,\"delivery_charge\":0,",
+            "batch_elapsed_ms": 95.7
+        },
+        {
+            "t": 597.126974105835,
+            "stream": "S1_POS_DIRECT_SALE",
+            "idx": 157,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":870,\"order_serial_no\":\"240526870\",\"queue_number\":\"A0147\",\"token\":null,\"parent_order_id\":null,\"subtotal\":5,\"discount\":0,\"total_tax\":0,\"total\":5,\"delivery_charge\":0,\"subtotal_currency_pric",
+            "batch_elapsed_ms": 351.9
+        },
+        {
+            "t": 597.126974105835,
+            "stream": "S4_KDS_BUMP",
+            "idx": 158,
+            "status": 202,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 867
+            },
+            "body_excerpt": "",
+            "batch_elapsed_ms": 351.9
+        },
+        {
+            "t": 602.8096170425415,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 159,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":871,\"order_serial_no\":\"240526871\",\"queue_number\":\"A0148\",\"token\":\"H3-KTK-159-065b8d81\",\"parent_order_id\":null,\"subtotal\":35,\"discount\":0,\"total_tax\":0,\"total\":35,\"delivery_charge\":0,\"sub",
+            "batch_elapsed_ms": 134.8
+        },
+        {
+            "t": 602.8096170425415,
+            "stream": "S5_ADMIN_TOGGLE_AVAIL",
+            "idx": 160,
+            "status": 200,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"ok\":true,\"item_id\":2,\"branch_id\":1,\"is_available\":true,\"unavailable_reason\":null}",
+            "batch_elapsed_ms": 134.8
+        },
+        {
+            "t": 607.0655090808868,
+            "stream": "S3_KIOSK_CASH_COLLECT",
+            "idx": 161,
+            "status": 200,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 871
+            },
+            "body_excerpt": "{\"data\":{\"id\":871,\"order_serial_no\":\"240526871\",\"queue_number\":\"A0148\",\"token\":\"H3-KTK-159-065b8d81\",\"parent_order_id\":null,\"subtotal\":35,\"discount\":0,\"total_tax\":0,\"total\":35,\"delivery_charge\":0,\"sub",
+            "batch_elapsed_ms": 63.6
+        },
+        {
+            "t": 612.179446220398,
+            "stream": "S1_POS_DIRECT_SALE",
+            "idx": 162,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":872,\"order_serial_no\":\"240526872\",\"queue_number\":\"A0149\",\"token\":null,\"parent_order_id\":null,\"subtotal\":2.5,\"discount\":0,\"total_tax\":0,\"total\":2.5,\"delivery_charge\":0,\"subtotal_currency_",
+            "batch_elapsed_ms": 423.7
+        },
+        {
+            "t": 612.179446220398,
+            "stream": "S4_KDS_BUMP",
+            "idx": 163,
+            "status": 202,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 870
+            },
+            "body_excerpt": "",
+            "batch_elapsed_ms": 423.7
+        },
+        {
+            "t": 613.4110991954803,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 164,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":873,\"order_serial_no\":\"240526873\",\"queue_number\":\"A0150\",\"token\":\"H3-KTK-164-070556ce\",\"parent_order_id\":null,\"subtotal\":35,\"discount\":0,\"total_tax\":0,\"total\":35,\"delivery_charge\":0,\"sub",
+            "batch_elapsed_ms": 98.6
+        },
+        {
+            "t": 623.6618440151215,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 165,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":874,\"order_serial_no\":\"240526874\",\"queue_number\":\"A0151\",\"token\":\"H3-KTK-165-07a8da7f\",\"parent_order_id\":null,\"subtotal\":25,\"discount\":0,\"total_tax\":0,\"total\":25,\"delivery_charge\":0,\"sub",
+            "batch_elapsed_ms": 96.6
+        },
+        {
+            "t": 627.3362061977386,
+            "stream": "S1_POS_DIRECT_SALE",
+            "idx": 166,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":875,\"order_serial_no\":\"240526875\",\"queue_number\":\"A0152\",\"token\":null,\"parent_order_id\":null,\"subtotal\":5,\"discount\":0,\"total_tax\":0,\"total\":5,\"delivery_charge\":0,\"subtotal_currency_pric",
+            "batch_elapsed_ms": 351.3
+        },
+        {
+            "t": 627.3362061977386,
+            "stream": "S4_KDS_BUMP",
+            "idx": 167,
+            "status": 202,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 872
+            },
+            "body_excerpt": "",
+            "batch_elapsed_ms": 351.3
+        },
+        {
+            "t": 634.0160810947418,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 168,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":876,\"order_serial_no\":\"240526876\",\"queue_number\":\"A0153\",\"token\":\"H3-KTK-168-084e1c9e\",\"parent_order_id\":null,\"subtotal\":32.5,\"discount\":0,\"total_tax\":0,\"total\":32.5,\"delivery_charge\":0,",
+            "batch_elapsed_ms": 88.4
+        },
+        {
+            "t": 637.1728291511536,
+            "stream": "S3_KIOSK_CASH_COLLECT",
+            "idx": 169,
+            "status": 200,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 876
+            },
+            "body_excerpt": "{\"data\":{\"id\":876,\"order_serial_no\":\"240526876\",\"queue_number\":\"A0153\",\"token\":\"H3-KTK-168-084e1c9e\",\"parent_order_id\":null,\"subtotal\":32.5,\"discount\":0,\"total_tax\":0,\"total\":32.5,\"delivery_charge\":0,",
+            "batch_elapsed_ms": 91.6
+        },
+        {
+            "t": 642.8196911811829,
+            "stream": "S1_POS_DIRECT_SALE",
+            "idx": 170,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":877,\"order_serial_no\":\"240526877\",\"queue_number\":\"A0154\",\"token\":null,\"parent_order_id\":null,\"subtotal\":7.5,\"discount\":0,\"total_tax\":0,\"total\":7.5,\"delivery_charge\":0,\"subtotal_currency_",
+            "batch_elapsed_ms": 375.8
+        },
+        {
+            "t": 642.8196911811829,
+            "stream": "S4_KDS_BUMP",
+            "idx": 171,
+            "status": 202,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 875
+            },
+            "body_excerpt": "",
+            "batch_elapsed_ms": 375.8
+        },
+        {
+            "t": 644.5004131793976,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 172,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":878,\"order_serial_no\":\"240526878\",\"queue_number\":\"A0155\",\"token\":\"H3-KTK-172-08f687ba\",\"parent_order_id\":null,\"subtotal\":30,\"discount\":0,\"total_tax\":0,\"total\":30,\"delivery_charge\":0,\"sub",
+            "batch_elapsed_ms": 91
+        },
+        {
+            "t": 654.7433571815491,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 173,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":879,\"order_serial_no\":\"240526879\",\"queue_number\":\"A0156\",\"token\":\"H3-KTK-173-099a44a9\",\"parent_order_id\":null,\"subtotal\":32.5,\"discount\":0,\"total_tax\":0,\"total\":32.5,\"delivery_charge\":0,",
+            "batch_elapsed_ms": 102.1
+        },
+        {
+            "t": 657.926066160202,
+            "stream": "S1_POS_DIRECT_SALE",
+            "idx": 174,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":880,\"order_serial_no\":\"240526880\",\"queue_number\":\"A0157\",\"token\":null,\"parent_order_id\":null,\"subtotal\":2.5,\"discount\":0,\"total_tax\":0,\"total\":2.5,\"delivery_charge\":0,\"subtotal_currency_",
+            "batch_elapsed_ms": 353.9
+        },
+        {
+            "t": 657.926066160202,
+            "stream": "S4_KDS_BUMP",
+            "idx": 175,
+            "status": 202,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 877
+            },
+            "body_excerpt": "",
+            "batch_elapsed_ms": 353.9
+        },
+        {
+            "t": 663.1426281929016,
+            "stream": "S5_ADMIN_TOGGLE_AVAIL",
+            "idx": 176,
+            "status": 200,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"ok\":true,\"item_id\":2,\"branch_id\":1,\"is_available\":true,\"unavailable_reason\":null}",
+            "batch_elapsed_ms": 53.7
+        },
+        {
+            "t": 665.2138030529022,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 177,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":881,\"order_serial_no\":\"240526881\",\"queue_number\":\"A0158\",\"token\":\"H3-KTK-177-0a4222eb\",\"parent_order_id\":null,\"subtotal\":30,\"discount\":0,\"total_tax\":0,\"total\":30,\"delivery_charge\":0,\"sub",
+            "batch_elapsed_ms": 93
+        },
+        {
+            "t": 667.3830740451813,
+            "stream": "S3_KIOSK_CASH_COLLECT",
+            "idx": 178,
+            "status": 200,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 881
+            },
+            "body_excerpt": "{\"data\":{\"id\":881,\"order_serial_no\":\"240526881\",\"queue_number\":\"A0158\",\"token\":\"H3-KTK-177-0a4222eb\",\"parent_order_id\":null,\"subtotal\":30,\"discount\":0,\"total_tax\":0,\"total\":30,\"delivery_charge\":0,\"sub",
+            "batch_elapsed_ms": 64.2
+        },
+        {
+            "t": 672.9980330467224,
+            "stream": "S1_POS_DIRECT_SALE",
+            "idx": 179,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":882,\"order_serial_no\":\"240526882\",\"queue_number\":\"A0159\",\"token\":null,\"parent_order_id\":null,\"subtotal\":7.5,\"discount\":0,\"total_tax\":0,\"total\":7.5,\"delivery_charge\":0,\"subtotal_currency_",
+            "batch_elapsed_ms": 342.1
+        },
+        {
+            "t": 672.9980330467224,
+            "stream": "S4_KDS_BUMP",
+            "idx": 180,
+            "status": 202,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 880
+            },
+            "body_excerpt": "",
+            "batch_elapsed_ms": 342.1
+        },
+        {
+            "t": 675.6711921691895,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 181,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":883,\"order_serial_no\":\"240526883\",\"queue_number\":\"A0160\",\"token\":\"H3-KTK-181-0ae92e44\",\"parent_order_id\":null,\"subtotal\":27.5,\"discount\":0,\"total_tax\":0,\"total\":27.5,\"delivery_charge\":0,",
+            "batch_elapsed_ms": 80.1
+        },
+        {
+            "t": 685.9027101993561,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 182,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":884,\"order_serial_no\":\"240526884\",\"queue_number\":\"A0161\",\"token\":\"H3-KTK-182-0b8c94f8\",\"parent_order_id\":null,\"subtotal\":30,\"discount\":0,\"total_tax\":0,\"total\":30,\"delivery_charge\":0,\"sub",
+            "batch_elapsed_ms": 82.7
+        },
+        {
+            "t": 688.0607190132141,
+            "stream": "S1_POS_DIRECT_SALE",
+            "idx": 183,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":885,\"order_serial_no\":\"240526885\",\"queue_number\":\"A0162\",\"token\":null,\"parent_order_id\":null,\"subtotal\":2.5,\"discount\":0,\"total_tax\":0,\"total\":2.5,\"delivery_charge\":0,\"subtotal_currency_",
+            "batch_elapsed_ms": 618
+        },
+        {
+            "t": 688.0607190132141,
+            "stream": "S4_KDS_BUMP",
+            "idx": 184,
+            "status": 202,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 882
+            },
+            "body_excerpt": "",
+            "batch_elapsed_ms": 618
+        },
+        {
+            "t": 696.1177380084991,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 185,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":889,\"order_serial_no\":\"240526889\",\"queue_number\":\"A0166\",\"token\":\"H3-KTK-185-0c412c09\",\"parent_order_id\":null,\"subtotal\":25,\"discount\":0,\"total_tax\":0,\"total\":25,\"delivery_charge\":0,\"sub",
+            "batch_elapsed_ms": 340.1
+        },
+        {
+            "t": 698.0552251338959,
+            "stream": "S3_KIOSK_CASH_COLLECT",
+            "idx": 186,
+            "status": 200,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 889
+            },
+            "body_excerpt": "{\"data\":{\"id\":889,\"order_serial_no\":\"240526889\",\"queue_number\":\"A0166\",\"token\":\"H3-KTK-185-0c412c09\",\"parent_order_id\":null,\"subtotal\":25,\"discount\":0,\"total_tax\":0,\"total\":25,\"delivery_charge\":0,\"sub",
+            "batch_elapsed_ms": 4214.8
+        },
+        {
+            "t": 703.2756412029266,
+            "stream": "S1_POS_DIRECT_SALE",
+            "idx": 187,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":891,\"order_serial_no\":\"240526891\",\"queue_number\":\"A0168\",\"token\":null,\"parent_order_id\":null,\"subtotal\":5,\"discount\":0,\"total_tax\":0,\"total\":5,\"delivery_charge\":0,\"subtotal_currency_pric",
+            "batch_elapsed_ms": 343.4
+        },
+        {
+            "t": 703.2756412029266,
+            "stream": "S4_KDS_BUMP",
+            "idx": 188,
+            "status": 202,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 890
+            },
+            "body_excerpt": "",
+            "batch_elapsed_ms": 343.4
+        },
+        {
+            "t": 706.439836025238,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 189,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":892,\"order_serial_no\":\"240526892\",\"queue_number\":\"A0169\",\"token\":\"H3-KTK-189-0cd53ab3\",\"parent_order_id\":null,\"subtotal\":35,\"discount\":0,\"total_tax\":0,\"total\":35,\"delivery_charge\":0,\"sub",
+            "batch_elapsed_ms": 81
+        },
+        {
+            "t": 716.625764131546,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 190,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":893,\"order_serial_no\":\"240526893\",\"queue_number\":\"A0170\",\"token\":\"H3-KTK-190-0d788d66\",\"parent_order_id\":null,\"subtotal\":25,\"discount\":0,\"total_tax\":0,\"total\":25,\"delivery_charge\":0,\"sub",
+            "batch_elapsed_ms": 85.5
+        },
+        {
+            "t": 718.2844460010529,
+            "stream": "S1_POS_DIRECT_SALE",
+            "idx": 191,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":894,\"order_serial_no\":\"240526894\",\"queue_number\":\"A0171\",\"token\":null,\"parent_order_id\":null,\"subtotal\":7.5,\"discount\":0,\"total_tax\":0,\"total\":7.5,\"delivery_charge\":0,\"subtotal_currency_",
+            "batch_elapsed_ms": 343.7
+        },
+        {
+            "t": 718.2844460010529,
+            "stream": "S4_KDS_BUMP",
+            "idx": 192,
+            "status": 202,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 891
+            },
+            "body_excerpt": "",
+            "batch_elapsed_ms": 343.7
+        },
+        {
+            "t": 723.4478280544281,
+            "stream": "S5_ADMIN_TOGGLE_AVAIL",
+            "idx": 193,
+            "status": 200,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"ok\":true,\"item_id\":2,\"branch_id\":1,\"is_available\":false,\"unavailable_reason\":null}",
+            "batch_elapsed_ms": 4844.3
+        },
+        {
+            "t": 728.7973160743713,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 194,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":899,\"order_serial_no\":\"240526899\",\"queue_number\":\"A0176\",\"token\":\"H3-KTK-194-0e3bcae1\",\"parent_order_id\":null,\"subtotal\":35,\"discount\":0,\"total_tax\":0,\"total\":35,\"delivery_charge\":0,\"sub",
+            "batch_elapsed_ms": 136.2
+        },
+        {
+            "t": 728.7973160743713,
+            "stream": "S3_KIOSK_CASH_COLLECT",
+            "idx": 195,
+            "status": 200,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 893
+            },
+            "body_excerpt": "{\"data\":{\"id\":893,\"order_serial_no\":\"240526893\",\"queue_number\":\"A0170\",\"token\":\"H3-KTK-190-0d788d66\",\"parent_order_id\":null,\"subtotal\":25,\"discount\":0,\"total_tax\":0,\"total\":25,\"delivery_charge\":0,\"sub",
+            "batch_elapsed_ms": 136.2
+        },
+        {
+            "t": 733.58846616745,
+            "stream": "S1_POS_DIRECT_SALE",
+            "idx": 196,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":900,\"order_serial_no\":\"240526900\",\"queue_number\":\"A0177\",\"token\":null,\"parent_order_id\":null,\"subtotal\":5,\"discount\":0,\"total_tax\":0,\"total\":5,\"delivery_charge\":0,\"subtotal_currency_pric",
+            "batch_elapsed_ms": 1447.5
+        },
+        {
+            "t": 733.58846616745,
+            "stream": "S4_KDS_BUMP",
+            "idx": 197,
+            "status": 202,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 898
+            },
+            "body_excerpt": "",
+            "batch_elapsed_ms": 1447.5
+        },
+        {
+            "t": 739.0020852088928,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 198,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":904,\"order_serial_no\":\"240526904\",\"queue_number\":\"A0181\",\"token\":\"H3-KTK-198-0f2105ce\",\"parent_order_id\":null,\"subtotal\":32.5,\"discount\":0,\"total_tax\":0,\"total\":32.5,\"delivery_charge\":0,",
+            "batch_elapsed_ms": 353.3
+        },
+        {
+            "t": 748.5950210094452,
+            "stream": "S1_POS_DIRECT_SALE",
+            "idx": 199,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":906,\"order_serial_no\":\"240526906\",\"queue_number\":\"A0183\",\"token\":null,\"parent_order_id\":null,\"subtotal\":5,\"discount\":0,\"total_tax\":0,\"total\":5,\"delivery_charge\":0,\"subtotal_currency_pric",
+            "batch_elapsed_ms": 1438.6
+        },
+        {
+            "t": 748.5950210094452,
+            "stream": "S4_KDS_BUMP",
+            "idx": 200,
+            "status": 202,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 905
+            },
+            "body_excerpt": "",
+            "batch_elapsed_ms": 1438.6
+        },
+        {
+            "t": 751.2429540157318,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 201,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":907,\"order_serial_no\":\"240526907\",\"queue_number\":\"A0184\",\"token\":\"H3-KTK-201-0fa285fb\",\"parent_order_id\":null,\"subtotal\":27.5,\"discount\":0,\"total_tax\":0,\"total\":27.5,\"delivery_charge\":0,",
+            "batch_elapsed_ms": 341.7
+        },
+        {
+            "t": 759.1959931850433,
+            "stream": "S3_KIOSK_CASH_COLLECT",
+            "idx": 202,
+            "status": 200,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 907
+            },
+            "body_excerpt": "{\"data\":{\"id\":907,\"order_serial_no\":\"240526907\",\"queue_number\":\"A0184\",\"token\":\"H3-KTK-201-0fa285fb\",\"parent_order_id\":null,\"subtotal\":27.5,\"discount\":0,\"total_tax\":0,\"total\":27.5,\"delivery_charge\":0,",
+            "batch_elapsed_ms": 163.1
+        },
+        {
+            "t": 761.3755011558533,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 203,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":912,\"order_serial_no\":\"240526912\",\"queue_number\":\"A0189\",\"token\":\"H3-KTK-203-10717bd9\",\"parent_order_id\":null,\"subtotal\":32.5,\"discount\":0,\"total_tax\":0,\"total\":32.5,\"delivery_charge\":0,",
+            "batch_elapsed_ms": 81.7
+        },
+        {
+            "t": 764.8173010349274,
+            "stream": "S1_POS_DIRECT_SALE",
+            "idx": 204,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":913,\"order_serial_no\":\"240526913\",\"queue_number\":\"A0190\",\"token\":null,\"parent_order_id\":null,\"subtotal\":2.5,\"discount\":0,\"total_tax\":0,\"total\":2.5,\"delivery_charge\":0,\"subtotal_currency_",
+            "batch_elapsed_ms": 619
+        },
+        {
+            "t": 764.8173010349274,
+            "stream": "S4_KDS_BUMP",
+            "idx": 205,
+            "status": 202,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 911
+            },
+            "body_excerpt": "",
+            "batch_elapsed_ms": 619
+        },
+        {
+            "t": 771.488596200943,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 206,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":917,\"order_serial_no\":\"240526917\",\"queue_number\":\"A0194\",\"token\":\"H3-KTK-206-1110ef48\",\"parent_order_id\":null,\"subtotal\":27.5,\"discount\":0,\"total_tax\":0,\"total\":27.5,\"delivery_charge\":0,",
+            "batch_elapsed_ms": 357.1
+        },
+        {
+            "t": 780.0964732170105,
+            "stream": "S1_POS_DIRECT_SALE",
+            "idx": 207,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":919,\"order_serial_no\":\"240526919\",\"queue_number\":\"A0196\",\"token\":null,\"parent_order_id\":null,\"subtotal\":2.5,\"discount\":0,\"total_tax\":0,\"total\":2.5,\"delivery_charge\":0,\"subtotal_currency_",
+            "batch_elapsed_ms": 633.2
+        },
+        {
+            "t": 780.0964732170105,
+            "stream": "S4_KDS_BUMP",
+            "idx": 208,
+            "status": 202,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 918
+            },
+            "body_excerpt": "",
+            "batch_elapsed_ms": 633.2
+        },
+        {
+            "t": 782.4323751926422,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 209,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":922,\"order_serial_no\":\"240526922\",\"queue_number\":\"A0199\",\"token\":\"H3-KTK-209-1196329b\",\"parent_order_id\":null,\"subtotal\":35,\"discount\":0,\"total_tax\":0,\"total\":35,\"delivery_charge\":0,\"sub",
+            "batch_elapsed_ms": 869.1
+        },
+        {
+            "t": 783.9104812145233,
+            "stream": "S5_ADMIN_TOGGLE_AVAIL",
+            "idx": 210,
+            "status": 200,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"ok\":true,\"item_id\":2,\"branch_id\":1,\"is_available\":true,\"unavailable_reason\":null}",
+            "batch_elapsed_ms": 56
+        },
+        {
+            "t": 789.512903213501,
+            "stream": "S3_KIOSK_CASH_COLLECT",
+            "idx": 211,
+            "status": 200,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 922
+            },
+            "body_excerpt": "{\"data\":{\"id\":922,\"order_serial_no\":\"240526922\",\"queue_number\":\"A0199\",\"token\":\"H3-KTK-209-1196329b\",\"parent_order_id\":null,\"subtotal\":35,\"discount\":0,\"total_tax\":0,\"total\":35,\"delivery_charge\":0,\"sub",
+            "batch_elapsed_ms": 870.1
+        },
+        {
+            "t": 792.9054160118103,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 212,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":925,\"order_serial_no\":\"240526925\",\"queue_number\":\"A0202\",\"token\":\"H3-KTK-212-1265d743\",\"parent_order_id\":null,\"subtotal\":30,\"discount\":0,\"total_tax\":0,\"total\":30,\"delivery_charge\":0,\"sub",
+            "batch_elapsed_ms": 97.1
+        },
+        {
+            "t": 796.1187751293182,
+            "stream": "S1_POS_DIRECT_SALE",
+            "idx": 213,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":926,\"order_serial_no\":\"240526926\",\"queue_number\":\"A0203\",\"token\":null,\"parent_order_id\":null,\"subtotal\":2.5,\"discount\":0,\"total_tax\":0,\"total\":2.5,\"delivery_charge\":0,\"subtotal_currency_",
+            "batch_elapsed_ms": 390.6
+        },
+        {
+            "t": 796.1187751293182,
+            "stream": "S4_KDS_BUMP",
+            "idx": 214,
+            "status": 202,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 924
+            },
+            "body_excerpt": "",
+            "batch_elapsed_ms": 390.6
+        },
+        {
+            "t": 803.3939011096954,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 215,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":927,\"order_serial_no\":\"240526927\",\"queue_number\":\"A0204\",\"token\":\"H3-KTK-215-12e4b539\",\"parent_order_id\":null,\"subtotal\":25,\"discount\":0,\"total_tax\":0,\"total\":25,\"delivery_charge\":0,\"sub",
+            "batch_elapsed_ms": 97.4
+        },
+        {
+            "t": 811.150600194931,
+            "stream": "S1_POS_DIRECT_SALE",
+            "idx": 216,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":928,\"order_serial_no\":\"240526928\",\"queue_number\":\"A0205\",\"token\":null,\"parent_order_id\":null,\"subtotal\":2.5,\"discount\":0,\"total_tax\":0,\"total\":2.5,\"delivery_charge\":0,\"subtotal_currency_",
+            "batch_elapsed_ms": 353.6
+        },
+        {
+            "t": 811.150600194931,
+            "stream": "S4_KDS_BUMP",
+            "idx": 217,
+            "status": 202,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 926
+            },
+            "body_excerpt": "",
+            "batch_elapsed_ms": 353.6
+        },
+        {
+            "t": 813.8491411209106,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 218,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":929,\"order_serial_no\":\"240526929\",\"queue_number\":\"A0206\",\"token\":\"H3-KTK-218-138bbe60\",\"parent_order_id\":null,\"subtotal\":32.5,\"discount\":0,\"total_tax\":0,\"total\":32.5,\"delivery_charge\":0,",
+            "batch_elapsed_ms": 114.6
+        },
+        {
+            "t": 819.588968038559,
+            "stream": "S3_KIOSK_CASH_COLLECT",
+            "idx": 219,
+            "status": 200,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 929
+            },
+            "body_excerpt": "{\"data\":{\"id\":929,\"order_serial_no\":\"240526929\",\"queue_number\":\"A0206\",\"token\":\"H3-KTK-218-138bbe60\",\"parent_order_id\":null,\"subtotal\":32.5,\"discount\":0,\"total_tax\":0,\"total\":32.5,\"delivery_charge\":0,",
+            "batch_elapsed_ms": 77.2
+        },
+        {
+            "t": 824.2273480892181,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 220,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":930,\"order_serial_no\":\"240526930\",\"queue_number\":\"A0207\",\"token\":\"H3-KTK-220-14326ae9\",\"parent_order_id\":null,\"subtotal\":25,\"discount\":0,\"total_tax\":0,\"total\":25,\"delivery_charge\":0,\"sub",
+            "batch_elapsed_ms": 95.2
+        },
+        {
+            "t": 826.4113771915436,
+            "stream": "S1_POS_DIRECT_SALE",
+            "idx": 221,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":931,\"order_serial_no\":\"240526931\",\"queue_number\":\"A0208\",\"token\":null,\"parent_order_id\":null,\"subtotal\":7.5,\"discount\":0,\"total_tax\":0,\"total\":7.5,\"delivery_charge\":0,\"subtotal_currency_",
+            "batch_elapsed_ms": 373.4
+        },
+        {
+            "t": 826.4113771915436,
+            "stream": "S4_KDS_BUMP",
+            "idx": 222,
+            "status": 202,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 928
+            },
+            "body_excerpt": "",
+            "batch_elapsed_ms": 373.4
+        },
+        {
+            "t": 834.244843006134,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 223,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":932,\"order_serial_no\":\"240526932\",\"queue_number\":\"A0209\",\"token\":\"H3-KTK-223-14d2a425\",\"parent_order_id\":null,\"subtotal\":32.5,\"discount\":0,\"total_tax\":0,\"total\":32.5,\"delivery_charge\":0,",
+            "batch_elapsed_ms": 89.2
+        },
+        {
+            "t": 841.4539771080017,
+            "stream": "S1_POS_DIRECT_SALE",
+            "idx": 224,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":933,\"order_serial_no\":\"240526933\",\"queue_number\":\"A0210\",\"token\":null,\"parent_order_id\":null,\"subtotal\":7.5,\"discount\":0,\"total_tax\":0,\"total\":7.5,\"delivery_charge\":0,\"subtotal_currency_",
+            "batch_elapsed_ms": 349.7
+        },
+        {
+            "t": 841.4539771080017,
+            "stream": "S4_KDS_BUMP",
+            "idx": 225,
+            "status": 202,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 931
+            },
+            "body_excerpt": "",
+            "batch_elapsed_ms": 349.7
+        },
+        {
+            "t": 844.1409900188446,
+            "stream": "S5_ADMIN_TOGGLE_AVAIL",
+            "idx": 226,
+            "status": 200,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"ok\":true,\"item_id\":2,\"branch_id\":1,\"is_available\":true,\"unavailable_reason\":null}",
+            "batch_elapsed_ms": 38.2
+        },
+        {
+            "t": 844.6844911575317,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 227,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":934,\"order_serial_no\":\"240526934\",\"queue_number\":\"A0211\",\"token\":\"H3-KTK-227-15795ec4\",\"parent_order_id\":null,\"subtotal\":30,\"discount\":0,\"total_tax\":0,\"total\":30,\"delivery_charge\":0,\"sub",
+            "batch_elapsed_ms": 111.8
+        },
+        {
+            "t": 849.9085512161255,
+            "stream": "S3_KIOSK_CASH_COLLECT",
+            "idx": 228,
+            "status": 200,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 934
+            },
+            "body_excerpt": "{\"data\":{\"id\":934,\"order_serial_no\":\"240526934\",\"queue_number\":\"A0211\",\"token\":\"H3-KTK-227-15795ec4\",\"parent_order_id\":null,\"subtotal\":30,\"discount\":0,\"total_tax\":0,\"total\":30,\"delivery_charge\":0,\"sub",
+            "batch_elapsed_ms": 92.9
+        },
+        {
+            "t": 855.0491971969604,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 229,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":935,\"order_serial_no\":\"240526935\",\"queue_number\":\"A0212\",\"token\":\"H3-KTK-229-161ee9bc\",\"parent_order_id\":null,\"subtotal\":35,\"discount\":0,\"total_tax\":0,\"total\":35,\"delivery_charge\":0,\"sub",
+            "batch_elapsed_ms": 99.4
+        },
+        {
+            "t": 856.7251951694489,
+            "stream": "S1_POS_DIRECT_SALE",
+            "idx": 230,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":936,\"order_serial_no\":\"240526936\",\"queue_number\":\"A0213\",\"token\":null,\"parent_order_id\":null,\"subtotal\":7.5,\"discount\":0,\"total_tax\":0,\"total\":7.5,\"delivery_charge\":0,\"subtotal_currency_",
+            "batch_elapsed_ms": 342.1
+        },
+        {
+            "t": 856.7251951694489,
+            "stream": "S4_KDS_BUMP",
+            "idx": 231,
+            "status": 202,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 933
+            },
+            "body_excerpt": "",
+            "batch_elapsed_ms": 342.1
+        },
+        {
+            "t": 865.4075870513916,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 232,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":937,\"order_serial_no\":\"240526937\",\"queue_number\":\"A0214\",\"token\":\"H3-KTK-232-16c518a1\",\"parent_order_id\":null,\"subtotal\":30,\"discount\":0,\"total_tax\":0,\"total\":30,\"delivery_charge\":0,\"sub",
+            "batch_elapsed_ms": 85.4
+        },
+        {
+            "t": 872.1157190799713,
+            "stream": "S1_POS_DIRECT_SALE",
+            "idx": 233,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":938,\"order_serial_no\":\"240526938\",\"queue_number\":\"A0215\",\"token\":null,\"parent_order_id\":null,\"subtotal\":7.5,\"discount\":0,\"total_tax\":0,\"total\":7.5,\"delivery_charge\":0,\"subtotal_currency_",
+            "batch_elapsed_ms": 347
+        },
+        {
+            "t": 872.1157190799713,
+            "stream": "S4_KDS_BUMP",
+            "idx": 234,
+            "status": 202,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 936
+            },
+            "body_excerpt": "",
+            "batch_elapsed_ms": 347
+        },
+        {
+            "t": 875.7963180541992,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 235,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":939,\"order_serial_no\":\"240526939\",\"queue_number\":\"A0216\",\"token\":\"H3-KTK-235-176ac02d\",\"parent_order_id\":null,\"subtotal\":25,\"discount\":0,\"total_tax\":0,\"total\":25,\"delivery_charge\":0,\"sub",
+            "batch_elapsed_ms": 98.3
+        },
+        {
+            "t": 879.972382068634,
+            "stream": "S3_KIOSK_CASH_COLLECT",
+            "idx": 236,
+            "status": 200,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 939
+            },
+            "body_excerpt": "{\"data\":{\"id\":939,\"order_serial_no\":\"240526939\",\"queue_number\":\"A0216\",\"token\":\"H3-KTK-235-176ac02d\",\"parent_order_id\":null,\"subtotal\":25,\"discount\":0,\"total_tax\":0,\"total\":25,\"delivery_charge\":0,\"sub",
+            "batch_elapsed_ms": 69.4
+        },
+        {
+            "t": 886.0975661277771,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 237,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":940,\"order_serial_no\":\"240526940\",\"queue_number\":\"A0217\",\"token\":\"H3-KTK-237-1810541b\",\"parent_order_id\":null,\"subtotal\":30,\"discount\":0,\"total_tax\":0,\"total\":30,\"delivery_charge\":0,\"sub",
+            "batch_elapsed_ms": 89.8
+        },
+        {
+            "t": 887.2547540664673,
+            "stream": "S1_POS_DIRECT_SALE",
+            "idx": 238,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":941,\"order_serial_no\":\"240526941\",\"queue_number\":\"A0218\",\"token\":null,\"parent_order_id\":null,\"subtotal\":5,\"discount\":0,\"total_tax\":0,\"total\":5,\"delivery_charge\":0,\"subtotal_currency_pric",
+            "batch_elapsed_ms": 341.1
+        },
+        {
+            "t": 887.2547540664673,
+            "stream": "S4_KDS_BUMP",
+            "idx": 239,
+            "status": 202,
+            "ok": true,
+            "ctx": {
+                "target_order_id": 938
+            },
+            "body_excerpt": "",
+            "batch_elapsed_ms": 341.1
+        },
+        {
+            "t": 896.4680020809174,
+            "stream": "S2_KIOSK_ORDER",
+            "idx": 240,
+            "status": 201,
+            "ok": true,
+            "ctx": [],
+            "body_excerpt": "{\"data\":{\"id\":942,\"order_serial_no\":\"240526942\",\"queue_number\":\"A0219\",\"token\":\"H3-KTK-240-18b5f7c5\",\"parent_order_id\":null,\"subtotal\":25,\"discount\":0,\"total_tax\":0,\"total\":25,\"delivery_charge\":0,\"sub",
+            "batch_elapsed_ms": 91.3
+        }
+    ]
+}

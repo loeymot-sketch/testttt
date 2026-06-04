@@ -85,7 +85,8 @@
                             <tr class="db-table-body-tr" v-for="user in creditBalanceReports" :key="user">
                                 <td class="db-table-body-td">{{ user.name }}</td>
                                 <td class="db-table-body-td">{{ user.email }}</td>
-                                <td class="db-table-body-td">{{ user.phone ? user.country_code + '' + user.phone : '' }}
+                                <!-- [UR1-002 V1.0.2 Wave B1] phoneDisplay SSOT -->
+                                <td class="db-table-body-td">{{ safePhone(user.phone) ? user.country_code + '' + safePhone(user.phone) : '' }}
                                 </td>
                                 <td class="db-table-body-td">{{ user.balance }}</td>
 
@@ -135,6 +136,8 @@ import print from 'vue3-print-nb';
 import PrintComponent from "../components/buttons/export/PrintComponent";
 import ExcelComponent from "../components/buttons/export/ExcelComponent";
 import "@vuepic/vue-datepicker/dist/main.css";
+// [UR1-002 V1.0.2 Wave B1] phoneDisplay SSOT — mirrors App\Support\PhoneDisplay::safe
+import { safePhone } from "../../../helpers/phoneDisplay";
 import displayModeEnum from "../../../enums/modules/displayModeEnum";
 import ENV from "../../../config/env";
 
@@ -203,6 +206,10 @@ export default {
         },
     },
     methods: {
+        // [UR1-002 V1.0.2 Wave B1] phoneDisplay SSOT proxy for template access.
+        safePhone(phone) {
+            return safePhone(phone);
+        },
         phoneNumber(e) {
             return appService.phoneNumber(e);
         },

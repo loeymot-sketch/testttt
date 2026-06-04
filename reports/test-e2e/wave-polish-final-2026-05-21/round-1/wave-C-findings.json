@@ -1,0 +1,120 @@
+{
+  "wave": "C",
+  "round": 1,
+  "started_at": "2026-05-21T08:43:23.205Z",
+  "ended_at": "2026-05-21T08:44:04.380Z",
+  "states_reviewed": 11,
+  "scope": "Stock Rupture Dashboard (post stock-mgmt-M1 + Phase 2H Q9-S1 fix) + KDS Historique drawer (post Wave X X3 commit 4428e3ca4 + Q12 sentinel).",
+  "commit_under_test": "4c8fdcdbe",
+  "fix_commits_verified": [
+    "7a409ade7 — feat(stock-mgmt-M1): unified catalog browser",
+    "1116b3957 — stock-mgmt-M1 final",
+    "a68acb20f — fix(sync-q9-s1): wire kiosk cache invalidator on extras + variations events",
+    "4428e3ca4 — feat(kds-X3): historique du jour drawer read-only V1",
+    "f0060a138 — bundle rebuild post X3",
+    "312221417 — test(sentinel-kds-bundle): build-integrity check"
+  ],
+  "states": {
+    "C-01": "rail axes : categories=11 extras=4 variations=6 (3 axes present)",
+    "C-06": "cross-axis dedupe : category=\"➕ Suppléments 10\" + extra=\"➕ Suppléments (à composer) 10\"",
+    "C-02": "category toggle Cheddar #12 : \"EN STOCK\" → \"RUPTURE\" (HTTP 200)",
+    "C-03": "extra toggle Boursin (4 ids fan-out) : \"EN STOCK\" → \"RUPTURE\", snapshot 9→13 in 526ms",
+    "C-04": "variation toggle Frites (5 ids fan-out) : \"EN STOCK\" → \"RUPTURE\", snapshot 13→18 in 537ms",
+    "C-05": "bulk toggle (4 sequential category toggles) : statuses=[200,200,200,200] in 1065ms (no 429)",
+    "C-07": "KDS mount, history pill text=\"📚\nHistorique\" (FR translated, no raw key)",
+    "C-08": "drawer opened from header pill"
+  },
+  "findings": [],
+  "summary": {
+    "P0": 0,
+    "P1": 0,
+    "P2": 0,
+    "P3": 0,
+    "open_P0": 0,
+    "open_P1": 0,
+    "open_P2": 0,
+    "open_P3": 0
+  },
+  "timings": {
+    "c03_extra_invalidation_ms": {
+      "delta_ms": 526,
+      "expect_max_ms": 5000,
+      "pass": true
+    },
+    "c04_variation_invalidation_ms": {
+      "delta_ms": 537,
+      "expect_max_ms": 5000,
+      "pass": true
+    },
+    "c05_bulk_total_ms": {
+      "delta_ms": 1065,
+      "expect_max_ms": 10000,
+      "pass": true
+    }
+  },
+  "evidence": {
+    "c01_rail_axes": {
+      "categories": 11,
+      "extras": 4,
+      "variations": 6
+    },
+    "c06_labels": {
+      "category": "➕\nSuppléments\n10",
+      "extra_group": "➕\nSuppléments (à composer)\n10"
+    },
+    "c02": {
+      "http": 200
+    },
+    "c03_snapshot_before": {
+      "ok": true,
+      "version": 9
+    },
+    "c03_snapshot_after": {
+      "ok": true,
+      "version": 13
+    },
+    "c04_snapshot_before": {
+      "ok": true,
+      "version": 13
+    },
+    "c04_snapshot_after": {
+      "ok": true,
+      "version": 18
+    },
+    "c05_bulk_results": [
+      {
+        "itemId": 13,
+        "status": 200
+      },
+      {
+        "itemId": 14,
+        "status": 200
+      },
+      {
+        "itemId": 15,
+        "status": 200
+      },
+      {
+        "itemId": 17,
+        "status": 200
+      }
+    ],
+    "c07_seeded": {
+      "prepared": {
+        "id": 285,
+        "serial": "WAVE-POLISH-C-HIST-A-1779353018340"
+      },
+      "delivered": {
+        "id": 286,
+        "serial": "WAVE-POLISH-C-HIST-B-1779353018818"
+      }
+    },
+    "c07_trigger_text": "📚\nHistorique",
+    "c09_first_item": "N°WAVE-POLISH-C-HIST-B-1779353018818\nLIVRÉ"
+  },
+  "cleanup": {
+    "ok": true,
+    "output": "[iter15] Cleanup applied — deleted 0 test orders (matched 0).\n"
+  },
+  "verdict": "GREEN"
+}

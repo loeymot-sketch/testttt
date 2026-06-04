@@ -1,0 +1,735 @@
+{
+  "agent": "Z12 Frozen-zone impact",
+  "phase": "BRAIN-WAVE-P 2026-05-24",
+  "baseline_ref": "d601fdd34",
+  "baseline_date": "2026-05-23 13:44:51 +0200",
+  "head_ref": "9db1b3dd9",
+  "head_date": "2026-05-24 19:34:41 +0200",
+  "verdict": "GREEN",
+  "scope_files_count": 14,
+
+  "frozen_files_diff_clean": {
+    "resources/js/components/admin/pos/PaymentComponent.vue": "0 LOC (md5 IDENTICAL d601fdd34→HEAD; last commit 2026-05-18 04:41 — pre-baseline)",
+    "resources/js/components/admin/pos/v5/PosV5TrancheRow.vue": "0 LOC (no diff vs baseline; last commit a99de069e Cycle 6 — pre-baseline)",
+    "resources/js/components/frontend/kiosk/KioskWizardComponent.vue": "0 LOC (no diff vs baseline; last commit 62f748bca K-004 wizard template aliases — pre-baseline)",
+    "resources/js/components/frontend/kiosk/KioskAppComponent.vue": "0 LOC (no diff vs baseline; last commit 4e124857e docs(mobile) — pre-baseline)",
+    "resources/js/components/frontend/kiosk/KioskUpsellComponent.vue": "0 LOC (no diff vs baseline; last commit b873d4728 — pre-baseline)",
+    "public/js/pos-wizard.js": "0 LOC (md5 IDENTICAL d601fdd34→HEAD; last commit 9730b18e7 — pre-baseline)",
+    "public/css/pos-wizard.css": "0 LOC (no diff vs baseline; last commit 827c3512e — pre-baseline)",
+    "app/Services/Fiscal/FiscalSequenceService.php": "0 LOC (md5 IDENTICAL; last commit 2026-05-19 8e6dceb5c scope-Z6-P1 — pre-baseline)",
+    "app/Services/Fiscal/ZReportService.php": "0 LOC (no diff; last commit 2026-05-10 a37f58e4a iter15 G0-A — pre-baseline)",
+    "app/Services/Fiscal/AuditLogService.php": "0 LOC (no diff; last commit 2026-04-21 048761103 — pre-baseline)",
+    "app/Models/Scopes/BranchScope.php": "0 LOC (no diff; last commit 2026-04-12 90e639d7c — pre-baseline)",
+    "app/Http/Middleware/IdempotencyKeyMiddleware.php": "0 LOC (no diff; last commit 2026-05-06 7f8c771d8 Cycle 7A P11 — pre-baseline)",
+    "app/Services/Pricing/PricingService.php": "0 LOC (md5 IDENTICAL; last commit 2026-05-10 18dc7a29c E-001/C-001/E-004/E-005 — pre-baseline)",
+    "app/Domain/Order/OrderStateMachine.php": "0 LOC (no diff; last commit 2026-05-10 619b49bc1 iter15 lockForUpdate fix race — pre-baseline)"
+  },
+  "frozen_files_diff_verdict": "ALL 14 files = 0 LOC vs d601fdd34 baseline. MD5 cross-checked IDENTICAL on 4 critical files (PaymentComponent.vue, FiscalSequenceService.php, pos-wizard.js, PricingService.php). All last-touch commit dates PRE-DATE baseline. Frozen-zone discipline POST-baseline = PERFECT.",
+
+  "file_sizes_loc": {
+    "PaymentComponent.vue": 1478,
+    "PosV5TrancheRow.vue": 352,
+    "KioskWizardComponent.vue": 3104,
+    "KioskAppComponent.vue": 1576,
+    "KioskUpsellComponent.vue": 543,
+    "pos-wizard.js": 5964,
+    "pos-wizard.css": 1987,
+    "FiscalSequenceService.php": 115,
+    "ZReportService.php": 727,
+    "AuditLogService.php": 375,
+    "BranchScope.php": 42,
+    "IdempotencyKeyMiddleware.php": 244,
+    "PricingService.php": 814,
+    "OrderStateMachine.php": 312
+  },
+  "loc_note": "PaymentComponent.vue measured at 1478 LOC. BRAIN.md cites 1625 LOC — likely a stale figure or includes blade/template surrounds. Empirically 1478 today.",
+
+  "callers_per_frozen": {
+    "FiscalSequenceService": {
+      "production_callers_count": 6,
+      "production_callers": [
+        "app/Services/PaymentService.php",
+        "app/Services/OrderService.php",
+        "app/Services/FrontendOrderService.php",
+        "app/Services/Order/RefundWithCounterEntryService.php",
+        "app/Services/Bypass/BypassAuditLogger.php",
+        "app/Services/Fiscal/FiscalSequenceService.php (self)"
+      ],
+      "command_callers_count": 4,
+      "public_methods": ["next(int $branchId): int"],
+      "interface_stability": "STABLE — single public method `next(int $branchId): int` is the choke-point for fiscal sequence allocation across kiosk+POS+refund+frontend paths"
+    },
+    "ZReportService": {
+      "production_callers_count": 11,
+      "production_callers": [
+        "app/Providers/AppServiceProvider.php (DI binding)",
+        "app/Http/Controllers/Admin/Fiscal/ZReportController.php",
+        "app/Services/Order/RefundWithCounterEntryService.php",
+        "app/Services/Fiscal/FiscalChainValidator.php",
+        "app/Services/Fiscal/ZReportCashEnrichmentService.php",
+        "app/Services/Order/SealedOrderGuard.php",
+        "app/Services/Fiscal/FiscalSealingService.php",
+        "app/Services/Fiscal/XReportService.php"
+      ],
+      "console_callers_count": 5,
+      "public_methods": [
+        "open(int branchId, User|int|null openedBy = null): ZReport",
+        "close(int branchId, User|int|null closedBy = null): ZReport",
+        "aggregate(int branchId, ?Carbon from, Carbon to): array",
+        "verifySignature(ZReport report): bool",
+        "verifyChain(int branchId, ?bool strict = null): array",
+        "setChainValidator(FiscalChainValidator validator): void"
+      ],
+      "interface_stability": "STABLE — open/close/aggregate/verify form the daily fiscal lifecycle contract; FiscalChainValidator injected via setter"
+    },
+    "AuditLogService": {
+      "production_callers_count": 13,
+      "production_callers": [
+        "app/Providers/AppServiceProvider.php",
+        "app/Models/OrderDiscountLog.php",
+        "app/Http/PaymentGateways/Gateways/Stripe.php",
+        "app/Http/Controllers/Auth/LoginController.php",
+        "app/Http/Controllers/Admin/Pos/PosReceiptPrintController.php",
+        "app/Services/OrderService.php",
+        "app/Services/PaymentService.php",
+        "app/Services/Payments/SplitPaymentService.php",
+        "app/Services/Fiscal/ZReportCashEnrichmentService.php",
+        "app/Services/Fiscal/FiscalChainValidator.php",
+        "app/Services/Order/RefundWithCounterEntryService.php",
+        "app/Services/Bypass/BypassAuditLogger.php",
+        "app/Services/Cash/CashDrawerService.php",
+        "app/Services/Delivery/DeliveryBoyCashSessionService.php"
+      ],
+      "console_callers_count": 4,
+      "public_methods": [
+        "write(array data): AuditLog",
+        "verifyChain(?int branchId = null): ?int",
+        "computeHash(int branchId, ?string prevHash, string action, array payload): string"
+      ],
+      "interface_stability": "STABLE — `write` is THE choke-point for all audit_logs entries (NF525 chain HMAC). 13 production paths converge here."
+    },
+    "BranchScope": {
+      "production_callers_count": 24,
+      "production_callers_sample": [
+        "app/Traits/DefaultAccessModelTrait.php",
+        "app/Models/Order.php",
+        "app/Models/FrontendOrder.php",
+        "app/Models/OrderItem.php",
+        "app/Models/OrderPayment.php",
+        "app/Models/OrderQuote.php",
+        "app/Models/User.php",
+        "app/Models/KioskMachine.php",
+        "app/Models/StockLevel.php",
+        "app/Models/StockMovement.php",
+        "app/Models/CashDrawerSession.php",
+        "app/Models/CashMovement.php",
+        "app/Models/DeliveryBoyCashSession.php",
+        "app/Models/DeliveryBoyCashMovement.php",
+        "app/Models/ItemBranchAvailability.php",
+        "app/Models/PendingPaymentConfirmation.php",
+        "app/Models/PaymentTerminal.php",
+        "app/Models/PosParkedOrder.php",
+        "app/Models/PushNotification.php",
+        "app/Models/DiningTable.php",
+        "app/Models/Printer.php",
+        "app/Models/WebhookEvent.php",
+        "app/Models/ItemWizardProfile.php (via WizardProfileBranchScope variant)"
+      ],
+      "callers_note": "20-model baseline locked by BranchScopeCoverageSentinelTest. WebhookEvent extra = post-iter11 addition.",
+      "public_methods": ["apply(Builder builder, Model model): void"],
+      "interface_stability": "STABLE — Eloquent Scope interface; signature locked by framework"
+    },
+    "IdempotencyKeyMiddleware": {
+      "production_callers_count": 4,
+      "production_callers": [
+        "app/Providers/AppServiceProvider.php (DI)",
+        "app/Http/Kernel.php (middleware registration)",
+        "app/Services/PaymentService.php (key generation)",
+        "app/Services/OrderService.php (key generation)"
+      ],
+      "exception_callers": ["app/Exceptions/MissingIdempotencyKeyException.php"],
+      "repository_layer": [
+        "app/Services/Idempotency/RedisIdempotencyKeyRepository.php",
+        "app/Services/Idempotency/IdempotencyRecord.php",
+        "app/Services/Idempotency/IdempotencyKeyRepository.php (contract)"
+      ],
+      "public_methods": [
+        "__construct(IdempotencyKeyRepository repo, ...)",
+        "handle(Request request, Closure next): SymfonyResponse"
+      ],
+      "interface_stability": "STABLE — middleware contract (handle signature) locked by Laravel framework"
+    },
+    "PricingService": {
+      "production_callers_count": 10,
+      "production_callers": [
+        "app/Http/Requests/OrderRequest.php",
+        "app/Http/Requests/Kiosk/PricingPreviewRequest.php",
+        "app/Http/Requests/Concerns/ValidatesAddonRoles.php",
+        "app/Http/Controllers/Frontend/PricingPreviewController.php",
+        "app/Domain/Order/AutoPrepareOnPaidPolicy.php",
+        "app/Services/OrderService.php",
+        "app/Services/FrontendOrderService.php",
+        "app/Services/Order/OrderQuoteService.php",
+        "app/Services/Fiscal/ZReportService.php",
+        "app/Services/Loyalty/PosRedemptionService.php",
+        "app/Services/Pricing/CompositionSnapshotBuilder.php",
+        "app/Services/Kiosk/PricingPreviewService.php"
+      ],
+      "console_callers_count": 4,
+      "public_methods": [
+        "calculateOrder(...)",
+        "menuRoleAdjustedAddonPrice(string role, float fullPrice): float"
+      ],
+      "interface_stability": "STABLE — `calculateOrder` is THE SSOT entry point for all kiosk/POS/preview pricing flows. composition_snapshot (NF525 SSOT) built at PricingService.php:266-291."
+    },
+    "OrderStateMachine": {
+      "production_callers_count": 11,
+      "production_callers": [
+        "app/Providers/AppServiceProvider.php",
+        "app/Http/Controllers/Frontend/DeliveryBoyOrderController.php",
+        "app/Http/Controllers/Admin/KitchenDisplaySystemController.php",
+        "app/Jobs/CleanupStalePendingKioskOrders.php",
+        "app/Rules/ValidStatusTransition.php",
+        "app/Domain/Order/AutoPrepareOnPaidPolicy.php",
+        "app/Listeners/PersistOrderStatusChangedToOutbox.php",
+        "app/Services/OrderService.php",
+        "app/Services/PaymentService.php",
+        "app/Services/KitchenDisplaySystemOrderService.php",
+        "app/Services/FrontendOrderService.php"
+      ],
+      "console_callers_count": 4,
+      "public_methods": [
+        "allows(int from, int to, ?Authenticatable user = null): bool",
+        "assertAllows(int from, int to, ?Authenticatable user = null): void",
+        "kitchenReleaseStatuses(): array",
+        "isKitchenReleaseStatus(int status): bool",
+        "isKitchenReleaseTransition(int from, int to): bool",
+        "isReleasedToKitchen(...)",
+        "recordTransition(...)",
+        "apply(...)",
+        "requiresReason(int to): bool",
+        "legalTransitions(): array",
+        "allStatuses(): array"
+      ],
+      "interface_stability": "STABLE — all methods static. apply() race fix iter15 (commit 619b49bc1) added lockForUpdate. No signature breakage since."
+    },
+    "PaymentComponent.vue": {
+      "frontend_importers_count": 6,
+      "frontend_importers": [
+        "resources/js/components/frontend/kiosk/KioskPaymentComponent.vue",
+        "resources/js/components/admin/pos/ReceiptComponent.vue",
+        "resources/js/components/admin/pos/PosCounterCollectModal.vue",
+        "resources/js/components/admin/pos/PosComponent.vue",
+        "resources/js/components/admin/pos/v5/PosV5Numpad.vue",
+        "resources/js/router/modules/kioskRoutes.js"
+      ],
+      "helper_imports": ["posReceiptBuilder.js", "posLoyaltyMainCta.js", "posSplitPayment.js"],
+      "interface_stability": "STABLE — composition emit/prop contract locked by paymentComponentEmitsJsdocList sentinel + PropMutationSentinel"
+    },
+    "PosV5TrancheRow.vue": {
+      "frontend_importers_count": 1,
+      "frontend_importers": ["resources/js/components/admin/pos/PaymentComponent.vue"],
+      "interface_stability": "STABLE — sole consumer PaymentComponent itself frozen"
+    },
+    "KioskWizardComponent.vue": {
+      "frontend_importers_count": 5,
+      "frontend_importers": [
+        "resources/js/components/frontend/kiosk/KioskPosWizardComponent.vue",
+        "resources/js/components/frontend/kiosk/KioskCategoriesComponent.vue",
+        "resources/js/components/frontend/kiosk/steps/KioskStepMenuComponent.vue",
+        "resources/js/components/admin/pos/PosComponent.vue",
+        "resources/js/router/modules/kioskRoutes.js"
+      ],
+      "helper_imports": ["kioskAuthInterceptor.js", "kioskTacosSize.js"]
+    },
+    "KioskAppComponent.vue": {
+      "frontend_importers_count": 4,
+      "frontend_importers": [
+        "resources/js/bootstrap-kiosk.js",
+        "resources/js/i18n.js",
+        "resources/js/app.js",
+        "resources/js/router/modules/kioskRoutes.js (implicit)"
+      ]
+    },
+    "KioskUpsellComponent.vue": {
+      "frontend_importers_count": 3,
+      "frontend_importers": [
+        "resources/js/components/frontend/kiosk/KioskWizardComponent.vue",
+        "resources/js/store/plugins/kioskAnalyticsPlugin.js",
+        "resources/js/router/modules/kioskRoutes.js"
+      ]
+    },
+    "pos-wizard.js": {
+      "blade_loaders": [
+        "resources/views/master.blade.php",
+        "resources/views/admin-pos-v4.blade.php"
+      ],
+      "loaded_via": "<script src=\"{{ asset('js/pos-wizard.js') }}\"> — Vanilla JS hand-written, NOT Mix-compiled",
+      "interface_stability": "STABLE — global window.posWizard contract, no module imports"
+    }
+  },
+
+  "dependencies_per_frozen": {
+    "FiscalSequenceService.php": [
+      "App\\Models\\Order",
+      "Illuminate\\Database\\ConnectionInterface",
+      "Illuminate\\Support\\Facades\\Cache",
+      "Illuminate\\Support\\Facades\\DB",
+      "RuntimeException"
+    ],
+    "ZReportService.php": [
+      "App\\Enums\\OrderStatus",
+      "App\\Enums\\PaymentStatus",
+      "App\\Models\\Order",
+      "App\\Models\\User",
+      "App\\Models\\ZReport",
+      "Illuminate\\Database\\ConnectionInterface",
+      "Illuminate\\Support\\Carbon",
+      "Illuminate\\Support\\Facades\\Cache",
+      "Illuminate\\Support\\Facades\\Config",
+      "Illuminate\\Support\\Facades\\DB",
+      "Illuminate\\Support\\Facades\\Log",
+      "RuntimeException"
+    ],
+    "AuditLogService.php": [
+      "App\\Models\\AuditLog",
+      "Illuminate\\Database\\QueryException",
+      "Illuminate\\Http\\Request",
+      "Illuminate\\Support\\Facades\\Auth",
+      "Illuminate\\Support\\Facades\\Cache",
+      "Illuminate\\Support\\Facades\\Config",
+      "Illuminate\\Support\\Facades\\DB",
+      "Illuminate\\Support\\Facades\\Log",
+      "RuntimeException"
+    ],
+    "BranchScope.php": [
+      "App\\Models\\User",
+      "App\\Traits\\DefaultAccessModelTrait",
+      "Illuminate\\Database\\Eloquent\\Scope",
+      "Illuminate\\Database\\Eloquent\\Model",
+      "Illuminate\\Database\\Eloquent\\Builder",
+      "Illuminate\\Support\\Facades\\App",
+      "Illuminate\\Support\\Facades\\Auth"
+    ],
+    "IdempotencyKeyMiddleware.php": [
+      "App\\Exceptions\\MissingIdempotencyKeyException",
+      "App\\Services\\Idempotency\\IdempotencyKeyRepository",
+      "App\\Services\\Idempotency\\IdempotencyRecord",
+      "App\\Services\\Idempotency\\IdempotencyStorageUnavailableException",
+      "Illuminate\\Http\\JsonResponse",
+      "Illuminate\\Http\\Request",
+      "Illuminate\\Http\\Response",
+      "Illuminate\\Support\\Facades\\Log",
+      "Symfony\\Component\\HttpFoundation\\Response"
+    ],
+    "PricingService.php": [
+      "App\\Enums\\TaxType",
+      "App\\Enums\\Status",
+      "App\\Libraries\\AppLibrary",
+      "App\\Models\\Item",
+      "App\\Models\\ItemAddon",
+      "App\\Models\\ItemAttribute",
+      "App\\Models\\ItemExtra",
+      "App\\Models\\ItemVariation",
+      "App\\Models\\ItemWizardProfile",
+      "App\\Models\\Tax",
+      "App\\Services\\Composer\\ComposerProfileProjection",
+      "App\\Services\\CouponService",
+      "App\\Services\\Menu\\AvailabilityService",
+      "App\\Services\\Stock\\ChoiceAvailabilityResolver",
+      "Illuminate\\Support\\Collection"
+    ],
+    "OrderStateMachine.php": [
+      "App\\Enums\\OrderType",
+      "App\\Enums\\OrderStatus",
+      "App\\Enums\\PaymentStatus",
+      "App\\Enums\\PosPaymentMethod",
+      "App\\Models\\OrderStatusTransition",
+      "Illuminate\\Contracts\\Auth\\Authenticatable",
+      "Illuminate\\Database\\Eloquent\\Model",
+      "Illuminate\\Support\\Facades\\DB"
+    ],
+    "PaymentComponent.vue": [
+      "lodash",
+      "axios",
+      "../components/LoadingComponent.vue",
+      "../../../services/appService",
+      "../../../services/alertService",
+      "./ReceiptComponent.vue",
+      "../../../enums/modules/posPaymentMethodEnum",
+      "../../../enums/modules/sourceEnum",
+      "../../../enums/modules/isAdvanceOrderEnum",
+      "../../../enums/modules/orderTypeEnum",
+      "../../../services/kioskHardware (openDrawer)",
+      "../../../helpers/posNormalizeIds",
+      "../../../store/modules/posCart",
+      "./v5/PosV5Numpad.vue",
+      "./v5/PosV5TrancheRow.vue (frozen→frozen)",
+      "../../../helpers/posSplitPayment"
+    ],
+    "KioskWizardComponent.vue": [
+      "vue (defineAsyncComponent)",
+      "./KioskOrderSummaryComponent.vue",
+      "./ds/KsAllergenBadge.vue",
+      "kioskPricingPreview helper",
+      "kioskFormatPrice helper",
+      "kioskMedia helpers",
+      "kioskDrinkAddons helper",
+      "kioskDisplayText helper (sanitizeKioskCustomerFacingText)",
+      "kioskPricing helper",
+      "kioskSauceCatalog helper",
+      "kioskExtrasPartition helper",
+      "kioskViandeCatalog helper",
+      "kioskTacosSize helper",
+      "kioskAnalytics helper"
+    ],
+    "KioskAppComponent.vue": [
+      "vuex (mapGetters, mapActions)",
+      "kioskOfflineQueue helper",
+      "./KioskToastComponent.vue",
+      "./CatalogChangeToastComponent.vue",
+      "./KioskOfflineConflictModalComponent.vue",
+      "./KioskInactivityOverlayComponent.vue",
+      "../../common/ConnectionStatusBanner.vue",
+      "axios",
+      "kioskFormatPrice helper",
+      "../../../services/eventContract",
+      "useCatalogChangeNotifier composable",
+      "useKioskA11y composable",
+      "kioskHardware service",
+      "kioskAnalytics helper"
+    ]
+  },
+  "dependencies_risk_note": "Frozen-file dependencies (helpers, models, enums) ARE NOT themselves frozen. If e.g. kioskDisplayText helper changes its sanitizeKioskCustomerFacingText() signature or kioskPricing helper its pure-fn shape, KioskWizardComponent.vue breaks at runtime WITHOUT triggering a §7 sentinel. This is the HIDDEN CHANGE risk. Mitigations: (1) frozen-file SHOULD only import contract-locked helpers; (2) V1.0.X backlog should add a sentinel that LOCKS the deps-tree of each §7 file (filename list + import-list hash).",
+
+  "sentinels_per_frozen": {
+    "PaymentComponent.vue": {
+      "count": 56,
+      "high_value_samples": [
+        "tests/js/sentinels/PaymentComponentPropMutationSentinelTest.spec.js",
+        "tests/js/sentinels/paymentComponentPropMutation.spec.js",
+        "tests/js/sentinels/paymentComponentEmitsJsdocList.spec.js",
+        "tests/js/sentinels/f002KioskPaymentAmountEcho.spec.js",
+        "tests/js/sentinels/f004KioskCancelReasonSent.spec.js",
+        "tests/js/sentinels/f014TpeStubQaToggleProductionGuard.spec.js",
+        "tests/js/sentinels/labelSplitPaymentI18nKey.spec.js",
+        "tests/js/sentinels/posCounterCollectModalSentinel.spec.js",
+        "tests/js/sentinels/KeyboardNavigationSentinel.spec.js",
+        "tests/js/paymentComponent401Retry.spec.js",
+        "tests/js/posPaymentComponentContract.spec.js"
+      ],
+      "verdict": "ULTRA-COVERED — FK-series specific sentinels + contract sentinel + emits JsDoc list lock"
+    },
+    "PosV5TrancheRow.vue": {
+      "count": 6,
+      "verdict": "ADEQUATE — sole importer PaymentComponent itself ULTRA-COVERED"
+    },
+    "KioskWizardComponent.vue": {
+      "count": 42,
+      "high_value_samples": [
+        "tests/js/kioskWizardNavigation.spec.js (referenced via posWizardComposerAware.spec.js)"
+      ],
+      "verdict": "ULTRA-COVERED — wizard navigation + composer-aware + step-menu contract"
+    },
+    "KioskAppComponent.vue": {
+      "count": 25,
+      "verdict": "WELL-COVERED — offline queue + a11y + analytics + idle timer paths"
+    },
+    "KioskUpsellComponent.vue": {
+      "count": 10,
+      "verdict": "ADEQUATE — Upsell drives analytics + auth interceptor (medium fanout)"
+    },
+    "pos-wizard.js": {
+      "count": 35,
+      "high_value_samples": [
+        "tests/Feature/Sentinels/WizardProfileMirrorSentinelTest.php",
+        "tests/js/posWizardComposerAware.spec.js",
+        "tests/js/kioskWizardNavigation.spec.js"
+      ],
+      "verdict": "WELL-COVERED — WizardProfileMirrorSentinel locks profile contract, Vanilla JS but ~5964 LOC critical mass"
+    },
+    "FiscalSequenceService.php": {
+      "count": 17,
+      "high_value_samples": [
+        "tests/load/RushMidiSimulationTest.php",
+        "tests/Feature/Fiscal/FiscalAllocOrphanRetryTest.php",
+        "tests/Feature/Fiscal/FiscalHardeningMinorTest.php"
+      ],
+      "verdict": "ADEQUATELY-COVERED — load test + alloc-orphan-retry + hardening; LOCK_FISCAL_WGS_Z6_P1 documents single exception"
+    },
+    "ZReportService.php": {
+      "count": 33,
+      "verdict": "ULTRA-COVERED — daily close lifecycle + chain verify + multi-branch"
+    },
+    "AuditLogService.php": {
+      "count": 40,
+      "verdict": "ULTRA-COVERED — write/verify chain HMAC + 13 production paths converge here"
+    },
+    "BranchScope.php": {
+      "count": 59,
+      "high_value_samples": [
+        "tests/Feature/Branch/BranchScopeCoverageSentinelTest.php (20-model baseline)",
+        "tests/Feature/Branch/OrderBranchIsolationTest.php",
+        "tests/Feature/Branch/BranchDeactivationTokenRevokeTest.php"
+      ],
+      "verdict": "ULTRA-COVERED — 20-model baseline-locked + isolation + token-revoke + fiscal-identity"
+    },
+    "IdempotencyKeyMiddleware.php": {
+      "count": 21,
+      "high_value_samples": [
+        "tests/Feature/Sentinels/IdempotencyMiddlewareSentinelTest.php",
+        "tests/Feature/Security/IdempotencyCrossUserLeakSentinelTest.php",
+        "tests/Feature/Orders/IdempotencyBranchScopedTest.php",
+        "tests/Feature/PaymentNoopIdempotencyTest.php",
+        "tests/js/sentinels/posOrderIdempotency409Handler.spec.js"
+      ],
+      "verdict": "ULTRA-COVERED — middleware sentinel + cross-user leak guard + branch-scoped + 409 handler"
+    },
+    "PricingService.php": {
+      "count": 34,
+      "high_value_samples": [
+        "tests/Unit/Services/Pricing/MenuRoleAdjustedAddonPriceTest.php",
+        "tests/Unit/Services/Pricing/TaxCalculatorTest.php",
+        "tests/Unit/Services/Pricing/DiscountCalculatorTest.php"
+      ],
+      "verdict": "ULTRA-COVERED — pricing SSOT split into unit tests per sub-concern (tax, discount, addon role)"
+    },
+    "OrderStateMachine.php": {
+      "count": 27,
+      "high_value_samples": [
+        "tests/Unit/Domain/Order/OrderStateMachineTest.php",
+        "tests/js/sentinels/kdsV2MultiBumpSentinel.spec.js",
+        "tests/js/sentinels/kdsHistoryDrawerSentinel.spec.js"
+      ],
+      "verdict": "ULTRA-COVERED — domain unit test + KDS multi-bump race sentinel + history drawer sentinel"
+    }
+  },
+  "sentinels_total_count": 415,
+  "sentinels_avg_per_frozen": 29.6,
+  "sentinels_verdict": "EXCELLENT — every frozen file has at least 6 sentinels; the 3 most-trafficked (BranchScope=59, PaymentComponent=56, KioskWizardComponent=42, AuditLogService=40) are ULTRA-LOCKED",
+
+  "migration_risks": [
+    {
+      "frozen_file": "FiscalSequenceService.php",
+      "table_column": "orders.fiscal_sequence_no",
+      "readers": ["FiscalSequenceService.php:101 ->max('fiscal_sequence_no')"],
+      "migrations_touching": [
+        "database/migrations/2026_04_22_000001_add_fiscal_sequence_no_to_orders.php (column origin)",
+        "database/migrations/2026_05_09_200000_add_fiscal_alloc_error_at_to_orders.php (adjacent column)",
+        "database/migrations/2026_05_19_200000_add_unique_parent_order_id_to_orders.php (orders constraint)"
+      ],
+      "risk": "LOW — column ADD-only since origin; no DROP/RENAME migration detected. Adjacent column adds (fiscal_alloc_error_at) don't break FiscalSequenceService."
+    },
+    {
+      "frozen_file": "ZReportService.php / AuditLogService.php",
+      "table": "z_reports + audit_logs",
+      "migrations_touching": [
+        "database/migrations/2026_04_22_000002_create_audit_logs_table.php",
+        "database/migrations/2026_04_22_000003_create_z_reports_table.php",
+        "database/migrations/2026_05_24_050000_add_z_reports_order_payments_sqlite_parity_triggers.php",
+        "database/migrations/2026_05_08_140200_alter_z_reports_add_cash_columns.php",
+        "database/migrations/2026_05_09_160000_add_z_reports_delete_trigger_immutability.php",
+        "database/migrations/2026_05_10_010000_secure_fiscal_audit_trail_immutability.php"
+      ],
+      "risk": "MEDIUM-LOW — z_reports gets ALTER ADD COLUMN migrations + immutability triggers. ALTER ADD is non-breaking; immutability triggers ENFORCE the frozen contract (DELETE blocked). 2026-05-24 SQLite parity migration NEW post-baseline — non-frozen migration; cross-check that triggers do not break SELECT paths reading z_reports."
+    },
+    {
+      "frozen_file": "PricingService.php / OrderStateMachine.php / others",
+      "table_column": "order_items.composition_snapshot",
+      "readers": ["PricingService.php:291 'composition_snapshot' => json_encode(...)"],
+      "migrations_touching": [
+        "database/migrations/2026_04_22_000020_add_composition_snapshot_to_order_items.php (origin)",
+        "database/migrations/2026_05_24_040211_add_composition_snapshot_immutability_trigger.php (NEW post-baseline)",
+        "database/migrations/2026_05_24_050000_add_z_reports_order_payments_sqlite_parity_triggers.php (NEW post-baseline)"
+      ],
+      "risk": "MEDIUM — 2026-05-24 NEW migration adds immutability trigger ON UPDATE composition_snapshot. This ENFORCES frozen contract (NF525 SSOT breach prevention). Cross-check: PricingService.php writes composition_snapshot ONCE at order creation (line 291); no UPDATE path. Trigger SAFE iff no legitimate UPDATE on this column exists. Recommend Z6/W7 verification."
+    },
+    {
+      "frozen_file": "BranchScope.php",
+      "columns_used": "branch_id (across 20 scoped models)",
+      "migrations_touching_count": 46,
+      "risk": "LOW — branch_id is foundational column on most tables; ADD-only since project inception. BranchScopeCoverageSentinelTest locks the 20-model baseline. New models added with branch_id get caught by sentinel."
+    },
+    {
+      "frozen_file": "IdempotencyKeyMiddleware.php",
+      "external_storage": "Redis (RedisIdempotencyKeyRepository) — no schema",
+      "risk": "NONE — middleware reads cache layer, not DB"
+    }
+  ],
+  "migration_risks_verdict": "LOW-MEDIUM overall — composition_snapshot immutability trigger ADDED 2026-05-24 (post-baseline) is the only newer migration touching frozen-file write path. Recommend Z6/W7 verify trigger doesn't break legitimate writes (creation path).",
+
+  "v2_refactor_strategy": [
+    {
+      "frozen_file": "PaymentComponent.vue",
+      "current_loc": 1478,
+      "claimed_loc_brain": 1625,
+      "v2_strategy": "Split 4 payment modes (CASH, CARD, SPLIT, TPE) into mode-specific child components: PaymentCashMode.vue + PaymentCardMode.vue + PaymentSplitMode.vue + PaymentTpeMode.vue. Parent PaymentComponent.vue becomes thin orchestrator (~300 LOC) routing to mode child. Sentinel: paymentComponentEmitsJsdocList stays on parent; new per-mode sentinels added per child.",
+      "preconditions": [
+        "PaymentComponentPropMutationSentinel must extend to child components",
+        "Cross-cutting concerns (loyalty CTA, split payment, receipt) need contract documentation",
+        "V2 wave dedicated to UI refactor (NOT V1)",
+        "Owner gate explicit (PaymentComponent is V1 untouched protected)"
+      ],
+      "risk": "HIGH — frozen status means owner views any change as risk. V2-only.",
+      "estimated_effort": "3-5 days + 1 day per child component sentinel suite"
+    },
+    {
+      "frozen_file": "PricingService.php",
+      "current_loc": 814,
+      "v2_strategy": "Split into 3 services: PriceQuoteService (immutable preview, no DB write) + PriceCalculateService (order creation, writes composition_snapshot) + PricePolicyService (tax/discount/addon-role rules). PricingService.php becomes Facade delegating to 3 sub-services. composition_snapshot creation MOVES to PriceCalculateService:line equivalent of current 266-291.",
+      "preconditions": [
+        "Maintain calculateOrder() public signature exact (10 production callers depend)",
+        "composition_snapshot byte-for-byte identical output between V1 and V2",
+        "Sentinel: paymentComponentEmitsJsdocList unchanged",
+        "Cross-validate: NF525 chain bit-identical pre/post refactor"
+      ],
+      "risk": "VERY HIGH — composition_snapshot is NF525 SSOT. Any byte drift = audit chain re-hash = compliance breach.",
+      "estimated_effort": "5-7 days + 3 days NF525 chain validation"
+    },
+    {
+      "frozen_file": "KioskWizardComponent.vue",
+      "current_loc": 3104,
+      "v2_strategy": "Split per template-alias (4 wizard templates per BRAIN K-004 commit 62f748bca): WizardSandwichComponent + WizardTacosComponent + WizardBurgerComponent + WizardMenuFormuleComponent. KioskWizardComponent becomes ~400 LOC orchestrator routing to template child.",
+      "preconditions": [
+        "kioskCustomization helper adaptatif (BRAIN §KDS plan) stays canonical",
+        "POS Vanilla JS pos-wizard.js MIRRORS V2 split (cross-system parity)",
+        "Sentinel: posWizardComposerAware + WizardProfileMirrorSentinel must extend per template"
+      ],
+      "risk": "HIGH — multi-template orchestration; pos-wizard.js Vanilla parity hard to maintain",
+      "estimated_effort": "5-7 days + 2 days pos-wizard.js mirror"
+    },
+    {
+      "frozen_file": "pos-wizard.js",
+      "current_loc": 5964,
+      "v2_strategy": "Migrate to Vue 3 SFC (PosWizardSPA.vue) compiled via Mix. Vanilla JS legacy removed. Single-page caissier UX preserved. Files reduce to ~2500 LOC via Vue reactivity vs hand-rolled DOM.",
+      "preconditions": [
+        "Owner explicit gate (frozen 'design parfait')",
+        "100% feature parity (currently version S25-SinglePage)",
+        "WizardProfileMirrorSentinel updated for SFC contract",
+        "Bundle size NOT inflated (Vue3 + composition < hand-rolled DOM)"
+      ],
+      "risk": "VERY HIGH — owner sentiment 'design parfait' = strong NO without explicit override",
+      "estimated_effort": "15+ days + week-long UAT"
+    },
+    {
+      "frozen_file": "BranchScope.php",
+      "current_loc": 42,
+      "v2_strategy": "V2 SaaS multi-tenant — extend `apply` to support tenant_id + branch_id composite scoping. Current Le Cayenne V1 single-tenant uses branch_id only. SaaS V2 needs tenant→branch hierarchy.",
+      "preconditions": [
+        "Models gain tenant_id column (new migration)",
+        "BranchScopeCoverageSentinelTest baseline GROWS (currently 20 models, V2 adds tenant_id everywhere)",
+        "WizardProfileBranchScope variant adapted for tenant"
+      ],
+      "risk": "MEDIUM — straightforward extension but cross-cuts 20 models",
+      "estimated_effort": "10+ days + 3 days sentinel adaptation"
+    }
+  ],
+  "v2_refactor_verdict": "DOCUMENTED ONLY. Z12 makes NO recommendation to actually execute these refactors in V1. All V2-deferred. Cross-reference: BRAIN §1 NORTH STAR + 'No useless complexity V1' mantra.",
+
+  "proposal_docs_count": 97,
+  "proposal_dm1_compliance": {
+    "total_proposals": 97,
+    "proposals_referencing_frozen": {
+      "PaymentComponent": 29,
+      "PosV5TrancheRow": 15,
+      "KioskWizardComponent": 13,
+      "KioskAppComponent": 22,
+      "KioskUpsellComponent": 16,
+      "pos-wizard": 5,
+      "FiscalSequenceService": 2,
+      "ZReportService": 3,
+      "AuditLogService": 4,
+      "BranchScope": 7,
+      "IdempotencyKeyMiddleware": 3,
+      "PricingService": 4,
+      "OrderStateMachine": 6
+    },
+    "lock_documents_count": 9,
+    "lock_documents": [
+      "plans/LOCK_FISCAL_TEST_ANON_CLASS_2026-05-18.md",
+      "plans/LOCK_FISCAL_WGS_Z6_P1_2026-05-19.md",
+      "plans/LOCK_KIOSK_SALADE_2026-05-11.md",
+      "plans/LOCK_PAY_PaymentComponent_currency_2026-05-23.md",
+      "plans/LOCK_POS_LOYALTY_REDEEM_UI_2026-05-18.md",
+      "plans/LOCK_POS_WIZARD_XSS_ADDENDUM_2026-05-23.md",
+      "plans/LOCK_POS_WIZARD_XSS_ESCAPE_2026-05-17.md",
+      "plans/LOCK_PRICING_W2_COMPOSITION_UPDATING_GUARD_2026-05-18.md",
+      "plans/LOCK_PRICING_W5_DB_UPDATE_TRIGGER_2026-05-18.md"
+    ],
+    "dm1_compliance_verdict": "CLEAN — 97 PROPOSALs exist but 0 LOC actually changed in §7. Discipline: PROPOSAL = doc-only artifact, never auto-applied. LOCK_* documents (9) are formal override gates for surgical patches when a frozen-file touch becomes UNAVOIDABLE. Even LOCK_FISCAL_WGS_Z6_P1 (current open exception per memory) did NOT introduce a LOC diff vs baseline d601fdd34 — only the test/sentinel path was modified."
+  },
+
+  "adversarial_dependency_drift": [
+    {
+      "risk_type": "Hidden dependency drift",
+      "scenario": "KioskWizardComponent.vue imports `sanitizeKioskCustomerFacingText` from kioskDisplayText helper. If kioskDisplayText.js signature changes (e.g. returns Promise instead of string), the frozen file breaks at runtime without a §7 sentinel firing.",
+      "detection": "Runtime — typically caught by E2E flow tests, not by static §7 sentinels",
+      "mitigation_v1_existing": "kioskDisplayText helper has its own unit tests (likely — verify in V1.0.X)",
+      "mitigation_v2_proposed": "Add a 'frozen-dep-hash' sentinel: hash the IMPORT list of each §7 file + the public-signature hash of every imported helper. Sentinel fails when any imported helper changes interface."
+    },
+    {
+      "risk_type": "Signature compatibility (caller side)",
+      "scenario": "PricingService::calculateOrder signature is depended on by 10 production paths. If a CALLER passes wrong arg type (e.g. OrderService.php passes Collection where array expected), the frozen file's behavior diverges silently.",
+      "detection": "PHPStan / Psalm level (static) — but project does not appear to enforce static analysis at this level",
+      "mitigation_v1_existing": "Type-hinted PHP 8 args + PHPUnit feature tests covering callers",
+      "mitigation_v2_proposed": "Enable phpstan level 8 + add a 'frozen-caller-signature' sentinel"
+    },
+    {
+      "risk_type": "Implicit DB contract",
+      "scenario": "FiscalSequenceService.php:101 reads `orders.fiscal_sequence_no` via Eloquent ->max(). If a future migration changes the column type (BIGINT → DECIMAL or NULLABLE behavior), the frozen file's PHP-cast behavior changes.",
+      "detection": "Migration review — current state: 3 migrations touch this column (all ADD-only)",
+      "mitigation_v1_existing": "FiscalAllocOrphanRetryTest + FiscalHardeningMinorTest exercise the path; RushMidiSimulationTest stress-tests under contention",
+      "mitigation_v2_proposed": "Add a 'frozen-schema-contract' sentinel that asserts orders.fiscal_sequence_no column type/nullability/index"
+    },
+    {
+      "risk_type": "Trigger interaction with frozen write path",
+      "scenario": "2026-05-24 migration `add_composition_snapshot_immutability_trigger.php` adds DB trigger BEFORE UPDATE on order_items.composition_snapshot. PricingService.php:291 writes this column ONCE at creation. If any legitimate UPDATE path exists (e.g. migration repair script), trigger SIGNALs and frozen-file behavior implicitly relies on no-update assumption.",
+      "detection": "Z6/W7 verify ZERO UPDATE statements on composition_snapshot column in app/ + database/",
+      "mitigation_v1_existing": "PROPOSAL discipline + LOCK_PRICING_W5_DB_UPDATE_TRIGGER_2026-05-18.md exists",
+      "mitigation_v2_proposed": "Add 'frozen-write-once' sentinel: grep app/ for `composition_snapshot.*=>` and assert all are at row-creation only"
+    },
+    {
+      "risk_type": "Cross-component prop contract drift",
+      "scenario": "PaymentComponent.vue → PosV5TrancheRow.vue prop contract (both frozen). If a non-frozen consumer (e.g. PosCounterCollectModal.vue) emits a prop shape that PaymentComponent re-shapes via spread, downstream PosV5TrancheRow may receive drifted shape.",
+      "detection": "paymentComponentPropMutation sentinel + posPaymentComponentContract sentinel",
+      "mitigation_v1_existing": "Both sentinels EXIST and cover the contract",
+      "mitigation_v2_proposed": "Already adequate. Optionally: TypeScript migration for hard prop typing."
+    }
+  ],
+
+  "frozen_zone_integrity_summary": {
+    "loc_diff_total": 0,
+    "loc_diff_per_file_max": 0,
+    "loc_diff_per_file_min": 0,
+    "md5_verified_critical_files": 4,
+    "md5_verified_critical_files_list": [
+      "PaymentComponent.vue",
+      "FiscalSequenceService.php",
+      "pos-wizard.js",
+      "PricingService.php"
+    ],
+    "md5_drift_detected": 0,
+    "last_touch_post_baseline_count": 0,
+    "lock_docs_open": 1,
+    "lock_docs_open_list": ["plans/LOCK_FISCAL_WGS_Z6_P1_2026-05-19.md (still applies per memory)"]
+  },
+
+  "verdict_detail": "GREEN — 14/14 frozen files = 0 LOC diff vs baseline d601fdd34. MD5 cross-check IDENTICAL on 4 critical. All last-touch dates pre-date baseline. 415 sentinels collectively cover §7 (avg 29.6 per file). 97 PROPOSAL docs catalogued, 9 LOCK_* override gates documented. DM1 compliance CLEAN — no auto-fix on §7 detected. Adversarial risks (dependency drift / DB trigger interaction) identified but mitigated by existing sentinels or documented as V1.0.X backlog. Migration risks LOW-MEDIUM with composition_snapshot trigger as primary watch item (recommend Z6/W7 cross-check no legitimate UPDATE path exists).",
+
+  "recommendations_v1_0_x_backlog": [
+    "Add frozen-dep-hash sentinel: hash IMPORT list of each §7 file; fails on import-signature drift",
+    "Add frozen-schema-contract sentinel: assert column type/nullability/index for tables read by §7 files",
+    "Add frozen-write-once sentinel: assert composition_snapshot has zero UPDATE statements in app/",
+    "Cross-check 2026-05-24 composition_snapshot immutability trigger doesn't break legitimate writes (Z6/W7 owns this)",
+    "Update BRAIN.md PaymentComponent.vue claimed LOC (1625) to actual (1478)"
+  ],
+
+  "files_audited": 14,
+  "callers_mapped": 91,
+  "dependencies_mapped": 89,
+  "sentinels_catalogued": 415,
+  "proposals_audited": 97,
+  "lock_docs_audited": 9,
+  "migrations_cross_referenced": 49,
+  "verdict_short": "GREEN"
+}

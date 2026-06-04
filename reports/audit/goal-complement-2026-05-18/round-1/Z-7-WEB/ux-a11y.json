@@ -1,0 +1,57 @@
+{
+  "zone": "Z-7-WEB",
+  "role": "UX-A11y",
+  "round": 1,
+  "audited_at": "2026-05-18T09:02:00Z",
+  "scope": {
+    "viewports": ["mobile 390x844", "tablet 768x1024", "desktop 1280x800", "wide 1920x1080"],
+    "wcag_target": "2.1 AA",
+    "tooling": "axe-core 4.x available at node_modules/axe-core (verified)"
+  },
+  "summary": "Existing 76 E2E tests sweep raw labels (RAW_LABEL_FORBIDDEN regex) across 4 viewports — all GREEN. ARIA: cart badge aria-live (components.jsx:67), promo error role=alert (funnel.jsx:187), notes char counter aria-live=polite (funnel.jsx:201, flows.jsx:90), OTP cells aria-label (account-v2.jsx:201), profile toggles aria-pressed (loyalty-v2.jsx:55), modal close aria-label (components.jsx:155). Touch targets 44px+ enforced via styles-mobile.css. Color palette flat orange/yellow/ink/cream — verified contrast at hero/buttons.",
+  "findings_p0": [],
+  "findings_p1": [],
+  "findings_p2": [
+    {
+      "id": "Z-7-A11Y-P2-1",
+      "anchor": "/Users/1millnonstop/Downloads/web/account-v2.jsx:75-76",
+      "title": "Login/Signup tabs lack role='tab' + tabpanel ARIA pattern",
+      "evidence": "account-v2.jsx:75 <button className=\"lcf-tab\">Connexion</button> + signup tab. Visually tabbed but no role=tab/tablist/aria-selected. Keyboard nav via arrow keys not handled.",
+      "recommendation": "Add role='tablist' to wrapper, role='tab' + aria-selected on each, role='tabpanel' on form section, arrow-key handler. Defer to V1.0.2 (touch existing comp).",
+      "scope_minimal": false,
+      "backlog_v102": "W-A11Y-TAB-ARIA"
+    },
+    {
+      "id": "Z-7-A11Y-P2-2",
+      "anchor": "/Users/1millnonstop/Downloads/web/components.jsx:77",
+      "title": "Burger button has aria-label='Menu' but no aria-expanded reflecting drawer state",
+      "evidence": "components.jsx:77 <button className=\"lc-nav-burger\" onClick={...} aria-label=\"Menu\"> — opens mobile menu but aria-expanded not set.",
+      "recommendation": "Add aria-expanded={open} + aria-controls='lc-mobile-menu' to burger button. Inline-edit ≤5 LOC = scope-minimal allowed.",
+      "scope_minimal": true,
+      "backlog_v101": "INLINE-EDIT-EXCEPTION"
+    },
+    {
+      "id": "Z-7-A11Y-P2-3",
+      "anchor": "/Users/1millnonstop/Downloads/web/flows.jsx:52",
+      "title": "Cart qty +/- buttons lack aria-label",
+      "evidence": "flows.jsx:52 <button onClick={()=>updateQty(idx, -1)}>−</button> — screen reader hears just '−' character.",
+      "recommendation": "aria-label='Diminuer la quantité' / 'Augmenter la quantité'. Inline-edit OK.",
+      "scope_minimal": true,
+      "backlog_v101": "INLINE-EDIT-EXCEPTION"
+    },
+    {
+      "id": "Z-7-A11Y-P2-4",
+      "anchor": "/Users/1millnonstop/Downloads/web/funnel.jsx:152",
+      "title": "Pickup day calendar buttons lack aria-label with full date",
+      "evidence": "funnel.jsx:152 <button>AUJ / 14</button> — screen reader hears 'AUJ 14' without context. Could be 'Aujourd''hui jeudi 14 mai'.",
+      "recommendation": "Add aria-label with full date verbose. Defer to V1.0.2 (touch funnel + date logic).",
+      "scope_minimal": false,
+      "backlog_v102": "W-A11Y-PICKUP-CAL"
+    }
+  ],
+  "findings_p3": [],
+  "verdict": "A11Y GOOD. Existing 76 tests sweep raw labels GREEN × 4 viewports. ARIA solid on critical surfaces (cart/promo/notes/OTP/modal). 4 P2 defensive ARIA polish backlogged. Recommend axe-core sweep added to E2E for ongoing regression detection (action this cycle).",
+  "evidence_artifacts": [
+    "reports/test-e2e/goal-complement-2026-05-18/Z-7-WEB/round-1/baseline-76pass.txt"
+  ]
+}

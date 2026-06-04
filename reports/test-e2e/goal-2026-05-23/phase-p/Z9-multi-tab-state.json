@@ -1,0 +1,351 @@
+{
+  "agent": "Z9 Multi-tab state",
+  "mission": "Multi-tab + concurrent admin/cashier state coherence — FoodKing Le Cayenne V1 BRAIN-WAVE-P 2026-05-24",
+  "scope_audited": [
+    "BroadcastChannel API usage (cross-tab)",
+    "Multi-admin same-user edit conflicts",
+    "Multi-cashier same-order encaisser race",
+    "Multi-chef same-order bump race",
+    "Multi-admin stock toggle simultaneity",
+    "Cashier+admin same-order touch",
+    "Echo broadcast handler idempotency per-tab",
+    "localStorage state sites + cross-tab divergence",
+    "Session/Sanctum token tab-isolation",
+    "beforeunload + reload + force-quit behavior",
+    "Adversarial: cross-tab logout, offline, bandwidth"
+  ],
+  "broadcast_channel_api_usage": "partial",
+  "broadcast_channel_evidence": {
+    "only_consumer": "resources/js/helpers/kioskOfflineQueue.js:47-68",
+    "channel_name": "kiosk-offline-queue-sync",
+    "tab_id": "kiosk-tab-${random}",
+    "purpose": "Coordinates the kiosk IndexedDB offline queue between bornes that share the same browser profile — broadcasts 'queue-updated' / 'lock-acquired' / 'lock-released' so each tab reloads its in-memory cache instead of working on stale snapshots.",
+    "lock_mechanism": "DB-backed lock entry (IndexedDB key kiosk:offline-queue:lock) with TTL 60s + 20s heartbeat — fully multi-tab-safe (acquireLock at line 300, refreshLock at line 319, releaseLock at line 331).",
+    "missing_consumers": [
+      "auth.js — no cross-tab login/logout sync",
+      "posCart.js — no cross-tab cart sync between admin tabs",
+      "kds.js — bumped_items_v1 localStorage map not synced (designed local-only, label.kds_bump_local_only_notice surfaces the caveat)",
+      "kioskFilter.js — no cross-tab filter sync",
+      "eventContract.js — correlation dedupe per-tab by design (sessionStorage, documented at lines 88-94)"
+    ]
+  },
+  "multi_admin_conflict_pattern": {
+    "verdict": "AMBER — last-write-wins on entities + Echo CatalogChanged broadcast for refresh",
+    "scenario_a_two_admin_tabs_edit_same_item": {
+      "optimistic_locking_check": "absent — grep on ItemController/ItemRequest/ItemService for If-Match, If-Unmodified-Since, expected_updated_at, version_id all returned empty",
+      "broadcast_compensation": "CatalogChanged event fired on save (app/Listeners/InvalidateMenuProjectionOnIngredientChange.php:37 + PersistCatalogChangedToOutbox) — tabs subscribed via onEvents() refresh their views, so a losing-tab editor sees the new state on next interaction",
+      "residual_risk": "If admin B saves stale form data 1s after admin A, admin A's changes are silently overwritten — no UI warning, no diff modal, no version mismatch error",
+      "impact_v1_le_cayenne": "LOW — Le Cayenne is single-restaurant single-admin operationally; the multi-admin scenario is theoretical for V1",
+      "v2_saas_concern": "elevated — multi-tenant SaaS with multiple admins per branch must add If-Match / version_id ETag pattern"
+    },
+    "scenario_b_kiosk_menu_invalidation_on_admin_edit": {
+      "verdict": "GREEN",
+      "evidence": "resources/js/components/frontend/kiosk/KioskAppComponent.vue:540-580 — _subscribeEchoChannel binds CatalogChanged + ComposerProfileChanged + ItemAvailabilityChanged + CouponChanged handlers, each routes through useCatalogChangeNotifier which shows a toast + re-fetches the catalog mid-session"
+    }
+  },
+  "multi_cashier_conflict_pattern": {
+    "verdict": "GREEN — backend serialization + typed 409 conflict",
+    "scenario_two_cashiers_encaisser_same_q10_kiosk_cash_order": {
+      "code_path": "app/Services/PaymentService.php:220-310",
+      "race_winner_path": "Cashier A wins lockForUpdate() at line 220 → flips payment_status=PAID → writes audit_logs row 'order.counter_payment_confirmed' with user_id=A",
+      "race_loser_path": "Cashier B's transaction enters at line 278 (PaymentStatus::PAID branch) → reads audit_logs collector → throws PaymentAlreadyCollectedException at line 305 if collectorUserId !== currentUserId",
+      "frontend_handling": "resources/js/components/admin/pos/PaymentComponent.vue:931-936 — err._idempotencyConflict and 409 error_code=payment_already_collected both surface via alertService.error() and skip the success-modal path (no phantom drawer-open simulation)",
+      "v5_5_same_cashier_replay_path": "Lines 292-298 short-circuit to 200 no-op if currentUserId === collectorUserId — preserves middleware-cache-miss / double-tap replay safety",
+      "audit_chain": "K2-HEAL-01 healed at 2026-05-24 (commit cluster GOAL-K2-HEAL-01) — pre-heal cashier B got silent 200 + phantom drawer-open + till-count drift. Verified healed via Phase J adversarial + Phase K.4 deep audit"
+    },
+    "scenario_two_cashiers_pos_cart_same_machine_same_user": {
+      "verdict": "GREEN — per-cashier-scoped localStorage key prevents cross-cashier cart leak",
+      "key_format": "pos_cart_v3:b{branch_id}:u{user_id}",
+      "evidence": "resources/js/store/modules/posCart.js:19-100 — getScopedKey() returns null until setScope() is dispatched, loadCartFromStorage() at line 55-80 cross-checks branchId+userId on every restore",
+      "v1_caveat": "Same user logged into 2 admin tabs sees stale in-memory carts (no storage event listener), but localStorage write/read race is benign — last-write-wins on persistence, and posCart/resetCart on payment success clears both."
+    }
+  },
+  "multi_chef_conflict_pattern": {
+    "verdict": "GREEN — designed-in local-only + backend idempotent state machine",
+    "design": "Per-tab kds.bumped_items_v1 localStorage map is INTENTIONALLY local-only — chef on station 1 bumps an item; that bump does not propagate to station 2's local map. The order auto-transition ACCEPT→PREPARING (KdsV2Grid.vue:235-249 watch on activeOrders) fires via shouldAutoTransition helper.",
+    "ui_caveat_surfaced": "label.kds_bump_local_only_notice rendered via KdsStatusBanner.vue:117 + KdsOrderCard.vue:34 — chef sees notice, no surprise",
+    "backend_safety": {
+      "patch_path": "KdsV2Grid.vue:291-346 — chef Prêt tap → $emit('change-status') → KitchenDisplaySystemComponent:1560-1578 onV2ChangeStatus → axios PATCH with X-Idempotency-Key UUID v4 (per-tap) → backend OrderStateMachine.allows + lockForUpdate",
+      "duplicate_patch_handling": "Wave V 2026-05-21 removed 3s undo window; concurrent PATCH on same order from 2 stations → backend serializes via lockForUpdate, second PATCH returns 409 either via IdempotencyKeyConflict or via InvalidTransition (state machine refuses PREPARING→PREPARING)",
+      "frontend_409_handling": "KitchenDisplaySystemComponent.vue:1568-1573 silently swallows 409 + triggers _debouncedRefresh(), so the losing-tab UI re-syncs with backend truth"
+    },
+    "verified_phase": "M-KDS-3 multi-bump race verified GREEN (per mission brief)"
+  },
+  "echo_handler_idempotency": {
+    "verdict": "GREEN — handlers are re-fetch by construction, plus correlation-id dedupe",
+    "correlation_id_dedupe": {
+      "code_path": "resources/js/services/eventContract.js:99-285",
+      "capacity": "SEEN_CORRELATION_CAP = 2048",
+      "ttl": "CORRELATION_DEDUPE_TTL_MS = 10 minutes",
+      "storage": "sessionStorage (per-tab, key foodking_correlation_dedupe_v1) with debounced 250ms write + pagehide synchronous flush",
+      "dedupe_key": "{eventType}:branch:{branchId}:{correlationId} (eventContract.js:260-268)",
+      "scope_caveat": "Per-tab dedupe by design — eventContract.js:88-94 explicitly documents: 'sessionStorage is per-tab; dedupe is NOT shared across browser tabs. Each tab maintains its own window. Cross-tab dedupe would require BroadcastChannel + localStorage and is out of scope.' Acceptable: each tab independently dedupes its own seen events; no risk of double-handle within a tab; cross-tab double-handle is the natural cost of having 2 listeners on the same Pusher channel and is harmless because handlers are idempotent re-fetches."
+    },
+    "per_handler_idempotency_audit": [
+      {
+        "surface": "KDS",
+        "file": "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue:1841-1880",
+        "events": "OrderStatusChanged, OrderCreated, OrderPaidAtCounter, ItemAvailabilityChanged, OrderTableChanged",
+        "handler_action": "_debouncedRefresh() — full GET refresh, idempotent by construction. ItemAvailabilityChanged also dispatches into kdsInflight store (10min TTL lazy purge, mutation idempotent)."
+      },
+      {
+        "surface": "OSS",
+        "file": "resources/js/components/admin/orderStatusScreen/PreparingAndReadyComponent.vue:257-289",
+        "events": "OrderStatusChanged, OrderCreated",
+        "handler_action": "this.list() refetch — idempotent. _markNewReady has explicit anti-double-fire guard via _echoMarkedReady Set (lines 269-277) so OSS Echo→list() cascade doesn't double-chime."
+      },
+      {
+        "surface": "POS PosComponent",
+        "file": "resources/js/components/admin/pos/PosComponent.vue:2660-2716",
+        "events": "OrderCreated, OrderStatusChanged, OrderPaidAtCounter, ItemAvailabilityChanged, CatalogChanged",
+        "handler_action": "loadKioskCashOrders + loadActiveOrdersStats + loadReadyOrders — all idempotent GET refresh. _notifyNewOrder protected by destroyed-guard (line 2672)."
+      },
+      {
+        "surface": "POS PosOrdersTrackerComponent",
+        "file": "resources/js/components/admin/pos/PosOrdersTrackerComponent.vue:656-695",
+        "events": "OrderCreated, OrderStatusChanged, OrderPaidAtCounter",
+        "handler_action": "this.fetchOrders() — idempotent"
+      },
+      {
+        "surface": "Kiosk App",
+        "file": "resources/js/components/frontend/kiosk/KioskAppComponent.vue:540-580",
+        "events": "ItemAvailabilityChanged, CatalogChanged, ComposerProfileChanged, CouponChanged",
+        "handler_action": "Cache invalidation + re-fetch — idempotent. CatalogChange runs through useCatalogChangeNotifier composable which shows a toast (single-fire by composable contract)."
+      },
+      {
+        "surface": "Kiosk Waiting",
+        "file": "resources/js/components/frontend/kiosk/KioskWaitingComponent.vue:237-281",
+        "events": "OrderStatusChanged",
+        "handler_action": "Polling cycle re-runs immediately — idempotent. AUDIT-P2-G guard at line 299 prevents overlapping poll on Echo+interval collision."
+      },
+      {
+        "surface": "Admin Stock Dashboard",
+        "file": "resources/js/components/admin/stock/StockRuptureDashboardComponent.vue:472-486",
+        "events": "ItemAvailabilityChanged",
+        "handler_action": "_debouncedReload — idempotent"
+      },
+      {
+        "surface": "Admin Outbox Observability",
+        "file": "resources/js/components/admin/observability/OutboxOverviewComponent.vue",
+        "handler_action": "_debouncedReload (visibilitychange + poll) — idempotent"
+      }
+    ],
+    "global_guard": "On every Echo subscribe, all components call unsubscribeEcho() first to prevent duplicate listeners on re-mount — pattern documented as [AUDIT-52-BUG2] / [AUDIT-P51-BUG2]"
+  },
+  "localStorage_state_sites": [
+    {
+      "file": "resources/js/store/index.js:244-292",
+      "library": "vuex-persistedstate (default = window.localStorage key 'vuex')",
+      "paths": [
+        "auth (authToken, authStatus, authBranchId, authInfo, authMenu, authPermission)",
+        "globalState",
+        "frontendCart",
+        "frontendSignup",
+        "GuestSignup",
+        "posCart (full Vuex module)",
+        "tableCart",
+        "kioskCart.branchId / orderRef / queueNumber / idempotencyKey / items / loyaltyDiscount / loyaltyCustomer / orderType / kioskToken / kioskMachineId",
+        "kioskSettings.contrast / pmr / audio / keyboardEnabled / idleMs / confirmMs / receiptMs / consentAnalytics / consentLoyalty"
+      ],
+      "cross_tab_risk": "HIGH — these are written to localStorage, which means a 'storage' event fires on every other tab on the same origin, but NO listener exists to consume it (verified by grep — zero matches for window.addEventListener('storage'). Tabs run on cached in-memory Vuex state until next axios round-trip."
+    },
+    {
+      "file": "resources/js/store/modules/posCart.js:19-100",
+      "key": "pos_cart_v3:b{branch_id}:u{user_id}",
+      "ttl": "POS_CART_TTL_MS = 2h",
+      "cross_tab_risk": "MEDIUM — scoped to (branch, user), so cashier-A-tab1 cart leaks to cashier-A-tab2 by design (same scope). Two POS tabs same user → last-write-wins on localStorage; in-memory carts diverge until next mount/restore."
+    },
+    {
+      "file": "resources/js/store/modules/kioskFilter.js:3-86",
+      "keys": "kiosk:filters, kiosk:customer_allergens",
+      "cross_tab_risk": "LOW — kiosk is single-tab per device (borne), multi-kiosk scenario uses different localStorage origins."
+    },
+    {
+      "file": "resources/js/store/modules/kds.js:1-87",
+      "key": "kds.bumped_items_v1",
+      "cross_tab_risk": "DESIGNED LOCAL — UI surfaces label.kds_bump_local_only_notice so the kitchen team knows station 1 bumps are not visible to station 2. Auto-transition (KdsV2Grid.vue:235-249) compensates — when chef on either station bumps the last item, the watcher fires onV2AutoPromote → PATCH → backend → broadcast → both stations re-sync the order status."
+    },
+    {
+      "file": "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue:1389,1680,1721",
+      "keys": "kds.hide_bump_info (banner dismissal)",
+      "cross_tab_risk": "TRIVIAL — UI preference"
+    },
+    {
+      "file": "resources/js/helpers/kioskOfflineQueue.js:11-12",
+      "keys": "kiosk:offline-queue:v2 + kiosk:offline-queue:lock",
+      "cross_tab_risk": "GREEN — explicitly multi-tab-safe via BroadcastChannel + IndexedDB-backed lock (heartbeat 20s, TTL 60s)"
+    },
+    {
+      "file": "resources/js/helpers/kioskOfflineQueueDb.js + kioskMenuCache.js + kioskReceiptPersistence.js + posOfflineQueueDb.js",
+      "store": "IndexedDB (NOT localStorage)",
+      "cross_tab_risk": "GREEN — IndexedDB has built-in cross-tab consistency via transactions"
+    },
+    {
+      "file": "resources/js/services/eventContract.js:101",
+      "key": "foodking_correlation_dedupe_v1 (sessionStorage)",
+      "cross_tab_risk": "PER-TAB BY DESIGN — sessionStorage is W3C per-tab. Acceptable: each tab independently dedupes; handlers are idempotent so cross-tab double-handle is harmless."
+    },
+    {
+      "file": "resources/js/app.js:90 + KioskShellComponent / maintenance flag",
+      "key": "kiosk_maintenance_mode (sessionStorage)",
+      "cross_tab_risk": "PER-TAB BY DESIGN"
+    }
+  ],
+  "session_inconsistency_risks": [
+    {
+      "id": "Z9-RISK-01",
+      "severity": "P2",
+      "title": "No 'storage' event listener — cross-tab logout not propagated",
+      "location": "resources/js/store/modules/auth.js:140-166 (authLogin/authLogout mutations) + resources/js/app.js:60-179 (axios 401 interceptor)",
+      "scenario": "Admin opens Tab A + Tab B. Tab A clicks Logout → authLogout mutation → state.authToken=null → vuex-persistedstate flushes to localStorage → 'storage' event fires on Tab B → NO LISTENER, Tab B keeps in-memory authToken. Tab B continues to operate until next axios call → server replies 401 (token revoked by /auth/logout endpoint) → axios interceptor (app.js:171-176) sets _401Handling guard, dispatches logout, redirects to /login. Window: between logout-click on A and first axios call on B (could be minutes if B is idle on a static screen).",
+      "impact": "LOW security risk — server has revoked the token so no privileged action can succeed silently. UX gap: Tab B may show stale data and only learn about logout when user interacts.",
+      "v2_saas_recommendation": "Add window.addEventListener('storage', e => if(e.key==='vuex' && parsed.auth.authStatus===false) router.push('/login'))"
+    },
+    {
+      "id": "Z9-RISK-02",
+      "severity": "P3",
+      "title": "Same user, 2 admin tabs editing same item — no optimistic lock",
+      "location": "app/Http/Controllers/Admin/ItemController.php (grep for If-Match / version_id returns empty)",
+      "scenario": "Admin Tab A loads /admin/items/42, Admin Tab B loads same item. A saves change → CatalogChanged broadcast → B receives via Echo → useCatalogChangeNotifier shows toast (kiosk path) BUT admin items page does not subscribe to CatalogChanged (no _subscribeEcho in ItemShowComponent / ItemListComponent / AvailabilityToggleComponent / CatalogStudioComponent — verified). B saves stale form 30s later → A's changes silently overwritten.",
+      "impact": "LOW for V1 Le Cayenne (single-admin operational reality). HIGH for V2 SaaS multi-tenant.",
+      "mitigations_in_place": "CatalogChanged broadcast exists for catalog projection invalidation; AvailabilityToggleComponent uses targeted PATCH on availability only, not full item edit"
+    },
+    {
+      "id": "Z9-RISK-03",
+      "severity": "P3",
+      "title": "Pos cart in-memory divergence between 2 POS tabs same user",
+      "location": "resources/js/store/modules/posCart.js:34-100",
+      "scenario": "Cashier opens 2 POS tabs. Tab A adds item → localStorage write fires 'storage' on Tab B → no listener → Tab B's in-memory Vuex state stays empty. Cashier finishes order on Tab A → posCart/resetCart clears storage → Tab B in-memory state still shows the deleted lines.",
+      "impact": "LOW — cashier physical workflow uses 1 POS tab at a time; in-memory divergence resolves on Tab B's next reload/scope-change. PaymentComponent uses backend-validated PricingService.calculateOrder so wrong cart cannot mint a wrong fiscal_sequence_no.",
+      "v1_le_cayenne_assessment": "Theoretical — no real-world report of cashier using 2 POS tabs at Le Cayenne"
+    },
+    {
+      "id": "Z9-RISK-04",
+      "severity": "P3",
+      "title": "Echo bandwidth — 10 tabs same user subscribed to same branch.{id} channel",
+      "location": "resources/js/bootstrap.js:308-396",
+      "scenario": "Owner has 10 admin tabs open on same machine, all subscribed to branch.1. Pusher Channels protocol opens 1 WebSocket connection per Echo instance, and 1 Echo instance per tab. 10 WS connections × ~50 events/min = 500 inbound messages/min per browser session.",
+      "impact": "LOW — Pusher Channels free tier handles 200 concurrent connections per app; Le Cayenne has 1 branch + small staff count. Bandwidth ~negligible. activityTimeout 30s + pongTimeout 5s (bootstrap.js:341-342) keep idle connections alive without storms.",
+      "v2_saas_recommendation": "Migrate to shared SharedWorker + BroadcastChannel relay to fan-out 1 WS per origin"
+    }
+  ],
+  "beforeunload_cleanup": {
+    "verdict": "PARTIAL — only kiosk payment cancel has explicit cleanup; POS/KDS/OSS rely on backend timeouts + idempotency",
+    "explicit_beforeunload_or_pagehide_handlers": [
+      {
+        "file": "resources/js/services/eventContract.js:171-179",
+        "purpose": "Synchronous flush of sessionStorage correlation dedupe on pagehide — no risk of lost dedupe writes when user reloads during debounce window"
+      },
+      {
+        "file": "resources/js/helpers/kioskAnalytics.js:203,332",
+        "purpose": "sendBeacon flush of analytics queue before unload — survives the unload"
+      },
+      {
+        "file": "resources/js/components/frontend/kiosk/KioskPaymentComponent.vue:738-750",
+        "purpose": "On cancelCardPayment, POST /frontend/order/change-status/{id} with reason=tpe_cancel_user to void the PENDING server order before tab closes. Prevents orphan PENDING orders."
+      }
+    ],
+    "scenarios": [
+      {
+        "scenario": "User reloads POS mid-order (before payment)",
+        "behavior": "posCart Vuex state restored from localStorage on remount via setScope/hydrateFromScope. Cart lines, subtotal, discount all recovered. restoredFromStorage=true triggers UI hint. acceptable",
+        "evidence": "posCart.js:538-549 hydrateFromScope mutation"
+      },
+      {
+        "scenario": "User closes tab mid-card-payment (TPE waiting)",
+        "behavior": "GAP — beforeunload/pagehide do not fire cancelCardPayment automatically. If user force-closes during TPE waiting state, the order stays PENDING server-side. Mitigation: Wave H pendingPaymentReconcile cron + payment timeout server-side (config payment.tpe_timeout_seconds) which retries the TPE acquire request and voids if abandoned.",
+        "impact": "LOW — orphan PENDING orders are reconciled within the configured timeout window by Reconcile worker (app/Console/Kernel.php cron jobs for PendingPaymentConfirmation)"
+      },
+      {
+        "scenario": "User force-quits browser (POS / Kiosk)",
+        "behavior": "localStorage retained (browser-level persistence). On next launch: vuex-persistedstate rehydrates Vuex modules. posCart restores via scoped key. kiosk receipt persistence (kioskReceiptPersistence.js helpers/IndexedDB) recovers any uncompleted receipt.",
+        "impact": "GREEN — designed-for-recovery"
+      },
+      {
+        "scenario": "User reloads KDS mid-shift",
+        "behavior": "kds.bumped_items_v1 restored from localStorage (loadMap at kds.js:11). Echo re-subscribes on mount. Order list refetched from backend. acceptable",
+        "evidence": "KitchenDisplaySystemComponent.vue:1841 subscribeEcho on mount + auto-refresh interval"
+      }
+    ]
+  },
+  "adversarial_findings": [
+    {
+      "id": "Z9-ADV-01",
+      "test": "Tab A POSTs order → Tab B reflects within X seconds?",
+      "result": "GREEN — Echo broadcast OrderCreated fires on backend → both tabs subscribed to branch.{id} channel receive within ~500ms (Pusher push). Correlation dedupe is per-tab so each tab independently fires its idempotent _debouncedRefresh().",
+      "measurement_reference": "Phase Q9-S1 measured 0-60s → ~1s empirically (per MEMORY.md START HERE)"
+    },
+    {
+      "id": "Z9-ADV-02",
+      "test": "Tab A logs out → Tab B still operates?",
+      "result": "AMBER — Tab B's in-memory token is stale until next axios round-trip. Server-side token IS revoked (LoginController.php:155 user.tokens.where(name=auth_token).delete() on /logout). First Tab B request returns 401 → axios interceptor handles. Gap: minutes-long window if Tab B is idle.",
+      "fix_complexity": "1-line storage event listener (deferred V2 SaaS)"
+    },
+    {
+      "id": "Z9-ADV-03",
+      "test": "Tab A in offline mode → Tab B online → state diverge?",
+      "result": "GREEN — Tab A's offline writes go to kioskOfflineQueue (IndexedDB) which IS multi-tab-safe via BroadcastChannel kiosk-offline-queue-sync. When Tab A comes back online, syncQueue acquires the cross-tab lock and replays. Tab B sees the resulting server-side state via Echo broadcast.",
+      "evidence": "kioskOfflineQueue.js:47-68 + acquireLock at line 300"
+    },
+    {
+      "id": "Z9-ADV-04",
+      "test": "10 tabs same user → Echo bandwidth?",
+      "result": "ACCEPTABLE — 10 WebSocket connections × ~50 events/min = 500 msg/min per browser. activityTimeout=30s + pongTimeout=5s. Pusher protocol multiplexes channel subscriptions over single connection per Echo instance. Le Cayenne real-world: ≤3 tabs typical.",
+      "fix_complexity": "SharedWorker fan-out (deferred V2)"
+    },
+    {
+      "id": "Z9-ADV-05",
+      "test": "Sanctum token per-tab vs shared?",
+      "result": "SHARED via vuex-persistedstate localStorage key 'vuex'. Every tab on same origin reads the same token. Sanctum is stateless — token validity is checked server-side per request. No tab-isolation issue; logout from any tab revokes token for ALL tabs (server-side), each tab discovers the revocation on next axios call.",
+      "verified": "bootstrap.js:313-323 selectSurfaceBearerToken reads localStorage; axios-setup.js:34-58 builds Authorization Bearer header from same source"
+    },
+    {
+      "id": "Z9-ADV-06",
+      "test": "Two chefs bump the same item simultaneously",
+      "result": "GREEN — bump is local-only (per-tab kds.bumped_items_v1). Each tab independently triggers auto-transition watcher. First tab to fire onV2ChangeStatus PATCH wins via backend lockForUpdate. Second tab's PATCH gets 409 (IdempotencyKeyConflict OR InvalidTransition ACCEPT→PREPARING when already PREPARING) → silently swallowed → _debouncedRefresh re-syncs to backend truth.",
+      "verified_in_phase": "M-KDS-3 (per mission brief)"
+    },
+    {
+      "id": "Z9-ADV-07",
+      "test": "Admin Tab A toggles item 86 OFF, Tab B toggles same item 86 OFF",
+      "result": "GREEN — ItemAvailabilityChanged is the canonical event; both PATCHes serialize backend-side, ItemBranchAvailability has a unique (item_id, branch_id) constraint. Second PATCH is no-op (same state). Broadcast fires both times; correlation dedupe skips the second on each subscribed tab.",
+      "code_path": "app/Listeners/PersistItemExtraAvailabilityChangedToOutbox.php + app/Events/ItemExtraAvailabilityChanged.php"
+    },
+    {
+      "id": "Z9-ADV-08",
+      "test": "Cashier encaisses kiosk-cash order, admin in another tab marks same order REFUNDED",
+      "result": "GREEN — backend OrderStateMachine enforces transition rules. REFUNDED requires PAID prerequisite. If cashier wins lockForUpdate first → PAID succeeds, admin's REFUNDED then succeeds. If admin somehow refunds first (impossible: REFUNDED from PENDING_COUNTER is not a valid transition) → cashier sees 409/422 with state machine message.",
+      "code_path": "app/Domain/Order/OrderStateMachine.php (frozen zone)"
+    }
+  ],
+  "session_summary": {
+    "shared_across_tabs": [
+      "Sanctum Bearer token (localStorage 'vuex' key, read by every Echo instance + axios interceptor)",
+      "PHP session cookie (same origin, all tabs)",
+      "Auth state via vuex-persistedstate",
+      "POS cart (scoped by branch+user, all tabs same scope read same key)",
+      "Kiosk offline queue (IndexedDB + BroadcastChannel)"
+    ],
+    "per_tab_isolated": [
+      "Vuex in-memory state (no storage event listener)",
+      "Correlation dedupe (sessionStorage)",
+      "Echo subscription instance (1 per tab)",
+      "WebSocket connection (1 per Echo instance)",
+      "KDS bumped_items map (designed local, label.kds_bump_local_only_notice)"
+    ]
+  },
+  "verdict": "AMBER",
+  "verdict_rationale": "Backend-mediated state coherence is GREEN (K2-HEAL-01 healed, KDS multi-bump race verified, IdempotencyKeyMiddleware scopes by branch+user+key, Echo broadcasts fan-out to all tabs, every handler is an idempotent re-fetch). Frontend-mediated cross-tab UX has DESIGNED-IN per-tab gaps: no 'storage' event listener, no cross-tab logout sync, no optimistic locking on admin item edits, KDS bump map is intentionally local-only with UI notice. The gaps are all (a) acknowledged in code comments, (b) compensated by backend invariants (lockForUpdate, state machine, Echo refresh), (c) low-impact for V1 Le Cayenne single-restaurant single-admin operational reality. For V2 SaaS multi-tenant rollout, recommended additions: window.addEventListener('storage') for cross-tab auth sync, If-Match/version_id optimistic lock on admin item PATCH, SharedWorker for Echo fan-out. None of these are V1 ship blockers — the mission specifies 'physical walks may run 5 surfaces simultaneously' and the audit confirms that scenario works because each surface (admin / POS / KDS / OSS / Kiosk preview) is on a different page route with its own Echo subscription, and conflicting writes are serialized backend-side via lockForUpdate + 409 conflict.",
+  "v1_ship_blockers": [],
+  "v2_saas_backlog": [
+    "Z9-RISK-01 storage event listener for cross-tab logout",
+    "Z9-RISK-02 If-Match/version_id optimistic locking on admin entity edits",
+    "Z9-RISK-03 BroadcastChannel cart sync between 2 POS tabs same user (low-priority — physical workflow rarely uses 2 tabs)",
+    "Z9-RISK-04 SharedWorker for Echo fan-out at 10+ concurrent tabs"
+  ],
+  "discipline_check": {
+    "read_only": "yes — no file modifications outside reports/test-e2e/goal-2026-05-23/phase-p/",
+    "file_line_citations": "every risk and finding cites file:line",
+    "self_test": "evidence cross-checked against mission references (K2-HEAL-01, M-KDS-3, Q9-S1) and confirmed via code grep"
+  }
+}

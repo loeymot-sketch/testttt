@@ -1,0 +1,23 @@
+{
+  "surface": "POS Suivi-commandes tracker (pos-tracker) — resources/js/components/admin/pos/PosOrdersTrackerComponent.vue + child PosCounterCollectModal.vue",
+  "head": "04603fa87adefa6dd605c7ec3c0d0ef20f56661c",
+  "verified_at": "2026-05-29",
+  "elements_checked": 23,
+  "confirmed_count": 1,
+  "dropped_count": 0,
+  "verified_findings": [
+    {
+      "severity": "P3",
+      "type": "dead_code",
+      "file": "resources/js/components/admin/pos/PosOrdersTrackerComponent.vue",
+      "line": "922-927",
+      "element": "openEncaissement() leftover CustomEvent dispatch ('foodking:pos:open-encaissement')",
+      "title": "Dead-code CustomEvent dispatch — zero listeners, harmless (NOT a dead button)",
+      "confirmed": true,
+      "grep_evidence": "grep -rn 'foodking:pos:open-encaissement' resources/js/ → only 2 matches, both in this file: L912 (comment) and L924 (the dispatch). grep for addEventListener('...open-encaissement') across resources/js → ZERO matches. The dispatched event has no listener anywhere in the app, confirming dead code. CONTEXT VERIFIED: the Encaisser button itself WORKS — L227 @click=openEncaissement(order) → L921 this.encaisseOrder = {...order, total: amount} → modal rendered at L401-404 (PosCounterCollectModal :order=encaisseOrder @confirmed=onEncaisseConfirmed @cancel=encaisseOrder=null), component registered L438, data init L471. The L924 dispatch is wrapped in try/catch and fires AFTER the modal already opened on L921, so it causes no user-visible breakage.",
+      "recommendation": "Remove the L922-927 CustomEvent dispatch and its comment block (L922). It is leftover from the pre-fix decoupled design and now adds only confusion — a future maintainer may believe a global host still listens. No behavior change: the modal path at L921 is the sole live wiring. Pure cleanup, optional.",
+      "frozen": false
+    }
+  ],
+  "summary": "Verified the single raw P3 finding against HEAD 04603fa87. CONFIRMED TRUE. The 'foodking:pos:open-encaissement' CustomEvent dispatch at L924 has zero listeners across all of resources/js (re-grepped: only the dispatch L924 + comment L912 match; no addEventListener). It is harmless dead code, NOT a dead button — the Encaisser CTA is fully wired: openEncaissement (L909) sets encaisseOrder (L921) which renders PosCounterCollectModal (L401-404, all three events wired, component registered L438). 0 findings dropped, 1 confirmed. No false positives in the raw set. The surface is essentially clean; only this P3 cleanup note stands."
+}

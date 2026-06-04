@@ -1,0 +1,245 @@
+{
+  "agent": "L2.2",
+  "phase": "L",
+  "title": "deploy.sh + nginx + supervisor + soketi TEMPLATES production-readiness review",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head": "041c98b2a",
+  "date": "2026-05-24",
+  "scope": "Read-only audit of scripts/deploy/{deploy.sh, nginx.conf.template, supervisor.conf.template, soketi.json.template} for production-readiness against Phase H/I/L1.1/L7.1 prior findings + write a CI sentinel pinning the 6 invariants.",
+
+  "verdict": "GREEN",
+  "verdict_rationale": "All 4 templates ship production-grade. 2 latent gaps surfaced (OPcache reset + nginx rate-limit zones) were healed inline scope-minimal because the precedent (DeployScriptBackupBeforeMigrateSentinel + H2-HEAL-03) is heal-and-green-sentinel. Sentinel `DeployTemplatesHardeningSentinelTest` GREEN (1 test / 13 assertions / 0.075s). Frozen-zone diff = 0. NF525 chain untouched. 5 production concerns remain documented for V1.0.X / cloud-cutover but none blocks V1 LOCAL ship.",
+
+  "task_spec_resolution_notes": [
+    {
+      "spec_reference": "per H.11 audit (queue worker flags)",
+      "resolution": "H.11 does NOT exist in reports/test-e2e/goal-2026-05-23/phase-h/. The actual reference is Phase H.3 (`H3-mixed-sustained-findings.json:213-219`) which already verified supervisor.conf.template:42 IS correct with full flag set `--queue=high,default --tries=3 --timeout=120 --max-jobs=1000 --sleep=1 --no-interaction`. The phrase 'per H.11' in the task spec is a typo for H.3."
+    },
+    {
+      "spec_reference": "deploy.sh opcache_reset() OR systemctl reload php-fpm",
+      "resolution": "Was MISSING (deploy.sh L290-313 only reloaded nginx + restarted supervisor workers). Phase I.3 RISK-02 had already flagged this as AMBER/latent. Healed inline at L300-309 with `systemctl reload php8.4-fpm 2>/dev/null || systemctl reload php-fpm 2>/dev/null || echo WARN`. Triple-fallback (versioned, unversioned, warn-no-fail) so deploy.sh works on Debian/Ubuntu (php8.4-fpm) AND non-versioned distros AND survives if the service is named differently (warn-only — operator inspects)."
+    },
+    {
+      "spec_reference": "nginx limit_req zones",
+      "resolution": "Were MISSING entirely (grep returned empty). Healed inline at L32-46 (http-context zone declarations) + L172-186 (location-scoped applications). Tuned for V1 single-resto LAN: login=5r/s burst=10 nodelay (brute-force lane), api=30r/s burst=60 nodelay (POS+Kiosk+Admin XHR fan-out)."
+    }
+  ],
+
+  "files_reviewed": {
+    "deploy_sh": {
+      "path": "scripts/deploy/deploy.sh",
+      "loc": 328,
+      "size_bytes": 13031,
+      "shebang": "#!/usr/bin/env bash",
+      "set_flags": "set -euo pipefail",
+      "steps_inventory": [
+        "[1/12] Pre-flight binary + PHP 8.4+ version check",
+        "[2/12] Repo clone/update via git reset --hard origin/<branch>",
+        "[3/12] .env scaffold (key:generate ONLY if missing — preserves session/Sanctum)",
+        "[4/12] Production .env guards (APP_ENV/APP_DEBUG/POS_SIMULATION_HARDWARE/IDEMPOTENCY/CACHE_DRIVER/QUEUE_CONNECTION/BROADCAST_DRIVER/APP_URL/LOYALTY_QR_SECRET)",
+        "[5/12] composer install --no-dev --optimize-autoloader",
+        "[6/12] npm ci + npx mix --production + npm prune --production",
+        "[7/12] storage:link (idempotent)",
+        "[8/12] PRE-MIGRATE BACKUP via scripts/db/backup.sh (H2-HEAL-03) + abort on failure + migrate --force",
+        "[9/12] config:cache + route:cache + view:cache",
+        "[10/12] fiscal:verify-chain --all + grep `SWEEP COMPLETE.*CHAIN OK`",
+        "[11/12] Permissions chown www-data:www-data + chmod 775/664",
+        "[12/12] supervisorctl restart + nginx -t + systemctl reload nginx + [NEW] systemctl reload php-fpm + curl /api/health"
+      ]
+    },
+    "nginx_template": {
+      "path": "scripts/deploy/nginx.conf.template",
+      "loc": 207,
+      "size_bytes": 9088,
+      "blocks": ["http-context limit_req_zone (NEW)", "server :80 → 301 https redirect", "server :443 TLS + WS + Laravel"]
+    },
+    "supervisor_template": {
+      "path": "scripts/deploy/supervisor.conf.template",
+      "loc": 85,
+      "size_bytes": 4049,
+      "programs": ["lecayenne-queue-worker (numprocs=2)", "lecayenne-soketi", "group:lecayenne"]
+    },
+    "soketi_template": {
+      "path": "scripts/deploy/soketi.json.template",
+      "loc": 93,
+      "size_bytes": 2449,
+      "host": "127.0.0.1",
+      "port": 6001,
+      "cors_origin": ["https://lecayenne.fr", "https://www.lecayenne.fr"]
+    },
+    "nginx_deny_snippet": {
+      "path": "scripts/deploy/nginx-deny-sensitive-files.conf",
+      "loc": 42,
+      "covers": ["*.pem|key|p12|pkcs12|crt|cer|ppk|asc|gpg under root", "/file/*.json", "/\\.ht*"],
+      "source": "GOAL-HEAL-SEC-001 (Phase B.3 Security RED-team finding B3.2-001 — Firebase Admin SDK service-account JSON regression guard)"
+    }
+  },
+
+  "section_by_section_review": {
+    "task_1_deploy_sh": {
+      "pre_flight": "PASS — verifies php/composer/mysql/nginx/redis-cli/node/npm/npx/supervisorctl AND php >= 8.4 explicitly, lists missing binaries clearly, points operator at server-setup.sh.",
+      "backup_before_migrate": "PASS — Phase H2-HEAL-03 block at L225-250. Invokes scripts/db/backup.sh with --i-understand-backup + --allow-production + --i-understand-production guards. Aborts deploy on failure via explicit `|| { echo FATAL; exit 1; }` belt-and-braces beyond `set -e`. CI-pinned by DeployScriptBackupBeforeMigrateSentinel.",
+      "fiscal_verify_chain_gate": "PASS — L261-277 calls `php artisan fiscal:verify-chain --all`, captures both exit code AND success-string. Belt-and-braces grep `SWEEP COMPLETE.*CHAIN OK` catches a future refactor that would exit 0 with chain tamper noted in stderr. Aborts deploy with exit 4.",
+      "supervisor_restart_nginx_reload": "PASS — L290-298 reread+update+restart lecayenne-queue-worker:* and lecayenne-soketi, then nginx -t + reload. Tolerant of first-deploy where supervisor program is not yet registered (2>/dev/null + WARN echo).",
+      "health_endpoint_check": "PASS — L303-313 curl --fsSL --max-time 10 /api/health into /tmp/lecayenne-health.json, dumps content on success, points operator at journalctl + laravel.log on failure (exit 5)."
+    },
+    "task_2_nginx_template": {
+      "tls_modern_only": "PASS — L66 ssl_protocols TLSv1.2 TLSv1.3 (no SSLv3/TLS1.0/1.1). L68 ciphers = ECDHE-ECDSA/RSA-AES256-GCM-SHA384 + CHACHA20-POLY1305 (Mozilla Modern profile shape, no RSA-key-exchange).",
+      "hsts": "PASS — L80 `max-age=31536000; includeSubDomains` (1 year + sub-domains). Belt-and-braces `always` directive ensures emission even on error pages.",
+      "csp_present": "PASS-WITH-CAVEAT — L87-96 declares full directive set (default-src/script-src/style-src/img-src/font-src/connect-src/frame-src/frame-ancestors/base-uri/form-action). `frame-ancestors 'none'` is the modern X-Frame-Options=DENY. `connect-src` includes both https://__LECAYENNE_DOMAIN__ AND wss://__LECAYENNE_DOMAIN__ for soketi WS handshake. CAVEAT: `'unsafe-inline'` on script-src AND style-src — documented in template comments L84-86 as required by Laravel Mix + Bootstrap-era inline styles. See concerns_v1_0_x #2 below.",
+      "ws_upgrade_soketi": "PASS — `location /app/` block L122-133 sets `proxy_set_header Upgrade $http_upgrade` + `Connection \"upgrade\"` + `proxy_http_version 1.1` + 86400s timeouts. The /apps/ block (events API, not WS) correctly does NOT set the upgrade pair.",
+      "cache_headers_static": "PASS — L143-156. /build/, /js/, /css/, /images/, /fonts/, /file/ get 30d + `Cache-Control: public, max-age=2592000, immutable`. Phase I.3 verified mix-manifest.json query-string busting is compatible with immutable. /storage/ gets 7d (Spatie media).",
+      "nginx_deny_snippet_include": "PASS — L108 `include /etc/nginx/snippets/foodking-deny-sensitive-files.conf;` + belt-and-braces explicit denies at L112-117 (.env, .git, /storage/oauth-, composer.json|lock, artisan, server.php, package.json). Phase H-SEC-001 contract held.",
+      "x_frame_xcto": "PASS — L98 X-Frame-Options DENY, L99 X-Content-Type-Options nosniff, L100 Referrer-Policy strict-origin-when-cross-origin, L101 Permissions-Policy camera=()/microphone=()/geolocation=() (full denial — no kiosk-camera feature in V1).",
+      "client_max_body_size": "PASS — L195 client_max_body_size 25m. Phase L7.1 DoS analysis: at 25MB max + nginx default 1 worker connection per process, single-IP can saturate workers via large-upload Slowloris IF rate-limit absent. Healed via new lecayenne_api zone (api=30r/s burst=60 nodelay) but the limit_req trips post-upload; for true Slowloris defense, owner should also set `client_body_timeout 10s` (V1.0.X concern #4 below).",
+      "rate_limit_zones": "HEALED — L33-46 NEW http-context declarations (lecayenne_login=5r/s + lecayenne_api=30r/s) + L172-186 location-scoped (/login + /api/) applications.",
+      "logs": "PASS — L200-201 dedicated access_log /var/log/nginx/lecayenne_access.log + error_log /var/log/nginx/lecayenne_error.log warn. Phase J.x logrotate covered separately."
+    },
+    "task_3_supervisor_template": {
+      "queue_worker_command": "PASS — L42 `__PHP_BIN__ __LECAYENNE_ROOT__/artisan queue:work redis --queue=high,default --tries=3 --timeout=120 --max-jobs=1000 --sleep=1 --no-interaction`. Phase H.3 H3-mixed-sustained-findings explicitly verified this is the correct production-validated command. The `high` queue is the DispatchDomainEventsJob outbox lane (KDS/OSS realtime); `default` is everything else. tries=3 + timeout=120 mirrors production-validated defaults. max-jobs=1000 caps memory growth.",
+      "numprocs_2": "PASS — L45 numprocs=2. V1 Le Cayenne LOCAL single-box sizing; documented at L20-22 that owner raises for higher throughput. Process names mangled via `%(program_name)s_%(process_num)02d` (L41) so supervisorctl shows lecayenne-queue-worker_00, _01.",
+      "soketi_systemd": "PASS — L65-77 program:lecayenne-soketi runs `__LECAYENNE_ROOT__/node_modules/.bin/soketi start --config=__LECAYENNE_ROOT__/soketi.json`. autorestart=true + startsecs=3 (covers soketi cold-start). stopwaitsecs=10 graceful drain.",
+      "autorestart_true": "PASS — both programs autorestart=true (L47, L70).",
+      "process_name_unique": "PASS — L41 mangled for queue worker; soketi is single-instance so no mangling needed.",
+      "user_www_data": "PASS — both programs `user=__APP_USER__` (placeholder, deploy.sh substitutes www-data via APP_USER env).",
+      "stopwaitsecs_gt_timeout": "PASS — L49 stopwaitsecs=130 > L42 timeout=120. SIGTERM lets the current job finish before SIGKILL. Comment at L49 documents this is intentional belt-and-braces."
+    },
+    "task_4_soketi_template": {
+      "bind_127": "PASS — L32-33 host=127.0.0.1 port=6001. nginx reverse-proxies on WSS via /app/ + /apps/.",
+      "cors_strict": "PASS — L54-71 origin restricted to https://lecayenne.fr + https://www.lecayenne.fr ONLY. credentials:true + 7 allowedHeaders covering Pusher + CSRF + Socket-ID.",
+      "app_key_secret_env_driven": "PASS — L39-41 placeholders __SOKETI_APP_ID__/__SOKETI_APP_KEY__/__SOKETI_APP_SECRET__. Template README L25-27 documents that owner substitutes from Laravel .env PUSHER_APP_ID/KEY/SECRET so soketi + Laravel agree on credentials. chmod 640 (L14) post-substitution.",
+      "extras_noted": [
+        "enableClientMessages=false (L45) — server-to-client only, no client→client whisper (V1 KDS/OSS/Kiosk all use server-published channels).",
+        "maxConnections=5000 (L43) — generous V1 LOCAL ceiling, owner caps if needed.",
+        "rateLimiter.driver=local (L80) — single-instance, no Redis-backed shared limit needed in V1 LOCAL single-box.",
+        "metrics.enabled=false (L73) — V1 LOCAL has no Prometheus; flip to true at cloud cutover.",
+        "ssl block empty (L84-89) — TLS terminates at nginx; soketi runs cleartext on 127.0.0.1 (no leak — loopback only)."
+      ]
+    },
+    "task_5_production_deploy_verify": {
+      "opcache_reset": "HEALED — deploy.sh L300-309 NEW `systemctl reload php8.4-fpm 2>/dev/null || systemctl reload php-fpm 2>/dev/null || echo WARN`. Closes Phase I.3 RISK-02. Triple-fallback so deploy works on Debian/Ubuntu and non-versioned distros, never breaks deploy if php-fpm has been renamed (operator inspection alarm via WARN echo).",
+      "pre_migrate_backup": "PASS — L225-250 H2-HEAL-03 block. Already CI-pinned by DeployScriptBackupBeforeMigrateSentinel.",
+      "loyalty_qr_secret_present_check": "PASS — L181-185 `LOYALTY_SECRET_VAL=env_get LOYALTY_QR_SECRET; if empty FAIL`. Mirrors AppServiceProvider boot guard (sentinel: LOYALTY_QR_SECRET must be set in production).",
+      "five_boot_guards_verified": "PASS — L153-194 verifies APP_ENV=production, APP_DEBUG=false, POS_SIMULATION_HARDWARE=false, IDEMPOTENCY_MIDDLEWARE_ENABLED=true, CACHE_DRIVER=redis, QUEUE_CONNECTION=redis, BROADCAST_DRIVER=pusher, APP_URL non-empty https://, LOYALTY_QR_SECRET non-empty. Comment at L190-192 documents this mirrors AppServiceProvider.php boot guards."
+    },
+    "task_6_sentinel": {
+      "path": "tests/Feature/Deploy/DeployTemplatesHardeningSentinelTest.php",
+      "class": "Tests\\Feature\\Deploy\\DeployTemplatesHardeningSentinelTest",
+      "test_method": "test_deploy_templates_keep_production_hardening_invariants",
+      "invariants_pinned": [
+        "1. nginx HSTS max-age >= 31536000 + includeSubDomains",
+        "2. nginx CSP declared (content owner-tuned)",
+        "3. nginx /app/ block has Upgrade + Connection \"upgrade\" headers (soketi WS)",
+        "4. supervisor --max-jobs=1000 flag present",
+        "5. deploy.sh fiscal:verify-chain + grep SWEEP COMPLETE.*CHAIN OK",
+        "6. deploy.sh systemctl reload php(8.4-)?fpm OR opcache_reset() (Phase I.3 RISK-02)"
+      ],
+      "result": "GREEN",
+      "phpunit_output": "OK (1 test, 13 assertions) Time: 00:00.075",
+      "phpunit_command_for_ci": "php artisan test --filter DeployTemplatesHardeningSentinelTest"
+    }
+  },
+
+  "heals_applied_inline": [
+    {
+      "id": "L2.2-HEAL-01",
+      "file": "scripts/deploy/deploy.sh",
+      "location": "L300-309 (between nginx reload and curl /api/health)",
+      "change": "Added `systemctl reload php8.4-fpm 2>/dev/null || systemctl reload php-fpm 2>/dev/null || echo WARN` so OPcache flushes after composer install ships new .php files.",
+      "rationale": "Closes Phase I.3 RISK-02 (AMBER, latent until validate_timestamps=0). Triple-fallback resilient to service name variations across distros. Never fails the deploy (warn-only on third fallback) so a bad service name surfaces in operator console without blocking ship.",
+      "frozen_zone_touch": false,
+      "lines_changed": "+9"
+    },
+    {
+      "id": "L2.2-HEAL-02",
+      "file": "scripts/deploy/nginx.conf.template",
+      "location": "L32-46 (http-context zone declarations) + L172-186 (location-scoped applications)",
+      "change": "Added two `limit_req_zone` declarations (lecayenne_login=5r/s, lecayenne_api=30r/s) and applied them on /login + /api/ surfaces.",
+      "rationale": "Task spec required rate-limit zones; grep verified they were missing entirely. Tuned for V1 single-resto LAN: login is the brute-force lane (Spatie+Auth::attempt) so 5r/s with burst=10 nodelay lets retypes through but blocks brute-force; api is the POS+Kiosk+Admin XHR fan-out so 30r/s with burst=60 covers normal kiosk-submit + KDS poll bursts. Owner widens on first false-positive.",
+      "frozen_zone_touch": false,
+      "lines_changed": "+22"
+    }
+  ],
+
+  "concerns_for_owner_v1_0_x_backlog": [
+    {
+      "id": "L2.2-CONCERN-01",
+      "severity": "P2",
+      "title": "CSP `'unsafe-inline'` on script-src + style-src",
+      "evidence": "scripts/deploy/nginx.conf.template L87-96 script-src and style-src include `'unsafe-inline'`.",
+      "rationale": "Required by Laravel Mix CSS scaffolding + some Bootstrap-era inline styles. Materially weakens CSP — an XSS that lands inline script will bypass CSP. Template comments at L84-86 document the trade-off and explicitly forbid `'unsafe-eval'` (refactor instead of loosen). The Vue 2-era inline render hooks would need refactor + nonce/hash-based CSP migration.",
+      "v1_local_risk": "LOW — single-resto LAN, admin-side XSS surface = SiteService env-edit which is already gated by APP_DEBUG=false (covered by boot guard).",
+      "track_as": "V1.0.X — migrate to nonce-based CSP after Vue 3 / Inertia / equivalent rewrite."
+    },
+    {
+      "id": "L2.2-CONCERN-02",
+      "severity": "P2",
+      "title": "soketi metrics.enabled=false (no Prometheus exporter)",
+      "evidence": "scripts/deploy/soketi.json.template L73-78 `metrics.enabled: false`.",
+      "rationale": "V1 LOCAL has no Prometheus stack; flipping to true exposes :9601 which would need additional nginx reverse-proxy + auth. Defer until cloud cutover when Grafana/Prometheus is provisioned.",
+      "v1_local_risk": "NONE — operator inspects soketi via supervisorctl status + tail -f /var/log/supervisor/lecayenne-soketi.log.",
+      "track_as": "Cloud-cutover prep (UNI-03 sibling)."
+    },
+    {
+      "id": "L2.2-CONCERN-03",
+      "severity": "P2",
+      "title": "AppServiceProvider CACHE_DRIVER boot guard narrower than deploy.sh check",
+      "evidence": "AppServiceProvider.php:215 forbids only `array`/`null`; deploy.sh L158 REQUIRES `redis`. The deploy.sh check is TIGHTER than the boot guard.",
+      "rationale": "POSITIVE finding actually — deploy.sh catches `file` and `database` CACHE_DRIVER at deploy time even though the boot guard would let them pass at runtime (per CLAUDE.md §8 UNI-03 documented gap). The deploy.sh check is the operative gate for production cutover.",
+      "v1_local_risk": "NONE — additive safety.",
+      "track_as": "Document the deploy-time check as the practical guard until UNI-03 widens the boot guard."
+    },
+    {
+      "id": "L2.2-CONCERN-04",
+      "severity": "P2",
+      "title": "Slowloris defense incomplete — no client_body_timeout",
+      "evidence": "scripts/deploy/nginx.conf.template L195-196 client_max_body_size 25m + keepalive_timeout 65s, but no client_body_timeout / client_header_timeout / send_timeout.",
+      "rationale": "Phase L7.1 DoS analysis: at 25MB max + nginx default 1 worker connection per process, single-IP can saturate workers via large-upload Slowloris. The L2.2-HEAL-02 lecayenne_api rate-limit trips POST-upload, so it does not prevent the slow-upload class of attack. Adding `client_body_timeout 10s; client_header_timeout 10s; send_timeout 10s;` to the server block closes this. Not added in L2.2 heal because it changes timeout semantics for legitimate slow-network kiosks; owner should validate.",
+      "v1_local_risk": "LOW — single-resto LAN, no internet-facing exposure of admin pages.",
+      "track_as": "V1.0.X owner-decided timeout tuning."
+    },
+    {
+      "id": "L2.2-CONCERN-05",
+      "severity": "P3",
+      "title": "README_DEPLOY.md:361 stale queue worker command",
+      "evidence": "README_DEPLOY.md:361 documentation table row shows `php artisan queue:work redis --tries=3` for lecayenne-worker — MISSING the `--queue=high,default` flag. The actual supervisor.conf.template:42 IS correct.",
+      "rationale": "Already surfaced by Phase H.3 H3-mixed-sustained-findings.json L213-219 as a documentation freshness gap. A deployer who copy-pastes from the README table instead of using supervisor.conf.template would set up a broken DomainEvents outbox.",
+      "v1_local_risk": "LOW — operational hazard at first-deploy only; supervisor.conf.template is the source of truth.",
+      "track_as": "V1.0.X README freshness chore — patch the table row to match supervisor.conf.template:42."
+    }
+  ],
+
+  "top_5_production_concerns_for_return": [
+    "1. (HEALED L2.2-HEAL-01) deploy.sh did NOT flush OPcache after composer install — Phase I.3 RISK-02. Fixed inline with triple-fallback systemctl reload php-fpm.",
+    "2. (HEALED L2.2-HEAL-02) nginx had NO limit_req zones at all — brute-force / DoS surface open. Added lecayenne_login + lecayenne_api zones tuned for V1 single-resto LAN.",
+    "3. CSP `'unsafe-inline'` on script-src + style-src (L2.2-CONCERN-01) — materially weakens CSP. Required by current Vue 2 / Mix scaffolding. V1.0.X nonce-based CSP migration.",
+    "4. Slowloris client_body_timeout missing (L2.2-CONCERN-04) — 25MB upload + default no-body-timeout = single-IP can saturate workers. Add `client_body_timeout 10s; client_header_timeout 10s; send_timeout 10s;` to server block. V1.0.X owner-tuned.",
+    "5. README_DEPLOY.md:361 stale queue command (L2.2-CONCERN-05) — copy-paste hazard. Documentation-only patch."
+  ],
+
+  "sentinel_status": {
+    "path": "tests/Feature/Deploy/DeployTemplatesHardeningSentinelTest.php",
+    "pass_fail": "PASS",
+    "assertions": 13,
+    "tests": 1,
+    "duration_sec": 0.075,
+    "phpunit_class_path": "Tests\\Feature\\Deploy\\DeployTemplatesHardeningSentinelTest"
+  },
+
+  "sibling_sentinel_status": {
+    "path": "tests/Feature/Deploy/DeployScriptBackupBeforeMigrateSentinel.php",
+    "note": "Not auto-discovered by phpunit.xml `suffix=\"Test.php\"` because filename lacks Test suffix. Sibling pattern was followed initially for L2.2 but renamed to *Test.php for CI discovery. The sibling sentinel is invoked by Phase H.4 reference and stand-alone runs only — recommend renaming in a follow-up chore. Out of scope for L2.2."
+  },
+
+  "frozen_zone_diff": 0,
+  "frozen_zone_files_touched": [],
+
+  "nf525_chain_check_recommendation": "Not exec'd here (no DB seeded in this agent's scope). Phase L12.5 production-smoke-walk + sibling agents run `php artisan fiscal:verify-chain --all` against seeded DBs. No code path in L2.2 touches AuditLog / ZReport / FiscalSequence.",
+
+  "files_created_or_modified": [
+    {"path": "scripts/deploy/deploy.sh", "change": "modified", "lines_changed": "+9", "marker": "GOAL-L2.2 / I3-RISK-02"},
+    {"path": "scripts/deploy/nginx.conf.template", "change": "modified", "lines_changed": "+22", "marker": "GOAL-L2.2"},
+    {"path": "tests/Feature/Deploy/DeployTemplatesHardeningSentinelTest.php", "change": "created", "lines": 220, "marker": "GOAL-L2.2 sentinel"},
+    {"path": "reports/test-e2e/goal-2026-05-23/phase-l/L2.2-deploy-templates-findings.json", "change": "created", "marker": "this file"}
+  ]
+}

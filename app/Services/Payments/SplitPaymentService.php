@@ -124,7 +124,9 @@ final class SplitPaymentService
                         "payment_breakdown.{$idx}.terminal_id" => 'CARD tranche requires a valid terminal_id.',
                     ]);
                 }
-                $terminalOk = PaymentTerminal::withoutGlobalScopes()
+                // [Z6-P1-WGS 2026-05-19] singular form — PaymentTerminal has no
+                // SoftDeletes; explicit BranchScope::class arg documents intent.
+                $terminalOk = PaymentTerminal::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
                     ->where('id', $terminalId)
                     ->where('branch_id', $branchId)
                     ->where('status', PaymentTerminal::STATUS_ACTIVE)
@@ -200,7 +202,11 @@ final class SplitPaymentService
         }
 
         $cashSession = null;
-        if ($hasCashTranche) {
+        // [2026-05-18] Hardware simulation: when no physical drawer is wired,
+        // CASH tranches are still recorded (OrderPayment row + audit log) but
+        // no cash_movement is written (handled below via $cashSession===null).
+        $simulating = config('pos.simulation_hardware') === true;
+        if ($hasCashTranche && ! $simulating) {
             if (! Auth::check()) {
                 throw new CashDrawerSessionNotOpenException();
             }

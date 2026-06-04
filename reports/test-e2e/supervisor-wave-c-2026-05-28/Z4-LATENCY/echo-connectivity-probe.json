@@ -1,0 +1,11 @@
+{
+  "has_echo": true,
+  "connector_type": "o",
+  "pusher_state": "connected",
+  "pusher_host": "127.0.0.1",
+  "pusher_port": 6001,
+  "channels": [
+    "private-branch.1"
+  ],
+  "socket_id": "8492813357.3741739113"
+}

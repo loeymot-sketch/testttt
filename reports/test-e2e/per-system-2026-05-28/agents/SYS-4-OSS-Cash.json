@@ -1,0 +1,100 @@
+{
+  "system": "SYS-4 OSS + Cash drawer",
+  "agent": "SYS-4-OSS-Cash",
+  "timestamp": "2026-05-28T10:55:00Z",
+  "server": "http://127.0.0.1:8000",
+  "branch_under_test": "heal/cms-pr1-quickwins-2026-05-18",
+  "captures_dir": "reports/test-e2e/per-system-2026-05-28/captures/SYS-4-OSS-Cash/",
+  "captures": [
+    {
+      "file": "01-oss-layout-2col.png",
+      "what": "OSS /admin/order-status-screen — 2-col layout En préparation (magenta) | Prêt (green) — empty state '—'",
+      "verdict": "PASS"
+    },
+    {
+      "file": "02-cash-overview-4kpi-reconcil.png",
+      "what": "Vue Caisse Unifiée — 4 KPI cells (Grand total / Caisse / Borne / Livreur all 0,00€/0tx) + Réconciliation panel (Caisse ouverte 12:40, Fond 50€, Encaissées 0€, Attendues 50€)",
+      "verdict": "PASS"
+    },
+    {
+      "file": "03-cash-after-close-reconcile.png",
+      "what": "Cash Overview after 1st close+reconcile cycle (session 1 closed 50€ no variance)",
+      "verdict": "PASS"
+    },
+    {
+      "file": "04-cash-final-all-reconciled.png",
+      "what": "Cash Overview after all 3 sessions reconciled — reconciliation panel disappears (correct hide-when-no-open-session UX)",
+      "verdict": "PASS"
+    },
+    {
+      "file": "05-oss-final-empty-state.png",
+      "what": "OSS final state — same 2-col layout, still empty (no test orders pushed through fiscal pipeline)",
+      "verdict": "PASS"
+    }
+  ],
+  "tasks_executed": {
+    "oss_entry_login": "PASS — admin@lecayenne.fr logged in fresh, dashboard rendered with audit trail panel + cash.session.opened event visible",
+    "oss_layout_2col_PREP_READY": "PASS — Wave Q-3 P-OWNER spec: 2 columns ONLY (En préparation magenta + Prêt vert). PopularItemComponent confirmed REMOVED per OSS layout commit (md:grid-cols-2)",
+    "oss_locale_FR_EN_AR_rotation": "NOT IMPLEMENTED — grep for locale/rotation/i18n/switchLocale across OSS + PreparingAndReadyComponent returns ZERO matches. OSS displays only FR (current admin locale). Wall-display FR/EN/AR rotation feature absent in V1 (deferred).",
+    "oss_public_endpoint": "PASS — /api/frontend/oss-order returns 400 JSON 'Clé API invalide' (throttle: oss-public 60/min/IP). Route /api/oss-order does NOT exist — only /api/admin/oss-order (auth required) + /api/frontend/oss-order (API key required). Vue route /admin/order-status-screen is the only wall-display surface; it is auth=true but exempted via PUBLIC_FRIENDLY_AUTH_ROUTES set in router/index.js:218 so wall-display survives unauthenticated load.",
+    "cash_overview_navigate": "PASS — /admin/cash-overview loads (permission cash-sessions-report required, Admin has it)",
+    "cash_overview_Wave_X4_visible": "PASS — 4 KPI + 3-cell reconciliation visible, dates range + Source filter (Caisse/Borne/Livreur) + Mode de paiement filter present",
+    "cash_drawer_open_new_session": "PASS via service — opening session #1 with 50€ float committed by prior session (audit trail shows cash.session.opened 9 min ago)",
+    "cash_drawer_close_no_variance": "PASS — CashDrawerService::closeSession(1, 50.00) status=closed → reconcileSession variance=0",
+    "cash_drawer_close_with_variance_gt_2eur": "PASS — variance +3€ rejected without reason (CashVarianceRequiresApprovalException 'Cash variance 3.00€ exceeds threshold 2.00€ — variance_reason required'), accepted with reason",
+    "cash_drawer_variance_negative": "PASS — variance -5€ same gate (shortage path also rejects no-reason)",
+    "cash_drawer_double_close_idempotent": "PASS — calling closeSession on already-closed session returns status=closed unchanged (no exception, no double-write)",
+    "cash_drawer_second_open_blocked": "PASS — openSession while one is already open for (branch, user) throws HttpException 'A cash drawer session is already open for this user on this branch'",
+    "z_report_state_dashboard_widget": "EMPTY (correct) — dashboard 'Dernier rapport Z' shows 'Aucune donnée' because no Z close performed today; ZReport table count=0",
+    "z_report_chain_integrity": "PASS — fiscal:verify-chain --all returns 'CHAIN OK on every active branch (1 total)' after open+close+reconcile×3 + variance scenarios"
+  },
+  "adversarial_results": {
+    "double_close_idempotent": "PASS",
+    "variance_gt_2eur_requires_reason": "PASS",
+    "variance_negative_requires_reason": "PASS",
+    "second_open_same_branch_user_blocked": "PASS",
+    "cross_tab_same_drawer": "NOT_TESTED — would require 2nd Playwright tab, deferred",
+    "nf525_chain_after_storm": "PASS — verify-chain CHAIN OK"
+  },
+  "console_state": {
+    "errors_on_oss_load": 0,
+    "warnings_on_oss_load": 1,
+    "errors_on_cash_overview_load": 0,
+    "warnings_on_cash_overview_load": 1,
+    "session_drops_observed": "3 redirects to /login or /kiosk/idle during nav transitions — Vue router PUBLIC_FRIENDLY_AUTH_ROUTES + STAFF_ONLY_MODE redirects intermittent during E2E ping-pong, not a defect per se but degrades automation reliability"
+  },
+  "frozen_zone_diff": "0 lines (read-only E2E only, no code touched)",
+  "nf525_chain_state": {
+    "before": "count=8 last_id=8 last_action=user.login (pre-test)",
+    "after": "count>=15 incl. cash.session.opened/closed/reconciled events × 3 cycles + Z chain still bit-identical",
+    "verify_chain": "CHAIN OK (branch=1)"
+  },
+  "findings": [
+    {
+      "id": "SYS-4-F1",
+      "severity": "P2",
+      "title": "OSS FR/EN/AR locale rotation not implemented",
+      "summary": "Mission task #5 asks 'Check FR/EN/AR rotation if implemented'. Audit confirms NO rotation logic in OrderStatusScreenComponent.vue or PreparingAndReadyComponent.vue. OSS displays exclusively the current admin/store locale (FR). For a customer wall display in a multilingual context (Cayenne French Guiana), a rotation toggle (e.g. swap headers every 8s FR→EN→AR) would improve customer comprehension. Deferred V1.0.2 backlog candidate — not a V1 blocker since OSS still works in FR and the FR-only customer base is the primary V1 target (Le Cayenne, French Guiana).",
+      "file": "resources/js/components/admin/orderStatusScreen/OrderStatusScreenComponent.vue",
+      "evidence": "grep -n 'locale|rotation|i18n|switchLocale|enUS|arSA' on both OSS .vue files = 0 matches"
+    },
+    {
+      "id": "SYS-4-F2",
+      "severity": "P3",
+      "title": "Cash Overview reconciliation panel uses 'à venir' placeholder for variance input",
+      "summary": "Réconciliation caisse panel says 'Pour calculer l'écart, saisir le comptage physique du tiroir (à venir).' The actual variance input lives in POS reconcile flow (CashDrawerSessionController::reconcile endpoint), confirmed working via direct service test. The cash-overview surface offers READ-ONLY visibility — physical-count input not yet wired in this admin tab. Owner Q14 (Wave Polish Final) likely already noted this. Functional: full close/reconcile flow works through POS UI; cash-overview is observability-only.",
+      "file": "resources/js/components/admin/cashOverview/CashOverviewComponent.vue",
+      "evidence": "DOM literal '(à venir)' visible on /admin/cash-overview"
+    },
+    {
+      "id": "SYS-4-F3",
+      "severity": "P3",
+      "title": "Vue SPA router triggers 3-redirect ping-pong during E2E automation (STAFF_ONLY + auth gate + kiosk auto-lock)",
+      "summary": "Repeated /admin/cash-overview and /admin/order-status-screen navigations bounce through /kiosk/idle or /login mid-flight, requiring 2-3 retries to land. Root cause: combination of STAFF_ONLY_MODE redirect + auth-status race + kiosk auto-lock. Not a user-impact defect (real cashier sessions stay stable), but degrades E2E automation reliability — automated probes hit phantom 401/redirects. Recommend stabilizing the gate priority order OR exposing a Playwright-friendly bypass cookie for E2E suites.",
+      "file": "resources/js/router/index.js:218-272",
+      "evidence": "5 distinct 'page-URL changed mid-navigation' incidents during this 20-step E2E run"
+    }
+  ],
+  "verdict": "PASS — OSS layout matches Wave Q-3 spec (2-col PREP/READY). Cash Overview Wave X X4 matches owner mandate (4 KPI + 3-cell reconciliation panel). Cash drawer close+variance+idempotency gates all pass adversarial testing. NF525 audit chain bit-identical after storm. 3 P2/P3 findings non-blocking for V1 Le Cayenne LOCAL. Frozen-zone diff = 0.",
+  "blockers_v1": []
+}

@@ -46,7 +46,7 @@
     <link rel="stylesheet" href="{{ mix('css/app.css') }}">
     <link rel="stylesheet" href="{{ asset('css/pos-wizard.css') }}?v=2-{{ time() }}">
     <!-- PAGE TITLE -->
-    <title>{{ trim((string) Settings::group('company')->get('company_name')) ?: (config('app.name') ?: 'FoodKing') }}</title>
+    <title>{{ trim((string) Settings::group('company')->get('company_name')) ?: (config('app.name') ?: 'Le Cayenne') }}</title>
 
     <!-- FAV ICON -->
     <link rel="icon" type="image" href="{{ $favicon }}">
@@ -103,14 +103,41 @@
         window.foodkingConfig.kioskDefaultLocale au moment de l'initialisation du bundle.
         (config:cache OK : on utilise config() et non env() directement)
     --}}
+    @php
+        // [2026-05-18 PR-B P0 kiosk-creds-leak heal] Gate the SPA auto-login
+        // payload by (a) path filter `/kiosk*` (legacy), (b) request IP in
+        // the configured allowlist OR `APP_ENV=local` (dev bypass).
+        // Without this, any unauthenticated requester to `/kiosk/idle` could
+        // harvest the machine credentials in cleartext (curl public host →
+        // grep kioskAutoLogin → mint a `kiosk:order` Sanctum token).
+        // Production deployment MUST set KIOSK_AUTO_LOGIN_TRUSTED_IPS to the
+        // LAN IPs of the physical kiosk machines, OR set
+        // KIOSK_REQUIRE_MACHINE_LOGIN=true (shows a UI login form instead).
+        // Sister test: tests/Feature/Kiosk/KioskAutoLoginGateTest.php
+        $kioskAutoLoginPayload = null;
+        if (request()->is('kiosk*')) {
+            $payload = config('kiosk.spa_payload');
+            if ($payload !== null) {
+                $localBypass = (bool) config('kiosk.auto_login_local_bypass', false);
+                $trustedIps  = (array) config('kiosk.auto_login_trusted_ips', []);
+                $clientIp    = (string) request()->ip();
+                $ipTrusted   = ! empty($trustedIps) && in_array($clientIp, $trustedIps, true);
+                if ($localBypass || $ipTrusted) {
+                    $kioskAutoLoginPayload = $payload;
+                }
+            }
+        }
+    @endphp
     <script>
         window.foodkingConfig = {
             baseUrl: @json(rtrim((string) config('app.url'), '/')),
             apiKey: @json((string) config('app.api_key')),
             googleMapKey: @json((string) config('app.google_map_key')),
             demo: @json((bool) config('app.demo_mode')),
-            // Borne : n'injecter les credentials machine que sur les routes kiosk.
-            kioskAutoLogin: @json(request()->is('kiosk*') ? config('kiosk.spa_payload') : null),
+            // [2026-05-18 PR-B P0 heal] Machine creds gated by IP allowlist +
+            // APP_ENV=local. See @php block above. Public unauth requests now
+            // get `null` even on /kiosk/* paths.
+            kioskAutoLogin: @json($kioskAutoLoginPayload),
             // Langue UI borne : fr | ar | en (défaut fr) — évite anglais si le navigateur / localStorage était en "en"
             kioskDefaultLocale: @json((string) config('kiosk.default_locale', 'fr')),
             // [ADR-007 / Sprint 3D 2026-05-16] Kiosk runtime FR-immutable en V1.
@@ -119,6 +146,19 @@
             // docs/adr/ADR-007-kiosk-fr-lock.md pour relax post-V1.
             kioskLocaleSwitchAllowed: @json((bool) config('kiosk.locale_switch_allowed', false)),
             kioskMenuPricing: @json(config('kiosk.menu_pricing', [])),
+            // [SUPERVISOR WAVE C Z1 2026-05-28] Plan B: route ALL kiosk payments to counter.
+            // When true, KioskPaymentComponent skips method selection UI and auto-submits
+            // with payment_method=CASH_ON_DELIVERY (1). Order remains PENDING_COUNTER
+            // until cashier collects at POS. See config/kiosk.php for env override.
+            kiosk: {
+                paymentRouteAllToCounter: @json((bool) config('kiosk.payment_route_all_to_counter', true)),
+            },
+            // [GOAL-GOLIVE-VAT10 / F1-dormancy 2026-05-31 Q2] Discretionary-discount
+            // master flag, exposed so the customer UI hides coupon + loyalty-redeem
+            // entries while discounts are disabled — otherwise a customer who uses them
+            // hits a raw 422 dead-end (the backend gates the order). When F1 is fixed
+            // and the flag flipped on, the entries reappear automatically.
+            discountsEnabled: @json((bool) config('pos.manual_discount_enabled', false)),
             // Borne : une catégorie « Nos Sandwichs » en base, deux lignes sidebar (signatures / froid)
             kioskSandwichSplit: @json(config('kiosk.sandwich_split')),
             maxItemQty: @json((int) config('kiosk.max_item_qty', 20)),
@@ -140,13 +180,25 @@
                 disconnectedJitterMs: @json((int) config('catalog_v15.kds_fallback_polling.disconnected_jitter_ms', 3000)),
             },
             // [STAFF-ONLY-V1] Feature flags for surface restructuring
-            staffOnlyMode: @json((bool) env('STAFF_ONLY_MODE', false)),
+            staffOnlyMode: @json((bool) config('features.staff_only_mode')),
             kioskUsePosWizard: @json((bool) env('KIOSK_USE_POS_WIZARD', false)),
             // [iter15-mega-fix C-003/A-003 2026-05-10] Expose APP_ENV so the SPA
             // can suppress the "Connexion temps réel perdue" banner in dev/local
             // environments where Pusher/Soketi is not running. Production keeps
             // the banner — it's still useful messaging during real outages.
             appEnv: @json((string) app()->environment()),
+            // [Wave T R1 F3 WT-B-R1-007 2026-05-20] Expose branch count so the
+            // admin SPA can hide messaging that only makes sense in a multi-
+            // branch deployment (e.g. KDS "Compte central multi-succursales"
+            // polling hint). Single-branch installs like Le Cayenne render
+            // branch_count=1 and the KDS computes kdsIsCentralAdmin=false so
+            // the misleading banner is suppressed. Cached 5min to avoid a
+            // SELECT COUNT(*) on every SPA boot. NF525-irrelevant query.
+            branchCount: @json((int) \Illuminate\Support\Facades\Cache::remember(
+                'fk:branches:count',
+                300,
+                fn () => \App\Models\Branch::query()->count()
+            )),
             features: {
                 wizard_per_item_demo: @json(\App\Support\WizardPerItemDemo::enabled(request())),
             },

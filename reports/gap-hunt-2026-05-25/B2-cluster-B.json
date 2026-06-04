@@ -1,0 +1,193 @@
+{
+  "agent": "B.2-CLUSTER-B (C4 Admin→Caisse + C5 Stock cascade + C6 Multi-device race)",
+  "mission": "FoodKing Le Cayenne V1 Gap-Hunt 2026-05-25 — cross-system inter-surface gaps. READ-ONLY audit.",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head_seen_in_brain": "b8ce23851",
+  "scope": "Verify three claimed sync/race invariants: (C4) admin promo broadcast reaches POS; (C5) ItemAvailabilityChanged cascades coherently across Borne+POS+KDS+Stock dashboard; (C6) Multi-cashier same-order race protections (K2-HEAL-01 typed 409 in PaymentService + K2-HEAL-02 lockForUpdate in OrderService) and whether other cashier UIs are notified via Echo broadcasts.",
+  "method": "Source grep + Read on app/Services, app/Events, app/Listeners, app/Http/Controllers/Admin/CouponController.php, routes/api.php, resources/js Echo subscriptions. Cross-checked code-comment provenance gates (POS-9.1.10, K2-HEAL-01, K2-HEAL-02, F-04bis, KR2/KIOSK-K3.5, Wave S-1) against actual symbol presence. No code executed.",
+
+  "C4_admin_to_caisse": {
+    "question": "Owner pousse promo flash → caisse l'applique automatique ?",
+    "verdict": "PARTIAL_NO — server-side broadcast exists, but the POS frontend does not consume it and the POS has no UI to apply any promo code.",
+    "screens_audited": [
+      "app/Http/Controllers/Admin/CouponController.php (admin coupon CRUD + toggleStatus)",
+      "app/Events/CouponChanged.php (CHANGE_CREATED|UPDATED|DELETED|STATUS_TOGGLED)",
+      "app/Listeners/PersistCouponChangedToOutbox.php",
+      "app/Services/Kiosk/KioskPromoService.php (kiosk-side validate())",
+      "app/Models/KioskPromo.php (branch-scoped table) and app/Models/Coupon.php (global fallback)",
+      "resources/js/components/admin/pos/PosComponent.vue lines 2660-2720 (_subscribeEcho — three broadcastAs entries: OrderCreated, OrderStatusChanged, OrderPaidAtCounter; also ItemAvailabilityChanged + CatalogChanged at 2714-2715)",
+      "resources/js/components/frontend/kiosk/KioskAppComponent.vue lines 566-575, 780+ (broadcastAs 'CouponChanged' handler _handleCouponChanged)"
+    ],
+    "findings": [
+      {
+        "id": "C4-F1",
+        "kind": "missing_consumer",
+        "severity": "P1",
+        "headline": "POS frontend does NOT subscribe to CouponChanged broadcasts — only the Kiosk does.",
+        "evidence": "Grep across resources/js/components/admin/pos/ returns ZERO matches for 'CouponChanged'. The only frontend consumer is resources/js/components/frontend/kiosk/KioskAppComponent.vue:571 ('broadcastAs: CouponChanged' + handler _handleCouponChanged at line 780). PosComponent.vue _subscribeEcho registers five bindings (OrderCreated, OrderStatusChanged, OrderPaidAtCounter, ItemAvailabilityChanged, CatalogChanged) — no CouponChanged.",
+        "consequence": "If admin creates / toggles a coupon while a POS session is active, the cashier UI never reacts. No staleness toast, no menu/discount refresh, no real-time invalidation. The POS application has no 'auto-apply promo flash' code path at all."
+      },
+      {
+        "id": "C4-F2",
+        "kind": "no_apply_ui",
+        "severity": "P1",
+        "headline": "POS has NO UI to enter or auto-apply a promo code.",
+        "evidence": "resources/js/components/admin/pos/PosComponent.vue contains the field 'coupon_id: null' twice (line 1567 in order template, line 3258 in reset) but no input, no axios call to /frontend/coupon-checking, no use of /api/frontend/promo/validate. The only coupon UI is resources/js/components/frontend/checkout/CouponComponent.vue (delivery checkout) — distinct surface, not POS. Kiosk consumes promos at /api/frontend/promo/validate (KioskPromoService); POS does not.",
+        "consequence": "Even if a real-time CouponChanged broadcast reached PosComponent, there would be no field/state to update. 'Promo flash auto-apply on caisse' is unimplemented end-to-end. Owner-side dashboard CRUD reaches Kiosk only."
+      },
+      {
+        "id": "C4-F3",
+        "kind": "no_flash_concept",
+        "severity": "P2",
+        "headline": "No 'flash promo' (push-now, time-boxed alert) concept distinct from standard valid_from/valid_to.",
+        "evidence": "Grep for 'flash_promo|FlashPromo|happy_hour|promo_alert|flash' across app/, database/migrations/, routes/, app/Events/ returns zero domain-specific matches. KioskPromo has only valid_from/valid_to/active/max_uses; Coupon has start_date/end_date. CouponChanged change types are CREATED|UPDATED|DELETED|STATUS_TOGGLED — no 'flash' / 'broadcast_now' variant.",
+        "consequence": "What an owner would call 'flash promo' (e.g. 'instant 10% for next 30 min, push every terminal NOW') has no first-class model. The closest workflow is: admin creates Coupon or KioskPromo with valid_from=now and short valid_to, kiosk picks it up next REST validate or via cache invalidate triggered by CouponChanged → for KIOSK only."
+      }
+    ],
+    "top_gap": "C4-F1: CouponChanged is broadcast on private-branch.{id} via the outbox (PersistCouponChangedToOutbox.php:73 channel='private-branch.<id>', broadcast_as='CouponChanged') but PosComponent.vue _subscribeEcho omits it entirely. Compounded by C4-F2: POS has no apply-promo UI, so even adding the listener is a no-op without scope expansion."
+  },
+
+  "C5_stock_to_borne_pos_kds": {
+    "question": "Rupture cohérente partout (Borne + POS + KDS) ? ItemAvailabilityChanged propagation vérifié ? Latence ? POS vs Kiosk coherent ?",
+    "verdict": "PASS — propagation is implemented uniformly across all four surfaces with a single event contract, an outbox-backed broadcast, and a verified failure-isolation policy. Latency floor is bound by DispatchDomainEventsJob queue lane (sync in dev, async in prod) + Pusher round-trip, not by polling.",
+    "evidence_trail": [
+      "Event source: app/Events/ItemAvailabilityChanged.php — two factories fromItem() (global) + forBranch() (branch-scoped MENU_86). Uses DispatchableAfterCommit trait.",
+      "Server emitters: app/Services/Stock/StockService.php:151,202,211 + app/Services/Menu/AvailabilityService.php:386,763 (DB::afterCommit closure → event(...)) + app/Services/ItemService.php:406,564 + app/Services/ItemExtraService.php:127 + app/Services/ItemAddonService.php:91 + app/Services/ItemVariationService.php:201. Stock decrement-on-order also runs via app/Listeners/DecrementItemAvailabilityOnOrder.php with WG-2 isolation try/catch.",
+      "Outbox listener: app/Listeners/PersistItemAvailabilityChangedToOutbox.php builds a UNIFORM payload {item_id, status, price, type, is_available, branch_id, reason}. F-04bis fix (line 19-24) guarantees is_available, branch_id, reason are always present (possibly null) so frontend handlers can rely on them. Idempotency key includes correlation_id so toggles true→false→true across legitimate distinct requests each get their own row; same-request listener re-fire is collapsed.",
+      "Channel routing: branch-scoped event → ['private-branch.<branchId>']; global event (admin item edit) → fan-out to all active branches (whereIn status [Status::ACTIVE, 1] — heal A3 for legacy seeded status=1 rows).",
+      "Cache invalidation: app/Listeners/InvalidateKioskMenuCacheOnItemAvailabilityChanged.php + app/Listeners/BumpMenuSnapshotOnItemAvailabilityChanged.php run inside the same dispatch so REST fallbacks also see fresh data.",
+      "Frontend consumers (all four):",
+      " - Kiosk: resources/js/components/frontend/kiosk/KioskAppComponent.vue:548-552 (broadcastAs 'ItemAvailabilityChanged' → _handleItemAvailabilityChanged at line 662). Cart prune handled in store/modules/kioskCart.js:404 (pruneUnavailable).",
+      " - POS: resources/js/components/admin/pos/PosComponent.vue:2714 ([POS-9.1.10] reacted to admin 86 and Audit POS-GA-F-45 noted parity with kiosk; F-04bis distinguishes global vs branch-scoped via is_available signal; cart prune via posCart/pruneUnavailable at line 2793).",
+      " - KDS: resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue:1867 (broadcastAs ItemAvailabilityChanged → _onItemAvailabilityChanged at 2206-2254, dispatches kdsInflight Vuex marker — [CV1-KDS-INFLIGHT-OOS-MARKER-001]).",
+      " - Stock Rupture Dashboard (admin): resources/js/components/admin/stock/StockRuptureDashboardComponent.vue:479-481 (three handlers — ItemAvailabilityChanged + ItemVariationAvailabilityChanged + ItemExtraAvailabilityChanged → _debouncedReload).",
+      "Outbox safety net: app/Jobs/DispatchDomainEventsJob.php (lockForUpdate + dispatched_at claim mutation) + app/Console/Commands/OutboxRetryFailedCommand.php re-dispatches rows with dispatched_at=null after broadcaster outage. PersistItemAvailabilityChangedToOutbox.php:104-117 absorbs inline dispatch failures with structured log (gate 'test-e2e-fix-E-001-round-2') so an HTTP request never bubbles 500 on a Pusher hiccup."
+    ],
+    "findings": [
+      {
+        "id": "C5-O1",
+        "kind": "observation",
+        "severity": "INFO",
+        "headline": "Uniform payload contract holds across all consumers (F-04bis verified).",
+        "evidence": "Both KioskAppComponent and PosComponent gate cart pruning on a strict three-state is_available signal (true/false vs undefined for global). Verified at PosComponent.vue:2765-2776 — global-only events with type='full' refresh the items list but DO NOT prune the cart; branch-scoped events apply pruning + announce."
+      },
+      {
+        "id": "C5-O2",
+        "kind": "observation",
+        "severity": "INFO",
+        "headline": "Latency contract — empirical baseline from memory snapshot.",
+        "evidence": "BRAIN MEMORY.md records 'Q9-S1 cross-surface sync : 0-60s → ~1s mesuré empiriquement' (reports/test-e2e/wave-polish-final-2026-05-21). Pipeline: emit → DB::afterCommit → firstOrCreate domain_events row → DB commit → DispatchDomainEventsJob → broadcaster->broadcast(channels, broadcast_as, envelope) → Pusher/Soketi → Echo .listen(`.ItemAvailabilityChanged`) → handler. No polling fallback is engaged in the happy path — handler runs as Pusher delivers. Polling fallback exists for Echo auth failure (PosComponent silent catch at 2717-2719)."
+      },
+      {
+        "id": "C5-O3",
+        "kind": "observation",
+        "severity": "INFO",
+        "headline": "Failure isolation — WG-2 listener guards prevent a single broken downstream from killing the cascade.",
+        "evidence": "DecrementItemAvailabilityOnOrder.php:30-66 catches Throwable, emits structured StockDecrementFailedEvent, and lets sibling listeners (SendFcmOnOrderCreated, PersistOrderCreatedToOutbox) continue. Outbox listener absorbs inline broadcast failure (PersistItemAvailabilityChangedToOutbox.php:104-117). Net: a Pusher outage degrades to REST/poll fallback without an HTTP 5xx surfacing to the cashier or kiosk customer."
+      },
+      {
+        "id": "C5-O4",
+        "kind": "observation",
+        "severity": "INFO",
+        "headline": "POS vs Kiosk parity — confirmed both for prune-on-unavailable and for global-vs-branch distinction.",
+        "evidence": "PosComponent.vue:2790-2799 mirrors KioskAppComponent — same is_available coercion, same cart-prune dispatch, same announce. The historical drift (Audit POS-GA-F-45 — kiosk had it, POS did not) was healed in commit [POS-9.1.10]; the present code paths are symmetric."
+      }
+    ],
+    "top_gap": "NO GAP — all four surfaces (Borne + POS + KDS + Stock Dashboard) consume the same event with a uniform payload contract, isolated listeners, an outbox safety net, and a retry cron. The only observed soft caveat is that the latency floor (~1s empirical) is bound by Pusher/Soketi delivery, not by the application — no in-app dead path."
+  },
+
+  "C6_multi_device_sync": {
+    "question": "K2-HEAL-01 PaymentService 409 typed exception verified ? K2-HEAL-02 OrderService lockForUpdate verified ? Echo broadcasts notify other cashier ?",
+    "verdict": "PASS — both heals are present in source with disciplined typed-exception → HTTP-409 conversion, locked-transaction race protection, and a backing sentinel test. Other-cashier UI notification is implemented via OrderStatusChanged + OrderPaidAtCounter broadcasts to private-branch.<id>, which all active POS sessions on that branch consume.",
+    "evidence_trail": [
+      "K2-HEAL-01 — app/Exceptions/Payment/PaymentAlreadyCollectedException.php exists, extends \\RuntimeException (NOT HttpException — deliberate choice documented at lines 33-41 so app/Exceptions/Handler.php:105-113 doesn't downgrade to 422). Constructor captures orderId + collectedByUserId + collectedAt.",
+      "K2-HEAL-01 — app/Services/PaymentService.php:219-310: DB::transaction wraps Order lockForUpdate at line 220-223. After lock, if $locked->payment_status === PAID: queries audit_logs for the 'order.counter_payment_confirmed' row (line 281-286), extracts collectedUserId, then SAME-cashier replay returns no-op 200 (V5.5 sister guard line 293-298, preserved per C5_EncaisserKdsPreserveTest:302-355) but DIFFERENT-cashier OR unknown collector throws PaymentAlreadyCollectedException (line 305-309). Unknown-collector is treated as foreign — the safe default explicitly justified at line 300-303.",
+      "K2-HEAL-01 — Route closure routes/api.php:815-856 has a TYPED catch for PaymentAlreadyCollectedException ABOVE the generic Exception→422 fallback (line 835-852) returning 409 + structured body {status:false, message, error_code:'payment_already_collected', order_id, collected_by_user_id, collected_at}. Route also gates on auth()->user()?->can('pos') and uses 'throttle:pos-order-update' + 'idempotency' middleware.",
+      "K2-HEAL-01 — Frontend resources/js/components/admin/pos/PosCounterCollectModal.vue:452-475 catches err with err.response.status === 409 AND err.response.data.error_code === 'payment_already_collected', shows FR error toast 'Cette commande a déjà été encaissée par un autre caissier.', emits('cancel') so the Q10 'à encaisser' panel refreshes and removes the now-paid row. NO phantom drawer-open simulation.",
+      "K2-HEAL-01 — Sentinel: tests/Feature/Payment/PosCounterCollectRaceProtectionSentinelTest.php (verifies service-level typed throw, route-level 409+error_code, and data integrity: exactly 1 cash_movements / 1 audit_logs / 1 transactions row — cashier B's POST creates ZERO additional rows).",
+      "K2-HEAL-02 — app/Services/OrderService.php:1927-1972: 'else' branch of changeStatus() wraps mutate path in DB::transaction (line 1946) and acquires Order::query()->whereKey($order->id)->lockForUpdate()->firstOrFail() INSIDE the closure (line 1947). After idempotent gate check on $locked->status (line 1959-1966) — returns early with setRawAttributes for the already-applied case. Mirrors the established self-cancel pattern at lines 1871-1901 and the PaymentService pattern.",
+      "K2-HEAL-02 — Post-tx sync at line 2071: $order->setRawAttributes($locked->getAttributes(), true) so post-commit dispatches (SendOrderMail+SendOrderSms+SendOrderPush at lines 2078-2080, OrderStatusChanged at line 2084, OrderCanceled at 2093) read persisted state rather than pre-lock attributes.",
+      "K2-HEAL-02 — Sentinel: tests/Feature/Orders/OrderServiceChangeStatusRaceSentinel.php verifies via source-level introspection that lockForUpdate sits INSIDE the else-branch transaction (reflection over OrderService::changeStatus) AND behavioural idempotency (one transition row + one action_log per order on duplicate clicks). SQLite serialisation noted at line 44-47.",
+      "Other-cashier Echo notification — app/Services/OrderService.php:2084 dispatches OrderStatusChanged($order, $oldStatusForBroadcast, $targetStatus) after commit. PaymentService.php:423 dispatches OrderStatusChanged on auto-prepare ACCEPT→PREPARING (Wave S-1 P-OWNER 2026-05-20). All outbox listeners route to channel 'private-branch.<branchId>' (see PersistOrderTableChangedToOutbox.php:75, PersistOrderPaymentStatusChangedOnRefundCreated.php docblock).",
+      "Other-cashier subscriber — resources/js/components/admin/pos/PosComponent.vue:2666-2716 _subscribeEcho() registers FIVE bindings on private-branch.<authBranchId>: OrderCreated (notify + reload), OrderStatusChanged (loadKioskCashOrders + loadActiveOrdersStats + loadReadyOrders), OrderPaidAtCounter (same three loads — added explicitly per Wave X X2 P-OWNER 2026-05-21 because OrderPaidAtCounter encodes payment_status but not status), ItemAvailabilityChanged, CatalogChanged.",
+      "PosOrdersTracker — separate component also subscribed: resources/js/components/admin/pos/PosOrdersTrackerComponent.vue:662-675 (OrderCreated + OrderStatusChanged + OrderPaidAtCounter handlers all call fetchOrders())."
+    ],
+    "findings": [
+      {
+        "id": "C6-O1",
+        "kind": "observation",
+        "severity": "INFO",
+        "headline": "K2-HEAL-01 verified end-to-end: service throw, typed catch in route, 409 response, frontend modal branch on error_code, data integrity sentinel.",
+        "evidence": "Five chained checkpoints: (1) PaymentService.php:305-309 throws typed exception; (2) routes/api.php:835-852 catches above generic 422; (3) HTTP 409 + error_code='payment_already_collected'; (4) PosCounterCollectModal.vue:466-474 branches on error_code (not message); (5) PosCounterCollectRaceProtectionSentinelTest covers service + route + data integrity."
+      },
+      {
+        "id": "C6-O2",
+        "kind": "observation",
+        "severity": "INFO",
+        "headline": "K2-HEAL-02 verified: lockForUpdate inside DB::transaction in the else-branch of OrderService::changeStatus, attribute sync back to route-bound model, sentinel test.",
+        "evidence": "OrderService.php:1946-1972 + 2071. Sentinel test OrderServiceChangeStatusRaceSentinel.php verifies via reflection AND behavioural idempotency. Mirrors the proven pattern from PaymentService.php:219-249 and KitchenDisplaySystemOrderService.php:257-261."
+      },
+      {
+        "id": "C6-O3",
+        "kind": "observation",
+        "severity": "INFO",
+        "headline": "Echo notifications to OTHER cashier — implemented via branch-scoped channel; both PosComponent AND PosOrdersTracker consume the same broadcasts.",
+        "evidence": "OrderStatusChanged fired on every status mutation (changeStatus + Wave S-1 auto-prepare). OrderPaidAtCounter fired on every counter-collect success. OrderCreated fired on every new order. All three carried on private-branch.<branchId>. PosComponent.vue:2666 onEvents(branchId, [...]) and PosOrdersTrackerComponent.vue:662 both subscribe — so within the same branch, every active POS terminal observes the same state mutations. The 'à encaisser' Q10 panel and the 'Prêt à livrer' shortcut both refresh in real time."
+      },
+      {
+        "id": "C6-O4",
+        "kind": "observation",
+        "severity": "INFO",
+        "headline": "Same-cashier idempotent replay is NOT broken by the K2 heals — the V5.5 sister guard is explicitly preserved.",
+        "evidence": "PaymentService.php:292-298 — when collected_by_user_id == current Auth::id() and the row is already PAID, returns 200 no-op with $order->setRawAttributes($locked->getAttributes(), true). Documented as defense behind IdempotencyKeyMiddleware (PosCounterCollectRaceProtectionSentinelTest.php:30-33 references the preserved pattern). The typed 409 only fires for race-loser (different cashier) or unknown collector."
+      }
+    ],
+    "top_gap": "NO GAP — K2-HEAL-01 and K2-HEAL-02 are fully implemented at service + route + frontend + sentinel layers. Other-cashier Echo notification is wired via OrderStatusChanged + OrderPaidAtCounter on private-branch.<id>, consumed by PosComponent and PosOrdersTracker. The only design caveat — by intent — is that race-loser cashier B sees their own 409 toast; cashier A doesn't get an extra 'you won the race' broadcast, but A's UI receives OrderStatusChanged/OrderPaidAtCounter which already refreshes the Q10 panel."
+  },
+
+  "summary_top_per_cluster": {
+    "C4_top": "POS frontend does NOT consume the CouponChanged Echo broadcast and POS has no UI to apply a promo code — admin coupon CRUD reaches Kiosk only. There is no first-class 'flash promo' concept beyond valid_from/valid_to scheduling.",
+    "C5_top": "Stock rupture cascade is uniform and disciplined: single event ItemAvailabilityChanged with uniform F-04bis payload, branch-scoped channel routing, outbox + retry cron, consumed by Borne + POS + KDS + Stock Dashboard with parity. Empirical latency floor ~1s per BRAIN snapshot.",
+    "C6_top": "K2-HEAL-01 (typed PaymentAlreadyCollectedException → 409 + error_code) and K2-HEAL-02 (lockForUpdate inside else-branch DB::transaction) are both verified at service + route + frontend + sentinel layers. Other-cashier UIs are notified via OrderStatusChanged + OrderPaidAtCounter on private-branch.<id>."
+  },
+
+  "verdict": "MIXED — C5 PASS, C6 PASS, C4 PARTIAL_NO (one missing consumer + missing UI + no flash concept).",
+
+  "risk_level_when_mapped_to_V1_le_cayenne_local": {
+    "C4": "P1 — owner-facing capability gap, not a regression. V1 Le Cayenne workflow at single restaurant rarely needs cross-terminal flash promo (cashier can apply a manual discount via existing discount_reason field). However the wording 'caisse l'applique automatique' is unimplemented and the owner should know.",
+    "C5": "GREEN — no blocker. Latency and consistency are within owner-validated bounds.",
+    "C6": "GREEN — no blocker. Race conditions are bounded by typed exceptions + locked transactions + sentinel-guarded contracts. Frozen-zone diff = 0 (heals introduced new file PaymentAlreadyCollectedException.php and a new sentinel test; PaymentService.php mods are documented within the same file but the file is NOT in the frozen list — PaymentComponent.vue is, the service is not)."
+  },
+
+  "out_of_scope_observations": [
+    "C4 P2 backlog candidate — if owner ever wants 'flash promo to all POS terminals NOW', a path forward exists with minimal scope: (a) add CouponChanged listener to PosComponent._subscribeEcho mirroring the kiosk handler, (b) add a 'Promo en cours' badge component in POS header reading from store/modules/coupon.js (already imported but unused in POS), (c) optionally add a 'flash' change_type variant to CouponChanged to allow priority styling. None of this is frozen-zone."
+  ],
+
+  "frozen_zones_touched_during_audit": "ZERO — read-only audit across app/, resources/js/, routes/, tests/.",
+
+  "files_inspected": [
+    "app/Events/CouponChanged.php",
+    "app/Events/ItemAvailabilityChanged.php",
+    "app/Exceptions/Payment/PaymentAlreadyCollectedException.php",
+    "app/Http/Controllers/Admin/CouponController.php",
+    "app/Listeners/DecrementItemAvailabilityOnOrder.php",
+    "app/Listeners/PersistCouponChangedToOutbox.php",
+    "app/Listeners/PersistItemAvailabilityChangedToOutbox.php",
+    "app/Models/KioskPromo.php",
+    "app/Services/Kiosk/KioskPromoService.php",
+    "app/Services/Menu/AvailabilityService.php",
+    "app/Services/OrderService.php (lines 1660-1750, 1920-2105)",
+    "app/Services/PaymentService.php (lines 200-450)",
+    "app/Services/Stock/StockService.php",
+    "resources/js/components/admin/pos/PosComponent.vue (lines 1560-1575, 2660-2800)",
+    "resources/js/components/admin/pos/PosCounterCollectModal.vue (lines 380-485)",
+    "resources/js/components/admin/pos/PosOrdersTrackerComponent.vue (lines 660-680)",
+    "resources/js/components/admin/stock/StockRuptureDashboardComponent.vue (lines 479-481)",
+    "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue (lines 1860-1870, 2200-2260)",
+    "resources/js/components/frontend/kiosk/KioskAppComponent.vue (lines 540-580, 660-790)",
+    "resources/js/services/eventContract.js (lines 320-380)",
+    "routes/api.php (lines 690-700, 805-860)",
+    "tests/Feature/Payment/PosCounterCollectRaceProtectionSentinelTest.php",
+    "tests/Feature/Orders/OrderServiceChangeStatusRaceSentinel.php"
+  ]
+}

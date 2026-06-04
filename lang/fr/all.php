@@ -66,6 +66,10 @@ return [
         'online_orders' => 'Commandes en ligne',
         'sales_report' => 'Rapport des ventes',
         'items_report' => 'Rapport des articles',
+        // [V102-08 HEAL-3 2026-05-26] One-click EOD PDF synthesis button on Admin Dashboard.
+        'eod_pdf_button' => 'PDF Clôture du jour',
+        'eod_pdf_error' => 'Téléchargement du PDF échoué. Réessayez ou vérifiez vos permissions.',
+        'downloading' => 'Téléchargement…',
         'stock_low_alerts' => 'Alertes stock bas',
         'last_z_report' => 'Dernier rapport Z',
         'view_all_alerts' => 'Voir toutes',
@@ -88,6 +92,28 @@ return [
             'no_low_alerts' => 'Aucune alerte de stock faible.',
             'below_threshold' => 'Sous le seuil',
         ],
+        // [Wave X3 2026-05-21] KDS Historique du jour — read-only V1 day-history.
+        'kds_history_button'      => 'Historique',
+        'kds_history_button_aria' => "Ouvrir l'historique des commandes du jour",
+        'kds_history_close_aria'  => 'Fermer',
+        'kds_history_title'       => 'Historique du jour',
+        'kds_history_empty'       => "Aucune commande historique aujourd'hui",
+        'kds_history_loading'     => 'Chargement…',
+        'kds_history_error'       => 'Erreur de chargement',
+        'kds_history_retry'       => 'Réessayer',
+        'kds_state_prepared'      => 'Prêt',
+        'kds_state_out'           => 'En livraison',
+        'kds_state_delivered'     => 'Livré',
+        // [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B compensating action]
+        'kds_recall_button'        => '↶ Annuler bump',
+        'kds_recall_button_aria'   => 'Annuler le bump de la commande N°{queue} — disponible 60 secondes',
+        'kds_recall_badge'         => 'RAPPELÉ',
+        'kds_recall_badge_aria'    => 'Commande N°{queue} rappelée en cuisine',
+        'kds_recall_confirm_title' => 'Annuler ce "Prêt" ?',
+        'kds_recall_warning_60s'   => 'Disponible 60 secondes après bump',
+        'kds_recall_success'       => 'Commande rappelée ✓',
+        'kds_recall_too_late'      => 'Délai 60s dépassé — contacter cassier',
+        'kds_recall_already_recalled' => 'Cette commande a déjà été rappelée',
         'configure_wizard' => 'Configurer le wizard',
         'composer' => [
             'product_context' => 'Produit',
@@ -152,6 +178,40 @@ return [
         // par PosController::store quand le caissier tente une vente espèces
         // sans avoir une CashDrawerSession OPEN sur sa branche.
         'cash_no_open_session_blocks_sale' => 'Aucune caisse ouverte — ouvrir une session avant de prendre un paiement espèces.',
+        // [W2-livreur 2026-05-21] Libellés UI cash-session admin livreur (V1.0.2 Sub-6.3 BUILD-1).
+        'delivery_cash_sessions' => 'Caisses livreur',
+        'delivery_cash_session' => 'Caisse livreur',
+        'delivery_cash_status_open' => 'Ouverte',
+        'delivery_cash_status_closed' => 'Clôturée',
+        'delivery_cash_status_reconciled' => 'Réconciliée',
+        // [T2-LIV-P1-01 heal 2026-05-28] Add missing keys surfaced by MAX TEST i18n sweep
+        // on /admin/delivery-boy-cash-sessions/1 (DeliveryBoyCashSessionShowComponent.vue).
+        'cash_session_closed_at' => 'Fermée le',
+        'cash_session_reconcile' => 'Réconcilier',
+        'direction' => 'Sens',
+        'notes' => 'Notes',
+        'branch' => 'Branche',
+        'type' => 'Type',
+        'delivery_boy' => 'Livreur',
+        'delivery_cash_mvt_order_collect' => 'Encaissement commande livrée',
+        'delivery_cash_mvt_change_given' => 'Rendu de monnaie',
+        'delivery_cash_mvt_drawer_open' => 'Ouverture caisse',
+        'delivery_cash_mvt_drawer_close' => 'Clôture caisse',
+        'delivery_cash_mvt_adjustment' => 'Ajustement',
+        // [I18N-DASH-P1-01 heal 2026-05-30] Full audit 2026-05-29 i18n agent
+        // caught dashboard AuditTrailComponent rendering audit_logs.action raw.
+        // Translations for displayed NF525 audit event types.
+        'audit_event_user_login' => 'Connexion utilisateur',
+        'audit_event_user_logout' => 'Déconnexion utilisateur',
+        'audit_event_cash_movement_recorded' => 'Mouvement de caisse enregistré',
+        'audit_event_cash_delivery_session_opened' => 'Ouverture caisse livreur',
+        'audit_event_cash_delivery_session_closed' => 'Clôture caisse livreur',
+        'audit_event_cash_delivery_session_reconciled' => 'Réconciliation caisse livreur',
+        'audit_event_order_counter_payment_confirmed' => 'Encaissement comptoir confirmé',
+        'audit_event_order_refund_counter_entry' => 'Remboursement comptoir',
+        'audit_event_z_report_closed' => 'Rapport Z clôturé',
+        'audit_event_z_report_opened' => 'Rapport Z ouvert',
+        'audit_event_outbox_replay' => 'Rejeu événement outbox',
     ],
     'studio' => [
         'eyebrow' => 'Catalogue centralisé',
@@ -174,6 +234,11 @@ return [
         // [test-e2e fix E-004 round-3] Translated exception messages — replaces
         // raw English strings previously hardcoded in app/Exceptions/Handler.php.
         'order_not_found'     => 'Commande introuvable.',
+        // [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B] backend abort() copies.
+        'kds_recall_invalid_state'     => 'Seules les commandes Prêt peuvent être rappelées.',
+        'kds_recall_window_expired'    => 'Délai 60s dépassé — contacter le caissier pour annuler manuellement.',
+        'kds_recall_already_recalled'  => 'Cette commande a déjà été rappelée.',
+        'kds_recall_success'           => 'Commande rappelée en cuisine.',
         'unauthorized'        => "Vous n'avez pas les permissions nécessaires.",
         'method_not_supported' => "Méthode non prise en charge pour cette route.",
         'url_not_found'       => "L'URL spécifiée est introuvable.",

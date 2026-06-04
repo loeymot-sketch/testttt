@@ -1,0 +1,82 @@
+{
+  "role": "RED-team (adversarial)",
+  "zone": "PK-3 — Contract Integrity",
+  "scope": "Exploit serializer divergence to hide an allergen, cross-branch leak via raw query, missing snapshot on legacy orders",
+  "method": "adversarial read-only attempt — exhaust attack surface on the 3-resources + items-board service path",
+  "attack_vectors": [
+    {
+      "id": "PK-3-RED-01",
+      "severity": "P1",
+      "title": "Allergen hiding via items-board serializer omission — chef relying on items-board column for prep batching sees no allergen warning",
+      "scenario": "Customer A orders Cheeseburger with allergen 'gluten'. Customer B orders Cheeseburger no allergen. POS captures allergens_snapshot=['gluten'] for A, [] for B. KitchenDisplaySystemOrderService::orderItems() correctly splits them into 2 KDS lines (allergen-hash split, verified by sentinel KdsAllergenAggregationSplitTest). BUT the serialized payload via KDSOrderItemsResource ships ZERO allergen info to the frontend. The items-board template doesn't currently render allergens, so the chef preps a 'Cheeseburger x2' card if they group by item-name in their head, missing the allergen flag entirely. The today-orders card view DOES surface the allergen via KDSOrderDetailsResource → OrderItemResource, so the warning exists somewhere on the screen — but the items-board column is silently allergen-blind.",
+      "exploit_result": "Real-world risk: chef in rush only checks items-board column → misses allergen on a card → gluten contamination. Probability bounded by chef workflow (they're trained to check both views) but the serializer SHOULD ship the field as defense-in-depth. Confirms Z-1 finding. RECOMMENDATION: heal inline.",
+      "blocked_by_existing": "Partial — today-orders card surface DOES render allergens; items-board column does NOT. Defense exists but not on both surfaces.",
+      "fix_class": "HEAL-ALLOWED per task brief"
+    },
+    {
+      "id": "PK-3-RED-02",
+      "severity": "P0_attempted_P3_actual",
+      "title": "Cross-branch leak via raw query manipulation on items-board endpoint",
+      "scenario": "Staff with branch_id=5, JWT token signed legit. Sends GET /admin/kds-order/items?branch_id=1 hoping the controller forwards branch_id to the service. Or sends ?branch_id=0 hoping to gain admin scope.",
+      "exploit_result": "BLOCKED. KitchenDisplaySystemOrderService::orderItems() (lines 257-331) reads $userBranchId = auth()->user()->branch_id ?? 0 — NEVER from request. The orderFilter array (line 36-43) allows request-side branch_id only in list() not in orderItems(). orderItems() has no request param processing at all beyond auth user. BranchScope auto-applied on OrderItem model as defense-in-depth. Cross-branch leak impossible via items-board endpoint.",
+      "blocked_by_existing": "Two layers — explicit auth()->user()->branch_id resolution + BranchScope global on Order AND OrderItem.",
+      "fix_class": "NONE — defense intact"
+    },
+    {
+      "id": "PK-3-RED-03",
+      "severity": "P2",
+      "title": "Allergen-hash collision via crafted unicode in allergens_snapshot — could merge two distinct allergen sets into one line",
+      "scenario": "Legacy order has allergens_snapshot=['gluten ', ' gluten'] (with whitespace). Service normalizeAllergensForHash applies array_filter(value !== null && value !== '') but does NOT trim() per-element. sha1 would yield different hash than ['gluten'].",
+      "exploit_result": "PARTIAL EXPLOIT. If POS code or migration backfill emits ['gluten '] with trailing space, the hash differs from ['gluten'], splitting lines that should merge (food-safety SIDE: chef sees 2 cards instead of 1 — safer not less-safe). The defense err on the side of split (more cards, never fewer). NOT a food-safety bug, but a usability inefficiency.",
+      "blocked_by_existing": "Conservative split-on-difference is food-safety-positive even when hash mismatches are spurious.",
+      "fix_class": "BACKLOG V1.0.X — normalize trim() in normalizeAllergensForHash"
+    },
+    {
+      "id": "PK-3-RED-04",
+      "severity": "P3",
+      "title": "Missing snapshot on legacy orders pre-2026_04_18 backfill — fallback path serves empty allergens",
+      "scenario": "Order created before backfill migration 2026_04_18_140004 + 2026_04_20_131600 ran. allergens_snapshot is NULL.",
+      "exploit_result": "MITIGATED. BackfillAllergensSnapshotCommand exists (app/Console/Commands/BackfillAllergensSnapshotCommand.php) and the service normalizeAllergensForHash collapses null/empty to identical hash. Resource fallback returns []. Wire shape is consistent. The customer who placed a pre-backfill order without an allergen profile gets a card without allergen flag — which is correct (no allergen recorded).",
+      "blocked_by_existing": "Backfill command + null-safe normalize.",
+      "fix_class": "NONE — graceful degradation"
+    },
+    {
+      "id": "PK-3-RED-05",
+      "severity": "P2",
+      "title": "Composition snapshot tampering attempt — frontend re-sends order with crafted composition_snapshot to bypass server-side pricing",
+      "scenario": "Adversary client sends item_id + a fabricated composition_snapshot pre-baked with extras=0 prices. Tests if backend trusts the snapshot from request.",
+      "exploit_result": "BLOCKED at order creation (PricingService is SSOT — composition_snapshot is COMPUTED by the backend at create-time and stored frozen, not read from request). Once stored, the snapshot is what KDS reads — and there is no KDS endpoint that mutates orders' composition_snapshot. The /change-status endpoint mutates only status field. Wire-immutable post-create.",
+      "blocked_by_existing": "Pricing SSOT NF525 invariant + KDS endpoints are read-only on snapshot.",
+      "fix_class": "NONE — by design"
+    },
+    {
+      "id": "PK-3-RED-06",
+      "severity": "P1",
+      "title": "Resource null-pointer crash via deleted Item — items-board references $this->orderItem?->name with null-safe op",
+      "scenario": "Item soft-deleted post-order. OrderItem relation Order::orderItem withTrashed (model:91), so the relation resolves to the soft-deleted Item. Resource ships item_name safely.",
+      "exploit_result": "DEFENDED. withTrashed() on the orderItem relation + null-safe operator $this->orderItem?->name. Result: soft-deleted items keep their name on KDS, chef sees a coherent card.",
+      "blocked_by_existing": "Defensive null-safe + withTrashed relation.",
+      "fix_class": "NONE"
+    },
+    {
+      "id": "PK-3-RED-07",
+      "severity": "P0_attempted_P3_actual",
+      "title": "Replay attack: re-POST identical /change-status with stale expected_status",
+      "scenario": "Adversary or buggy client re-submits status change after a peer already advanced the order.",
+      "exploit_result": "BLOCKED by optimistic locking (KitchenDisplaySystemOrderService::changeStatus:189-202) — DB lockForUpdate + expected_status check + 409 on conflict. Logged for telemetry. No state corruption.",
+      "blocked_by_existing": "Optimistic lock + lockForUpdate + 409 contract.",
+      "fix_class": "NONE — defense exemplary"
+    }
+  ],
+  "summary": {
+    "attacks_tried": 7,
+    "p0_or_p1_real": 1,
+    "p1_findings": ["PK-3-RED-01 — confirms Z-1 allergen contract gap"],
+    "all_other_attacks": "BLOCKED by existing defenses (BranchScope, NF525 SSOT, optimistic lock, defensive null-safety, conservative hash-split)"
+  },
+  "verdict": {
+    "summary": "Defense surface is solid across cross-tenant, replay, and tamper vectors. The single confirmed P1 is the Z-1 allergen contract gap, which is HEAL-ALLOWED scope and trivial 1-line fix. No P0 found. Items-board endpoint is the weakest contract by accident of historical drift, not by adversarial vulnerability.",
+    "blocking_v1": false,
+    "heal_recommended": "YES — PK-3-RED-01 + PK-3-ARCH-01 are the same finding (Z-1 confirmation). Apply minimal fix + sentinel test."
+  }
+}

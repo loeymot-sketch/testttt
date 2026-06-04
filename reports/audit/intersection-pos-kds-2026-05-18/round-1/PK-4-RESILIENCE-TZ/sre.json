@@ -1,0 +1,132 @@
+{
+  "role": "SRE",
+  "zone": "PK-4 Resilience + TZ-awareness",
+  "mode": "read-only",
+  "date": "2026-05-18",
+  "scope": [
+    "Cadence cap correctness (floor 250ms / ceiling 60s base + 30s jitter)",
+    "Jitter spread (avoid reconnect storm = thundering herd)",
+    "Session-A heals attested intact (Wave 2c-3 + 3b + 3c)",
+    "Cron alignment (outbox:retry-failed --since=24h hourly, webhook:retry-failed --since=24h hourly, prune cadences)"
+  ],
+  "anchors": {
+    "config_clamps": "config/catalog_v15.php:79-97",
+    "frontend_clamps": "resources/js/services/KdsSyncService.js:25-27, 455-490",
+    "outbox_retry": "app/Console/Commands/OutboxRetryFailedCommand.php (DIRTY-OBSERVE)",
+    "webhook_retry": "app/Console/Commands/OutboxWebhookRetryFailedCommand.php (DIRTY-OBSERVE)",
+    "kernel": "app/Console/Kernel.php:40-147"
+  },
+  "session_a_heals_attestation": {
+    "wave_2c_148dbebce": {
+      "claim": "KdsSyncService TZ-aware boundaries (KDS-ADV3-01 P0)",
+      "intact": true,
+      "evidence_lines": "app/Services/KdsSyncService.php:77-94 — Paris->UTC conversion before binding, comments cite KDS-ADV3-01"
+    },
+    "wave_2b_c2613cab0": {
+      "claim": "KitchenDisplaySystemOrderService + OrderStatusScreenOrderService TZ-aware (KDS-ADV3B-01 P0)",
+      "intact": true,
+      "evidence_lines": "app/Services/KitchenDisplaySystemOrderService.php:104-107, 282-285 + OrderStatusScreenOrderService.php:77-80, 208-211"
+    },
+    "wave_3_a1dd60f56": {
+      "claim": "Cadence FLOOR 250ms (KDS-RED-09 P1)",
+      "intact": true,
+      "evidence_lines": "config/catalog_v15.php:91-96 (PHP min/max clamp) + KdsSyncService.js:25, 472 (JS clampBase)"
+    },
+    "wave_3b_9ff26e12b": {
+      "claim": "Cadence CEILING 60s base / 30s jitter (KDS-ADV3B-04 P1)",
+      "intact": true,
+      "evidence_lines": "config/catalog_v15.php:91-96 (min(60_000, ...)) + KdsSyncService.js:26-27, 473, 479 (CADENCE_CEILING_MS, JITTER_CEILING_MS)"
+    },
+    "wave_3c_fe595a4d6": {
+      "claim": "Outbox Cache::lock TTL 60->300s + batch cap 500 (SYNC-ADV3C-04 P1)",
+      "intact": true,
+      "evidence_lines": "app/Console/Commands/OutboxRetryFailedCommand.php:44 (LOCK_TTL_SECONDS=300) + OutboxWebhookRetryFailedCommand.php:64 (LOCK_TTL_SECONDS=300)"
+    },
+    "wave_3c_4905138fa": {
+      "claim": "Dashboard/OrderService/OSS stale-prune/Avail/Cron TZ-aware (Wave 3c P0+P1)",
+      "intact": true,
+      "evidence_lines": "OrderStatusScreenOrderService.php:108 + 228 — now('UTC')->subHours(...) for stale-prune binding"
+    },
+    "wave_5_65f59e82f": {
+      "claim": "ws:heartbeat write after successful broadcast (S-P0-A)",
+      "intact": true,
+      "evidence_lines": "app/Jobs/DispatchDomainEventsJob.php:127-131"
+    }
+  },
+  "findings": [
+    {
+      "id": "PK4-SRE-01",
+      "severity": "VERIFIED",
+      "claim": "Cadence floor/ceiling clamps defended in BOTH PHP config (server-published meta) AND JS runtime (client-injected window.foodkingConfig).",
+      "evidence": [
+        "config/catalog_v15.php:91-96 — `min(60_000, max(250, env(...)))` covers both bounds in env-driven values",
+        "KdsSyncService.js:469-480 — clampBase + clampJitter functions enforce identical bounds in JS at runtime",
+        "Defense-in-depth: an attacker poisoning window.foodkingConfig.kdsFallbackPolling cannot get below 250ms or above 60s base / 30s jitter"
+      ],
+      "action": "verified"
+    },
+    {
+      "id": "PK4-SRE-02",
+      "severity": "VERIFIED",
+      "claim": "Jitter spread prevents reconnect storm at fleet scale.",
+      "evidence": [
+        "KdsSyncService.js:451-453 — `_jitter(max)` = Math.floor(Math.random() * (max + 1)) — uniform [0, max]",
+        "Default jitter spreads 50+ stations across 1-3s window post-reconnect",
+        "Storm-detected forceSync adds extra 0-500ms client-side jitter (line 257) — bridges Pusher cool-down without lockstep",
+        "Server-side Cache::remember(5s) at KdsSyncService.php:49 softens any residual herding to a single DB query per minute-bucket per branch"
+      ],
+      "action": "verified"
+    },
+    {
+      "id": "PK4-SRE-03",
+      "severity": "VERIFIED",
+      "claim": "Outbox + Webhook retry cron lanes safe under concurrency.",
+      "evidence": [
+        "OutboxRetryFailedCommand.php:50 + OutboxWebhookRetryFailedCommand.php:70 use Cache::lock(KEY, 300s) with finally-release",
+        "BATCH_CAP=500 + lock TTL 300s = bounded wall-clock; overflow drains on next hourly tick (Kernel.php:65, :77)",
+        "Lock keys are distinct: 'outbox.retry-failed.lock' vs 'outbox.webhook-retry-failed.lock' — the two lanes run concurrently",
+        "Kernel: `withoutOverlapping(10)` + `onOneServer()` both lanes (lines 66-68, 78-80)"
+      ],
+      "action": "verified"
+    },
+    {
+      "id": "PK4-SRE-04",
+      "severity": "P3-INFO",
+      "claim": "CLI default vs cron parity drift: --since=1h CLI default but --since=24h cron in Kernel.",
+      "evidence": [
+        "OutboxRetryFailedCommand.php:16 — `{--since=1h}` CLI default",
+        "Kernel.php:64 — `foodking:outbox:retry-failed --since=24h` scheduled value",
+        "Effect: operator running `php artisan foodking:outbox:retry-failed` for manual replay misses 23h of failures vs the cron lane",
+        "Not a P1 (manual replay is rare and operator can pass `--since=24h`), but a subtle footgun. Webhook command has --since=24h as CLI default (line 40) — consistent."
+      ],
+      "recommendation": "Align CLI default to --since=24h to match the cron behavior. V1.0.1 backlog. File is DIRTY-OBSERVE — do not heal here.",
+      "action": "defer"
+    },
+    {
+      "id": "PK4-SRE-05",
+      "severity": "RESOLVED-BY-DESIGN",
+      "claim": "Webhook DLQ 24h-vs-180d retention gap is intentional, NOT a bug.",
+      "evidence": [
+        "Kernel.php:117 — `foodking:webhook:prune --older-than-days=180` retains processed+duplicate rows for PCI dispute window",
+        "Kernel.php:111-112 comment — pending/failed rows are owned by DLQ retry lane (foodking:webhook:retry-failed)",
+        "24h retry window = operational SLO. 180d retention = PCI lookback. Failed rows >24h old are paged via staleness monitor for human triage",
+        "Confirmed via PruneWebhookEventsCommand docblock reference in Kernel:115-116"
+      ],
+      "action": "verified"
+    },
+    {
+      "id": "PK4-SRE-06",
+      "severity": "VERIFIED",
+      "claim": "Heartbeat best-effort try/catch is correct degraded-mode behavior.",
+      "evidence": [
+        "DispatchDomainEventsJob.php:127-131 — if Cache facade itself fails (Redis outage), heartbeat goes stale -> polling fallback engages -> kitchen self-heals",
+        "Observability dashboard correctly flips to 'WS_HEARTBEAT_STALE' state in SyncOverviewController:531",
+        "Outbox dispatch is NOT impacted (observability failure is swallowed)"
+      ],
+      "action": "verified"
+    }
+  ],
+  "verdict": "All Wave 2c/3/3b/3c/Wave 5 session-A heals attested INTACT. Cadence clamps defended dual-layer (PHP+JS). Jitter spread is uniform [0, max] preventing thundering herd. Outbox+Webhook retry locks safe. 1 P3-INFO CLI/cron parity drift deferred to V1.0.1. 1 RESOLVED-BY-DESIGN (24h vs 180d gap).",
+  "heals_applied": 0,
+  "files_modified": []
+}

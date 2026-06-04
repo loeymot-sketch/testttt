@@ -1,0 +1,101 @@
+{
+  "specialist": "RED",
+  "mode": "read-only adversarial",
+  "scope": "What breaks Option C fold-in thesis? Argue against C-1 default. Hunt anti-patterns.",
+  "branch": "v1-0-1-hardening-2026-05-17",
+  "head": "ce23352ab",
+  "date": "2026-05-19",
+  "method": "Constructive challenge of plans/SPINBOOST_FOLD_IN_FOODKING_V12_PLAN_2026-05-19.md and underlying Option C strategy. Cross-validate against ULTRA_REVIEW + Wave D + memory feedbacks + real-world enforcement landscape 2026.",
+  "verdict": "Option C is the operationally rational choice given current owner posture, BUT 7 adversarial scenarios deserve explicit acknowledgment in plan §7 risks. Plan as written already covers 4-5 of them (R-01 to R-06) — RED adds 3 sharper edges (RED-FOLDIN-04, RED-FOLDIN-06, RED-FOLDIN-07).",
+
+  "adversarial_scenarios_that_break_option_c_thesis": [
+    {
+      "id": "RED-FOLDIN-01",
+      "title": "Google policy enforcement materializes — FoodKing brand contamination",
+      "scenario": "C-2 variant retained (owner override). 12 months in production. Google Business Profile of Le Cayenne suspended for 'incentivized reviews'. Bad PR: '[Le Cayenne fast-food] caught paying for Google reviews via FoodKing platform — gamified bribery'. Public TikTok / X post viral. Other restos considering FoodKing adoption see this and abandon.",
+      "probability": "10-25% over 18 months C-2 / <5% C-1 (per ULTRA_REVIEW §1.3 calibration)",
+      "impact_if_materialized": "FoodKing brand permanently tied to gray-zone review-gating. SaaS scaling to 10+ restos impossible because no resto wants brand association with policy-violating tool. Existing Le Cayenne loses local trust + Google traffic.",
+      "mitigation_in_plan": "Plan R-01 and §2.1 strongly recommend C-1 + §13 owner gates explicit. Plan R-10 covers variant drift C-1 → C-2 silent. Adequate IF owner respects recommendation.",
+      "verdict": "Plan adequately covers BUT requires owner discipline. Recommend §2.1 stronger language: 'C-2 = NON-RECOMMANDÉ. Si retenu, plan séparé requis avec budget juridique +3k€.'"
+    },
+    {
+      "id": "RED-FOLDIN-02",
+      "title": "Anti-pattern: bolting unrelated feature onto Laravel monolith",
+      "scenario": "Review Boost is gamification + email opt-in CRM. FoodKing is POS + Kiosk + KDS + OSS + Stock. Fold-in says 'reuse 30-40% infra' but the new module's CORE LOGIC (wheel SVG + spin animation + drawProof HMAC + voucher state machine) is NOT FoodKing-domain. Adding it to the monolith = (a) Code surface increases, (b) Deployment risk for FoodKing core increases (1 buggy migration kills POS), (c) Solo founder cognitive load expands.",
+      "probability": "low if discipline respected, moderate if no architectural separation",
+      "impact_if_materialized": "Tech debt accelerates. FoodKing V1.3/V2 work blocked because Review Boost migrations conflict. Backup/restore tested for FoodKing core might not cover review_boost_* tables properly.",
+      "mitigation_in_plan": "Plan §3.1 creates app/Domain/ReviewBoost/ + app/Services/ReviewBoost/ namespace = strict module separation. Feature flag default OFF prevents accidental coupling. R-05 covers maintenance burden.",
+      "verdict": "Plan covers via namespace isolation + feature flag. Owner must enforce: NO cross-cutting changes to FoodKing core to support Review Boost. Module either lives in its namespace cleanly OR doesn't ship V1.2. Recommend §3.1 add note: 'Aucun import depuis app/Services/ReviewBoost vers app/Services/Pos/Kiosk/Kds/Oss — couplage interdit V1.2.'"
+    },
+    {
+      "id": "RED-FOLDIN-03",
+      "title": "Solo founder bandwidth — V1.0.2 + V1.1 + V1.2 + Le Cayenne support concurrent",
+      "scenario": "V1.0.2 hardening + V1.1 OAuth + V1.2 Review Boost + ongoing Le Cayenne pilot operations = 4 fronts. Memory project_v1_0_1_hardening_2026-05-17 already shows V1.0.2 backlog (POS cash session livreur + others). Adding V1.2 Sprint 0-5 = 4-6 weeks calendar = realistic only if V1.1 is small or differred.",
+      "probability": "moderate-high if owner attempts parallel work all fronts",
+      "impact_if_materialized": "Quality drift across all 3 versions. Le Cayenne complaints unaddressed. V1.2 ships buggy. Demoralization.",
+      "mitigation_in_plan": "Plan §1.4 sets 5-case gate: V1.0.2 stabilisé + V1.1 roadmap clarifiée before Sprint 0. §8 sequences strictly. Owner must respect 'one major front at a time' discipline.",
+      "verdict": "Plan covers via sequencing gates. Owner discipline mandatory. Recommend §1.4 add: 'Si V1.1 dérapage > 4 sem au-delà roadmap, V1.2 différé V1.3.' Hard stop trigger."
+    },
+    {
+      "id": "RED-FOLDIN-04",
+      "title": "TAM limitation: 1 restaurant pilot for 12 months = no ROI signal",
+      "scenario": "FoodKing V1 SHIPPABLE per memory project_wave_z_convergence_2026-05-16 + project_v1_0_1_hardening_2026-05-17 = Le Cayenne single-resto. Acquisition of 5-10 more FoodKing restaurants is non-trivial (FoodKing SaaS B2B not in active sales mode per memory feedback_no_cloud_until_owner_initiates). V1.2 Review Boost distributed to 1 restaurant = 1 data point = inconclusive for ROI / engagement KPIs. Module sits idle.",
+      "probability": "high (current state)",
+      "impact_if_materialized": "12 months effort for 1 data point. Cannot validate or invalidate concept. Module bitrots. Tech debt accumulates without offsetting value.",
+      "mitigation_in_plan": "Plan §8 'Conditions de re-évaluation Option C vs A' addresses POST-ship 3-month check. But not the PRE-ship question: 'why ship if only 1 customer to validate?'",
+      "verdict": "INSUFFICIENTLY COVERED. RED recommends plan §13 owner gate add: 'Q-FINAL: V1.2 démarrage uniquement si soit (a) Le Cayenne owner explicitement demande Review Boost ASAP comme upsell pilot, soit (b) FoodKing acquisitionné 3+ restos avant Sprint 0 → 3+ data points justifient effort.' Otherwise differred V1.3+ when FoodKing scale justifies."
+    },
+    {
+      "id": "RED-FOLDIN-05",
+      "title": "Marketing positioning C-1 = 'Voice of Customer' is unproven differentiator",
+      "scenario": "C-1 pivot positioning: 'Voice of Customer + CRM marketing en 90 secondes' (ULTRA_REVIEW §1.2). For a single Le Cayenne pilot, this positioning is irrelevant (it's just a customer perk, not a SaaS-sell). If FoodKing scales to 10 restos, the positioning needs validation: do restos value email opt-in CRM more than they value Google review boost? Restaurateur Patron Pierre persona (DESIGN_BRIEF §1.2) explicitly described as 'wants Google review boost' originally. Pivot may lose Pierre.",
+      "probability": "moderate-high if FoodKing tries SaaS upsell of Review Boost",
+      "impact_if_materialized": "C-1 module ships but restos don't enable it because they want C-2 outcomes (Google boost). Module sits idle on flag-OFF state. ROI = 0.",
+      "mitigation_in_plan": "Plan §7 R-02 covers customer trust. Plan §5 Q-2 owner-defines reward economics. But marketing positioning question not strongly surfaced.",
+      "verdict": "PARTIALLY COVERED. RED recommends plan §5 add Q-10: 'Owner valide-t-il que la valeur perçue par le restaurateur de Review Boost est CRM + email opt-in + NPS feedback, ET QUE l'absence de boost direct Google reviews est acceptable commercialement ?' If owner says no → V1.2 economically unviable, kill or revert to risk-assumed C-2."
+    },
+    {
+      "id": "RED-FOLDIN-06",
+      "title": "Voucher fraud: cashier collusion / register-side ghost redemption",
+      "scenario": "Patron Pierre instructs Sami the server: 'Take this customer's voucher code, redeem it in POS, then later we mark the customer as paid in cash and pocket the voucher discount value as personal margin'. Voucher is reduction sur addition réelle, mais cashier-server collusion can game it.",
+      "probability": "low single-resto small staff trust, moderate at scale",
+      "impact_if_materialized": "Resto-side fraud, customer never gets full discount, FoodKing platform credibility hit if discovered.",
+      "mitigation_in_plan": "Plan covers atomic redemption state machine (Sprint 3) preventing double-redemption AT POS. But does NOT cover cashier-server collusion (cashier IS the legitimate user, redemption IS atomic, fraud is at human layer).",
+      "verdict": "PARTIALLY MITIGABLE only. RED recommends plan §4 Sprint 3 add: 'Audit dashboard surfaces vouchers redeemed by cashier user_id with redemption volume KPI per cashier. Outlier detection if cashier X redeems 10x more than peers. Sentry alert.' V1.3 enrichissement avec photo voucher requis avant redemption pour traçabilité visuelle."
+    },
+    {
+      "id": "RED-FOLDIN-07",
+      "title": "GDPR data subject rights (DSR) at scale — solo founder cannot handle",
+      "scenario": "Module ships, 100 customers play across Le Cayenne pilot. 1 customer submits GDPR Article 15 (right of access) + Article 17 (right to erasure) request. Solo founder must respond < 30 days. Process: identify all review_boost_spins + review_boost_vouchers + audit_logs entries + Mail::send logs containing PII for that customer + sanitize/delete with chain integrity preserved (NF525 audit_logs cannot be deleted but can be tombstoned).",
+      "probability": "low at 1-restaurant pilot, moderate at scale",
+      "impact_if_materialized": "Solo founder spends 4-8 hours per DSR request. At 10 customers/year requesting, 40-80 hours/year admin overhead. Plus risk of incomplete response = CNIL exposure.",
+      "mitigation_in_plan": "Plan R-09 mentions memory cloud-yet drift but not DSR. Plan §6 covers SPIN-SEC-05 partial (Play table split for retention). But not the DSR workflow itself.",
+      "verdict": "INSUFFICIENTLY COVERED. RED recommends plan §4 Sprint 0 add: 'app/Console/Commands/ReviewBoostDsrExportCommand.php — given customer email, export all PII rows + tombstone audit_logs entries (preserving chain hash via tombstone marker). DPIA Sprint 0 must include DSR workflow documentation. Avocat 1h Sprint 0 must validate tombstone pattern vs NF525 6-year retention conflict.'"
+    }
+  ],
+
+  "thesis_attack_summary": {
+    "option_c_thesis_holds_if": [
+      "Owner respects C-1 recommendation (no override to C-2 without 2nd-stage gate)",
+      "FoodKing acquires 3+ additional restos before/during V1.2 OR Le Cayenne explicitly requests as upsell",
+      "Solo founder maintains discipline: V1.0.2 stabilisé before V1.1, V1.1 before V1.2",
+      "Module namespace isolation strict (no cross-cutting changes to FoodKing core)",
+      "DSR workflow + cashier-fraud detection added to plan before Sprint 0"
+    ],
+    "option_c_thesis_breaks_if": [
+      "Variant drift C-1 → C-2 silent under marketing pressure (P0-1 contamination)",
+      "V1.2 ships to 1 restaurant only with no scaling path = ROI inconclusive forever (RED-FOLDIN-04)",
+      "Solo bandwidth overcommitted concurrent fronts (RED-FOLDIN-03)",
+      "Restaurateur persona Pierre rejects C-1 positioning (RED-FOLDIN-05)",
+      "Cashier collusion fraud undetected at scale (RED-FOLDIN-06)",
+      "DSR workload undermines solo founder availability (RED-FOLDIN-07)"
+    ]
+  },
+
+  "counter_recommendation_if_thesis_breaks": {
+    "fallback_to_option_d": "Differred V1.3 — KILL V1.2 plan now, defer all SpinBoost work to V1.3 (or V1.4) when (a) FoodKing has 5+ restos OR (b) owner has explicit Le Cayenne pilot request OR (c) V1.0.2 + V1.1 demonstrably shipped clean. Memory feedback_v1_focus_no_saas_2026-05-08 supports this defer-by-default posture.",
+    "if_owner_pushes_v_1_2_anyway": "Plan still useful as design doc but mark explicit OWNER OVERRIDE: ship to 1 restaurant pilot accepting ROI inconclusive risk, with V1.3 re-evaluation gate at 3-month mark per plan §8."
+  },
+
+  "summary_for_master": "RED audit confirms plan as written covers major risks adequately for 4-5 scenarios. 3 sharper edges identified: (RED-FOLDIN-04 TAM limitation 1 restaurant = inconclusive ROI signal, RED-FOLDIN-06 cashier collusion fraud not addressed, RED-FOLDIN-07 GDPR DSR workflow missing). All 3 should be reflected in plan §5 (Q-10 owner-gate marketing positioning) + Sprint 3 (cashier outlier detection) + Sprint 0 (DSR command + tombstone pattern). RED's strongest recommendation: plan §13 add Q-FINAL gate 'V1.2 démarrage SI FoodKing 3+ restos OU Le Cayenne explicite demande'. Otherwise V1.2 = effort sans signal de validation. Option C fold-in remains operationally rational vs Option A, but the 'when' question (V1.2 vs V1.3 vs V1.4) is more important than the 'whether' question."
+}

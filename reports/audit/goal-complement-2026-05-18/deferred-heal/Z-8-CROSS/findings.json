@@ -1,0 +1,180 @@
+{
+  "meta": {
+    "zone": "Z-8-CROSS",
+    "scope": "Cross-surface i18n + A11y (AUDIT-ONLY — touches dirty surfaces)",
+    "timestamp": "2026-05-18T11:00:00Z",
+    "branch": "pr/mobile-app-real-e2e-heal-2026-05-18",
+    "head": "575a04652",
+    "specialists_used": ["UX/A11y", "RED-team"],
+    "specialists_skipped_per_fanout_matrix": ["Architect", "Security", "DBA", "SRE", "Implementer", "QA-Visual", "RED-Visual"],
+    "audit_only_rationale": "Heal would touch dirty surfaces (admin-*.js, kiosk-shell.js, OSS, mobile/web vue/RN). All heals deferred V1.0.X."
+  },
+  "p0_findings": [
+    {
+      "id": "Z-8-P0-00",
+      "title": "19 verified $t() calls reference UNDEFINED keys across admin/kiosk/POS surfaces — raw key visible to user at runtime",
+      "files": ["public/js/admin-kds.js", "public/js/admin-shell.js", "public/js/kiosk-wizard-step.js", "public/js/pos-app.js", "public/js/pos-shell.js"],
+      "evidence_path": "RED dispute on synthesis — verified by resolving each key against fr.json tree",
+      "missing_keys": [
+        "label.kds_status_conflict (admin-kds.js, KDS status conflict banner — NO fallback, raw key shown)",
+        "label.monday_short → label.sunday_short (admin-shell.js, weekly schedule short day names — HAS '|| Mon/Tue/...' fallback so user sees English)",
+        "kiosk.wizard.generic.step_fallback (kiosk-wizard-step.js + pos-app.js — generic wizard step name)",
+        "kiosk.wizard.generic.min_hint (kiosk-wizard-step.js — minimum selection hint)",
+        "label.note, label.notes (pos-app.js + pos-shell.js — note labels)",
+        "label.advanced_promo_fields, label.max_uses_global, label.valid_hours_start, label.valid_hours_end (admin-shell.js — promo form fields)",
+        "kiosk.a11y.theme, kiosk.a11y.theme_hint, kiosk.a11y.theme_aria (pos-app.js — a11y theme toggle)"
+      ],
+      "behavioral_break": "User triggering KDS status conflict (concurrent bump) sees 'label.kds_status_conflict' as raw text instead of localized message. POS user editing weekly schedule sees English short day names instead of FR localized. Kiosk wizard fallback step uses raw key. Promo admin form shows raw field labels. A11y theme toggle shows raw key.",
+      "heal_scope": "V1.0.X — add 19 missing keys to fr.json + en.json + ar.json. Most are short labels. Estimate 1h work + translator review.",
+      "blocker_for_V1": "PARTIAL — label.kds_status_conflict could surface during V1 KDS use. Recommend adding 1 fr key as scope-minimal patch IF KDS owner-gate cleared. Others are admin-shell (rare admin paths) or kiosk a11y (theme toggle rarely used)."
+    },
+    {
+      "id": "Z-8-P0-01",
+      "title": "Arabic translation drops {n} placeholder — i18n interpolation will fail at runtime",
+      "file": "resources/js/languages/ar.json",
+      "key": "kiosk.wizard.step.viande.instruction_remaining_one",
+      "evidence_path": "reports/audit/goal-complement-2026-05-18/round-1/Z-8-CROSS/RED.json#RED-P0-01",
+      "behavioral_break": "vue-i18n $tc plural will not substitute {n} — kiosk Arabic users see generic 'one portion' regardless of actual count",
+      "heal_scope": "1 string change in ar.json — V1.0.X owner-translation pass",
+      "blocker_for_V1": "NO (Arabic locale is launch-optional per V1 scope = Le Cayenne FR-only)"
+    },
+    {
+      "id": "Z-8-P0-02",
+      "title": "i18n parity drift fr↔en — 269 inconsistent keys (75 fr-only + 194 en-only)",
+      "files": ["resources/js/languages/fr.json", "resources/js/languages/en.json"],
+      "evidence_path": "reports/audit/goal-complement-2026-05-18/round-1/Z-8-CROSS/UX-A11Y.json#UX-P0-01",
+      "behavioral_break": "User switching FR→EN locale on POS/Admin sees raw translation keys (e.g., label.cash_session_open) for 75 keys; EN-default user misses FR-introduced labels.",
+      "heal_scope": "Sync key sets + translator pass across 269 keys — V1.0.X owner-driven; partial coverage tolerable in V1 since Le Cayenne is FR-only by default",
+      "blocker_for_V1": "NO (FR default + admin-forced FR sentinel already exists at tests/js/sentinels/i18nForceFRForAdminSurfaces.spec.js)"
+    },
+    {
+      "id": "Z-8-P0-03",
+      "title": "i18n parity drift fr→ar — 239 keys orphan in Arabic locale",
+      "files": ["resources/js/languages/ar.json"],
+      "evidence_path": "reports/audit/goal-complement-2026-05-18/round-1/Z-8-CROSS/UX-A11Y.json#UX-P0-02",
+      "behavioral_break": "Arabic user sees raw keys for 239 paths — UX-broken for ar locale",
+      "heal_scope": "V1.0.X — full translator pass on ar.json key gaps. Block ar enablement until >=95% parity on POS+Kiosk namespaces.",
+      "blocker_for_V1": "NO (ar not enabled by default for Le Cayenne V1)"
+    },
+    {
+      "id": "Z-8-P0-04",
+      "title": "Axe coverage gap — 6 surfaces lack persisted axe-results in goal-pageby-2026-05-18 round-1",
+      "files": ["reports/test-e2e/goal-pageby-2026-05-18/round-1/{POS,BORNE,OSS,STOCK,SYNC,LIVREUR}/"],
+      "evidence_path": "reports/audit/goal-complement-2026-05-18/round-1/Z-8-CROSS/UX-A11Y.json#UX-P0-03 + RED.json#RED-P1-03",
+      "behavioral_break": "Cannot certify WCAG AA across V1 production surfaces without axe baseline; KDS revealed 9 contrast nodes + 1 keyboard issue, identical or worse may exist on other surfaces.",
+      "heal_scope": "V1.0.X — add @axe-core/playwright to each goal-pageby surface spec; re-run mobile-A11y wave (last data is 1 week stale from 2026-05-11)",
+      "blocker_for_V1": "DOWNGRADED to P0-soft — V1 Le Cayenne is FR-fixed-locale single-resto, a11y gap acceptable to ship if (a) KDS contrast fix lands in V1, (b) post-V1 backlog has full sweep."
+    },
+    {
+      "id": "Z-8-P0-05",
+      "title": "Missing sentinel tests promised by plan §9 — CrossSurfaceI18nLeakSentinelTest + I18nParityFrEnArSentinelTest do NOT exist",
+      "files": ["tests/Feature/Sentinels/ (missing tests)"],
+      "evidence_path": "reports/audit/goal-complement-2026-05-18/round-1/Z-8-CROSS/RED.json#RED-P0-06",
+      "behavioral_break": "Drift can re-emerge silently; existing sentinels cover specific subsets only (kdsAriaI18n 5-lang aria, studioFrontendI18nParity studio.* namespace).",
+      "heal_scope": "V1.0.X — write i18nParityFrEnArSentinel.spec.js + crossSurfaceI18nLeakSentinel.spec.js (vitest). Leverage existing tools/i18n/audit_locale_keys.mjs helpers.",
+      "blocker_for_V1": "NO (audit-only finding)"
+    }
+  ],
+  "p1_findings": [
+    {
+      "id": "Z-8-P1-01",
+      "title": "fr.json has 3 empty-string keys producing dotted-suffix keys 'menu.', 'label.', 'kiosk.filters.'",
+      "file": "resources/js/languages/fr.json",
+      "lines": [260, 629, 1432],
+      "evidence_path": "reports/audit/goal-complement-2026-05-18/round-1/Z-8-CROSS/RED.json#RED-P1-02",
+      "heal_scope": "V1.0.X — rename to meaningful keys (menu.root, label.root, kiosk.filters.all). 3-line change."
+    },
+    {
+      "id": "Z-8-P1-02",
+      "title": "KDS color-contrast — 9 nodes 3.63:1 (WCAG AA expects 4.5:1) on .kds-card__shortcut",
+      "file": "resources/js/components/admin/kitchenDisplaySystem/ + Vue stylesheet",
+      "evidence_path": "reports/test-e2e/goal-pageby-2026-05-18/round-1/KDS/axe-results.json + UX-A11Y.json#UX-P1-04",
+      "heal_scope": "V1.0.X — darken .kds-card__shortcut foreground to #4b5563 or lighten bg. CSS-only fix."
+    },
+    {
+      "id": "Z-8-P1-03",
+      "title": "KDS scrollable-region-focusable — 1 region without keyboard access",
+      "file": "resources/js/components/admin/kitchenDisplaySystem/KdsBoard.vue (or container)",
+      "evidence_path": "reports/test-e2e/goal-pageby-2026-05-18/round-1/KDS/axe-results.json + UX-A11Y.json#UX-P1-05",
+      "heal_scope": "V1.0.X — add tabindex=0 + appropriate role to scrollable container."
+    },
+    {
+      "id": "Z-8-P1-04",
+      "title": "Mobile A11y — region landmarks missing on all 12 surveyed mobile pages (107 nodes)",
+      "file": "mobile/screens-main.jsx + RN equivalents",
+      "evidence_path": "tests/e2e/__screenshots__/test-e2e-mobile-design-perfect-wave-a11y/*.axe.json + UX-A11Y.json#UX-P1-06",
+      "heal_scope": "Mobile standalone scope (Z-6) — defer to mobile owner. RN A11y differs from web ARIA — needs separate audit pass.",
+      "cross_zone_handoff": "Z-6 MOBILE owner"
+    },
+    {
+      "id": "Z-8-P1-05",
+      "title": "Mobile A11y — nested-interactive (61 nodes) + button-name (60 nodes) on menu filter screen",
+      "file": "mobile menu-filter screen",
+      "evidence_path": "tests/e2e/__screenshots__/test-e2e-mobile-design-perfect-wave-a11y/07-menu-filter-aria-pressed.axe.json + UX-A11Y.json#UX-P1-07/08",
+      "heal_scope": "V1.0.X mobile — refactor filter chips + add aria-label to icon-only filter buttons",
+      "cross_zone_handoff": "Z-6 MOBILE owner"
+    },
+    {
+      "id": "Z-8-P1-06",
+      "title": "Existing i18n audit tool (tools/i18n/audit_locale_keys.mjs) NOT wired to CI / dormant since 9 mai",
+      "file": "tools/i18n/audit_locale_keys.mjs + CI config",
+      "evidence_path": "reports/audit/goal-complement-2026-05-18/round-1/Z-8-CROSS/RED.json#RED-P1-08",
+      "heal_scope": "V1.0.X — add `node tools/i18n/audit_locale_keys.mjs --emit-report` to CI; warn-only first then block. Would auto-detect future drift."
+    }
+  ],
+  "p2_findings": [
+    {
+      "id": "Z-8-P2-01",
+      "title": "Stale-copy fr=en (20 keys identical, length>2)",
+      "file": "resources/js/languages/{fr,en}.json",
+      "evidence_path": "UX-A11Y.json#UX-P2-09 + RED.json agreement with UX (partial dispute)",
+      "heal_scope": "V1.0.X owner review case-by-case. Allergens probably intentional, admin.help.* probably stale-copy bug."
+    },
+    {
+      "id": "Z-8-P2-02",
+      "title": "Stale-copy fr=ar (12 keys mostly proper nouns)",
+      "file": "resources/js/languages/{fr,ar}.json",
+      "evidence_path": "UX-A11Y.json#UX-P2-10",
+      "heal_scope": "Mostly false positives. kiosk.loyalty_screen.placeholder_phone (FR phone format in Arabic locale) is a real i18n smell — owner review."
+    },
+    {
+      "id": "Z-8-P2-03",
+      "title": "PHP Laravel lang catalog (16 files/locale) vs JSON catalog (~1900 keys) — dual-maintenance surface",
+      "files": ["lang/{fr,en,ar}/*.php", "resources/js/languages/*.json"],
+      "evidence_path": "RED.json#RED-P2-05",
+      "heal_scope": "V1.0.X — architectural note. Document the split. Ensure i18nAuditTool covers PHP catalog drift."
+    }
+  ],
+  "p3_findings": [
+    {
+      "id": "Z-8-P3-01",
+      "title": "Encoding clean — no BOM on fr/en/ar.json (UTF-8)",
+      "evidence_path": "RED.json#RED-P3-07",
+      "heal_scope": "None — clears encoding concern raised in scope."
+    }
+  ],
+  "totals": {
+    "p0": 6,
+    "p1": 6,
+    "p2": 3,
+    "p3": 1,
+    "total": 16
+  },
+  "v1_blocker_assessment": {
+    "blocks_v1_le_cayenne_merge": false,
+    "rationale": "V1 Le Cayenne is FR-default single-restaurant. Existing i18nForceFRForAdminSurfaces sentinel guarantees POS/admin shows FR. en/ar drift impacts NON-default locales (deferred V1.0.X). Axe gap is a process gap (no captured baseline) not a known regression. KDS contrast 9 nodes is P1 not P0 (impact serious, not critical; KDS is FR-only). 19 missing $t() keys (Z-8-P0-00) — most are rare-path admin/kiosk-a11y; ONE (label.kds_status_conflict) could surface on KDS concurrent-bump conflict — flag for owner-decision before V1 merge.",
+    "v1_blockers_outside_z8": "Refer to other zones (Z-1 KDS, Z-2 OSS, Z-3 Stock, Z-4 Livreur, Z-5 Pricing, Z-6 Mobile, Z-7 Web) for actual V1 blockers.",
+    "z8_recommendation_for_v1_merge": "PASS Z-8 as AUDIT-ONLY clean. Queue P0/P1 heal for V1.0.X. Add 2 sentinel tests as V1.0.1 day-1 task."
+  },
+  "v10x_priorities": [
+    "Week 1: Z-8-P0-00 (add 19 missing $t() keys to fr.json + en/ar — quick wins)",
+    "Week 1: Z-8-P0-05 (write 2 sentinel tests — locks regression)",
+    "Week 1: Z-8-P1-06 (wire audit tool to CI — auto-detect drift)",
+    "Week 2: Z-8-P0-02 + Z-8-P0-03 (fr/en + fr/ar parity translator pass)",
+    "Week 2: Z-8-P1-01 (rename 3 empty-key entries)",
+    "Week 2: Z-8-P1-02 + Z-8-P1-03 (KDS a11y CSS fixes)",
+    "Week 3-4: Z-8-P0-04 (wire axe-core to all goal-pageby surface specs)",
+    "Week 3-4: Z-8-P1-04/05 (mobile a11y — handoff Z-6 owner)",
+    "Week 4+: Z-8-P2-01/02/03 + Z-8-P0-01 (translator passes + architectural docs)"
+  ]
+}

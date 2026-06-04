@@ -1,0 +1,184 @@
+{
+  "supervisor_wave": "C",
+  "zone": "Z1-PAYMENT",
+  "head": "fcfef17fd",
+  "branch": "feature/mobile-app-le-cayenne-2026-05-10",
+  "verdict": "PROCEED_WITH_PLAN",
+  "verdict_rationale": "Recommended pattern (config flag in kiosk.php + foodkingConfig.kioskPaymentRouteAllToCounter + skip UI in KioskPaymentComponent + force payment_method=CASH_ON_DELIVERY) is architecturally sound. ZERO §7 frozen-zone touch required. Backend already supports the routing semantics (is_counter_deferred_kiosk_cash at FrontendOrderService.php:206-208). Future Plan A transition is a single env flip (no code change).",
+
+  "architectural_decision": {
+    "pattern": "Config-flag-based frontend short-circuit + backend reuse of existing 'counter-deferred kiosk cash' branch",
+    "layer_separation": {
+      "config_layer": "config/kiosk.php — new key 'payment_route_all_to_counter' (env KIOSK_PAYMENT_ROUTE_ALL_TO_COUNTER, default true V1, will flip to false post-acquéreur-contract). Single source of truth.",
+      "blade_layer": "resources/views/master.blade.php:132 — add ONE line to expose flag to window.foodkingConfig.kioskPaymentRouteAllToCounter. Already 14 other kiosk keys are exposed this way (kioskAutoLogin, kioskDefaultLocale, kioskLocaleSwitchAllowed, kioskMenuPricing, kioskSandwichSplit, kioskConfirmationAutoReturnSeconds, etc.). Established pattern.",
+      "frontend_layer": "resources/js/components/frontend/kiosk/KioskPaymentComponent.vue (NOT frozen — confirmed grep of CLAUDE.md §7). Two surgical changes: (1) computed property planBActive that reads window.foodkingConfig?.kioskPaymentRouteAllToCounter, (2) in confirmPayment() at line 356, if planBActive then bypass selectMethod UI by forcing this.method='cash' before submitOrder call. UI optionally hides 'Carte' + 'Ticket Restaurant' tiles in template (v-if guarded — leaves DOM clean).",
+      "backend_layer": "ZERO change. FrontendOrderService.php:186-208 already maps payment_method=1 (CASH_ON_DELIVERY) on a kiosk order to is_counter_deferred_kiosk_cash=true, which: (a) auto-accepts order so KDS receives it immediately, (b) leaves payment state UNPAID, (c) defers actual money capture to POS PosCounterCollectModal. This is the EXACT semantics the owner described."
+    },
+    "why_not_frontend_only": "Frontend-only would work for V1 but leaves no audit/observability switch. Config-flag pattern (already used 14× in same blade) gives ops a single env knob to monitor + flip when terminals are wired, and the same flag is greppable in logs (FrontendOrderService:239-248 already logs is_kiosk_payment_method).",
+    "why_not_backend_only": "Backend-only enforcement (reject CARD/TR from kiosk machines) would force frontend to handle a 422 gracefully, doubling complexity. Backend stays semantically pure (it still SUPPORTS the 3 methods, but the kiosk surface CHOOSES to only emit cash). This is forward-compatible with Plan A: just flip the env and the same backend handles CARD/TR again without code change."
+  },
+
+  "touch_matrix": [
+    {
+      "file": "config/kiosk.php",
+      "loc_estimated": 8,
+      "is_frozen": false,
+      "change": "Add new array key 'payment_route_all_to_counter' => filter_var(env('KIOSK_PAYMENT_ROUTE_ALL_TO_COUNTER', true), FILTER_VALIDATE_BOOLEAN) in BOTH return arrays (lines 96-128 the $requireForm branch, AND lines 182-211 the auto-login branch). Pattern mirrors locale_switch_allowed (lines 31, 106, 190) — same dual-return-path discipline.",
+      "frozen_zone_evidence": "Not in CLAUDE.md §7 list. Grep against §7 list: absent."
+    },
+    {
+      "file": "resources/views/master.blade.php",
+      "loc_estimated": 2,
+      "is_frozen": false,
+      "change": "Add ONE line after line 152 (kioskConfirmationAutoReturnSeconds): kioskPaymentRouteAllToCounter: @json((bool) config('kiosk.payment_route_all_to_counter', true)), Documentation comment 1 line above. Strict additive, zero existing line modified.",
+      "frozen_zone_evidence": "Not in CLAUDE.md §7 list. Note: §7 explicitly freezes 'resources/views/admin-pos-v4.blade.php' which is a DIFFERENT blade (loads pos-wizard.js, not POS Vue SPA). master.blade.php is the SPA shell and is non-frozen — see how 14 prior kiosk-config keys (kioskAutoLogin, kioskDefaultLocale, kioskLocaleSwitchAllowed, etc.) were all added between lines 140-152 without LOCK."
+    },
+    {
+      "file": "resources/js/components/frontend/kiosk/KioskPaymentComponent.vue",
+      "loc_estimated": 18,
+      "is_frozen": false,
+      "change": "(a) data() add planBActive: !!(window.foodkingConfig?.kioskPaymentRouteAllToCounter) ~2 LOC. (b) In confirmPayment() (line 356), prepend: if (this.planBActive && this.method !== 'cash') { this.method = 'cash'; } ~3 LOC. (c) In template, guard 'card' tile (line 50-79) and 'tr' tile (line 112-140) with v-if=\"!planBActive\" — 2 attribute additions. (d) On mount/created, if planBActive then auto-select method='cash' so the confirm button enables without click ~4 LOC. (e) Comment block explaining the Plan B → Plan A migration path ~5 LOC. Total ~14-18 LOC additive.",
+      "frozen_zone_evidence": "CLAUDE.md §7 lists KioskWizardComponent.vue, KioskAppComponent.vue, KioskUpsellComponent.vue — KioskPaymentComponent.vue is NOT in the list. Confirmed by git log: file has been actively modified post-V1 freeze (commits 1eebd208c, c138b32dd, cecbf186c, 8cfabc836, b59ce40d8 — all within last weeks, mostly idempotency + i18n + role=alert heals)."
+    }
+  ],
+
+  "frozen_zone_proof": {
+    "method": "Grep of CLAUDE.md §7 against touch_matrix files. ALL 15 §7 files verified to exist (sanity check). Touch matrix files cross-checked against the 15-file list: ZERO match.",
+    "section_7_full_list_verified": [
+      "resources/js/components/frontend/kiosk/KioskWizardComponent.vue",
+      "resources/js/components/frontend/kiosk/KioskAppComponent.vue",
+      "resources/js/components/frontend/kiosk/KioskUpsellComponent.vue",
+      "resources/js/components/admin/pos/PaymentComponent.vue",
+      "resources/js/components/admin/pos/v5/PosV5TrancheRow.vue",
+      "public/js/pos-wizard.js",
+      "public/css/pos-wizard.css",
+      "resources/views/admin-pos-v4.blade.php",
+      "app/Services/Fiscal/FiscalSequenceService.php",
+      "app/Services/Fiscal/ZReportService.php",
+      "app/Services/Fiscal/AuditLogService.php",
+      "app/Models/Scopes/BranchScope.php",
+      "app/Http/Middleware/IdempotencyKeyMiddleware.php",
+      "app/Services/Pricing/PricingService.php",
+      "app/Domain/Order/OrderStateMachine.php"
+    ],
+    "diff_assertion": "git diff --name-only HEAD post-implementation MUST match exactly: ['config/kiosk.php', 'resources/views/master.blade.php', 'resources/js/components/frontend/kiosk/KioskPaymentComponent.vue', + bundle rebuild artifacts]. Sentinel test: grep the §7 list against the diff — if any match found, BLOCK.",
+    "verdict": "ZERO §7 touch. Compliant."
+  },
+
+  "nf525_compliance_proof": {
+    "pricing_ssot": "PricingService.php (frozen) is NOT touched. The submitOrder flow at KioskPaymentComponent.vue:375 already sends only {item_id, quantity, option_ids} via buildKioskOrderPayload (kioskCart.js:160). Backend recalculates totals server-side at FrontendOrderService.php (post-line 258 unsets client-supplied total/subtotal/discount per [GAP-21-2] comment line 255-258). Plan B does NOT introduce any frontend price computation. Compliant.",
+    "audit_chain": "AuditLogService.php (frozen) is NOT touched. The order creation path still goes through DB::transaction at FrontendOrderService.php:177 — same path as today's kiosk-cash flow. HMAC chain extension is unchanged. The counter-deferred-cash path (is_counter_deferred_kiosk_cash=true line 206) already exists and is in production today — Plan B simply makes ALL kiosk orders take that path. ZERO new audit-chain code surface. Compliant.",
+    "composition_snapshot": "composition_snapshot JSON is created at order-creation time inside DB::transaction (FrontendOrderService.php:177-237 closure). Plan B does not modify what is sent (same buildKioskOrderPayload) — only WHICH method enum value (forced to 1=CASH_ON_DELIVERY). The snapshot logic is order-payload-driven, not payment-method-driven. Frozen at creation, NEVER overwritten. Compliant.",
+    "fiscal_sequence_no": "FiscalSequenceService.php (frozen) allocation logic: allocated at order creation for kiosk PAID orders (CARD/TR) OR at POS close for cash. Plan B routes ALL kiosk orders to cash-on-delivery semantics → allocation happens at POS close (existing path used by today's kiosk-cash). Same monotonic per-branch gap-free behavior. NF525 chain bit-identical: BASELINE 'count=26 | last_hash=ca4ac1fdc208dae1' must still hold post-implementation. Compliant.",
+    "production_boot_guard": "POS_SIMULATION_HARDWARE=false in production (AppServiceProvider.php:78-145). Plan B does NOT depend on simulation — the cash flow goes through PosCounterCollectModal which already has its own production-real cash drawer integration. Plan B is hardware-agnostic. Compliant."
+  },
+
+  "future_migration_plan_a": {
+    "transition_trigger": "Owner signs acquéreur CB contract (SG Sogemonétique OR Worldline OR Viva.com — see feedback_titres_resto_conecs_2026.md). Terminals get wired to the bank. Currently SumUp blocks this — see feedback_no_sumup_existing_tpes.md.",
+    "code_change_required": "ZERO. The kiosk CARD/TR paths are still present in KioskPaymentComponent (just v-if hidden) and FrontendOrderService backend handling is intact. To enable Plan A: set KIOSK_PAYMENT_ROUTE_ALL_TO_COUNTER=false in .env, run php artisan config:clear, rebuild bundles ONCE for the cached foodkingConfig blade injection.",
+    "owner_invariant_preserved": "Owner verbatim: 'l'encaissement cash depuis borne vers caisse RESTE pour toujours'. Even in Plan A, kiosk-cash orders MUST still route to PosCounterCollectModal (cashier reconciles physical cash). The existing FrontendOrderService.php:206-207 logic (is_counter_deferred_kiosk_cash for CASH_ON_DELIVERY on a kiosk order) is permanent — it predates Plan B and is preserved in Plan A. Owner invariant is structurally locked into FrontendOrderService routing, not into the kiosk UI flag.",
+    "rollback_simplicity": "If Plan A causes issue post-flip, set KIOSK_PAYMENT_ROUTE_ALL_TO_COUNTER=true (or remove env to use default), run config:clear. Instant rollback to Plan B in <30 sec.",
+    "intermediate_state": "Owner can also adopt PARTIAL Plan A: keep flag true (force all-to-counter) but enable terminal-specific behavior at POS via PosCounterCollectModal — already supports mode='card' which can drive a wired terminal. Plan B is FORWARD-COMPATIBLE: the cashier-side wired-terminal flow is independent of the kiosk-side routing flag."
+  },
+
+  "data_flow_summary": {
+    "plan_b_flow": [
+      "1. Client browses kiosk wizard (unchanged)",
+      "2. Client clicks 'Payer' on cart → routes to KioskPaymentComponent",
+      "3. NEW: planBActive=true → either skip render of card/tr tiles OR auto-select cash + show 'Présentez-vous à la caisse' guidance",
+      "4. Client clicks confirm → submitOrder({paymentMethod:'cash'}) → payment_method=1 sent to backend",
+      "5. FrontendOrderService.php:206-208: is_counter_deferred_kiosk_cash=true → auto-accept (KDS receives) + status=PENDING_COUNTER + UNPAID",
+      "6. Client receives queue number, kitchen starts prepping",
+      "7. Client presents at counter → cashier opens PosCounterCollectModal (existing, Wave X-1) → picks cash OR card OR ticket OR mobile → physically encashes → confirms",
+      "8. Backend flips ps=PAID, allocates fiscal_sequence_no via FiscalSequenceService, audit_logs HMAC chain extended"
+    ],
+    "plan_a_flow_post_transition": "Identical to today's pre-Plan-B behavior: client picks card/cash/tr at kiosk → wired terminal handles card/tr inline → backend confirms paid at TPE callback → KDS notified. CASH flows still go counter-deferred (owner invariant)."
+  },
+
+  "risks": [
+    {
+      "id": "R1",
+      "severity": "P2",
+      "description": "Cart 'Validate' button currently routes to /kiosk/payment. With UI tiles hidden, user lands on a near-empty screen. UX risk: client confusion ('did it work?').",
+      "mitigation": "Render an informative card: 'Paiement à la caisse — Validez pour générer votre numéro de commande, puis présentez-vous à la caisse.' Single i18n key kiosk.pay_screen.plan_b_notice. Already part of touch_matrix LOC budget for KioskPaymentComponent."
+    },
+    {
+      "id": "R2",
+      "severity": "P3",
+      "description": "Test suite may have specs asserting 3-method tile presence (e.g., tests checking data-testid='kiosk-payment-method-card').",
+      "mitigation": "Specs should be guarded with the flag too. Grep + update test specs as part of implementation. ~1-2 spec files likely affected. Outside the §7 frozen-zone."
+    },
+    {
+      "id": "R3",
+      "severity": "P3",
+      "description": "Analytics event 'payment_method_selected' fires per kioskAnalytics.track at line 353. With auto-cash, this event becomes uniform.",
+      "mitigation": "Acceptable — emit one 'payment_routed_to_counter' analytics event instead for Plan B transparency. Optional."
+    },
+    {
+      "id": "R4",
+      "severity": "P2",
+      "description": "TPE simulation tests / Playwright specs that drive the borne happy-path via CARD method will need updating.",
+      "mitigation": "Identify specs via grep, add flag-aware variant. Same release artifact."
+    },
+    {
+      "id": "R5",
+      "severity": "P1",
+      "description": "Network-offline (line 320, 358) and tpeWaiting logic become unreachable when planBActive=true. Dead code risk if not guarded.",
+      "mitigation": "Wrap network-offline check + TPE overlay with v-if=\"!planBActive\" too. Cleaner than ripping them out (Plan A reuse)."
+    }
+  ],
+
+  "owner_questions": [
+    {
+      "id": "Q1",
+      "question": "Plan B default value: KIOSK_PAYMENT_ROUTE_ALL_TO_COUNTER=true by DEFAULT in V1 (safe, no env flip needed at deploy)? Or default=false with explicit opt-in env (more conservative, owner sets it after physical walk Monday)?",
+      "recommendation": "Default=true so V1 LOCAL Le Cayenne resto auto-routes from day 1, matches owner verbatim. Owner Monday physical walk = no env flip required."
+    },
+    {
+      "id": "Q2",
+      "question": "Plan B UI: hide CARD/TR tiles entirely (cleaner) OR render them disabled with grey-out + tooltip 'Disponible bientôt' (preserves spatial layout, communicates future evolution)?",
+      "recommendation": "HIDE entirely. The screen becomes informative: total + 'paiement à la caisse' message + confirm button. Lighter UX, faster decision. Grey-out introduces visual debt."
+    },
+    {
+      "id": "Q3",
+      "question": "Should kiosk confirmation screen wording also be updated? Currently shows 'Présentez-vous au comptoir', which already fits Plan B. Confirm no copy change needed?",
+      "recommendation": "Confirm no copy change. KioskConfirmationComponent already aligns. Owner verifies on physical walk."
+    },
+    {
+      "id": "Q4",
+      "question": "When acquéreur CB contract signed, owner wants kiosk-CARD active AND kiosk-cash still routed to POS. Confirm: flip flag to false → CARD/TR tiles reappear, cash remains routed via backend's existing is_counter_deferred_kiosk_cash. NO additional code needed?",
+      "recommendation": "Confirmed by architecture: backend routing is permanent (FrontendOrderService.php:206-208), only the frontend UI gating changes with the flag. Plan A = single env flip."
+    },
+    {
+      "id": "Q5",
+      "question": "Ticket Restaurant: Plan B routes via cashier? But ticket-resto via cashier requires manual stamp/punch (current French workflow). Confirm cashier will manually punch ticket-resto in PosCounterCollectModal mode='ticket' on physical paper?",
+      "recommendation": "Owner-confirm. PosCounterCollectModal already supports mode='ticket' (Wave X-1). Workflow: cashier picks 'Ticket' mode → physically takes paper ticket → enters amount → confirms. Same as POS-only orders today."
+    }
+  ],
+
+  "implementation_estimate": {
+    "loc_total": 28,
+    "files_touched": 3,
+    "frozen_zone_files": 0,
+    "estimated_wall_clock_implementation": "45-60 min including bundle rebuild + smoke test",
+    "test_strategy": "1. Vitest unit: KioskPaymentComponent.spec.js with planBActive=true asserts auto-cash + tiles hidden. 2. Playwright E2E: kiosk-plan-b-routing.spec.js — wizard → cart → payment → confirm → verify queue number + verify POS counter-collect modal receives order. 3. Sentinel: frozen-zone diff = 0 (git diff --name-only against §7 list)."
+  },
+
+  "evidence_citations": {
+    "frontend_order_service_routing": "app/Services/FrontendOrderService.php:186-237 — is_kiosk_payment_method flag + is_counter_deferred_kiosk_cash auto-accept logic with explicit truth table comment lines 215-237.",
+    "kiosk_config_pattern": "config/kiosk.php:14, 31, 50-53, 69-93 — env-var + filter_var pattern for boolean flags. Dual return paths (lines 96-128 for $requireForm and 182-211 for auto-login).",
+    "master_blade_config_injection": "resources/views/master.blade.php:132-204 — 14 kiosk-config keys already injected (kioskAutoLogin, kioskDefaultLocale, kioskLocaleSwitchAllowed, kioskMenuPricing, kioskSandwichSplit, kioskConfirmationAutoReturnSeconds, kioskUsePosWizard, etc.). Adding one more follows the same one-line pattern.",
+    "kiosk_payment_component_not_frozen": "CLAUDE.md §7 lines 219-258 lists frozen files. KioskPaymentComponent.vue is ABSENT. Git log shows 5 recent commits modifying this file (1eebd208c, c138b32dd, cecbf186c, 8cfabc836, b59ce40d8).",
+    "kiosk_payment_component_submission": "resources/js/components/frontend/kiosk/KioskPaymentComponent.vue:356-375 — confirmPayment method submits via submitOrder({paymentMethod: this.method, ...}). Method names: 'cash' | 'card' | 'tr'.",
+    "payment_method_map": "resources/js/store/modules/kioskCart.js:22 — PAYMENT_METHOD_MAP = { cash: 1, card: 4, tr: 5 }. Mapping aligns with PaymentGateway.php:6,9,10 (CASH_ON_DELIVERY=1, CARD=4, TICKET_RESTAURANT=5).",
+    "pos_counter_collect_modal_exists": "resources/js/components/admin/pos/PosCounterCollectModal.vue 768 LOC, 4 modes (cash/card/ticket/mobile), already shipped from Wave X-1 SSOT counter-collect work.",
+    "pricing_ssot_unchanged": "app/Services/Pricing/PricingService.php is in CLAUDE.md §7 frozen list. Plan B does NOT touch it. Backend recalculation guaranteed at FrontendOrderService.php:255-258 ([GAP-21-2] unset client-supplied financial fields)."
+  },
+
+  "decision_for_supervisor": {
+    "ship_status": "READY_FOR_IMPLEMENTATION",
+    "blocking_conditions": "None. All 5 owner_questions are clarifying preferences, not architectural blockers. Q1+Q2 have safe defaults recommended.",
+    "next_action": "Spawn IMPLEMENT sub-agent with this architecture.json + answers to Q1-Q5. Implement → smoke test → Vitest → Playwright kiosk happy-path → frozen-zone diff sentinel → commit.",
+    "estimated_total_cycle": "~90 min from spawn to GREEN smoke (45-60 implementation + 30 min test/verify)."
+  }
+}

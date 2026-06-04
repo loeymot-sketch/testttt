@@ -1,0 +1,96 @@
+{
+  "specialist": "RED-team (adversarial)",
+  "task": "WE-1 POS Cashier Loyalty CTA — adversarial defect probe",
+  "mode": "read-only",
+  "stance": "challenge constructively; find what GREEN tests miss",
+  "findings": {
+    "summary": "5 adversarial threat scenarios examined. 2 are caught by existing defenses (server-side). 2 are mitigated by recommended client-side guards. 1 is an inherent CASH-wizard limitation already flagged by Architect — document, do not block.",
+    "threats": [
+      {
+        "id": "RED-1",
+        "title": "Double-click race: CTA clicked twice while modal opening",
+        "scenario": "Cashier taps CTA twice in rapid succession. Modal's :open=true emitted twice. Internally Vue dedupes the boolean watcher (PosLoyaltyRedeemModal.vue:225-243 only fires on transition). However if user types code+points, clicks Apply, then accidentally re-opens modal, lastResponse may show stale success band.",
+        "current_defense": "Modal has `if (!this.canApply || this.loading) return;` guard in submitApply (line 290). Loading state prevents concurrent submit. Backend idempotency key includes minute-bucket timestamp + code + points, so server-side dedupe is 60s.",
+        "severity": "P3 (UX polish)",
+        "fix_required": "NO — existing defenses sufficient. Optional: modal could reset errorMessage/successMessage on open watch (already does — line 228-231)."
+      },
+      {
+        "id": "RED-2",
+        "title": "Redemption-after-payment race: cashier clicks Loyalty CTA AS payment confirms",
+        "scenario": "Cashier confirms CASH payment via wizard at t=0. Order created with payment_status=PAID at t=10ms (server). order:confirmed event fires at t=20ms. Cashier had clicked Loyalty CTA at t=5ms — modal open. Cashier submits at t=100ms with the stale orderId now PAID.",
+        "current_defense": "Backend PosRedemptionService.assertOrderRedeemable() rejects PAID orders with 422 ORDER_ALREADY_FINALIZED (PosRedemptionService.php:232-240). Modal maps to translateErrorCode → 'order_already_finalized' i18n message.",
+        "severity": "P2 (race window exists but recoverable)",
+        "fix_required": "NO — server is authoritative. Modal UI surfaces clear error; cashier sees 'cette commande est déjà payée' and closes modal."
+      },
+      {
+        "id": "RED-3",
+        "title": "Stale order-id binding after multi-order session",
+        "scenario": "Cashier creates order #1 (non-PAID). currentLoyaltyOrderId=1. Cashier creates order #2 without resetCart (some flows allow). currentLoyaltyOrderId is now 2 OR 1 depending on event order. If event order is racy, cashier opens modal targeting WRONG order.",
+        "current_defense": "PaymentComponent's order:confirmed always emits the just-confirmed order. order:confirmed handler in PosComponent overwrites currentLoyaltyOrderId with the latest payload — last-write-wins, deterministic.",
+        "severity": "P2",
+        "fix_required": "RECOMMEND: explicit clear on resetCart AND on resetPaymentForm (which fires after each order cycle), so the stale-id window between order #1 finalization and order #2 creation is narrowed. Architect spec already includes this."
+      },
+      {
+        "id": "RED-4",
+        "title": "Permission downgrade: cashier loses pos.redeem-loyalty mid-session",
+        "scenario": "Admin revokes pos.redeem-loyalty from cashier role at t=0 (Spatie permission cache invalidated). Cashier clicks Loyalty CTA at t=1m. Modal opens (no permission check client-side per LOCK design — server is gate).",
+        "current_defense": "Backend FormRequest authz returns 403 with permission_denied code. Modal translateErrorCode → 'pos.loyalty.redeem.errors.permission_denied' shown in role='alert' band.",
+        "severity": "P3",
+        "fix_required": "NO — by design, server is single source of truth for authz. Hiding CTA based on cached permission would create false-negative UX for legitimate cashiers post permission grant."
+      },
+      {
+        "id": "RED-5",
+        "title": "Already-redeemed double-apply attempt",
+        "scenario": "Cashier applies 500pts to order #42 → success. Cashier reopens modal on same order. Modal pre-fills nothing (state cleared on watch open). Cashier types another code + 500pts → submits.",
+        "current_defense": "Backend PosRedemptionService rejects with already_redeemed code (one redemption per order is the LOCK invariant). Modal shows 'Une réduction fidélité a déjà été appliquée à cette commande.'",
+        "severity": "P3",
+        "fix_required": "NO — server invariant enforced. Optionally: track applied=true in PosComponent.data and disable CTA after successful apply (cleared on resetCart). RECOMMEND as a UX polish."
+      },
+      {
+        "id": "RED-6",
+        "title": "Subtotal mutation: order total changes after redemption",
+        "scenario": "Cashier applies 500pts (5€ discount) to 12€ order → total=7€. Cashier adds item via PosOrderShow edit flow → subtotal jumps to 20€. Discount stays 5€ — no recompute.",
+        "current_defense": "Backend pricing recalc on order update strips loyalty discount or revalidates against subtotal. Per LOCK §6, redemption is final on apply.",
+        "severity": "P2 (potential SSOT drift if backend doesn't revalidate)",
+        "fix_required": "OUT OF SCOPE — this is a PosOrderShow edit-flow concern, not the main-page CTA. Document in V1.0.2 backlog if not already covered."
+      },
+      {
+        "id": "RED-7",
+        "title": "Empty cart loyalty intent: cashier opens CTA with carts.length=0",
+        "scenario": "Cashier accidentally clicks CTA when cart is empty. currentLoyaltyOrderId=null. Modal disabled state shows greyed button.",
+        "current_defense": "Recommended UX state machine: CTA disabled when currentLoyaltyOrderId=null. Modal can't open via disabled button.",
+        "severity": "P3",
+        "fix_required": "RECOMMEND: PosV5Button :disabled=\"!canShowLoyaltyCta\" attribute. Already in Architect spec."
+      },
+      {
+        "id": "RED-8",
+        "title": "Modal open then route change: leaks listener",
+        "scenario": "Cashier opens modal → navigates to /admin/pos-orders/list mid-modal. Modal still mounted in PosComponent tree if PosComponent is parent. On route exit, modal listeners (esc key handler) may not unbind cleanly.",
+        "current_defense": "PosComponent unmounted on route change → modal unmounted with it → Vue cleans up watchers + DOM listeners automatically. Modal has no manual listener setup in onMounted (only nextTick focus).",
+        "severity": "P3",
+        "fix_required": "NO — Vue lifecycle handles cleanup."
+      }
+    ],
+    "false_positives_we_might_get": [
+      "Vitest GREEN does not prove visual placement is correct. Playwright capture mandatory.",
+      "PHPUnit 6/6 PosLoyaltyRedeemTest stays GREEN does NOT validate Vue wire-up — pure backend test.",
+      "JS suite GREEN does NOT prove integration with PaymentComponent event chain — recommend manual sanity via Playwright dispatching synthetic order:confirmed."
+    ],
+    "production_risk_assessment": {
+      "p0_blockers": [],
+      "p1_majors": [],
+      "p2_minors": [
+        "RED-3 (stale order id between order cycles) — fixed by explicit clear on resetCart/resetPaymentForm.",
+        "RED-6 (subtotal mutation post-redeem) — out of scope, V1.0.2 backlog."
+      ],
+      "p3_polish": [
+        "RED-1 (double-click race) — existing defenses adequate.",
+        "RED-5 (double-apply UX) — recommend track applied=true client-side.",
+        "RED-7 (empty cart CTA) — disable button when no order."
+      ],
+      "verdict": "NO P0/P1 blockers found. Proceed with build, ensure Architect spec's three reset hooks (order:confirmed, resetCart, resetPaymentForm) all clear currentLoyaltyOrderId. Test plan must include both 'visible-then-hidden' and 'stale-id-rejected' scenarios."
+    },
+    "convergence_recommendation": "GO. Risk surface is low. Server-side guards (idempotency, terminal-state rejection, permission gate, already-redeemed invariant) form the primary defense. UI is a discoverability + reset-semantics layer. Document CASH-wizard limitation explicitly."
+  },
+  "word_count": "approx 1050"
+}

@@ -1,0 +1,148 @@
+{
+  "specialist": "Architect",
+  "scope": "Kiosk Borne Couche 1 — 8 sub-systems (Idle, Catalog, Wizard, Cart, Payment, Confirmation, Allergen, Upsell)",
+  "round": 1,
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head_at_audit": "4ad1adba8",
+  "date": "2026-05-18",
+  "mode": "READ-ONLY (FROZEN + DIRTY honored)",
+  "execution_note": "5 specialist roles executed sequentially by master sub-agent because Task tool unavailable in nested sub-agent context. No parallel spawn; analytical depth preserved per role.",
+
+  "files_read": [
+    "resources/js/components/frontend/kiosk/KioskAppComponent.vue (FROZEN; lines 1..100 sampled)",
+    "resources/js/components/frontend/kiosk/KioskWizardComponent.vue (FROZEN; 119747 bytes — header + entrypoints only)",
+    "resources/js/components/frontend/kiosk/KioskUpsellComponent.vue (FROZEN; lines 1..80 sampled)",
+    "resources/js/components/frontend/kiosk/KioskIdleScreenComponent.vue (HEAL-ALLOWED; full)",
+    "resources/js/components/frontend/kiosk/KioskCartComponent.vue (HEAL-ALLOWED; 1235 lines)",
+    "resources/js/components/frontend/kiosk/KioskPaymentComponent.vue (HEAL-ALLOWED; lines 1..600 + tail)",
+    "resources/js/components/frontend/kiosk/KioskWaitingComponent.vue (HEAL-ALLOWED; lines 1..100)",
+    "resources/js/components/frontend/kiosk/KioskConfirmationComponent.vue (HEAL-ALLOWED; lines 1..100)",
+    "resources/js/store/modules/kioskCart.js (lines 200..610)",
+    "app/Services/FrontendOrderService.php (full structure + finalizePaidKioskOrder)",
+    "app/Services/Pricing/PricingService.php (composition_snapshot path)",
+    "app/Http/Requests/OrderRequest.php (authorize + withValidator)",
+    "app/Http/Controllers/Frontend/KioskEventController.php (full)",
+    "app/Http/Controllers/Auth/KioskMachineLoginController.php (full)",
+    "app/Models/KioskMachine.php (full)",
+    "routes/channels.php (full)",
+    "routes/api.php (kiosk routes; ~10 grep hits)"
+  ],
+
+  "verdict": "GREEN — STATE MACHINE INTACT, NO HEAL REQUIRED",
+
+  "findings": [
+    {
+      "id": "KB-1-ARCH-01",
+      "category": "STATE_MACHINE",
+      "severity": "INFO",
+      "title": "Kiosk paid-at-creation contract correctly enforced server-side",
+      "evidence": [
+        "app/Services/FrontendOrderService.php:236 — `shouldDispatchNewOrderSignals = !isKioskOrderType || isCounterDeferredKioskCash || !isKioskPaymentMethod` — kiosk card/TR orders NEVER dispatch OrderCreated at create time; deferred until TPE callback flips ps=PAID.",
+        "app/Services/FrontendOrderService.php:1066..1218 — `finalizePaidKioskOrder` gates fiscal_sequence allocation behind `payment_status === PAID` (line 1107) defense-in-depth even though controller pre-checks.",
+        "app/Services/FrontendOrderService.php:265 — at-creation `payment_status` is `PENDING_COUNTER` only for cash (auto-accept), `UNPAID` otherwise; status stays `PENDING` until TPE confirms.",
+        "app/Services/FrontendOrderService.php:1192 — `OrderStatus::ACCEPT` promotion happens INSIDE same transaction as fiscal alloc; rollback consistency guaranteed."
+      ],
+      "assessment": "F-002 round-3 truth table fully implemented. NF525 invariant 'kiosk paid = at-creation allocation' literally means: allocation happens at the moment payment is confirmed, NOT at the bare order-create POST. This is the correct interpretation — early allocation would create fiscal gaps for declined TPE."
+    },
+    {
+      "id": "KB-1-ARCH-02",
+      "category": "STATE_MACHINE",
+      "severity": "INFO",
+      "title": "Composition snapshot frozen at create (NF525 SSOT contract)",
+      "evidence": [
+        "app/Services/Pricing/PricingService.php:266..297 — composition_snapshot built via `CompositionSnapshotBuilder->build()` then `json_encode` directly into the bulk-insert row (Eloquent 'array' cast bypassed because mass-insert).",
+        "app/Services/FrontendOrderService.php:466 — kiosk legacy path (non-SSOT) ALSO builds + json_encodes composition_snapshot, parity preserved.",
+        "app/Services/FrontendOrderService.php:294 — `OrderItem::insert($itemsArray)` is the single write; no UPDATE path on composition_snapshot exists in the codebase (verified by grep). NF525 immutability honored."
+      ],
+      "assessment": "Composition snapshot is the fiscal SSOT for reprint/Z-export. The fact that BOTH the SSOT path (PricingService) and the legacy fallback path (FrontendOrderService inline) emit identical structures means no class of finding can claim 'composition_snapshot diverges between kiosk paths'. KEEP."
+    },
+    {
+      "id": "KB-1-ARCH-03",
+      "category": "STATE_MACHINE",
+      "severity": "INFO",
+      "title": "Wizard 4-template contract (sandwich / taco / burger / menu_formule) — FROZEN component surface",
+      "evidence": [
+        "resources/js/components/frontend/kiosk/KioskWizardComponent.vue exists at 119747 bytes (FROZEN per CLAUDE.md §7).",
+        "Owner-attested 'impeccable via manual test' — no behavioural changes mandated.",
+        "Mobile cross-system parity (mobile/data/menu.js composer_profile) is in scope for the Mobile Realignment master (memory: project_mobile_realignment_ultraplan_2026-05-16 + project_goal_longterm_executed_2026-05-17). Verifying parity here would re-tread already-covered ground."
+      ],
+      "assessment": "DEFER parity verification to mobile audit (separate master). The kiosk wizard FROZEN contract is the source of truth; cross-surface verification belongs to whichever consumer touches mobile/data/menu.js. Architect surface here = the wizard hands the cart an item with `{ item_id, quantity, item_variations[], item_extras[] }` shape — that contract is verified in OrderRequest line 182 (`items` JSON validator `ValidJsonOrder`) and FrontendOrderService:273 (`safeJsonDecode($request->items)`)."
+    },
+    {
+      "id": "KB-1-ARCH-04",
+      "category": "STATE_MACHINE",
+      "severity": "INFO",
+      "title": "Sub-system 11.7 'Allergen modal' implemented inline + via KsAllergenBadge, NOT as a discrete modal file",
+      "evidence": [
+        "grep `name=\"KioskAllergen` returned no .vue file matching 'AllergenModal'.",
+        "resources/js/components/frontend/kiosk/ds/KsAllergenBadge.vue is the badge ATOM consumed by KioskCart (line 369 import).",
+        "Allergen logic lives in: KioskCart (lines 414..490 customerAllergenCodes + cartLineAllergenSelections), KioskCategories, KioskWizard (FROZEN, presumed allergen step inline).",
+        "Backend allergen contract: FrontendOrderService:289 + 920..928 `hydrateAllergenSnapshots()` delegates to `OrderItemAllergenSnapshot::hydrate()` (W3.A POS↔Kiosk parity heal)."
+      ],
+      "assessment": "Spec scope item 11.7 names a 'modal' that doesn't exist as a discrete file — it's inline functionality. Worth noting in STATUS so reviewers don't hunt for `KioskAllergenModalComponent.vue`. No defect; just clarification."
+    },
+    {
+      "id": "KB-1-ARCH-05",
+      "category": "DATA_MODEL",
+      "severity": "INFO",
+      "title": "FrontendOrder schema alignment with Order (BroadcastableOrder + source_surface) — Couche 0 fix downstream of kiosk",
+      "evidence": [
+        "app/Models/FrontendOrder.php:13 `implements BroadcastableOrder` — contract aligned with Order.",
+        "app/Models/FrontendOrder.php:22..32 — `creating` hook mirrors `Order::creating` for source_surface='delivery' fallback on order_type=DELIVERY (idempotent, kiosk path explicitly fills `source_surface='kiosk'` upstream — FrontendOrderService:505).",
+        "Migration 2026_03_27_120000_add_kiosk_upsell_flags_to_item_categories_table.php + 2026_04_18_120005_create_kiosk_promos_table.php confirm V1 schema settled."
+      ],
+      "assessment": "Couche 0 broadcastable-order normalization (`source_surface` cast + interface) reached kiosk path correctly. No drift."
+    },
+    {
+      "id": "KB-1-ARCH-06",
+      "category": "STATE_MACHINE",
+      "severity": "INFO",
+      "title": "FROZEN wizard hands cart a stable contract; cart→quote→submit chain symmetric",
+      "evidence": [
+        "resources/js/store/modules/kioskCart.js:603..620 — `quoteOrder` gates on `state.kioskToken` (no token = no quote, prevents 401 silent fail) — Wave E state 04 heal.",
+        "resources/js/components/frontend/kiosk/KioskPaymentComponent.vue:486..510 — `refreshQuote` mirrors same gate (`if (!this.$store.state.kioskCart?.kioskToken)` throws `KIOSK_QUOTE_NO_TOKEN`).",
+        "resources/js/components/frontend/kiosk/KioskPaymentComponent.vue:373..395 — `submitOrder` returns the server-truth `total` (from `OrderDetailsResource.total`) and uses `quote.total_ttc` as the SSOT for cart→pay surface display."
+      ],
+      "assessment": "Quote→pay→confirm chain is symmetric across cart and payment components. Both gate on the same token state. KEEP."
+    },
+    {
+      "id": "KB-1-ARCH-07",
+      "category": "CONTRACT_OBSERVATION",
+      "severity": "INFO",
+      "title": "FrontendOrderService `myOrderStore` is dual-purpose (kiosk + web/mobile)",
+      "evidence": [
+        "app/Services/FrontendOrderService.php:131..170 — comment block explicitly documents 'route /api/frontend/order is dual-purpose (kiosk + web/mobile users)'.",
+        "Line 199 — `$isKioskMachineOrder = (bool) $kiosk;` driver of every branching decision (KioskMachine row presence).",
+        "Line 144..151 — branch_id resolution falls back to `Auth::user()?->branch_id` then 422 if zero — closes the cross-branch idempotency leak the F-007 heal targeted."
+      ],
+      "assessment": "BY-DESIGN dual-purpose. Splitting into a dedicated `KioskOrderService` would be a V1.0.2 refactor with regression risk — not actionable now. Surface this for reviewers who might suspect 'kiosk logic in a service called Frontend should be split'."
+    }
+  ],
+
+  "wizard_4_template_parity_check": {
+    "result": "NOT-PERFORMED — DEFERRED",
+    "rationale": "Mobile/data/menu.js is standalone with separate audit master per architect mandate; cross-reading it here would create scope creep and duplicate Mobile Realignment work. The FROZEN wizard contract surface (item_id + quantity + item_variations[] + item_extras[]) is already validated by `ValidJsonOrder` (resources/rules) and the SSOT `CompositionSnapshotBuilder` which is template-agnostic.",
+    "what-would-trigger-real-divergence": "If mobile shipped a 5th template (e.g. tacos with cheese-step) that the kiosk wizard didn't recognize, the cart line would still arrive at the backend with valid {item_id, item_variations[]} — the backend doesn't know about templates; it just hydrates by IDs. Template parity is a UX concern, not a data-integrity one."
+  },
+
+  "kept_as_is": [
+    "FrontendOrderService.php:236 dispatch-gate truth table (kiosk card/TR deferred until TPE).",
+    "FrontendOrderService.php:1066..1218 finalizePaidKioskOrder full body (PAID-gate + fiscal_seq alloc-in-tx + ACCEPT promotion).",
+    "FrontendOrderService.php:1130..1190 FISCAL-ORPHAN-RETRY flag-on-error pattern (fiscal_alloc_error_at + cron retry).",
+    "PricingService.php:266..297 composition_snapshot build path (NF525 SSOT, immutable).",
+    "KioskPaymentComponent.vue:486..510 refreshQuote token-gate (KIOSK_QUOTE_NO_TOKEN explicit code, no silent 401).",
+    "KioskPaymentComponent.vue:578..596 amount_cents echo to backend (AUDIT-F-002 +/-1 cent tolerance).",
+    "KioskPaymentComponent.vue:546..563 void-on-decline path (AUDIT-P1 + AUDIT-F-004 reason whitelist).",
+    "KioskPaymentComponent.vue:464..482 MAX_PAYMENT_FAILURES=2 → route to /error/payment-refused (UX standard concurrence)."
+  ],
+
+  "deferred_or_oos": [
+    "Wizard 4-template mobile parity — deferred to Mobile Realignment audit master.",
+    "FrontendOrderService split into KioskOrderService — V1.0.2 refactor, regression risk.",
+    "Wizard FROZEN file lines:N internal refs — cannot read for finding without violating CLAUDE.md §7."
+  ],
+
+  "red_dispute_summary": "No state-machine path exposes ghost orders to KDS. No path bypasses composition_snapshot immutability. No path skips fiscal_sequence alloc for paid kiosk orders silently — the FISCAL-ORPHAN-RETRY flag + cron close that gap explicitly.",
+
+  "word_count_self_check": "approx 1180 words content (within 1500 cap)"
+}

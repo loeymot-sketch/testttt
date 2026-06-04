@@ -4,8 +4,10 @@ namespace App\Console\Commands;
 
 use App\Jobs\ProcessWebhookEventJob;
 use App\Models\WebhookEvent;
+use App\Services\Fiscal\AuditLogService;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
 
@@ -39,24 +41,116 @@ class OutboxWebhookRetryFailedCommand extends Command
 
     protected $description = 'Reset and re-dispatch failed webhook_events within the recovery window.';
 
+    /**
+     * [Wave 3b SYNC-ADV3B-06 — P1 concurrency — 2026-05-18]
+     * [Wave 3c SYNC-ADV3C-04 — P1 latent — 2026-05-18]
+     * Distinct lock key from the domain-event outbox so the two retry
+     * commands can run concurrently when scheduled together.
+     *
+     * TTL raised 60→300s (Wave 3c) because the default `--since=24h`
+     * cron window can sweep a Stripe-outage-backlog whose audit-chain
+     * write contention exceeds the old 60s budget. 5 min covers
+     * worst-case wall-clock even at the BATCH_CAP below.
+     *
+     * BATCH_CAP bounds the per-run row count so a 24h DLQ surge drains
+     * over `ceil(N/500)` hourly ticks instead of risking a single-batch
+     * lock overrun.
+     *
+     * `finally`-released to prevent an early throw from stranding the
+     * key.
+     */
+    private const LOCK_KEY = 'outbox.webhook-retry-failed.lock';
+
+    private const LOCK_TTL_SECONDS = 300;
+
+    private const BATCH_CAP = 500;
+
     public function handle(): int
+    {
+        $lock = Cache::lock(self::LOCK_KEY, self::LOCK_TTL_SECONDS);
+
+        if (! $lock->get()) {
+            $this->warn('Another webhook:retry-failed run in progress. Skipping.');
+            Log::channel('fiscal')->info('webhook.dlq.retry_failed_lock_contended', [
+                'event' => 'webhook_dlq_retry_failed_lock_contended',
+                'lock_key' => self::LOCK_KEY,
+            ]);
+
+            return self::SUCCESS;
+        }
+
+        try {
+            return $this->runHandle();
+        } finally {
+            $lock->release();
+        }
+    }
+
+    private function runHandle(): int
     {
         $cutoff = $this->resolveCutoff((string) $this->option('since'));
 
+        // [Wave 3c SYNC-ADV3C-04 — P1 latent — 2026-05-18]
+        // BATCH_CAP bounds the single-run wall-clock so the LOCK_TTL
+        // window can never expire mid-handle. Overflow drains on the
+        // next hourly cron tick (Kernel.php:77).
         $events = WebhookEvent::query()
             ->where('status', WebhookEvent::STATUS_FAILED)
             ->where('created_at', '>=', $cutoff)
+            ->orderBy('id') // deterministic order ⇒ overflow is the same tail each run
+            ->take(self::BATCH_CAP)
             ->get();
 
-        foreach ($events as $event) {
-            // Reset to pending BEFORE dispatch so re-failure flips
-            // cleanly. Attempts counter intentionally preserved.
-            $event->forceFill([
-                'status'        => WebhookEvent::STATUS_PENDING,
-                'error_message' => null,
-            ])->save();
+        $auditLog = app(AuditLogService::class);
 
-            ProcessWebhookEventJob::dispatch($event->id);
+        foreach ($events as $event) {
+            // [Wave 3 SYNC-ADV3-04 — NF525-adjacent — 2026-05-18]
+            // Write-then-dispatch ordering: the tamper-evident audit row
+            // MUST exist before we re-broadcast the event. If audit write
+            // throws (chain-lock timeout, UNIQUE violation, secret
+            // misconfig), we skip THIS event but `continue` so the rest
+            // of the batch still replays. Guarantees: audit row exists
+            // IFF dispatch was attempted, AND batch continuity is preserved.
+            try {
+                $auditLog->write([
+                    'branch_id' => 0,
+                    'user_id' => null,
+                    'action' => 'outbox.replay',
+                    'resource' => 'webhook_event',
+                    'resource_id' => (int) $event->id,
+                    'payload' => [
+                        'command' => 'foodking:webhook:retry-failed',
+                        'event_id' => (int) $event->id,
+                        'webhook_id' => (string) $event->webhook_id,
+                        'provider' => (string) $event->provider,
+                        'event_type' => (string) $event->event_type,
+                        'attempts' => (int) $event->attempts,
+                    ],
+                ]);
+            } catch (\Throwable $e) {
+                Log::channel('fiscal')->error('Outbox replay audit_log write failed', [
+                    'event_id' => (int) $event->id,
+                    'error' => $e->getMessage(),
+                ]);
+                continue; // skip this event — do NOT dispatch without audit trail
+            }
+
+            try {
+                // Reset to pending BEFORE dispatch so re-failure flips
+                // cleanly. Attempts counter intentionally preserved.
+                $event->forceFill([
+                    'status'        => WebhookEvent::STATUS_PENDING,
+                    'error_message' => null,
+                ])->save();
+
+                ProcessWebhookEventJob::dispatch($event->id);
+            } catch (\Throwable $e) {
+                Log::channel('fiscal')->error('Outbox replay dispatch failed (audit row exists)', [
+                    'event_id' => (int) $event->id,
+                    'error' => $e->getMessage(),
+                ]);
+                continue;
+            }
         }
 
         $msg = sprintf(

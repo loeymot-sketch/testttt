@@ -49,61 +49,61 @@
   // -------------------------------------------------------------------------
   const ASSET_BASE = 'assets/menu/';
 
-  // Items → images (heal-light v2 2026-05-14 — réutilise generated_*.png existants)
+  // Items → images ([BOARD-REPOINT 2026-05-30] canonical board photos, board filenames preserved)
   const ITEM_IMG = {
     // Sandwich Cayenne (1 + Big)
-    'sandwich-cayenne-classique': 'generated_le-cayenne.png',
-    'big-cayenne':                'generated_le-cayenne.png',
+    'sandwich-cayenne-classique': 'sandwich-cayenne.png',
+    'big-cayenne':                'sandwich-cayenne-maxi.png',
     // Galette (2)
-    'galette-normale': 'generated_sandwich-classique-galette.png',
-    'galette-cayenne': 'generated_sandwich-classique-galette.png',
+    'galette-normale': 'galette.png',
+    'galette-cayenne': 'galette.png',
     // Sandwich Classique (1 + Big)
-    'sandwich-classique-faluche': 'generated_sandwich-classique-pain.png',
-    'big-classique':              'generated_sandwich-classique-pain.png',
-    // Burgers (2 — heal-light v2 NEW) — assets aliased from existing kiosk generated_*.png
-    'chicken-burger': 'generated_chicken-burger.png',
-    'big-chicken':    'generated_big-burger.png',
-    // Tacos (2)
-    'tacos-1-viande': 'generated_tacos-m-1-viande.png',
-    'big-tacos-2-viandes': 'generated_tacos-l-2-viandes.png',
-    // Bols (8 — heal-light v2 RESTRUCTURE)
-    'bowl-frites-marine':   'generated_assiette-poulet.png',
-    'bowl-frites-curry':    'generated_assiette-poulet.png',
-    'bowl-frites-tandoori': 'generated_assiette-poulet.png',
-    'bowl-frites-crispy':   'generated_assiette-poulet.png',
-    'bowl-riz-marine':      'generated_assiette-poulet.png',
-    'bowl-riz-curry':       'generated_assiette-poulet.png',
-    'bowl-riz-tandoori':    'generated_assiette-poulet.png',
-    'bowl-riz-crispy':      'generated_assiette-poulet.png',
+    'sandwich-classique-faluche': 'sandwich-classique.png',
+    'big-classique':              'sandwich-classique-maxi.png',
+    // Burgers (2 — heal-light v2 NEW)
+    'chicken-burger': 'burger-cheese.png',
+    'big-chicken':    'burger-big.png',
+    // Tacos (2) — board deliberately shares one tacos photo
+    'tacos-1-viande': 'tacos.png',
+    'big-tacos-2-viandes': 'tacos.png',
+    // Bols (8 — board: all frites-bowls share bol-frites.png, all riz-bowls share bol-riz.png)
+    'bowl-frites-marine':   'bol-frites.png',
+    'bowl-frites-curry':    'bol-frites.png',
+    'bowl-frites-tandoori': 'bol-frites.png',
+    'bowl-frites-crispy':   'bol-frites.png',
+    'bowl-riz-marine':      'bol-riz.png',
+    'bowl-riz-curry':       'bol-riz.png',
+    'bowl-riz-tandoori':    'bol-riz.png',
+    'bowl-riz-crispy':      'bol-riz.png',
     // Frites (2)
-    'petite-frites': 'generated_frites-moyenne.png',
-    'grande-frites': 'generated_frites-grande.png',
-    // Desserts (existing kept)
-    'glace': 'generated_glace.png',
-    'tarte-daim': 'generated_tarte-daim.png',
-    'tiramisu': 'generated_tiramisu.png',
-    // Drinks (existing kept)
-    'coca': 'generated_coca-cola-33cl.png',
-    'coca-zero': 'generated_coca-cola-zero-33cl.png',
-    'fanta': 'generated_fanta-orange-33cl.png',
-    'sprite': 'generated_sprite-33cl.png',
-    'oasis': 'generated_oasis-tropical-33cl.png',
-    'orangina': 'generated_orangina-33cl.png',
-    'eau-plate': 'generated_eau-plate-50cl.png',
-    'capri-sun': 'generated_capri-sun.png',
-    // Suppléments standalone (heal-light v2 — Bacon supprimé, Boursin ajouté, oignon-frais)
-    'supp-cheddar': 'generated_fromage-supplementaire.png',
-    'supp-raclette': 'generated_fromage-a-raclette.png',
-    'supp-emmental': 'generated_fromage-supplementaire.png',
-    'supp-oeuf': 'generated_oeuf.png',
-    'supp-boursin': 'supplement_boursin.png',
-    'supp-legumes-sautes': 'generated_salade-verte.png',
-    'supp-jambon': 'generated_jambon-de-dinde.png',
-    'supp-oignon-frais': 'crudite_oignon.png',
-    'supp-champignons': 'generated_omelette-champignons-fromage.png',
-    'supp-boule-gratinee': 'generated_galette-pommes-de-terre.png',
+    'petite-frites': 'frites.png',
+    'grande-frites': 'frites.png',
+    // Desserts
+    'glace': 'ben-jerrys.png',
+    'tarte-daim': 'tarte.png',
+    'tiramisu': 'tiramisu.png',
+    // Drinks
+    'coca': 'coca.png',
+    'coca-zero': 'coca-zero.png',
+    'fanta': 'fanta-orange.png',
+    'sprite': 'sprite.png',
+    'oasis': 'oasis.png',
+    'orangina': 'tropico.png',
+    'eau-plate': 'eau.png',
+    'capri-sun': 'capri-sun.png',
+    // Suppléments standalone
+    'supp-cheddar': 'cheddar.png',
+    'supp-raclette': 'raclette.png',
+    'supp-emmental': 'fromage.png',
+    'supp-oeuf': 'oeuf.png',
+    'supp-boursin': 'boursin.png',
+    'supp-legumes-sautes': 'legumes-sautes.png',
+    'supp-jambon': 'jambon-dinde.png',
+    'supp-oignon-frais': 'oignons-frits.png',
+    'supp-champignons': 'champignons.png',
+    'supp-boule-gratinee': 'bol-frites-gratine.png',
     // Menu enfant (heal-light v2 NEW)
-    'menu-nuggets': 'generated_nuggets-x6.png',
+    'menu-nuggets': 'nuggets.png',
   };
 
   // Signature heroes (bg-removed)
@@ -128,59 +128,60 @@
 
   // 4 viandes canoniques (config/menu.php meats — heal-light v2 2026-05-14)
   const MEATS = [
-    { id: 'm-marine',   name: 'Poulet mariné',   price: 0, emoji: '🍗', image: ASSET_BASE + 'viande_escalope_poulet.png' },
-    { id: 'm-curry',    name: 'Poulet curry',    price: 0, emoji: '🍛', image: ASSET_BASE + 'viande_escalope_poulet.png' },
-    { id: 'm-tandoori', name: 'Poulet tandoori', price: 0, emoji: '🔥', image: ASSET_BASE + 'viande_escalope_poulet.png' },
-    { id: 'm-crispy',   name: 'Poulet crispy',   price: 0, emoji: '🍗', image: ASSET_BASE + 'viande_tenders.png' },
+    { id: 'm-marine',   name: 'Poulet mariné',   price: 0, emoji: '🍗', image: ASSET_BASE + 'viande-marine.png' },
+    { id: 'm-curry',    name: 'Poulet curry',    price: 0, emoji: '🍛', image: ASSET_BASE + 'viande-curry.png' },
+    { id: 'm-tandoori', name: 'Poulet tandoori', price: 0, emoji: '🔥', image: ASSET_BASE + 'viande-tandoori.png' },
+    { id: 'm-crispy',   name: 'Poulet crispy',   price: 0, emoji: '🍗', image: ASSET_BASE + 'viande-crispy.png' },
   ];
 
   // 11 sauces canoniques (heal-light v2 2026-05-14) — Tandoori + Cayenne supprimées (viande/sandwich, pas sauce)
   const SAUCES = [
-    { id: 's-mayo',       name: 'Mayonnaise',             price: 0, image: ASSET_BASE + 'sauce_mayo.svg' },
-    { id: 's-ketchup',    name: 'Ketchup',                price: 0, image: ASSET_BASE + 'sauce_ketchup.svg' },
-    { id: 's-algerien',   name: 'Algérienne',             price: 0, image: ASSET_BASE + 'sauce_algerienne.svg' },
-    { id: 's-samurai',    name: 'Samouraï',               price: 0, image: ASSET_BASE + 'sauce_samourai.svg' },
-    { id: 's-curry',      name: 'Curry',                  price: 0, image: ASSET_BASE + 'sauce_curry.svg' },
-    { id: 's-andalouse',  name: 'Andalouse',              price: 0, image: ASSET_BASE + 'sauce_andalouse.svg' },
-    { id: 's-harissa',    name: 'Harissa',                price: 0, is_spicy: true, image: ASSET_BASE + 'sauce_harissa.svg' },
-    { id: 's-hannibal',   name: 'Hannibal',               price: 0, is_spicy: true, image: ASSET_BASE + 'sauce_hannibal.svg' },
-    { id: 's-blanche',    name: 'Blanche',                price: 0, image: ASSET_BASE + 'sauce_blanche.svg' },
-    { id: 's-fromagere',  name: 'Sauce fromagère maison', price: 0, image: ASSET_BASE + 'sauce_blanche.svg' },
-    { id: 's-spicy',      name: 'Spicy',                  price: 0, is_spicy: true, image: ASSET_BASE + 'sauce_harissa.svg' },
+    { id: 's-mayo',       name: 'Mayonnaise',             price: 0, image: ASSET_BASE + 'sauce-mayonnaise.png' },
+    { id: 's-ketchup',    name: 'Ketchup',                price: 0, image: ASSET_BASE + 'sauce-ketchup.png' },
+    { id: 's-algerien',   name: 'Algérienne',             price: 0, image: ASSET_BASE + 'sauce-algerienne.png' },
+    { id: 's-samurai',    name: 'Samouraï',               price: 0, image: ASSET_BASE + 'sauce-samurai.png' },
+    { id: 's-curry',      name: 'Curry',                  price: 0, image: ASSET_BASE + 'sauce-curry.png' },
+    { id: 's-andalouse',  name: 'Andalouse',              price: 0, image: ASSET_BASE + 'sauce-andalouse.png' },
+    { id: 's-harissa',    name: 'Harissa',                price: 0, is_spicy: true, image: ASSET_BASE + 'sauce-harissa.png' },
+    { id: 's-hannibal',   name: 'Hannibal',               price: 0, is_spicy: true, image: ASSET_BASE + 'sauce-hannibal.png' },
+    { id: 's-blanche',    name: 'Blanche',                price: 0, image: ASSET_BASE + 'sauce-blanche.png' },
+    { id: 's-fromagere',  name: 'Sauce fromagère maison', price: 0, image: ASSET_BASE + 'sauce-fromagere-maison.png' },
+    { id: 's-spicy',      name: 'Spicy',                  price: 0, is_spicy: true, image: ASSET_BASE + 'sauce-spicy-maison.png' },
   ];
 
   // 4 crudités (Salade/Tomate/Oignon/Cornichon — Cornichon ajouté 2026-05-13)
   const CRUDITES = [
-    { id: 'c-salade',    name: 'Salade',    default: true, image: ASSET_BASE + 'crudite_salade.png' },
-    { id: 'c-tomate',    name: 'Tomate',    default: true, image: ASSET_BASE + 'crudite_tomate.png' },
-    { id: 'c-oignon',    name: 'Oignon',    default: true, image: ASSET_BASE + 'crudite_oignon.png' },
-    { id: 'c-cornichon', name: 'Cornichon', default: true, image: ASSET_BASE + 'crudite_oignon.png' },
+    { id: 'c-salade',    name: 'Salade',    default: true, image: ASSET_BASE + 'salade.png' },
+    { id: 'c-tomate',    name: 'Tomate',    default: true, image: ASSET_BASE + 'tomate.png' },
+    { id: 'c-oignon',    name: 'Oignon',    default: true, image: ASSET_BASE + 'oignon.png' },
+    { id: 'c-cornichon', name: 'Cornichon', default: true, image: ASSET_BASE + 'cornichon.png' },
   ];
 
   // 9 suppléments génériques (heal-light v2 2026-05-14 — Bacon supprimé, Boursin ajouté, prix 0.90€)
+  // [MASSIVE-LOGIC HEAL 2026-05-17 P0] allergens added per FIC 1169/2011 — aggregation reads from this pool
   const SUPPLEMENTS = [
-    { id: 'sup-cheddar',        name: 'Cheddar',        price: 0.90, image: ASSET_BASE + 'generated_fromage-supplementaire.png' },
-    { id: 'sup-raclette',       name: 'Raclette',       price: 0.90, image: ASSET_BASE + 'supplement_raclette.png' },
-    { id: 'sup-emmental',       name: 'Emmental',       price: 0.90, image: ASSET_BASE + 'supplement_fromage.png' },
-    { id: 'sup-oeuf',           name: 'Œuf',            price: 0.90, image: ASSET_BASE + 'supplement_oeuf.png' },
-    { id: 'sup-boursin',        name: 'Boursin',        price: 0.90, image: ASSET_BASE + 'supplement_boursin.png' },
-    { id: 'sup-legumes-sautes', name: 'Légumes sautés', price: 0.90, image: ASSET_BASE + 'generated_salade-verte.png' },
-    { id: 'sup-jambon',         name: 'Jambon',         price: 0.90, image: ASSET_BASE + 'supplement_jambon_dinde.png' },
-    { id: 'sup-oignon-frais',   name: 'Oignon frais',   price: 0.90, image: ASSET_BASE + 'crudite_oignon.png' },
-    { id: 'sup-champignons',    name: 'Champignons',    price: 0.90, image: ASSET_BASE + 'generated_omelette-champignons-fromage.png' },
+    { id: 'sup-cheddar',        name: 'Cheddar',        price: 0.90, image: ASSET_BASE + 'cheddar.png',          allergens: ['lactose'] },
+    { id: 'sup-raclette',       name: 'Raclette',       price: 0.90, image: ASSET_BASE + 'raclette.png',         allergens: ['lactose'] },
+    { id: 'sup-emmental',       name: 'Emmental',       price: 0.90, image: ASSET_BASE + 'fromage.png',          allergens: ['lactose'] },
+    { id: 'sup-oeuf',           name: 'Œuf',            price: 0.90, image: ASSET_BASE + 'oeuf.png',             allergens: ['oeuf'] },
+    { id: 'sup-boursin',        name: 'Boursin',        price: 0.90, image: ASSET_BASE + 'boursin.png',          allergens: ['lactose'] },
+    { id: 'sup-legumes-sautes', name: 'Légumes sautés', price: 0.90, image: ASSET_BASE + 'legumes-sautes.png',   allergens: [] },
+    { id: 'sup-jambon',         name: 'Jambon',         price: 0.90, image: ASSET_BASE + 'jambon-dinde.png',     allergens: [] },
+    { id: 'sup-oignon-frais',   name: 'Oignon frais',   price: 0.90, image: ASSET_BASE + 'oignons-frits.png',    allergens: [] },
+    { id: 'sup-champignons',    name: 'Champignons',    price: 0.90, image: ASSET_BASE + 'champignons.png',      allergens: [] },
   ];
 
   // Suppléments spécifiques aux bols (heal-light v2 2026-05-14 — gratiné +2€ bol-specific)
   const SUPPLEMENTS_BOLS = [
-    { id: 'sb-oignon-frais',   name: 'Oignon frais',    price: 0.90 },
-    { id: 'sb-jambon',         name: 'Jambon',          price: 0.90 },
-    { id: 'sb-champignons',    name: 'Champignons',     price: 0.90 },
-    { id: 'sb-boule-gratinee', name: 'Boule gratinée',  price: 2.00 },
+    { id: 'sb-oignon-frais',   name: 'Oignon frais',    price: 0.90, image: ASSET_BASE + 'oignons-frits.png' },
+    { id: 'sb-jambon',         name: 'Jambon',          price: 0.90, image: ASSET_BASE + 'jambon-dinde.png' },
+    { id: 'sb-champignons',    name: 'Champignons',     price: 0.90, image: ASSET_BASE + 'champignons.png' },
+    { id: 'sb-boule-gratinee', name: 'Boule gratinée',  price: 2.00, image: ASSET_BASE + 'bol-frites-gratine.png' },
   ];
 
   // Formules menu (heal-light v2 2026-05-14 — menu addon 3.00 → 2.50€)
   const FORMULES = [
-    { id: 'f-menu',    name: 'Menu (Frites + Boisson)', price: 2.50, has_drink: true, has_fries: true },
+    { id: 'f-menu',    name: 'Menu (Frites + Boisson)', price: 3.00, has_drink: true, has_fries: true },
     { id: 'f-frites',  name: 'Ajouter Frites',           price: 2.00, has_fries: true },
     { id: 'f-boisson', name: 'Ajouter Boisson',          price: 2.00, has_drink: true },
   ];
@@ -188,43 +189,43 @@
   // Frites styles (Nature / Cheddar +1€ / Cheddar+Oignons +2€) — owner update 2026-05-13
   const FRITES_STYLES = [
     { id: null,                name: 'Nature',                   price: 0,    is_default: true, emoji: '🍟', image: ASSET_BASE + 'frites.png' },
-    { id: 'fs-cheddar',        name: 'Cheddar fondu',            price: 1.00, emoji: '🧀',                  image: ASSET_BASE + 'supplement_cheddar.png' },
-    { id: 'fs-cheddar-oignon', name: 'Cheddar + Oignons frits',  price: 2.00, emoji: '🧅',                  image: ASSET_BASE + 'generated_frites-grande.png' },
+    { id: 'fs-cheddar',        name: 'Cheddar fondu',            price: 1.00, emoji: '🧀',                  image: ASSET_BASE + 'frites-cheddar.png' },
+    { id: 'fs-cheddar-oignon', name: 'Cheddar + Oignons frits',  price: 2.00, emoji: '🧅',                  image: ASSET_BASE + 'frites-cheddar-oignons.png' },
   ];
 
   // Bases bols (Frites / Riz basmati)
   const BOL_BASES = [
     { id: 'bb-frites', name: 'Frites',       price: 0, image: ASSET_BASE + 'frites.png' },
-    { id: 'bb-riz',    name: 'Riz basmati',  price: 0, image: ASSET_BASE + 'generated_assiette-poulet.png' },
+    { id: 'bb-riz',    name: 'Riz basmati',  price: 0, image: ASSET_BASE + 'bol-riz.png' },
   ];
 
   // Boissons formule menu
   const FORMULE_DRINKS = [
-    { id: 'd-coca',      name: 'Coca-Cola 33cl',      emoji: '🥤', image: ASSET_BASE + 'coca_cola.png' },
-    { id: 'd-coca-zero', name: 'Coca-Cola Zero 33cl', emoji: '🥤', image: ASSET_BASE + 'coca_zero.png' },
-    { id: 'd-fanta',     name: 'Fanta Orange 33cl',   emoji: '🍊', image: ASSET_BASE + 'fanta.png' },
+    { id: 'd-coca',      name: 'Coca-Cola 33cl',      emoji: '🥤', image: ASSET_BASE + 'coca.png' },
+    { id: 'd-coca-zero', name: 'Coca-Cola Zero 33cl', emoji: '🥤', image: ASSET_BASE + 'coca-zero.png' },
+    { id: 'd-fanta',     name: 'Fanta Orange 33cl',   emoji: '🍊', image: ASSET_BASE + 'fanta-orange.png' },
     { id: 'd-sprite',    name: 'Sprite 33cl',         emoji: '🍋', image: ASSET_BASE + 'sprite.png' },
-    { id: 'd-oasis',     name: 'Oasis Tropical 33cl', emoji: '🌴', image: ASSET_BASE + 'oasis_tropical.png' },
-    { id: 'd-orangina',  name: 'Orangina 33cl',       emoji: '🍊', image: ASSET_BASE + 'orangina.png' },
+    { id: 'd-oasis',     name: 'Oasis Tropical 33cl', emoji: '🌴', image: ASSET_BASE + 'oasis.png' },
+    { id: 'd-orangina',  name: 'Orangina 33cl',       emoji: '🍊', image: ASSET_BASE + 'tropico.png' },
     { id: 'd-eau',       name: 'Eau Plate 50cl',      emoji: '💧', image: ASSET_BASE + 'eau.png' },
-    { id: 'd-capri',     name: 'Capri-Sun',           emoji: '🧃', image: ASSET_BASE + 'capri_sun.png' },
+    { id: 'd-capri',     name: 'Capri-Sun',           emoji: '🧃', image: ASSET_BASE + 'capri-sun.png' },
   ];
 
   // -------------------------------------------------------------------------
   // CATEGORIES (11 catégories — heal-light v2 2026-05-14)
   // -------------------------------------------------------------------------
   const CATEGORIES = [
-    { id: 1,  slug: 'sandwich-cayenne',   name: 'Sandwich Cayenne',   icon: '🥖', sort: 1,  wizard_template: 'sandwich', has_menu: true,  description: 'Sandwich signature avec sauce Cayenne maison',   image: ASSET_BASE + 'generated_le-cayenne.png' },
-    { id: 2,  slug: 'galette',            name: 'Galette',            icon: '🌯', sort: 2,  wizard_template: 'sandwich', has_menu: true,  description: 'Galette traditionnelle ou Cayenne',              image: ASSET_BASE + 'generated_sandwich-classique-galette.png' },
-    { id: 3,  slug: 'sandwich-classique', name: 'Sandwich Classique', icon: '🥖', sort: 3,  wizard_template: 'sandwich', has_menu: true,  description: 'Sandwich classique en pain faluche',             image: ASSET_BASE + 'generated_sandwich-classique-pain.png' },
-    { id: 4,  slug: 'burgers',            name: 'Burgers',            icon: '🍔', sort: 4,  wizard_template: 'sandwich', has_menu: true,  description: 'Chicken Burger ou Big Chicken, pain brioché',    image: ASSET_BASE + 'generated_category_nos-burgers.png' },
-    { id: 5,  slug: 'tacos',              name: 'Tacos',              icon: '🌮', sort: 5,  wizard_template: 'tacos',    has_menu: true,  description: 'Tacos M ou Tacos L, sauce fromagère maison',     image: ASSET_BASE + 'generated_category_nos-tacos.png' },
-    { id: 6,  slug: 'bols-gourmands',     name: 'Bols Gourmands',     icon: '🥣', sort: 6,  wizard_template: 'custom',   has_menu: false, description: 'Bowl Frites ou Riz × 4 viandes au choix',        image: ASSET_BASE + 'generated_assiette-poulet.png' },
-    { id: 7,  slug: 'frites',             name: 'Frites',             icon: '🍟', sort: 7,  wizard_template: 'custom',   has_menu: false, description: 'Petite ou Grande, style au choix',               image: ASSET_BASE + 'generated_category_frites-accompagnements.png' },
-    { id: 8,  slug: 'supplements',        name: 'Suppléments',        icon: '➕', sort: 8,  wizard_template: 'simple',   has_menu: false, description: 'Suppléments commandables séparément',            image: ASSET_BASE + 'generated_category_supplements.png' },
-    { id: 9,  slug: 'desserts',           name: 'Desserts',           icon: '🍰', sort: 9,  wizard_template: 'simple',   has_menu: false, description: 'Desserts gourmands',                             image: ASSET_BASE + 'generated_category_nos-desserts.png' },
-    { id: 10, slug: 'boissons',           name: 'Boissons',           icon: '🥤', sort: 10, wizard_template: 'simple',   has_menu: false, description: 'Boissons fraîches',                              image: ASSET_BASE + 'generated_category_nos-boissons.png' },
-    { id: 11, slug: 'menu-enfant',        name: 'Menu enfant',        icon: '🧒', sort: 11, wizard_template: 'simple',   has_menu: false, description: 'Menu enfant nuggets + frites + Capri-Sun',       image: ASSET_BASE + 'generated_category_nos-menus-enfants.png' },
+    { id: 1,  slug: 'sandwich-cayenne',   name: 'Sandwich Cayenne',   icon: '🥖', sort: 1,  wizard_template: 'sandwich', has_menu: true,  description: 'Sandwich signature avec sauce Cayenne maison',   image: ASSET_BASE + 'cat-sandwich-cayenne.png' },
+    { id: 2,  slug: 'galette',            name: 'Galette',            icon: '🌯', sort: 2,  wizard_template: 'sandwich', has_menu: true,  description: 'Galette traditionnelle ou Cayenne',              image: ASSET_BASE + 'cat-galette.png' },
+    { id: 3,  slug: 'sandwich-classique', name: 'Sandwich Classique', icon: '🥖', sort: 3,  wizard_template: 'sandwich', has_menu: true,  description: 'Sandwich classique en pain faluche',             image: ASSET_BASE + 'cat-sandwich-classique.png' },
+    { id: 4,  slug: 'burgers',            name: 'Burgers',            icon: '🍔', sort: 4,  wizard_template: 'sandwich', has_menu: true,  description: 'Chicken Burger ou Big Chicken, pain brioché',    image: ASSET_BASE + 'cat-burgers.png' },
+    { id: 5,  slug: 'tacos',              name: 'Tacos',              icon: '🌮', sort: 5,  wizard_template: 'tacos',    has_menu: true,  description: 'Tacos M ou Tacos L, sauce fromagère maison',     image: ASSET_BASE + 'cat-tacos.png' },
+    { id: 6,  slug: 'bols-gourmands',     name: 'Bols Gourmands',     icon: '🥣', sort: 6,  wizard_template: 'custom',   has_menu: false, description: 'Bowl Frites ou Riz × 4 viandes au choix',        image: ASSET_BASE + 'cat-bols-gourmands.png' },
+    { id: 7,  slug: 'frites',             name: 'Frites',             icon: '🍟', sort: 7,  wizard_template: 'custom',   has_menu: false, description: 'Petite ou Grande, style au choix',               image: ASSET_BASE + 'cat-frites.png' },
+    { id: 8,  slug: 'supplements',        name: 'Suppléments',        icon: '➕', sort: 8,  wizard_template: 'simple',   has_menu: false, description: 'Suppléments commandables séparément',            image: ASSET_BASE + 'cat-supplements.png' },
+    { id: 9,  slug: 'desserts',           name: 'Desserts',           icon: '🍰', sort: 9,  wizard_template: 'simple',   has_menu: false, description: 'Desserts gourmands',                             image: ASSET_BASE + 'cat-desserts.png' },
+    { id: 10, slug: 'boissons',           name: 'Boissons',           icon: '🥤', sort: 10, wizard_template: 'simple',   has_menu: false, description: 'Boissons fraîches',                              image: ASSET_BASE + 'cat-boissons.png' },
+    { id: 11, slug: 'menu-enfant',        name: 'Menu enfant',        icon: '🧒', sort: 11, wizard_template: 'simple',   has_menu: false, description: 'Menu enfant nuggets + frites + Capri-Sun',       image: ASSET_BASE + 'cat-menu-enfant.png' },
   ];
 
   // -------------------------------------------------------------------------
@@ -252,7 +253,10 @@
       thumb: 'item-' + slug,
       image: imgFor(slug),
       hero: heroFor(slug),
-      kiosk_emoji: opts.emoji || '',
+      kiosk_emoji: opts.emoji || '', // legacy field used by screens-item-steps.jsx:841
+      // [ULTRA-FRONTENDS HEAL 2026-05-18 P1] also expose `emoji` for web parity (consumers
+      // expecting item.emoji per web mkItem shape — mobile consumers may use either field).
+      emoji: opts.emoji || '',
       time: opts.time !== undefined ? opts.time : 8,
       tags: opts.tags || [],
       is_featured: !!opts.is_featured,
@@ -292,10 +296,19 @@
   //         source_type, position, min_select, max_select, addon_role?, choices[] }] }
   // -------------------------------------------------------------------------
   function buildBolComposerProfile(item, opts) {
-    // Sauce default ID resolved from name (bol_sauce_default = "Curry" → 's-curry')
-    const defaultSauce = opts.bol_sauce_default
-      ? (SAUCES.find(s => s.name === opts.bol_sauce_default) || {})
-      : {};
+    // [MASSIVE-LOGIC HEAL 2026-05-17 P0] Bol sauce default lookup with safe fallback :
+    // if name lookup fails (sauce renamed/deleted), fall back to first SAUCE rather
+    // than `{}` which leaves user with no pre-selection + no error feedback.
+    let defaultSauce = null;
+    if (opts.bol_sauce_default) {
+      defaultSauce = SAUCES.find(s => s.name === opts.bol_sauce_default);
+      if (!defaultSauce) {
+        console.warn('[buildBolComposerProfile] bol_sauce_default "' + opts.bol_sauce_default + '" not found in SAUCES for item ' + item.slug + ' — falling back to first sauce');
+        defaultSauce = SAUCES[0];
+      }
+    } else {
+      defaultSauce = SAUCES[0];
+    }
     return {
       template: 'bol',
       version: 1,
@@ -310,10 +323,10 @@
           max_select: 1,
           allow_repeat: false,
           addon_role: null,
-          default_choice_id: defaultSauce.id || null,
+          default_choice_id: (defaultSauce && defaultSauce.id) || null,
           choices: SAUCES.map(s => ({
             id: s.id, name: s.name, price: 0, image: s.image,
-            is_default: s.id === defaultSauce.id,
+            is_default: !!(defaultSauce && s.id === defaultSauce.id),
             is_spicy: !!s.is_spicy,
           })),
         },
@@ -328,7 +341,7 @@
           addon_role: null,
           default_choice_id: null,
           choices: SUPPLEMENTS_BOLS.map(s => ({
-            id: s.id, name: s.name, price: s.price, image: null, is_default: false,
+            id: s.id, name: s.name, price: s.price, image: s.image || null, is_default: false,
           })),
         },
         {
@@ -385,9 +398,9 @@
     return drinkSlugMap[formuleDrinkId] !== undefined ? drinkSlugMap[formuleDrinkId] : 1.50;
   }
 
-  // ====== SANDWICH CAYENNE (cat 1) — heal-light v2 prix 7.00→7.50 + Big Cayenne ======
+  // ====== SANDWICH CAYENNE (cat 1) — [CAISSE-SYNC 2026-05-30] prix DB 7.00 (était 7.50) + Big Cayenne 9.50 ======
   const SANDWICH_CAYENNE = [
-    mkItem(101, 'sandwich-cayenne-classique', 1, 'Sandwich Cayenne', 7.50,
+    mkItem(101, 'sandwich-cayenne-classique', 1, 'Sandwich Cayenne', 7.00,
       'Sauce Cayenne maison incluse · 1 viande au choix · Crudités · Suppléments optionnels',
       { viandes: 1, has_crudites: true, has_menu_addon: true, sauce_locked: 'Cayenne', has_sauce: false,
         is_featured: true, tags: ['SIGNATURE'], emoji: '🌶️', is_spicy: true, time: 10 }),
@@ -408,9 +421,9 @@
         is_featured: true, tags: ['SIGNATURE'], emoji: '🌶️', is_spicy: true, time: 8 }),
   ];
 
-  // ====== SANDWICH CLASSIQUE (cat 3) — heal-light v2 prix 6.50→7.00 + Big Classique ======
+  // ====== SANDWICH CLASSIQUE (cat 3) — [CAISSE-SYNC 2026-05-30] prix DB 6.50 (était 7.00) + Big Classique 9.00 ======
   const SANDWICH_CLASSIQUE = [
-    mkItem(301, 'sandwich-classique-faluche', 3, 'Sandwich Classique', 7.00,
+    mkItem(301, 'sandwich-classique-faluche', 3, 'Sandwich Classique', 6.50,
       'Pain faluche · 1 viande · Sauce au choix · Crudités · Suppléments optionnels',
       { viandes: 1, has_crudites: true, has_menu_addon: true, has_sauce: true, time: 8, emoji: '🥖' }),
     mkItem(302, 'big-classique', 3, 'Big Classique', 9.00,
@@ -428,13 +441,15 @@
       { viandes: 1, has_crudites: true, has_menu_addon: true, has_sauce: true, is_featured: true, tags: ['NEW', 'XL'], emoji: '🍔', time: 12 }),
   ];
 
-  // ====== TACOS (cat 5) — heal-light v2 rename + prix down (8.50→6.90, 11.50→7.90) ======
+  // ====== TACOS (cat 5) — owner decision 2026-06-04 : Tacos M (1 viande) 6,90 · Tacos L (2 viandes) 8,90 (prix "seul" / à la carte)
+  //   Owner a OVERRIDÉ le caisse-sync 2026-05-30 (DB items 26/27 = 8,50/11,50) → prix retail canonique = 6,90/8,90.
+  //   ⚠️ La caisse/borne DB porte ENCORE 8,50/11,50 : à corriger côté caisse (owner-gated) pour cohérence SSOT. ======
   const TACOS = [
     mkItem(501, 'tacos-1-viande', 5, 'Tacos M', 6.90,
       '1 viande au choix · Frites maison · Sauce fromagère maison',
       { viandes: 1, has_crudites: false, has_menu_addon: true, has_sauce: false,
         is_featured: true, tags: ['SIGNATURE'], emoji: '🌮', time: 10 }),
-    mkItem(502, 'big-tacos-2-viandes', 5, 'Tacos L', 7.90,
+    mkItem(502, 'big-tacos-2-viandes', 5, 'Tacos L', 8.90,
       '2 viandes au choix · Frites maison · Sauce fromagère maison',
       { viandes: 2, has_crudites: false, has_menu_addon: true, has_sauce: false,
         is_featured: true, tags: ['TOP'], emoji: '🌮', time: 12 }),
@@ -502,7 +517,7 @@
   ];
 
   // -------------------------------------------------------------------------
-  // ALL ITEMS (heal-light v2 2026-05-14 — 37 produits visibles)
+  // ALL ITEMS (heal-light v2 2026-05-14 ; recompté 2026-05-29 — 41 entrées sur 11 catégories)
   // -------------------------------------------------------------------------
   const ITEMS = [
     ...SANDWICH_CAYENNE, ...GALETTE, ...SANDWICH_CLASSIQUE, ...BURGERS, ...TACOS,

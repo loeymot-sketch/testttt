@@ -34,6 +34,9 @@ class PosManualDiscountAuditTest extends TestCase
             'broadcasting.default' => 'log',
             'fiscal.audit_secret' => str_repeat('a', 48),
             'pricing.use_ssot_service' => true,
+            // [GOAL-GOLIVE-VAT10 / F1-dormancy 2026-05-30] manual-discount audit
+            // suite — enable the flag (V1 default OFF).
+            'pos.manual_discount_enabled' => true,
         ]);
 
         $branch = Branch::factory()->create();

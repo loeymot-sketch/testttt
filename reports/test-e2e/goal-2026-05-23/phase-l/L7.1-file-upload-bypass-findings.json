@@ -1,0 +1,270 @@
+{
+  "agent": "L7.1 Adversarial file upload bypass",
+  "date": "2026-05-24",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "mission": "Re-test J-ADV-1 ADV1-V05 P2 claim: 14 image upload requests use mimes (extension) not mimetypes (magic byte) — assess polyglot / double-extension / SVG XSS / DoS / RCE risk",
+
+  "method": {
+    "static_analysis": [
+      "grep -rn 'mimes:' app/ — catalog every FormRequest + inline validation",
+      "grep -rn 'mimetypes:' app/ — count magic-byte validations",
+      "grep -rn 'validate\\|Validator::make' app/Http/Controllers/ — inline upload validations",
+      "Read nginx vhost templates (scripts/deploy/nginx.conf.template + deploy/ansible/templates/nginx-foodking.conf.j2)",
+      "Read public/.htaccess + public/file/.htaccess for Apache stack",
+      "Read config/media-library.php (file_namer + path_generator + image_optimizers)",
+      "Read config/filesystems.php (public disk symlink confirmation)",
+      "Read vendor/laravel/.../ValidatesAttributes.php@validateMimes + shouldBlockPhpUpload",
+      "Read vendor/spatie/.../FileAdder.php@defaultSanitizer + appendExtension chain"
+    ],
+    "empirical_probe": {
+      "harness": "/tmp/l71-probe/probe.php, probe2.php, probe3.php, probe4.php — standalone PHP loading vendor autoload, instantiating Illuminate Validator + Spatie FileAdder via reflection",
+      "fixtures_built": [
+        "A_shell.php — polyglot JPEG header + <?php system($_GET[c]) ?> in EXIF comment, named shell.php",
+        "B_shell.php.jpg — same polyglot, double extension",
+        "C_shell.phar — same polyglot, phar extension",
+        "D_shell.pht — same polyglot, .pht extension (NOT in blocklist)",
+        "E_xss.svg — SVG with <script>alert(document.domain)</script>",
+        "F_nullbyte — polyglot with client name 'shell.php\\x00.jpg'",
+        "G_path_traverse — polyglot with client name '../../../../etc/passwd.jpg'",
+        "H_real_big.png — 10 MB valid-header PNG (DoS test)",
+        "I_fake.xlsx — 98 KB fake bytes (max:2048 test)",
+        "Plus 10 sanitizer edge-case patterns"
+      ]
+    }
+  },
+
+  "stack_facts": {
+    "laravel_version": "^9.19 (Laravel 9, locked by composer.json)",
+    "spatie_medialibrary_version": "^10.5",
+    "spatie_file_namer": "DefaultFileNamer (preserves client filename + extension; no UUID/random rename)",
+    "spatie_default_sanitizer": "preg_replace('#\\p{C}+#u','',name); str_replace(['#','/','\\\\',' '],'-',name) — strips control bytes (including \\x00) and replaces path separators; dots and tabs after strip become '-' substitution",
+    "spatie_disk": "MEDIA_DISK env, defaults to 'public' (= storage/app/public, web-exposed via storage/symlink → public/storage)",
+    "image_optimizers_enabled": "Jpegoptim --strip-all (strips EXIF in conversions), Svgo, Pngquant, Optipng, Gifsicle, Cwebp, Avifenc — BUT optimizers run on derived conversions, not on the originally stored 'original' media file",
+    "queue_conversions_by_default": true,
+    "webserver_targeted_for_le_cayenne_V1_local": "Apache (.htaccess exists) AND nginx (deploy templates exist) — V1 LOCAL likely Apache box; V2 cloud cutover will use nginx vhost templates"
+  },
+
+  "upload_endpoints_audited": [
+    {"req": "ItemPhotoUploadRequest", "rule": "['required','image','mimes:jpg,jpeg,png,webp','max:4096']", "route": "POST /api/admin/items/{item}/photo", "auth": "Sanctum + permission:items_edit", "sink": "Item->addMediaFromRequest('photo')->toMediaCollection('item')", "disk": "public"},
+    {"req": "ItemRequest",            "rule": "['nullable','image','mimes:jpg,jpeg,png','max:2048']",      "route": "POST/PUT /api/admin/items", "auth": "Sanctum + permission:items_edit", "sink": "ItemService::store/update → addMedia($request->image)->toMediaCollection('item')", "disk": "public"},
+    {"req": "ItemCategoryRequest",    "rule": "['nullable','image','mimes:jpg,jpeg,png','max:2048']",      "route": "POST/PUT /api/admin/item-categories", "auth": "permission:categories_edit", "sink": "addMediaFromRequest('image')->toMediaCollection('item-category')", "disk": "public"},
+    {"req": "ChangeImageRequest",     "rule": "['required','image','mimes:jpg,jpeg,png','max:2048']",      "route": "varied (generic)", "auth": "Sanctum admin", "sink": "addMediaFromRequest/addMedia → various collections", "disk": "public"},
+    {"req": "CouponRequest",          "rule": "['nullable','image','mimes:jpg,jpeg,png','max:2048']",      "route": "POST/PUT /api/admin/coupons", "auth": "permission:coupons_edit", "sink": "CouponService → addMedia($request->image)->toMediaCollection('coupon')", "disk": "public"},
+    {"req": "OfferRequest",           "rule": "['nullable|required','image','mimes:jpg,jpeg,png','max:2048']", "route": "POST/PUT /api/admin/offers", "auth": "permission:offers_edit", "sink": "OfferService → addMedia(...)->toMediaCollection('offer')", "disk": "public"},
+    {"req": "SliderRequest",          "rule": "['nullable|required','image','mimes:jpg,jpeg,png','max:2048']", "route": "POST/PUT /api/admin/sliders", "auth": "permission:sliders_edit", "sink": "SliderService → addMediaFromRequest('image')->toMediaCollection('slider')", "disk": "public"},
+    {"req": "MessageRequest",         "rule": "['nullable','image','mimes:jpg,jpeg,png','max:2048']",      "route": "POST /api/admin/messages", "auth": "Sanctum admin", "sink": "MessageService → addMediaFromRequest('image')->toMediaCollection('message')", "disk": "public"},
+    {"req": "PageRequest",            "rule": "['nullable','image','mimes:jpg,jpeg,png','max:2048']",      "route": "POST/PUT /api/admin/pages", "auth": "permission:pages_edit", "sink": "PageService → addMediaFromRequest('image')->toMediaCollection('page-image')", "disk": "public"},
+    {"req": "PushNotificationRequest","rule": "['image','mimes:jpeg,png,jpg|max:5098']  ← BUG, see findings", "route": "POST /api/admin/push-notification", "auth": "permission:push_notifications_edit", "sink": "PushNotificationService → addMediaFromRequest('image')->toMediaCollection('pushNotifications')", "disk": "public"},
+    {"req": "ThemeRequest (x3 fields)","rule": "['nullable','file','mimes:jpg,jpeg,png']  (no max!)",       "route": "PUT /api/admin/theme", "auth": "permission:settings", "sink": "ThemeService → addMediaFromRequest('theme_logo'|'theme_favicon_logo'|'theme_footer_logo')", "disk": "public"},
+    {"req": "NotificationRequest",    "rule": "['nullable','file','mimes:json','max:2048']",               "route": "PUT /api/admin/notification (Firebase Admin key upload)", "auth": "permission:settings", "sink": "NotificationService → addMedia($request->file('notification_fcm_json_file'))->usingFileName('service-account-file.'+clientExt)->toMediaCollection('notification-file')", "disk": "firebase_private (NON-public — hardened by GOAL-HEAL-SEC-001)"},
+    {"req": "ItemImportRequest",      "rule": "['required','file','mimes:xls,xlsx','max:2048']",           "route": "POST /api/admin/items/import", "auth": "permission:items_edit", "sink": "Excel::import(new ItemImport($request->file('file')))", "disk": "tmp Maatwebsite"},
+    {"req": "ItemCategoryImportRequest","rule": "['required','file','mimes:xls,xlsx','max:2048']",         "route": "POST /api/admin/item-categories/import", "auth": "permission:categories_edit", "sink": "Excel::import(new ItemCategoryImport(...))", "disk": "tmp Maatwebsite"}
+  ],
+
+  "extension_only_validations": [
+    "ALL 16 catalogued validations use `mimes:` (extension-derived) — 0 use `mimetypes:` (magic-byte derived)",
+    "ItemCategoryImportRequest mimes:xls,xlsx",
+    "ItemRequest, ItemCategoryRequest, ChangeImageRequest, CouponRequest, MessageRequest, OfferRequest, SliderRequest, PageRequest mimes:jpg,jpeg,png",
+    "ItemPhotoUploadRequest mimes:jpg,jpeg,png,webp",
+    "ThemeRequest (3 fields) mimes:jpg,jpeg,png — NO max:size set",
+    "PushNotificationRequest mimes:jpeg,png,jpg|max:5098 (BUG)",
+    "NotificationRequest mimes:json",
+    "ItemImportRequest mimes:xls,xlsx"
+  ],
+  "magic_byte_validations": [],
+
+  "j_adv_1_p2_claim_reconciliation": {
+    "claim_was": "14 image upload requests use `mimes:jpg,jpeg,png` (extension-derived) not `mimetypes:image/jpeg,...` (magic-byte). Polyglot + double-extension RCE depends on nginx PHP-exec block in /storage/*",
+    "verdict_on_claim": "PARTIALLY ACCURATE — mimes-only count confirmed (16 incl. xlsx/json), BUT the framing missed two Laravel-level defenses that materially change the risk surface",
+    "laravel_defenses_observed_empirically": [
+      "Laravel validateMimes uses $value->guessExtension() which calls Symfony MimeTypeGuesser (finfo_file content-based) and maps MIME → extension — so the extension list IS effectively magic-byte-validated against image content for the JPEG/PNG/SVG family (empirical: a polyglot with JPEG bytes returns guessExtension()='jpg')",
+      "Laravel's shouldBlockPhpUpload() explicitly REJECTS getClientOriginalExtension() in [php, php3, php4, php5, php7, php8, phtml, phar] REGARDLESS of content (added in Laravel 9.2 — present in this repo via vendor/laravel/framework/src/Illuminate/Validation/Concerns/ValidatesAttributes.php:1483-1496)"
+    ],
+    "remaining_gaps_after_defenses": [
+      "shouldBlockPhpUpload blocklist MISSES: .pht, .php2, .php6, .phps, .phpt, .phtm, .module, .inc — these are configurable PHP-handler extensions in some webserver setups",
+      "Double extension shell.php.jpg PASSES validation (extension=jpg) AND Spatie's defaultSanitizer DOES NOT strip the .php middle segment — saved on disk as 'shell.php.jpg' verbatim",
+      "Null-byte truncation: client filename 'shell.php\\x00.jpg' is stripped by sanitizer to 'shell.php.jpg' (control bytes removed) — same exposure as plain double extension",
+      "PushNotificationRequest.php:37 — rule `'mimes:jpeg,png,jpg|max:5098'` inside a flat array element is NOT split into two rules by Laravel's parser (verified empirically). Laravel treats it as a single mimes rule with extensions ['jpeg','png','jpg|max:5098']. The max:5098 is NEVER applied. 10 MB+ files accepted → DoS vector bounded only by nginx client_max_body_size 25-32MB and PHP post_max_size",
+      "ThemeRequest (theme_logo/theme_favicon_logo/theme_footer_logo): no max:size set at all — bounded only by webserver limits",
+      "Spatie stores under the public disk (storage/app/public symlinked into public/storage). nginx vhost templates have a global `location ~ \\.php$` block with NO exclusion under /storage/ — meaning IF an attacker ever managed to drop a stored filename ending in literal .php under storage/app/public, PHP-FPM WOULD execute it. The Laravel guards above currently prevent that filename from being stored, but the defense-in-depth gap is real"
+    ]
+  },
+
+  "empirical_probe_results": {
+    "harness": "/tmp/l71-probe/probe.php + probe2.php + probe4.php — full output saved to output.txt, output2.txt, output4.txt",
+    "TEST_1_validateMimes_jpg_jpeg_png_webp": {
+      "A_shell.php (real .php ext)": "FAIL — shouldBlockPhpUpload caught it (validation.image; validation.mimes)",
+      "B_shell.php.jpg (double ext)": "PASS — origExt=jpg, content magic=jpg → both checks satisfied",
+      "C_shell.phar": "FAIL — shouldBlockPhpUpload caught it",
+      "D_shell.pht (NOT in blocklist)": "PASS — origExt=pht passes shouldBlockPhpUpload (not in list), content guessExt=jpg matches mimes:jpg → BYPASS",
+      "E_xss.svg (embedded script)": "FAIL — guessExt=svg not in [jpg,jpeg,png,webp] — SVG XSS blocked by mimes restriction",
+      "F_null_byte_shell.php\\0.jpg": "PASS — origExt=jpg (PHP getClientOriginalExtension uses pathinfo on full string; \\x00 truncation in PHP 5.3+ is patched, but the .jpg is still the last ext)",
+      "G_path_traverse_name": "PASS — name '../../../../etc/passwd.jpg' validates, Spatie sanitizer rewrites '/' to '-' (saved as '..-..-..-..-etc-passwd.jpg' — safe)"
+    },
+    "TEST_2_validateImage_alone_no_mimes_restriction": {
+      "A_shell.php": "FAIL", "B_shell.php.jpg": "PASS", "C_shell.phar": "FAIL", "D_shell.pht": "PASS",
+      "E_xss.svg": "PASS — SVG passes Laravel's 'image' rule by default (svg in built-in extension list)",
+      "F_null_byte": "PASS", "G_traverse": "PASS"
+    },
+    "TEST_3_spatie_default_sanitizer_disk_filename": {
+      "shell.php": "shell.php (unchanged)",
+      "shell.php.jpg": "shell.php.jpg (.php middle preserved)",
+      "shell.phar": "shell.phar",
+      "shell.pht": "shell.pht",
+      "xss.svg": "xss.svg",
+      "shell.php\\x00.jpg": "shell.php.jpg (null byte stripped)",
+      "..\\/..\\/..\\/..\\/etc\\/passwd.jpg": "..-..-..-..-etc-passwd.jpg (path separators replaced)",
+      "shell.PHP.jpg": "shell.PHP.jpg (case preserved)",
+      "shell.php\\t.jpg": "shell.php.jpg (tab stripped)",
+      "shell.php.jpeg.png": "shell.php.jpeg.png (triple ext preserved)"
+    },
+    "TEST_4_pushnotification_max_bug": {
+      "buggy_rule_['image','mimes:jpeg,png,jpg|max:5098']_vs_10MB_PNG": "PASS — max NEVER applied",
+      "clean_rule_['image','mimes:jpeg,png,jpg','max:5098']_vs_10MB_PNG": "FAIL: validation.max.file",
+      "rules_array_post_parse": "['image' => ['image', 'mimes:jpeg,png,jpg|max:5098']] — Laravel does NOT split sub-string on |",
+      "manual_validateMimes_call_with_['jpeg','png','jpg|max:5098']": "returns true (PNG content matches 'png' element)"
+    },
+    "TEST_5_shouldBlockPhpUpload_coverage_gap": {
+      "blocked_extensions": "php, php3, php4, php5, php7, php8, phtml, phar",
+      "NOT_blocked_but_executable_on_some_webservers": "pht, php2, php6, phps, phpt, phtm, inc, module"
+    }
+  },
+
+  "exploit_vectors_found": [
+    {
+      "id": "L7.1-V1",
+      "severity": "HIGH-conditional",
+      "title": ".pht extension bypass on RCE",
+      "description": "Polyglot JPEG-magic file uploaded as shell.pht passes ItemPhotoUploadRequest, ItemRequest, ItemCategoryRequest, ChangeImageRequest, OfferRequest, SliderRequest, MessageRequest, PageRequest, CouponRequest. Spatie persists literal 'shell.pht' under storage/app/public/N/. nginx PHP regex `\\.php$` does NOT match `.pht`, so it does NOT execute under standard nginx. BUT: if the deploy ever uses Apache with `AddHandler application/x-httpd-php .pht` (default-OFF, but admin-toggleable), or if a future ops change widens the PHP regex to `\\.ph` or `\\.ph(p|t)`, RCE becomes live. Mitigation: extend shouldBlockPhpUpload blocklist via custom validator OR add nginx `location ~ ^/storage/.*\\.(ph|pht|phps|phtm|inc)$ { deny all; }`.",
+      "proof": "TEST_1 D_shell.pht → PASS validation; TEST_3 sanitizer preserves 'shell.pht'",
+      "preconditions": ["admin user with permission:items_edit (or peer item/category/etc. perm)", "webserver configured to exec .pht as PHP — NOT default on lecayenne-prod nginx, MUST verify Apache stack"]
+    },
+    {
+      "id": "L7.1-V2",
+      "severity": "MEDIUM",
+      "title": "Double-extension persistence (shell.php.jpg → defense gap)",
+      "description": "Files named shell.php.jpg pass all validations and are stored on disk with literal name 'shell.php.jpg' under /storage/app/public/N/. nginx default `\\.php$` regex does NOT match (ends in .jpg). BUT: Apache with `AddType application/x-httpd-php .php` + default mod_mime multi-extension handling (`Options +Indexes` style configs from cPanel/shared-hosting era) WILL execute files with `.php` anywhere in their extension chain. The Le Cayenne V1 LOCAL stack uses Apache (public/.htaccess exists), and the current vhost does not explicitly deny PHP handler invocation on multi-extension files under /storage/.",
+      "proof": "TEST_1 B PASS, TEST_3 shows literal name preserved",
+      "mitigations_in_place": ["public/storage Spatie disk → NOT served by app PHP code (direct static)", "Apache mod_php auto-handler typically NOT installed on a Laravel-only PHP-FPM box"],
+      "hardening_recommendation": "Add to public/.htaccess: `<FilesMatch \"\\.ph(p[345678]?|t|tml|ar|ps)\\.\">` Require all denied `</FilesMatch>` (denies any path containing .php* before a dot)"
+    },
+    {
+      "id": "L7.1-V3",
+      "severity": "MEDIUM",
+      "title": "PushNotificationRequest |max:5098 parser bug → DoS",
+      "description": "Rule at app/Http/Requests/PushNotificationRequest.php:37 is `'image' => ['image', 'mimes:jpeg,png,jpg|max:5098']`. Laravel's array-form rule parser does NOT split a sub-element on `|` — the max:5098 is parsed as a fake extension `'jpg|max:5098'` and the size limit is NEVER enforced. Empirically, a 10 MB valid PNG passes. With nginx client_max_body_size 25-32 MB and PHP post_max_size typically 32 MB, an authenticated admin can upload 30 MB notification images repeatedly → storage exhaustion + Spatie image-conversion queue saturation.",
+      "proof": "TEST_4 buggy=PASS, clean=FAIL: validation.max.file",
+      "fix": "Change PushNotificationRequest.php:37 to `'image' => ['image', 'mimes:jpeg,png,jpg', 'max:5098']` (separate array elements)"
+    },
+    {
+      "id": "L7.1-V4",
+      "severity": "MEDIUM",
+      "title": "ThemeRequest absent max:size → DoS",
+      "description": "app/Http/Requests/ThemeRequest.php:27-29 — three image fields (theme_logo / theme_favicon_logo / theme_footer_logo) declared as `['nullable', 'file', 'mimes:jpg,jpeg,png']` with NO max:size. Bounded only by nginx client_max_body_size (25-32 MB) and PHP post_max_size. Each upload spawns Spatie image-conversion derivatives (thumb/cover/preview) — 3 large simultaneously = sustained CPU + storage hit.",
+      "proof": "ThemeRequest.php:27-29 source — no max key in any of the three rule arrays",
+      "fix": "Add 'max:2048' (2 MB) to each of the three rules — consistent with other image FormRequests"
+    },
+    {
+      "id": "L7.1-V5",
+      "severity": "LOW",
+      "title": "shouldBlockPhpUpload blocklist incomplete (no .phps/.phpt/.phtm/.inc)",
+      "description": "Laravel 9.x shouldBlockPhpUpload covers php/php3-8/phtml/phar but misses .phps (PHP source display), .phpt (PHP test), .phtm, .inc (commonly included PHP). On stacks where any of these are configured as a PHP handler, the polyglot+content-magic bypass is live. .phps in particular is widely configured to display source — could leak any /storage-uploaded content as PHP source (mild infodisclo).",
+      "proof": "TEST_5 enumeration",
+      "fix": "Override validateMimes via a custom FormRequest base class or register a custom validator that extends the blocklist"
+    }
+  ],
+
+  "vectors_blocked_or_safe": [
+    "SVG XSS (E_xss.svg) — BLOCKED by mimes:jpg,jpeg,png[,webp] on all 14 image FormRequests (svg not in allowlist). The 'image' rule alone WOULD accept it, but every endpoint pairs 'image' with 'mimes:' restriction",
+    "Direct shell.php upload — BLOCKED by shouldBlockPhpUpload",
+    "shell.phar upload — BLOCKED",
+    "shell.phtml upload — BLOCKED",
+    "Path traversal '../../../etc/passwd.jpg' — BLOCKED by Spatie defaultSanitizer (/ and \\ replaced with -)",
+    "Null-byte injection in filename — null is stripped by Spatie sanitizer; reduces to L7.1-V2 (double-ext case, same risk surface)",
+    "Firebase service-account JSON exposure — HARDENED by GOAL-HEAL-SEC-001 (firebase_private non-public disk + public/.htaccess + public/file/.htaccess + nginx-deny-sensitive-files.conf)",
+    "Excel ZIP-bomb auto-extraction — Maatwebsite uses ZipArchive on-demand for XLSX read, not full disk-extract; max:2048 on import requests bounds initial upload to 2 MB",
+    "ItemService::addMediaFromString file_get_contents($path) at line 681 — $path is the source path of a previously-validated uploaded image being re-attached during item-photo cleanup. Not user-controllable URL. Safe."
+  ],
+
+  "nginx_apache_exec_block_assessment": {
+    "nginx_vhost_template": "scripts/deploy/nginx.conf.template:163-175 — `location ~ \\.php$` is global (matches /storage/.../*.php). NO `/storage/` exclusion. If a .php file ever lands under public/storage, PHP-FPM executes it. Currently dependent on Laravel guards preventing storage.",
+    "nginx_ansible_template": "deploy/ansible/templates/nginx-foodking.conf.j2:91-101 — same pattern with `try_files $uri =404`. Same gap.",
+    "apache_htaccess_protection": "public/.htaccess + public/file/.htaccess — deny credential bundles (.pem/.key/.json/etc.) but DO NOT explicitly deny .php/.phtml/.pht under /storage. Defense-in-depth gap.",
+    "missing_hardening": [
+      "nginx: add `location ~ ^/storage/.*\\.(ph|pht|phps|phtm|inc|cgi|pl)$ { deny all; }` BEFORE the global `\\.php$` block",
+      "apache: add to public/.htaccess: `<FilesMatch \"\\.(ph|phtml|phps|phtm|inc|cgi|pl)$\">` Require all denied `</FilesMatch>`",
+      "apache: add `<Directory /var/www/.../public/storage>` `RemoveHandler .php` `RemoveType .php` `</Directory>`",
+      "Pin Spatie file_namer to a UUID-rename custom FileNamer to remove client-extension persistence entirely (eliminates V2 + most of V1)"
+    ]
+  },
+
+  "rce_risk_assessment": "CURRENT VERDICT: LOW-but-NON-ZERO on a hardened stack, MEDIUM if any Apache mod_mime multi-extension handler is enabled.\\n\\nRationale:\\n1. Laravel shouldBlockPhpUpload prevents the obvious shell.php path\\n2. Laravel guessExtension content-checks JPEG/PNG/SVG magic bytes — naive polyglot rejected for SVG, accepted only when extension+content both align with image\\n3. Spatie sanitizer does NOT rename to UUID — original client extension chain persists on disk → enables V1 (.pht) and V2 (double-ext) IF the webserver maps those to PHP\\n4. nginx default vhosts here do NOT explicitly deny PHP under /storage — defense-in-depth gap that becomes live RCE only if (a) an extension exec-mapping change ships OR (b) shouldBlockPhpUpload is bypassed via some future Laravel core regression\\n5. PushNotification |max bug + Theme no-max = real DoS surface today on authenticated admin endpoints (medium-impact, attacker-must-authenticate)",
+
+  "recommendations_for_hardening": [
+    {
+      "priority": "P1-NOW (V1 LOCAL ship)",
+      "fix": "PushNotificationRequest.php:37 — change `'mimes:jpeg,png,jpg|max:5098'` to separate array elements `'mimes:jpeg,png,jpg', 'max:5098'`. One-line surgical fix, no frozen-zone touch. Add unit test.",
+      "blast_radius": "trivial, +1 test"
+    },
+    {
+      "priority": "P1-NOW",
+      "fix": "ThemeRequest.php:27-29 — add `'max:2048'` to each of the three image rules. Aligns with all other image FormRequests.",
+      "blast_radius": "trivial"
+    },
+    {
+      "priority": "P2-V1.0.X",
+      "fix": "Add custom validation rule (or FormRequest base trait) that extends shouldBlockPhpUpload blocklist to include pht, php2, php6, phps, phpt, phtm, inc, module — applied to all *Request files via composition. Also add a sentinel test enforcing the extension list.",
+      "blast_radius": "moderate, ~30 LOC + 1 sentinel"
+    },
+    {
+      "priority": "P2-V1.0.X",
+      "fix": "Pin Spatie file_namer to a custom UUID-prefixed FileNamer that uses Symfony MimeTypes::getExtensions($mimeFromMagicBytes) — fully eliminates client-supplied extension persistence. Drop-in: extend DefaultFileNamer, override originalFileName() and conversionFileName().",
+      "blast_radius": "high (changes file_name column values for new uploads — does NOT migrate existing records; coordinate with frontend that references file_name)"
+    },
+    {
+      "priority": "P2-V2/CLOUD CUTOVER",
+      "fix": "nginx vhost — add BEFORE `location ~ \\.php$`: `location ~ ^/storage/.*\\.(ph|pht|phps|phtm|inc|cgi|pl|html|htm)$ { deny all; access_log off; log_not_found off; }`. Apply to both scripts/deploy/nginx.conf.template (lecayenne) and deploy/ansible/templates/nginx-foodking.conf.j2.",
+      "blast_radius": "trivial vhost change, validated with nginx -t before reload"
+    },
+    {
+      "priority": "P3-V2/CLOUD CUTOVER",
+      "fix": "Apache: add to public/.htaccess: `<FilesMatch \"\\.(ph|phtml|phps|phtm|inc)$\">` `<IfModule mod_authz_core.c>Require all denied</IfModule>` `</FilesMatch>` — recursive deny applies to public/storage symlink target",
+      "blast_radius": "trivial, double-check no legitimate file uses these extensions in public/"
+    },
+    {
+      "priority": "P3-V2",
+      "fix": "Switch mimes: rules to mimetypes: rules where possible (e.g. `mimetypes:image/jpeg,image/png,image/webp`) for explicit magic-byte enforcement. Laravel's validateMimetypes uses Symfony MimeTypeGuesser regardless, but the explicit name makes the intent auditable.",
+      "blast_radius": "low, ~14 FormRequest edits, regression-tested"
+    }
+  ],
+
+  "verdict": "AMBER",
+  "verdict_rationale": "Laravel 9.x shouldBlockPhpUpload + Spatie content-aware validation + nginx default `\\.php$`-only regex collectively prevent immediate RCE on the current Le Cayenne V1 LOCAL stack. However: (a) PushNotificationRequest.php:37 rule-parsing bug is a confirmed DoS vector requiring 1-line fix; (b) ThemeRequest missing max is parallel DoS surface; (c) shouldBlockPhpUpload blocklist gap (.pht/.phps/etc.) + Spatie not renaming files = ambient defense-in-depth weakness that turns live RCE the moment any extension-handler config shifts. NOT a V1 ship-blocker, but the two P1 fixes should land before cloud cutover.",
+
+  "files_to_change_for_fixes": [
+    "app/Http/Requests/PushNotificationRequest.php:37 (P1)",
+    "app/Http/Requests/ThemeRequest.php:27-29 (P1)",
+    "scripts/deploy/nginx.conf.template:163 (P2 vhost — add storage php-deny BEFORE)",
+    "deploy/ansible/templates/nginx-foodking.conf.j2:91 (P2 vhost — same)",
+    "public/.htaccess (P3 — extend FilesMatch to .ph/.phtml/.phps/.phtm/.inc)",
+    "NEW: app/Validation/Rules/HardenedFileUpload.php (P2 — custom rule extending shouldBlockPhpUpload)",
+    "NEW: tests/Feature/Security/FileUploadHardeningSentinelTest.php (lock fix in place)"
+  ],
+
+  "primary_evidence_artifacts": [
+    "/tmp/l71-probe/probe.php + probe2.php + probe3.php + probe4.php",
+    "/tmp/l71-probe/output.txt + output2.txt + output3.txt + output4.txt",
+    "/tmp/l71-probe/fixtures/A_shell.php (real polyglot fixture, 336 bytes, JPEG header + <?php system($_GET[c])?> + JPEG body)",
+    "/tmp/l71-probe/fixtures/B_shell.php.jpg, C_shell.phar, D_shell.pht, E_xss.svg, F_nullbyte_carrier.jpg, G_traverse.jpg, H_real_big.png (10 MB)",
+    "/tmp/l71-mimes-all.txt (16 catalogued mimes validations)",
+    "/tmp/l71-mimetypes.txt (0 lines — no magic-byte explicit rules)"
+  ],
+
+  "self_check": {
+    "claim_verified_against_source": true,
+    "primary_evidence_present": true,
+    "empirical_probe_reproducible": true,
+    "no_unverified_assumptions": "Apache mod_mime exec-on-multi-extension behaviour for the V1 LOCAL Le Cayenne box was inferred from .htaccess presence — needs ops confirmation. Stated as 'conditional' in findings.",
+    "j_adv_1_p2_claim_reconciled": "yes — partial accuracy, two Laravel defenses re-asserted, two new gaps surfaced (V3 + V4)"
+  }
+}

@@ -29,6 +29,15 @@ backup_s3_bucket: "s3://foodking-backups-gra"
 backup_s3_endpoint: "https://s3.gra.io.cloud.ovh.net"
 
 # --- Secrets (vault refs — never inline) -------------------------------------
+# [GOAL-CMS-2026-05-18 CVP0-1] DB identity for fiscal-table REVOKE task —
+# closes the deploy-doc gap explicitly acknowledged in migration
+# 2026_05_09_160000_add_z_reports_delete_trigger_immutability.php (z_reports
+# BEFORE DELETE trigger does NOT fire on TRUNCATE) and
+# 2026_05_10_010000_secure_fiscal_audit_trail_immutability.php (same for
+# audit_logs). Without REVOKE TRUNCATE, an app-credential breach can wipe
+# the NF525 chain in ~50ms → Art. 1743 CGI criminal exposure.
+db_name: "foodking"
+db_user: "foodking_app"
 db_password: "{{ vault_db_password }}"
 redis_password: "{{ vault_redis_password }}"
 soketi_app_id: "{{ vault_soketi_app_id }}"

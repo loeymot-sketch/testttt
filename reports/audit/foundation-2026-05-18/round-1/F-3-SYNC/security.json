@@ -1,0 +1,105 @@
+{
+  "zone": "F-3-SYNC",
+  "role": "Security",
+  "mode": "read-only",
+  "scope": "Channel-auth Sanctum, webhook signature verification (Stripe + SenangPay), idempotency UNIQUE",
+  "session_a_heals_acknowledged": [
+    "GOAL-CMS S-R3-P0-G heal: token-name discriminator instead of tokenCan() to bypass Sanctum '*' wildcard (routes/channels.php:42)",
+    "Guest-Echo-Bypass closure: hasRole('Admin') or hasRole('Tenant Admin') replaces bare branch_id===0 sentinel (routes/channels.php:50-53)",
+    "Wave 3c TrustHosts P0 + IP-based throttle"
+  ],
+  "summary": "Channel-auth Sanctum hardening is COMPLETE post-S-R3-P0-G heal (verified routes/channels.php:36-58). The BRAIN flag 'Pusher channel-auth observably broken via Sanctum wildcard' is STALE - the fix is in code. Webhook signature verification is robust on both providers: Stripe uses StripeClient\\Webhook::constructEvent with explicit SignatureVerificationException handling; SenangPay uses hash_hmac sha256 with hash_equals (timing-safe). Idempotency middleware enforces scoped key = (branch_id, user_id, sha256(key)) with payload-hash conflict detection. DB UNIQUE index on (provider, webhook_id) is the atomicity floor for webhook idempotency.",
+  "findings": [
+    {
+      "id": "SEC-1",
+      "severity": "P0",
+      "category": "CORS-MISCONFIG",
+      "title": "Broadcast auth endpoint observably blocked by CORS in test-e2e SYNC flow-6",
+      "evidence": {
+        "file": "reports/test-e2e/goal-pageby-2026-05-18/round-1/SYNC/sync-findings.json (flow-6 entry, ts 2026-05-18T02:53:45.785Z)",
+        "detail": "consoleErrors[0]: 'Access to XMLHttpRequest at http://localhost:8000/api/broadcasting/auth from origin http://127.0.0.1:8000 has been blocked by CORS policy: The Access-Control-Allow-Origin header has a value http...'. The flow was marked severity=OK because polling fallback masked the failure, but the channel-auth round-trip silently fails when host = 127.0.0.1 and APP_URL = localhost (or vice versa). Pusher auth never succeeds -> client never subscribes to private channels -> only polling delivers updates.",
+        "impact": "In any environment where the kiosk/POS/KDS browser hits a different host alias than APP_URL, real-time push is silently disabled. Polling fallback masks the failure (UX-wise) but the SLA `outbox_dispatch_latency_p95 < 2s` is replaced by polling cadence latency (3-10s).",
+        "session_a_heal_relation": "Independent of S-R3-P0-G channel-auth role heal - this is a transport-layer CORS issue, not the authorization callback."
+      },
+      "recommendation": "Audit config/cors.php to ensure 'allowed_origins' includes both the APP_URL host AND any alias (127.0.0.1/localhost pair). Add a sentinel test that asserts /api/broadcasting/auth returns a CORS-compatible Access-Control-Allow-Origin header for the configured kiosk host pattern.",
+      "owner_question": "What is the APP_URL value in production, and is the in-store kiosk browser configured to hit the exact same host (FQDN, IP, alias)? If they differ, channel-auth has silently failed since the SPA was deployed."
+    },
+    {
+      "id": "SEC-2",
+      "severity": "P1",
+      "category": "WEBHOOK-SIGNATURE-VERIFICATION",
+      "title": "Stripe webhook secret config key inconsistent: handleWebhook reads config('services.stripe.webhook_secret'), but no audit confirms it's set in production",
+      "evidence": {
+        "file": "app/Http/PaymentGateways/Gateways/Stripe.php:199-208",
+        "detail": "If `config('services.stripe.webhook_secret', '')` is empty, the handler returns 500 'misconfigured'. Stripe retries on 5xx -> the misconfigured webhook would re-fire forever and clog Stripe Dashboard webhook delivery view. No production-config sentinel test verifies the value is set.",
+        "impact": "Deploy-time misconfig surfaces as Stripe Dashboard alerts, not as a production blocker. Owner could miss it during silent V1 hardening windows."
+      },
+      "recommendation": "Add a sentinel test (tests/Feature/Production/StripeWebhookSecretConfiguredTest) that asserts config('services.stripe.webhook_secret') is non-empty in any environment with Stripe gateway active. Optionally fail health-check in /api/health/ready when stripe.activation_guard.activation_gate_cleared=true AND webhook_secret=''.",
+      "owner_question": null
+    },
+    {
+      "id": "SEC-3",
+      "severity": "P1",
+      "category": "WEBHOOK-IDEMPOTENCY-PRE-VERIFICATION",
+      "title": "SenangPay webhook calls WebhookEvent::firstOrCreate AFTER signature verification - correct - but the gateway-lookup happens BEFORE",
+      "evidence": {
+        "file": "app/Http/PaymentGateways/Gateways/Senangpay.php:83-104, 110-122, 125-137",
+        "detail": "Flow: 1) parse fields (line 65-79), 2) PaymentGateway::with('gatewayOptions')->where('slug','senangpay') lookup (line 83), 3) extract secret (line 94-104), 4) compute HMAC + hash_equals (line 107-121), 5) firstOrCreate (line 125-137). Steps 2-3 hit the DB BEFORE signature verification - an attacker can DOS by spamming malformed webhook posts (each generates 1 SELECT on payment_gateways + 1 join on gateway_options, no idempotency replay).",
+        "impact": "Low-grade DOS amplifier - one HTTP request -> 2 DB queries even on rejected signatures. Mitigated by IP-based throttle (Wave 3c TrustProxies '*'), but the webhook routes likely bypass per-IP rate limiting (provider IPs are static)."
+      },
+      "recommendation": "Move the gateway lookup AFTER the cheap field validation but BEFORE the hash check (acceptable - the secret is needed for HMAC). Cache the gateway secret via Cache::remember('senangpay.secret', 3600, fn() => ...) to avoid 2 DB queries on every webhook. Verify per-IP throttle is NOT bypassed for /senangpay-webhook/ and /stripe-webhook/ routes.",
+      "owner_question": "Are /stripe-webhook/ and /senangpay-webhook/ exempted from the per-IP throttle? Provider IPs are static -> exemption is safer than rate-limiting them, but the rate limit on signature-rejected requests should still apply."
+    },
+    {
+      "id": "SEC-4",
+      "severity": "P2",
+      "category": "IDEMPOTENCY-DEFAULT-OFF",
+      "title": "config/idempotency.php enabled = env('IDEMPOTENCY_MIDDLEWARE_ENABLED', false) - default OFF",
+      "evidence": {
+        "file": "config/idempotency.php:21, app/Http/Middleware/IdempotencyKeyMiddleware.php:41-43",
+        "detail": "Middleware short-circuits at line 41 'if (! config('idempotency.enabled', false)) return $next($request);'. Only the app-layer DB UNIQUE (branch_id, idempotency_key) on `orders` and the WebhookEvent UNIQUE protect against double-execute when middleware is off. Cannot verify production env from here.",
+        "impact": "If IDEMPOTENCY_MIDDLEWARE_ENABLED=false in production .env, double-submit on counter-collect-confirm / cash-drawer-open / refund-with-counter-entry executes twice on retry. The recent C-P0-H heal expanded `required_routes` to 10 more URIs (config:31-50) but the middleware itself is the gate."
+      },
+      "recommendation": "Production env hardening: set IDEMPOTENCY_MIDDLEWARE_ENABLED=true explicitly in .env.production.example. Add to deploy checklist + health-check warning when enabled=false in APP_ENV=production.",
+      "owner_question": "Is IDEMPOTENCY_MIDDLEWARE_ENABLED currently set to true in production? Cannot verify from code; the config default is false."
+    },
+    {
+      "id": "SEC-5",
+      "severity": "P2",
+      "category": "FAIL-OPEN-DEGRADATION",
+      "title": "Idempotency middleware fail_open mode falls through to app-layer UNIQUE",
+      "evidence": {
+        "file": "app/Http/Middleware/IdempotencyKeyMiddleware.php:125-135, config/idempotency.php:23",
+        "detail": "When IdempotencyStorageUnavailableException is thrown (Redis down), if config('idempotency.fail_open') is true the request bypasses middleware. Default is false -> returns 503. The fail_open mode relies on app-layer DB UNIQUE - which only exists for the routes that have explicit (branch_id, idempotency_key) UNIQUE indexes (orders table). The 10 new C-P0-H routes added to required_routes do NOT all have app-layer UNIQUE backstops (e.g. cash-drawer-open).",
+        "impact": "If fail_open=true (potential prod setting for availability), Redis outage + concurrent retry of cash-drawer-open could open the drawer twice. orders are safe (UNIQUE backstop); cash-drawer / refund / change-status are NOT all safe."
+      },
+      "recommendation": "Inventory which required_routes have app-layer UNIQUE backstops. For routes without one, document that fail_open MUST stay false. Add a unit test asserting fail_open=false in production environment.",
+      "owner_question": "What is the production setting of IDEMPOTENCY_FAIL_OPEN? Default is false (safe), but if production toggled it true for availability, the 10 C-P0-H routes need backstop audit."
+    },
+    {
+      "id": "SEC-6",
+      "severity": "P3",
+      "category": "BROADCAST-AUTH-MIDDLEWARE",
+      "title": "Broadcast::routes uses auth:sanctum middleware but no per-IP throttle on /api/broadcasting/auth",
+      "evidence": {
+        "file": "app/Providers/BroadcastServiceProvider.php:22, routes/channels.php:36-58",
+        "detail": "Broadcast::routes(['prefix' => 'api', 'middleware' => ['auth:sanctum']]). No throttle middleware. A spammer with a valid token (e.g. revoked-but-not-yet-expired kiosk token) could hammer /api/broadcasting/auth to enumerate branch IDs (channel-auth returns true/false per branchId).",
+        "impact": "Low. The auth callback returns boolean only; no payload exposed. Throttle would be defense-in-depth."
+      },
+      "recommendation": "Add `throttle:60,1` to the broadcast auth middleware: Broadcast::routes(['prefix' => 'api', 'middleware' => ['auth:sanctum', 'throttle:60,1']]). 60 channel subscriptions per minute per token is generous and blocks enumeration.",
+      "owner_question": null
+    }
+  ],
+  "keep_as_is": [
+    "routes/channels.php token-name discriminator (lines 41-48) - blocks Sanctum '*' wildcard",
+    "routes/channels.php role-check admin/tenant-admin (lines 50-53) - blocks guest-echo-bypass",
+    "Stripe.php Webhook::constructEvent + SignatureVerificationException handling (line 213-224)",
+    "Senangpay.php hash_hmac sha256 + hash_equals (line 108-110) - timing-safe",
+    "IdempotencyKeyMiddleware payload-hash conflict 409 detection (line 88-93, 110-115)",
+    "WebhookEvent::firstOrCreate idempotency pattern with DB UNIQUE (provider, webhook_id) floor"
+  ],
+  "dirty_files_cited_no_change": [],
+  "frozen_files_cited_no_change": [
+    "app/Http/Middleware/IdempotencyKeyMiddleware.php"
+  ]
+}

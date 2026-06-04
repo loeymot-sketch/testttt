@@ -180,4 +180,6 @@ return [
 
     'attributes' => [],
 
+    'items_cap_exceeded' => 'الحد الأقصى 50 صنفًا لكل طلب',
+
 ];

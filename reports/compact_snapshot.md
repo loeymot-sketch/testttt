@@ -1,20 +1,30 @@
-# Compact Snapshot — 2026-05-09 16:19:41
+# Compact Snapshot — 2026-04-18 16:33:17
 
 ## Active Cycle
-TASK_ID: none
-PHASE: none
-PRIMARY_MODEL: none
-PLAN_FILE: none
-REPORT_FILE: none
-GATE_FILE: none
+TASK_ID: 
+PHASE: (none)
+PRIMARY_MODEL: 
+PLAN_FILE: 
+REPORT_FILE: 
+GATE_FILE: 
 
 ## Phase Completion
-No completion rows found.
+| PLAN | [ ] |
+| EXECUTE | [ ] |
+| VALIDATE | [ ] |
+| AUDIT | [ ] |
 
 ## Last Post-Execute Hook
 [post-execute] tests: PASSED
 [post-execute] lint: SKIPPED — no lint script in package.json
-[post-execute] playwright: SKIPPED — aucune stratégie playwright déclarée dans le plan
+[post-execute] playwright: strategy=playwright-full-e2e
+[post-execute] playwright: BASE_URL=http://localhost:8000
+[post-execute] playwright: flows à valider via MCP tools :
+[post-execute] tests: PASSED
+[post-execute] lint: SKIPPED — no lint script in package.json
+[post-execute] playwright: strategy=playwright-full-e2e
+[post-execute] playwright: BASE_URL=http://localhost:8000
+[post-execute] playwright: flows à valider via MCP tools :
 
 ## Open Gates
 No open gate.

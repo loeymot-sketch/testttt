@@ -1,0 +1,21 @@
+- generic [ref=e1]:
+  - generic [ref=e346]:
+    - generic [ref=e347]:
+      - generic [ref=e348]:
+        - generic [ref=e349]: 💶
+        - heading "Rendez-vous en caisse" [level=1] [ref=e350]
+        - paragraph [ref=e351]: Présentez votre numéro à un membre de l'équipe
+      - group "Rendez-vous en caisse" [ref=e352]:
+        - generic [ref=e354]:
+          - generic [ref=e355]:
+            - generic [ref=e356]: Numéro de commande
+            - strong [ref=e357]: "#A0009"
+          - generic [ref=e359]:
+            - generic [ref=e360]: Montant à régler
+            - generic [ref=e362]: 1,50 €
+        - paragraph [ref=e363]: Paiement en espèces uniquement à la caisse.
+    - generic [ref=e364]:
+      - paragraph [ref=e365]: Retour à l'accueil dans 44 s
+      - button "J'ai compris" [ref=e366] [cursor=pointer]:
+        - generic [ref=e367]: J'ai compris
+  - status

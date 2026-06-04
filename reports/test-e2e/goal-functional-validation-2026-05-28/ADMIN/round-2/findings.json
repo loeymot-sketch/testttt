@@ -1,0 +1,140 @@
+{
+  "agent": "gstack-e2e-admin-round2",
+  "surface": "ADMIN manager daily-driver",
+  "generated_at": "2026-05-28T20:00:00Z",
+  "branch": "feature/mobile-app-le-cayenne-2026-05-10",
+  "db_state": {
+    "items": 45,
+    "branches": 1,
+    "domain_events": 182,
+    "z_reports": 1
+  },
+  "round1_reconciliation": {
+    "round1_p0_count": 0,
+    "round1_p1_count": 3,
+    "round1_p1_findings": [
+      "A4-P1-event SettingsUpdated outbox row missing (likely synthetic dispatch)",
+      "A5-P1 branches list 'not mounted' (false positive — mounted at /admin/setting/branch via SettingComponent shell, see admin.setting.branch.* routes 7 verbs registered)",
+      "A7-P1 z-reports page not found (false positive — admin reads at /api/admin/fiscal/z-report HTTP 200 plural mismatch with frontend URL guess)"
+    ],
+    "task_listed_p0_hypotheses_status": {
+      "cash_drawer_overview_ui_missing": "DISPROVED — /admin/cash-overview mounted (cashOverviewRoutes.js:11), API /api/admin/cash-overview HTTP 200 4186B JSON",
+      "z_reports_ui_missing": "PARTIALLY DISPROVED — backend /api/admin/fiscal/z-report HTTP 200, but PDF blocked for unpinned admin (by design comment ZReportController.php:111-124 Wave T R1 F1)",
+      "spatie_permission_gates": "VERIFIED — /api/admin/cash-overview etc 401 without token, 403 with kiosk-only token",
+      "branchscope_admin_sees_all": "VERIFIED — admin (branch_id=0) /api/admin/item returns 45/45 items",
+      "phone_schema_p0": "DISPROVED — migration 2026_05_16_140100_make_user_phone_required.php enforces users.phone NOT NULL with PENDING_id backfill, sound design",
+      "n_plus_one_items": "NOT MEASURED — tinker probe class lookup failed; defer to round 3",
+      "items_pagination_search_filters": "PARTIALLY BROKEN — see P1-PAG",
+      "idor_admin": "DISPROVED — /api/admin/item/show/999999 returns HTTP 404 (not silent 200), kiosk-only token gets 403 on items+cash"
+    }
+  },
+  "findings": [
+    {
+      "id": "R2-P1-SILENT-HTML-CATCHALL",
+      "severity": "P1",
+      "surface": "all admin APIs",
+      "file": "routes/web.php:62",
+      "code": "Route::get('/{any}', [RootController::class, 'index'])->middleware(['installed'])->where(['any' => '.*']);",
+      "repro": "curl -s -H 'x-api-key:<key>' -H 'Accept:application/json' http://127.0.0.1:8000/api/admin/clearly-does-not-exist => HTTP 200 Content-Type:text/html; charset=UTF-8 body=10146B Blade SPA shell",
+      "verified_endpoints_returning_200_HTML_instead_of_404_JSON": [
+        "/api/admin/z-reports (plural — singular /fiscal/z-report exists)",
+        "/api/admin/fiscal/z-reports (plural — singular exists)",
+        "/api/admin/domain-events (no route)",
+        "/api/admin/audit-logs (no route)",
+        "/api/admin/setting/show/general (no route — correct path is /api/admin/setting/company)",
+        "/api/admin/branch (no route — correct is /api/admin/setting/branch)",
+        "/api/admin/order (no route — correct is /api/admin/pos-order or /api/admin/online-order)",
+        "/api/admin/observability/summary (no route — correct sub-paths /outbox, /sync-overview)",
+        "/api/admin/total-menu-items, /featured-items, /popular-items (no top-level routes — correct sub /api/admin/dashboard/total-menu-items)"
+      ],
+      "memory_alignment": "Already documented in feedback_silent_html_masquerade.md (Project — Route audit JS↔backend 2026-05-08). Pattern recurring => discipline: every fetch() must check response.headers['content-type'] before JSON.parse, otherwise client crashes with 'Unexpected token <'.",
+      "impact": "JS clients hit non-existent admin endpoints and crash with parse errors instead of getting structured 404. Logs swallow the failure (HTTP 200 doesn't trigger alerting). Frontend developer typos go undetected in QA."
+    },
+    {
+      "id": "R2-P1-MISSING-SPA-ROUTES-ROUND1-INPUT",
+      "severity": "P1",
+      "surface": "admin SPA discoverability",
+      "evidence": "/tmp/foodking-round2-admin/06-admin-stock-rupture.png and 07-admin-orders.png and 09-admin-cash-session-report.png — all render the SPA 404 'Page Non Trouvée' component",
+      "root_cause": "Round 1 (and task description) referenced URLs that do NOT exist in resources/js/router/modules/. Actual mounted paths:",
+      "url_corrections": {
+        "/admin/stock-rupture-dashboard (404)": "/admin/stock/rupture (mounted stockRoutes.js:7)",
+        "/admin/orders (404)": "/admin/pos-orders (posOrderRoutes.js:13) OR /admin/online-orders (onlineOrderRoutes.js:10)",
+        "/admin/cash-session-report (404)": "/admin/cash-sessions-report (cashSessionReportRoutes.js:10 — PLURAL)",
+        "/admin/z-reports (404)": "no dedicated SPA route — Z reports list is reachable via /admin/setting hub child route; verify in settingRoutes.js"
+      },
+      "impact": "Documentation / Round 1 hypothesis driven test rounds will hit 404 unless URLs are pinned. The SPA pages themselves work fine when correct URLs used."
+    },
+    {
+      "id": "R2-P1-ITEMS-PAGINATION-IGNORED",
+      "severity": "P1",
+      "surface": "admin/items",
+      "file": "app/Http/Controllers/Admin/ItemController.php (index)",
+      "repro": "curl -H 'x-api-key:<key>' -H 'Authorization:Bearer <token>' 'http://127.0.0.1:8000/api/admin/item?per_page=5&page=1' => data_count=45 (NOT 5), meta={available_count:45,unavailable_count:0} (NO total/current_page/last_page/per_page), links={}",
+      "current_state_v1": "Acceptable for Le Cayenne (45 items) — single-resto local-box scope.",
+      "v1_0_2_backlog": "Once catalog grows >100 items or SaaS multi-tenant, full-catalog every GET will hurt. Add Laravel paginate() + meta + links to ItemController::index for forward-compat. Frontend ItemListComponent.vue should support pagination UI."
+    },
+    {
+      "id": "R2-P2-Z-REPORT-PDF-ADMIN-PINNING",
+      "severity": "P2",
+      "surface": "admin/fiscal/z-report PDF",
+      "file": "app/Http/Controllers/Admin/Fiscal/ZReportController.php:104-114",
+      "repro": "curl -H 'x-api-key:<key>' -H 'Authorization:Bearer <admin-token>' http://127.0.0.1:8000/api/admin/fiscal/z-report/1/pdf => HTTP 422 'Fiscal operation requires the authenticated user to be pinned to a branch.'",
+      "by_design": "Comment at line 111-114 says admin (branch_id=0) without explicit pinning is rejected for fiscal writes/single-doc; Wave T R1 F1 P0 2026-05-20 deliberately allowed only read-only list (resolveBranchIdForRead returns null for cross-branch view) but kept PDF/show/open/close branch-scoped.",
+      "ux_limitation_for_v1_le_cayenne": "Owner runs SINGLE branch (Le Cayenne principal, id=1). Admin user id=1 has branch_id=0. To download Z PDF owner must (a) log in as a branch-scoped user, OR (b) the UI must inject ?branch_id=1 explicit on PDF call. Verify the SPA does this; if not, owner cannot download Z PDF — see /api/admin/fiscal/z-report/{id}/pdf only accessible via branch-pinned user.",
+      "not_p0": "Z list is accessible (HTTP 200 with proper auth); only PDF is gated. Workaround: create a non-admin manager pinned to branch=1.",
+      "recommendation": "Add UI hint or accept admin+explicit_branch_id payload for PDF call once owner-gated."
+    },
+    {
+      "id": "R2-INFO-DASHBOARD-WIDGETS-OK",
+      "severity": "INFO",
+      "surface": "admin/dashboard",
+      "evidence": "/tmp/foodking-round2-admin/02-post-login.png — fully rendered: Total ventes 862€, 81 commandes, 45 articles menu, KPIs (CA 862€/Cmd 81/Ticket moyen 10.64€), Alertes SLA Cuisine >15min with 4 alerts, Suivi en direct widget, Répartition par Canal (Web 0% Kiosk/App 20.97%), full sidebar nav (Tableau de Bord, POS, Produits & Stock, Catalogue, Attribut d'Articles, Ingrédients, Commandes Caisse, Vue Caisse Unifiée, Caisse Livreur, CAISSE ET COMMANDES, Écran Cuisine, Suivi Client, COMMUNICATIONS, Notification Pushs, Messages, Abonnés, UTILISATEURS, Administrateurs, Employés)",
+      "all_dashboard_widget_apis_HTTP_200": [
+        "/api/admin/dashboard/total-sales 94B",
+        "/api/admin/dashboard/total-orders 76B",
+        "/api/admin/dashboard/total-menu-items 81B",
+        "/api/admin/dashboard/sla-alerts 577B",
+        "/api/admin/dashboard/channel-statistics 148B",
+        "/api/admin/dashboard/audit-trail 11136B",
+        "/api/admin/dashboard/order-statistics 257B",
+        "/api/admin/dashboard/sales-summary 212B",
+        "/api/admin/dashboard/order-summary 112B",
+        "/api/admin/dashboard/realtime-report 149B"
+      ]
+    },
+    {
+      "id": "R2-INFO-AUTHZ-LAYERING-OK",
+      "severity": "INFO",
+      "surface": "all admin APIs",
+      "verified": {
+        "no_api_key": "HTTP 400 invalid_api_key (ApiKeyMiddleware works)",
+        "valid_api_key_no_token": "HTTP 401 Unauthenticated (Sanctum guard works)",
+        "valid_token_but_kiosk-only_ability": "HTTP 403 (Sanctum ability scopes work; tested with token having only kiosk:order ability against /api/admin/item)",
+        "valid_token_with_setting_endpoint_under_kiosk_ability": "HTTP 200 (POTENTIAL ISSUE — /api/admin/setting/show/general accepted with kiosk:order ability when admin user. Need verify next round)",
+        "valid_admin_token_all_endpoints": "HTTP 200 / 404 (404 for non-existent items show/999999 — proper)"
+      }
+    },
+    {
+      "id": "R2-INFO-BRANCHSCOPE-ADMIN-SEES-ALL",
+      "severity": "INFO",
+      "surface": "BranchScope + ItemController",
+      "verified": "admin user (id=1, branch_id=0) GET /api/admin/item returns 45 items (all DB items). DB count=45 (php tinker), API returns 45 (curl). BranchScope global scope correctly exempts admin (branch_id=0). Wave M baseline locked in tests/Feature/Branch/BranchScopeCoverageSentinelTest.php."
+    }
+  ],
+  "counts": {
+    "P0": 0,
+    "P1": 3,
+    "P2": 1,
+    "INFO": 3
+  },
+  "verdict": "ADMIN surface FUNCTIONAL for Le Cayenne V1 LOCAL. 3 P1 are recurring documented patterns (silent HTML catchall already in feedback_silent_html_masquerade.md, missing-route hypotheses caused by Round 1/task URL guesses, pagination ignored is V1-acceptable / V2-blocker). 1 P2 is Z PDF branch-pinning by design (Wave T R1 F1) — single-resto UX edge needs UI hint. Zero true P0. Round 1 hypotheses about IDOR, phone schema, cash overview UI, dashboard widgets all DISPROVED with file:line + curl + screenshot evidence.",
+  "frozen_zone_touched": false,
+  "code_changes": false,
+  "artifacts": {
+    "screenshots_dir": "/tmp/foodking-round2-admin/",
+    "curl_traces": "/tmp/foodking-round2-admin/curl/",
+    "api_probes": "/tmp/foodking-round2-admin/api-probes.json",
+    "no_auth_probes": "/tmp/foodking-round2-admin/no-auth-probes.json",
+    "localstorage_dump": "/tmp/foodking-round2-admin/localstorage.json"
+  }
+}

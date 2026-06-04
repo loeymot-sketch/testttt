@@ -1,0 +1,15 @@
+{
+  "status": 200,
+  "body": {
+    "data": [
+      {
+        "id": 307,
+        "order_serial_no": "WAVE-FINAL-S4-ACC-001",
+        "token": "WAVE-FINAL-S4-ACC-001",
+        "queue_number": "A0042",
+        "order_type": 25,
+        "status": 8
+      }
+    ]
+  }
+}

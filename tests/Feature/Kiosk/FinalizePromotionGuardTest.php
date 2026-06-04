@@ -145,10 +145,14 @@ class FinalizePromotionGuardTest extends TestCase
 
         $promoted = app(FrontendOrderService::class)->finalizePaidKioskOrder($order);
 
-        $this->assertTrue($promoted, 'PENDING+PAID kiosk card order must be promoted to ACCEPT.');
+        // [Wave S-1 — 2026-05-20] Owner P-OWNER Wave S-1: PENDING+PAID kiosk
+        // promotion goes through ACCEPT in-tx and then immediately advances
+        // to PREPARING per the auto-prepare policy. Post-commit DB state
+        // observes the final status only.
+        $this->assertTrue($promoted, 'PENDING+PAID kiosk card order must be promoted (S-1: lands in PREPARING).');
         $this->assertDatabaseHas('orders', [
             'id'             => $order->id,
-            'status'         => OrderStatus::ACCEPT,
+            'status'         => OrderStatus::PREPARING,
             'payment_status' => PaymentStatus::PAID,
         ]);
     }

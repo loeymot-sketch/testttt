@@ -1,0 +1,80 @@
+{
+  "specialist": "UX/A11y",
+  "task": "WE-2 — Path A DÉMO V1 badges on web loyalty surfaces",
+  "scope": "read-only (audit before build)",
+  "files_audited": [
+    "/Users/1millnonstop/Downloads/web/screens.jsx (WebLoyalty lines 539-720)",
+    "/Users/1millnonstop/Downloads/web/account-v2.jsx (success modal lines 213-232)",
+    "/Users/1millnonstop/Downloads/web/components.jsx (WebQR lines 21-37)",
+    "/Users/1millnonstop/Downloads/web/styles.css (lc-wallet styles lines 511-560)"
+  ],
+  "decision_inputs": {
+    "design_system_palette": {
+      "yellow": "var(--yellow) = warning/info accent (used on lc-wallet-mark, paymethod-icon--cash, success-modal-bg)",
+      "ink": "var(--ink) #0A0A0A — primary text on light/yellow surfaces",
+      "orange": "var(--orange) #FF5A1F — CTA/highlight",
+      "wallet_bg": "dark ink (line 519 implies background: var(--ink) gradient)"
+    },
+    "existing_badge_idioms_in_codebase": [
+      "lc-eyebrow — uppercase mono accent text (`// label`), already used 5+ times in WebLoyalty",
+      "lc-wallet-mark — yellow uppercase mono label inside wallet (line 568)",
+      "lc-acc-art-stamp — bold +25/PTS callout on signup modal (account-v2.jsx line 66)"
+    ],
+    "contrast_check": {
+      "yellow_bg_ink_text": "yellow ~#FFD93D + ink #0A0A0A = contrast ratio ~16:1 — passes WCAG AAA",
+      "ink_bg_yellow_text": "ink #0A0A0A + yellow #FFD93D = contrast ratio ~16:1 — passes WCAG AAA",
+      "applies_to": "all 3 badge placements (wallet on ink bg, QR area on dark wallet bg, success modal on yellow bg)"
+    }
+  },
+  "recommendations": {
+    "badge_text": "DÉMO V1",
+    "rationale_text": "explicit 'DÉMO V1' surfaces the customer-trust risk: shows demo state without ambiguity. Owner-locked label per task brief. FR-only (site is FR-only — no i18n needed)",
+    "placement_1_wallet_head": {
+      "location": "screens.jsx line 569 — inside lc-wallet-head, sibling to lc-wallet-tier",
+      "color_strategy": "yellow background + ink text (mirrors lc-wallet-mark idiom that's already in the same row at line 568)",
+      "size": "match lc-wallet-mark micro-caps (12px mono 700) — same visual rhythm as adjacent label",
+      "aria_label": "Mode démonstration version 1 — points non synchronisés avec la caisse"
+    },
+    "placement_2_qr_area": {
+      "location": "screens.jsx around line 582-583 — inside lc-wallet-code-body, BELOW the LECAY-347-A9F2C ID line so it sits next to the QR visual",
+      "color_strategy": "yellow background + ink text — same as placement 1, visually anchors the demo-state to the QR (the artifact the customer presents at POS)",
+      "size": "11-12px mono uppercase to match existing lc-wallet-code-title micro-caption",
+      "aria_label": "Mode démonstration version 1 — ce QR code n'est pas connecté à la caisse"
+    },
+    "placement_3_success_modal": {
+      "location": "account-v2.jsx around line 224 — inside success state container, just above or sibling-to the '// Bienvenue au club' eyebrow",
+      "color_strategy": "ink background + yellow text (inverted on yellow modal bg, gives it stamp/badge feel without disappearing)",
+      "size": "12-14px mono 700 bold — proportional to +25 point headline below",
+      "aria_label": "Mode démonstration version 1 — points fictifs, non utilisables en caisse"
+    },
+    "a11y_pattern_choice": "plain <span> with aria-label + title attribute (tooltip). Reject role='status' (status is for live updates). Reject role='alert' (alert is for urgent). Plain semantic span = correct for static informational chip per ARIA APG"
+  },
+  "consistency_with_other_surfaces": {
+    "loyalty_v2_jsx": "OUT of scope per task brief (profile chrome, not in scope WE-2)",
+    "marketing_unauth_screen": "screens.jsx line 548 mentions '+25 pts à l'inscription' in marketing copy. NOT a number presented as user balance — out of scope per advisor reconfirmation. Surface in STATUS for owner awareness."
+  },
+  "loc_estimate": {
+    "screens_jsx_inserts": 2,
+    "account_v2_jsx_inserts": 1,
+    "css_changes": 0,
+    "total_loc": "~6-9 (inline style, no separate CSS file edit)"
+  },
+  "risk_register": {
+    "risk_R1_badge_overlooked": {
+      "vector": "customer reads big '347 pts' number, ignores small DÉMO V1 chip → still believes balance is real",
+      "mitigation": "placement_1 placed in lc-wallet-head row at SAME baseline as lc-wallet-mark which uses identical visual treatment — visually unavoidable; placement_3 placed inside the success modal hero copy area — cannot be missed; placement_2 anchors the QR which is the one artifact presented to POS",
+      "residual_risk": "LOW — three independent placements all in customer-attention hotspots"
+    },
+    "risk_R2_color_contrast_fail": {
+      "vector": "yellow on light wallet bg insufficient AA",
+      "mitigation": "wallet bg is dark ink (per line 519 ::before gradient), and the placement is yellow PILL with ink text on the yellow chip itself = 16:1 contrast within the chip. Outside-chip contrast (chip border vs dark wallet) is high also.",
+      "residual_risk": "MIN — verified via palette inspection"
+    },
+    "risk_R3_i18n_drift": {
+      "vector": "DÉMO V1 hardcoded — what if site adds EN later",
+      "mitigation": "site is FR-only V1 per advisor; no i18n infrastructure exists in /Downloads/web/ (no .json catalogs, no t() helper). When site goes multi-lang, badge will be one of the items to translate. Acceptable V1 debt.",
+      "residual_risk": "LOW — documented in STATUS"
+    }
+  },
+  "verdict": "GO — placement strategy + colors + a11y attestable. No frozen-zone touch. ~6-9 LOC across 2 source files. 0 CSS file edits required."
+}

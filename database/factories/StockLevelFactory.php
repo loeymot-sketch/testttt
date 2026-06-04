@@ -15,7 +15,7 @@ class StockLevelFactory extends Factory
     {
         return [
             'branch_id' => Branch::factory(),
-            'stockable_type' => 'item',
+            'stockable_type' => Item::class,
             'stockable_id' => Item::factory(),
             'on_hand' => 10,
             'reserved' => 0,

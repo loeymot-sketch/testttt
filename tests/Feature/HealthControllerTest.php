@@ -93,6 +93,23 @@ class HealthControllerTest extends TestCase
         }
     }
 
+    /**
+     * [OPS-2 2026-06-04] Regression lock: /api/health MUST return HTTP 503
+     * (not 200) when any subsystem is degraded, so a pager doing an HTTP-code
+     * `curl -f` actually fires on an outage. Forcing the null broadcast driver
+     * makes checkBroadcast() report 'warning' (not 'ok') → degraded → 503.
+     * This test FAILS against the old always-200 implementation.
+     */
+    public function test_health_full_returns_503_when_degraded(): void
+    {
+        Config::set('broadcasting.default', 'null');
+
+        $response = $this->getJson('/api/health');
+
+        $response->assertStatus(503);
+        $this->assertSame('degraded', $response->json('status'));
+    }
+
     public function test_health_full_rejects_non_whitelisted_ip_when_whitelist_set(): void
     {
         config()->set('app.env', 'production');

@@ -1,0 +1,165 @@
+{
+  "agent": "S4-P2 OSS x Client-impatient",
+  "scope": "Audit Order Status Screen (mur client public à /admin/order-status-screen) du point de vue d'un client en attente qui se demande 'où en est ma commande ?'. Surface = 2 colonnes EN PRÉPARATION / PRÊT après collapse Wave Q-3 P-OWNER 2026-05-20 (PopularItemComponent démonté du layout, conservé pour POS dashboard). Endpoint public sans auth /api/frontend/oss-order via OrderStatusScreenController::publicIndex avec rate-limit throttle:oss-public 60/min/IP.",
+  "screens_audited": [
+    "OrderStatusScreenComponent.vue (shell 2-col + ConnectionStatusBanner suppress-transient)",
+    "PreparingAndReadyComponent.vue (colonnes EN PRÉPARATION rouge #B0004D + PRÊT vert #1AB759, font 56px tokens, wakeLock TV, audio chime gated authBranchId>0)",
+    "PopularItemComponent.vue (démonté du layout OSS — toujours référencé par POS dashboard)",
+    "OrderStatusScreenController.php (index admin + publicIndex + mostPopularItems + publicMostPopularItems)",
+    "OrderStatusScreenOrderService.php (list/listForBranch — allowlist KIOSK+TAKEAWAY, stale prune 8h, FIFO queue_number)",
+    "CDSOrderDetailsResource.php (payload public minimal : id, order_serial_no, token, queue_number, order_type, status)",
+    "Routes api.php:1242-1247 (oss-order.public + popular-items.public, throttle:oss-public)"
+  ],
+  "gaps_found": [
+    {
+      "id": "GAP-S4-P2-001",
+      "title": "Pas de temps écoulé ni ETA par commande sur le mur OSS",
+      "user_story": "En tant que client impatient regardant le mur OSS et voyant N°42 en EN PRÉPARATION, je devrais voir 'commencé il y a 4 min — estimé prêt dans ~3 min' pour savoir si je peux aller aux toilettes, regarder mon téléphone ou si je dois rester planté car bientôt prêt.",
+      "evidence_absence": "CDSOrderDetailsResource.php:17-25 expose UNIQUEMENT id, order_serial_no, token, queue_number, order_type, status. AUCUN timestamp order_datetime, started_at, ou ETA. PreparingAndReadyComponent.vue ligne 34-39 et 56-61 affiche QUE 'N°<queue_number>' ou token brut. Grep 'eta|estimated|wait_time|temps_attente' dans /app /resources = 0 occurrence. Le seul timing affiché est le elapsedSeconds côté KIOSK (KioskWaitingComponent) — pas exporté au mur OSS public.",
+      "impact": "FRICTION-DAILY",
+      "effort": "M",
+      "risk_if_absent": "client doit deviner / vérifier toutes les 30s en se déplaçant ; perçu comme inefficace ('même un MacDo affiche un temps') ; pousse à demander au staff au comptoir (perte débit) ; n'importe quelle attente >5 min sans signal devient anxiogène.",
+      "frozen_zone_touch_needed": false,
+      "implementation_hint": "Étendre CDSOrderDetailsResource avec started_preparing_at (Carbon ISO) ; calculer elapsed côté frontend Vue computed ; afficher sub-token discret 'depuis 4min' en text-[24px] gris #6E7191 sous le N°. ETA optionnelle = avg p50 préparation last-N orders branch (DashboardService a déjà avg metrics) exposée via service OSS. Sentinel test : OssPayloadShapeTest pour figer le contrat public."
+    },
+    {
+      "id": "GAP-S4-P2-002",
+      "title": "Pas de position file ('vous êtes 3ème') pour la commande client",
+      "user_story": "En tant que client impatient avec N°45, je devrais voir 'Vous êtes 3ème en préparation (sur 6)' afin de pouvoir évaluer concrètement mon attente plutôt que deviner en comptant les N° devant moi sur le mur.",
+      "evidence_absence": "Service list() ligne 144 ordre FIFO queue_number asc + id asc — donc l'ordre est défini DETERMINISTE mais aucune position rank n'est exposée. CDSOrderDetailsResource ne contient pas de champ position/rank/index. Frontend PreparingAndReadyComponent.vue boucle v-for items 34-39 sans afficher rank. Client doit visuellement compter de haut en bas — exigeant à 3m de distance avec font 56px.",
+      "impact": "FRICTION-DAILY",
+      "effort": "S",
+      "risk_if_absent": "client à distance ne sait pas où il se situe (font 56px = ~3-4 N° visibles à la fois sur un écran TV portrait) ; quand auto-scroll s'enclenche >8 orders il perd son repère ; anxiété 'on m'a oublié ?'.",
+      "frozen_zone_touch_needed": false,
+      "implementation_hint": "Backend : ajouter rank = collection->search($order->id)+1 dans la resource ; OU côté frontend Vue computed indexInColumn = preparingItems.findIndex(i => i.id === item.id)+1 (déjà disponible sans backend touch). Affichage discret '3/6' en chip à côté du N°. Aucun touch frozen-zone."
+    },
+    {
+      "id": "GAP-S4-P2-003",
+      "title": "Pas de notification active (SMS/push/buzzer) quand commande passe à PRÊT — client doit fixer le mur",
+      "user_story": "En tant que client takeaway impatient ayant payé et reçu un N°, je devrais pouvoir m'éloigner (toilettes, voiture, terrasse fumeurs) et recevoir un signal actif (SMS, push web, buzzer physique) quand mon ordre passe en PRÊT, plutôt que de rester planté devant le mur OSS pendant 8-15 minutes.",
+      "evidence_absence": "Le mur OSS dispose d'un chime audio + flash vert (PreparingAndReadyComponent.vue:329-368 _playReadySound + 451-457 oss-ready-flash) MAIS : (1) chime gated par authBranchId>0 — sur la surface publique customer wall (branch_id=0) il est SILENCIEUX par design [GOAL Round 2 Impl C P0-OSS-01 2026-05-18] ; (2) le flash visuel n'aide pas si le client n'est pas dans la salle. FcmNotificationService.php expose order_ready uniquement pour DeliveryBoy (mobile staff app) — pas de customer-facing push. Aucun envoi SMS lors de la transition PREPARING→PREPARED dans OrderObserver/OrderService. Aucun service Web Push pour client.",
+      "impact": "FRICTION-DAILY",
+      "effort": "L",
+      "risk_if_absent": "client cloué au mur OSS pendant 8-15 min = friction majeure du fast-food digital moderne ; standard McDo/BK/Starbucks 2024-2026 (SMS, app push, beeper) ; perd la valeur du takeaway (gain de temps).",
+      "frozen_zone_touch_needed": false,
+      "implementation_hint": "Phase 1 (V1.1) : opt-in SMS au moment du paiement kiosk → POST phone au PaymentService → OrderObserver::updated() écoute status==PREPARED → enqueue SmsService::send(template:order_ready, vars:queue_number). Phase 2 (V2) : Web Push subscription depuis KioskConfirmationComponent pour client retenant URL /tracking/{token}. Phase 3 : intégration beeper hardware (NewLand/Long Range Systems) via REST trigger. Cf. GAP-S1-P2-002 sibling pour scope kiosk."
+    },
+    {
+      "id": "GAP-S4-P2-004",
+      "title": "Pas d'URL/QR de tracking individuel pour suivre sa commande sur son téléphone",
+      "user_story": "En tant que client impatient quittant la zone resto, je devrais pouvoir scanner un QR (sur mon reçu kiosk) ou ouvrir un lien court pour suivre l'état EN PRÉPARATION → PRÊT de MA commande sur mon téléphone, plutôt que de devoir revenir physiquement devant le mur OSS.",
+      "evidence_absence": "Aucune route /tracking/{token} ou /order-status/{token} dans routes/api.php ou routes/web.php (grep 'tracking|order-status/{|/order/{token' = 0 hit). Le token est généré pour usage interne (CDSOrderDetailsResource expose token mais aucune page client le consomme). KioskConfirmationComponent affiche le reçu mais ne fournit pas de QR de suivi. L'URL OSS /admin/order-status-screen affiche TOUTES les commandes de la branche (publique mais non scopée client).",
+      "impact": "FRICTION-DAILY",
+      "effort": "M",
+      "risk_if_absent": "client perd l'autonomie de suivre depuis ailleurs ; doit physiquement revenir au mur ; expérience inférieure à apps modernes (Starbucks Order Ahead, Uber Eats pickup tracking).",
+      "frozen_zone_touch_needed": false,
+      "implementation_hint": "Nouveau controller PublicOrderTrackingController + route GET /tracking/{token} retournant la même CDSOrderDetailsResource scopée 1 commande + Vue page mobile-first 'EN PRÉPARATION (depuis 4min)' qui poll toutes les 10s ou souscrit au channel Echo public branch.{branchId}. QR généré dans KioskConfirmationComponent à côté du reçu impression. Rate-limit throttle:oss-public déjà existant adaptable."
+    },
+    {
+      "id": "GAP-S4-P2-005",
+      "title": "Granularité status binaire seulement (EN PRÉPARATION / PRÊT) — pas de jalon intermédiaire",
+      "user_story": "En tant que client impatient, je devrais voir 'Reçue → En cuisson → Dressage → Prête' au lieu uniquement de 'En préparation → Prêt' afin de visualiser la progression et estimer plus finement.",
+      "evidence_absence": "Service::list() ligne 63 filtre whereIn('status', [PREPARING, PREPARED]) — donc seulement 2 états remontent au mur. Bien que l'OrderStatus enum a plus de valeurs (PENDING, ACCEPTED, etc. — voir KDS qui les utilise), aucun n'est exposé à l'écran customer. Le passage cuisson/dressage/etc. n'existe pas dans le modèle de domaine — kitchen_status existe au niveau Order (cf service ligne 26) mais n'est pas remonté dans la resource publique.",
+      "impact": "FRICTION-WEEKLY",
+      "effort": "L",
+      "risk_if_absent": "expérience peu informative ; standard moderne Domino's Pizza Tracker (Order Placed → Prep → Bake → Quality Check → Out for Delivery) ; particulièrement frustrant si l'ordre stagne en PREPARING 8min sans progression visible.",
+      "frozen_zone_touch_needed": false,
+      "implementation_hint": "Nécessite extension du modèle Order avec kitchen_substatus ou usage du kitchen_status existant non remonté actuellement. UI : ajouter une barre progress 0-25-50-75-100% sous le N° du client. Backend KDS expose les transitions via Echo bus. NF525 invariant : ces sub-status ne sont pas fiscaux donc OK d'ajouter sans toucher FiscalSequenceService."
+    },
+    {
+      "id": "GAP-S4-P2-006",
+      "title": "Pas de différenciation visuelle 'à emporter' vs 'sur place' — client TAKEAWAY peut chercher son N° dans la mauvaise zone",
+      "user_story": "En tant que client TAKEAWAY (à emporter), je devrais voir mon N° dans une section distincte 'À EMPORTER' afin de savoir où aller récupérer (comptoir takeaway vs salle) ; idem pour KIOSK sur place.",
+      "evidence_absence": "Service::list() lignes 60-62 + 220-223 inclut KIOSK et TAKEAWAY ensemble sans distinction visuelle. CDSOrderDetailsResource expose order_type (10=TAKEAWAY, 25=KIOSK) MAIS PreparingAndReadyComponent.vue:34-39 et 56-61 N'UTILISE PAS order_type pour styler/regrouper — affichage texte uniforme. Aucun pictogramme/badge 'sac' vs 'assiette'.",
+      "impact": "FRICTION-WEEKLY",
+      "effort": "S",
+      "risk_if_absent": "client TAKEAWAY ne sait pas si son N° est au comptoir ou en salle ; va à la mauvaise zone, perd 30s ; staff doit corriger oralement.",
+      "frozen_zone_touch_needed": false,
+      "implementation_hint": "Soit (A) ajouter un mini-icon emoji/SVG à gauche du N° selon order_type (kiosk-on-site = chaise, takeaway = sac), soit (B) section header par type 'À EMPORTER (3)' / 'SUR PLACE (2)' dans chaque colonne. order_type déjà dans la resource — pure modif visuelle frontend."
+    },
+    {
+      "id": "GAP-S4-P2-007",
+      "title": "Auto-scroll 30s loop pure-CSS désoriente le client qui suit son N° (saut visuel)",
+      "user_story": "En tant que client surveillant le mur, je devrais voir mon N° rester visible le temps que je le repère ; un scroll automatique cyclique qui démasque mon N° pendant 27s sur 30 m'oblige à attendre le prochain cycle pour le re-vérifier.",
+      "evidence_absence": "PreparingAndReadyComponent.vue:467-478 .oss-autoscroll active dès items.length>8 ; keyframe oss-scroll-loop 30s linear infinite — 10% pause + saut translateY(-50%) + retour. Pas de pause-on-hover ni de pause-on-newly-ready (sauf prefers-reduced-motion accessibility ligne 481-488). Pas de pause si le client tap (mais c'est un mur TV sans touch).",
+      "impact": "FRICTION-WEEKLY",
+      "effort": "S",
+      "risk_if_absent": "client doit attendre 30s pour re-scanner s'il manque le passage ; à >12 orders en cuisine simultanées le mur OSS devient un défilement infini qui frustre la lecture rapide.",
+      "frozen_zone_touch_needed": false,
+      "implementation_hint": "Réduire animation cycle 30s → 20s + augmenter pause de 10% à 30% pour temps de lecture. OU implémenter '2-column display split' : si >16 items, afficher en 2 colonnes côte-à-côte par section au lieu de scroll vertical. Touch CSS uniquement."
+    },
+    {
+      "id": "GAP-S4-P2-008",
+      "title": "Pas d'historique 'commandes terminées dernières 5 min' pour récupération tardive",
+      "user_story": "En tant que client revenu 6 minutes après que mon N° est passé en PRÊT (et donc disparu du mur car servi/livré), je devrais voir 'Commandes prêtes — il y a moins de 5 min' afin de confirmer que ma commande est bien terminée et pas perdue.",
+      "evidence_absence": "Service::list() ligne 63 whereIn status PREPARING+PREPARED — sitôt qu'un order passe à DELIVERED ou DELIVERED_AT_KITCHEN, il disparaît instantanément du mur. Aucune zone 'récemment terminées' ou 'merci d'avoir commandé'. Le client absent pendant la fenêtre PREPARED n'a aucune trace de passage.",
+      "impact": "FRICTION-WEEKLY",
+      "effort": "M",
+      "risk_if_absent": "client en doute 'ma commande a-t-elle été servie ?' demande staff ; staff doit checker manuellement KDS/POS ; perte de temps comptoir.",
+      "frozen_zone_touch_needed": false,
+      "implementation_hint": "Ajouter 3ème zone légère 'PRÊT IL Y A QQ MINS' avec filtre status=DELIVERED + ready_at>now-5min. Affichage compact + opacité réduite pour distinguer. Service modifié : ajouter listForBranch include_recently_delivered=true."
+    },
+    {
+      "id": "GAP-S4-P2-009",
+      "title": "Pas de signal 'commande en retard' (delayed) pour client qui dépasse l'attente moyenne",
+      "user_story": "En tant que client dont la commande EN PRÉPARATION dépasse 10 min (alors que la moyenne est 5 min), je devrais voir mon N° marqué différemment (orange clignotant + 'retard') et savoir si je dois m'inquiéter.",
+      "evidence_absence": "PreparingAndReadyComponent.vue n'a aucune logique de threshold delay. Tous les N° dans 'EN PRÉPARATION' partagent la même couleur red-900 #991B1B sans gradient temporel. Aucun champ delayed_since ou is_overdue dans CDSOrderDetailsResource. Aucun bench KDS de avg-time exporté côté OSS public.",
+      "impact": "FRICTION-WEEKLY",
+      "effort": "M",
+      "risk_if_absent": "client attend dans l'ignorance qu'il y a un problème (cuisine débordée, ingrédient manquant) ; le staff ignore aussi le signal visuel proactif ; le client demande seul à 12-15 min et apprend tard.",
+      "frozen_zone_touch_needed": false,
+      "implementation_hint": "Backend : calc avg prep time last-N orders branch (déjà dans DashboardService). CDSOrderDetailsResource ajoute is_overdue boolean si elapsed>avg*1.5. UI : classe CSS oss-overdue avec animation jaune→orange. Sentinel test OssOverdueFlagTest."
+    },
+    {
+      "id": "GAP-S4-P2-010",
+      "title": "Multilang OSS muré en français — touriste anglophone/arabophone ne comprend pas 'EN PRÉPARATION'",
+      "user_story": "En tant que touriste anglophone à Le Cayenne, je devrais voir 'PREPARING / READY' à côté de 'EN PRÉPARATION / PRÊT' (ou rotation) afin de comprendre le statut de ma commande.",
+      "evidence_absence": "PreparingAndReadyComponent.vue:28 et 50 utilise $t('label.preparing') / $t('label.ready') — donc i18n technique en place. MAIS : le mur OSS est statique sur la langue du backend (route publique sans locale switcher). Aucun toggle FR/EN/AR comme sur kiosk idle. Si app locale = fr, le mur reste fr 100% du temps.",
+      "impact": "FRICTION-WEEKLY",
+      "effort": "S",
+      "risk_if_absent": "touristes/expat anglophones confus ; Le Cayenne (selon contexte Caraïbes) reçoit clientèle anglo/créolophone significative.",
+      "frozen_zone_touch_needed": false,
+      "implementation_hint": "Mode rotation header : alterne FR (5s) → EN (5s) → AR (5s) via setInterval + locale temporaire pour les labels colonnes uniquement. OU stack vertical 'EN PRÉPARATION / PREPARING' permanent. Touch frontend uniquement, i18n keys déjà existantes (label.preparing existe dans en.json, fr.json, ar.json)."
+    },
+    {
+      "id": "GAP-S4-P2-011",
+      "title": "Empty state '—' minimaliste lorsque aucune commande — pas de message rassurant",
+      "user_story": "En tant que client arrivant au comptoir et voyant le mur OSS afficher '—' dans les 2 colonnes, je devrais voir 'En attente d'une commande' ou 'Bienvenue chez Le Cayenne' pour confirmer que le système marche (pas un écran cassé).",
+      "evidence_absence": "PreparingAndReadyComponent.vue:40 et 62 affiche `<p>—</p>` text-[28px] text-[#A0A3BD] quand items.length===0. Pas de message branding ni de status système ('Système actif'). Risque perception 'écran en panne'.",
+      "impact": "FRICTION-MONTHLY",
+      "effort": "S",
+      "risk_if_absent": "première impression douteuse pour client qui ne sait pas si le mur est en panne ; client demande staff 'votre écran marche pas ?'.",
+      "frozen_zone_touch_needed": false,
+      "implementation_hint": "Remplacer '—' par message contextuel : si EN PRÉPARATION vide = 'Aucune commande en cours' ; si PRÊT vide = 'Aucune commande prête'. Ajouter logo Le Cayenne en watermark bas. Touch CSS+template uniquement."
+    },
+    {
+      "id": "GAP-S4-P2-012",
+      "title": "Pas d'indication 'mode dégradé / hors-ligne' visible client quand WebSocket déconnecté >5s",
+      "user_story": "En tant que client surveillant le mur, je devrais voir 'Connexion réseau dégradée — mises à jour différées' si Echo se déconnecte plus de 5s, pour comprendre que les changements peuvent tarder.",
+      "evidence_absence": "OrderStatusScreenComponent.vue:9 a `<ConnectionStatusBanner suppress-transient />` mais SUPPRIME les transients pour ne pas polluer le mur — le commentaire 2-7 dit explicitement 'suppress-transient... no need to show a permanent yellow bar'. Donc client ne voit RIEN si Echo tombe — sauf si session_invalid (terminal). Le polling fallback ossSyncService fonctionne mais pas signalé visuellement.",
+      "impact": "FRICTION-MONTHLY",
+      "effort": "S",
+      "risk_if_absent": "lors d'un incident réseau, le mur paraît figé ; clients doutent ; staff doit expliquer à plusieurs personnes au comptoir.",
+      "frozen_zone_touch_needed": false,
+      "implementation_hint": "Override le suppress-transient flag pendant les fenêtres >15s sans event pour afficher un discret tag '⚡ Connexion temporairement lente' bas de page. Pattern wsConnected déjà géré (PreparingAndReadyComponent.vue:90)."
+    }
+  ],
+  "top_3_blocker_daily": [
+    {
+      "id": "GAP-S4-P2-001",
+      "title": "Pas de temps écoulé ni ETA par commande",
+      "rationale": "DAILY : c'est la première information naturellement attendue par tout client en attente (standard McDo/Toast/Square 2024-2026). Sans elapsed_time, le mur OSS est essentiellement un tableau de tri statique. Effort M (1 champ resource + 1 computed Vue) pour un gain majeur de perception qualité service. Aucun frozen-zone touch."
+    },
+    {
+      "id": "GAP-S4-P2-003",
+      "title": "Pas de notification active SMS/push quand commande PRÊT",
+      "rationale": "DAILY : friction critique du fast-food digital ; client takeaway cloué devant le mur 8-15 min anéantit l'intérêt du takeaway. Standard absolu de tous concurrents modernes. Effort L mais ROI fort (libère le mur, augmente satisfaction, baisse charge comptoir). Cf. cohérence avec GAP-S1-P2-002 sibling kiosk = doublon stratégique à traiter une seule fois."
+    },
+    {
+      "id": "GAP-S4-P2-004",
+      "title": "Pas d'URL/QR de tracking individuel sur téléphone",
+      "rationale": "DAILY : permet au client de quitter physiquement la zone OSS tout en gardant la visibilité du statut. Pré-requis pour fluidifier le débit (le mur OSS sature à 8+ orders avec auto-scroll = lecture difficile). Effort M (nouveau controller + route + Vue mobile). Synergie forte avec GAP-S4-P2-003 (le QR héberge le SMS/push opt-in)."
+    }
+  ],
+  "verdict": "12 gaps found (3 BLOCKER-DAILY, 6 FRICTION-WEEKLY, 3 FRICTION-MONTHLY). L'OSS V1 Le Cayenne actuel est un mur d'affichage technique très solide (FIFO deterministe, WCAG-compliant 56px tokens, wakeLock TV, animations fines, fail-closed allowlist KIOSK+TAKEAWAY, stale prune 8h, byte-identical admin/public services, NF525-safe). MAIS il est conçu comme un panneau de tri staff plutôt que comme un journal client : zero temps, zero progression, zero ETA, zero notification active, zero tracking individuel mobile. Le scope public payload (CDSOrderDetailsResource) est intentionnellement minimal pour anti-PII — c'est correct mais bloque les évolutions UX. Les 3 BLOCKER-DAILY (temps écoulé / notification PRÊT / tracking mobile QR) sont le minimum vital pour rejoindre le standard QSR digital 2024-2026 (McDo DOM v2, BK Reclaim, Starbucks Order Ahead, Toast 2.0). Aucun gap ne nécessite de toucher une frozen-zone (PaymentComponent / FiscalSequenceService intacts). Quick-wins immédiats sans backend touch : GAP-002 (rank position côté Vue computed), GAP-007 (réduire scroll cycle), GAP-010 (rotation FR/EN/AR labels), GAP-011 (empty-state rassurant). Recommandation : prioriser GAP-001 + GAP-003 dans une vague unique 'OSS Client Visibility' (Wave V1.1), grouper avec GAP-S1-P2-002 sibling kiosk pour économiser SmsService implementation."
+}

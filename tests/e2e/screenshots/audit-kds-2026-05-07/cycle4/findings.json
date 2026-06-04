@@ -6,7 +6,7 @@
     "severity": "OK",
     "note": "orderItems()=true, allergens_hash-used=true, exposed-as-key=true",
     "screenshot": null,
-    "ts": "2026-05-11T08:46:03.042Z"
+    "ts": "2026-05-16T17:01:11.003Z"
   },
   {
     "step": "D4-02",
@@ -15,7 +15,7 @@
     "severity": "OK",
     "note": "resolveAddonsForKds=true, composition_snapshot=true, safe-json=true, addons-key=true",
     "screenshot": null,
-    "ts": "2026-05-11T08:46:03.048Z"
+    "ts": "2026-05-16T17:01:11.009Z"
   },
   {
     "step": "D4-03",
@@ -24,7 +24,7 @@
     "severity": "OK",
     "note": "Inventaire tests allergens: [{\"file\":\"tests/Feature/Orders/KDSAllergenVisibilityTest.php\",\"exists\":true},{\"file\":\"tests/Feature/Orders/OrderAllergenSnapshotComposedTest.php\",\"exists\":true},{\"file\":\"tests/Feature/Orders/OrderAllergenSnapshotTest.php\",\"exists\":true},{\"file\":\"tests/js/kdsAllergens.spec.js\",\"exists\":true}]",
     "screenshot": null,
-    "ts": "2026-05-11T08:46:03.054Z"
+    "ts": "2026-05-16T17:01:11.014Z"
   },
   {
     "step": "D4-04",
@@ -33,6 +33,6 @@
     "severity": "OK",
     "note": "Mutations détectées: 0. Sample: ",
     "screenshot": null,
-    "ts": "2026-05-11T08:46:03.060Z"
+    "ts": "2026-05-16T17:01:11.020Z"
   }
 ]

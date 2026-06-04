@@ -14,6 +14,7 @@ use App\Models\ItemVariation;
 use App\Models\StockLevel;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -57,7 +58,11 @@ final class AvailabilityService
                     'unavailable_reason' => $available ? null : $reason,
                     'unavailable_since' => $available ? null : now(),
                     'daily_consumed_qty' => 0,
-                    'daily_reset_at' => Carbon::today()->toDateString(),
+                    // [Wave 3c KDS-ADV3C-03 P1 2026-05-18] Explicit Paris-local
+                    // day for `daily_reset_at` (DATE column, TZ-agnostic in MySQL
+                    // but business-day-Paris by convention). Prevents drift if
+                    // PHP process inherits UTC or app.timezone is mutated.
+                    'daily_reset_at' => Carbon::today(config('app.timezone'))->toDateString(),
                 ]);
                 $row->save();
                 $this->dispatchEvent($itemId, $branchId, $available, $reason);
@@ -106,7 +111,9 @@ final class AvailabilityService
                     'branch_id' => $branchId,
                     'is_available' => true,
                     'daily_consumed_qty' => 0,
-                    'daily_reset_at' => Carbon::today()->toDateString(),
+                    // [Wave 3c KDS-ADV3C-03 P1 2026-05-18] See sibling comment
+                    // in toggle().
+                    'daily_reset_at' => Carbon::today(config('app.timezone'))->toDateString(),
                     'max_daily_qty' => $maxDailyQty,
                 ]);
                 $row->save();
@@ -279,7 +286,48 @@ final class AvailabilityService
     public function decrementForOrder(Model $order): void
     {
         $branchId = (int) $order->branch_id;
-        $today = Carbon::today()->toDateString();
+        $orderId = (int) ($order->id ?? 0);
+
+        // [HEAL-C.1 Z2 P1 2026-05-19] Per-order idempotency guard.
+        //
+        // `OrderCreated` may fire twice for the same order (queue replay on
+        // transient broadcaster failure, a refactor moving this listener to
+        // `ShouldQueue`, a bad merge resurrecting an old cascade path). The
+        // sibling stock listener is idempotent at the StockService layer via
+        // `stock_movements.idempotency_key` (Z1 verified). This service used
+        // raw `daily_consumed_qty + {$qty}` UPDATEs with ZERO per-order key —
+        // re-fire = double-count toward the daily quota → premature 86 flip.
+        //
+        // `Cache::add()` is SETNX-equivalent (atomic first-writer-wins) on
+        // Redis AND the array driver used in tests, so the guard is race-safe
+        // across queue workers. 24h TTL is ~200× the queue retry horizon
+        // (`tries=6, backoff=[1,5,15,60,300]` ≈ 6.4min) — bounded but ample.
+        //
+        // Failure mode if cache is flushed mid-day: a single re-dispatched
+        // order could double-count once before the next clear. `daily_consumed_qty`
+        // is a UX quota (auto-86), NOT a fiscal counter; `stock_movements`
+        // remains the NF525-adjacent SSOT. The blast radius is bounded to
+        // one order's quota, observable via the catalog warning dashboard.
+        //
+        // See: reports/audit/v1-sync-deep-audit-2026-05-19/HEAL-PLAN-C-order-lifecycle.md §3
+        if ($branchId > 0 && $orderId > 0) {
+            $orderKind = $order instanceof \App\Models\FrontendOrder ? 'fe' : 'o';
+            $guardKey = sprintf(
+                'availability:decremented:%s:%d:%d',
+                $orderKind,
+                $branchId,
+                $orderId
+            );
+            if (! Cache::add($guardKey, 1, now()->addHours(24))) {
+                // Already processed this order — short-circuit, no decrement.
+                return;
+            }
+        }
+
+        // [Wave 3c KDS-ADV3C-03 P1 2026-05-18] Explicit Paris-local day —
+        // see toggle() comment. `daily_reset_at` is DATE column; predicate
+        // `whereDate('daily_reset_at', '<', $today)` compares plain Y-m-d.
+        $today = Carbon::today(config('app.timezone'))->toDateString();
 
         foreach ($order->orderItems as $line) {
             $qty = (int) $line->quantity;

@@ -93,6 +93,13 @@ class NF525ComplianceE2ETest extends TestCase
         $this->admin->assignRole('Admin');
         $this->admin->givePermissionTo('pos-destroy-paid');
         $this->admin->givePermissionTo('pos-manage-fiscal');
+        // [HEAL-4 / PROPOSAL-02 — V101-02 2026-05-26] New pos-refund permission
+        // gate added to PosOrderController::refundWithCounterEntry. Scenario 6
+        // (refund post-Z mirror) calls the route → requires the new permission.
+        if (!\Spatie\Permission\Models\Permission::where('name', 'pos-refund')->where('guard_name', 'sanctum')->exists()) {
+            \Spatie\Permission\Models\Permission::create(['name' => 'pos-refund', 'guard_name' => 'sanctum']);
+        }
+        $this->admin->givePermissionTo('pos-refund');
 
         $this->cashier = User::factory()->create([
             'branch_id' => $this->branch->id,

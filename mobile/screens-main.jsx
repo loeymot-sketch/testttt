@@ -100,7 +100,7 @@ function ScreenHome({ go, name = 'Ikyes' }) {
         </div>
 
         {/* marquee categories */}
-        <Marquee items={['🔥 Fait maison', '🍔 Smash burgers', '🌮 Tacos', '🥣 Bowls', '🌯 Wraps', '🍗 Buckets']}/>
+        <Marquee items={['🌶 Sauce Cayenne maison', '🥖 Sandwichs faluche', '🌮 Tacos M & L', '🥣 Bols Frites/Riz', '🍔 Burgers brioché', '🍟 Frites Cheddar', '🧒 Menu enfant', '⚡ Prêt en 8 min']}/>
 
         {/* featured signature card */}
         <div style={{ padding: '20px 20px 0' }}>
@@ -118,7 +118,7 @@ function ScreenHome({ go, name = 'Ikyes' }) {
                   <button className="lc-btn lc-btn--ink" style={{ height: 40, padding: '0 16px', fontSize: 11, alignSelf: 'flex-start' }}>Commander <I.Arrow size={14} stroke="var(--orange)"/></button>
                 </div>
                 <div style={{ width: 150, position: 'relative' }}>
-                  <Slot id={featured.thumb} h="100%" radius={0} placeholder={featured.name} src={featured.hero} alt={featured.name}/>
+                  <Slot id={featured.thumb} h="100%" radius={0} placeholder={featured.name} src={featured.hero} alt={featured.name} fit="contain"/>
                   <div style={{ position: 'absolute', bottom: 14, right: 14, background: '#0A0A0A', color: '#FFD93D', fontFamily: 'var(--font-display)', fontSize: 22, padding: '6px 12px', borderRadius: 8 }}>{featured.price.toFixed(2).replace('.', ',')} €</div>
                 </div>
               </div>
@@ -193,7 +193,7 @@ function ScreenHome({ go, name = 'Ikyes' }) {
           </div>
           <div style={{ width: 32, height: 4, background: 'var(--orange)', marginBottom: 12 }}/>
           <h3 className="lc-display" style={{ margin: 0, fontSize: 26, color: 'var(--yellow)' }}>LE CAYENNE<br/>HÉNIN-BEAUMONT</h3>
-          <p style={{ margin: '12px 0 0', fontSize: 13, lineHeight: 1.5, color: 'rgba(255,255,255,0.75)' }}>Abdoullah en cuisine, fait maison chaque jour. Smash burgers, bowls, tacos — du peuple, pour le peuple.</p>
+          <p style={{ margin: '12px 0 0', fontSize: 13, lineHeight: 1.5, color: 'rgba(255,255,255,0.75)' }}>Abdoullah en cuisine, fait maison chaque jour à Hénin-Beaumont. Sandwich Cayenne signature, bols gourmands, tacos M & L — du peuple, pour le peuple.</p>
           <div style={{ marginTop: 18, paddingTop: 14, borderTop: '1px solid rgba(255,255,255,0.12)', display: 'flex', justifyContent: 'space-between', fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
             <span>Ouvert 11h — 00h</span>
             <span style={{ color: 'var(--orange)' }}>06 51 30 XX XX</span>
@@ -658,7 +658,7 @@ function ScreenCart({ go, cart, setCart }) {
         <div style={{ margin: '20px 20px 0', padding: 16, background: 'var(--yellow)', borderRadius: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ width: 40, height: 40, borderRadius: 10, background: 'var(--ink)', color: 'var(--orange)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><I.Gift size={20}/></div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 13, fontWeight: 700 }}>+{Math.round(total)} pts gagnés sur cette commande</div>
+            <div style={{ fontSize: 13, fontWeight: 700 }}>+{Math.round(total || 0)} pts gagnés sur cette commande</div>
             <div style={{ fontSize: 11, color: 'var(--gray-4)', marginTop: 2 }}>Plus que 153 pts pour ton burger gratuit</div>
           </div>
         </div>
@@ -672,7 +672,7 @@ function ScreenCart({ go, cart, setCart }) {
             {ITEMS.filter(i => i.cat === 'sides' || i.cat === 'drinks' || i.cat === 'desserts').slice(0, 5).map(it => (
               <div key={it.id} onClick={() => go('item', it.id)} style={{ flex: '0 0 130px', background: 'var(--cream)', borderRadius: 12, padding: 8, cursor: 'pointer' }}>
                 <div style={{ height: 80, borderRadius: 8, overflow: 'hidden', background: 'var(--ink)' }}>
-                  <Slot id={it.slot} h="100%" radius={0} placeholder={it.name} src={it.image} alt={it.name}/>
+                  <Slot id={it.slot} h="100%" radius={0} placeholder={it.name} src={it.image} alt={it.name} fit="contain"/>
                 </div>
                 <div style={{ marginTop: 6, fontSize: 12, fontWeight: 700, lineHeight: 1.2 }}>{it.name}</div>
                 <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -939,8 +939,8 @@ function ScreenProfile({ go }) {
           return (
             <div style={{ padding: '14px 20px 0' }}>
               <div role="button" tabIndex={0} aria-label={`Carte fidélité — ${lAcc.balance} points, voir détails`} className="lc-tap" onClick={() => go('loyalty')} onKeyDown={window.lcTapKey(() => go('loyalty'))} style={{ position: 'relative', background: 'var(--ink)', color: '#fff', borderRadius: 20, padding: 20, overflow: 'hidden', cursor: 'pointer' }}>
-                <div style={{ position: 'absolute', top: -30, right: -30, width: 180, height: 180, borderRadius: 999, background: 'var(--orange)', opacity: 0.18 }}/>
-                <div style={{ position: 'absolute', top: -10, right: -10, width: 100, height: 100, borderRadius: 999, background: 'var(--yellow)', opacity: 0.18 }}/>
+                <div style={{ position: 'absolute', top: -30, right: -30, width: 180, height: 180, borderRadius: 999, background: 'var(--orange)', opacity: 0.42 }}/>
+                <div style={{ position: 'absolute', top: -10, right: -10, width: 100, height: 100, borderRadius: 999, background: 'var(--yellow)', opacity: 0.30 }}/>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
                   <I.Gift size={18} stroke="var(--yellow)"/>
                   <span className="lc-eyebrow" style={{ color: 'var(--yellow)' }}>Carte fidélité</span>
@@ -1208,7 +1208,7 @@ function ScreenLoyalty({ go }) {
             {tab === 'points' && !isEmpty && (
               <div id="loyalty-tabpanel-points" role="tabpanel" style={{ display: 'grid', gap: 8 }}>
                 {config.tiers.map(tier => {
-                  const matchingReward = rewards.find(r => r.points_cost === tier) || { name: '−' + (tier / config.redeem_ratio).toFixed(2).replace('.', ',') + ' €', icon: '💶', points_cost: tier };
+                  const matchingReward = rewards.find(r => r.points_cost === tier) || { name: '−' + (tier / config.redeem_ratio).toFixed(2).replace('.', ',') + ' €', icon: '🎁', points_cost: tier };
                   const unlocked = balance >= tier;
                   const missing = unlocked ? 0 : tier - balance;
                   return (
@@ -1343,7 +1343,8 @@ function PromoCodeRow({ onApply }) {
   const apply = () => {
     const trimmed = code.trim().toUpperCase();
     if (!trimmed) return;
-    if (trimmed === 'WELCOME10' || trimmed === 'CAYENNE') {
+    // [FULL-FLOW HEAL 2026-05-18 P0-2] Unify promo codes with web (WELCOME10 + CAYENNE + CAYENNE10)
+    if (trimmed === 'WELCOME10' || trimmed === 'CAYENNE' || trimmed === 'CAYENNE10') {
       setStatus('applied');
       setAppliedCode(trimmed);
       if (typeof onApply === 'function') onApply(trimmed);

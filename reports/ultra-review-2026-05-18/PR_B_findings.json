@@ -1,0 +1,189 @@
+{
+  "scope": "PR-B Borne / Kiosk",
+  "branch": "v1-0-1-hardening-2026-05-17",
+  "head": "a34d1f696",
+  "reviewed_plan": "plans/ultra-plans-2026-05-18/PR_B_BORNE_KIOSK_ULTRA_PLAN_REVIEW_2026-05-18.md",
+  "verdict": "GO-CONDITIONAL (with 1 NEW P0 to add)",
+  "counts": {
+    "p0_plan_confirmed": 1,
+    "p0_new": 1,
+    "p1_confirmed": 4,
+    "p2_confirmed": 6,
+    "p2_new": 2
+  },
+  "plan_findings_status": [
+    {
+      "id": "P0-K1",
+      "title": "Composer profile drift surfaces as 'le choix #N n'appartient pas au profil publié'",
+      "verdict": "CONFIRMED EXACT",
+      "anchor_verified": "app/Services/Pricing/PricingService.php:693",
+      "notes": "Throw site is assertComposerSelectionsBelongToPublishedProfile (lines 659-699), invoked from line 603 inside validateRequestItems. Sub-cause analysis sound. Listener InvalidateKioskMenuCacheOnCatalogChange IS wired (EventServiceProvider line 223). Server cache evicted but SPA in-memory cache NOT. Plan cites ComposerProfileService.php:142,149 — actual lines are 142 (updated), 169 (published), 245 (unpublished). Minor cite error."
+    },
+    {
+      "id": "P1-K2-i18n",
+      "title": "i18n key-path migration debt (kiosk.wizard.confirmation residual)",
+      "verdict": "ALREADY CLOSED on this HEAD",
+      "anchor_verified": "resources/js/languages/{fr,en,ar,bn,de}.json — 0 hits for 'kiosk.wizard.confirmation'",
+      "notes": "T-B7 should be reduced to assertion-only sentinel (the rebase landmine is closed)."
+    },
+    {
+      "id": "P1-K2-frlock",
+      "title": "FR-lock invariant (ADR-007) not enforced server-side",
+      "verdict": "CONFIRMED",
+      "anchor_verified": "app/Http/Middleware/ValidateKioskLocale.php:31-98",
+      "notes": "Middleware validates against Branch.activeLocales() only. config('kiosk.locale_switch_allowed') is exposed but never read for enforcement. A hostile client can send X-Kiosk-Locale: en on a branch with multi-locale enabled even when V1 FR-lock should block. T-B3 plan is correct fix."
+    },
+    {
+      "id": "P1-K3",
+      "title": "FrontendOrderService kiosk machine resolution silent-pick",
+      "verdict": "CONFIRMED",
+      "anchor_verified": "app/Services/FrontendOrderService.php:144,184",
+      "notes": "where('user_id', Auth::id())->first() without ordering. Under BranchScope, admin (branch_id=0) sees all branches; staff sees only its own. T-B4 fix sound. Alternative: deterministic orderBy(branch_id) or DB UNIQUE(user_id, branch_id) constraint."
+    },
+    {
+      "id": "P1-K4",
+      "title": "OrderQuoteService kiosk lookup BranchScope asymmetry vs login path",
+      "verdict": "CONFIRMED",
+      "anchor_verified": "app/Services/Order/OrderQuoteService.php:172-184 vs app/Http/Controllers/Auth/KioskMachineLoginController.php:55,90",
+      "notes": "Login path uses withoutGlobalScope(BranchScope::class). Quote path does not. Mismatched intent. T-B5 one-line fix."
+    },
+    {
+      "id": "P1-K5",
+      "title": "PosController::quote kiosk-surface ability gate is session-guard-permissive",
+      "verdict": "CONFIRMED with NEW nuance",
+      "anchor_verified": "app/Http/Controllers/Admin/PosController.php:164-215 + app/Services/Order/OrderQuoteService.php:167-170",
+      "notes": "On api/frontend/*, permission:pos is bypassed. OrderQuoteService::resolveBranchId tokenCan check is gated by `$token !== null`. Session/guard-auth users with TransientToken pass through. T-B6 sentinel essential. Also need to assert TransientToken bypass closed."
+    },
+    {
+      "id": "P2-K6",
+      "title": "Frozen-zone drift vs main (audit-only)",
+      "verdict": "CONFIRMED EXACT",
+      "anchor_verified": "git diff --stat main..HEAD -- resources/js/components/frontend/kiosk/*.vue",
+      "loc": {
+        "KioskWizardComponent.vue": "+1903 / -257",
+        "KioskAppComponent.vue": "+1009 / -42",
+        "KioskUpsellComponent.vue": "+57 / -8"
+      },
+      "notes": "Expected per BRAIN §2 (iter1-14 + Wave Z accumulation). Baseline = HEAD@phase0 snapshot. T-B8 sentinel design pattern correct."
+    },
+    {
+      "id": "P2-K7",
+      "title": "Composer profile cache fanout to kiosk SPA missing",
+      "verdict": "CONFIRMED",
+      "anchor_verified": "app/Listeners/InvalidateKioskMenuCacheOnCatalogChange.php + app/Providers/EventServiceProvider.php:223",
+      "notes": "Server cache invalidated. SPA in-memory store (kioskMenu.js) not notified — refetches lazily. T-B9 Pusher broadcast pattern aligns with Wave 5G SettingsUpdated fanout."
+    },
+    {
+      "id": "P2-K8",
+      "title": "Wizard a11y focus order on touch screen",
+      "verdict": "PRESUMED OPEN (not deep-read this round)",
+      "notes": "Frozen-zone-test-allowed pattern. Vitest spec per T-B11."
+    },
+    {
+      "id": "P2-K9",
+      "title": "KioskLocale observability noise",
+      "verdict": "CONFIRMED",
+      "anchor_verified": "app/Http/Middleware/ValidateKioskLocale.php:43-49,77-84",
+      "notes": "Info-level logs on every bad-locale. No cardinality control. T-B10 fix straightforward."
+    },
+    {
+      "id": "P2-K10",
+      "title": "KioskMachineLoginController logout sweep under BranchScope",
+      "verdict": "CONFIRMED EXACT",
+      "anchor_verified": "app/Http/Controllers/Auth/KioskMachineLoginController.php:117-121",
+      "notes": "KioskMachine::where('user_id', $user->id)->get() under BranchScope. Inconsistent with login path which uses withoutGlobalScope. One-line fix in T-B12 cluster."
+    },
+    {
+      "id": "P2-K11",
+      "title": "Kiosk SPA token storage in localStorage (XSS surface)",
+      "verdict": "CONFIRMED",
+      "anchor_verified": "resources/js/store/modules/kioskCart.js:202,384,392 + resources/js/store/index.js:267",
+      "notes": "state.kioskToken persisted via vuex-persistedstate (localStorage). Mitigations rely on CSP script-src restrictions — verify via T-B12 spec."
+    },
+    {
+      "id": "P2-K12",
+      "title": "KioskEvent throttle 30/min may be tight",
+      "verdict": "CONFIRMED",
+      "anchor_verified": "routes/api.php:1232,1278",
+      "notes": "30/min for telemetry. Wave Z noted possible drops. T-B12 measurement-driven approach correct."
+    }
+  ],
+  "new_findings": [
+    {
+      "id": "P0-NEW1",
+      "severity": "P0",
+      "title": "Kiosk machine credentials exposed unauthenticated on /kiosk/* URLs via master.blade.php inline JS",
+      "anchors": [
+        "resources/views/master.blade.php:113",
+        "app/Http/Controllers/Frontend/RootController.php:14-20",
+        "routes/web.php:62",
+        "config/kiosk.php:133-145"
+      ],
+      "mechanism": "routes/web.php:62 catch-all Route::get('/{any}', RootController::index)->middleware(['installed']) matches /kiosk/* with no auth gate. Blade line 113 injects 'kioskAutoLogin: @json(request()->is(\"kiosk*\") ? config(\"kiosk.spa_payload\") : null)'. config('kiosk.spa_payload') returns {username, password} cleartext from env. APP_ENV=local hardcodes kiosk-lecayenne/kiosk123.",
+      "exploit_path": "curl https://host/kiosk/idle → HTML contains window.foodkingConfig.kioskAutoLogin = {username, password} → use vs /api/auth/kiosk-login → mint kiosk:order Sanctum token → place orders / scrape data.",
+      "mitigation_options": [
+        "Option A: Server-side runtime guard (IP allowlist, local network only) wrapped around the @json conditional",
+        "Option B: Client-certificate (mTLS) gate so credentials never in HTML",
+        "Option C: Remove KIOSK_MACHINE_USERNAME/PASSWORD env; require manual machine login first boot"
+      ],
+      "task_id_recommended": "T-B0",
+      "estimate_hours": "2-4",
+      "owner_gate_required": true,
+      "sentinel_test": "tests/Feature/Kiosk/KioskAutoLoginPayloadUnauthenticatedAccessTest.php — GET /kiosk/idle no-auth → assert no plaintext password in response body"
+    },
+    {
+      "id": "P2-NEW2",
+      "severity": "P2",
+      "title": "MenuController::kiosk cache key not scoped by locale",
+      "anchor": "app/Http/Controllers/Frontend/MenuController.php:67",
+      "notes": "$cacheKey = \"kiosk.menu.branch.{$branchId}\" — locale not in key. If KioskMenuService::build returns locale-dependent strings, first cacher wins for 60s default TTL. UX bug, not security.",
+      "mitigation": "Suffix cache key with resolved locale; or document why KioskMenuService::build is locale-invariant."
+    },
+    {
+      "id": "P2-NEW3",
+      "severity": "P2",
+      "title": "PricingPreviewController lacks defense-in-depth tokenCan check at controller layer",
+      "anchor": "app/Http/Controllers/Frontend/PricingPreviewController.php:33-44",
+      "notes": "Controller relies on PricingPreviewRequest::authorize() which returns user->tokenCan('kiosk:order'). TransientToken returns true for any ability, so session-guard admin could reach the handler — gated only by absence of KioskMachine row (503).",
+      "mitigation": "Add explicit if ($user->currentAccessToken() !== null && ! $user->tokenCan('kiosk:order')) return 401."
+    }
+  ],
+  "acceptance_critique": {
+    "T-B1_T-B2": "Approach sound. Pusher broadcast requires Echo client wiring on SPA — pair commit with T-B9.",
+    "T-B3": "Pass. Also block ?lang= query path symmetrically (ValidateKioskLocale.php:106-108 reads query).",
+    "T-B4": "Better to use deterministic orderBy(branch_id) or DB UNIQUE constraint than introduce 422 KIOSK_MULTI_MACHINE_AMBIGUOUS.",
+    "T-B5": "LGTM one-line fix.",
+    "T-B6": "Sentinel essential. Also assert TransientToken bypass closed (P1-K5 nuance).",
+    "T-B7": "Reduce scope to assertion-only — i18n converged already on this HEAD.",
+    "T-B8": "Verify baseline diff file exists or create pre-merge.",
+    "T-B9": "Pair with T-B1.",
+    "T-B10_T-B11_T-B12": "LGTM.",
+    "T-B0_NEW": "ADD: close P0-NEW1. Owner-gate the mitigation strategy."
+  },
+  "frozen_zone_drift": {
+    "verified": "0 touch by PR-B on the 9 frozen kiosk frontend components",
+    "expected_baseline_diff_vs_main": {
+      "KioskWizardComponent.vue": "+1903",
+      "KioskAppComponent.vue": "+1009",
+      "KioskUpsellComponent.vue": "+57",
+      "rationale": "iter1-14 + Wave Z accumulation; baseline is HEAD@phase0 not main (BRAIN §2)"
+    },
+    "nf525_chain": "Unchanged. No PricingService edits in plan T-B1..T-B12. NF525 SSOT preserved."
+  },
+  "owner_gates": [
+    {
+      "id": "OG-B1",
+      "title": "Choose mitigation strategy for kiosk credential exposure (P0-NEW1)",
+      "blocking": true,
+      "options": ["A: IP allowlist", "B: mTLS client cert", "C: Remove env auto-login"]
+    },
+    {
+      "id": "OG-B2",
+      "title": "PricingService.php edit only if T-B1 root-cause fix requires (plan §6)",
+      "blocking": false,
+      "notes": "Plan T-B1 + T-B2 do NOT need PricingService edits — close as not-needed."
+    }
+  ],
+  "estimated_revised_wall_clock_hours": "14-18 (includes T-B0)",
+  "final_recommendation": "GO-CONDITIONAL on PR-B with: (1) MUST add T-B0 for P0-NEW1, owner-gate strategy. (2) MUST commit T-B1+T-B2+T-B9 together. (3) SHOULD reduce T-B7 to assertion-only."
+}

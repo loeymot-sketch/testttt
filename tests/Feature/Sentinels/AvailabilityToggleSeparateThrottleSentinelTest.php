@@ -12,13 +12,20 @@ use Tests\TestCase;
  *   (30 req/min) avec POST /api/admin/pos. Pendant un rush, un caissier qui toggle
  *   un item OOS puis submit une commande peut atteindre la limite et hit 429
  *   (self-DoS). On extrait UNIQUEMENT le toggle availability dans un groupe
- *   sibling avec throttle:60,1 — bucket dédié 60/min, indépendant du bucket
+ *   sibling avec une limite dédiée — bucket dédié, indépendant du bucket
  *   admin-mutation.
  *
  *   IMPORTANT : le groupe doit être SIBLING, pas imbriqué. Si on imbrique
- *   `->middleware('throttle:60,1')` à l'intérieur du groupe `throttle:admin-mutation`,
- *   Laravel additionne les deux et la limite effective devient min(30, 60) = 30/min.
- *   Cette assertion négative est la garantie load-bearing.
+ *   `->middleware('throttle:menu-availability')` à l'intérieur du groupe
+ *   `throttle:admin-mutation`, Laravel additionne les deux et la limite effective
+ *   devient min(admin-mutation-cap, menu-availability-cap). Cette assertion
+ *   négative est la garantie load-bearing.
+ *
+ *   [GOAL Phase F.1 2026-05-23] Bucket renommé `throttle:60,1` →
+ *   `throttle:menu-availability` (named limiter, env-driven via
+ *   MENU_AVAILABILITY_RATE_LIMIT). Default 60/min préservé pour
+ *   backwards-compat ; local dev raise à 1000/min pour absorber le bulk-86
+ *   fan-out depuis /admin/stock-rupture-dashboard.
  *
  * Récurrent RED-R3 → ORCHESTRATOR → B3 — sentinel anti-régression obligatoire.
  */
@@ -37,10 +44,17 @@ class AvailabilityToggleSeparateThrottleSentinelTest extends TestCase
 
         $middleware = $route->gatherMiddleware();
 
-        $this->assertContains(
-            'throttle:60,1',
-            $middleware,
-            'Expected the toggle route to declare its dedicated throttle:60,1 bucket.'
+        // [GOAL Phase F.1 2026-05-23] Accept either the legacy hardcoded
+        // `throttle:60,1` or the new named limiter `throttle:menu-availability`.
+        // Either form keeps the sibling bucket isolated from admin-mutation
+        // (the load-bearing property covered by the negative assertion below).
+        $hasDedicatedBucket = in_array('throttle:60,1', $middleware, true)
+            || in_array('throttle:menu-availability', $middleware, true);
+
+        $this->assertTrue(
+            $hasDedicatedBucket,
+            'Expected the toggle route to declare a dedicated throttle bucket — '
+            . 'either the legacy `throttle:60,1` form or the named `throttle:menu-availability` form.'
         );
     }
 

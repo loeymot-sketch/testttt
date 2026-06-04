@@ -1,0 +1,186 @@
+{
+  "agent": "G.12 Backup restore drill",
+  "phase": "G",
+  "task": "G.12",
+  "date_utc": "2026-05-23T22:01Z",
+  "tz_paris": "2026-05-23T23:01 Europe/Paris",
+  "head_commit": "69279bc85",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "scope_description": "Empirical re-verification of NF525 6-year retention restore drill — fresh backup at HEAD + restore round-trip + bit-identical chain validation + older backup restore + forensic HMAC walk on 5 audit_logs rows of restored DB.",
+
+  "source_db_at_head": {
+    "audit_logs": 67,
+    "z_reports": 6,
+    "orders": 134,
+    "items": 59,
+    "tables_total": 88,
+    "audit_logs_last_hash": "4d92d827cfc05f3da0f2bca60540cfd5c9750845500cc4cefa6a97915f8dd069",
+    "audit_logs_first_hash": "945f14b4a101a29ff0fc4807a1096bdade899981a6e61b1ce6aa829fb5bd8e4f",
+    "z_reports_last_signature": "709ab5f86d297ea74dce66e883e48492610ae3b65ae3163c94217dbf2c6f8fa3"
+  },
+
+  "latest_backup": {
+    "path": "storage/backups/db-daily/daily-2026-05-23.sql.gz",
+    "size_bytes": 166347,
+    "sha256": "63393bcf77fba7fbc553cab102f2e0b198373cbe0a5b462731d88ab8b813f9f3",
+    "gzip_integrity": "OK",
+    "produced_at": "2026-05-23T23:01 Europe/Paris",
+    "method": "php artisan foodking:backup-daily (Laravel cmd at HEAD)",
+    "mysqldump_flags": "--single-transaction --routines --triggers --events --set-gtid-purged=OFF",
+    "size_warn_threshold_breached": true,
+    "size_warn_reason": "166347 < 1048576 (1 MB warn floor) — plausible for local dev DB, hard floor 1024 passed"
+  },
+
+  "older_backup": {
+    "path": "storage/backups/db-daily/daily-2026-05-21.sql.gz",
+    "size_bytes": 90767,
+    "sha256": "7cf09571f48baa31e3f40515ebe82e28dbd20e3809043f34eee9b84172200295",
+    "age_days": 2,
+    "gzip_integrity": "OK",
+    "sha256_matches_committed_proof_doc": true,
+    "committed_proof_doc": "scripts/db/RESTORE_DRILL_2026-05-21.md",
+    "comment": "SHA256 byte-identical to value recorded in committed restore drill doc 2 days ago — confirms backup file untampered."
+  },
+
+  "restore_drill_fresh_backup": {
+    "target_db": "foodking_restore_test",
+    "creation": "DROP DATABASE IF EXISTS + CREATE DATABASE utf8mb4 utf8mb4_unicode_ci",
+    "restore_method": "gunzip -c <backup> | mysql foodking_restore_test",
+    "mysql_restore_exit_code": 0,
+    "restored_counts": {
+      "audit_logs": 67,
+      "z_reports": 6,
+      "orders": 134,
+      "items": 59,
+      "tables_total": 88
+    },
+    "table_count_match": true,
+    "audit_logs_count_match": true,
+    "z_reports_count_match": true,
+    "orders_count_match": true,
+    "items_count_match": true,
+    "audit_logs_last_hash_bit_identical": true,
+    "audit_logs_first_hash_bit_identical": true,
+    "z_reports_last_signature_bit_identical": true,
+    "z_reports_all_6_signatures_bit_identical": true,
+    "fiscal_verify_chain_command": "DB_DATABASE=foodking_restore_test php artisan fiscal:verify-chain --all",
+    "fiscal_verify_chain_result": "+ branch=1 CHAIN OK | SWEEP COMPLETE — CHAIN OK on every active branch (1 total)",
+    "restored_chain_ok": true,
+    "env_override_airtight_probe": {
+      "method": "Re-restored fresh backup into foodking_restore_verify, then `DB_DATABASE=foodking_restore_verify php artisan tinker --execute='echo DB::connection()->getDatabaseName()'`",
+      "connection_name_echoed": "foodking_restore_verify",
+      "config_cache_present": false,
+      "bootstrap_cache_config_php_exists": false,
+      "verifyChain_branch1_on_restored": "CHAIN_OK",
+      "audit_logs_count_via_env_override": 67,
+      "z_reports_count_via_env_override": 6,
+      "verdict": "Env override empirically picked up at runtime — verify-chain + forensic walk results are not phantom-source-DB readings. Belt-and-suspenders confirmation (direct mysql probes already proved restore correctness independently)."
+    }
+  },
+
+  "restore_drill_older_backup": {
+    "target_db": "foodking_restore_old",
+    "source_backup": "daily-2026-05-21.sql.gz",
+    "mysql_restore_exit_code": 0,
+    "restored_counts": {
+      "audit_logs": 62,
+      "z_reports": 0,
+      "orders": 38,
+      "items": 59,
+      "tables_total": 88
+    },
+    "counts_match_committed_proof": true,
+    "committed_proof_values": "audit_logs=62 z_reports=0 orders=38 items=59 tables=88 (per scripts/db/RESTORE_DRILL_2026-05-21.md)",
+    "fiscal_verify_chain_result": "+ branch=1 CHAIN OK | SWEEP COMPLETE",
+    "restored_chain_ok": true,
+    "comment": "Verified 2-day-old backup round-trips bit-identically (62/0/38/59/88 + CHAIN OK). HONEST CAVEAT: task asked for ≥7d-old backup; only 2d-old artifact available because storage/backups/db-monthly/ and db-quarterly/ dirs are EMPTY today (verified by `ls` — see G12-F-03 below). 6-year retention path is structurally implemented (RunDailyBackup.php rotate() copies day-1 daily→monthly and Jan/Apr/Jul/Oct day-1 daily→quarterly) but NOT yet empirically observable because the V1 LOCAL deployment is still inside its first month. Recommendation: re-run G.12 drill after next month-1 to validate the rotation actually emits a monthly snapshot, and again after first quarterly cutoff (Jul 1) to validate quarterly cutting. Today's drill proves the daily-tier path and chain-preservation invariant — it does NOT prove the 30d/12mo/24q rotation path empirically (only structurally)."
+  },
+
+  "nf525_triggers_preservation": {
+    "trigger_count_per_db": 3,
+    "triggers_per_db": [
+      "audit_logs_no_delete (BEFORE DELETE)",
+      "audit_logs_no_update (BEFORE UPDATE)",
+      "z_reports_no_delete (BEFORE DELETE)"
+    ],
+    "preserved_in_source_foodking": true,
+    "preserved_in_foodking_restore_test_fresh": true,
+    "preserved_in_foodking_restore_old": true,
+    "verdict": "NF525 BEFORE DELETE / BEFORE UPDATE triggers preserved on restored DBs — immutability invariant survives backup round-trip thanks to --triggers --routines mysqldump flags."
+  },
+
+  "forensic_hmac_walk": {
+    "scope": "Last 5 audit_logs rows on foodking_restore_test (restored from fresh backup)",
+    "method": "AuditLogService::computeHash() re-execution comparing recomputed vs stored current_hash",
+    "rows": [
+      { "id": 63, "action": "cash.movement.recorded", "prev16": "5f3e65722d4a34b7", "stored16": "8d9a7f6af3c86b37", "recomputed16": "8d9a7f6af3c86b37", "match": "OK" },
+      { "id": 64, "action": "cash.movement.recorded", "prev16": "8d9a7f6af3c86b37", "stored16": "8daed68a65b8c8e7", "recomputed16": "8daed68a65b8c8e7", "match": "OK" },
+      { "id": 65, "action": "cash.movement.recorded", "prev16": "8daed68a65b8c8e7", "stored16": "0d6263ebfa7f1950", "recomputed16": "0d6263ebfa7f1950", "match": "OK" },
+      { "id": 66, "action": "order.refund.counter_entry", "prev16": "0d6263ebfa7f1950", "stored16": "167a6e4583be7257", "recomputed16": "167a6e4583be7257", "match": "OK" },
+      { "id": 67, "action": "order.refund.counter_entry", "prev16": "167a6e4583be7257", "stored16": "4d92d827cfc05f3d", "recomputed16": "4d92d827cfc05f3d", "match": "OK" }
+    ],
+    "all_match": true,
+    "verdict": "5/5 HMAC bit-identical between stored and recomputed on restored DB — confirms (a) backup preserves payload + branch_secret + chain-pointer integrity, (b) HMAC algorithm round-trips exactly."
+  },
+
+  "cleanup": {
+    "foodking_restore_test_dropped": true,
+    "foodking_restore_old_dropped": true,
+    "source_db_modified": false
+  },
+
+  "findings": [
+    {
+      "id": "G12-F-01",
+      "severity": "P2",
+      "title": "Sidecar .sha256 files are not produced by `php artisan foodking:backup-daily`",
+      "evidence": "ls storage/backups/db-daily/*.sha256 → zsh: no matches found. RunDailyBackup.php writes only the .sql.gz, no sidecar.",
+      "impact": "The official restore script scripts/restore-foodking-from-backup.sh requires the sidecar (line 38: `[[ -f \"$SHA\" ]] || fail \"checksum sidecar missing: $SHA\"`). A first-responder reaching for that script against a storage/backups/ artifact will get an immediate hard fail and have to fall back to manual gunzip | mysql (what this drill did). The production cron path (scripts/backup-foodking-daily.sh writing to /var/backups/foodking/) DOES produce .sha256 — so the gap exists only for the Laravel-cmd lane.",
+      "disposition": "V1.0.2 backlog — either (a) extend RunDailyBackup to emit .sha256 alongside the .sql.gz, or (b) update scripts/restore-foodking-from-backup.sh to accept --skip-checksum when sidecar absent, or (c) document the two-track separation in BACKUP_RESTORE_NF525.md runbook so on-call knows the storage/backups/ lane requires manual checksum verification.",
+      "non_blocking_for_v1": true,
+      "rationale_non_blocking": "Today's V1 LOCAL Le Cayenne single-box deployment uses the Laravel cmd lane scheduled via Kernel.php — restore drill via direct gunzip | mysql verified working empirically here AND in the committed RESTORE_DRILL_2026-05-21.md doc. Production /var/backups/foodking/ cron lane separately produces sidecars and is what scripts/restore-foodking-from-backup.sh targets."
+    },
+    {
+      "id": "G12-F-02",
+      "severity": "P3",
+      "title": "Backup size 166 KB < 1 MB warn floor on fresh local DB",
+      "evidence": "`dump under warn-bytes threshold (166347 < 1048576) — plausible on fresh local DB but verify` — warn line in backup-run.txt",
+      "impact": "Owner intent (RunDailyBackup.php docblock) is to surface suspiciously small dumps on a real restaurant DB. On dev (134 orders / 67 audit_logs / 59 items) 166 KB is plausible. In production with 1000+ daily orders this floor would surface real truncation. Not a defect.",
+      "disposition": "Informational — keep threshold as-is. The warn (not fail) discipline is correct.",
+      "non_blocking_for_v1": true
+    },
+    {
+      "id": "G12-F-03",
+      "severity": "P2",
+      "title": "≥7-day-old / monthly / quarterly backups do not yet exist — 6-year retention rotation path not empirically observable today",
+      "evidence": "Verified by `ls -lt storage/backups/db-monthly/` and `ls -lt storage/backups/db-quarterly/` both returning empty (only `.gitkeep` placeholder). storage/backups/db-daily/ has 2 artifacts: daily-2026-05-21 (2d) + daily-2026-05-23 (today). Oldest dump available = 2 days old. RunDailyBackup.php rotate() seeds monthly only on day-of-month==1 and quarterly only on Jan/Apr/Jul/Oct day-1 — V1 LOCAL deployment is still inside its first month, so structurally no monthly artifact exists yet.",
+      "impact": "Task G.12.4 asked for empirical verification of ≥7d-old backup restorability to prove the 6-year retention path. We can prove (a) daily-tier restorability bit-identically (done — see restore_drill_fresh_backup + restore_drill_older_backup sections), and (b) the rotation code path STRUCTURALLY (read of RunDailyBackup::rotate at lines 325-388). We CANNOT today prove empirically that the rotation actually emits monthly/quarterly artifacts and that those artifacts also round-trip — there are no such artifacts to test against.",
+      "disposition": "Re-run G.12 cycle: (1) on day-1 of the next calendar month to verify a monthly-YYYY-MM.sql.gz appears in db-monthly/, restore it, verify CHAIN OK. (2) on first Jul 1 / Oct 1 / Jan 1 to verify a quarterly-YYYY-Qn.sql.gz appears in db-quarterly/, restore it, verify CHAIN OK. (3) cron task scheduled to auto-run the drill quarterly (suggestion from RESTORE_DRILL_2026-05-21.md §'Future drill cadence'). Until then, the 24-quarter NF525 retention is structurally-implemented but empirically-unproven for tiers 2 and 3.",
+      "non_blocking_for_v1": true,
+      "rationale_non_blocking": "V1 LOCAL Le Cayenne ship date is BEFORE first month-rollover would produce a monthly artifact. The daily tier — which is what the restaurant relies on for next-day restorability — is fully verified. Monthly/quarterly tiers serve longer-term NF525 audit (6-year inspector retrieval) and will be validatable once first rotation actually emits. No code change required — the rotation logic is in place and code-inspected GREEN; only the empirical attestation is deferred."
+    }
+  ],
+
+  "evidence_artifacts": [
+    "reports/test-e2e/goal-2026-05-23/phase-g/G12-backup-restore-drill-findings.json (this file)",
+    "reports/test-e2e/goal-2026-05-23/phase-g/G12-backup-run.txt (php artisan foodking:backup-daily output)",
+    "storage/backups/db-daily/daily-2026-05-23.sql.gz (166347 B, SHA256 63393bcf77fba7fbc553cab102f2e0b198373cbe0a5b462731d88ab8b813f9f3)",
+    "storage/backups/db-daily/daily-2026-05-21.sql.gz (90767 B, SHA256 7cf09571f48baa31e3f40515ebe82e28dbd20e3809043f34eee9b84172200295 — matches committed proof)"
+  ],
+
+  "verdict": "GREEN",
+  "verdict_rationale": [
+    "Fresh backup at HEAD (commit 69279bc85) produced successfully — gzip integrity OK, SHA256 recorded.",
+    "Full restore round-trip executed empirically into foodking_restore_test → all 88 tables + 67 audit_logs + 6 z_reports + 134 orders + 59 items restored bit-identical to source (counts match exactly).",
+    "audit_logs first hash + last hash + z_reports last signature bit-identical between source and restored — chain pointer integrity proven.",
+    "`php artisan fiscal:verify-chain --all` returns CHAIN OK on restored DB — restored chain re-verifies under the live algorithm.",
+    "Forensic HMAC walk on 5 audit_logs rows: 5/5 PASS — recomputed HMAC equals stored current_hash, confirming both payload preservation AND branch_secret accessibility post-restore.",
+    "Older backup (daily-2026-05-21.sql.gz, 2 days old) restored independently into foodking_restore_old → 62/0/38/59/88 matches committed RESTORE_DRILL_2026-05-21.md proof exactly. Chain OK. SHA256 of the committed dump still bit-identical to value recorded in the proof doc 2 days ago — proves no silent file tampering. CAVEAT: task asked for ≥7d-old backup; the 2d-old artifact is the OLDEST available because V1 deployment is still inside its first month and monthly/quarterly dirs are empty (see G12-F-03).",
+    "NF525 BEFORE DELETE + BEFORE UPDATE triggers on audit_logs + z_reports preserved across both restored DBs — immutability invariant survives backup round-trip (mysqldump --triggers flag honoured).",
+    "Env-override probe airtight: re-restored fresh backup into foodking_restore_verify, confirmed `DB::connection()->getDatabaseName()` echoes the test DB name (not source), confirmed verifyChain runs against restored chain. No config cache present (bootstrap/cache/config.php absent) so DB_DATABASE override is picked up at runtime.",
+    "Test DBs (foodking_restore_test + foodking_restore_old + foodking_restore_verify) cleaned up. Source DB untouched.",
+    "Three non-blocking findings: P2 sidecar gap (G12-F-01), P3 warn threshold on dev DB (G12-F-02), P2 monthly/quarterly rotation empirically-unobservable until first rotation cycle (G12-F-03). None breaks the V1 restore path."
+  ],
+
+  "drift_from_committed_proof": "ZERO regression. Fresh-cycle row counts (67/6/134/59/88) differ from committed proof (62/0/38/59/88) because real activity has happened since 2026-05-21 — expected. The OLD backup restore independently verified the committed proof counts byte-identically."
+}

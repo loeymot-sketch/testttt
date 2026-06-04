@@ -1,0 +1,73 @@
+{
+  "intersection": "POS x Stock",
+  "specialist": "Security",
+  "scope": "Cross-branch stock leak, unauthorized decrement vectors, BranchScope coverage",
+  "round": 1,
+  "timestamp": "2026-05-18",
+  "anchors_reviewed": [
+    "app/Models/StockLevel.php (BranchScope global)",
+    "app/Models/StockMovement.php (BranchScope global)",
+    "app/Models/Scopes/BranchScope.php",
+    "app/Services/Stock/StockService.php (lines 86-91, 390-395)",
+    "app/Services/Stock/ChoiceAvailabilityResolver.php (lines 216-251)",
+    "app/Http/Controllers/Admin/PosController.php (no direct stock calls)",
+    "app/Services/Menu/AvailabilityService.php (releaseForOrderItems item_id/branch_id assertions)"
+  ],
+  "findings": [
+    {
+      "id": "PSTK-S-1",
+      "severity": "P0-MITIGATED",
+      "title": "BranchScope global on StockLevel + StockMovement closes cross-tenant leak — verified",
+      "evidence": "StockLevel::boot() line 25 + StockMovement::boot() line 23 both register BranchScope. BranchScope::apply() filters queries by branch_id when (web context OR phpunit tests) AND Auth::check(). Admin (branch_id=0) bypass preserved. StockService queries explicitly add WHERE branch_id (lines 87-89, 391-393) which is REDUNDANT with the global scope but provides defense-in-depth. ChoiceAvailabilityResolver does the same (line 216).",
+      "impact": "Cross-tenant stock leak NOT exploitable via Eloquent queries. A multi-branch admin user could not see Branch B's stock_levels through Branch A's POS UI.",
+      "recommendation": "Add a regression test under tests/Feature/Multitenant/ asserting that a staff (branch_id=1) querying StockLevel::all() returns ONLY branch_id=1 rows. Currently StockBranchIsolationTest only tests the forBranch scope helper, not the global BranchScope guard.",
+      "files": ["app/Models/StockLevel.php:25", "app/Models/StockMovement.php:23"],
+      "heal_allowed": false,
+      "heal_reason": "No code change needed -- the gap is missing test coverage. Add to V1.0.1 sentinels."
+    },
+    {
+      "id": "PSTK-S-2",
+      "severity": "P2",
+      "title": "Raw DB::table queries bypass BranchScope in AvailabilityService::releaseForOrderItems",
+      "evidence": "AvailabilityService.php line 630 uses DB::table('order_items')->where('id', $orderItemId)->lockForUpdate()->first() -- this BYPASSES the OrderItem BranchScope. The function then validates item_id AND branch_id from the line item match the DB row (lines 644-654), so a forged $orderItemId pointing to another branch's order_item would be REJECTED with 'availability release skipped (line item mismatch)' log. SAFE in practice.",
+      "impact": "If a future caller passes attacker-controlled order_item_id values, the line_item_mismatch guard catches them. Cross-branch release attack vector is closed by the (item_id + branch_id) double-key check.",
+      "recommendation": "Document the implicit security contract: callers MUST supply item_id and branch_id matched against the order_item_id payload. Consider adding a phpunit test asserting cross-branch release IS rejected (currently only the warning log proves it, no assertion). Add to V1.0.1 sentinel suite.",
+      "files": ["app/Services/Menu/AvailabilityService.php:630-654"],
+      "heal_allowed": false,
+      "heal_reason": "AvailabilityService.php = Menu service, not in our intersection scope mandate. Defer."
+    },
+    {
+      "id": "PSTK-S-3",
+      "severity": "P1",
+      "title": "No HTTP-level authorization gate documented for stock decrement entry points",
+      "evidence": "Stock decrement is only triggered via OrderCreated/OrderCanceled/RefundCreated events. There is NO HTTP endpoint allowing direct stock manipulation (verified via grep on app/Http/Controllers/). The Spatie permission 'settings' gates StockRuptureDashboardController (admin manual toggle), but that goes through AvailabilityService::toggleExtra/toggleVariation, not the order-driven decrement path. POS submit goes through PosOrderRequest -> OrderService.posStore which requires Auth::check() (POS staff session).",
+      "impact": "No direct stock-tampering attack surface via HTTP. The only way to mutate stock is via legitimate order submission, which requires authenticated session + branch context.",
+      "recommendation": "Add a sentinel test asserting NO HTTP route allows direct StockService::decrementForOrder or releaseForOrder calls (currently a grep test would suffice). Add to V1.0.1.",
+      "files": ["app/Http/Controllers (none)"],
+      "heal_allowed": false
+    },
+    {
+      "id": "PSTK-S-4",
+      "severity": "P2",
+      "title": "StockMovement append-only DB triggers landed but TRUNCATE bypass not REVOKE-ed in prod doc",
+      "evidence": "Migration 2026_05_18_140000_add_stock_movements_immutability_triggers.php lines 54-55 (comment): 'TRUNCATE TABLE stock_movements bypasses MySQL triggers — mitigation = REVOKE TRUNCATE on prod DB user (deploy doc scope, not migration).' Same caveat as audit_logs/z_reports immutability migrations. The doc note is correct but easily missed.",
+      "impact": "If a prod DB user has TRUNCATE grant (default in many MySQL installs since TRUNCATE counts as DROP+CREATE), a malicious or compromised user could wipe stock_movements bypassing triggers. Audit trail loss.",
+      "recommendation": "Add a deploy-doc gate documented in docs/PRODUCTION_DEPLOYMENT_CHECKLIST.md (or equivalent): REVOKE DROP, ALTER, CREATE on `stock_movements` from app DB user; only DBA role gets TRUNCATE. Defense-in-depth same pattern as audit_logs/z_reports. V1.0.1 deploy hardening.",
+      "files": ["database/migrations/2026_05_18_140000_add_stock_movements_immutability_triggers.php:54-55"],
+      "heal_allowed": false,
+      "heal_reason": "Deploy doc concern, not code-level fix."
+    },
+    {
+      "id": "PSTK-S-5",
+      "severity": "INFO",
+      "title": "Idempotency key namespace 'stock:' + sha1 — deterministic, no collision vector",
+      "evidence": "StockService::movementKey lines 327-344: keys are 'stock:' + sha1(reason | order_class | order_id | line_uid | stockable_type | stockable_id). For order_created reason, $seed is NEVER appended -- so the inline call at OrderService:894 (with seed) and the listener call (without seed) produce identical keys, ensuring single decrement. Cryptographically resistant collision space ~2^160.",
+      "impact": "Positive -- key construction is deterministic and unforgeable across attempts.",
+      "recommendation": "No action.",
+      "files": ["app/Services/Stock/StockService.php:327-344"],
+      "heal_allowed": false
+    }
+  ],
+  "verdict": "SECURITY POSTURE OK FOR V1 - 0 P0, 1 P1 (no HTTP route audit sentinel), 3 P2 (test/deploy-doc gaps)",
+  "summary": "Stock mutation is event-only, no direct HTTP attack surface. BranchScope global on StockLevel + StockMovement closes cross-tenant leak. ChoiceAvailabilityResolver applies explicit branch_id filter. The migration 2026_05_18_140000 closes the raw-query DB-level bypass that was the only remaining vector. Three P2 items are test/deploy-doc completeness items (TRUNCATE REVOKE doc, BranchScope sentinel, no-direct-HTTP-stock sentinel). All deferrable to V1.0.1."
+}

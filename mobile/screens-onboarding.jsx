@@ -69,7 +69,7 @@ function ScreenOnb1({ onNext, onSkip }) {
       </div>
       {/* Hero signature photo (Phase 6.A real-assets) */}
       <div style={{ position: 'absolute', bottom: -20, left: 24, right: 24, height: 280 }}>
-        <Slot id="onb-burger" h="100%" radius={20} placeholder="Hero burger" src="assets/menu/signature/cayenne-hero.png" alt="Le Cayenne signature"/>
+        <Slot id="onb-burger" h="100%" radius={20} placeholder="Burger signature" src="assets/menu/signature/cayenne-hero.png" alt="Le Cayenne signature"/>
       </div>
     </div>
   );
@@ -81,7 +81,7 @@ function ScreenOnb1({ onNext, onSkip }) {
       onSkip={onSkip}
       eyebrow="01 — Bienvenue"
       title={<>Salut, c'est <span style={{ color: 'var(--orange)' }}>Le&nbsp;Cayenne</span></>}
-      body="Smash burgers, tacos, bowls — fait maison à Hénin-Beaumont. Du peuple, pour le peuple."
+      body="Sandwichs Cayenne, tacos M&L, bols gourmands — fait maison à Hénin-Beaumont. Du peuple, pour le peuple."
       accent="var(--orange)"
     />
   );
@@ -94,7 +94,7 @@ function ScreenOnb2({ onNext, onSkip }) {
       <div style={{ position: 'absolute', top: -20, left: -10, right: -10, fontFamily: 'var(--font-display)', fontSize: 280, color: '#FF5A1F', opacity: 0.95, textAlign: 'center', lineHeight: 0.85 }}>30s</div>
       <div style={{ position: 'absolute', top: 36, left: 24, fontSize: 11, color: '#FFD93D', fontWeight: 700, letterSpacing: '0.32em', textTransform: 'uppercase' }}>// Speedrun</div>
       <div style={{ position: 'absolute', bottom: 28, left: 24, right: 24, height: 260 }}>
-        <Slot id="onb-tender" h="100%" radius={20} placeholder="Tenders dipped in sauce" src="assets/menu/generated_tenders-12-pieces.png" alt="Tenders croustillants"/>
+        <Slot id="onb-tender" h="100%" radius={20} placeholder="Tenders trempés dans la sauce" src="assets/menu/generated_tenders-12-pieces.png" alt="Tenders croustillants"/>
       </div>
       {/* sticker callouts */}
       <div style={{ position: 'absolute', top: 200, right: 22, transform: 'rotate(8deg)', background: '#FFD93D', color: '#0A0A0A', fontFamily: 'var(--font-display)', fontSize: 18, padding: '8px 14px', borderRadius: 8, boxShadow: '4px 4px 0 #FF5A1F' }}>3 TAPS</div>

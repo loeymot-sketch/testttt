@@ -25,7 +25,13 @@ class MailRequest extends FormRequest
     public function rules() : array
     {
         return [
-            'mail_host'       => ['required', 'string', 'max:190'],
+            // [GOAL-L2-HEAL-04 2026-05-24] L7.2 F-02 P1 — SafeRemoteHost
+            // rejects admin-supplied mail_host pointing at loopback /
+            // link-local / RFC1918 / cloud-metadata IP ranges. Prevents
+            // SMTP-driven internal-VPC probe + AWS metadata-service exfil
+            // primitive. See app/Rules/SafeRemoteHost.php docblock for the
+            // full forbidden-range list.
+            'mail_host'       => ['required', 'string', 'max:190', new \App\Rules\SafeRemoteHost()],
             'mail_port'       => ['required', 'string', 'max:190'],
             'mail_username'   => ['required', 'string', 'max:190'],
             'mail_password'   => ['required', 'string', 'max:190'],

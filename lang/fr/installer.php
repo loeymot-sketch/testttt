@@ -2,11 +2,11 @@
 
 
 return [
-    'title' => 'Installateur FoodKing',
+    'title' => 'Installateur Le Cayenne',
     'next'  => 'Étape suivante',
     'welcome' => [
         'templateTitle' => 'Bienvenue',
-        'title'         => 'Installateur FoodKing',
+        'title'         => 'Installateur Le Cayenne',
         'message'       => 'Assistant d’installation et de configuration.',
         'next'          => 'Vérifier les prérequis',
     ],
@@ -75,7 +75,7 @@ return [
         'next'            => 'Terminer',
     ],
     'installed' => [
-        'success_log_message' => 'Installateur FoodKing installé avec succès le ',
-        'update_log_message'  => 'Installateur FoodKing mis à jour avec succès le ',
+        'success_log_message' => 'Installateur Le Cayenne installé avec succès le ',
+        'update_log_message'  => 'Installateur Le Cayenne mis à jour avec succès le ',
     ],
 ];

@@ -114,6 +114,22 @@ class DispatchDomainEventsJob implements ShouldQueue
                 // `connection('pusher')` — breaks CI/tests when PUSHER_* env is unset.
                 $broadcaster = app(BroadcastManager::class)->connection();
                 $broadcaster->broadcast($channels, $domainEvent->broadcast_as, $envelope);
+
+                // [GOAL-CMS-2026-05-18 S-P0-A heal] R1 SRE-001:
+                // ws:heartbeat cache key was READ by SyncOverviewController:531
+                // but NEVER WRITTEN anywhere — admin observability dashboard
+                // stayed green-emerald while Pusher died silently. Successful
+                // broadcast proves Pusher is responsive: stamp the cache key
+                // with the wall-clock timestamp. 120s TTL > 4× the per-surface
+                // polling window (POS 30s / KDS 5-60s / Kiosk 15s — see
+                // config/broadcasting.php for the per-surface SoT note,
+                // heal B.3 2026-05-19). Wrapped best-effort: observability
+                // must NEVER break outbox dispatch.
+                try {
+                    \Illuminate\Support\Facades\Cache::put('ws:heartbeat', now()->timestamp, 120);
+                } catch (Throwable $heartbeatException) {
+                    // best-effort observability — swallow
+                }
             }
 
             // [NEW-04] Non-blocking telemetry: record dispatch latency on the
@@ -141,8 +157,7 @@ class DispatchDomainEventsJob implements ShouldQueue
             // [NEW-01] Phase 3b — release the claim so the queue retry
             // ($tries / $backoff curve documented at top of class) can re-attempt
             // cleanly. Preserves PayloadMismatchException semantics:
-            // last_error is populated AND the original exception is rethrown so the
-            // job lands in failed_jobs after all attempts exhausted.
+            // last_error is populated AND the failed() callback fires once.
             $domainEvent->forceFill([
                 'dispatched_at' => null,
                 'last_error' => $e instanceof PayloadMismatchException
@@ -156,6 +171,19 @@ class DispatchDomainEventsJob implements ShouldQueue
                     'event_type' => $domainEvent->event_type,
                     'errors' => $e->errors,
                 ]);
+
+                // [F-3 SYNC P1 V1.0.1 quick win — 2026-05-19]
+                // Contract violations are NOT retry-recoverable: the payload
+                // itself is malformed, so re-attempting wastes 6 'high' queue
+                // messages per bad event (with the $backoff curve). 1000 bad
+                // payloads = 6000 useless messages saturating the high lane.
+                // Short-circuit via $this->fail() so the job lands in
+                // failed_jobs immediately and the failed() callback fires once.
+                // Source: reports/audit/foundation-2026-05-18/round-1/F-3-SYNC/STATUS.md §P1
+                // Sentinel: tests/Feature/Sentinels/PayloadMismatchFailOnceSentinelTest.php
+                $this->fail($e);
+
+                return;
             }
 
             throw $e;

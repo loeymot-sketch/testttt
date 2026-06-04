@@ -29,3 +29,21 @@ button:focus-visible,
     outline: 3px solid #1d4ed8;
     outline-offset: 2px;
 }
+
+/*
+ * [A11Y-KB-P1 heal 2026-05-29] Wave E A11Y-KB agent caught :
+ * - POS search input.pos-v5-search-input__field had outline:none / no ring
+ * - Admin items vue-select div#vs__-combobox > input had no visible focus
+ * Extend focus-visible to interactive inputs + custom combobox.
+ * Mirror the button ring (#1d4ed8 3px solid + 2px offset).
+ */
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[role="combobox"]:focus-visible,
+[role="combobox"] input:focus-visible,
+.vs__search:focus-visible,
+.pos-v5-search-input__field:focus-visible {
+    outline: 3px solid #1d4ed8 !important;
+    outline-offset: 2px !important;
+}

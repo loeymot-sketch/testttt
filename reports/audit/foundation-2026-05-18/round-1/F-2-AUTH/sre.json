@@ -1,0 +1,90 @@
+{
+  "specialist": "SRE",
+  "zone": "F-2 Auth + Security",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "date": "2026-05-18",
+  "mode": "READ-ONLY",
+  "scope_summary": "Rate-limit config effectiveness, middleware order in Kernel.php, throttle bucket scoping, log levels for auth failures.",
+  "files_read": [
+    "app/Http/Kernel.php",
+    "app/Providers/RouteServiceProvider.php",
+    "app/Http/Middleware/TrustProxies.php",
+    "app/Http/Middleware/TrustHosts.php",
+    "app/Http/Middleware/CorrelationIdMiddleware.php (via inventory)",
+    "app/Http/Middleware/EnsureUserStatusActive.php",
+    "config/auth.php",
+    "config/app.php (login_lockout)",
+    "routes/api.php"
+  ],
+  "findings": {
+    "P1_sre": [
+      {
+        "id": "F-2-SRE-01",
+        "title": "No structured logging on auth failure paths. LoginController returns 400 JSON on credentials_invalid, kiosk_machine_inactive, kiosk_user_inactive, role_exist, etc. without any Log::warning() / Log::notice() call. Brute-force attempts are visible only via the rate-limiter (which emits Laravel's default ThrottleRequests 429 response). For a single-restaurant V1 a SIEM is not deployed; for V1.0.2 / production hardening this is a gap.",
+        "evidence": "Greps for 'Log::warning|Log::error|auth.failure|login.failed' in app/Http/Controllers/Auth/ returned ZERO hits.",
+        "category": "RECOMMENDATION",
+        "user_impact": "Forensic gap: if an attacker is brute-forcing a real staff email and the per-email lockout absorbs the noise, the only signal is in storage/logs/laravel.log if Laravel internally logs throttle hits (it does not by default). Owner cannot answer 'was account X targeted last week?'",
+        "proposed_v1_action": "V1.0.2 quick win: 4 lines in LoginController.login() after credentials_invalid -> Log::channel('security')->warning('auth.login.failed', ['email'=>..., 'ip'=>...]) + same in KioskMachineLoginController. New log channel + retention policy in config/logging.php. Backlog-able."
+      },
+      {
+        "id": "F-2-SRE-02",
+        "title": "TrustProxies::$proxies='*' is correct for the LAN nginx+PHP-FPM topology BUT documented gotcha: if ever fronted by a public load balancer that doesn't strip X-Forwarded-For (e.g. naive cloud setup), an attacker can spoof source IP -> defeats every per-IP rate-limit AND poisons access logs. Wave 3c added TrustHosts as the partial mitigation (host header anchored) BUT $proxies='*' itself is intentionally permissive for the local deploy.",
+        "evidence": "TrustProxies.php:24 `protected $proxies = '*';` with explicit comment at lines 13-22.",
+        "category": "KEEP-AS-IS",
+        "user_impact": "Acceptable for V1 single-restaurant on localhost. Risk emerges only on public hosting -- which BRAIN feedback_no_cloud_until_owner_initiates_2026-05-18 confirms is deferred.",
+        "proposed_v1_action": "None V1. Production-readiness checklist for the day cloud-deploy is greenlit: validate proxy IP allowlist (e.g. AWS ELB private CIDRs) and tighten $proxies to that range."
+      }
+    ],
+    "P2_sre": [
+      {
+        "id": "F-2-SRE-03",
+        "title": "Rate-limit bucket inventory in RouteServiceProvider::configureRateLimiting -- 10 distinct named limiters: api (120/min default), kiosk-orders (5/min), kiosk-menu (60/min), admin-mutation (30 or 120/min for POS), pos-quote (120/min), pos-order-create (60/min), pos-order-update (120/min), kiosk-login (30/min by username|ip), oss-public (60/min IP-only), login-lockout (10 per 10min by email|ip). All keyed correctly with `user?->id ?: ip` or composite keys. login-lockout uses is_string() guard against fuzz array attack (W8.B REM B3) -- defensive.",
+        "evidence": "RouteServiceProvider.php:50-173. Comment block at :154-173 explicitly defends against email[]=foo array casts.",
+        "category": "KEEP-AS-IS",
+        "user_impact": "Working, well-documented. Each bucket has rationale comments.",
+        "proposed_v1_action": "None V1. The /authcheck endpoint at routes/api.php:202 has NO rate-limit -- post-Sanctum it's safe (auth:sanctum is implicit via the outer 'auth' group) but worth a 60/min belt-and-braces. Not a P1."
+      },
+      {
+        "id": "F-2-SRE-04",
+        "title": "Middleware priority array in Kernel.php:80-95 is locally extended to insert EnsureUserStatusActive AFTER AuthenticatesRequests. Without this explicit override, Laravel's parent default would `array_unshift` an unknown middleware to position 0 -- placing it BEFORE auth resolves and bypassing the gate. This is non-obvious; future Laravel upgrade may shift the parent array and require re-validation.",
+        "evidence": "Kernel.php:72-93 with full audit comment.",
+        "category": "KEEP-AS-IS",
+        "user_impact": "Correctly gated. Working.",
+        "proposed_v1_action": "Add a Sentinel feature test that asserts EnsureUserStatusActive runs after Sanctum's TokenGuard resolves a user (existing tests if any cover this -- not validated by this audit). V1.0.2 task."
+      },
+      {
+        "id": "F-2-SRE-05",
+        "title": "/api/auth/authcheck (routes/api.php:202-236) returns full user + permission + menu payload. Used on SPA hydration. Public exposure of an authenticated user's role/menu structure is by design (the user needs it). BUT there is NO throttle bucket on this endpoint specifically (it inherits the prefix 'auth' group's apiKey + localization only). A logged-in client could call /authcheck in a tight loop and burn CPU on PermissionResource::collection + MenuService->menu queries.",
+        "evidence": "routes/api.php:202-236. No ->middleware('throttle:...') chain on the Route::post('/authcheck').",
+        "category": "RECOMMENDATION",
+        "user_impact": "Low. Single-restaurant V1. Not exploitable externally without a valid login. Resource exhaustion vector internal-only.",
+        "proposed_v1_action": "V1.0.2 add ->middleware('throttle:60,1') to /authcheck. 1-line change."
+      },
+      {
+        "id": "F-2-SRE-06",
+        "title": "Auth uses Sanctum 'sanctum' guard for API, 'web' guard for login transient session (LoginController.php:60 `Auth::guard('web')->attempt` -> :100 `Auth::guard('web')->logout` to close it). The deliberate handshake (open web -> rehash -> revoke prior tokens -> issue PAT -> close web) is correct and well-commented but COMPLEX. Future devs may regress by skipping the logout. Hardcoded by the comment block at LoginController.php:82-86.",
+        "evidence": "LoginController.php:82-100.",
+        "category": "KEEP-AS-IS",
+        "user_impact": "Working, documented.",
+        "proposed_v1_action": "None V1. Feature test exists likely. Not validated by this read-only audit."
+      }
+    ],
+    "P3_sre": []
+  },
+  "rate_limit_coverage_matrix": {
+    "auth_login": "throttle:login-lockout (10 / 10min by email|ip) -- routes/api.php:153",
+    "auth_kiosk_login": "throttle:kiosk-login (30/min by username|ip) -- routes/api.php:160",
+    "forgot_password_send": "throttle:3,60 (3/hour) -- routes/api.php:165",
+    "forgot_password_verify": "throttle:5,1 -- routes/api.php:167",
+    "forgot_password_reset": "throttle:5,1 -- routes/api.php:169",
+    "signup_otp": "throttle:5,1 -- routes/api.php:175",
+    "signup_verify": "throttle:3,5 -- routes/api.php:178",
+    "signup_register": "throttle:10,1 -- routes/api.php:180",
+    "guest_signup_otp": "throttle:5,1 -- routes/api.php:186",
+    "guest_signup_verify": "throttle:3,5 -- routes/api.php:191",
+    "logout_kioskLogout_deleteAccount": "INHERIT 'auth:sanctum' group throttle (none explicit). Re-using normal 'api' bucket 120/min via auth:sanctum chain via outer group. ACCEPTABLE.",
+    "authcheck": "NO EXPLICIT THROTTLE -- see F-2-SRE-05"
+  },
+  "frozen_zones_touched": false,
+  "wall_clock_minutes": 6
+}

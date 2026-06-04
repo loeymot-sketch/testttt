@@ -1,0 +1,156 @@
+{
+  "mission": "SUPERVISOR WAVE C — Z2 RED ADVERSARIAL NF525 cross-cut (hostile read-only)",
+  "date": "2026-05-28",
+  "auditor": "RED Z2 (hostile)",
+  "head_at_audit": "fcfef17fd",
+  "evidence_mode": "static-source + live read-only mysql + prior-cycle artefact dispute",
+  "frozen_zone_touched": "NONE",
+  "verdict": "NEEDS_HARDENING",
+  "verdict_rationale": "N2 alone (no signed NF525-conformant Z PDF blade exists; the only PDF on disk is self-labeled 'Document interne — Synthèse NON-fiscale') is a NF525 art. 286-I-3 bis CGI conformity gap, not 'P2 polish' as the prior Z2 agent's z-close-pdf.json CAV-2 downgraded it. URSSAF / DGFiP day-1 audit would refuse the EOD PDF as the fiscal artefact AND find no fiscal artefact in any printable form. Additional N1/N5/N6/N7 surface latent risks documented as P1/P2 hardening below.",
+  "prior_z2_agents_dispute": {
+    "refund.json": "S1+S3 PASS confirmed empirically. NOT DISPUTED on what was tested. Disputed for SCOPE GAP: S2 partial-refund 'NOT_SUPPORTED_BY_SERVICE' is buried as informational; for NF525 it is acceptable (all-or-nothing mirror is conservative), but for V1 LOCAL UX it is a known cashier-blocker on real refund (drop 1 frite from 3-item order = must refund whole order = bigger NF525 negative + bigger customer perception of error). Flag as V1.0.2 backlog, not a NF525 violation.",
+    "z-close-pdf.json": "PASS verdict DISPUTED. CAV-1 ('two PDF endpoints, two contracts') and CAV-2 ('SIRET absent V1 LOCAL config gap') are downgraded as informational/P2. RED: both together = the system has NO signed NF525-compliant fiscal Z PDF at all. The blade itself disclaims 'non-fiscale' (line 186). NEEDS_HARDENING is the honest verdict."
+  },
+  "findings": [
+    {
+      "id": "N1-AUDIT-TRUNCATE-VULNERABILITY",
+      "title": "MySQL BEFORE DELETE trigger does NOT block TRUNCATE on audit_logs / z_reports",
+      "severity": "P1",
+      "evidence_mode": "static",
+      "file_line": [
+        "database/migrations/2026_04_22_000002_create_audit_logs_table.php:97-115 (BEFORE UPDATE/DELETE only)",
+        "database/migrations/2026_05_09_160000_add_z_reports_delete_trigger_immutability.php:30-31 (acknowledges TRUNCATE bypasses triggers)",
+        "CLAUDE.md §8 references Ansible task CVP0-1 commit f840c3ef5 as GRANT-level REVOKE mitigation"
+      ],
+      "reproduction": "mysql -uroot foodking -e 'TRUNCATE TABLE audit_logs' (sandbox-denied in this cycle; behaviour is well-known MySQL semantics — TRUNCATE = metadata DDL, fires no row triggers). Detection IS preserved by FiscalChainValidator on next Z.open() because chain becomes empty (genesis prev_hash mismatch on next Z) — but evidence is permanently destroyed AND fiscal:verify-chain returns 'CHAIN OK' on the empty chain (no rows = no errors). Operator opens a Z and sees normal behaviour.",
+      "what_prior_agents_said": "Not surfaced. CLAUDE.md §8 documents the GRANT REVOKE mitigation but no in-app boot guard or runtime probe verifies the GRANT state at production startup.",
+      "what_red_disputes": "Mitigation lives OUTSIDE the codebase (Ansible). No AppServiceProvider boot guard checks SHOW GRANTS FOR @CURRENT_USER for absence of DROP/TRUNCATE on audit_logs|z_reports. If operator forgets the Ansible task, or future migration recreates the user with default grants, the immutability claim silently collapses. Add boot-guard probe (RuntimeException refusing prod boot if CURRENT_USER has DROP or TRUNCATE on the two tables). Today: blocked-by-policy, not blocked-by-code.",
+      "remediation": "AppServiceProvider production boot-guard: SELECT PRIVILEGE_TYPE FROM information_schema.USER_PRIVILEGES + table-grants; throw if DROP|REFERENCES|TRUNCATE present on audit_logs|z_reports. Mirrors the existing POS_SIMULATION_HARDWARE / CACHE_DRIVER pattern."
+    },
+    {
+      "id": "N2-NO-FISCAL-Z-PDF-BLADE-EXISTS",
+      "title": "ZReportController::pdf() returns JSON only; no NF525-conformant signed Z PDF blade in resources/views/pdf/",
+      "severity": "P0",
+      "evidence_mode": "empirical (file listing + blade source)",
+      "file_line": [
+        "app/Http/Controllers/Admin/Fiscal/ZReportController.php:79-95 (returns JSON {z_report, verified, generated_at}, NOT a PDF)",
+        "resources/views/pdf/ inventory: eod_synthesis.blade.php + online_orders.blade.php + items_report.blade.php + sales_report.blade.php — NO z_report blade, NO cloture_fiscale blade",
+        "resources/views/pdf/eod_synthesis.blade.php:186 verbatim disclaimer: 'Document interne — Synthèse non-fiscale. Pour la clôture fiscale officielle, se référer au Rapport Z journalier signé HMAC (NF525, art. 286-I-3 bis du CGI). Conservation 6 ans.'",
+        ".playwright-mcp/cloture-jour-2026-05-28.pdf (1.28 MB binary PDF produced by Pdf::loadView('pdf.eod_synthesis') at DashboardController:228)"
+      ],
+      "reproduction": "grep -nE 'SIRET|TVA intra|N° Z|Numéro Z|fiscal_sequence_no|signature|prev_hash' resources/views/pdf/eod_synthesis.blade.php → ZERO matches. find resources/views/pdf -name '*z_report*' OR '*fiscal*' OR '*cloture*' → ZERO results. ZReportController::pdf() docblock line 73-78 admits: 'The actual PDF rendering is delegated to a later view layer' — that view layer was NEVER built. The signed JSON is the only NF525-grade artefact; cashier/owner has NO printable receipt of daily fiscal closure.",
+      "missing_nf525_fields_per_attack_brief": {
+        "SIRET": "ABSENT from eod_synthesis blade entirely (not even an empty placeholder line). Prior agent claimed 'config gap — empty in V1 LOCAL'. RED: blade has no $company['siret'] interpolation token at all.",
+        "adresse_etablissement": "PARTIAL — line 57 prints company_address if not empty. NF525 requires it unconditionally on the fiscal document.",
+        "tva_cumulative_breakdown_by_rate": "ABSENT in eod_synthesis. ZReportService aggregates total_by_tax_rate (ZReportService.php:414-419) and stores it on z_reports row, but blade does NOT render it.",
+        "date_debut_fin_periode": "PARTIAL — only single date displayed (line 61). NF525 fiscal Z is opened_at→closed_at window, not a calendar day.",
+        "cumul_ventes_periodique": "ABSENT — eod_synthesis is single-day. Cumulative cross-day totals required for fiscal Z (since-last-Z, since-genesis cumul).",
+        "numero_z_sequentiel": "ABSENT — eod_synthesis carries no z_reports.sequence_no anywhere.",
+        "signature_HMAC_prefix": "ABSENT — fiscal Z signature is NOT printed (would make the artefact self-verifying à la NF525 art. 286-I-3 bis).",
+        "prev_hash_chain_link": "ABSENT."
+      },
+      "what_prior_agents_said": "z-close-pdf.json CAV-1: 'two PDF endpoints, two contracts ... informational'. CAV-2: 'SIRET absent V1 LOCAL config gap, P2 polish'. Verdict was Z_LIVE_VERIFIED PASS.",
+      "what_red_disputes": "The 'two PDF endpoints' framing hides the truth: there is ONE PDF endpoint (EOD synthese) and ONE JSON endpoint (signed bundle). NEITHER renders a fiscal-compliant printable Z. NF525 art. 286-I-3 bis CGI requires the daily Z to be reproducible from the signed payload — i.e. the operator/auditor must be able to print/verify the Z. The signed JSON bundle IS the fiscal artefact in theory but has no human-printable form. The EOD PDF self-disclaims 'non-fiscale'. This is a code-level missing-feature, not a config polish.",
+      "remediation": "Create resources/views/pdf/z_report.blade.php with the 8 NF525 fields above. Wire from ZReportController::pdf() with a ?format=pdf query parameter (keep JSON for API consumers, PDF for printable). Add SIRET to config/company.php + .env scaffold + Settings UI. Render TVA breakdown from z_reports.total_by_tax_rate JSON column. Print signature_prefix + prev_hash_prefix in footer."
+    },
+    {
+      "id": "N3-REFUND-NONEXISTENT-OR-DUPLICATE",
+      "title": "Refund on non-existent order: 404 via Route Model Binding (OK). Refund on already-refunded parent: defense-in-depth dual-guard.",
+      "severity": "OK",
+      "evidence_mode": "static",
+      "file_line": [
+        "routes/api.php:961 Route::post('/{order}/refund-with-counter-entry') uses RMB → automatic 404 on missing model",
+        "app/Services/Order/RefundWithCounterEntryService.php:86-91 status==RETURNED guard (belt)",
+        "app/Http/Controllers/Admin/PosOrderController.php:102-108 catches QueryException 23000 → 409 MIRROR_ALREADY_EXISTS (suspenders, from migration 2026_05_19_200000 UNIQUE(orders.parent_order_id))"
+      ],
+      "reproduction": "POST /api/v1/admin/pos-order/999999/refund-with-counter-entry → 404. POST a second refund on parent already refunded → 409 (UNIQUE collision) OR 422 (status==RETURNED, dormant path).",
+      "what_red_disputes": "Nothing to dispute. Dual-layer is correct. Note however: the 422 path at service:86-91 is documented as 'dormant — primary enforcement at DB level since migration 2026_05_19_200000'. If the migration ever rolls back (it has no production-block at down(), unlike audit_logs), the dormant guard becomes load-bearing. Add down() prod-block to that migration."
+    },
+    {
+      "id": "N4-MIRROR-ORDERING",
+      "title": "Mirror created AFTER parent (timestamp + id), fresh fiscal_sequence_no (no collision)",
+      "severity": "OK",
+      "evidence_mode": "empirical (prior S1 evidence)",
+      "file_line": [
+        "refund.json S1 evidence: parent id=226 seq=38 → mirror id=227 seq=39 (post-parent on both axes)",
+        "RefundWithCounterEntryService.php:103-128 reserves $mirrorSeq via FiscalSequenceService::next() THEN Order::create → both ids and fiscal_seq are post-parent by construction"
+      ],
+      "what_red_disputes": "Nothing. Verified."
+    },
+    {
+      "id": "N5-CONCURRENT-CLOSE-RACE",
+      "title": "Two simultaneous close attempts: defense-in-depth (Cache::lock + ZReport::lockForUpdate + status='open' WHERE on first row)",
+      "severity": "OK_WITH_CAVEAT",
+      "evidence_mode": "static",
+      "file_line": [
+        "ZReportService.php:191-197 Cache::lock('z_report_b{N}') TTL 10s, ACQUIRE 4s",
+        "ZReportService.php:205-208 ZReport::query->where(status=OPEN)->lockForUpdate()->first() inside DB transaction",
+        "ZReportService.php:210-212 throws RuntimeException 'no open Z report to close for branch X' if second arrives after first commits"
+      ],
+      "what_red_disputes": "Race protection is correct (lock + tx + lockForUpdate triple-defense). CAVEAT: under cache outage (CLAUDE.md §8 production guards forbid array/null drivers, but file driver passes — cross-process file-cache semantics on local FS are OS-dependent), Cache::lock can degenerate. The DB lockForUpdate + status='open' WHERE is the ultimate floor — losing party gets 'no open Z report to close' which is a noisy but safe failure mode. P2 hardening: add a fiscal:health-probe command verifying Cache::lock cross-process semantics on chosen driver before production boot."
+    },
+    {
+      "id": "N6-REFUND-INSIDE-CURRENT-Z-WINDOW",
+      "title": "Refund of order inside current OPEN Z window → SealedOrderGuard::assertSealed throws 422 → cashier MUST use standard pre-Z path (changeStatus → RETURNED)",
+      "severity": "OK_WITH_OBSERVABILITY_GAP",
+      "evidence_mode": "static + S3 empirical proof",
+      "file_line": [
+        "app/Services/Order/SealedOrderGuard.php:84-114 assertSealed throws InvalidArgumentException 422",
+        "app/Services/Order/RefundWithCounterEntryService.php:73-74 calls assertSealed('refund-with-counter-entry')",
+        "ZReportService.php:355-357 aggregate() excludes status IN (CANCELED, REJECTED, RETURNED) so pre-Z RETURNED orders correctly drop out of Z totals"
+      ],
+      "reproduction": "Prior S3 PASS evidence proves the 422 rejection. Refund must take pre-Z path. Z aggregate then correctly excludes the RETURNED order via terminal_status whitelist (NOT via separate negative). Z totals adjust by NOT counting the order — different mathematical path than post-Z mirror counter-entry.",
+      "what_red_disputes": "Logic is correct. OBSERVABILITY GAP: the 422 is surfaced to the cashier as a message, but no audit_logs row is written when a pre-Z RETURNED transition happens via OrderService::changeStatus. The post-Z mirror writes 'order.refund.counter_entry' (service:301-316); the pre-Z RETURNED path does NOT have a symmetric 'order.refund.pre_z' audit row. URSSAF would expect a refund event on BOTH paths. Verify OrderService::changeStatus audit-trail coverage and add equivalent audit_logs write for pre-Z RETURNED transitions."
+    },
+    {
+      "id": "N7-POST-Z-SEQUENCE-CONTINUITY",
+      "title": "Post-Z new order receives next fiscal_sequence_no with no gap, no overlap (algorithmically guaranteed)",
+      "severity": "OK_NOT_EMPIRICALLY_VERIFIED_THIS_CYCLE",
+      "evidence_mode": "static",
+      "file_line": [
+        "app/Services/Fiscal/FiscalSequenceService.php:97-103 MAX(fiscal_sequence_no) +1 per branch, WHERE branch_id=X WITHOUT BranchScope + withTrashed()",
+        "Cache::lock + lockForUpdate + DB UNIQUE(orders_branch_fiscal_seq_unique) triple-defense"
+      ],
+      "what_red_disputes": "Algorithm is correct. Two latent risks: (a) FiscalSequenceService:97 uses withTrashed (per LOCK_FISCAL_WGS_Z6_P1 2026-05-19 documented exception) so soft-deleted post-allocation orders ARE considered — good. (b) ZReportService::aggregate at line 337 uses BranchScope bypass + withTrashed too — symmetric, good. CAVEAT: no empirical proof in this cycle that creating a new order AFTER a Z close gets next seq (CAV-4 of prior z-close-pdf agent acknowledged this DEFERRED_TO_SENTINEL). FiscalSequenceMonotonicityTest sentinel covers static; physical-walk Monday smoke would close it."
+    },
+    {
+      "id": "N8-CHAIN-VALIDATOR-TAIL-WINDOW-BOUNDED",
+      "title": "FiscalChainValidator.verifyAuditChainTail walks only TAIL window (default 500). Tamper older than window is invisible to Z.open() integrity assertion",
+      "severity": "P2",
+      "evidence_mode": "static",
+      "file_line": [
+        "app/Services/Fiscal/FiscalChainValidator.php:86 $window = Config::get('fiscal.audit_chain_tail_window', 500)",
+        "app/Services/Fiscal/FiscalChainValidator.php:118-183 verifyAuditChainTail walks DESC LIMIT then ASC — bounded scan"
+      ],
+      "what_red_disputes": "Bounded scan is correct under the 4s z_report_b{N} lock (full O(N) walk would deadlock). BUT the on-demand fiscal:verify-chain command also delegates to the bounded path. A 10M-row tamper at row 5M is invisible to BOTH the daily cron AND the on-demand operator command. Hardening: add `fiscal:verify-chain --full` flag bypassing the window for a quarterly URSSAF-prep full walk, with structured progress output."
+    },
+    {
+      "id": "N9-FISCAL-LOG-CHANNEL-SWALLOW",
+      "title": "Best-effort try{Log::channel('fiscal')->...}catch{} swallow leaves no chained trace",
+      "severity": "P2",
+      "evidence_mode": "static",
+      "file_line": [
+        "app/Services/Fiscal/ZReportService.php:281-284 swallowed Log::channel('stack')->info('[FISCAL_TIMING]')",
+        "app/Services/Order/RefundWithCounterEntryService.php:286-297 + 318-328 swallowed best-effort Log",
+        "Note: the audit_logs HMAC chain IS the immutable record; the fiscal Log channel is NOT chained/signed (file/Slack/syslog target depending on config)"
+      ],
+      "what_red_disputes": "Swallow is defensible (a log adapter outage must not break a Z close). HOWEVER the comment 'logger swallow leaves no trace' is technically inaccurate because the audit_logs row IS the real evidence and IS written before the log call. The Log channel is observability, not evidence. Sentence-fix: confirmed not a NF525 hole, but a P2 hygiene improvement would route the swallow to a small ring-buffer counter exposed via /api/admin/fiscal/health for ops dashboards."
+    }
+  ],
+  "summary": {
+    "total_findings": 9,
+    "P0": 1,
+    "P1": 1,
+    "P2": 3,
+    "OK_or_OK_with_caveat": 4,
+    "key_red_disputes": [
+      "N2 NEEDS_HARDENING (not OK_BY_DESIGN as prior agent framed): no NF525-conformant signed Z PDF blade exists in code, only the JSON bundle. The only printable artefact (EOD synthesis) self-disclaims non-fiscale.",
+      "N1 P1 (not silent OK): mitigation is Ansible-side, no in-app boot guard. Out-of-code dependency is a NF525 supply-chain weakness for V1 LOCAL Le Cayenne (owner is sole sysadmin)."
+    ]
+  },
+  "verdict_final": "NEEDS_HARDENING",
+  "ship_block": false,
+  "ship_block_rationale": "V1 LOCAL Le Cayenne can soft-ship today (NF525 chain CHAIN OK empirically, refund + Z mirror + audit chain extension work as designed). N2 PDF gap is a HARD block for any URSSAF day-1 audit but owner-perso V1 LOCAL has weeks/months of soak before any inspection risk crystallises. Recommend creating issues for N2 (this week) and N1 boot guard (V1.0.1) before any V2 / SaaS B2B branch opens.",
+  "budget_used_min": 28,
+  "word_count_approx": 1450
+}

@@ -107,4 +107,47 @@ class RefreshTokenAbilityPreserveTest extends TestCase
         $response->assertStatus(401);
         $response->assertJson(['status' => false]);
     }
+
+    /**
+     * [OI-3 2026-05-30] An EXPIRED token must NOT be refreshable. Sanctum's findToken()
+     * returns the row regardless of expires_at; without the guard an expired Bearer could
+     * be silently revived into a fresh full-TTL session for hours (until sanctum:prune).
+     *
+     * @test
+     */
+    public function test_expired_token_cannot_be_refreshed(): void
+    {
+        $user = User::factory()->create(['status' => Status::ACTIVE]);
+        $new = $user->createToken('auth_token', ['*']);
+        $plain = $new->plainTextToken;
+        // Force the persisted token past its TTL.
+        $new->accessToken->forceFill(['expires_at' => now()->subMinutes(5)])->save();
+
+        $response = $this->postJson('/api/refresh-token', ['token' => $plain]);
+
+        $response->assertStatus(401);
+        $response->assertJson(['status' => false]);
+        // The expired token must remain (no rotation occurred).
+        $this->assertNotNull(PersonalAccessToken::findToken($plain), 'Expired token must not be deleted/rotated by a rejected refresh.');
+    }
+
+    /**
+     * [BS-3 2026-05-30] Refresh must PRESERVE the source token name. channels.php pins
+     * kiosk WS channel auth on name === 'kiosk-token'; the old hardcoded 'auth_token'
+     * would have silently broken a refreshed kiosk token's channel authz.
+     *
+     * @test
+     */
+    public function test_refresh_preserves_token_name(): void
+    {
+        $user = User::factory()->create(['status' => Status::ACTIVE]);
+        $plain = $user->createToken('kiosk-token', ['kiosk:order'])->plainTextToken;
+
+        $response = $this->postJson('/api/refresh-token', ['token' => $plain]);
+
+        $response->assertStatus(201);
+        $stored = PersonalAccessToken::findToken($response->json('token'));
+        $this->assertNotNull($stored);
+        $this->assertSame('kiosk-token', $stored->name, 'Refreshed token must keep the source name (kiosk channel auth pins by name).');
+    }
 }

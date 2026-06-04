@@ -2,6 +2,7 @@
     <div id="receiptModal" class="modal">
         <div class="modal-dialog max-w-[340px] rounded-none" id="print" :dir="direction">
             <div class="modal-body">
+                <receipt-remboursement-marker :order="order" />
                 <div class="text-center pb-3.5 border-b border-dashed border-gray-400">
                     <h3 class="text-2xl font-bold mb-1">{{ company.company_name }}</h3>
                     <h4 class="text-sm font-normal">{{ receiptBranch.address }}</h4>
@@ -158,9 +159,11 @@ import displayModeEnum from "../../../enums/modules/displayModeEnum";
 import posPaymentMethodEnum from "../../../enums/modules/posPaymentMethodEnum";
 import OrderTypeEnum from "../../../enums/modules/orderTypeEnum";
 import { receiptBranchHeader } from "../../../helpers/posReceiptBuilder";
+import ReceiptRemboursementMarker from "../pos/ReceiptRemboursementMarker.vue";
 
 export default {
     name: "PosOrderReceiptComponent",
+    components: { ReceiptRemboursementMarker },
     props: {
         order: Object
     },

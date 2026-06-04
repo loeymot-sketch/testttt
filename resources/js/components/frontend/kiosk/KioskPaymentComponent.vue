@@ -1,7 +1,57 @@
 <template>
   <div class="kiosk-payment" data-testid="kiosk-payment-root">
+    <!-- [SUPERVISOR WAVE C Z1 2026-05-28] Plan B: route ALL kiosk payments to counter.
+         When true, hide method selection + auto-submit cash. Owner mandate Le Cayenne. -->
+    <div
+      v-if="paymentRouteAllToCounter"
+      class="kiosk-pay-counter-route"
+      role="status"
+      aria-live="polite"
+      data-testid="kiosk-payment-counter-route"
+    >
+      <div class="kiosk-pay-counter-icon" aria-hidden="true">
+        <svg width="120" height="120" viewBox="0 0 120 120" fill="none">
+          <circle cx="60" cy="60" r="58" stroke="#F4501E" stroke-width="3"/>
+          <rect x="32" y="44" width="56" height="36" rx="4" fill="#FFE8DD" stroke="#F4501E" stroke-width="2"/>
+          <rect x="40" y="52" width="40" height="6" fill="#F4501E" opacity="0.3"/>
+          <circle cx="60" cy="70" r="6" fill="#F4501E"/>
+        </svg>
+      </div>
+      <h1 class="kiosk-pay-counter-title" data-testid="kiosk-payment-counter-title">
+        {{ $t('kiosk.pay_screen.counter_route_title') }}
+      </h1>
+      <p class="kiosk-pay-counter-sub" data-testid="kiosk-payment-counter-sub">
+        {{ $t('kiosk.pay_screen.counter_route_sub') }}
+      </p>
+      <div class="kiosk-pay-counter-total" data-testid="kiosk-payment-counter-total">
+        <span>{{ $t('kiosk.pay_screen.total_prefix') }}</span>
+        <strong>{{ formatPrice(cartTotal) }}</strong>
+      </div>
+      <div v-if="submitting" class="kiosk-pay-counter-spinner" aria-hidden="true"></div>
+      <p v-if="submitting" class="kiosk-pay-counter-processing">
+        {{ $t('kiosk.pay_screen.counter_route_processing') }}
+      </p>
+      <div
+        v-if="error"
+        class="kiosk-pay-error"
+        role="alert"
+        data-testid="kiosk-payment-counter-error"
+      >{{ error }}</div>
+      <button
+        v-if="!submitting && !submitted"
+        type="button"
+        class="kiosk-btn-confirm"
+        @click="confirmCounterRoute"
+        data-testid="kiosk-payment-counter-confirm"
+      >
+        <span>{{ $t('kiosk.pay_screen.counter_route_confirm_btn') }}</span>
+      </button>
+    </div>
+
     <!-- Header -->
-    <div class="kiosk-pay-header">
+    <div
+      v-if="!paymentRouteAllToCounter"
+      class="kiosk-pay-header">
       <button type="button"
         class="kiosk-pay-back"
         @click="$router.replace({ name: 'kiosk.cart' })"
@@ -18,17 +68,17 @@
       </div>
     </div>
     <div
-      v-if="networkOffline"
+      v-if="networkOffline && !paymentRouteAllToCounter"
       class="kiosk-pay-offline-alert"
       role="status"
       aria-live="polite"
       data-testid="kiosk-payment-offline-alert"
     >
-      Paiement CB/TR indisponible hors ligne. Le menu reste consultable; choisissez les espèces au comptoir ou réessayez quand la connexion revient.
+      {{ $t('kiosk.pay_screen.offline_alert') }}
     </div>
 
     <div
-      v-if="!submitting && !submitted && !tpeWaiting"
+      v-if="!submitting && !submitted && !tpeWaiting && !paymentRouteAllToCounter"
       class="kiosk-pay-amount-card"
       role="status"
       aria-live="polite"
@@ -40,7 +90,7 @@
 
     <!-- Modes de paiement — grille borne (cartes, pas bandeaux pleine largeur) -->
     <div
-      v-if="!submitting && !submitted"
+      v-if="!submitting && !submitted && !paymentRouteAllToCounter"
       class="kiosk-pay-methods-outer"
       role="radiogroup"
       :aria-label="$t('kiosk.pay_screen.title')"
@@ -143,7 +193,7 @@
 
     <!-- Écran API en cours (commande en création) — masqué pendant TPE (Lot 2.H) -->
     <div
-      v-if="submitting && !tpeWaiting"
+      v-if="submitting && !tpeWaiting && !paymentRouteAllToCounter"
       class="kiosk-pay-processing"
       role="status"
       aria-live="polite"
@@ -194,7 +244,7 @@
     </transition>
 
     <!-- Bouton confirmer -->
-    <div v-if="!submitting && !submitted && !tpeWaiting" class="kiosk-pay-confirm">
+    <div v-if="!submitting && !submitted && !tpeWaiting && !paymentRouteAllToCounter" class="kiosk-pay-confirm">
       <div
         v-if="error"
         class="kiosk-pay-error"
@@ -230,6 +280,7 @@ import kioskHardware from '../../../services/kioskHardware';
 import { KIOSK_HARDWARE } from '../../../config/kioskHardware';
 // [PHASE-6.4] Analytics instrumentation (gated par consent, no-op si opt-out).
 import kioskAnalytics from '../../../helpers/kioskAnalytics';
+import { buildIdempotencyHeaders } from '../../../helpers/idempotencyHeaders';
 // Kiosk Phase 9.1.8 — TTS sur erreurs de paiement (EAA 2025).
 // Les malvoyants n'avaient aucun retour audio en cas de refus TPE → risque
 // que le client ne réalise pas que la transaction a échoué.
@@ -275,6 +326,17 @@ export default {
     // [GAP-22-4] Also read orderType so it's passed to submitOrder
     ...mapGetters('kioskCart', ['total', 'branchId', 'orderType']),
     cartTotal() { return this._lastQuote?.total_ttc ?? this.total; },
+    // [SUPERVISOR WAVE C Z1 2026-05-28] Plan B: route all kiosk payments to counter.
+    // Read from window.foodkingConfig.kiosk.paymentRouteAllToCounter (config/kiosk.php +
+    // master.blade.php injection). When true, KioskPaymentComponent hides method
+    // selection UI and auto-submits with payment_method=1 (CASH_ON_DELIVERY).
+    paymentRouteAllToCounter() {
+      try {
+        return !!(window?.foodkingConfig?.kiosk?.paymentRouteAllToCounter);
+      } catch (_) {
+        return false;
+      }
+    },
   },
   mounted() {
     // Kiosk Phase 9.1.8 — prépare le composable TTS (no-op si audio off ou
@@ -330,7 +392,7 @@ export default {
     },
 
     offlinePaymentMessage() {
-      return 'Paiement CB/TR indisponible hors ligne.';
+      return this.$t('kiosk.pay_screen.offline_short');
     },
 
     selectMethod(m) {
@@ -350,6 +412,19 @@ export default {
       this.paymentFailureCount = 0;
       // [PHASE-6.4] Analytics : sélection d'un moyen de paiement (avant confirm).
       try { kioskAnalytics.track('payment_method_selected', { method: m }); } catch (_) {}
+    },
+
+    // [SUPERVISOR WAVE C Z1 2026-05-28] Plan B counter-route flow.
+    // Force method='cash' (payment_method=CASH_ON_DELIVERY=1 backend mapping) and
+    // reuse confirmPayment() pipeline. Order goes PENDING_COUNTER, cashier collects
+    // at POS (espèces tiroir OR carte ticket+manual terminal). No TPE at kiosk.
+    async confirmCounterRoute() {
+      if (this.submitting) return;
+      this.method = 'cash';
+      this.error = null;
+      // Delegate to existing confirmPayment which already routes 'cash' to
+      // processCashPayment → kiosk.cash-instruction navigation.
+      return this.confirmPayment();
     },
 
     async confirmPayment() {
@@ -551,9 +626,12 @@ export default {
           // 'tpe_declined' covers generic refusal. Backend OrderStatusRequest 422s on missing
           // or non-whitelisted code when actor is kiosk machine token.
           const tpeReasonCode = (paymentResult?.error_code === 'timeout' ? 'tpe_timeout' : 'tpe_declined');
-          axios.post(`frontend/order/change-status/${this._lastOrder.id}`, {
+          const tpeVoidPayload = {
             status: orderStatusEnum.CANCELED,
             reason: tpeReasonCode,
+          };
+          axios.post(`frontend/order/change-status/${this._lastOrder.id}`, tpeVoidPayload, {
+            headers: buildIdempotencyHeaders(tpeVoidPayload),
           })
             .catch(e => console.warn('[KioskPayment] void order failed:', e.message));
         }
@@ -734,9 +812,12 @@ export default {
       // [AUDIT-P1] Void the server order created before TPE — prevents orphan PENDING orders.
       if (this._lastOrder?.id && !String(this._lastOrder.id).startsWith('offline_')) {
         // [AUDIT-F-004] Customer pressed Cancel on the TPE prompt → 'tpe_cancel_user'.
-        axios.post(`frontend/order/change-status/${this._lastOrder.id}`, {
+        const userCancelPayload = {
           status: orderStatusEnum.CANCELED,
           reason: 'tpe_cancel_user',
+        };
+        axios.post(`frontend/order/change-status/${this._lastOrder.id}`, userCancelPayload, {
+          headers: buildIdempotencyHeaders(userCancelPayload),
         })
           .catch(e => console.warn('[KioskPayment] void on cancel failed:', e.message));
         this._lastOrder = null;
@@ -899,6 +980,79 @@ export default {
   flex-direction: column;
   overflow: hidden;
   color: var(--kiosk-text);
+}
+
+/* [SUPERVISOR WAVE C Z1 2026-05-28] Plan B counter-route screen */
+.kiosk-pay-counter-route {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  padding: 40px;
+  background: var(--kiosk-page-bg, #FFFFFF);
+  color: var(--kiosk-text, #0F0F0F);
+  text-align: center;
+}
+.kiosk-pay-counter-icon {
+  margin-bottom: 8px;
+}
+.kiosk-pay-counter-title {
+  font-size: clamp(36px, 5vw, 56px);
+  font-weight: 900;
+  margin: 0;
+  color: var(--kiosk-text, #0F0F0F);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+.kiosk-pay-counter-sub {
+  font-size: clamp(22px, 2.8vw, 32px);
+  font-weight: 700;
+  color: var(--kiosk-primary, #F4501E);
+  margin: 0;
+  max-width: 720px;
+}
+.kiosk-pay-counter-total {
+  margin: 16px auto 0;
+  width: min(640px, calc(100vw - 64px));
+  min-height: 140px;
+  border-radius: 28px;
+  background: linear-gradient(135deg, var(--kiosk-primary, #F4501E), var(--kiosk-primary-dark, #D7263D));
+  color: #FFFFFF;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: var(--kiosk-shadow-cta, 0 12px 28px rgba(0,0,0,0.18));
+}
+.kiosk-pay-counter-total span {
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.9;
+}
+.kiosk-pay-counter-total strong {
+  font-size: clamp(48px, 8vw, 80px);
+  font-weight: 900;
+  line-height: 0.92;
+}
+.kiosk-pay-counter-spinner {
+  width: 64px;
+  height: 64px;
+  border: 5px solid #FFE8DD;
+  border-top-color: #F4501E;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-top: 8px;
+}
+.kiosk-pay-counter-processing {
+  font-size: 18px;
+  color: var(--kiosk-text-muted, #5A5A5A);
+  margin: 0;
 }
 
 /* Header — thème clair : texte foncé lisible */

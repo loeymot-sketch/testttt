@@ -1,0 +1,45 @@
+# F-017 Suite 7 — Stress Run Report
+
+**Verdict:** FAIL
+**Generated:** 2026-05-30 03:05:09
+**Base URL:** http://localhost:8000
+
+## Parameters
+
+- orders: 100
+- branches: 1
+- concurrency: 10
+- type: mixed
+
+## Timing
+
+- total_duration_s: 30.748
+- batch_duration_s: 19.836
+- avg_latency_ms: 198.36
+- throughput_rps: 5.04
+
+## HTTP Results
+
+- total: 100
+- ok: 10
+- failed: 90
+- status_breakdown:
+  - 401: 50
+  - 201: 10
+  - 429: 40
+
+## DB Invariants
+
+- duplicate_fiscal_sequence_no: 0 (must be 0)
+- duplicate_queue_number: 0 (must be 0)
+- cross_branch_leak: 0 (must be 0)
+- outbox_stale_30s: 0 (target: 0)
+
+## Notes
+
+- This run is owner-driven; CI structural invariants live in
+  `tests/load/RushMidiSimulationTest.php` (PHPUnit @group stress).
+- Real Cache::lock contention requires Redis cache + MySQL DB
+  (sqlite-memory in CI cannot truly contend).
+- A FAIL verdict here means production is at risk: investigate
+  before merging.

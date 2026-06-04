@@ -79,7 +79,7 @@ function TabBar({ active, onChange }) {
 // Phase 6.A 2026-05-11 (real assets) — if `src` is provided, render a real <img>
 // with object-fit:cover + emoji fallback on error. Falls back to the legacy
 // <image-slot> drag-and-drop placeholder only when no src is provided.
-function Slot({ id, w, h, radius = 14, placeholder = 'photo', shape, style = {}, src, alt, fallbackEmoji }) {
+function Slot({ id, w, h, radius = 14, placeholder = 'photo', shape, style = {}, src, alt, fallbackEmoji, fit = 'cover' }) {
   const sharedBoxStyle = {
     display: 'block',
     width: w === undefined ? '100%' : w,
@@ -104,7 +104,7 @@ function Slot({ id, w, h, radius = 14, placeholder = 'photo', shape, style = {},
             display: 'block',
             width: '100%',
             height: '100%',
-            objectFit: 'cover',
+            objectFit: fit,
             objectPosition: '50% 50%',
           }}
         />

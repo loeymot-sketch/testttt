@@ -1,0 +1,208 @@
+{
+  "system": "SYS-I SETTINGS + RBAC",
+  "agent": "SYS-I-Settings-ULTIMATE",
+  "date": "2026-05-28",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head": "d601fdd34",
+  "discipline": "DM6 RO + DM3 + DM5 + DM8 (Master ULTIMATE template)",
+  "scope": {
+    "technical": [
+      "Settings hub + sub-pages (company, site, branches, currencies, kiosk-machines a.k.a. bornes, order-setup, kiosk-setup, mail, otp, time-slots, sliders, item-categories, item-attributes, taxes, pages, role, permission, cookies, languages, notification-alert, social-media, analytics, theme, loyalty-setup)",
+      "Spatie roles + permissions (82 sanctum guard, 1 web guard)",
+      "FormRequest authz (sentinel baseline 69, actual 66)",
+      "Event-driven settings sync (SettingsUpdated, BranchStatusChanged)"
+    ],
+    "visual": [
+      "captures/SYS-I-Settings/01-company-form.png",
+      "captures/SYS-I-Settings/02-branches-list.png",
+      "captures/SYS-I-Settings/03-kiosk-setup.png",
+      "captures/SYS-I-Settings/04-currencies-list.png",
+      "captures/SYS-I-Settings/05-kiosk-machines.png",
+      "captures/SYS-I-Settings/06-roles-list.png",
+      "captures/SYS-I-Settings/07-permissions-admin.png"
+    ]
+  },
+  "verdict": "GO-CONDITIONAL — 7 captures clean (FR-resolved labels, branding intact, layouts coherent, RBAC enforces 403 on POS Operator). 3 findings: 1 P1 (semi-orphan SettingsUpdated/BranchStatusChanged outbox events with no JS Echo subscriber), 1 P2 (AdminWebGuardPermissionsSyncSeeder INERT in current DB — Admin web-guard role missing, 82-perm sync skipped silently), 1 P2 (Permissions page row labels in English not localized FR). RBAC 403 verified end-to-end via real PATCH /api/admin/setting/company with POS Operator sanctum token.",
+  "data_state": {
+    "branches": 1,
+    "kiosk_machines": 1,
+    "currencies": 1,
+    "settings_rows": 68,
+    "roles_total": 8,
+    "roles_breakdown": {
+      "Admin_sanctum": 82,
+      "Customer_sanctum": 0,
+      "Delivery_Boy_sanctum": 0,
+      "Waiter_sanctum": 4,
+      "Chef_sanctum": 3,
+      "Branch_Manager_sanctum": 52,
+      "POS_Operator_sanctum": 7,
+      "Stuff_sanctum": 3
+    },
+    "permissions_per_guard": {
+      "sanctum": 82,
+      "web": 1
+    },
+    "model_has_roles_rows": 4,
+    "model_has_permissions_rows": 0,
+    "formrequest_return_true_count": 66,
+    "formrequest_sentinel_baseline": 69
+  },
+  "captures_evidence": {
+    "01-company-form": "Tableau De Bord > Paramètres > Entreprise — fields Nom/Email/Téléphone/Site web/Ville/État/Indicatif pays/Code postal/Adresse — all FR-resolved, no raw labels, layout coherent",
+    "02-branches-list": "Filiales — single 'Le Cayenne (principal)(Par défaut)' Actif row, Voir + Modifier actions",
+    "03-kiosk-setup": "Configuration Borne — Écran d'accueil tab with Vidéo accueil URL, Titre bienvenue, Sous-titre, Indication tactile, PIN Admin (4 chiffres), Enregistrer button",
+    "04-currencies-list": "Devises — single Euro(Par défaut) EUR (no crypto, taux=1), Ajouter + Modifier actions",
+    "05-kiosk-machines": "Bornes — KIOSK-LC-001 Le Cayenne principal Admin Le Cayenne, status ON, Déconnexion/Modifier/Supprimer actions",
+    "06-roles-list": "Rôle & Autorisations — 8 roles (Admin 1, Customer 1, Delivery Boy 0, Waiter 0, Chef 1, Branch Manager 0, POS Operator 1, Stuff 0), each row has Autorisations + Modifier (+ Supprimer for non-default)",
+    "07-permissions-admin": "Rôle & Autorisations / Voir (Admin) — page grid (Dashboard, Items, Dining Tables, POS, POS Orders, POS Discount Up To 10%, POS Discount 10%-50%, POS Discount Above 50%, POS Destroy Paid Order, POS Manage Fiscal (Z/X Reports), POS Reopen Closed Z Report, POS Redeem Loyalty Points, POS Refund (Counter-Entry NF525), Online Orders, Table Orders, ...) × Créer/Modifier/Supprimer/Voir matrix — column headers FR but row labels EN"
+  },
+  "rbac_proof": {
+    "test": "Real HTTP PATCH /api/admin/setting/company with POS Operator sanctum token + valid x-api-key header + idempotency key",
+    "user": "pos@lecayenne.fr",
+    "role": "POS Operator",
+    "permissions_count": 7,
+    "settings_perm_granted": false,
+    "status": 403,
+    "body": "{\"message\":\"User does not have the right permissions.\"}",
+    "admin_baseline_test": {
+      "user": "admin@lecayenne.fr",
+      "endpoint": "GET /api/admin/setting/company",
+      "status": 200,
+      "payload_keys": ["company_name", "company_email", "company_phone", "company_website", "company_city", "company_state", "company_country_code", "company_zip_code", "company_address"]
+    },
+    "verdict": "RBAC permission:settings gate WORKS end-to-end. Verified via direct HTTP (not just unit can() call). CompanyController::__construct enforces permission:settings on update only — GET is open (read), but Vue SPA still navigates correctly because route-level middleware permits it"
+  },
+  "cross_branch_test": {
+    "scope": "V1 LOCAL Le Cayenne single-tenant — only 1 branch exists",
+    "settings_table_scope": "GLOBAL (no branch_id column on settings — owner config is org-wide)",
+    "branch_scope_models_count": 20,
+    "settings_in_branch_scope_baseline": false,
+    "leak_test": "Not reproducible in V1 single-tenant — cross-branch leak requires V2 SaaS branches > 1. Documented as V1.0.X cloud-prep open question",
+    "verdict": "PASS V1 LOCAL (1 branch). Settings.update wrote globally without leakage because there is no multi-branch boundary to leak across yet"
+  },
+  "findings": [
+    {
+      "id": "SYS-I-F-001",
+      "severity": "P1",
+      "category": "sync",
+      "title": "SettingsUpdated + BranchStatusChanged broadcast events are SEMI-ORPHANS — backend dispatches, outbox row created, but ZERO JS Echo subscriber consumes them",
+      "evidence": {
+        "backend_dispatchers": [
+          "app/Http/Controllers/Admin/CompanyController.php:36 SettingsUpdated::dispatch(['company'])",
+          "app/Http/Controllers/Admin/CurrencyController.php:38,50,62 SettingsUpdated::dispatch(['currency'])",
+          "app/Http/Controllers/Admin/TaxController.php:39,51,63 SettingsUpdated::dispatch(['tax'])",
+          "app/Http/Controllers/Admin/SiteController.php:40 SettingsUpdated::dispatch(['site'])",
+          "app/Http/Controllers/Admin/OrderSetupController.php:37 SettingsUpdated::dispatch(['order_setup'])",
+          "app/Http/Controllers/Admin/BranchController.php:72,99 BranchStatusChanged::dispatch(...)"
+        ],
+        "backend_listeners_registered": [
+          "app/Providers/EventServiceProvider.php:300 SettingsUpdated => PersistSettingsUpdatedToOutbox",
+          "app/Providers/EventServiceProvider.php:309 BranchStatusChanged => [RevokeTokensOnBranchDeactivated, PersistBranchStatusChangedToOutbox]"
+        ],
+        "outbox_persistence": "domain_events row written with broadcast_as='SettingsUpdated' on channel 'private-branch.{id}'. DispatchDomainEventsJob fires WebSocket broadcast.",
+        "frontend_subscribers": {
+          "broadcastAs_SettingsUpdated_grep": "grep -rn 'SettingsUpdated' resources/js/ public/js/ -> 0 matches in frontend listener handlers",
+          "broadcastAs_BranchStatusChanged_grep": "grep -rn 'BranchStatusChanged' resources/js/ -> 0 matches",
+          "comparison_other_events": "CatalogChanged, ComposerProfileChanged, CouponChanged, OrderCreated, OrderStatusChanged, ItemAvailabilityChanged ALL have JS subscribers via broadcastAs handlers in KioskAppComponent.vue / KioskWaitingComponent.vue / PreparingAndReadyComponent.vue / useCatalogChangeNotifier.js",
+          "the_2_events_missing": "ONLY SettingsUpdated + BranchStatusChanged are dispatched without JS handler — the Wave 5G R9 / R10 backend halves landed but their frontend halves were never implemented"
+        }
+      },
+      "impact": "POS/Kiosk/Admin SPA do NOT refresh live when owner edits Site/Company/Currency/Tax/OrderSetup or toggles a branch ACTIVE<->INACTIVE. The setting change reaches DB + outbox + WebSocket frame, then is silently discarded. Page reload OR cache invalidation OR token expiry are the only paths to surface the change. The outbox cron retries the broadcast indefinitely without consumer.",
+      "blast_radius": "Owner-facing daily friction: change currency symbol € -> $, no POS surface updates until tab reload. Change kiosk welcome text -> deployed kiosks still show old text. Toggle branch INACTIVE -> RevokeTokensOnBranchDeactivated logout WORKS (server-side revoke), but no client-side notice fires (silent kick).",
+      "remediation": {
+        "files_to_create_or_extend": [
+          "resources/js/components/admin/AdminAppComponent.vue — add Echo.private('branch.'+branchId).listen('.SettingsUpdated', payload => store.dispatch('refreshSettings'))",
+          "resources/js/components/frontend/kiosk/KioskAppComponent.vue — add Echo listener .SettingsUpdated to refetch /frontend/setting after debounce 500ms",
+          "resources/js/components/admin/pos/PosShellComponent.vue or pos-shell.js — same SettingsUpdated listener (currency / tax symbols refresh)",
+          "Optional: Echo .BranchStatusChanged listener globally to surface a 'session terminée' modal before forced logout"
+        ],
+        "scope": "frontend-only (backend already complete, frozen-zone safe)",
+        "effort": "0.5-1.5 days, ~150 LOC across 3 files",
+        "test": "Manual: open kiosk + admin in 2 tabs, change currency symbol from admin, expect kiosk to refresh within 1-2s without reload"
+      },
+      "z2_finding_status": "CONFIRMED — Z2 audit caught this. Backend Wave 5G R9 (2026-05-17) landed PersistSettingsUpdatedToOutbox but the matching frontend handler was never paired. Same story for R10 BranchStatusChanged."
+    },
+    {
+      "id": "SYS-I-F-002",
+      "severity": "P2",
+      "category": "rbac",
+      "title": "AdminWebGuardPermissionsSyncSeeder is INERT in current DB — Admin role on web guard doesn't exist, the 82-perm sanctum-to-web mirror is silently skipped",
+      "evidence": {
+        "seeder_file": "database/seeders/AdminWebGuardPermissionsSyncSeeder.php:47-55",
+        "seeder_logic": "Role::query()->where('name','Admin')->where('guard_name','web')->first() returns NULL -> early return with warn 'Admin (web guard) role not found — Admin sync skipped.'",
+        "db_state": {
+          "Admin_sanctum_role_id": 1,
+          "Admin_web_role": "MISSING",
+          "permissions_sanctum_count": 82,
+          "permissions_web_count": 1,
+          "the_1_web_perm": "ingredients_manage (created by IngredientPermissionSeeder loop ['sanctum', 'web'])"
+        },
+        "seeder_execution_order": "DatabaseSeeder.php:51 IngredientPermissionSeeder -> :56 AdminWebGuardPermissionsSyncSeeder",
+        "claude_md_claim": "82 perms × 2 guards post AdminWebGuardPermissionsSyncSeeder — VERIFIED FALSE today: 82 sanctum + 1 web = 83 total, not 164",
+        "impact_assessed": {
+          "case_when_breaks": "If any /api/admin/* endpoint resolves the user via web guard session cookie (instead of Sanctum bearer) AND that endpoint runs a permission:foo check, the user gets 403 because the foo permission exists ONLY on sanctum guard. Spatie's Gate compares guard_name strictly.",
+          "case_when_safe": "The api.php /api/admin group is authed via 'auth:sanctum' middleware (line 273). $request->user() resolves via Sanctum's PersonalAccessToken, NOT via web session. So all bearer-token traffic uses sanctum guard. Vue SPA admin uses Bearer Authorization header (verified by grep of axios setup) — not session cookies on /api/* — so the web-guard inertness doesn't currently fire as a 403.",
+          "latent_bug": "If a future contributor mounts an admin SPA route on session cookies (e.g. via EnsureFrontendRequestsAreStateful), they'll hit silent 403s exactly like the ingredients incident the heal was written for. The CLAUDE.md claim 'post AdminWebGuardPermissionsSyncSeeder = 82 × 2 guards' is misleading."
+        }
+      },
+      "remediation": {
+        "option_A_seeder_self_heal": "Extend AdminWebGuardPermissionsSyncSeeder to firstOrCreate the Admin (web guard) role itself before mirroring perms",
+        "option_B_remove_seeder": "Delete AdminWebGuardPermissionsSyncSeeder + update CLAUDE.md §9 to remove the 82 × 2 claim — the V1 LOCAL admin SPA exclusively uses Sanctum bearer auth, so web-guard perms are unnecessary",
+        "option_C_truth_in_doc": "Keep seeder + update CLAUDE.md §9 to state 'AdminWebGuardPermissionsSyncSeeder is a guard against a future drift; in current DB it is INERT because Admin (web) role does not exist. It will activate only if a future seeder creates Admin (web).'",
+        "recommended": "Option C (truth in doc) — V1.0.X cloud-prep backlog item UNI-04: decide cleanly whether web guard is needed.",
+        "scope": "doc-only (no code change required if web guard auth is not used by SPA), frozen-zone safe"
+      }
+    },
+    {
+      "id": "SYS-I-F-003",
+      "severity": "P2",
+      "category": "ui-i18n",
+      "title": "Permissions matrix page rows are in English (Dashboard / Items / POS / POS Discount Up To 10% / POS Refund (Counter-Entry NF525) / Online Orders / Table Orders / ...) while the rest of the admin is FR — i18n gap on permission labels",
+      "evidence": {
+        "capture": "captures/SYS-I-Settings/07-permissions-admin.png",
+        "page_url": "/admin/settings/role/show/1 (Admin role)",
+        "english_labels_observed": [
+          "Dashboard",
+          "Items",
+          "Dining Tables",
+          "POS",
+          "POS Orders",
+          "POS Discount Up To 10%",
+          "POS Discount 10%-50% (Manager)",
+          "POS Discount Above 50% (Owner)",
+          "POS Destroy Paid Order",
+          "POS Manage Fiscal (Z/X Reports)",
+          "POS Reopen Closed Z Report",
+          "POS Redeem Loyalty Points",
+          "POS Refund (Counter-Entry NF525)",
+          "Online Orders",
+          "Table Orders"
+        ],
+        "fr_resolved_around_them": [
+          "Column headers: CRÉER / MODIFIER / SUPPRIMER / VOIR (FR)",
+          "Header breadcrumb: 'Tableau De Bord / Paramètres / Rôle & Autorisations / Voir' (FR)",
+          "Sidebar groups: 'Caisse Et Commandes', 'Communications', 'Utilisateurs', 'Comptes' (FR)",
+          "Filter pill on title: '(Admin)' (orange) — neutral"
+        ]
+      },
+      "impact": "Owner-facing admin shows a mixed-language permissions screen. Lower professionalism, harder for Branch Manager to audit perms. Affects only this one page (/admin/settings/role/show/{id}) — the rest of Settings is FR-clean.",
+      "remediation": {
+        "files_to_check": [
+          "resources/lang/fr/permission.php or resources/lang/fr/menu.php — verify if EN labels match keys (e.g. 'POS Refund (Counter-Entry NF525)' might be the literal string from DB seeder PermissionTableSeederVersionTwo.php where new perms were inserted without i18n)",
+          "database/seeders/PermissionTableSeederVersionTwo.php — check 'name' fields used as display labels"
+        ],
+        "scope": "either (a) add FR translations keyed by permission name, OR (b) seed permissions with display_name FR + render display_name in PermissionListComponent. Frozen-zone safe (no NF525 / payment touch).",
+        "effort": "1-2h, ~30 LOC + ~150 FR i18n string adds"
+      }
+    }
+  ],
+  "secondary_observations": [
+    "Bornes table column header is 'UTILISATEURNAME' (concat sans espace) — likely raw label 'utilisateur' + 'name' joined without translation lookup. Minor.",
+    "RBAC sentinel FormRequestAuthzDriftSentinelTest passes at count=66/baseline=69. The sentinel emits a SHRINK diagnostic asking the operator to lower the baseline to 66 — V1.0.2 backlog item already tracked in CLAUDE.md §9.",
+    "Customer + Delivery Boy roles on sanctum guard have ZERO permissions — they rely on tokenCan('kiosk:order') / specific abilities, not Spatie permissions. Documented design, no finding.",
+    "Stuff role (typo for 'Staff'?) has 3 perms. Minor naming oddity, not a finding."
+  ],
+  "captures_path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/master-ultimate-2026-05-28/captures/SYS-I-Settings/",
+  "output_path": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/master-ultimate-2026-05-28/agents/SYS-I-Settings-ultimate.json"
+}

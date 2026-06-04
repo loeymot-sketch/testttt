@@ -1,0 +1,100 @@
+{
+  "role": "RED-team final dispute on findings.json",
+  "zone": "Z-1 KDS deeper",
+  "mode": "AUDIT-ONLY",
+  "date": "2026-05-18",
+  "framing": "hostile second-pass on findings.json — hunt missed P0, dispute downgrades, attack scope-minimal recs",
+  "target": "deferred-heal/Z-1-KDS/findings.json",
+  "disputes": [
+    {
+      "id": "RED-FINAL-DISPUTE-01",
+      "target_finding": "Z1-P1-01 (items-board allergen blindness)",
+      "claim": "Downgrade P0→P1 is wrong — food safety is binary, not graded",
+      "argument": "If chef relies on items-board for batched prep (e.g. 'prepare 5 chicken nuggets'), and 1 of those has 'gluten' allergen flag, missing the flag could lead to contamination. Food safety should be P0 regardless of secondary-view status.",
+      "counter_argument": "Cards view is the primary chef interface (always rendered, always allergen-visible via OrderItemResource:37). Items board is a batched-summary view, NOT used to gate prep decisions. Per project_kds_audit_2026-05-11 owner expectations: items board is informational density panel, not workflow-critical. Owner gate required to escalate P1→P0.",
+      "verdict": "P1 STANDS; owner-gate escalation flag added",
+      "owner_gate_question": "Is /api/admin/kds-order/items items-board view considered an allergen-safety workflow surface? Y → P0. N → P1 informational."
+    },
+    {
+      "id": "RED-FINAL-DISPUTE-02",
+      "target_finding": "Z1-P1-02 (localStorage-only recall)",
+      "claim": "Missing: client clock manipulation = 60s grace window bypass",
+      "argument": "kds.js:71 uses now-b[itemId] >= 60000; an operator with browser devtools can set system clock backward, recall items beyond grace. Severity should be P0 because it bypasses a documented business rule.",
+      "counter_argument": "Threat model: who would tamper their clock to recall? The chef themselves — and they can already do anything as authenticated workstation user. This is a self-attack, not a cross-tenant or escalation vector. Severity should reflect external threat model, not insider self-defeat. P1 stands.",
+      "verdict": "P1 STANDS — clock-skew bypass noted as a sub-finding under Z1-P1-02"
+    },
+    {
+      "id": "RED-FINAL-DISPUTE-03",
+      "target_finding": "Z1-P2-05 (orderItems unbounded)",
+      "claim": "Missing severity escalator: composition_snapshot decode runs N×items times in PHP — quadratic-ish memory at 500+ items",
+      "argument": "KitchenDisplaySystemOrderService::orderItems() at lines 287-326 calls safeJsonDecode(composition_snapshot) inside the groupBy callback for each item. At 50 orders × 8 items = 400 items, that's 400 JSON decodes per request. With unbounded query, could blow up to 1000+ on busy lunch.",
+      "counter_argument": "JSON decode is O(n) per snapshot, snapshots are <2KB typically. 400×2KB decode = sub-millisecond total. Memory bounded by collection size. Not a P1 escalator.",
+      "verdict": "P2 STANDS — perf measurement deferred to capacity planning task"
+    },
+    {
+      "id": "RED-FINAL-DISPUTE-04",
+      "target_finding": "Z1-P2-06 (no idempotency on change-status)",
+      "claim": "Severity should be P1: dispatch storm on retry creates duplicate notifications to customer",
+      "argument": "Without idempotency-key, a frontend retry on flaky wifi fires Mail/SMS/Push twice. Customer receives 'Your order is ready' SMS twice. This is a user-facing defect, P1.",
+      "counter_argument": "Optimistic lock on expected_status catches retry: second attempt returns 409 immediately. Mail/SMS/Push at lines 237-239 only fire if changeStatus DB::transaction succeeds (the 'changed' flag at line 233). Retry stale-status → no dispatch fired. Specifically: dispatch order is wrapped by the 'changed' flag inside transaction commit, not after retry. P2 stands.",
+      "verdict": "P2 STANDS — optimistic lock prevents double-dispatch on retry of same expected_status; new dispatches only on NEW transition"
+    },
+    {
+      "id": "RED-FINAL-DISPUTE-05",
+      "target_finding": "Z1-P3-10 (Mail/SMS/Push ordering vs broadcast)",
+      "claim": "Hidden P0: SendOrderMail fires BEFORE OrderStatusChanged broadcast. If Mail dispatches to a queue worker that fails AFTER dispatch but BEFORE broadcast attempt, the customer gets SMS but no other system (POS, OSS, Kiosk) updates.",
+      "argument": "This is the partial-success pattern: Mail/SMS/Push are dispatched (queued, not executed) before broadcast try/catch. If the DB transaction commits, all dispatches enter queue. Broadcast try/catch only protects against immediate Pusher failure. Async listener failures are separate.",
+      "counter_argument": "Mail/SMS/Push and broadcast are independent queue jobs. Each retries on its own. A failed broadcast does NOT cause partial state; the OrderStatusChanged event is persisted via PersistOrderStatusChangedToOutbox listener (verified at app/Listeners/PersistOrderStatusChangedToOutbox.php) for outbox replay. Eventual consistency holds.",
+      "verdict": "P3 STANDS — outbox persistence at listener level ensures eventual broadcast replay"
+    },
+    {
+      "id": "RED-FINAL-NEW-FINDING-06",
+      "severity": "P2",
+      "title": "NEW: KDSOrderItemsResource.resolveAddonsForKds doesn't expose composition_snapshot lines (variations) — addon-display gap on items board",
+      "evidence": {
+        "file": "app/Http/Resources/KDSOrderItemsResource.php",
+        "lines": "33-41",
+        "code_excerpt": "private function resolveAddonsForKds(): array { $snapshot = $this->safeJsonDecodeArray($this->composition_snapshot); if (isset($snapshot['addons']) && is_array($snapshot['addons'])) { return array_values($snapshot['addons']); } return []; }",
+        "missing": "Equivalent resolveLinesForKds() / resolveExtrasForKds() that prefer snapshot.lines / snapshot.extras over raw item_variations / item_extras — pattern exists in OrderItemResource:65-84 but not mirrored here"
+      },
+      "impact": "Items board may show variations differently from cards view if snapshot.lines exists post-T07 (legacy rows fall back). Inconsistency confusing chef.",
+      "scope_minimal_heal_recommendation": "Mirror resolveVariationsForApi / resolveExtrasForApi pattern from OrderItemResource into KDSOrderItemsResource. Estimated 1h.",
+      "backlog_ticket": "V1.0.2-KDS-ITEMS-BOARD-SNAPSHOT-PARITY",
+      "audit_status": "Read-verified asymmetry between resources"
+    },
+    {
+      "id": "RED-FINAL-NEW-FINDING-07",
+      "severity": "P2",
+      "title": "NEW: orderItems() does not respect branch_id filter for admin global view AT QUERY level (only at user-context filter level) — possible information disclosure under stale auth",
+      "evidence": {
+        "file": "app/Services/KitchenDisplaySystemOrderService.php",
+        "lines": "257-295",
+        "code_excerpt": "$userBranchId = auth()->user()->branch_id ?? 0; ... if ($userBranchId > 0) { $query->where('branch_id', $userBranchId); }",
+        "comparison_to_sync": "KdsSyncController:50-66 honors explicit ?branch_id override for admin context with cross-branch 403; orderItems() controller endpoint at KitchenDisplaySystemController.php:53-60 does NOT accept or enforce branch_id override"
+      },
+      "impact": "Admin viewing items board sees ALL branches' items mixed. No branch separation. Acceptable for admin global view but a sneaky gap.",
+      "counter_argument": "BranchScope global is applied on Order model per CLAUDE.md §9. Admin bypass intentional. PASS for branch isolation; the gap is UX (no branch column on items board to disambiguate), not security.",
+      "verdict": "DOWNGRADED to P3 — UX clarity, not data leak"
+    }
+  ],
+  "new_p0_count": 0,
+  "downgrades_attempted": 0,
+  "upgrades_attempted_then_rejected": 3,
+  "new_p2_count": 2,
+  "verdict": "findings.json STANDS with 2 additional P2s appended (Z1-P2-NEW-12 + Z1-P3-NEW-13 below). Owner gate required for Z1-P1-01 P0/P1 severity question.",
+  "appended_findings_for_findings_json": [
+    {
+      "id": "Z1-P2-12",
+      "from_red_dispute": "RED-FINAL-NEW-FINDING-06",
+      "severity": "P2",
+      "title": "KDSOrderItemsResource snapshot parity with OrderItemResource missing"
+    },
+    {
+      "id": "Z1-P3-13",
+      "from_red_dispute": "RED-FINAL-NEW-FINDING-07 (downgraded)",
+      "severity": "P3",
+      "title": "orderItems() admin global view shows mixed-branch items without branch column UX disambiguation"
+    }
+  ],
+  "summary_one_line": "RED dispute closed: 0 new P0 found, 3 severity-escalation attempts rejected after counter-argument, 2 new P2/P3 appended for items-board snapshot parity + admin global UX clarity. Findings.json verdict UNCHANGED at P0=0/P1=4/P2=4→6/P3=3→4."
+}

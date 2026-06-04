@@ -1,0 +1,9 @@
+[
+  {
+    "severity": "INFO",
+    "viewport": "mobile",
+    "state": "cascade-recap",
+    "png": "web-mobile-cascade-recap.png",
+    "observed": "cascade recap total \"10,00 €\" (cascadeFired=true)"
+  }
+]

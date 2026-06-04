@@ -1,0 +1,76 @@
+{
+  "wave": "L",
+  "round": 2,
+  "states_reviewed": 5,
+  "review_subject": "Customer web auth + order tracker — tests/e2e/test-e2e-abuse-L-customer-tracker.spec.js, artifacts tests/e2e/__screenshots__/test-e2e-L/ (5 states x quartet). Capture passed 4/4.",
+  "context_not_defects": [
+    "L-PLAN-01 (already documented by author, spec header lines 11-47): the AUDIT_PLAN's anonymous '#+phone' order tracker DOES NOT EXIST in this codebase. TrackOrderComponent.vue is a logged-in active-order banner; there is no public guest order-read route (all /api/order reads are auth:sanctum, api.php:1311). KEY ASSERTION was correctly REFRAMED onto the authenticated /my-orders/:id detail page. This is context, NOT a defect.",
+    "STAFF_ONLY_MODE was flipped to false for this run so the customer wall is reachable (spec lines 114-118). Context, not a defect.",
+    "L-SEED-01 (documented): place-order.js creates kiosk-token orders not attributed to a customer account; no public API creates a walkingcustomer-owned order from the test layer. In THIS run the shared dev DB already held customer-owned orders so the populated branch (03) + KEY ASSERT (04) were both reached — the seeding gap did not block."
+  ],
+  "audit_integrity_assessment": {
+    "key_assertion_serial_match": "REAL and HARD-ASSERTED. Spec lines 327-335 capture the clicked row's serial (#0306264118, row 1 of state 03) BEFORE navigation, then assert getByText(/#\\s*0306264118\\b/) is visible on the detail page. State-04 DOM contains EXACTLY ONE order serial (#0306264118) — it matches the clicked row, and no second/other-customer order leaked. The 'tracker resolves the correct order' assertion genuinely passes. VERIFIED.",
+    "live_status_no_stale_half": "NOT genuinely verified. The spec's secondary 'status syncs live / no stale badge' cross-check (lines 337-342) is only `expect(page.locator('section').first()).toBeVisible()` — it asserts a section exists, NOT that the status is fresh. Empirically the detail status ('En préparation' / progress node at 'Commande En préparation') matched the row badge ('En préparation'), so no defect is observed — but the freshness half of the KEY ASSERTION is an existence check, not a freshness check. Faithful answer: serial-match half is real; live-status half is weakly asserted (no defect found empirically)."
+  },
+  "findings": [
+    {
+      "id": "L-001",
+      "state_artifact": "test-e2e-L/04-order-detail-resolves-correct-order.png (+ all crisp states 03/04/05)",
+      "category": "color_contrast / aria",
+      "severity": "P2",
+      "evidence": "Header cart button (between the 'Français' selector and the 'Compte' dropdown) renders as a solid dark-navy pill with NO visible content. DOM (04.dom.html): <button class=\"webcart ... text-heading bg-heading\"><i class=\"lab lab-bag-2 ...\"></i><span>0.00€</span></button>. tailwind.config.js:32 defines heading=#1F1F39, so foreground (text-heading #1F1F39) sits on background (bg-heading #1F1F39) => measured contrast ratio = 1.00:1 (identical color, far below WCAG AA 4.5:1). The cart bag icon AND the live cart total '0.00€' are INVISIBLE to all sighted users on EVERY customer page. The button is icon+amount only and carries NO aria-label (grep: 'aria-label' absent on the webcart element) => icon-only control also opaque to screen readers (category 8). This is the genuine defect the Wave L spec MISSED: it only asserted login (#formEmail/#formPassword), the my-orders list, and the detail serial — it never asserted the persistent header cart control is legible. P2 per the P1-objectivity rule (measured contrast is a category-4 P2; missing aria is a category-8 P2); flagged as the strongest finding because it is a primary purchase-path control invisible on 100% of customer pages.",
+      "fix_hint": "Header cart button class 'text-heading bg-heading' (dark-on-dark). Either set text-white on bg-heading, or bg-light/bg-transparent with text-heading. Add aria-label (e.g. label.cart / 'Panier {total}'). Component: the frontend layout header (web Vue layout); class 'webcart' is the locator. Confirm against the empty-cart count badge styling.",
+      "status": "OPEN"
+    },
+    {
+      "id": "L-002",
+      "state_artifact": "test-e2e-L/05-network-error-degrades-to-empty.png (footer) + 02-login-bad-credentials.png (footer)",
+      "category": "i18n_leak",
+      "severity": "P2",
+      "evidence": "Customer-facing footer column heading reads 'Useful Liens' — a mixed-locale string (English 'Useful' + French 'Liens'), clearly visible in the orange footer of state 05 and state 02. Root cause: resources/js/languages/fr.json:1244 \"useful_links\": \"Useful Liens\" — the FRENCH translation value itself was left half-English. Compare en.json:834 \"Useful Links\", de.json:400 \"Nützliche Links\", ar.json:664 proper Arabic, bn.json:400 proper Bengali — only the FR value is botched. This is a genuine translation defect on the FR locale (the site's default), visible on every page footer. CLASSIFIED P2 (not P1): it is a mixed-locale human string, NOT a raw i18n key — it does NOT match the P1-objectivity raw-key regex ^[a-z]+(\\.[a-z_]+){1,4}$ — so promoting it to P1 would violate the convergence rule. It is the author-noted footer string, correctly classified as a P2 quality defect.",
+      "fix_hint": "resources/js/languages/fr.json:1244 → \"useful_links\": \"Liens utiles\".",
+      "status": "OPEN"
+    },
+    {
+      "id": "L-003",
+      "state_artifact": "test-e2e-L/03-my-orders-list-populated.dom.html",
+      "category": "performance / unbounded_render",
+      "severity": "P3",
+      "evidence": "The 'Commandes Actives' list is fetched UNPAGINATED. MyOrderComponent.vue active fetch (line ~238) sends only `excepts=DELIVERED|CANCELED|REJECTED|RETURNED` with NO `paginate`/`per_page` (the previous-orders fetch IS paginated, per_page=5). Result: the my-orders DOM (03.dom.html) is 1.8 MB and contains 1212 unique order serials / 1360 'N° Commande' nodes / ~1364 <li> — the screenshot only shows the top ~4 rows so the bloat is invisible visually. NOTE: this is NOT a privacy leak — FrontendOrderService::myOrder (FrontendOrderService.php:100) ANDs `where('user_id', auth()->user()->id)` inside the query group, so all 1212 are walkingcustomer's OWN accumulated dev-DB orders. P3 for V1-LOCAL (a real single customer has a handful of active orders); P2 defensible if customer order volume can grow large. The capture genuinely hid it.",
+      "fix_hint": "Paginate (or cap + 'see all') the activeOrder fetch like previousOrder, OR virtualize the active list. MyOrderComponent.vue activeOrderList dispatch ~line 238.",
+      "status": "OPEN"
+    }
+  ],
+  "considered_non_findings": [
+    {
+      "id": "L-NF-01",
+      "subject": "PRIVACY / numeric_integrity — REFUTED",
+      "rationale": "1212 order serials in the 03 DOM are NOT a cross-customer leak. FrontendOrderService.php:100 `$query->where('user_id', auth()->user()->id)` is ANDed inside the query group => server-side scoped to the authed customer. State-04 detail DOM contains exactly ONE serial (#0306264118) matching the clicked row. 'walkingcustomer@example.com' is the only per-order customer; the other emails (admin/contact/pos/chef/bm) appear once each = footer/chrome, not order attribution. No P0."
+    },
+    {
+      "id": "L-NF-02",
+      "subject": "States 01 & 02 washed-out / near-white render",
+      "rationale": "01-login-idle and 02-login-bad-credentials PNGs are near-white/low-contrast, BUT a page-enter loading spinner (the '|||' bars) is visible in both => the snapshot was taken mid fade-in/opacity transition. States 03/04/05 render the SAME components and chrome fully opaque and correctly colored. This is a CAPTURE-TIMING artifact (mega-audit-snap fired during the enter animation), NOT a runtime contrast defect. Note as capture-quality P3-info; do NOT flag the login page as a contrast P1."
+    },
+    {
+      "id": "L-NF-03",
+      "subject": "02 bad-credentials HTTP 400 + console error",
+      "rationale": "02.network.json: POST /api/auth/login => 400. 02.console.json has one 'Failed to load resource ... 400' entry whose location is the login URL (browser XHR log, NO app JS stack, not vendor-excluded but not an application code error). [role=alert] IS present and holds real French text 'Identifiants invalides ou compte bloqué' with a close button. Per task framing (400+visible alert = OK) this is the expected bad-creds path, CLEARED. Minor note: it is 400, while the protocol allowlist names 422 for validation — same intent (rejected creds), not a silent failure (alert shown)."
+    },
+    {
+      "id": "L-NF-04",
+      "subject": "05 two ERR_FAILED console errors on /api/frontend/order",
+      "rationale": "05.console.json has two net::ERR_FAILED on /api/frontend/order... — these are TEST-INDUCED via page.route('**/api/frontend/order**', abort('failed')) (spec lines 373-381) to exercise graceful degradation. Expected. The list correctly degraded to the honest empty state ('Aucune commande. Commencez par commander !' + 'Retour à l'accueil' CTA) — no white page, no crash. CLEARED."
+    },
+    {
+      "id": "L-NF-05",
+      "subject": "Empty-state quality (05)",
+      "rationale": "05 empty state has an illustration <img>, copy ('Aucune commande. Commencez par commander !'), and a primary CTA ('Retour à l'accueil') => passes category-5 empty-state quality. Clean."
+    }
+  ],
+  "summary": {
+    "P0": 0, "P1": 0, "P2": 2, "P3": 1,
+    "open_P0": 0, "open_P1": 0, "open_P2": 2, "open_P3": 1
+  },
+  "verdict": "GREEN (no open P0/P1). KEY ASSERTION (order detail resolves the correct order by serial) is REAL and passes; no wrong-order / cross-customer privacy leak (query scoped to user_id). Disclosed non-blocking: L-001 P2 header cart button dark-on-dark + no aria-label (invisible on every customer page — the genuine MISS), L-002 P2 fr.json 'Useful Liens' mixed-locale, L-003 P3 unpaginated active-orders list (1.8MB DOM, own orders only). Live-status freshness half of the KEY ASSERTION is only an existence check (no defect found empirically)."
+}

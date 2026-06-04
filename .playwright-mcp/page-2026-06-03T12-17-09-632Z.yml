@@ -1,0 +1,57 @@
+- main [ref=e5]:
+  - generic [ref=e6]:
+    - link "logo" [ref=e7] [cursor=pointer]:
+      - /url: /home
+      - img "logo" [ref=e8]
+    - generic [ref=e9]:
+      - generic [ref=e10]:
+        - button "Plein écran" [ref=e11] [cursor=pointer]:
+          - generic [ref=e12]: 
+        - generic [ref=e13]:
+          - link " Tableau de bord" [ref=e15] [cursor=pointer]:
+            - /url: /admin/dashboard
+            - generic [ref=e16]: 
+            - generic [ref=e17]: Tableau de bord
+          - button "flag" [ref=e20] [cursor=pointer]:
+            - img "flag" [ref=e21]
+      - generic [ref=e22]:
+        - button "avatar Bonjour Caissier Le Cayenne" [ref=e23] [cursor=pointer]:
+          - img "avatar" [ref=e24]
+          - heading "Bonjour Caissier Le Cayenne" [level=3] [ref=e25]:
+            - text: Bonjour
+            - generic "Caissier Le Cayenne" [ref=e26]
+          - generic [ref=e27]: 
+        - menu "avatar Bonjour Caissier Le Cayenne":
+          - generic:
+            - figure:
+              - img "avatar"
+            - generic:
+              - button "Modifier le profil"
+              - generic: 
+            - heading "Caissier Le Cayenne" [level=3]
+            - paragraph: pos@lecayenne.fr
+            - paragraph: "+330600000002"
+            - heading "0,00 €" [level=3]
+          - menuitem "Modifier le profil":
+            - text: 
+            - generic: Modifier le profil
+          - menuitem "Changer le mot de passe":
+            - text: 
+            - generic: Changer le mot de passe
+          - menuitem "Déconnexion":
+            - text: 
+            - generic: Déconnexion
+  - text:           
+  - main "Écran de statut des commandes" [ref=e28]:
+    - img [ref=e31]
+    - region "En préparation" [ref=e35]:
+      - heading "En préparation" [level=3] [ref=e36]
+      - list [ref=e38]:
+        - listitem [ref=e39]: N°A0011
+        - listitem [ref=e40]: N°A0012
+        - listitem [ref=e41]: N°A0013
+    - region "Prêt" [ref=e42]:
+      - heading "Prêt" [level=3] [ref=e43]
+      - generic [ref=e44]:
+        - status "Prêt"
+        - paragraph [ref=e45]: —

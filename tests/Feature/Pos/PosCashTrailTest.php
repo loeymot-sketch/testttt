@@ -17,6 +17,7 @@ use App\Models\ItemCategory;
 use App\Models\KioskMachine;
 use App\Models\Order;
 use App\Models\OrderPayment;
+use App\Models\PaymentTerminal;
 use App\Models\Tax;
 use App\Models\User;
 use App\Services\Cash\CashDrawerService;
@@ -196,10 +197,21 @@ class PosCashTrailTest extends TestCase
         $this->actingAs($this->operator, 'sanctum');
         $session = $this->openSessionForOperator(50.00);
 
+        // [F-SPLIT-PHANTOM-CARD-001 2026-05-17] CARD tranches now require an
+        // ACTIVE terminal_id scoped to the order's branch.
+        $terminal = PaymentTerminal::create([
+            'branch_id'    => $this->branch->id,
+            'name'         => 'TPE CashTrail',
+            'gateway_type' => PaymentTerminal::GATEWAY_MANUAL,
+            'fee_percent'  => 0,
+            'fee_fixed'    => 0,
+            'status'       => PaymentTerminal::STATUS_ACTIVE,
+        ]);
+
         $payload = $this->basePayload([
             'payment_breakdown' => [
                 ['mode' => PosPaymentMethod::CASH, 'amount' => 5.00, 'tendered' => 5.00, 'change' => 0],
-                ['mode' => PosPaymentMethod::CARD, 'amount' => 20.00, 'reference' => '4242'],
+                ['mode' => PosPaymentMethod::CARD, 'amount' => 20.00, 'reference' => '4242', 'terminal_id' => $terminal->id],
             ],
         ]);
 

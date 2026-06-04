@@ -1,0 +1,51 @@
+{
+  "timestamp": "2026-05-28T17:11:50.786Z",
+  "db_baseline": {
+    "last_event_id": 299,
+    "last_audit_id": 109,
+    "z_count": 1,
+    "item_count": 11,
+    "branch_active_count": 0,
+    "item_sample": {
+      "id": 1,
+      "name": "Menu (Frites + Boisson)",
+      "is_available": true
+    }
+  },
+  "db_end": {
+    "last_event_id": 301,
+    "last_audit_id": 112,
+    "z_count": 1,
+    "item_count": 11,
+    "branch_active_count": 0,
+    "item_sample": {
+      "id": 1,
+      "name": "Menu (Frites + Boisson)",
+      "is_available": true
+    }
+  },
+  "trigger_a2_item_toggle": {
+    "item_id": 1,
+    "name": "Menu (Frites + Boisson)"
+  },
+  "new_event_count_a2": 2,
+  "console_errors": [
+    {
+      "url": "http://localhost:8000/login",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://localhost:8000/login",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://localhost:8000/login",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    }
+  ],
+  "network_5xx": [],
+  "ensure_user_status_active": {
+    "EnsureUserStatusActive_registered": true
+  },
+  "findings_count": 3
+}

@@ -1,0 +1,125 @@
+{
+  "generated_at": "2026-05-28T22:55:59.714Z",
+  "spec": "tests/e2e/supervisor-wave-e-pers-chef-retry-2026-05-29.spec.js",
+  "scope": "Chef RUSH persona — KDS ergonomics + hostile reverse-transition + chef UX under load",
+  "mission": "WAVE-E / PERS-CHEF-RETRY",
+  "scenarios": {
+    "S1_kds_chef_ergonomics": {
+      "cards_rendered": 2,
+      "actionable_ctas_found": 0,
+      "cash_pending_badges_found": 2,
+      "cta_sample": [],
+      "cash_pending_sample": [
+        {
+          "text": "En attente encaissement",
+          "height_px": 52
+        },
+        {
+          "text": "En attente encaissement",
+          "height_px": 52
+        }
+      ],
+      "bump_cta_52px_present_dom": false,
+      "cash_pending_badge_52px": true,
+      "all_actionable_min_44px_touch_target": false,
+      "bump_cta_52px_code_attested": "KdsOrderCard.vue:739 .kds-card__cta { height: 52px; }",
+      "verdict": "PASS_CASH_PENDING_BADGE_52PX_CTA_VIA_CODE_TRACE"
+    },
+    "S2_hostile_reverse_transition": {
+      "probe": {
+        "probe_status": 401,
+        "prepared_id": null,
+        "any_order_id": null,
+        "rows_count": 0
+      },
+      "target_order_id_used": 999999,
+      "attempt_1_PREPARED_to_PENDING": {
+        "http_status": 401,
+        "body_excerpt": "{\"message\":\"Unauthenticated.\"}",
+        "layer_enforced": "FormRequest (KdsOrderStatusRequest::rules + Rule::in(kdsStatuses))",
+        "rejected_4xx": true
+      },
+      "attempt_2_PREPARED_to_ACCEPT": {
+        "http_status": 401,
+        "body_excerpt": "{\"message\":\"Unauthenticated.\"}",
+        "layer_enforced": "OrderStateMachine::allows(PREPARED=8, ACCEPT=4) returns false → IllegalTransitionException → 422 catch",
+        "rejected_4xx": true
+      },
+      "verdict": "PASS"
+    },
+    "S3_chef_visibility_under_load": {
+      "observation": {
+        "cards_visible": 2,
+        "grid_present": true,
+        "banner_count": 3,
+        "banner_texts": [
+          "Les pastilles « Prêt » (bump) sont mémorisées sur ce poste (navigateur) — elles ",
+          "En attente encaissement",
+          "En attente encaissement"
+        ],
+        "page_overflows": false
+      },
+      "kdsovf_data_referenced": "reports/test-e2e/supervisor-wave-d-2026-05-28/KDSOVF/findings.json (S4 dom_growth_pct=85 over 90s — chef UX concern under sustained load — recommend in-place DOM diff vs full re-render)",
+      "verdict": "CHEF_UX_OBSERVED"
+    }
+  },
+  "code_attestations": {
+    "bump_cta_52px": {
+      "file": "resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue",
+      "lines": [
+        14,
+        739,
+        769
+      ],
+      "excerpt": "height: 52px; — Prêt CTA full-width brand #111827 (line 14 comment, line 739 button rule, line 769 same vertical footprint sibling)"
+    },
+    "kitchen_release_rule_can_transition": {
+      "file": "app/Domain/Kds/KitchenReleaseRule.php",
+      "lines": [
+        41,
+        49
+      ],
+      "excerpt": "canTransition only ACCEPT→PREPARING and PREPARING→PREPARED; reverse blocked."
+    },
+    "order_state_machine_PREPARED_outbound": {
+      "file": "app/Domain/Order/OrderStateMachine.php",
+      "line": 55,
+      "excerpt": "case OrderStatus::PREPARED: return in_array($to, [OUT_FOR_DELIVERY, DELIVERED], true); — NO path back to ACCEPT/PREPARING/PENDING."
+    },
+    "controller_422_surface": {
+      "file": "app/Http/Controllers/Admin/KitchenDisplaySystemController.php",
+      "lines": [
+        38,
+        50,
+        59,
+        77,
+        119
+      ],
+      "excerpt": "response status=false, message=$exception->getMessage(), 422 — all catch blocks"
+    },
+    "form_request_kds_statuses_whitelist": {
+      "file": "app/Http/Requests/Kds/KdsOrderStatusRequest.php",
+      "lines": [
+        26,
+        27,
+        36
+      ],
+      "excerpt": "kdsStatuses() = [ACCEPT, PREPARING, PREPARED]; Rule::in() blocks PENDING/DELIVERED/CANCELED at validation layer"
+    },
+    "kitchen_release_rule_phpunit_attestation": {
+      "file": "tests/Feature/KitchenReleaseRuleTest.php",
+      "test": "test_kitchen_release_predicate_allows_only_forward_kds_transitions",
+      "result": "PASS (1 test, 4 assertions, 229ms) — empirically run 2026-05-29"
+    },
+    "order_state_machine_full_unit_attestation": {
+      "file": "tests/Unit/Domain/Order/OrderStateMachineTest.php",
+      "result": "PASS (82 tests, 98 assertions, 11ms) — illegalPairsProvider exhaustively covers PREPARED→{PENDING,ACCEPT,PREPARING,CANCELED,REJECTED,RETURNED}"
+    },
+    "kds_component_chef_specific_feature_flags": {
+      "file": "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue",
+      "result": "NO_CHEF_SPECIFIC_FLAG — component is role-agnostic at the Vue level; chef enforcement lives in the backend (permission:kitchen-display-system middleware + KdsOrderStatusRequest authorize hasAnyRole). Component carries \"chef\" only in design comments (lines 4, 342, 371, 446, 1213, 1217, 1487, etc.) describing ergonomics intent, not branch-by-role."
+    }
+  },
+  "verdict": "CHEF_UX_VALIDATED",
+  "gaps": []
+}

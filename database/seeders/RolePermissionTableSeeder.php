@@ -72,10 +72,21 @@ class RolePermissionTableSeeder extends Seeder
                 'chefs_show',
                 'transactions',
                 'sales-report',
+                // [Wave O — O4 2026-05-20] Branch Manager voit le rapport des
+                // caisses quotidiennes (scoped à sa branche via BranchScope).
+                'cash-sessions-report',
                 // [Sprint 1D / F-4] Branch Manager may approve cash variance
                 // beyond the configured threshold (default 2€). Cashiers
                 // (POS Operator) must escalate to a manager.
                 'cash.reconcile.variance.override',
+                // [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19] Branch Manager can
+                // apply customer loyalty redemption from POS cashier UI.
+                'pos.redeem-loyalty',
+                // [HEAL-4 / PROPOSAL-02 — V101-02 2026-05-26] Branch Manager can
+                // issue NF525 counter-entry refunds via the new PosRefundModal UI.
+                // Admin gets this via Permission::all() above. POS Operator does
+                // NOT get it by default (mass-refund vector mitigation).
+                'pos-refund',
             ];
             $branchManager->givePermissionTo(
                 Permission::whereIn('name', $branchManagerPermissionNames)->get()
@@ -90,6 +101,9 @@ class RolePermissionTableSeeder extends Seeder
                 'pos-orders',
                 // [POS-9.1.1] cashier = up-to-10% discount
                 'pos-discount-up-to-10',
+                // [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19] Cashier-facing
+                // loyalty redemption gate (LOCK §6.1).
+                'pos.redeem-loyalty',
             ];
             $posOperatorManager->givePermissionTo(
                 Permission::whereIn('name', $posOperatorManagerPermissionNames)->get()

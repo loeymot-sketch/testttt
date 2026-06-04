@@ -1,0 +1,201 @@
+{
+  "agent": "E2E-01 Kiosk Idle Client",
+  "persona": "real client anonymous, no login",
+  "server": "http://127.0.0.1:8000",
+  "started_url": "http://127.0.0.1:8000/kiosk/idle",
+  "started_at": "2026-05-25T16:28:38.948Z",
+  "states_captured": 8,
+  "screenshots": [
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/bad-mood-final-2026-05-25/captures/E2E-01-state1.png",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/bad-mood-final-2026-05-25/captures/E2E-01-state2.png",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/bad-mood-final-2026-05-25/captures/E2E-01-state3.png",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/bad-mood-final-2026-05-25/captures/E2E-01-state4.png",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/bad-mood-final-2026-05-25/captures/E2E-01-state5.png",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/bad-mood-final-2026-05-25/captures/E2E-01-state6.png",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/bad-mood-final-2026-05-25/captures/E2E-01-state7.png",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/test-e2e/bad-mood-final-2026-05-25/captures/E2E-01-state8.png"
+  ],
+  "state_logs": {
+    "state1_idle": {
+      "url": "http://127.0.0.1:8000/kiosk/idle",
+      "title": "Le Cayenne",
+      "textPreview": "🌮\n🍔\n🍟\nBienvenue !\n\nCommandez en quelques touches\n\nÀ emporter\nJe récupère ma commande\n\nCHOISISSEZ UNE OPTION POUR COMMENCER",
+      "rawLabels": [],
+      "buttonCount": 3,
+      "categoryCount": 0,
+      "hasHero": false,
+      "heading": null,
+      "a11yMissingAlt": 0,
+      "lang": "fr"
+    },
+    "state2_probe": {
+      "fallback": [
+        {
+          "tag": "BUTTON",
+          "text": "☾"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "À emporter\nJe récupère ma commande"
+        }
+      ]
+    },
+    "state2_menu": {
+      "url": "http://127.0.0.1:8000/kiosk/idle",
+      "textPreview": "🌮\n🍔\n🍟\nBienvenue !\n\nCommandez en quelques touches\n\nÀ emporter\nJe récupère ma commande\n\nCHOISISSEZ UNE OPTION POUR COMMENCER",
+      "itemCount": 0,
+      "visibleButtons": 3
+    },
+    "state3_probe": null,
+    "state3_wizard": {
+      "url": "http://127.0.0.1:8000/kiosk/idle",
+      "textPreview": "🌮\n🍔\n🍟\nBienvenue !\n\nCommandez en quelques touches\n\nÀ emporter\nJe récupère ma commande\n\nCHOISISSEZ UNE OPTION POUR COMMENCER",
+      "hasWizard": false,
+      "stepIndicator": null
+    },
+    "state4_click": null,
+    "state5_addcart": null,
+    "state5_post": {
+      "url": "http://127.0.0.1:8000/kiosk/idle",
+      "textPreview": "🌮\n🍔\n🍟\nBienvenue !\n\nCommandez en quelques touches\n\nÀ emporter\nJe récupère ma commande\n\nCHOISISSEZ UNE OPTION POUR COMMENCER",
+      "cartCount": null,
+      "cartTotal": null
+    },
+    "state6_click": null,
+    "state6_cart": {
+      "url": "http://127.0.0.1:8000/kiosk/idle",
+      "textPreview": "🌮\n🍔\n🍟\nBienvenue !\n\nCommandez en quelques touches\n\nÀ emporter\nJe récupère ma commande\n\nCHOISISSEZ UNE OPTION POUR COMMENCER",
+      "itemsInCart": 0
+    },
+    "state7_click": null,
+    "state7_payment": {
+      "url": "http://127.0.0.1:8000/kiosk/idle",
+      "textPreview": "🌮\n🍔\n🍟\nBienvenue !\n\nCommandez en quelques touches\n\nÀ emporter\nJe récupère ma commande\n\nCHOISISSEZ UNE OPTION POUR COMMENCER",
+      "hasPaymentMethods": false
+    },
+    "state8_home": {
+      "url": "http://127.0.0.1:8000/kiosk/idle",
+      "textPreview": "🌮\n🍔\n🍟\nBienvenue !\n\nCommandez en quelques touches\n\nÀ emporter\nJe récupère ma commande\n\nCHOISISSEZ UNE OPTION POUR COMMENCER",
+      "backOnIdle": true
+    }
+  },
+  "raw_labels_found": [],
+  "console_errors": [
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    }
+  ],
+  "console_error_count": 1,
+  "network_errors": [
+    {
+      "url": "http://localhost:8000/api/login",
+      "status": 401
+    }
+  ],
+  "network_error_count": 1,
+  "notable_requests": [
+    {
+      "url": "http://127.0.0.1:8000/kiosk/idle",
+      "status": 200
+    },
+    {
+      "url": "http://127.0.0.1:8000/api/auth/kiosk-login",
+      "status": 201
+    },
+    {
+      "url": "http://127.0.0.1:8000/api/frontend/setting?vuex=false",
+      "status": 200
+    },
+    {
+      "url": "http://127.0.0.1:8000/api/frontend/branch?vuex=false",
+      "status": 200
+    },
+    {
+      "url": "http://127.0.0.1:8000/api/frontend/setting",
+      "status": 200
+    },
+    {
+      "url": "http://127.0.0.1:8000/api/frontend/kiosk-event",
+      "status": 200
+    },
+    {
+      "url": "http://127.0.0.1:8000/api/frontend/csp-report",
+      "status": 204
+    },
+    {
+      "url": "http://127.0.0.1:8000/api/frontend/menu",
+      "status": 200
+    },
+    {
+      "url": "http://localhost:8000/api/broadcasting/auth",
+      "status": 302
+    },
+    {
+      "url": "http://127.0.0.1:8000/api/frontend/csp-report",
+      "status": 204
+    },
+    {
+      "url": "http://localhost:8000/api/login",
+      "status": 401
+    },
+    {
+      "url": "http://127.0.0.1:8000/kiosk/idle",
+      "status": 200
+    },
+    {
+      "url": "http://127.0.0.1:8000/api/frontend/setting?vuex=false",
+      "status": 200
+    },
+    {
+      "url": "http://127.0.0.1:8000/api/frontend/branch?vuex=false",
+      "status": 200
+    },
+    {
+      "url": "http://127.0.0.1:8000/api/frontend/kiosk-event",
+      "status": 200
+    },
+    {
+      "url": "http://127.0.0.1:8000/api/frontend/setting",
+      "status": 200
+    },
+    {
+      "url": "http://127.0.0.1:8000/api/frontend/csp-report",
+      "status": 204
+    },
+    {
+      "url": "http://localhost:8000/api/broadcasting/auth",
+      "status": 200
+    },
+    {
+      "url": "http://127.0.0.1:8000/api/frontend/menu",
+      "status": 200
+    }
+  ],
+  "issues": [
+    {
+      "state": "state2",
+      "severity": "P1",
+      "description": "No category card or commande button found on idle screen"
+    },
+    {
+      "state": "state3",
+      "severity": "P0",
+      "description": "No item visible after category selection — menu may be empty or DOM unknown"
+    }
+  ],
+  "gstack_scores": {
+    "ux": 3,
+    "perf": 4,
+    "a11y": 6,
+    "i18n": 7,
+    "polish": 5
+  },
+  "adversarial_findings": [
+    "1 P0 blocker(s) detected during journey",
+    "Network errors (4xx/5xx/failed): 1",
+    "Console errors/warnings: 1",
+    "Journey did not advance beyond idle — entry point not discoverable by anonymous client"
+  ],
+  "verdict": "RED"
+}

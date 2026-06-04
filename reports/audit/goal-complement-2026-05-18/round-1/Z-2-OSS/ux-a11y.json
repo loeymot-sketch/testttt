@@ -1,0 +1,121 @@
+{
+  "specialist": "UX/A11y",
+  "zone": "Z-2-OSS",
+  "mode": "AUDIT-ONLY",
+  "scope": "WCAG AA contrast on large queue numbers + ARIA + i18n key resolution + responsive at 360/768/1280/1920 + raw label hunt",
+  "framing": "Audit OSS surfaces in their post-Round-2-heal state (PRÊT contrast fix #2AC769→#0E7C3A applied). Verify session-A claims hold and identify net-new a11y/UX risks not yet covered.",
+  "evidence": {
+    "wcag_contrast_post_heal": {
+      "PRET_column": {
+        "previous": "text-[#2AC769] on white — 2.22:1 (Impl C re-computed) — FAIL AA",
+        "current": "text-[#0E7C3A] on white — 5.30:1 — PASS AA (4.5:1 threshold)",
+        "code_anchor": "resources/js/components/admin/orderStatusScreen/PreparingAndReadyComponent.vue:45",
+        "sentinel": "tests/js/ossChimePublicWall.spec.js test 'replaces text-[#2AC769] with WCAG-AA-passing green' + 'isolated logic: WCAG ratio for new green clears AA threshold'"
+      },
+      "PREPARATION_column": {
+        "ratio": "text-[#1F1F39] on white = 19.2:1 — PASS AAA",
+        "queue_variant": "text-[#991B1B] on white = 8.85:1 — PASS AAA",
+        "code_anchor": "PreparingAndReadyComponent.vue:25"
+      },
+      "header_bars": {
+        "PREPARATION": "text-white on bg-[#B0004D] = 8.40:1 — PASS AAA",
+        "PRET": "text-[#1F1F39] on bg-[#1AB759] = ~6.0:1 — PASS AA-large (>=3.0)",
+        "code_anchor": "PreparingAndReadyComponent.vue:18 + 38"
+      }
+    },
+    "aria_labels": {
+      "root": "<div role=\"main\" :aria-label=\"$t('label.oss_main_aria')\">  — OrderStatusScreenComponent.vue:13",
+      "preparing_col": "<div role=\"region\" :aria-label=\"$t('label.preparing')\"> — line 17",
+      "ready_col": "<div role=\"region\" :aria-label=\"$t('label.ready')\"> — line 37",
+      "popular_widget_assumed": "<div role=\"region\" :aria-label=\"$t('label.oss_popular_region_aria')\"> — per agent-4-oss round-1 §4"
+    },
+    "i18n_key_resolution": {
+      "fr": {
+        "label.preparing": "En préparation",
+        "label.ready": "Prêt",
+        "label.oss_main_aria": "Écran de statut des commandes",
+        "label.oss_popular_region_aria": "Articles populaires"
+      },
+      "en": {
+        "label.preparing": "Being prepared",
+        "label.ready": "Ready!",
+        "label.oss_main_aria": "Order status screen"
+      },
+      "ar": {
+        "label.preparing": "قيد التحضير",
+        "label.ready": "جاهز!",
+        "label.oss_main_aria": "شاشة حالة الطلبات"
+      },
+      "verified_via": "grep on resources/js/languages/{fr,en,ar}.json"
+    },
+    "responsive_existing_artifacts": {
+      "1920x1080_canonical": "tests/e2e/__screenshots__/oss/oss-oss-public-1920x1080.png (×6 iters)",
+      "3840x2160_4K": "tests/e2e/__screenshots__/oss/oss-oss-public-3840x2160.png (×6 iters)",
+      "rush_sync_pipeline": "tests/e2e/__screenshots__/rush-sync/oss/S1-03-oss-ready.png + S2 + S5 (PREPARED state captures)",
+      "iter15_admin_baseline": "tests/e2e/__screenshots__/iter15-mega-admin/04-order-status-screen-default.png",
+      "audit_only_no_new_capture": true
+    }
+  },
+  "findings": [
+    {
+      "id": "Z2-UX-01",
+      "severity": "P0_PRE_HEAL_RESOLVED",
+      "title": "PRÊT column WCAG AA contrast — fixed",
+      "evidence": "Heal applied 2026-05-18 (P1-OSS-01 in Impl C). Sentinel spec passes 7/7 per Impl C evidence §4. Independent WCAG 2.x luminance re-computation confirmed inside the spec at lines 145-160.",
+      "status": "ALREADY-HEAL-APPLIED. No further action.",
+      "blast_radius": "none"
+    },
+    {
+      "id": "Z2-UX-02",
+      "severity": "P2",
+      "title": "PopularItemComponent <img alt=\"\"> empty",
+      "evidence": "Per agent-4-oss round-1 §4 finding [OSS-C-02] at PopularItemComponent.vue:15 — empty alt attribute. Lighthouse a11y flag (decorative-vs-informative). Session-A explicitly deferred (Impl C §7 'different file → Impl C scope is PreparingAndReadyComponent.vue only').",
+      "rationale_already_heal_or_new": "ALREADY-FLAGGED-AS-P2-IN-ROUND-1. Session-A did not address.",
+      "heal_recommendation": "Replace with :alt=\"item.name\" in PopularItemComponent.vue:15. Scope-minimal single-line edit, frozen-zone-free.",
+      "backlog_ticket": "V1.0.1+1-OSS-POPULAR-ALT",
+      "blast_radius": "single-screen-reader-impact, low"
+    },
+    {
+      "id": "Z2-UX-03",
+      "severity": "P2",
+      "title": "Missing oss_main_aria + oss_popular_region_aria keys in de/bn locales",
+      "evidence": "Verified via grep across resources/js/languages/{fr,en,ar,de,bn}.json — keys present in 3/5 (fr, en, ar) and absent in 2/5 (de, bn). Vue $t() falls back to the raw key string → screen reader announces 'label.oss_main_aria' literally on those locales.",
+      "rationale_already_heal_or_new": "ALREADY-FLAGGED-AS-P2-IN-ROUND-1 ([OSS-C-04]). Session-A explicitly deferred 'V1.0.2 SaaS scope (V1 = single Le Cayenne FR-only)'.",
+      "heal_recommendation": "Add 2 keys to de.json + bn.json. Defer per V1 scope.",
+      "backlog_ticket": "V1.0.2-OSS-I18N-DE-BN",
+      "blast_radius": "none for V1 (FR-only Le Cayenne)"
+    },
+    {
+      "id": "Z2-UX-04",
+      "severity": "P1",
+      "title": "No Lighthouse CI gate for OSS public wall a11y ≥95 acceptance",
+      "evidence": "Agent 4 round-1 §4 cited '(test TO BE CREATED at .github/workflows/lighthouse-ci.yml + tests/lighthouse/oss-public.json) — no CI gate today'. After the #0E7C3A heal, OSS PRÊT should now clear axe-core color-contrast. WITHOUT a CI gate, a future heal could regress contrast silently.",
+      "rationale_already_heal_or_new": "ALREADY-FLAGGED-AS-P1-IN-ROUND-1 (acceptance gate inventory line 87) BUT it is gate infrastructure rather than the OSS code — appropriately deferred but not yet ticketed.",
+      "heal_recommendation": "Phase 2 orchestrator-level: stand up .github/workflows/lighthouse-ci.yml hitting /admin/order-status-screen (public anonymous, viewport 1920×1080) with a11y threshold ≥95. Coordinate with Z-8 cross-surface i18n+A11y agent.",
+      "backlog_ticket": "V1.0.1+1-LIGHTHOUSE-CI",
+      "blast_radius": "regression-coverage gap, not a current defect"
+    },
+    {
+      "id": "Z2-UX-05",
+      "severity": "P3",
+      "title": "Responsive — no per-viewport text scaling for queue numbers",
+      "evidence": "PreparingAndReadyComponent.vue:22-29 + 42-49 — text-[40px] is a hard-coded class, no responsive variants (sm:/md:/lg:). At 360px (mobile), 40px queue numbers might break layout if the column halves to 180px width. Existing artifacts only cover 1920×1080 and 3840×2160 (TV-grade) — no 360/768/1280 captures.",
+      "rationale_already_heal_or_new": "ALREADY-FLAGGED-AS-P3-IN-ROUND-1 ([OSS-C-03] doc V1: TV is always 1080p+, scale not needed).",
+      "heal_recommendation": "Defer V1.0.2 — if customers ever access OSS on mobile (unintended use case, would be via deep link), add md:text-[40px] text-[24px] responsive variant.",
+      "backlog_ticket": "V1.0.2-OSS-MOBILE-RESCALE",
+      "blast_radius": "none for V1 TV-wall use case"
+    },
+    {
+      "id": "Z2-UX-06",
+      "severity": "P3",
+      "title": "AR direction (RTL) not explicitly wrapped at OSS template root",
+      "evidence": "Agent 4 round-1 §4 noted no explicit dir=\"rtl\" wrapper observed in OSS Vue templates — inheritance from app root must be verified visually. Existing screenshots do not include AR locale captures.",
+      "rationale_already_heal_or_new": "ALREADY-FLAGGED-AS-P3-IN-ROUND-1.",
+      "heal_recommendation": "If AR locale becomes a Le Cayenne requirement, run Playwright headed at /admin/order-status-screen?lang=ar (1920×1080) and verify column order + bidi text. Defer V1.0.2.",
+      "backlog_ticket": "V1.0.2-OSS-AR-RTL",
+      "blast_radius": "none for FR-only V1"
+    }
+  ],
+  "verdict": "AUDIT-ONLY pass. Session-A WCAG heal Z2-UX-01 confirmed via sentinel. Pre-existing P2/P3 (alt-empty / de+bn i18n / mobile rescale / AR RTL) all deferred V1.0.2. Net-new finding Z2-UX-04 elevates round-1 P1 (Lighthouse CI gate) as the highest-leverage forward work.",
+  "word_count_approx": 1100
+}

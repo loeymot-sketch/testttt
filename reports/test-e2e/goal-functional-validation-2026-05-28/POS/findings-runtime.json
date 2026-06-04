@@ -1,0 +1,148 @@
+{
+  "findings": [
+    {
+      "id": "POS-01-DOM-INPUTS",
+      "severity": "INFO",
+      "title": "login page input inventory",
+      "file_line": "/login SPA",
+      "evidence": {
+        "inputs": [
+          {
+            "type": "text",
+            "name": "",
+            "id": "formEmail",
+            "placeholder": ""
+          },
+          {
+            "type": "password",
+            "name": "",
+            "id": "formPassword",
+            "placeholder": ""
+          },
+          {
+            "type": "checkbox",
+            "name": "",
+            "id": "checkbox2",
+            "placeholder": ""
+          }
+        ]
+      },
+      "ts": "2026-05-28T17:23:48.913Z"
+    },
+    {
+      "id": "POS-01-LOGIN-OK",
+      "severity": "INFO",
+      "title": "Login admin OK — landed at http://127.0.0.1:8000/admin/dashboard",
+      "file_line": "/login",
+      "evidence": {
+        "url": "http://127.0.0.1:8000/admin/dashboard"
+      },
+      "ts": "2026-05-28T17:23:51.563Z"
+    },
+    {
+      "id": "POS-02-OBS",
+      "severity": "INFO",
+      "title": "POS loaded — buttons=72 item_cards=1 wizard_root=true",
+      "file_line": "public/js/pos-wizard.js (frozen)",
+      "evidence": {
+        "buttonCount": 72,
+        "itemCards": 1,
+        "hasWizardRoot": true,
+        "sampleText": "Filiale\nLe Cayenne (Principal)\nLe Cayenne (Principal)\nBonjour\nAdmin Le Cayenne\nAdmin Le Cayenne\n\nadmin@lecayenne.fr\n\n+330600000000\n\n0,00 €\nModifier Le Profil\nChanger Le Mot De Passe\nDéconnexion\nTableau De Bord\nPOS\nProduits & Stock\nCatalogue\nAttribut D’articles\nIngrédients\nCommandes Caisse\nVue Caisse Unifiée\nCaisse Livreur\nCAISSE ET COMMANDES\nÉcran Cuisine\nSuivi Client\nCOMMUNICATIONS\nNotification Pushs\nMessages\nAbonnés\nUTILISATEURS\nAdministrateurs\nEmployés\nChefs\nCOMPTES\nTransactions\nRAPPORTS\nRapp",
+        "url": "http://127.0.0.1:8000/admin/pos"
+      },
+      "ts": "2026-05-28T17:24:02.916Z"
+    },
+    {
+      "id": "POS-03-CASH-OVERVIEW",
+      "severity": "INFO",
+      "title": "cash-drawer-overview status=200 has_open_text=false",
+      "file_line": "CashDrawerSessionController",
+      "evidence": {
+        "url": "http://127.0.0.1:8000/admin/cash-drawer-overview",
+        "status": 200,
+        "hasOpenSessionText": false
+      },
+      "ts": "2026-05-28T17:24:13.216Z"
+    },
+    {
+      "id": "POS-04-NO-CARD",
+      "severity": "P1",
+      "title": "No product card found in POS DOM — wizard cannot be triggered for observation",
+      "file_line": "public/js/pos-wizard.js DOM render",
+      "evidence": {
+        "hint": "DB-deficit: 11 items in DB, no Sandwich/Burger/Tacos/Bols — supplements should render but POS may filter to featured cats only"
+      },
+      "ts": "2026-05-28T17:24:24.543Z"
+    },
+    {
+      "id": "POS-05-PAY-BUTTON",
+      "severity": "INFO",
+      "title": "Payment-related button discoverable=true",
+      "file_line": "public/js/pos-wizard.js payment UI",
+      "evidence": {
+        "hasPayButton": true
+      },
+      "ts": "2026-05-28T17:24:36.024Z"
+    },
+    {
+      "id": "POS-06-I18N-CLEAN",
+      "severity": "INFO",
+      "title": "No raw label patterns on POS body",
+      "file_line": "/admin/pos",
+      "evidence": {
+        "textLen": 1565
+      },
+      "ts": "2026-05-28T17:24:48.517Z"
+    },
+    {
+      "id": "POS-07-Z-ROUTE",
+      "severity": "INFO",
+      "title": "Z route /admin/z-reports status=200 ct=text/html; charset=UTF-8",
+      "file_line": "/admin/z-reports",
+      "evidence": {
+        "route": "/admin/z-reports",
+        "status": 200,
+        "content_type": "text/html; charset=UTF-8"
+      },
+      "ts": "2026-05-28T17:24:56.505Z"
+    },
+    {
+      "id": "POS-07-Z-ROUTE",
+      "severity": "INFO",
+      "title": "Z route /admin/cloture status=200 ct=text/html; charset=UTF-8",
+      "file_line": "/admin/cloture",
+      "evidence": {
+        "route": "/admin/cloture",
+        "status": 200,
+        "content_type": "text/html; charset=UTF-8"
+      },
+      "ts": "2026-05-28T17:25:01.530Z"
+    },
+    {
+      "id": "POS-07-Z-ROUTE",
+      "severity": "INFO",
+      "title": "Z route /admin/reports/daily status=200 ct=text/html; charset=UTF-8",
+      "file_line": "/admin/reports/daily",
+      "evidence": {
+        "route": "/admin/reports/daily",
+        "status": 200,
+        "content_type": "text/html; charset=UTF-8"
+      },
+      "ts": "2026-05-28T17:25:06.582Z"
+    },
+    {
+      "id": "POS-07-Z-ROUTE",
+      "severity": "INFO",
+      "title": "Z route /admin/reports/z-report status=200 ct=text/html; charset=UTF-8",
+      "file_line": "/admin/reports/z-report",
+      "evidence": {
+        "route": "/admin/reports/z-report",
+        "status": 200,
+        "content_type": "text/html; charset=UTF-8"
+      },
+      "ts": "2026-05-28T17:25:11.640Z"
+    }
+  ],
+  "generated_at": "2026-05-28T17:25:11.640Z"
+}

@@ -1,0 +1,71 @@
+{
+  "audit": "F-X-DUPS duplicate-files",
+  "date": "2026-05-18",
+  "approach": "1) Find files with identical basenames across folders. 2) Diff suspect pairs. 3) Check for v1/v2/legacy/old/_bak prefixes. 4) Compare obvious structural parallels (Requests/ vs PaymentRequests/).",
+  "explicit_intentional_dual_files_per_owner_mandate": {
+    "description": "Per audit prompt — POS Vanilla pos-wizard.js + Kiosk Vue Kiosk*.vue compose the same business logic via two UI surfaces by DESIGN. Not flagged.",
+    "files": [
+      "public/js/pos-wizard.js (frozen, Vanilla JS, ~296KB)",
+      "resources/js/components/frontend/kiosk/KioskWizardComponent.vue (frozen)",
+      "resources/js/components/frontend/kiosk/KioskUpsellComponent.vue (frozen)"
+    ]
+  },
+  "candidates": [
+    {
+      "id": "DUP-FILES-1",
+      "title": "PaymentGateways/Requests/<Name>.php vs PaymentGateways/PaymentRequests/<Name>.php — twin folders, 22 paired class files",
+      "paths_left": [
+        "app/Http/PaymentGateways/Requests/Bkash.php (and 21 others: Cashfree, Easypaisa, Flutterwave, Iyzico, Mercadopago, Midtrans, Mollie, Myfatoorah, Payfast, Paypal, Paystack, Paytm, Pesapal, Phonepe, Razorpay, Senangpay, Skrill, Sslcommerz, Stripe, Telr, TwoCheckout)"
+      ],
+      "paths_right": [
+        "app/Http/PaymentGateways/PaymentRequests/Bkash.php (and 22 others including Credit.php)"
+      ],
+      "diff_stat": "Same class names, DIFFERENT bodies. Requests/* contains real validation rules ($request->bkash_status check, app_key/secret rules etc). PaymentRequests/* are STUBS: spot-checked Cashfree/Razorpay/Senangpay all return rules() => [] (empty array). The only PaymentRequests/* with any rule is Stripe.php which validates 'stripeToken' => required|string|max:190.",
+      "actual_runtime_usage": {
+        "Requests/<Name>.php": "Loaded dynamically by Admin/PaymentGatewayController.php:37 for admin gateway-settings update (validates admin form input with real rules)",
+        "PaymentRequests/<Name>.php": "Loaded dynamically by Frontend/PaymentController.php:75 which calls $request->validate($gateway->rules()). For all gateways EXCEPT Stripe, rules() returns an empty array, so the customer's payment-form payload is effectively unvalidated at this layer (server-side validation may exist downstream in the gateway service classes themselves — not verified by this audit)."
+      },
+      "verdict": "KEEP-AS-IS but FLAG-FOR-OWNER-CONFIRMATION — both folders are wired to different controllers, so deleting either would break runtime. HOWEVER the PaymentRequests/* stubs suggest an architectural intent that may have been left incomplete: either the stubs are intentional (downstream gateway services handle validation) or there is a latent validation gap on the customer payment payload. Owner should confirm whether the empty rules() bodies are intentional design or unfinished work.",
+      "user_friendly": "Two folders with the same class names. The admin-side folder (`Requests/`) has full validation. The customer-side folder (`PaymentRequests/`) is mostly empty stubs that return no rules — only the Stripe stub has one rule (the Stripe token format). This may be intentional (the actual gateway code may validate further downstream) but it is worth a quick owner glance: 'is this empty-stub pattern on purpose, or did somebody forget to fill in the rules?'. Either way, do NOT delete the files — Frontend/PaymentController.php loads them by name at runtime, so removing breaks payment immediately."
+    },
+    {
+      "id": "DUP-FILES-2",
+      "title": "Table/* Vue components mirror Frontend/* for the dine-in (table-ordering) feature",
+      "examples": [
+        "resources/js/components/table/checkout/CheckoutComponent.vue (306 lines) <-> resources/js/components/frontend/checkout/CheckoutComponent.vue (990 lines)",
+        "resources/js/components/table/components/ItemComponent.vue <-> resources/js/components/frontend/components/ItemComponent.vue",
+        "resources/js/components/table/page/ContactUsComponent.vue <-> resources/js/components/frontend/page/ContactUsComponent.vue"
+      ],
+      "diff_stat": "Frontend versions are much larger (delivery+pickup+kiosk paths) — table versions are dine-in only (lighter, no address picker, etc). Not byte-similar.",
+      "actual_runtime_usage": {
+        "table/*": "Wired via resources/js/router/modules/tableOrderRoutes.js (registered in router/index.js:179)",
+        "frontend/*": "Wired via standard frontend routes"
+      },
+      "v1_dine_in_status": "Per project memory: V1 has dine_in_enabled=false feature flag (pos.dine_in_enabled). Code is kept, runtime-disabled.",
+      "verdict": "KEEP-AS-IS — code is feature-flagged off but lives for when dine-in is enabled. NF525 + multi-tenant scopes already cover both. Removing would block future feature unfreeze.",
+      "user_friendly": "There is a parallel /table/ folder of Vue components for dine-in (sur place). V1 has dine-in turned off via a flag, but the code is kept ready for when it gets turned on later. Both versions are real, neither is dead."
+    },
+    {
+      "id": "DUP-FILES-3",
+      "title": "Admin/<Entity>Component.vue vs Frontend/<Entity>Component.vue parallel naming",
+      "examples": [
+        "MenuComponent: admin/settings/MenuComponent.vue (admin CRUD) vs frontend/menu/MenuComponent.vue (customer-facing menu display)",
+        "ItemComponent: admin/items/ (admin CRUD), admin/pos/ (POS picker), frontend/components/ (customer card), table/components/ (dine-in card) — 4 distinct variants",
+        "OfferComponent, CouponComponent — admin manage vs frontend display",
+        "AddressComponent: frontend/checkout/ (one-shot pick) vs frontend/account/address/ (account-level CRUD)"
+      ],
+      "diff_stat": "All radically different files — they share a name token but no body overlap. This is naming convention not duplication.",
+      "verdict": "KEEP-AS-IS — these are separate components with different responsibilities. NOT duplicates. Naming convention is internally consistent (Admin/* = manager UI, Frontend/* = customer UI, table/* = dine-in UI, kiosk/* = self-service UI).",
+      "user_friendly": "Lots of Vue components share names like 'MenuComponent' or 'ItemComponent' but they are different files for different surfaces (admin CRUD vs customer view vs POS picker vs dine-in card). All are legitimate. Renaming for clarity is a nice-to-have, not a duplication problem."
+    },
+    {
+      "id": "DUP-FILES-4",
+      "title": "config/kioskHardware.js (37 lines) vs services/kioskHardware.js (389 lines)",
+      "diff_stat": "Different purposes per explicit file header: config holds bridge timings + IDs, service holds wrapper logic. Comment in config: 'Séparé du service kioskHardware.js pour permettre aux composants Vue / tests de consommer uniquement les timings sans tirer le wrapper complet.'",
+      "verdict": "KEEP-AS-IS — intentional split documented in file header.",
+      "user_friendly": "Two files named kioskHardware.js but one is small (just constants/timings) and the other is the full Electron bridge wrapper. Split was made on purpose to keep tests light. Don't merge."
+    }
+  ],
+  "no_v1_v2_old_legacy_bak_files_found_in_app_or_resources_js": true,
+  "kds_v2_grid_note": "resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue exists with 'V2' suffix — verified ACTIVE (current KDS uses it). The 'V2' is not legacy — it's the production component. KdsV1Grid.vue does NOT exist."
+}

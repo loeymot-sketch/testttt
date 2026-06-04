@@ -220,13 +220,25 @@ export function serializeTranches(tranches) {
     return tranches.map((t) => {
         const cents = toCents(t.amount);
         const tenderedCents = isCashMode(t.mode) ? toCents(t.tendered) : null;
-        return {
+        const out = {
             mode: Number(t.mode),
             amount: fromCents(cents),
             tendered: tenderedCents != null ? fromCents(tenderedCents) : null,
             change: isCashMode(t.mode) ? fromCents(computeChangeCents(t)) : 0,
             note: t.note ?? null,
         };
+        // [2026-05-18 PR-A V1 GO-LIVE blocker heal] Propagate terminal_id for
+        // CARD tranches. Backend PosOrderRequest:138 +
+        // SplitPaymentService:F-SPLIT-PHANTOM-CARD-001 require this on every
+        // CARD tranche; omitting it returns 422 with "A valid payment terminal
+        // is required for every CARD tranche."
+        if (Number(t.mode) === 2 && t.terminal_id !== undefined && t.terminal_id !== null) {
+            const tid = Number(t.terminal_id);
+            if (Number.isFinite(tid) && tid > 0) {
+                out.terminal_id = tid;
+            }
+        }
+        return out;
     });
 }
 

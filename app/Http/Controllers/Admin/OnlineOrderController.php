@@ -113,6 +113,11 @@ class OnlineOrderController extends AdminController
     {
         try {
             return new OrderDetailsResource($this->orderService->selectDeliveryBoy($order, $request));
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $http) {
+            // [GOAL-2026-05-18 P0-LIV-01] Branch/role guards in
+            // OrderService::selectDeliveryBoy raise 403/422 via abort().
+            // Propagate so the multi-tenant guard reaches the client.
+            throw $http;
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }

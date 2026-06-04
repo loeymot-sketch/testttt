@@ -6,6 +6,8 @@ use Exception;
 use App\Enums\Ask;
 use App\Models\User;
 use App\Enums\Role as EnumRole;
+use Spatie\Permission\Models\Role;
+use App\Services\Concerns\EnforcesOwnBranchScope;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Hash;
@@ -18,6 +20,8 @@ use App\Http\Requests\UserChangePasswordRequest;
 
 class EmployeeService
 {
+    use EnforcesOwnBranchScope;
+
     public $user;
     public $phoneFilter = ['phone'];
     public $roleFilter = ['role_id'];
@@ -66,10 +70,41 @@ class EmployeeService
         }
     }
 
+    /**
+     * [USR-RBAC-01 heal 2026-06-01] Caller-entitlement gate for role grants.
+     *
+     * Prevents privilege escalation + peer-cloning via the employee endpoint. A `settings`
+     * holder (admin) may grant any non-core role; a non-settings staff (e.g. Branch Manager)
+     * may grant ONLY a role whose permission set is a STRICT SUBSET of the caller's own —
+     * i.e. the caller holds every permission of the target role AND the target has strictly
+     * fewer (blocks granting a permission the caller lacks, and blocks cloning a peer).
+     */
+    public function callerMayGrantRole(?User $caller, $roleId): bool
+    {
+        if (!$caller) {
+            return false;
+        }
+        if ($caller->can('settings')) {
+            return true;
+        }
+        $role = Role::find($roleId);
+        if (!$role) {
+            return false;
+        }
+        $callerPerms = $caller->getAllPermissions()->pluck('name');
+        $targetPerms = $role->permissions->pluck('name');
+
+        return $targetPerms->diff($callerPerms)->isEmpty()
+            && $targetPerms->count() < $callerPerms->count();
+    }
+
     public function store(EmployeeRequest $request)
     {
         try {
             if (!in_array($request->role_id, $this->blockRoles)) {
+                if (!$this->callerMayGrantRole(auth()->user(), $request->role_id)) {
+                    throw new Exception(trans('all.message.permission_denied'), 422);
+                }
                 DB::transaction(function () use ($request) {
                     $this->user = User::create([
                         'name'              => $request->name,
@@ -77,7 +112,7 @@ class EmployeeService
                         'phone'             => $request->phone,
                         'username'          => $this->username($request->email),
                         'password'          => bcrypt($request->password),
-                        'branch_id'         => $request->branch_id,
+                        'branch_id'         => $this->effectiveBranchId(auth()->user(), $request->branch_id),
                         'status'            => $request->status,
                         'email_verified_at' => now(),
                         'country_code'      => $request->country_code,
@@ -107,20 +142,25 @@ class EmployeeService
                 optional($employee->roles[0])->id,
                 $this->blockRoles
             )) {
+                if (!$this->callerMayGrantRole(auth()->user(), $request->role_id)) {
+                    throw new Exception(trans('all.message.permission_denied'), 422);
+                }
                 DB::transaction(function () use ($employee, $request) {
                     $this->user               = $employee;
                     $this->user->name         = $request->name;
                     $this->user->email        = $request->email;
                     $this->user->phone        = $request->phone;
-                    $this->user->branch_id    = $request->branch_id;
+                    $this->user->branch_id    = $this->effectiveBranchId(auth()->user(), $request->branch_id);
                     $this->user->status       = $request->status;
                     $this->user->country_code = $request->country_code;
                     if ($request->password) {
                         $this->user->password = Hash::make($request->password);
                     }
                     $this->user->save();
+                    // [USR-RBAC-03 heal 2026-06-01] syncRoles inside the transaction — atomic with
+                    // the user update (was outside: a failed sync left the user mutated but role stale).
+                    $this->user->syncRoles($request->role_id);
                 });
-                $this->user->syncRoles($request->role_id);
                 return $this->user;
             } else {
                 throw new Exception(trans('all.message.permission_denied'), 422);

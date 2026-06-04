@@ -1,0 +1,95 @@
+{
+  "wave": "G",
+  "round": 2,
+  "states_reviewed": 10,
+  "states": [
+    "01-login-idle",
+    "02-login-bad-credentials",
+    "03-login-throttle",
+    "04-login-success-redirect",
+    "04b-login-reload-authcheck",
+    "05-forgot-password-form",
+    "06-reset-password-gate",
+    "07-change-password-form",
+    "07b-change-password-old-error",
+    "08-logout",
+    "08b-logout-guard-bounce-login"
+  ],
+  "findings": [
+    {
+      "id": "G-001",
+      "state_artifact": "test-e2e-G/03-login-throttle.png",
+      "category": "go_live_config_gap_brute_force_lockout_env_override",
+      "severity": "P2",
+      "evidence": "KEY ASSERTION for Wave G is 'lockout throttle fires'. The spec (test-e2e-abuse-G-auth.spec.js:131-167) posts a FIXED email ADMIN_EMAIL='admin@lecayenne.fr' + a constant wrong password 14 times in ~8s (network.json ts 1780457489277 -> 1780457497402, all same key). The login route HAS throttle:login-lockout (routes/api.php:161); the limiter is Limit::perMinutes(10, 10) keyed by 'email|ip' (RouteServiceProvider.php:247-265, max_attempts=10 / decay=10min). With a FIXED email+ip, attempt 11 MUST return 429. OBSERVED: 03-login-throttle.network.json = 14 consecutive POST /api/auth/login -> 400, ZERO 429. The brute-force account-lockout did NOT fire. The spec only soft-warns (console.warn) and still PASSES, so the 5/5 green hid an unenforced security control. The throttle loop (spec lines 162-167) contains no rate-limit-bucket clear, so the cause is product/runtime (limiter key, cache driver coherence, or bad-creds 400 short-circuiting before the limiter decrements), not a test artifact.",
+      "fix_hint": "GO-LIVE CHECKLIST: ensure prod .env sets LOGIN_LOCKOUT_MAX_ATTEMPTS=10 (or unset -> default 10). BACKLOG (UNI-03 style): fold a LOGIN_LOCKOUT_MAX_ATTEMPTS<=N ceiling into the AppServiceProvider production boot guard so a misconfigured prod .env hard-fails at boot like POS_SIMULATION_HARDWARE.",
+      "status": "dispositioned",
+      "resolution": "DOWNGRADED P1->P2 after root-cause. NOT a code defect: limiter is correctly wired (RouteServiceProvider:247-265, Limit::perMinutes(decay,max)->by(email|ip)->429) and PROVEN to fire in prod config. The cause is dev .env:80 LOGIN_LOCKOUT_MAX_ATTEMPTS=500 (an intentional E2E-convenience override documented in .env.example:34,46). Prod-safe: config/auth.php default=10 AND .env.example template=10. RISK: the AppServiceProvider boot guard does NOT assert LOGIN_LOCKOUT_MAX_ATTEMPTS, so a prod .env carrying a high value would ship brute-force protection neutered with nothing catching it."
+    },
+    {
+      "id": "G-002",
+      "state_artifact": "test-e2e-G/07-change-password-form.png",
+      "category": "i18n_leak",
+      "severity": "P1",
+      "evidence": "Rendered breadcrumb on the change-password page shows the RAW i18n key instead of a translated label: PNG visibly reads 'Tableau De Bord / Menu.Change_password' (the key 'menu.change_password' title-cased by a CSS/JS transform). DOM confirms: <span class=\"text-slate-800 font-medium\">menu.change_password</span> (07-change-password-form.dom.html and 07b-change-password-old-error.dom.html). Matches Reviewer-Protocol category-1 regex ^[a-z]+(\\.[a-z_]+){1,4}$ exactly. Console corroborates: 07-change-password-form.console.json = '[intlify] Not found menu.change_password key in fr locale messages.' grep across resources/js/lang + resources/lang + lang found ZERO change_password entry, confirming the key is missing from the fr bundle. Visible on TWO states (07 and 07b), same root cause.",
+      "fix_hint": "Add the 'menu.change_password' key to the fr i18n bundle (resources/js/lang/fr* / the menu.* namespace that feeds the admin breadcrumb), value e.g. 'Changer le mot de passe' (the page H1 already correctly renders 'Changer Le Mot De Passe', so reuse that string). Verify the breadcrumb meta/title source that emits 'menu.change_password' resolves through $t() so the fallback no longer prints the raw key.",
+      "status": "fixed",
+      "resolution": "FIXED commit e67df4553 — added menu.change_password='Changer le mot de passe' to fr.json + rebuilt app/pos-app bundles. RE-VERIFIED live: change-password capture shows 'Changer le mot de passe' x3, ZERO raw 'menu.change_password', console clean (no intlify 'Not found')."
+    },
+    {
+      "id": "G-003",
+      "state_artifact": "test-e2e-G/07b-change-password-old-error.png",
+      "category": "i18n_locale_english_string",
+      "severity": "P2",
+      "evidence": "Wrong-old-password validation error renders in ENGLISH inside a FR-locale-only product (ADR-007 immutable FR): PNG shows 'The old password does not match.' under the ANCIEN MOT DE PASSE field. Source is a hardcoded English literal: app/Http/Requests/ChangePasswordRequest.php:46 $validator->errors()->add('old_password', 'The old password does not match.'). Sibling FormRequests share the same hardcoded English pattern ('The password confirmation does not match.' in ChangePasswordRequest.php:49, AdministratorRequest.php:71, EmployeeRequest.php:78, etc.), and lang/fr/validation.php:34 itself still holds untranslated English ('The :attribute confirmation does not match.'). NOT a measured-P1 category (does not match the raw-key regex; AUDIT_PLAN measured-P1 rule downgrades non-measured locale defects to P2 to keep the loop convergent). Real defect, disclose-only.",
+      "fix_hint": "Replace the hardcoded English literals with __() translation keys resolving to French, e.g. ChangePasswordRequest.php:46 -> __('auth.old_password_mismatch') with 'auth.old_password_mismatch' => 'L\\'ancien mot de passe est incorrect.' in lang/fr/auth.php. Also translate the leftover English strings in lang/fr/validation.php (line 34, 38, ...). Batch the validation-message i18n sweep across the *Request.php FormRequests.",
+      "status": "open"
+    },
+    {
+      "id": "G-004",
+      "state_artifact": "test-e2e-G/04b-login-reload-authcheck.png",
+      "category": "test_infra_double_prefix_probe",
+      "severity": "P3",
+      "evidence": "04b-login-reload-authcheck.console.json + .network.json show POST http://127.0.0.1:8000/api/api/auth/authcheck -> 405 (Method Not Allowed) with a doubled /api/api/ prefix. ROOT CAUSE IS THE SPEC, NOT THE PRODUCT: spec line 212 calls window.axios.post('/api/auth/authcheck') but window.axios already carries baseURL='/api', producing /api/api/auth/authcheck. The real application code is correct: resources/js/store/modules/auth.js:67 calls axios.post('auth/authcheck') -> /api/auth/authcheck, and the SAME quartet shows that correct call returning 200 (04b-login-reload-authcheck.network.json first entry, ts 1780457504470). Token-persistence-across-reload is genuinely proven (post-reload /admin URL guard + the 200 authcheck). The 405 console error is a test-harness artifact, not application code, so it does not count as a category-9 console error against the product.",
+      "fix_hint": "Spec hygiene only: in test-e2e-abuse-G-auth.spec.js:212 change window.axios.post('/api/auth/authcheck') to window.axios.post('auth/authcheck') (or use a leading-slash-free path) so the probe stops doubling the baseURL. No product change.",
+      "status": "open"
+    },
+    {
+      "id": "G-005",
+      "state_artifact": "test-e2e-G/06-reset-password-gate.png",
+      "category": "coverage_gap_reset_form_never_rendered",
+      "severity": "P3",
+      "evidence": "AUDIT_PLAN Wave G state 06 is meant to be the 'reset form (validation)'. The captured PNG is NOT a reset form -- it is the standard login page ('Bon Retour' / Email / Mot De Passe / Connexion). The reset-password route self-redirected to login because no OTP/resetToken store state is set (documented in spec header lines 63-64: ResetPasswordComponent.mounted -> emailChecking() redirects to auth.verifyEmail unless store.resetInfo.{email,resetToken} are set; OTP delivery is SMS/email-gated and not wired in dev). The gate behavior (no token -> bounce to login) is acceptable, but it means the reset-password FORM itself and its validation were never visually or technically audited in this wave. Disclose as a coverage gap so it is on record.",
+      "fix_hint": "To actually exercise the reset form, seed store.resetInfo.{email,resetToken} (or stub the OTP step) before navigating to the reset route, or add a dev-only ENV path that wires a fake OTP. Track as a follow-up capture; not a product defect.",
+      "status": "open"
+    },
+    {
+      "id": "G-006",
+      "state_artifact": "test-e2e-G/05-forgot-password-form.png",
+      "category": "capture_quality_mid_fade",
+      "severity": "P3",
+      "evidence": "05-forgot-password-form.png (and 01/02/07b) were captured mid fade-in / while a loading spinner overlay is still active: the entire frame renders at very low opacity (washed-out), so contrast cannot be meaningfully measured from the image. The DOM is correct and well-formed (forgot-pw form: 'Mot De Passe Oublie' heading, Email input, 'Suivant' button, 'Vous avez deja un compte ? Connexion' link), and the fully-settled sibling states (03, 06, 08) render with correct Cayenne palette and strong contrast, so this is a snapshot-timing artifact, not a product defect. Flag P3 so the GStack capture step adds an explicit wait-for-animation/networkidle settle before snap() on the auth/forgot/login states.",
+      "fix_hint": "In the capture helper, await an animation/opacity-settle (e.g. wait for the card container computed opacity===1 or the spinner to detach) before snap() on 01/02/05/07b so future rounds yield measurable contrast. No product change.",
+      "status": "open"
+    }
+  ],
+  "summary": {
+    "P0": 0,
+    "P1": 1,
+    "P2": 2,
+    "P3": 3,
+    "open_P0": 0,
+    "open_P1": 0,
+    "open_P2": 1,
+    "open_P3": 3
+  },
+  "notes_clean_states": [
+    "01-login-idle: renders correct (mid-fade but DOM clean); console [] network [].",
+    "02-login-bad-credentials: 400 WITH visible [role=alert] 'Identifiants invalides ou compte bloque' = CORRECT per protocol (allowlisted), not a finding.",
+    "04-login-success-redirect: clean admin dashboard, 'Connexion reussie' toast, KPIs render (31 691,40 EUR / 3422 / 45); console [] network=201.",
+    "08-logout: logout 200 then 401 cascade on dashboard widgets + /api/auth/logout = expected post-token-clear (allowlisted 401-on-logout); lands clean on login.",
+    "08b-logout-guard-bounce-login: clean login page, console [] network []; auth guard correctly bounces unauthenticated /admin -> login."
+  ],
+  "verdict": "GREEN",
+  "post_fix_note": "Round-3 reconcile 2026-06-03: G-002 FIXED+verified; G-001 root-caused as prod-safe dev .env override (P2 go-live checklist). 0 open P0/P1. All 5 G tests pass standalone (login-throttle soft-warn, login-success, change-password, logout); forget-password step is the G-006 capture-settle timing artifact (form renders, input type=email confirmed)."
+}

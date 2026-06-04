@@ -9,10 +9,16 @@ class KioskMachineRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
+     *
+     * V1.0.2 BUILD-6 heal: defense-in-depth — KioskMachineController middleware enforces
+     * `permission:settings` on show/store/update/destroy/logout/changeStatus. KioskMachine
+     * pairing creates sanctum tokens with `kiosk:order` ability — never permit without
+     * the settings gate. FormRequest doubles down so any future route bypass still
+     * authz-checks.
      */
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('settings') ?? false;
     }
 
     /**

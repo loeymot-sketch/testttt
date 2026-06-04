@@ -91,61 +91,70 @@
 }
 
 /* -----------------------------------------------------------------------------
-   DARK MODE — toggle via [data-kiosk-theme='dark'] propagé par useKioskTheme
+   DARK MODE — DISABLED per owner instruction 2026-05-21
+   -----------------------------------------------------------------------------
+   Owner: "je veux plus l'icône de changer de thème... laisse en mode Light c'est tout".
+   Owner re-instruction: "page d'accueil et page principale moitié Dark moitié Light".
+
+   ROOT CAUSE: les sous-composants Vue (KioskCategoriesComponent header/sidebar,
+   bottom bar Abandonner/Payer) consument les tokens `--kiosk-bold-*` qui
+   avaient leur PROPRE dark mode déclaré ici via `[data-kiosk-theme='dark']`.
+   Mes overrides précédents sur les vars `--kiosk-*` (kiosk-fallback.css) ne
+   touchent PAS les `--kiosk-bold-*` → moitié des surfaces restait sombre.
+
+   FIX: réécrire le bloc dark mode avec les valeurs LIGHT exactes du :root
+   light defaults (lignes 35-90 ci-dessus). `!important` sur chaque var pour
+   battre n'importe quel scoped Vue override.
    ----------------------------------------------------------------------------- */
 [data-kiosk-theme='dark'] {
-    --kiosk-bold-bg:                #0E0A07; /* deep warm dark */
-    --kiosk-bold-surface:           #1F1611; /* lifted dark warm */
-    --kiosk-bold-surface-subtle:    #150F0B; /* between */
-    --kiosk-bold-surface-strong:    #FFF5E8; /* inversion (rare ribbons clairs) */
-    --kiosk-bold-surface-overlay:   rgba(0, 0, 0, 0.75);
+    --kiosk-bold-bg:                #FFFFFF !important;
+    --kiosk-bold-surface:           #FFFFFF !important;
+    --kiosk-bold-surface-subtle:    #F7F7F7 !important;
+    --kiosk-bold-surface-strong:    #0F0F0F !important;
+    --kiosk-bold-surface-overlay:   rgba(15, 15, 15, 0.65) !important;
 
-    --kiosk-bold-text-primary:      #FFF5E8; /* warm white */
-    --kiosk-bold-text-secondary:    #B8A99A; /* warm taupe */
-    --kiosk-bold-text-tertiary:     #8A7B6E;
-    --kiosk-bold-text-inverse:      #1A1410;
-    --kiosk-bold-text-on-primary:   #FFF5E8;
-    --kiosk-bold-text-on-accent:    #1A1410;
+    --kiosk-bold-text-primary:      #0F0F0F !important;
+    --kiosk-bold-text-secondary:    #5A5A5A !important;
+    --kiosk-bold-text-tertiary:     #8A8A8A !important;
+    --kiosk-bold-text-inverse:      #FFFFFF !important;
+    --kiosk-bold-text-on-primary:   #FFFFFF !important;
+    --kiosk-bold-text-on-accent:    #0F0F0F !important;
 
-    --kiosk-bold-border:            #2A1F18;
-    --kiosk-bold-border-strong:     #FFF5E8;
-    --kiosk-bold-border-emphasis:   #FF6B6B;
+    --kiosk-bold-border:            #E5E5E5 !important;
+    --kiosk-bold-border-strong:     #0F0F0F !important;
+    --kiosk-bold-border-emphasis:   #F4501E !important;
 
-    /* Brand — slightly desaturated pour préserver contraste AAA en dark */
-    --kiosk-bold-primary:           #FF6B6B;
-    --kiosk-bold-primary-hover:     #FF8585;
-    --kiosk-bold-primary-active:    #FF4D4D;
-    --kiosk-bold-primary-soft:      #2D1518;
-    --kiosk-bold-primary-glow:      rgba(255, 107, 107, 0.40);
+    --kiosk-bold-primary:           #F4501E !important;
+    --kiosk-bold-primary-hover:     #DC4517 !important;
+    --kiosk-bold-primary-active:    #B83A12 !important;
+    --kiosk-bold-primary-soft:      #FFE8DD !important;
+    --kiosk-bold-primary-glow:      rgba(244, 80, 30, 0.32) !important;
 
-    --kiosk-bold-accent:            #FFC857; /* doré plus brillant en dark */
-    --kiosk-bold-accent-hover:      #FFD571;
-    --kiosk-bold-accent-soft:       #2D2418;
-    --kiosk-bold-accent-glow:       rgba(255, 200, 87, 0.36);
+    --kiosk-bold-accent:            #F5C518 !important;
+    --kiosk-bold-accent-hover:      #E0B214 !important;
+    --kiosk-bold-accent-soft:       #FFF7D6 !important;
+    --kiosk-bold-accent-glow:       rgba(245, 197, 24, 0.28) !important;
 
-    --kiosk-bold-success:           #4ADE80;
-    --kiosk-bold-success-soft:      #1A2D22;
-    --kiosk-bold-success-text:      #86EFAC;
-    --kiosk-bold-warning:           #FBBF24;
-    --kiosk-bold-warning-soft:      #2D2418;
-    --kiosk-bold-warning-text:      #FCD34D;
-    --kiosk-bold-danger:            #F87171;
-    --kiosk-bold-danger-soft:       #2D1A1D;
-    --kiosk-bold-danger-text:       #FCA5A5;
+    --kiosk-bold-success:           #2D6A4F !important;
+    --kiosk-bold-success-soft:      #D4F0E0 !important;
+    --kiosk-bold-success-text:      #1A4A36 !important;
+    --kiosk-bold-warning:           #F59E0B !important;
+    --kiosk-bold-warning-soft:      #FEF3C7 !important;
+    --kiosk-bold-warning-text:      #92400E !important;
+    --kiosk-bold-danger:            #9A0E2A !important;
+    --kiosk-bold-danger-soft:       #FFE5E8 !important;
+    --kiosk-bold-danger-text:       #6B0820 !important;
 
-    /* Élévation — ombres plus profondes en dark */
-    --kiosk-shadow-card-bold:       0 4px 16px rgba(0, 0, 0, 0.50), 0 1px 4px rgba(0, 0, 0, 0.30);
-    --kiosk-shadow-card-bold-hover: 0 8px 24px rgba(0, 0, 0, 0.60), 0 2px 6px rgba(0, 0, 0, 0.40);
-    --kiosk-shadow-cta-bold:        0 12px 32px rgba(255, 107, 107, 0.40), 0 4px 12px rgba(255, 107, 107, 0.20);
-    --kiosk-shadow-cta-bold-hover:  0 16px 40px rgba(255, 107, 107, 0.50), 0 6px 16px rgba(255, 107, 107, 0.25);
-    --kiosk-shadow-hero:            0 24px 64px rgba(0, 0, 0, 0.60), 0 8px 24px rgba(0, 0, 0, 0.40);
-    --kiosk-shadow-sticky-bold:     0 -8px 24px rgba(0, 0, 0, 0.40);
-    --kiosk-shadow-pop:             0 8px 24px rgba(0, 0, 0, 0.50);
-    --kiosk-shadow-modal-bold:      0 32px 80px rgba(0, 0, 0, 0.70), 0 12px 32px rgba(0, 0, 0, 0.40);
+    --kiosk-shadow-card-bold:       0 4px 16px rgba(15, 15, 15, 0.08), 0 1px 4px rgba(15, 15, 15, 0.04) !important;
+    --kiosk-shadow-card-bold-hover: 0 8px 24px rgba(15, 15, 15, 0.12), 0 2px 6px rgba(15, 15, 15, 0.06) !important;
+    --kiosk-shadow-cta-bold:        0 12px 32px rgba(244, 80, 30, 0.32), 0 4px 12px rgba(244, 80, 30, 0.16) !important;
+    --kiosk-shadow-cta-bold-hover:  0 16px 40px rgba(244, 80, 30, 0.42), 0 6px 16px rgba(244, 80, 30, 0.20) !important;
+    --kiosk-shadow-hero:            0 24px 64px rgba(15, 15, 15, 0.18), 0 8px 24px rgba(15, 15, 15, 0.10) !important;
+    --kiosk-shadow-sticky-bold:     0 -8px 24px rgba(15, 15, 15, 0.06) !important;
+    --kiosk-shadow-pop:             0 8px 24px rgba(15, 15, 15, 0.12) !important;
+    --kiosk-shadow-modal-bold:      0 32px 80px rgba(15, 15, 15, 0.28), 0 12px 32px rgba(15, 15, 15, 0.12) !important;
 
-    --kiosk-backdrop-overlay-bold:  rgba(0, 0, 0, 0.75);
-
-    /* Mode `auto` (résolu en dark par useKioskTheme) hérite de la même cascade. */
+    --kiosk-backdrop-overlay-bold:  rgba(15, 15, 15, 0.55) !important;
 }
 
 /* -----------------------------------------------------------------------------

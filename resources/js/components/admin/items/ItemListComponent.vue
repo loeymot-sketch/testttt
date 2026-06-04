@@ -192,9 +192,6 @@
                             <th class="db-table-head-th">
                                 {{ $t('label.status') }}
                             </th>
-                            <th class="db-table-head-th" v-if="permissionChecker('items_edit')">
-                                {{ $t('label.availability') }}
-                            </th>
                             <th class="db-table-head-th hidden-print"
                                 v-if="permissionChecker('items_show') || permissionChecker('items_edit') || permissionChecker('items_create') || permissionChecker('items_delete')">
                                 {{ $t('label.action') }}
@@ -218,15 +215,20 @@
                             <td class="db-table-body-td">{{ item.category_name }}</td>
                             <td class="db-table-body-td">{{ item.flat_price }}</td>
                             <td class="db-table-body-td">
-                                <span :class="statusClass(item.status)">
+                                <!-- [MISSION FIX D4 2026-05-21] Status pill must reflect per-branch
+                                     availability, not just items.status. Cross-surface parity with
+                                     /admin/stock-rupture-dashboard: an item that is "ACTIVE"
+                                     globally but flagged unavailable in item_branch_availability
+                                     for the current branch renders RUPTURE here too. -->
+                                <span v-if="isItemRuptured(item)"
+                                      class="admin-item-rupture-pill"
+                                      :title="item.availability_reason || ''"
+                                      data-testid="admin-item-rupture-pill">
+                                    {{ $t('label.rupture') }}
+                                </span>
+                                <span v-else :class="statusClass(item.status)">
                                     {{ enums.statusEnumArray[item.status] }}
                                 </span>
-                            </td>
-                            <td class="db-table-body-td" v-if="permissionChecker('items_edit')">
-                                <div :data-testid="`admin-availability-toggle-${item.id}`">
-                                    <AvailabilityToggleComponent :item-id="item.id" :branch-id="null" :is-available="item.is_available ?? true" :unavailable-reason="item.availability_reason || item.unavailable_reason || null" @availability-changed="list" />
-                                </div>
-                                <span class="sr-only" :data-testid="`admin-availability-status-${item.id}`">{{ item.is_available ?? true }}</span>
                             </td>
                             <td class="db-table-body-td hidden-print"
                                 v-if="permissionChecker('items_show') || permissionChecker('items_edit') || permissionChecker('items_create') || permissionChecker('items_delete')">
@@ -326,7 +328,6 @@ import SampleFileComponent from "../components/buttons/import/SampleFileComponen
 import UploadFileComponent from "../components/buttons/import/UploadFileComponent.vue";
 import ImportComponent from "../components/buttons/import/ImportComponent.vue";
 import ItemUploadComponent from './ItemUploadComponent.vue';
-import AvailabilityToggleComponent from './AvailabilityToggleComponent.vue';
 import ENV from '../../../config/env';
 
 export default {
@@ -349,7 +350,6 @@ export default {
         UploadFileComponent,
         ImportComponent,
         ItemUploadComponent,
-        AvailabilityToggleComponent
     },
     data() {
         return {
@@ -472,31 +472,63 @@ export default {
             return this.$store.getters['frontendLanguage/show'].display_mode === displayModeEnum.RTL ? 'rtl' : 'ltr';
         },
         itemsCount: function () {
+            // [Wave P-5 2026-05-20] Prefer the paginated total (full catalog size)
+            // over `items.length` (currently visible page = 10). Owner viewed
+            // "10 produits" on a 46-item Le Cayenne menu — defect Wave O O7.
+            const pageTotal = this.paginationPage && Number(this.paginationPage.total);
+            if (Number.isFinite(pageTotal) && pageTotal > 0) {
+                return pageTotal;
+            }
+            const paginationTotal = this.pagination && Number(this.pagination.total);
+            if (Number.isFinite(paginationTotal) && paginationTotal > 0) {
+                return paginationTotal;
+            }
             return Array.isArray(this.items) ? this.items.length : 0;
         },
         categoriesCount: function () {
             return Array.isArray(this.itemCategories) ? this.itemCategories.length : 0;
         },
         activeItemsCount: function () {
+            // [MISSION FIX D4 2026-05-21] Prefer global server-computed count
+            // so the tile reflects the whole catalogue, not the visible page.
+            const metaCount = this.pagination && Number(this.pagination?.meta?.available_count);
+            if (Number.isFinite(metaCount) && metaCount >= 0) {
+                return metaCount;
+            }
             if (!Array.isArray(this.items)) {
                 return 0;
             }
             return this.items.filter((item) => Number(item.status) === Number(statusEnum.ACTIVE)).length;
         },
         unavailableItemsCount: function () {
+            // [MISSION FIX D4 2026-05-21] Prefer server-computed global count
+            // from response meta (matches paginated-total pattern at itemsCount
+            // above). Falls back to local filter only if backend hasn't supplied
+            // the meta key (older deployments / tests stubbing the store).
+            const metaCount = this.pagination && Number(this.pagination?.meta?.unavailable_count);
+            if (Number.isFinite(metaCount) && metaCount >= 0) {
+                return metaCount;
+            }
             if (!Array.isArray(this.items)) {
                 return 0;
             }
-            return this.items.filter((item) => {
-                return item.is_available === false || item.is_available === 0 || item.is_available === '0'
-                    || item.availability_reason || item.unavailable_reason;
-            }).length;
+            return this.items.filter((item) => this.isItemRuptured(item)).length;
         },
 
     },
     methods: {
         permissionChecker(e) {
             return appService.permissionChecker(e);
+        },
+        // [MISSION FIX D4 2026-05-21] SSOT for "is this item ruptured on this branch?"
+        // — same predicate used by the table pill, the header card local fallback,
+        // and the test spec. Strict false (vs falsy) protects against missing API
+        // field on older deployments (a missing key would falsely flag everything).
+        isItemRuptured: function (item) {
+            if (!item) return false;
+            return item.is_available === false
+                || item.is_available === 0
+                || item.is_available === '0';
         },
         statusClass: function (status) {
             return appService.statusClass(status);
@@ -650,6 +682,25 @@ export default {
     .hidden-print {
         display: none !important;
     }
+}
+
+/* [MISSION FIX D4 2026-05-21] Rupture pill — visually distinct from
+   the regular Actif (green) / Inactif (gray) chips so admin spots
+   per-branch stock-rupture at a glance. Aligned with
+   StockRuptureDashboardComponent's red "RUPTURE" treatment. */
+.admin-item-rupture-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 9px;
+    border-radius: 999px;
+    background: #fee2e2;
+    color: #b91c1c;
+    border: 1px solid #fca5a5;
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    line-height: 1;
 }
 
 .catalog-control-plane {

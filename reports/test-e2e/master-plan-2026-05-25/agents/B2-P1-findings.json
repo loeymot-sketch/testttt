@@ -1,0 +1,173 @@
+{
+  "agent": "B2-P1",
+  "surface": "POS Caisse /admin/pos",
+  "persona": "Chef-rush",
+  "persona_reframe": "Pendant un coup de feu, qu'est-ce que la caisse (côté caissier en face-à-face client) signale au chef en cuisine ? Le caissier est le filtre humain entre la voix du client et le ticket KDS — quelles intentions exprimées au comptoir se traduisent — ou pas — sur la ligne KDS ?",
+  "timestamp": "2026-05-25T22:02:00+02:00",
+  "server": "http://127.0.0.1:8000",
+  "git_branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "git_head": "a6ed32807",
+  "discipline": {
+    "DM3_quartet_captures": "PARTIAL — state-1 HTML shell capturé via curl (10173 bytes, HTTP 200) — captures/B2-P1/state-1-shell.html. States 2-5 sont du raisonnement code-driven (lecture PosComponent.vue 4874 LOC partielle ciblée + PaymentComponent.vue 1478 LOC partielle + PosCounterCollectModal.vue 768 LOC + ItemComponent.vue partielle + posCart.js 585 LOC + posOrder.js 352 LOC + kdsAllergens.js 53 LOC + KitchenDisplaySystemComponent.vue grep). PAS de captures browser-driven (Playwright MCP non utilisé en sub-agent). DM8: signalé honnêtement, à l'identique du pattern B1-P1.",
+    "DM5_adversarial_inline": "OUI — paragraphe dédié infra",
+    "DM6_NF525_readonly": "RESPECTÉ — zéro INSERT/UPDATE sur audit_logs/z_reports/fiscal_sequences. Lecture seule des sources frontend + 1 curl GET /admin/pos (renvoie shell SPA, pas d'effet de bord).",
+    "DM8_honest_reporting": "OUI — states 2-5 reasoned-not-captured, payload final POS observé code-side (no live network capture). 3 findings rigoureusement traçables aux fichiers/lignes lus. Scope POS-only — convergence cross-surface (POS↔Kiosk↔KDS) déférée à l'agent de synthèse master-plan."
+  },
+  "states_audited": [
+    {
+      "id": 1,
+      "name": "POS shell load — /admin/pos (200 with admin cookie expected)",
+      "evidence": "captures/B2-P1/state-1-shell.html (10173 bytes, HTTP 200, Content-Type: text/html)",
+      "route": "GET /admin/pos",
+      "render_mode": "SPA shell Vue — Le curl no-auth renvoie un 200 HTML générique (10173 bytes — exactement la taille observée par B1-P1 sur /kiosk/idle) ; sans cookie admin, c'est la coquille SPA + login redirect côté client. Le rendu réel du POS V5 est mounted client-side après auth via window.foodkingConfig + Vue Router.",
+      "chef_relevance": "Aucune donnée chef émise à ce stade. NOTE OBSERVABILITY : Comme pour la borne (B1-P1), window.foodkingConfig.bypassMode est exposé en HTML inline. Pour le POS en MODE TEST (POS_SIMULATION_HARDWARE=true en local) — drawer simulé, TPE simulé — AUCUN indicateur côté chef que la commande qu'il prépare vient d'un POS en mode test. Le AppServiceProvider boot guard refuse POS_SIMULATION_HARDWARE=true en production (CLAUDE.md §8), donc en prod c'est non-applicable. En local/staging le risque reste.",
+      "observations": [
+        "Réutilise la même coquille SPA que /kiosk/idle (10173 bytes — pattern Laravel catchall identique)",
+        "Aucune fuite kiosk-style d'identifiants caisse en HTML inline (kioskAutoLogin était spécifique borne) — caisse exige login admin Spatie (admin@lecayenne.fr/123456 baseline)",
+        "Le payload est rendu client-side après mount — toute mesure de contenu réel impose un Playwright authenticated session, hors scope sub-agent."
+      ]
+    },
+    {
+      "id": 2,
+      "name": "PosComponent.vue — order_type chooser + cart cycle",
+      "evidence": "PosComponent.vue lines 618-660 (legend select_order_type — DINING_TABLE / TAKEAWAY / DELIVERY radio buttons) + ItemComponent.vue:288-292 (textarea instruction per-line). Wizard caisse Vanilla JS (frozen pos-wizard.js public/js, non lu) ouvre via dataset bridge.",
+      "render_mode": "Vue SFC mounted dans admin-pos-v4.blade.php (M-POS-2 keyboard heal appliqué — keypress handlers floatNumber/phoneNumber lines 894/1044)",
+      "chef_relevance": "Critique — l'order_type que le caissier sélectionne au comptoir va sur le ticket KDS. 3 valeurs possibles caisse (DINING_TABLE/TAKEAWAY/DELIVERY) vs 2 borne (TAKEAWAY/KIOSK). Le chef distingue ainsi un ticket caisse d'un ticket borne via le code numérique (POS_SELF_ORDER_TYPES = [15, 20] dans posOrder.js:6 — DINING_TABLE=15 + TAKEAWAY=20). MAIS : aucun champ tier/priorité, aucun champ nombre de personnes (sauf pour DINING_TABLE qui exige dining_table_id ligne 3699).",
+      "observations": [
+        "ItemComponent.vue:288-292 — le caissier PEUT taper une instruction PAR LIGNE (textarea {{ $t('label.special_instructions') }}). Donc 'sans oignon', 'bien cuit', 'allergie X' peuvent être saisis. Mais le caissier doit penser à demander au client + à taper — pas de prompt UI qui le rappelle.",
+        "PosCounterCollectModal.vue:419 — il y a un champ `note` MAIS strictement réservé à CASH (motif 'pourquoi le client a payé en espèce'). PAS un canal chef.",
+        "ZÉRO champ order-level (customer_note / order_note / message_chef) confirmé par grep exhaustif sur PosComponent.vue, PaymentComponent.vue, PosCounterCollectModal.vue, ItemComponent.vue. Pas un trou borne-specific — c'est un trou systémique POS+Borne (cohérent avec B1-P1-F03).",
+        "M-POS-2 keyboard heal : keypress numeric-only sur tel/prix — sans impact chef.",
+        "DELIVERY exige address_id (ligne 3703) mais PAS delivery_boy_id à création — assignation est ultérieure via posOrder/selectDeliveryBoy (posOrder.js:282). Conséquence chef-rush : chef ne sait pas à création si un livreur est dispo. Pour un coup de feu DELIVERY, ticket KDS arrive sans livreur attribué et un délai de cuisine optimal repose sur l'hypothèse 'on aura un livreur en 15 min'."
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Cart allergens passthrough — vérification ligne par ligne",
+      "evidence": "posCart.js:196-215 normalizeCartForApi (POS payload sanitizer) + posCart.js:218-237 shapePosListItem (forme canonique cart line) + posOrder.js:196-223 save action (axios POST admin/pos avec idempotency-key)",
+      "render_mode": "Vuex pipeline : cart line UI → shapePosListItem → normalizeCartForApi → posOrder/save POST → backend FrontendOrderController équivalent POS",
+      "chef_relevance": "GAP-1 IDENTIQUE À LA BORNE — comme sanitizeKioskOrderItem (kioskCart.js B1-P1-F01), normalizeCartForApi côté POS NE TRANSMET AUCUN `customer_declared_allergens` global ni `customer_allergen_warning`. Pire qu'à la borne : la caisse n'a même pas de champ UI pour les capturer en V1 (pas de declared_allergens visibles dans PosCounterCollectModal, ItemComponent, ou checkoutProps.form). Le grep `customer_declared_allergens` sur tout `app/` renvoie ZÉRO résultat backend — la persistance schema n'existe pas pour cette donnée.",
+      "observations": [
+        "Le ticket KDS chef voit `item.allergens_snapshot` (intrinsèque à l'item via composition_snapshot NF525-locked) — affichage badge kds-allergens-badge (KitchenDisplaySystemComponent.vue lignes 307, 497, 669, 847 + modal lignes 1023+). C'est BON pour le côté technique.",
+        "MAIS si un client comptoir dit verbalement 'je suis allergique aux arachides' et que le caissier oublie de taper cette consigne dans `instruction` per-line, l'information est PERDUE. Aucun champ UI dédié, aucun garde-fou.",
+        "Le caissier PEUT taper l'allergie dans `instruction` per-line (free-form textarea), mais c'est : (1) reposant sur la discipline humaine en coup de feu, (2) perdu si le caissier choisit de la taper sur 1 ligne au hasard (même problème UX que B1-P1-F03), (3) non parseable côté KDS pour highlighter spécifiquement (vs un champ structuré `customer_declared_allergens: ['peanut']` qui afficherait un badge top-ticket rouge).",
+        "Conclusion : le pipeline allergen à la caisse est intégralement humain — la borne fait au moins un travail de profil client (declared_allergens en localStorage), la caisse n'offre rien."
+      ]
+    },
+    {
+      "id": 4,
+      "name": "Chef-instruction capture au comptoir + observabilité livreur",
+      "evidence": "ItemComponent.vue:288-292 (textarea instruction per-line) + PosComponent.vue:3628 (instruction: row.instruction || '') + PosComponent.vue:1230-1232 (instruction affiché dans modal détail commande) + posOrder.js:282 selectDeliveryBoy (action séparée post-création)",
+      "render_mode": "instruction est UN CHAMP TEXTUEL LIBRE per-line — ship vers backend via normalizeCartForApi spread `...normalizedItem` + shapePosListItem ligne 224",
+      "chef_relevance": "Le caissier peut transmettre des consignes au chef via 2 canaux UI : (a) instruction per-line dans le wizard d'ajout d'item (visible PosComponent.vue:3628 cart line + 1230 modal détail), (b) cart_display généré par wizard (ligne 795 — résumé propre). Le chef voit donc item.instruction sur sa carte KDS si le KDS adapter le rend (à vérifier dans helper kdsCustomization). PAS de note globale. PAS de tier priorité (urgent/normal/lent). PAS de pré-flag livreur à création (assignation séparée).",
+      "observations": [
+        "instruction per-line bien shippé via normalizeCartForApi (spread `...normalizedItem` ligne 201 préserve le champ) ET shapePosListItem (ligne 224 explicite). Donc chef voit instruction.",
+        "MAIS : aucun garde-fou UI pour rappeler au caissier 'avez-vous demandé les allergies ?' / 'avez-vous demandé si urgent ?' — 100% discipline humaine en coup de feu.",
+        "Livreur : posOrder/selectDeliveryBoy (action séparée, ligne 282) déclenche un POST distinct admin/pos-order/select-delivery-boy/{id}. Conséquence chef-rush : le KDS reçoit DELIVERY tickets sans `delivery_boy_id` à création — le chef ne peut pas anticiper le timing 'livreur prêt à partir'. C'est ASYNC.",
+        "Token génération : DELIVERY → first name du client inline (PosComponent.vue:3686-3690) ; TAKEAWAY → counter séquentiel jour `pos_order_seq_${today}` (3691-3697) reset minuit. Chef voit donc 'Aurélien' vs 'N°5' — bonne différenciation visuelle.",
+        "POS_SELF_ORDER_TYPES = [15, 20] (posOrder.js:6) — POS ne se notifie pas lui-même (skip realtime POS-origin). Pas de side-effect chef, mais à noter : si une commande POS DELIVERY est routée vers livreur, le chef peut ne pas voir la notif realtime côté POS (lecture autonome KDS-side)."
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Submit final + side-effects KDS — payload POST admin/pos",
+      "evidence": "PaymentComponent.vue:899 throw 'POS save: missing order payload' + PaymentComponent.vue:881 dispatch posOrder/save + posOrder.js:196-222 axios.post('admin/pos', payload, {X-Idempotency-Key}) + PaymentComponent.vue:869-877 SSOT strip total/subtotal/discount (Sprint H5 POS-A6) + N-HEAL-03/04 polling fixes (PosComponent.vue:2068-2069, 2090, 2632)",
+      "render_mode": "POST /admin/pos avec body = saveForm = { ...aligned, items: normalizedItems } — SANS total/subtotal/discount (server SSOT pricing recompute via PricingService::calculateOrder)",
+      "chef_relevance": "C'est le moment où la commande devient visible KDS. Le ticket KDS porte order_type + items + instruction per-line + allergens_snapshot intrinsèque + token (sequential ou prénom). Le caissier voit immédiatement la confirmation receipt mais ne reçoit AUCUN feedback 'le KDS a bien reçu' (one-way fire-and-forget après réponse 2xx).",
+      "observations": [
+        "SSOT enforcement strict (PaymentComponent.vue:869-877) — total/subtotal/discount strippés avant POST. Le backend recompute. Chef peut être confiant que le prix sur la commande est le bon. NF525 OK.",
+        "Idempotency-Key X-Idempotency-Key obligatoire (posOrder.js:204) — pas de duplication ticket KDS sur double-tap du bouton Encaisser. RED-R1 P2/Q-13-2 cashier-friendly toast pour 409 idempotency conflict (posOrder.js:217).",
+        "30s AbortController timeout (posOrder.js:202) — si POST échoue par timeout, le caissier voit un toast 'Délai de paiement dépassé (30s). Ne relancez pas — vérifiez le statut.' BIEN — protection contre double-encaisse en coup de feu réseau dégradé. Chef-side : si le POST timeout, le KDS n'a peut-être rien reçu et le caissier ne sait pas — il doit vérifier le ticker manuellement.",
+        "N-HEAL-04 polling self-recursive setTimeout (2068-2069, 2632) — au lieu de setInterval, garantit que la cadence rafraîchie ne race-condition pas si la requête prend > intervalle. Côté chef : si polling tickete plus lent que prévu pendant un coup de feu, c'est invisible côté caisse (ticker peut être en retard).",
+        "Aucun broadcast 'commande créée caisse' vers KDS canal pusher OU polling — KDS pull-side seul (KdsSyncService.js). En coup de feu avec POS_SIMULATION_HARDWARE+broadcasting null driver, le KDS peut prendre jusqu'à pollingIntervalMs (30s par défaut, posOrder.js:5) pour voir la commande caisse. Pour un café qui paie 1 sandwich, c'est marginal. Pour 8 commandes en 30s, le chef voit un burst groupé au lieu d'un flux régulier."
+      ]
+    }
+  ],
+  "chef_rush_workflow_map": {
+    "step_1_client_arrive_comptoir": "Client parle au caissier — verbalement. Le caissier compose dans PosComponent (categories → ItemComponent wizard).",
+    "step_2_caissier_compose_cart": "ItemComponent textarea instruction per-line peut capturer 'sans oignon', 'allergie X', 'TRÈS PRESSÉ' MAIS aucun prompt UI ne le rappelle. Pas de champ structuré allergens. Pas de note ordre-level.",
+    "step_3_caissier_select_order_type": "DINING_TABLE / TAKEAWAY / DELIVERY (legend select_order_type ligne 618). DELIVERY exige address_id (ligne 3703) mais PAS delivery_boy_id à création.",
+    "step_4_caissier_encaisse": "PaymentComponent V5 — cash/card/multi/mobile/ticket. SSOT strip total/subtotal/discount. POST admin/pos avec X-Idempotency-Key. 30s AbortController.",
+    "step_5_kds_recoit": "KDS poll (KdsSyncService 30s par défaut sans pusher) reçoit le ticket avec : order_type (15/20 = POS-self) + items.instruction (per-line free-form) + items.allergens_snapshot (intrinsèque NF525-locked) + token (séquentiel/prénom).",
+    "step_6_chef_prepare": "Chef voit ticket avec items + instruction per-line + badge allergens intrinsèques. NE VOIT PAS : customer_declared_allergens (champ inexistant frontend ET backend), priorité tier, mode TEST flag, livreur attribué (assigné après création), nombre de personnes (sauf DINING_TABLE).",
+    "step_7_chef_appelle": "Token séquentiel (N°5) si TAKEAWAY ou prénom si DELIVERY — chef hurle 'N°5' ou 'Aurélien'."
+  },
+  "findings_top_3": [
+    {
+      "id": "B2-P1-F01",
+      "severity": "P1",
+      "title": "Caisse n'offre AUCUN canal allergens client-déclaré — pire que la borne",
+      "category": "safety / data-flow",
+      "evidence_file": "resources/js/components/admin/pos/PosCounterCollectModal.vue (zero allergen field) + resources/js/components/admin/pos/PaymentComponent.vue (zero allergen field) + resources/js/components/admin/pos/ItemComponent.vue:288-292 (textarea instruction free-form per-line — non structuré) + resources/js/store/modules/posCart.js:196-215 normalizeCartForApi (zero customer_declared_allergens) + grep `customer_declared_allergens` sur app/ = zéro résultat backend",
+      "description": "La borne offre au moins un mécanisme : kioskSettings.customerProfile.declared_allergens stocké localStorage par le client en mode dégagé (B1-P1 a documenté que le payload jette ces données — F01 borne). La CAISSE n'offre RIEN : aucun champ UI 'allergies déclarées' dans PosCounterCollectModal, aucun champ dans le checkoutProps.form de PosComponent, aucun champ dans PaymentComponent V5. La seule façon pour le caissier de transmettre une allergie au chef est de la TAPER manuellement dans le textarea `instruction` per-line (ItemComponent.vue:290). C'est : (1) free-form non parseable côté KDS, (2) attaché à 1 seule ligne d'item alors que l'allergie est globale au client, (3) dépend de la discipline humaine en coup de feu (le caissier doit demander + le client doit répondre + le caissier doit taper sans erreur). En outre, le grep `customer_declared_allergens` sur tout app/ Laravel renvoie ZÉRO — la persistance backend n'existe pas pour ce champ structuré, donc même si on l'ajoutait au front il n'y aurait pas de colonne où le stocker côté order.",
+      "chef_impact": "Coup de feu : 6 clients en 5 min au comptoir. Client #3 dit 'je suis allergique aux noix'. Caissier débordé oublie de taper. Chef prépare un menu qui contient un dressing avec noix. Pas de signal côté KDS — le `allergens_snapshot` intrinsèque va catcher SI l'allergène est tracé dans la composition de l'item, MAIS si l'allergène vient d'une sauce custom ou d'un combo où l'ingrédient est noyé, le signal échoue. Pire qu'à la borne car aucun filet de sécurité localStorage profil.",
+      "v1_blocker": false,
+      "recommendation": "V1.0.1 P1 safety : ajouter un champ `declared_allergens` (multi-select chips) dans PosCounterCollectModal OU dans un nouveau widget 'Allergies client' au-dessus de la cart V5. Persister dans orders.customer_declared_allergens (nouvelle colonne nullable JSON). KDS adapter highlight badge rouge top-ticket 'ALLERGIE DÉCLARÉE: noix, gluten'. Backend = 1 migration + 1 FormRequest + 1 sélecteur KDS. Effort ~3h. Convergent avec B1-P1-F01 — un seul backend field sert les 2 surfaces (POS + Borne).",
+      "estimated_fix": "3 hours — 1 widget Vue chips multiselect + 1 mutation Vuex + 1 migration + 1 FormRequest field + 1 sélecteur KDS + 1 Vitest unit posCart + 1 Playwright e2e"
+    },
+    {
+      "id": "B2-P1-F02",
+      "severity": "P2",
+      "title": "Livreur attribué APRÈS création — chef ne peut pas anticiper le timing DELIVERY",
+      "category": "ops / workflow",
+      "evidence_file": "resources/js/store/modules/posOrder.js:282-295 selectDeliveryBoy (action distincte POST admin/pos-order/select-delivery-boy/{id}) + resources/js/components/admin/pos/PosComponent.vue:3686-3690 (token = deliveryInline.name.split(' ')[0] pour DELIVERY) + ZÉRO `delivery_boy_id` dans checkoutProps.form au moment du POST admin/pos initial",
+      "description": "Quand le caissier encaisse une commande DELIVERY, le payload POST admin/pos ne contient PAS encore l'identité du livreur. L'attribution se fait via une action séparée ultérieure (posOrder/selectDeliveryBoy → POST admin/pos-order/select-delivery-boy/{order_id}). Conséquence chef-rush : le ticket arrive sur le KDS sans champ `delivery_boy_id` ni `delivery_boy_name`, donc le chef ne sait pas si la cuisine doit prioriser (livreur déjà disponible, prêt à partir) ou peut prendre 15 min (aucun livreur dispo, le client attendra de toute façon). Le chef traite donc tous les DELIVERY en FIFO sans signal de priorité. Cohérent avec V1 'no useless complexity' mais détecté ici comme zone d'amélioration UX cuisine.",
+      "chef_impact": "Coup de feu samedi soir : 4 commandes DELIVERY en 3 minutes, 1 seul livreur dispo. Le chef prépare les 4 dans l'ordre d'arrivée. Quand le livreur arrive, il prend la 1ère commande, livre, revient 25 min plus tard. Les commandes 2-3-4 ont stagné chaudes 25 min. Résultat : nourriture refroidie, client mécontent. Si le chef avait su 'cmd 1 = livreur dispo, cmd 2-3-4 = pas de livreur', il aurait préparé cmd 1 d'abord et différé cmd 2-3-4 de 20 min — qualité produit préservée.",
+      "v1_blocker": false,
+      "recommendation": "V1.0.2 — pré-fetch livreurs dispo côté caisse (cashier sees 'X livreurs disponibles' badge sur le bouton DELIVERY). Si caissier coche 'livreur prêt' alors payload POST inclut `delivery_boy_estimated_dispatch_minutes: 0|15|30`. KDS reçoit + affiche badge 'LIVREUR DISPO' vs 'LIVREUR DANS ~20 MIN'. Chef priorise sa préparation en conséquence. Tracking simple, gros gain qualité.",
+      "estimated_fix": "4 hours — 1 sélecteur livreurs dispo PosComponent + 1 colonne nullable orders.delivery_boy_estimated_dispatch_minutes + KDS badge + sélecteur"
+    },
+    {
+      "id": "B2-P1-F03",
+      "severity": "P3",
+      "title": "Pas d'order-level note 'message cuisine' — pattern systémique POS+Borne",
+      "category": "UX / workflow",
+      "evidence_file": "Grep exhaustif sur PosComponent.vue + PaymentComponent.vue + PosCounterCollectModal.vue + ItemComponent.vue = ZÉRO `customer_note` / `order_note` / `note_cuisine`. Seul `note` trouvé dans PosCounterCollectModal.vue:419 est conditionnel CASH (motif paiement espèce, non chef). instruction est PER-LINE only.",
+      "description": "Identique à la borne (B1-P1-F03) : la caisse peut transmettre une instruction par ligne (ItemComponent.vue:290 textarea per-line). Mais aucun champ global au niveau ORDER pour 'client pressé', 'commande pour bureau X', 'allergie générale famille'. Si le caissier veut passer une consigne globale au chef ('client repart à 12h45'), il doit la coller sur 1 ligne d'item au hasard. Le chef voit la consigne attachée à un sandwich isolé alors qu'elle concerne toute la commande. Le fait que ce trou existe AUSSI à la borne (B1-P1-F03) confirme que c'est un pattern systémique architecture, pas un oubli surface-specific.",
+      "chef_impact": "Coup de feu : consigne 'TRÈS PRESSÉ — client repart 12h45' tapée sur 1 ligne (le sandwich Chicken). Chef accélère le Chicken et oublie d'accélérer les 3 autres lignes du même ticket. Confusion potentielle. Pour un panini + frites + boisson, le client attend les frites parce que le chef ne savait pas que tout devait sortir vite. Identique au scénario borne — pattern systémique.",
+      "v1_blocker": false,
+      "recommendation": "Ajouter un champ `order_customer_note` global au niveau order (1 textarea visible au-dessus du cart V5 et dans PosCounterCollectModal pour la borne→counter handoff). Backend orders.customer_note (colonne existe peut-être déjà — à vérifier via SHOW COLUMNS). KDS adapter affiche en bannière TOP du ticket (au-dessus des lignes individuelles). Un seul champ backend sert POS + Borne — convergent avec B1-P1-F03.",
+      "estimated_fix": "2 hours — 1 textarea PosComponent V5 cart header + 1 mutation Vuex + 1 colonne backend (si pas déjà) + 1 KDS bandeau top-ticket"
+    }
+  ],
+  "adversarial_paragraph": "Worst case je vois : samedi midi coup de feu. 6 clients au comptoir Le Cayenne. Client #3 (Mme Dubois, 65 ans, mémoire-imparfaite client allergique sévère aux arachides confirmée) commande un menu Chicken pour son neveu — dit verbalement au caissier 'attention, mon neveu est allergique aux arachides, surtout pas de sauce qui en contient'. Le caissier débordé hoche la tête, compose le menu dans PosComponent, oublie de taper 'allergie arachides' dans le textarea instruction (ItemComponent.vue:290 — free-form, optionnel, aucun prompt UI). Aucun champ structuré declared_allergens côté caisse n'existe (B2-P1-F01 confirmé). Le caissier ajoute une sauce custom 'Sauce Suprême' dont la composition_snapshot contient bien `allergens_snapshot: ['peanut']` (NF525-locked, intrinsèque). Le ticket KDS arrive avec le badge kds-allergens-badge sur la ligne Sauce. MAIS dans le rush avec 6 tickets simultanés, le chef rate le badge (overlay 308 KitchenDisplaySystemComponent.vue est visible mais pas hyperlinké comme 'ALERTE TOP-TICKET ROUGE'). Prépare. Sert au neveu. Réaction anaphylactique. C'est un cas réel possible. Le pipeline a échoué TROIS fois : (1) la caisse n'a pas demandé 'voulez-vous déclarer une allergie ?', (2) le caissier n'a pas tapé manuellement dans le textarea libre, (3) le ticket KDS a noyé l'allergen badge dans 6 tickets concurrents. La sécurité a été pensée 'NF525 fiscal-first' (composition_snapshot bit-perfect, immuable, signé HMAC) mais pas 'safety first' (alerte client-declared en pré-cuisine). Second worst case : commande DELIVERY validée 21h05 vendredi soir. Pas de livreur (B2-P1-F02). Le chef prépare la commande en 6 min (perf normale). Le livreur arrive 21h25 (20 min plus tard). Le burger est froid, les frites molles. Le caissier ne savait pas, le chef ne savait pas, le client appelle 30 min après livraison pour réclamer. Le system a manqué une donnée critique de coordination temporelle. Ces deux scénarios montrent une asymétrie identique à la borne : la caisse est polish UX-side (cart V5 propre, numpad responsive, SSOT NF525 strict, idempotency robust, M-POS-2 keyboard heal, N-HEAL-03/04 polling), MAIS le data-pipeline VERS le chef est sous-équipé. Le caissier humain devient le point de défaillance critique sans filet UI. La discipline GStack ne suffit pas si le formulaire de capture lui-même est manquant.",
+  "scores": {
+    "scope_note": "POS shell scoring limité — grep + code-read uniquement (zéro Playwright capture authenticated). Flow-wider scores rigoureux sur le code lu (PosComponent + PaymentComponent + ItemComponent + posCart + posOrder + PosCounterCollectModal + kdsAllergens + KitchenDisplaySystemComponent).",
+    "pos_shell_load": {
+      "UX": null,
+      "perf": null,
+      "a11y": null,
+      "i18n": null,
+      "polish": null,
+      "rationale": "Non scoré — shell HTML curl-only (10173 bytes Laravel catchall), rendu réel mounted client-side Vue + auth requise. Sans Playwright authenticated session, impossible de noter l'UX du shell load réel."
+    },
+    "flow_wider_pos_to_kds": {
+      "UX": 7,
+      "perf": 8,
+      "a11y": null,
+      "i18n": null,
+      "polish": 8,
+      "rationale": "UX flow : composition cart V5 solide, SSOT NF525 strict, idempotency robust, 30s timeout protection, M-POS-2 keyboard heal, N-HEAL-04 polling self-recursive cohérent. MAIS : pas de champ declared_allergens (gap UX safety), pas d'order-level note (cohérent avec gap borne), livreur attribué hors-création (asynchronie sub-optimale chef). Perf 8 : N-HEAL-04 setTimeout self-recursive évite race-condition cadence, AbortController 30s POST timeout, idempotency dedup. Polish 8 : SSOT strip total/subtotal/discount élégant, 409 idempotency conflict cashier-friendly toast, token gen DELIVERY/TAKEAWAY différencié intelligemment. Scores a11y/i18n du flow complet non attribués — nécessitent capture Playwright pour mesurer (DM8 honest)."
+    }
+  },
+  "verdict": "AMBER",
+  "verdict_rationale": "POS shell + V5 cart = excellent qualité technique (SSOT NF525, idempotency, polling self-recursive, M-POS-2 heal, SSOT strip, token gen). MAIS reframe Chef-rush expose 3 trous data-pipeline POS → KDS : (1) ZÉRO canal client-declared allergens (pire qu'à la borne car aucun localStorage profil — caissier-humain seul filtre), (2) livreur attribué APRÈS création (chef sans visibilité timing dispatch), (3) pas de note ordre-level (pattern systémique POS+Borne). Aucun n'est V1 blocker mais (1) est P1 safety prioritaire au V1.0.1 — convergent avec B1-P1-F01 (un seul backend field sert les 2 surfaces). La caisse fait son métier fiscal/encaissement de manière exemplaire ; le défaut est l'asymétrie entre la rigueur backend (SSOT, NF525, idempotency, snapshot frozen) et la pauvreté du canal humain caissier→chef (pas de structure capture allergens, pas de note globale, pas de pré-flag urgence). Le caissier est le maillon critique sans outil UI dédié.",
+  "captures_paths": [
+    "reports/test-e2e/master-plan-2026-05-25/captures/B2-P1/state-1-shell.html"
+  ],
+  "files_read": [
+    "resources/js/components/admin/pos/PosComponent.vue (4874 LOC — partial via grep + targeted reads lines 618-660, 793-797, 1220-1238, 3628, 3680-3730, 2068-2090, 2632, 894, 1044)",
+    "resources/js/components/admin/pos/PaymentComponent.vue (1478 LOC — partial via grep + lines 100-240, 850-920)",
+    "resources/js/components/admin/pos/PosCounterCollectModal.vue (768 LOC — partial via grep + lines 195-230, 419)",
+    "resources/js/components/admin/pos/ItemComponent.vue (partial via grep — lines 288-292, 346, 385, 832, 854, 1089, 1135, 1276-1279, 1366, 1400, 1461)",
+    "resources/js/components/admin/pos/v5/PosV5TrancheRow.vue (partial — lines 1-30 for frozen-zone sniff)",
+    "resources/js/store/modules/posCart.js (585 LOC — read lines 100-260)",
+    "resources/js/store/modules/posOrder.js (352 LOC — full read lines 1-350)",
+    "resources/js/helpers/kdsAllergens.js (53 LOC — full read)",
+    "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue (partial via grep — lines 307, 497, 669, 847, 940-946, 1023-1028)",
+    "Backend grep `customer_declared_allergens` on app/ = zero matches (negative finding documented)"
+  ],
+  "frozen_zone_touch": "NONE — read-only inspection only (PaymentComponent.vue is §7 frozen; only lines 100-240 + 850-920 READ for chef-relevance audit, zero modification)",
+  "nf525_touch": "NONE — DM6 respected. Zero INSERT/UPDATE on audit_logs/z_reports/fiscal_sequences. Documented in observations only (SSOT strip total/subtotal/discount, idempotency-key, composition_snapshot allergens_snapshot intrinsic).",
+  "convergence_signal": "B2-P1-F01 (allergens) converges with B1-P1-F01 (kiosk allergens dropped). B2-P1-F03 (no order-note) converges with B1-P1-F03 (no kiosk order-note). Pattern: 2 surfaces independent agents → same 2 gaps = SYSTEMIC architecture issue, not surface-specific oversight. B2-P1-F02 (livreur post-creation) is POS-specific (kiosk has no DELIVERY order_type)."
+}

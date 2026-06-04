@@ -1,0 +1,241 @@
+{
+  "agent": "S1-P1 Borne x Chef-rush",
+  "surface": "Kiosk (Borne) /kiosk/idle -> /kiosk/confirmation",
+  "perspective": "Chef en rush — qu'est-ce que la borne devrait me dire ou demander au client pour que je priorise et prepare correctement ?",
+  "scope": "READ-ONLY audit. Mapping screens + missing chef-relevant signals (urgency, party-size, ETA contract, allergen cross-check, stock realtime, prep complexity, eat-now-or-later, big-order alert, completion broadcast).",
+  "screens_audited": [
+    {
+      "name": "kiosk.idle",
+      "path": "resources/js/components/frontend/kiosk/KioskIdleScreenComponent.vue",
+      "components": ["KioskIdleScreenComponent", "KsA11ySettings"],
+      "chef_relevant_data_collected": ["order_type (TAKEAWAY only — dine_in feature-flag OFF V1)"]
+    },
+    {
+      "name": "kiosk.categories",
+      "path": "resources/js/components/frontend/kiosk/KioskCategoriesComponent.vue",
+      "components": ["KioskCategoriesComponent", "KsAllergenBadge", "KsBadge", "KsCartBottomSheet", "CatalogChangeToast"],
+      "chef_relevant_data_collected": ["product allergens (customer-allergen collision warning rendered)", "unavailable_reason if 86'd item"]
+    },
+    {
+      "name": "kiosk.wizard",
+      "path": "resources/js/components/frontend/kiosk/KioskWizardComponent.vue",
+      "components": ["KioskWizardComponent (FROZEN)", "KsAllergenBadge header", "KioskOrderSummaryComponent (recap)"],
+      "chef_relevant_data_collected": [
+        "per-item composition (pain/viande/sauce/garniture/supplements/menu)",
+        "per-item special_instructions textarea (190 char, recap step only) -> persists as cart line item.instruction -> KDSOrderItemsResource.instruction -> KDS line render"
+      ]
+    },
+    {
+      "name": "kiosk.cart",
+      "path": "resources/js/components/frontend/kiosk/KioskCartComponent.vue",
+      "components": ["KioskCartComponent", "KsAllergenBadge per line", "KsCartBottomSheet"],
+      "chef_relevant_data_collected": ["order_type toggle (dine_in disabled V1)", "per-line instruction display", "per-line allergen collision flag if customer profile declared allergens"]
+    },
+    {
+      "name": "kiosk.loyalty",
+      "path": "resources/js/components/frontend/kiosk/KioskLoyaltyComponent.vue",
+      "components": ["KioskLoyaltyComponent"],
+      "chef_relevant_data_collected": ["customer phone -> loyalty link only. NOT exposed to KDS (GDPR Z9-P0-03)"]
+    },
+    {
+      "name": "kiosk.upsell",
+      "path": "resources/js/components/frontend/kiosk/KioskUpsellComponent.vue",
+      "components": ["KioskUpsellComponent (FROZEN)"],
+      "chef_relevant_data_collected": ["additional items only — no new chef signal"]
+    },
+    {
+      "name": "kiosk.payment",
+      "path": "resources/js/components/frontend/kiosk/KioskPaymentComponent.vue",
+      "components": ["KioskPaymentComponent"],
+      "chef_relevant_data_collected": ["payment method (cash/card/tr) — not chef-relevant"]
+    },
+    {
+      "name": "kiosk.waiting",
+      "path": "resources/js/components/frontend/kiosk/KioskWaitingComponent.vue",
+      "components": ["KioskWaitingComponent"],
+      "chef_relevant_data_collected": ["queue_number polled from backend, no ETA from chef back to client"]
+    },
+    {
+      "name": "kiosk.confirmation",
+      "path": "resources/js/components/frontend/kiosk/KioskConfirmationComponent.vue",
+      "components": ["KioskConfirmationComponent"],
+      "chef_relevant_data_collected": ["receipt + loyalty points only — chef receives nothing new"]
+    }
+  ],
+  "backend_signals_audited": [
+    {
+      "field": "is_rush",
+      "produced_at": "app/Services/Kiosk/KioskMenuService.php:163-207 — computeIsRush(branch) reads config('kiosk.rush_windows')",
+      "stored_in_vuex": "resources/js/store/modules/kioskMenu.js:175 (branchFlags.is_rush)",
+      "consumed_by_components": "ZERO — grep across resources/js/components returns no consumer. Server already computes the flag, store already stores it, but NO UI binds to it. ORPHAN SIGNAL."
+    },
+    {
+      "field": "preparation_time",
+      "produced_at": "Order.preparation_time exposed in KDSOrderDetailsResource:44",
+      "consumed_by_kiosk": "ZERO — KioskWaitingComponent shows indeterminate progress bar only ('kiosk.waiting_subtitle'), never reads/displays prep ETA",
+      "consumed_by_confirmation": "ZERO — KioskConfirmationComponent shows generic 'message_kitchen' + 'message_counter' i18n only"
+    },
+    {
+      "field": "party_size / guest_count / nb_persons",
+      "produced_at": "ZERO — no column, no migration, no model field. Verified: grep app/Models, database/migrations -> empty",
+      "consumed_anywhere": "N/A — feature does not exist"
+    },
+    {
+      "field": "urgent / priority_order",
+      "produced_at": "ZERO — no field anywhere in codebase",
+      "consumed_anywhere": "N/A — feature does not exist"
+    },
+    {
+      "field": "cooking_level / cuisson (saignant/à point/bien cuit)",
+      "produced_at": "ZERO — no selector in KioskWizardComponent, no step type 'cuisson'",
+      "consumed_anywhere": "N/A — feature does not exist. Chef has no way to know how client wants viande cooked (relevant for grilled items)"
+    }
+  ],
+  "gaps_found": [
+    {
+      "id": "GAP-S1-P1-001",
+      "title": "Borne ne signale jamais au chef que le client commande pour un groupe (party-size)",
+      "user_story": "En tant que chef en rush, je devrais savoir 'commande #42 = 1 personne' vs '#43 = 6 personnes' parce que ça change ma file de priorisation (un solo client mange dans 5 min, un groupe peut absorber 15 min sans broncher). Aujourd'hui le panier de 8 sandwichs ressemble exactement à 8 commandes de 1 sandwich.",
+      "evidence_absence": "grep 'party_size|guest_count|nb_persons|nb_people' app/Models app/Http database/migrations resources/js/components/frontend/kiosk = 0 hits. Aucun champ, aucune migration, aucun selector dans KioskWizardComponent ou KioskCartComponent. KDSOrderDetailsResource.php ne possède pas de field party_size.",
+      "impact": "FRICTION-WEEKLY",
+      "effort": "S",
+      "risk_if_absent": "Chef priorise par order_serial seul. Un solo bowl 5 min se retrouve coince derriere une commande groupe 12 items qui aurait du absorber 15 min de prep. Le client solo abandonne, churn.",
+      "frozen_zone_touch_needed": false,
+      "implementation_hint": "Add optional party-size pill selector on KioskCartComponent (1 / 2-3 / 4-5 / 6+). Persist on Order.party_size column. Expose in KDSOrderDetailsResource. Render as badge on KdsOrderCard. ZERO frozen-zone (cart + new column + KDS not in FROZEN list)."
+    },
+    {
+      "id": "GAP-S1-P1-002",
+      "title": "Signal backend is_rush calcule mais jamais affiche au client -> aucune negociation d'attente",
+      "user_story": "En tant que chef en rush, je devrais que la borne dise au client AVANT qu'il paie 'cuisine en coup de feu, attente estimee ~12 min'. Si client accepte, il commande, attend, est content. Si pas content, il quitte AVANT de payer (zero perte). Aujourd'hui le client paie, attend 15 min, decouvre l'attente une fois immobilise -> 1-star avis Google.",
+      "evidence_absence": "app/Services/Kiosk/KioskMenuService.php:163-207 produit `is_rush` (config kiosk.rush_windows). resources/js/store/modules/kioskMenu.js:175 stocke branchFlags.is_rush. grep 'kioskBranchFlags|branchFlags|is_rush' resources/js/components = 0 consumer. ORPHAN SIGNAL backend->store->dead-end.",
+      "impact": "FRICTION-DAILY",
+      "effort": "XS",
+      "risk_if_absent": "Le calcul backend existe deja (heuristique horaire) mais le client ne le voit jamais. Expectation mismatch -> avis Google negatif systematique pendant rush hour 12h-14h / 19h-21h.",
+      "frozen_zone_touch_needed": false,
+      "implementation_hint": "Bind `kioskBranchFlags.is_rush` dans KioskIdleScreenComponent header + KioskCartComponent banner. Texte i18n 'Cuisine en pleine activite — attente estimee ~12 min (au lieu de ~6 min)'. Pas de frozen file. 30 min total."
+    },
+    {
+      "id": "GAP-S1-P1-003",
+      "title": "Aucune ETA affichee au client sur l'ecran d'attente — chef ne peut pas calibrer expectation",
+      "user_story": "En tant que chef en rush, je veux que le client voit 'attente estimee X min' qui correspond a Order.preparation_time deja calcule. Aujourd'hui KioskWaitingComponent affiche une barre de progression INDETERMINEE (animation indefinie loop) + texte generic 'En preparation'. Le client n'a aucune projection => va a la caisse demander toutes les 2 min => interrompt le chef => pertes seches.",
+      "evidence_absence": "KioskWaitingComponent.vue ligne 26-48 : template `preparing` n'affiche aucune duree, aucune ETA. Backend expose deja preparation_time (KDSOrderDetailsResource:44, Order model). fetchOrderStatus dans kioskCart.js ne map pas preparation_time vers le frontend. ZERO field 'eta' / 'estimated_wait' dans le payload polling.",
+      "impact": "FRICTION-DAILY",
+      "effort": "S",
+      "risk_if_absent": "Sans ETA chef est interrompu par clients toutes les 2-3 min ('c'est pour quand ?') -> chef perd 30s par interruption x 20 interruptions/jour = 10 min/jour de prep perdues. Pendant rush c'est exponentiel.",
+      "frozen_zone_touch_needed": false,
+      "implementation_hint": "Expose preparation_time + created_at_iso dans le payload polling kioskOrderStatus. Compute ETA front: ETA = max(0, created_at + prep_time - now). Afficher 'Pret dans ~X min' (texte adaptatif si depasse: 'Cuisine bientot terminee'). ZERO frozen file."
+    },
+    {
+      "id": "GAP-S1-P1-004",
+      "title": "Borne ne signale pas au chef quand un ingredient va manquer (no realtime stock awareness vers chef)",
+      "user_story": "En tant que chef, j'ai 3 portions de viande hachee restantes mais le client clique 'commander' alors que 5 personnes attendent deja avec hache. Si la borne pouvait me dire 'ATTENTION viande hachee tres demandee — 8 commandes sur la stack' AVANT l'envoi cuisine, je pourrais soit (1) lancer une cuisson preemptive, soit (2) couper la disponibilite. Aujourd'hui je decouvre au moment du bump KDS que je suis en negatif stock.",
+      "evidence_absence": "KioskCategoriesComponent.vue ligne 461 affiche `unavailable_reason` ssi item.is_available=false (binaire). Pas de tier intermediaire 'low_stock', 'few_remaining', 'high_demand'. grep 'low_stock|stock_warning|nearly_out|few_left|hurry' resources/js + app/Http/Resources = 0 hits.",
+      "impact": "FRICTION-WEEKLY",
+      "effort": "M",
+      "risk_if_absent": "Chef decouvre rupture au moment du KDS bump -> client paie -> 86'ing tardif -> rembourse -> 1-star avis. Le pattern existe deja (StockLevel + ItemBranchAvailability dans frozen zone list multi-tenant) mais aucun signal threshold 'demand spike imminent rupture' n'est expose.",
+      "frozen_zone_touch_needed": false,
+      "implementation_hint": "Ajouter sur Item resource un field `demand_signal` ('normal' | 'high' | 'last_few'). Calcul backend: COUNT(pending OrderItems contenant cet item / branch) > seuil ou stock_levels.qty < N. UI: petit badge 'Tres demande' ou 'Reste peu' sur card. Chef visibilise via KdsOrderLine.allergens_snapshot extension."
+    },
+    {
+      "id": "GAP-S1-P1-005",
+      "title": "Note client (special_instructions) est PAR LIGNE — pas de note transverse 'pour toute la commande' visible chef",
+      "user_story": "En tant que chef, si le client veut 'tout sans oignon' ou 'tout bien cuit', il doit retaper l'instruction sur CHAQUE item du wizard (max 190 char/item, recap step seulement). Si client commande 6 items, c'est 6 saisies. Resultat: client n'ecrit rien ou ne tape que sur 1 item -> chef rate la consigne sur les autres -> client retourne le plat -> frustration des deux cotes.",
+      "evidence_absence": "KioskWizardComponent.vue:151-162 : la textarea instruction est portee par `selections.instruction` SCOPEE au wizard d'un item. kioskCart.js:101 stocke `item.instruction || ''`. Il n'existe pas de field Order.global_note ou Order.kitchen_note expose dans KDSOrderDetailsResource. KioskCartComponent n'affiche pas non plus de champ 'note pour toute la commande'.",
+      "impact": "FRICTION-WEEKLY",
+      "effort": "S",
+      "risk_if_absent": "Repetitive UX friction + chef rate consignes transverses. Ex client allergic poivron + commande 4 items -> client tape note sur item 1 seulement -> chef cuit item 2/3/4 normalement -> retour plat -> perte produit + 1-star.",
+      "frozen_zone_touch_needed": false,
+      "implementation_hint": "Add Order.kitchen_note (200 char) + champ textarea dans KioskCartComponent au-dessus du bouton payer ('Note pour le chef — valable pour toute la commande'). Expose dans KDSOrderDetailsResource. Render TOP de KdsOrderCard avec icone alerte. KioskWizardComponent reste intact (note par-item conservee)."
+    },
+    {
+      "id": "GAP-S1-P1-006",
+      "title": "Cuisson viande (saignant/a point/bien cuit) absente — chef devine pour grilled items",
+      "user_story": "En tant que chef, quand le client commande un 'Burger Big Cayenne' ou 'Sandwich Steak' avec viande grillee, il ne peut PAS specifier la cuisson souhaitee. Je dois cuire 'standard' (point fixe). Resultat: client habitue cuisson saignante recoit bien cuit -> mecontent -> retour -> waste.",
+      "evidence_absence": "grep 'cooking|cuisson|saignant|a_point|bien_cuit|rare|medium_rare|well_done' resources/js/components/frontend/kiosk = 0 hits. KioskWizardComponent ne possede aucun step type 'cuisson'. STEP_KEY_REGISTRY (KioskWizardComponent.vue:315) registres: pain/viande/sauce/garnitures/supplements/menu — pas de cuisson.",
+      "impact": "FRICTION-DAILY",
+      "effort": "S",
+      "risk_if_absent": "Differentation versus competitors low (McDonald's/BurgerKing meme limite mais pas concurrents premium). Pour fast-casual avec viande grillee = parite manquante. Sur 50 commandes burger/sandwich/jour = ~10 clients qui auraient voulu specifier.",
+      "frozen_zone_touch_needed": true,
+      "implementation_hint": "FROZEN ZONE: KioskWizardComponent.vue est FROZEN (CLAUDE.md §7). Owner gate requis. Alternative scope-minimal: ajouter cuisson comme `option_id` standard via item.options[] backend, sans nouveau step ad-hoc. Implem sub-agent sous LOCK doc."
+    },
+    {
+      "id": "GAP-S1-P1-007",
+      "title": "Aucune detection 'commande grosse' (>= N items) ne notifie le chef en amont via badge KDS",
+      "user_story": "En tant que chef, une commande de 10 items (groupe de bureau / livraison familiale) est radicalement differente d'1 sandwich solo. Aujourd'hui rien ne le signale visuellement sur KDS — meme card, meme priorite. Resultat: je commence un sandwich solo entre 2 grosses commandes -> bloc workflow.",
+      "evidence_absence": "KDSOrderDetailsResource:50 expose `order_items` (collection) sans champ derive `item_count` ou `is_large_order`. KdsOrderCard.vue n'affiche pas de badge 'BIG ORDER'.",
+      "impact": "FRICTION-WEEKLY",
+      "effort": "XS",
+      "risk_if_absent": "Chef interrompt workflow 'big' a chaque ping nouvelle commande solo. Optimum impossible sans signal visuel.",
+      "frozen_zone_touch_needed": false,
+      "implementation_hint": "Ajouter au payload KDS `items_total_qty` (sum quantity) + flag `is_large_order` (>= 6 items). Render badge orange sur KdsOrderCard. Pas de schema change — calcul derive dans resource."
+    },
+    {
+      "id": "GAP-S1-P1-008",
+      "title": "Cross-check allergene profil client vs ingredients caches dans suppléments n'est PAS escalade chef",
+      "user_story": "En tant que chef, si un client a 'arachide' declared dans son profil RGPD et commande un item qui contient arachide dans un SUPPLEMENT (pas dans base item), le warning rouge s'affiche client-cote (KsAllergenBadge) mais NE remonte PAS comme alerte rouge cuisine — KDS recoit allergens_snapshot mais sans flag 'CUSTOMER PROFILE COLLISION'. Le chef ne sait pas que c'est un risque safety, juste qu'il y a un allergene declare dans l'item.",
+      "evidence_absence": "KsAllergenBadge.vue:43 'Si customerAllergens cap allergens != empty -> role=alert + cadre rouge' (UI client). KDSOrderItemsResource:39 expose allergens_snapshot mais SANS customer_collision flag. KdsOrderLine.vue render allergens_snapshot SANS distinction visuelle 'customer profile match'.",
+      "impact": "FRICTION-WEEKLY",
+      "effort": "M",
+      "risk_if_absent": "FIC UE 1169/2011 + EAA 2025: safety + legal. Si client a renseigne profil allergene et commande quand meme (peut-etre par erreur de step), le chef devrait recevoir un signal ALERTE ROUGE pas juste un badge passif.",
+      "frozen_zone_touch_needed": false,
+      "implementation_hint": "Persister `customer_allergen_collisions` (array codes) dans OrderItem au moment du checkout (read kioskSettings.customerProfile.declared_allergens). Expose dans KDSOrderItemsResource. Render KdsOrderLine avec badge rouge clignotant 'PROFIL ALLERGENE'. ZERO frozen file."
+    },
+    {
+      "id": "GAP-S1-P1-009",
+      "title": "Aucune notification 'le client est venu chercher' / 'le client n'est pas la' — chef ne peut pas reagir",
+      "user_story": "En tant que chef, je termine la prep, je bump KDS, le client est notifie par OSS. Mais si client part avant que sa commande soit prete (frequent: client realise qu'il oublie portefeuille et part), je continue a cuisiner -> waste. Reciproquement, si client attend 20 min et chef ne voit pas qu'il est tjrs la, le chef peut croire qu'il est parti.",
+      "evidence_absence": "KioskWaitingComponent.vue offre 'Annuler' avant PREPARING (ligne 100-106) puis disparait des que kitchen commence. Pas de heartbeat 'customer still here' apres PREPARING. Pas de bouton 'je suis parti' apres PREPARING.",
+      "impact": "FRICTION-WEEKLY",
+      "effort": "M",
+      "risk_if_absent": "Waste cuisine + temps perdu si client parti. Reciproquement: chef stress si OSS ready et client n'a pas leve la main pendant 5 min — pas de signal de presence.",
+      "frozen_zone_touch_needed": false,
+      "implementation_hint": "Heartbeat client-side polling KioskWaitingComponent (ping toutes les 30s). Si silence > 2 min apres PREPARED -> alert KDS 'NO PICKUP'. UI client: bouton optionnel 'Je dois partir' a partir de PREPARED. Cote chef: badge OSS 'attente client'."
+    },
+    {
+      "id": "GAP-S1-P1-010",
+      "title": "Aucun signal 'dine_in vs takeaway' grossier au chef (puisque dine_in OFF V1 mais TOUS sont TAKEAWAY) — manque sub-segmentation 'sur place comptoir' vs 'a emporter sac'",
+      "user_story": "En tant que chef, en V1 toutes commandes sont TAKEAWAY (dine_in feature-flag OFF). Mais en pratique au Cayenne 60% des clients mangent au comptoir (pas de table assignee), 40% partent avec un sac. Le packaging est different (plateau vs sac). Aujourd'hui je dois deviner ou demander au client.",
+      "evidence_absence": "KIOSK_ORDER_TYPES dans kioskCart.js liste KIOSK (dine_in disabled) + TAKEAWAY uniquement. Pas de tier 'eat-in-counter' vs 'true-takeaway'. KDS ne sait pas si emballer carton ou plat reutilisable.",
+      "impact": "FRICTION-DAILY",
+      "effort": "S",
+      "risk_if_absent": "Erreur packaging frequente (sac quand client attend au comptoir, plat reutilisable quand client part). Waste packaging + frustration.",
+      "frozen_zone_touch_needed": false,
+      "implementation_hint": "Toggle additionel apres TAKEAWAY: 'Manger sur place (comptoir)' vs 'Emporter'. Persiste dans Order.packaging_hint. Expose dans KDSOrderDetailsResource. Render KdsOrderCard avec icone. dine_in n'est PAS touche (reste OFF V1)."
+    }
+  ],
+  "top_3_blocker_daily": [
+    {
+      "id": "GAP-S1-P1-002",
+      "rationale": "Backend deja calcule is_rush + store deja le stocke — il manque uniquement 5 lignes Vue + 1 i18n key. Effort XS pour gain DAILY. ORPHAN SIGNAL = quick win evident."
+    },
+    {
+      "id": "GAP-S1-P1-003",
+      "rationale": "Sans ETA visible client, chef interrompu en continu pendant rush. preparation_time existe deja dans Order, juste pas pipe vers le polling kiosk. Effort S, gain DAILY direct."
+    },
+    {
+      "id": "GAP-S1-P1-010",
+      "rationale": "Erreur packaging quotidienne (60/40 comptoir/sac) -> waste. 1 toggle + 1 column + 1 badge KDS. Effort S, gain DAILY visible."
+    }
+  ],
+  "verdict": "10 gaps found — HIGH gap density (chef-rush relevance). Le pattern dominant: la BORNE traite le client comme un solo isole, sans aucun protocole de communication retour avec la cuisine pendant le service. 1 orphan signal (is_rush calcule jamais affiche) + 2 absentes par-design (party-size, cuisson) + 3 cadeaux quick-win (ETA, is_rush UI, packaging-hint) + 4 ameliorations safety/workflow (kitchen-note global, allergen-profile escalation, big-order badge, low-stock signal). 1 gap necessite frozen-zone touch (GAP-006 cuisson dans KioskWizardComponent).",
+  "frozen_zone_audit": {
+    "frozen_files_touched_by_audit": 0,
+    "components_read": [
+      "resources/js/components/frontend/kiosk/KioskAppComponent.vue",
+      "resources/js/components/frontend/kiosk/KioskIdleScreenComponent.vue",
+      "resources/js/components/frontend/kiosk/KioskCategoriesComponent.vue (partial)",
+      "resources/js/components/frontend/kiosk/KioskWizardComponent.vue (FROZEN, read-only)",
+      "resources/js/components/frontend/kiosk/KioskCartComponent.vue (partial)",
+      "resources/js/components/frontend/kiosk/KioskWaitingComponent.vue",
+      "resources/js/components/frontend/kiosk/KioskConfirmationComponent.vue (partial)",
+      "resources/js/components/frontend/kiosk/KioskPaymentComponent.vue (partial)",
+      "resources/js/components/frontend/kiosk/KioskUpsellComponent.vue (FROZEN, read-only)",
+      "resources/js/components/frontend/kiosk/KioskOrderSummaryComponent.vue (partial)",
+      "app/Http/Resources/KDSOrderDetailsResource.php",
+      "app/Http/Resources/KDSOrderItemsResource.php",
+      "app/Services/Kiosk/KioskMenuService.php (rush computation)",
+      "resources/js/store/modules/kioskMenu.js (rush store)"
+    ],
+    "implementation_only_one_requires_frozen_lock": "GAP-S1-P1-006 (cuisson selector dans KioskWizardComponent) — requires LOCK_kiosk-wizard-cuisson.md owner gate per CLAUDE.md §7"
+  }
+}

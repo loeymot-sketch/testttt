@@ -1,0 +1,132 @@
+{
+  "audit_id": "goal-functional-validation-2026-05-28-LIVREUR-round-2",
+  "scope": "LIVREUR / DeliveryBoy daily flow (admin oversight + cash session + IDOR + BranchScope)",
+  "date": "2026-05-28",
+  "branch": "feature/mobile-app-le-cayenne-2026-05-10",
+  "db_state": { "branches": 1, "delivery_boys": 1, "cash_sessions": 1, "cash_movements": 0 },
+  "screenshots_dir": "/tmp/foodking-round2-livreur/",
+  "verdict_summary": "1 P0 (UI broken via double /api prefix), 1 P0 (PII leak — raw scaffold token displayed), 2 P1 (audit-chain integration gap, no livreur self-service UI), 0 P2 critical. BranchScope + IDOR defenses sound at backend layer.",
+  "findings": [
+    {
+      "id": "LIV-R2-P0-01",
+      "severity": "P0",
+      "title": "Cash sessions list shows 'Aucune donnée disponible' — XHR hits double /api/api/ path returning SPA catchall HTML",
+      "evidence": {
+        "file": "resources/js/components/admin/deliveryBoyCashSession/DeliveryBoyCashSessionListComponent.vue",
+        "line": 180,
+        "code": "axios.get('/api/admin/delivery-boy/cash-sessions', { params })",
+        "axios_baseURL": "resources/js/shared/axios-setup.js:74 sets baseURL = API_URL + '/api'",
+        "network_trace": "GET http://127.0.0.1:8000/api/api/admin/delivery-boy/cash-sessions?per_page=20&page=1 → 200 text/html (SPA catchall)",
+        "ui_effect": "Vue parses res.data.data || [] from HTML body → sessions = []",
+        "expected_url": "/admin/delivery-boy/cash-sessions (axios prepends baseURL=/api)"
+      },
+      "reproduction": "Login admin → navigate /admin/delivery-boy-cash-sessions → DB has 1 OPEN session (id=1, branch=1, livreur_id=10) → list renders empty state. Same call from devtools network: status 200, Content-Type=text/html, body=DOCTYPE.",
+      "impact": "Livreur cash drawer cockpit completely non-functional. Manager cannot see open sessions, close, or reconcile — NF525 audit cockpit blind. Affects also detail page (/admin/delivery-boy-cash-sessions/:id) — see screenshot 03 (blank).",
+      "fix_hint": "Strip leading '/api' from URLs in DeliveryBoyCashSessionListComponent.vue:180 AND DeliveryBoyCashSessionShowComponent.vue / FormComponent.vue. Pattern in peer files like dashboard widgets uses bare '/admin/...' paths.",
+      "screenshot": "02-cash-session-list.png + 03-cash-session-show.png"
+    },
+    {
+      "id": "LIV-R2-P0-02",
+      "severity": "P0",
+      "title": "PII / scaffold artifact leaked — livreur phone column shows raw 'PENDING_CREATE_331502b3385a' token in admin list",
+      "evidence": {
+        "ui": "screenshot 01-delivery-boys-list.png — TÉLÉPHONE column = 'nullPENDING_CREATE_331502b3385a'",
+        "api_payload": "/api/admin/delivery-boy returns: {\"phone\":\"PENDING_CREATE_331502b3385a\",\"image\":\"http:\\/\\/127.0.0.1:8000\\/im...\"}",
+        "db_user_id": 10,
+        "email": "livreur.e2e@lecayenne.test"
+      },
+      "reproduction": "Login admin → /admin/delivery-boys → table shows scaffold placeholder rather than NULL or real phone.",
+      "impact": "Owner-visible UI defect on a release-candidate branch. Suggests E2E seeder (livreur.e2e) left scaffold sentinel in production DB after restore 2026-05-28. Either the seeder needs to set NULL/empty or list must coalesce 'PENDING_CREATE_*' → '—'.",
+      "fix_hint": "Either (a) sanitize at DeliveryBoyResource boundary — strip 'PENDING_CREATE_*'; or (b) re-run seeder with valid phone null. Add CI sentinel against scaffold tokens in production-bound users table.",
+      "screenshot": "01-delivery-boys-list.png"
+    },
+    {
+      "id": "LIV-R2-P1-01",
+      "severity": "P1",
+      "title": "DELIVERED hook writes 'delivery.cash_collected_escrow' but does NOT call DeliveryBoyCashSessionService::recordMovement → audit/movement chain integrity gap",
+      "evidence": {
+        "file_a": "app/Services/OrderService.php:1747-1824 (DELIVERED flip writes AuditLogService::write action='delivery.cash_collected_escrow')",
+        "file_b": "app/Services/Fiscal/ZReportCashEnrichmentService.php:489 (Z verify expects action='cash.delivery.movement.recorded')",
+        "file_c": "app/Services/Delivery/DeliveryBoyCashSessionService.php:372 (recordMovement writes 'cash.delivery.movement.recorded')",
+        "search": "grep DeliveryBoyCashSessionService usage in app/Services/ → ONLY ZReportCashEnrichmentService (read) + self. NO call site from OrderService when COD DELIVERED."
+      },
+      "reproduction": "Trace COD order: PREPARED→OUT_FOR_DELIVERY→DELIVERED writes audit_log row 'delivery.cash_collected_escrow' on order. No corresponding cash_movement row inserted on the livreur's open session → verifyConsistencyVsAuditLog() will fire 'count_mismatch' / 'movement_missing_audit_row' until manual recordMovement runs.",
+      "impact": "Z-report enrichment / NF525 verification probe will flag drift for COD deliveries on V1 LIVREUR cycle. Service exists with strict=false best-effort hook documented in DeliveryBoyCashSessionService L286-294 docblock, but no caller. Architecturally documented as Path B decoupling but not connected.",
+      "fix_hint": "Add a best-effort call to DeliveryBoyCashSessionService::recordMovement(sessionId, 'order_collect', amount, 'in', orderId) AFTER cash_collected_escrow audit in OrderService L1824. session lookup via findOpenSessionForDeliveryBoy($branchId, $driverId). Strict=false so missing session → log warning, no 5xx for customer."
+    },
+    {
+      "id": "LIV-R2-P1-02",
+      "severity": "P1",
+      "title": "No livreur self-service UI in V1 — backend-only. Livreur logs into admin shell and sees admin pages (not a dedicated mobile/PWA flow)",
+      "evidence": {
+        "file_a": "Spatie role 'Delivery Boy' landing_url = 'delivery-boys' → /admin/delivery-boys (requires permission:delivery-boys_show)",
+        "file_b": "app/Http/Controllers/Admin/DeliveryBoyCashSessionController.php:20 docblock — 'The livreur self-service surface (/api/frontend/delivery-boy-shift/*) is a separate controller (Wave 6b-1.3b) — not part of this BUILD-1 scope.'",
+        "search_routes": "grep -rn 'delivery-boy-shift|FrontendDeliveryBoy' routes/ → ZERO matches. The promised Wave 6b-1.3b never landed.",
+        "frontend_url_attempted": "/livreur → 404 Page Non Trouvée (screenshot 05)"
+      },
+      "reproduction": "Login as livreur (user_id=10, email livreur.e2e@lecayenne.test, role 'Delivery Boy') → landing redirects to /admin/delivery-boys which the livreur role likely cannot fully access (depends on RBAC grants). No PWA / mobile flow / shift-open self-service screen.",
+      "impact": "In production, the livreur must be opened/closed/reconciled BY the admin/manager from the admin desktop UI (DeliveryBoyCashSessionShowComponent / FormComponent embedded in DeliveryBoyShow tabs). For V1 LOCAL Le Cayenne (owner = single operator) this is acceptable per CLAUDE.md feedback_v1_personal_le_cayenne, but Master Plan claims 'cash session opening/closing flow' delivered. Doc + plan vs reality drift.",
+      "fix_hint": "Either (a) document explicitly in PROJECT_BRAIN.md §3 that V1 livreur has NO self-service UI and shift open/close runs from admin only; or (b) ship the deferred /api/frontend/delivery-boy-shift/* controller + a small PWA card in mobile app. For V1 Le Cayenne (a) is sufficient.",
+      "screenshot": "05-livreur-self-service.png"
+    },
+    {
+      "id": "LIV-R2-PASS-01",
+      "severity": "PASS",
+      "title": "BranchScope coverage verified on DeliveryBoyCashSession + DeliveryBoyCashMovement",
+      "evidence": {
+        "model_a": "app/Models/DeliveryBoyCashSession.php:79 — static::addGlobalScope(new BranchScope())",
+        "model_b": "app/Models/DeliveryBoyCashMovement.php:64 — static::addGlobalScope(new BranchScope())",
+        "sentinel": "tests/Feature/Branch/BranchScopeCoverageSentinelTest.php auto-detects branch_id column → both pass (not in EXEMPTED_MODELS).",
+        "tinker_check": "Auth as admin (branch_id=0) sees 1 session. Auth as livreur (branch_id=1) sees 1 session (own branch). Cross-branch read isolated by global scope."
+      }
+    },
+    {
+      "id": "LIV-R2-PASS-02",
+      "severity": "PASS",
+      "title": "IDOR mitigated on session detail — route binding 'DeliveryBoyCashSession $session' enforces BranchScope; cross-branch returns 404",
+      "evidence": {
+        "controller": "app/Http/Controllers/Admin/DeliveryBoyCashSessionController.php:101 show(DeliveryBoyCashSession $session)",
+        "service": "DeliveryBoyCashSessionService::openSession L82-96 uses withoutGlobalScope explicitly + Cache::lock + lockForUpdate + UNIQUE partial index (3-layer defense).",
+        "form_request": "DeliveryBoyCashSessionOpenRequest.php:50-67 — withoutGlobalScope for cross-branch admin context; asserts target user has DELIVERY_BOY role + branch assignment; uses singular Z6-P1-WGS form preserving SoftDeletingScope (soft-deleted livreur cannot reopen)."
+      }
+    },
+    {
+      "id": "LIV-R2-PASS-03",
+      "severity": "PASS",
+      "title": "NF525 invariants on cash session lifecycle solid",
+      "evidence": {
+        "I1": "openSession refuses duplicate OPEN via Cache::lock + lockForUpdate + DB UNIQUE partial index uk_branch_livreur_open (migration 2026_05_18_120200)",
+        "I2": "closeSession refuses reconciled; idempotent on closed",
+        "I3": "reconcile computes expected = opening + Σ(signed movements) → variance = closing - expected",
+        "I4": "DB no-delete triggers migration 2026_05_18_120300 — DELETE forbidden SQLSTATE '45000'",
+        "audit_chain": "service writes via AuditLogService::write() under namespace 'cash.delivery.session.*' + 'cash.delivery.movement.*'",
+        "tests": "tests/Feature/Admin/DeliveryBoyCashSessionControllerTest.php exists (300+ lines, BUILD-1 coverage)"
+      }
+    }
+  ],
+  "tested_urls": [
+    {"url": "/admin/delivery-boys", "status": 200, "ui_ok": false, "defect": "phone scaffold token visible"},
+    {"url": "/admin/delivery-boy-cash-sessions", "status": 200, "ui_ok": false, "defect": "double /api/api/ → empty state despite 1 session in DB"},
+    {"url": "/admin/delivery-boy-cash-sessions/1", "status": 200, "ui_ok": false, "defect": "page blank (same root cause as list)"},
+    {"url": "/livreur", "status": 404, "ui_ok": true, "defect": "no V1 livreur self-service flow (deferred Wave 6b-1.3b never shipped)"}
+  ],
+  "files_audited": [
+    "app/Models/DeliveryBoyCashSession.php",
+    "app/Models/DeliveryBoyCashMovement.php",
+    "app/Http/Controllers/Admin/DeliveryBoyCashSessionController.php",
+    "app/Http/Controllers/Admin/DeliveryBoyController.php",
+    "app/Http/Controllers/Frontend/DeliveryBoyOrderController.php",
+    "app/Http/Requests/DeliveryBoyCashSessionOpenRequest.php",
+    "app/Http/Requests/DeliveryBoyCashSessionCloseRequest.php",
+    "app/Services/Delivery/DeliveryBoyCashSessionService.php",
+    "app/Services/Fiscal/ZReportCashEnrichmentService.php",
+    "app/Services/OrderService.php (DELIVERED hook L1747-1824)",
+    "database/migrations/2026_05_18_120000_create_delivery_boy_cash_sessions_table.php",
+    "database/migrations/2026_05_18_120100_create_delivery_boy_cash_movements_table.php",
+    "database/migrations/2026_05_18_120200_add_unique_partial_delivery_boy_cash_open.php",
+    "resources/js/components/admin/deliveryBoyCashSession/DeliveryBoyCashSessionListComponent.vue",
+    "resources/js/router/modules/deliveryBoyCashSessionRoutes.js",
+    "routes/api.php (lines 636-690, 1359-1364)",
+    "tests/Feature/Branch/BranchScopeCoverageSentinelTest.php"
+  ]
+}

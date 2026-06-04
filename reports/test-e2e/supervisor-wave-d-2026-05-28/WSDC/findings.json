@@ -1,0 +1,291 @@
+{
+  "timestamp": "2026-05-28T22:44:14.012Z",
+  "head": "WSDC-Wave-D",
+  "soketi_port": 6001,
+  "laravel_port": 8000,
+  "scenarios": {
+    "S1": {
+      "status": "PASS",
+      "evidence": {
+        "earlySnap": {
+          "hasEcho": true,
+          "hasPusher": true,
+          "pusherState": "connected",
+          "socketId": "8822102404.6163501611",
+          "channels": [
+            {
+              "name": "private-branch.1",
+              "subscribed": false,
+              "subscriptionPending": false
+            }
+          ],
+          "wsServiceState": null,
+          "transport": null
+        },
+        "lateSnap": {
+          "hasEcho": true,
+          "hasPusher": true,
+          "pusherState": "connected",
+          "socketId": "8822102404.6163501611",
+          "channels": [
+            {
+              "name": "private-branch.1",
+              "subscribed": true,
+              "subscriptionPending": false
+            }
+          ],
+          "wsServiceState": null,
+          "transport": null
+        },
+        "url": "http://127.0.0.1:8000/admin/kitchen-display-system",
+        "consoleErrorsSample": [
+          "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+        ],
+        "broadcastingAuthCalls": [
+          {
+            "at": 1780008256762,
+            "status": 302,
+            "method": "POST",
+            "hasAuth": true,
+            "authPrefix": "Bearer",
+            "hasApiKey": true,
+            "hasXRequestedWith": false,
+            "postData": "socket_id=8822102404.6163501611&channel_name=private-branch.1",
+            "respHeaders": [
+              "cache-control",
+              "location",
+              "connection",
+              "access-control-allow-credentials",
+              "access-control-allow-origin"
+            ]
+          },
+          {
+            "at": 1780008262462,
+            "status": 200,
+            "method": "POST",
+            "hasAuth": true,
+            "authPrefix": "Bearer 722|2KvUBc5mQ",
+            "hasApiKey": true,
+            "hasXRequestedWith": false,
+            "postData": "socket_id=8822102404.6163501611&channel_name=private-branch.1",
+            "respHeaders": [
+              "cache-control",
+              "connection",
+              "access-control-allow-credentials",
+              "access-control-allow-origin",
+              "date"
+            ]
+          }
+        ]
+      },
+      "reason": "Echo connected, subscribed to private-branch.1 (2 auth calls)"
+    },
+    "S2": {
+      "status": "PASS",
+      "evidence": {
+        "baselineHits": 1,
+        "baselineWindowMs": 6000,
+        "postDisconnect": {
+          "ok": true,
+          "preState": "connected"
+        },
+        "postDisconnectHits": 2,
+        "postDisconnectWindowMs": 12000,
+        "postSnap": {
+          "hasEcho": true,
+          "hasPusher": true,
+          "pusherState": "disconnected",
+          "socketId": "8292530367.7141160962",
+          "channels": [
+            {
+              "name": "private-branch.1",
+              "subscribed": false,
+              "subscriptionPending": false
+            }
+          ],
+          "wsServiceState": null,
+          "transport": null
+        }
+      },
+      "reason": "Polling fallback fired 2 time(s) in 12s post-disconnect (baseline 1 in 6s)"
+    },
+    "S3": {
+      "status": "PASS",
+      "evidence": {
+        "stormEvents": [
+          {
+            "i": 0,
+            "action": "disconnect",
+            "t": 1780008308041
+          },
+          {
+            "i": 0,
+            "action": "connect",
+            "t": 1780008308544
+          },
+          {
+            "i": 1,
+            "action": "disconnect",
+            "t": 1780008309044
+          },
+          {
+            "i": 1,
+            "action": "connect",
+            "t": 1780008309546
+          },
+          {
+            "i": 2,
+            "action": "disconnect",
+            "t": 1780008310047
+          },
+          {
+            "i": 2,
+            "action": "connect",
+            "t": 1780008310549
+          },
+          {
+            "i": 3,
+            "action": "disconnect",
+            "t": 1780008311052
+          },
+          {
+            "i": 3,
+            "action": "connect",
+            "t": 1780008311553
+          },
+          {
+            "i": 4,
+            "action": "disconnect",
+            "t": 1780008312054
+          },
+          {
+            "i": 4,
+            "action": "connect",
+            "t": 1780008312555
+          }
+        ],
+        "totalPollHits": 0,
+        "minGapMs": null,
+        "subFloorCount": 0,
+        "domOk": true,
+        "postSnap": {
+          "hasEcho": true,
+          "hasPusher": true,
+          "pusherState": "connected",
+          "socketId": "759111222.6979718188",
+          "channels": [
+            {
+              "name": "private-branch.1",
+              "subscribed": true,
+              "subscriptionPending": false
+            }
+          ],
+          "wsServiceState": null,
+          "transport": null
+        }
+      },
+      "reason": "Storm survived: 0 polls, minGap=nullms, DOM intact"
+    },
+    "S4": {
+      "status": "PARTIAL",
+      "evidence": {
+        "kdsChannel": {
+          "name": "private-branch.1",
+          "subscribed": false,
+          "subscriptionPending": false
+        },
+        "ossChannel": {
+          "name": "private-branch.1",
+          "subscribed": true,
+          "subscriptionPending": false
+        },
+        "sameChannel": true,
+        "kdsPusherState": "connected",
+        "ossPusherState": "connected",
+        "backendBumpProbed": false
+      },
+      "reason": "Channel sharing confirmed (private-branch.1) but no test order available to verify status flip"
+    },
+    "S5": {
+      "status": "PASS",
+      "evidence": {
+        "bounds": {
+          "floorMs": 250,
+          "ceilingMs": 60000,
+          "jitterCeilingMs": 30000,
+          "high": {
+            "baseMs": 3000,
+            "jitterMs": 1000
+          },
+          "degraded": {
+            "baseMs": 5000,
+            "jitterMs": 2000
+          },
+          "disconnected": {
+            "baseMs": 10000,
+            "jitterMs": 3000
+          }
+        },
+        "issues": []
+      },
+      "reason": "All cadence bounds match mission spec"
+    }
+  },
+  "cadence_bounds": {
+    "floorMs": 250,
+    "ceilingMs": 60000,
+    "jitterCeilingMs": 30000,
+    "high": {
+      "baseMs": 3000,
+      "jitterMs": 1000
+    },
+    "degraded": {
+      "baseMs": 5000,
+      "jitterMs": 2000
+    },
+    "disconnected": {
+      "baseMs": 10000,
+      "jitterMs": 3000
+    }
+  },
+  "verdict": "NEEDS_HEAL",
+  "summary": {
+    "total": 5,
+    "pass": 4,
+    "partial": 1,
+    "fail": 0
+  },
+  "critical_findings": [
+    {
+      "id": "WSDC-P0-01",
+      "severity": "P0",
+      "title": "Echo private-branch.* subscription fails on first KDS/OSS load (stale empty Bearer token)",
+      "symptom": "First /api/broadcasting/auth POST after login carries Authorization: \"Bearer \" (empty token) \u2192 Laravel auth:sanctum returns HTTP 302 redirect to /login. Pusher does not treat 302 as pusher:subscription_error, so the channel stays subscribed:false forever. KDS receives KitchenReleaseRule/OrderCreated/KdsOrderRecalled broadcasts NEVER on that browser session \u2014 polling fallback (5-10s cadence) silently masks the regression.",
+      "evidence": {
+        "auth_call_1": "authPrefix=\"Bearer\" (empty), status=302, response has Location header",
+        "auth_call_2_after_workaround": "authPrefix=\"Bearer 711|gBTSPcwQf...\", status=200, subscribed=true",
+        "workaround": "window._refreshEchoAuth() + Echo.leaveChannel + Echo.private(\"branch.1\") forces re-auth"
+      },
+      "root_cause_hypothesis": "bootstrap.js sets auth.headers.Authorization at Echo construct time via _getEchoBearerToken() (reads localStorage.vuex). On a hard page navigation that starts from /login, Vuex is empty at the moment Echo is constructed; Echo subscribes before _refreshEchoAuth() runs. The subsequent _refreshEchoAuth update of the headers object does NOT trigger Pusher to re-attempt the failed subscription, because the 302 was never surfaced as pusher:subscription_error.",
+      "affected_files": [
+        "resources/js/bootstrap.js:308-394",
+        "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue:1893-1953",
+        "resources/js/components/admin/orderStatusScreen/PreparingAndReadyComponent.vue:257-289"
+      ],
+      "production_impact": "Every KDS/OSS browser session that loads after login (the common case) operates in polling-only mode. Owner-perceived \"live sync\" is actually 5-10s lagged. Wave Polish Final Q9-S1 measured ~1s cross-surface sync \u2014 that measurement may have been on a refreshed session where Echo eventually recovered via a different path; first-load case stays broken silently.",
+      "suggested_heal": "Either (A) detect 302 response on broadcasting/auth in bootstrap.js _bindSubscriptionErrorHandler and force re-subscription, OR (B) defer Echo instantiation until Vuex hydration has completed (e.g. after first authToken mutation), OR (C) have channel subscription retry automatically when window._refreshEchoAuth() runs and current subscribed=false."
+    },
+    {
+      "id": "WSDC-P2-01",
+      "severity": "P2",
+      "title": "OSS Echo subscription intentionally skipped for admin (branch_id=0)",
+      "symptom": "PreparingAndReadyComponent.vue:260 `if (branchId <= 0) return` early-returns the subscribeEcho() call for admin users. Admin opens /admin/order-status-screen \u2192 no Echo, polling only.",
+      "evidence": {
+        "design_intent": "Admin is cross-branch, no single private-branch.X channel suffices",
+        "risk": "If admin watches OSS during peak service, latency is 5-10s polling not <500ms Echo"
+      },
+      "severity_rationale": "Design choice (not a bug per se), but worth documenting in V1 backlog for V2 multi-branch OSS subscription strategy."
+    }
+  ],
+  "verdict_reason": "Scenarios: 4 PASS / 1 PARTIAL / 0 FAIL. Critical P0 surfaced: Echo private-branch.* subscription silently fails on first KDS/OSS load due to empty-Bearer race (HTTP 302 from broadcasting/auth, not handled by pusher:subscription_error). Polling fallback masks the issue but cross-surface sync regresses from <500ms (Echo) to 5-10s (polling). See critical_findings[WSDC-P0-01]."
+}

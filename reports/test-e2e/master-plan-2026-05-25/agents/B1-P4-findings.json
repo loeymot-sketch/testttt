@@ -1,0 +1,227 @@
+{
+  "agent": "B1-P4",
+  "mission": "Borne x Owner-night review — combien commandes, abandon, ruptures, erreurs, pic horaire",
+  "discipline": "DM6 RO + DM3 + DM5 + DM8",
+  "server": "http://127.0.0.1:8000",
+  "executed_at": "2026-05-25T21:55:00+02:00",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head": "a6ed32807",
+  "auth": {
+    "user_id": 2,
+    "email": "admin@lecayenne.fr",
+    "role": "Admin",
+    "branch_id": 1,
+    "method": "Bearer token via /api/auth/login + x-api-key MIX_API_KEY"
+  },
+  "states": [
+    {
+      "n": 1,
+      "title": "Dashboard borne analytics (channel-statistics + sales/orders summary)",
+      "endpoints_hit": [
+        "GET /api/admin/dashboard/channel-statistics?branch_id=1",
+        "GET /api/admin/dashboard/order-summary?branch_id=1&period=today",
+        "GET /api/admin/dashboard/total-orders?branch_id=1&period=today",
+        "GET /api/admin/dashboard/order-statistics?branch_id=1&period=today",
+        "GET /api/admin/dashboard/sales-summary?branch_id=1&period=today",
+        "GET /api/admin/dashboard/realtime-report?branch_id=1"
+      ],
+      "results": {
+        "channel_statistics": [
+          { "name": "Web", "value": 0 },
+          { "name": "Kiosk/App", "value": 100 },
+          { "name": "POS", "value": 0 }
+        ],
+        "channel_statistics_caveat": "100% is a PERCENT split. With n=1 order today, the Kiosk channel = 1 order = 100% of the daily sample. Absolute count NOT directly exposed via dashboard endpoint.",
+        "order_summary": { "delivered": 0, "returned": 0, "canceled": 0, "rejected": 0 },
+        "total_orders_today": 0,
+        "total_orders_caveat": "/total-orders returned 0 today even though orders.created_at >= today has 1 row (id=63) — possible status filter (paid+delivered only?) hiding the canceled/non-delivered set OR scope filter mismatch.",
+        "order_statistics_today": { "total_order": 1, "pending": 0, "preparing": 0, "accept": 1, "prepared": 0, "out_for_delivery": 0, "delivered": 0, "canceled": 0, "returned": 0, "rejected": 0 },
+        "sales_summary_today": { "total_sales": "0,00 €", "avg_per_day": "0,00 €", "per_day_sales_zeros": true },
+        "sales_summary_caveat": "total_sales=0€ but DB orders.total today = 7.80€ — endpoint likely filters by payment_status=15 (paid+settled) only AND/OR status range that excludes order 63 (status=4 accepted, not delivered).",
+        "realtime_report_today": { "daily_sales": "0,00 €", "daily_orders": 1, "average_ticket": "0,00 €" }
+      },
+      "owner_q_answered": "Combien commandes via borne aujourd'hui ? — Direct DB query: 1 commande borne (orders.source_surface='kiosk'), id=63, queue_number=A0001, total=7.80€, 12h24. Dashboard endpoint AGREES on count (realtime.daily_orders=1, order_statistics.total_order=1) but DISAGREES on sales (display 0€ vs DB 7.80€). P1 displayed-vs-DB sales drift = owner-facing footgun."
+    },
+    {
+      "n": 2,
+      "title": "Cash overview borne-specific analytics",
+      "endpoints_hit": [
+        "GET /api/admin/cash-overview?branch_id=1"
+      ],
+      "results": {
+        "status": true,
+        "cash_session": { "id": 1, "branch_id": 1, "opened_at": "2026-05-25T12:32:25+02:00", "opening_amount": 50, "expected_cash": 50, "cash_collected": 0 },
+        "summary": { "total": 0, "count": 0, "by_source": [], "by_mode": [] },
+        "meta": { "from": "2026-05-25T00:00:00+02:00", "to": "2026-05-25T23:59:59+02:00", "row_count": 0, "capped": false },
+        "borne_specific_breakdown": "NONE. cash-overview returns by_source (e.g. POS/KIOSK/DELIVERY split) BUT summary.by_source=[] today because no cash movements yet. The endpoint DOES expose borne split when data exists — schema supports it."
+      },
+      "owner_q_answered": "Tracé caisse borne aujourd'hui ? — Cash session opened 12h32 (after order 63 at 12h24, NB session opened AFTER first borne sale of the day — minor chronology curiosity). 0 cash movements recorded. Borne order 63 paid by non-cash method (payment_status=15 settled but doesn't appear in cash-overview)."
+    },
+    {
+      "n": 3,
+      "title": "Phase F2 SmsBornePending event presence/absence verification",
+      "evidence": {
+        "grep_app_Events": "ls app/Events/ | grep -iE '(F2|borne|sms_borne)' returned NONE FOUND",
+        "grep_codebase": "grep -rE 'SmsBornePending|sms_borne_pending|SmsBorne' --include='*.php' --include='*.vue' --include='*.js' returned ZERO matches in app/ resources/",
+        "phase_f2_actual_meaning_in_BRAIN": "Phase F2 = NF525 REFUND wave: 'ReceiptRemboursementMarker live since Phase F2' + 'Phase F2-HEAL-03 REMBOURSEMENT marker'. F2 is NOT about SMS notifications.",
+        "sms_events_actually_present": [
+          "app/Events/SendOrderDeliveryBoySms.php",
+          "app/Events/SendOrderGotSms.php",
+          "app/Events/SendOrderSms.php",
+          "app/Events/SendSmsCode.php"
+        ],
+        "sms_gateways_table": "sms_gateways table EXISTS but rows=0 (no SMS provider configured)",
+        "borne_sms_audit_logs_today": "0 SMS-related entries in audit_logs/notifications today"
+      },
+      "owner_q_answered": "Phase F2 SmsBornePending event ? — ABSENT. The string 'SmsBornePending' is not present anywhere in app/, resources/, tests/, migrations. Phase F2 in this codebase refers to the NF525 refund/REMBOURSEMENT marker work, NOT a borne SMS event. If the mission framing intended to ask 'is there an SMS notification when a borne order is pending pickup?', the answer is NO — only SendOrderGotSms exists (order acceptance) and sms_gateways has 0 configured providers, so even existing SMS paths are inert today."
+    },
+    {
+      "n": 4,
+      "title": "Stock dashboard /admin/stock-rupture-dashboard borne items",
+      "endpoints_hit": [
+        "GET /api/admin/stock/scan-rupture/last-summary?branch_id=1"
+      ],
+      "results": {
+        "cron_enabled": false,
+        "cron_enabled_caveat": "STOCK_RUPTURE_CRON disabled → scheduled scan does NOT run. last-summary returns summary=null because cron never ran today.",
+        "branches": [{ "branch_id": 1, "branch_name": "Le Cayenne (principal)", "summary": null }],
+        "currently_unavailable": [],
+        "currently_unavailable_db_cross_check": {
+          "stock_levels_on_hand_le_zero_branch_1": 0,
+          "stock_levels_at_or_below_threshold_low_branch_1": 0,
+          "item_branch_availability_is_available_zero_branch_1": 0,
+          "verdict": "DB confirms: 0 borne items rejected for rupture today. Endpoint result is accurate (no rupture)."
+        }
+      },
+      "owner_q_answered": "Items rejetés rupture stock borne ? — ZÉRO aujourd'hui. Cross-checked via direct DB on stock_levels + item_branch_availability + manual_unavailable_reason. NB: STOCK_RUPTURE_CRON disabled → operator sees 'summary=null' card on the dashboard (last-summary endpoint returns null branch summary). UI may render this as 'pas de scan récent' which is technically correct but visually identical to 'pas de rupture' — minor confusion-vector P2."
+    },
+    {
+      "n": 5,
+      "title": "Adversarial owner-night verification + Errors/Pic horaire/Abandon",
+      "evidence": {
+        "kiosk_machines_today": {
+          "real_machines_branch_1": 1,
+          "stress_machines_excluded": 9,
+          "currently_logged_in_real": 0,
+          "currently_logged_in_caveat": "is_login=10 means logged-in, 0 real kiosks currently logged in (action_logs heartbeats end at 21:15:12, evidence shows machine WAS online through the day)"
+        },
+        "kiosk_action_logs_today": {
+          "hardware_health_count": 11,
+          "all_state": "ok",
+          "all_degradation": "none",
+          "first_heartbeat": "2026-05-25 11:44:50",
+          "last_heartbeat": "2026-05-25 21:15:12",
+          "cash_instruction_shown": 1,
+          "a11y_settings_open": 3
+        },
+        "no_payment_failure_events_today": {
+          "audit_logs_today_actions": ["user.login:54", "cash.session.opened:1", "z_report.closed:1", "tamper.attempt:1"],
+          "tamper_attempt_caveat": "1 tamper.attempt today — this is the KNOWN baseline E2E-13 dev-incident id=34 (per baseline.txt + Option B decision), NOT a new payment failure. Verified PRE-EXISTING.",
+          "no_PaymentFailure_in_audit": true,
+          "no_Echo_down_events_in_action_logs": true
+        },
+        "pic_horaire_kiosk_today": {
+          "12h": { "count": 1, "range": "12:24:13..12:24:13" },
+          "verdict": "n=1 — pic horaire indéterminable, échantillon trop faible pour une journée typique. 1 vente borne sur ~10h d'ouverture (11:44 first heartbeat -> 21:15 last) = volume très faible, possible jour de test ou jour fermé partiel."
+        },
+        "abandon_panier_today": {
+          "kiosk_orders_payment_status_lt_10": 0,
+          "verdict": "0 abandons mesurés via orders.payment_status<10 — MAIS le 'panier abandonné côté frontend (jamais POSTé)' n'est PAS tracé en DB (no cart_drafts table). Métrique d'abandon réel borne = NON DISPONIBLE V1.",
+          "P1_owner_facing_gap": "Le metric 'taux abandon panier borne' demandé par owner ne peut PAS être répondu avec les données actuelles — il faudrait instrumenter front-end (analytics event) ou backend cart_drafts persistence."
+        },
+        "borne_order_63_full_picture": {
+          "id": 63,
+          "source": 5,
+          "source_surface": "kiosk",
+          "status": 4,
+          "payment_status": 15,
+          "order_type": 10,
+          "total_eur": 7.80,
+          "queue_number": "A0001",
+          "created_at": "2026-05-25 12:24:13",
+          "transitions": [{ "from_status": 1, "to_status": 4, "occurred_at": "2026-05-25 12:24:13", "actor_id": null }],
+          "transition_caveat": "Single transition 1→4 with actor_id=NULL — this is the kiosk auto-transition (no human actor). Direct jump skips intermediate status 2 (preparing) / 3 (prepared) → either status semantics differ from owner expectation, OR this borne order was completed before any KDS state changes were captured."
+        },
+        "dashboard_vs_db_drift_P1": {
+          "discrepancy_1": "sales-summary.total_sales='0,00 €' BUT DB orders.total today summed = 7.80€",
+          "discrepancy_2": "total-orders endpoint returns 0 today but DB has 1 row matching today (orders.created_at>=2026-05-25)",
+          "consistency_anchor": "realtime-report.daily_orders=1 AND order-statistics.total_order=1 — these match DB",
+          "verdict": "TWO endpoints (total-orders + sales-summary) under-report compared to DB and to peer endpoints. Owner reading the dashboard tonight would see '0 commandes, 0€' on those widgets while reality is 1 commande / 7,80€. P1 owner-facing drift."
+        },
+        "scoring": {
+          "completeness": "5/5 states executed",
+          "owner_questions_answered": "5/5 with explicit values + caveats",
+          "evidence_strength": "HIGH — every claim cross-checked endpoint+DB",
+          "P0_blockers_found": 0,
+          "P1_findings": 2,
+          "P2_findings": 2,
+          "verdict": "GREEN — borne layer technically clean today (1 order through, no rupture, no Echo down, kiosk heartbeats ok). HOWEVER 2 owner-facing P1 gaps in REPORTING (sales drift + abandon-not-measured) limit owner-night usefulness of dashboard."
+        }
+      }
+    }
+  ],
+  "verdict": "GREEN-WITH-REPORTING-GAPS",
+  "findings": [
+    {
+      "id": "B1-P4-F01",
+      "severity": "P1",
+      "category": "owner-facing-reporting",
+      "title": "Dashboard sales/orders endpoints under-report vs DB",
+      "details": "GET /api/admin/dashboard/total-orders returns 0 today and GET /api/admin/dashboard/sales-summary returns '0,00 €' BUT direct DB query on orders.created_at>=today returns 1 row with total=7.80€ (kiosk source_surface). Two peer endpoints (realtime-report + order-statistics) DO see the order. Owner reading dashboard tonight sees '0 commandes / 0€' on those widgets while a real borne sale happened.",
+      "evidence": "States 1 + 5 dashboard_vs_db_drift_P1",
+      "impact": "Owner cannot trust EOD dashboard for daily totals; manager risk of mis-decisioning (e.g. flagging the day as 'no sales').",
+      "fix_hint": "Audit DashboardController total-orders + sales-summary status/payment_status filters — likely require payment_status=15 (settled) AND order status in (delivered set) — current order 63 is status=4 (accepted) which is excluded. Align all 4 widgets to the same filter set OR document semantics in tooltip."
+    },
+    {
+      "id": "B1-P4-F02",
+      "severity": "P1",
+      "category": "owner-facing-metric-missing",
+      "title": "Taux abandon panier borne — métrique non instrumentée",
+      "details": "Mission asks 'Taux abandon panier borne ?' — V1 has NO data source for this. orders.payment_status<10 filter returns 0 today but this only captures POSTed orders that failed payment, not abandoned wizard sessions before submit. No cart_drafts/wizard_sessions table exists. No frontend analytics event to backend. Owner cannot get this metric from current dashboard.",
+      "evidence": "State 5 abandon_panier_today.P1_owner_facing_gap",
+      "impact": "Owner-night review of borne effectiveness blocked on this question. Common SaaS KPI missing.",
+      "fix_hint": "V1.0.X backlog: either (a) lightweight client-side beacon on wizard step-out → action_logs insert OR (b) wizard_sessions ephemeral table with start_ts/last_step_ts/abandoned_at. (a) is cheap and aligns with existing action_logs Kiosk event pattern."
+    },
+    {
+      "id": "B1-P4-F03",
+      "severity": "P2",
+      "category": "phantom-event-mission-framing",
+      "title": "Phase F2 SmsBornePending event = ABSENT (phantom)",
+      "details": "Mission task line 4 says 'Verify Phase F2 SmsBornePending event presence/absence'. After grep -rE on full codebase (app/, resources/, tests/, migrations): ZERO matches. app/Events/ contains NO event with 'Borne' substring. Phase F2 in this codebase refers to NF525 REFUND/REMBOURSEMENT marker work (confirmed via PROJECT_BRAIN.md proposals section), NOT borne SMS. The mission name 'SmsBornePending' appears to be a phantom — never landed, never planned.",
+      "evidence": "State 3 grep_codebase + phase_f2_actual_meaning_in_BRAIN",
+      "impact": "If a parent agent or roadmap expects this event for owner-night borne pickup notification, that pipeline does not exist. Possibly conflated with the planned (but unbuilt) borne pickup SMS path.",
+      "fix_hint": "Clarify upstream what was meant. If borne pickup SMS is needed, design as new event (e.g. KioskOrderReadyForPickup) wired to SendOrderGotSms listener + sms_gateways config — sms_gateways table exists but has 0 rows so any SMS path is currently inert anyway."
+    },
+    {
+      "id": "B1-P4-F04",
+      "severity": "P2",
+      "category": "ux-confusion-vector",
+      "title": "Stock-rupture dashboard cron disabled → 'no data' renders identically to 'no rupture'",
+      "details": "/admin/stock/scan-rupture/last-summary returns cron_enabled=false + summary=null for branch_id=1. UI likely renders this state similarly to 'no rupture detected'. Owner-night may interpret null as 'all good' when in reality scan never ran today.",
+      "evidence": "State 4 results.cron_enabled_caveat",
+      "impact": "False-confidence risk for owner. Operationally also disconnects the rupture dashboard from real stock-level state (cross-checked DB has 0 ruptures today, so coincidentally accurate, but it would still appear clean even if there WERE ruptures).",
+      "fix_hint": "Either (a) re-enable STOCK_RUPTURE_CRON for production owner-night UX OR (b) explicit UI badge 'Scan rupture désactivé — donnée non rafraîchie' when cron_enabled=false."
+    },
+    {
+      "id": "B1-P4-F05",
+      "severity": "INFO",
+      "category": "data-snapshot",
+      "title": "Owner-night borne snapshot 2026-05-25",
+      "details": "1 commande borne (id=63 A0001 7.80€ 12h24), 0 abandons mesurables, 0 ruptures, 0 PaymentFailure, 0 Echo down events, 11 hardware_health heartbeats all state=ok 11h44→21h15. Pic horaire: 12h (n=1, échantillon trop faible). Sample size today insufficient for trend.",
+      "evidence": "Aggregated across States 1-5",
+      "impact": "Informational baseline for next-day comparison.",
+      "fix_hint": "None — capture for cross-session continuity."
+    }
+  ],
+  "scores": {
+    "completeness": "5/5 states",
+    "owner_questions": "5/5 answered with caveats",
+    "evidence_strength": "HIGH",
+    "verdict_short": "GREEN borne layer + 2 P1 reporting gaps blocking owner-night usefulness"
+  },
+  "top_3_findings_summary": [
+    "P1 B1-P4-F01: Dashboard /total-orders + /sales-summary under-report (show 0/0€ while DB has 1 order/7.80€) — owner cannot trust EOD widgets",
+    "P1 B1-P4-F02: 'Taux abandon panier borne' metric NOT INSTRUMENTED in V1 — owner question unanswerable",
+    "P2 B1-P4-F03: Phase F2 SmsBornePending event = ABSENT in codebase (phantom) — Phase F2 in this repo = NF525 refund work, not borne SMS"
+  ]
+}

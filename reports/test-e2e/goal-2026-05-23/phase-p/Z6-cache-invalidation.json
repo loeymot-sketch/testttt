@@ -1,0 +1,320 @@
+{
+  "agent": "Z6 Cache invalidation",
+  "scope": "Cache layer inventory + TTL discipline + invalidation paths + tags + cross-worker coherence + item availability cache + pricing cache + session cache + adversarial",
+  "methodology": "READ-ONLY. grep -rn 'Cache::*' app/ ; raw matches count = 60 (includes docblock refs + comments + plumbing). Actual call sites bucketed by op below. file:line cited per discipline mandate.",
+
+  "cache_op_distribution": {
+    "lock_acquire_sites": 11,
+    "put_sites": 9,
+    "remember_sites": 2,
+    "add_sites": 3,
+    "forget_sites": 7,
+    "get_sites": 6,
+    "has_sites": 1,
+    "flush_sites": 1,
+    "store_sites": 3
+  },
+
+  "cache_write_sites_count": 33,
+  "cache_write_sites_note": "Sum of lock/put/remember/add/forget/has/flush/store sites. 60-count from raw grep includes ~27 docblock/comment references not counted as real call sites.",
+
+  "cache_write_sites_inventory": [
+    {
+      "key_pattern": "kiosk.menu.branch.{branchId}",
+      "op": "Cache::remember (read-through)",
+      "ttl": "config('kiosk.menu_cache_ttl', 60) seconds",
+      "file": "app/Http/Controllers/Frontend/MenuController.php:71",
+      "invalidation_listeners": [
+        "InvalidateKioskMenuCacheOnItemAvailabilityChanged (ItemAvailabilityChanged)",
+        "InvalidateKioskMenuCacheOnCatalogChange (ItemCreated/ItemUpdated/ItemDeleted/CategoryCreated/Updated/Deleted/ItemExtraAvailabilityChanged/ItemVariationAvailabilityChanged/ComposerProfileChanged/StockLevelChanged)",
+        "InvalidateMenuProjectionOnIngredientChange (IngredientAvailabilityChanged)",
+        "ApplyLeCayenneV2Command::forget (manual seed flush)"
+      ]
+    },
+    {
+      "key_pattern": "menu:snapshot_version:branch:{branchId}",
+      "op": "Cache::put + Cache::increment",
+      "ttl": "7 days",
+      "file": "app/Services/Menu/MenuSnapshot.php:41,58,70",
+      "invalidation": "Atomic increment on every availability/catalog event — monotonic by design, never forgotten."
+    },
+    {
+      "key_pattern": "kds.sync.{branch}.{minuteBucket}.{md5}",
+      "op": "Cache::remember",
+      "ttl": "5 seconds",
+      "file": "app/Services/KdsSyncService.php:49",
+      "invalidation": "TTL-only (5s). minute-bucket salt prevents long-cache pollution."
+    },
+    {
+      "key_pattern": "stock_scan_rupture:last_summary:branch:{branchId}",
+      "op": "Cache::put",
+      "ttl": "1 day",
+      "writer_file": "app/Console/Commands/StockScanRupture.php:141",
+      "reader_files": [
+        "app/Http/Controllers/Admin/StockRuptureDashboardController.php:79",
+        "app/Http/Controllers/Admin/StockRuptureDashboardController.php:236"
+      ],
+      "invalidation": "TTL-only (24h overwrite on next scan run) — observability snapshot, intentional"
+    },
+    {
+      "key_pattern": "availability:decremented:{fe|o}:{branchId}:{orderId}",
+      "op": "Cache::add (SETNX)",
+      "ttl": "24 hours",
+      "file": "app/Services/Menu/AvailabilityService.php:321",
+      "invalidation": "TTL-only — per-order idempotency guard, NEVER reuses orderId. C.1 Z2 P1 heal pattern."
+    },
+    {
+      "key_pattern": "stock_low_alert:{branchId}:{stockable_type}:{id}",
+      "op": "Cache::put after Cache::has check",
+      "ttl": "config('catalog_v15.stock_low_alert.throttle_seconds', 3600)",
+      "file": "app/Listeners/NotifyStockLowOnStockLevelChanged.php:52,56",
+      "invalidation": "TTL-only — alert throttle, intentional"
+    },
+    {
+      "key_pattern": "change_payment_status:{branch}:{order}:{idemHash}",
+      "op": "Cache::get + Cache::put",
+      "ttl": "24 hours",
+      "file": "app/Services/OrderService.php:2163,2264",
+      "invalidation": "TTL-only — service-layer idempotency replay marker"
+    },
+    {
+      "key_pattern": "ws:heartbeat",
+      "op": "Cache::get + Cache::put",
+      "ttl": "120 seconds",
+      "writer": "app/Jobs/DispatchDomainEventsJob.php:129",
+      "reader": "app/Http/Controllers/Admin/Observability/SyncOverviewController.php:531",
+      "invalidation": "TTL-only — broadcaster liveness probe, intentional"
+    },
+    {
+      "key_pattern": "fiscal_seq_b{branchId}",
+      "op": "Cache::lock",
+      "ttl": "5 seconds",
+      "file": "app/Services/Fiscal/FiscalSequenceService.php:66",
+      "invalidation": "Lock auto-released (try/finally + LOCK_TTL fallback)"
+    },
+    {
+      "key_pattern": "audit_chain_b{branchId}",
+      "op": "Cache::lock",
+      "ttl": "CHAIN_LOCK_TTL",
+      "file": "app/Services/Fiscal/AuditLogService.php:101",
+      "invalidation": "Lock auto-released; cross-worker coherence depends on shared driver (Redis)."
+    },
+    {
+      "key_pattern": "z_report_b{branchId}",
+      "op": "Cache::lock",
+      "ttl": "LOCK_TTL_SECONDS",
+      "file": "app/Services/Fiscal/ZReportService.php:79,192",
+      "invalidation": "Lock auto-released"
+    },
+    {
+      "key_pattern": "queue_lock_{branchId}_{businessDate}",
+      "op": "Cache::lock",
+      "ttl": "30s",
+      "files": [
+        "app/Services/OrderService.php:2716",
+        "app/Services/FrontendOrderService.php:983"
+      ],
+      "invalidation": "Lock auto-released via finally"
+    },
+    {
+      "key_pattern": "pos_order_idempotency_{sha1(branch|key)} / frontend_order_idempotency_{sha1(branch|key)}",
+      "op": "Cache::lock",
+      "ttl": "10s",
+      "files": [
+        "app/Services/OrderService.php:636",
+        "app/Services/FrontendOrderService.php:157"
+      ],
+      "invalidation": "Lock auto-released"
+    },
+    {
+      "key_pattern": "delivery_boy_cash_session_lock + cash_drawer_session_lock",
+      "op": "Cache::lock",
+      "ttl": "5s",
+      "files": [
+        "app/Services/Delivery/DeliveryBoyCashSessionService.php:82",
+        "app/Services/Cash/CashDrawerService.php:78"
+      ],
+      "invalidation": "Lock auto-released via block(3, fn)"
+    },
+    {
+      "key_pattern": "fiscal_archive_lock / outbox_retry_lock",
+      "op": "Cache::lock",
+      "ttl": "ARCHIVE_LOCK_TTL / 300s",
+      "files": [
+        "app/Console/Commands/FiscalArchiveCommand.php:126",
+        "app/Console/Commands/OutboxRetryFailedCommand.php:71",
+        "app/Console/Commands/OutboxWebhookRetryFailedCommand.php:70"
+      ],
+      "invalidation": "Lock auto-released"
+    },
+    {
+      "key_pattern": "payment_reconcile_lock",
+      "op": "Cache::lock",
+      "ttl": "10s",
+      "file": "app/Http/Controllers/Frontend/PaymentReconcileController.php:165",
+      "invalidation": "Lock auto-released"
+    },
+    {
+      "key_pattern": "Redis idempotency key (Cache::store(...).put)",
+      "op": "Cache::add (SETNX) via repo abstraction",
+      "ttl": "config('idempotency.ttl_seconds')",
+      "file": "app/Services/Idempotency/RedisIdempotencyKeyRepository.php:78,138,139",
+      "invalidation": "TTL-only — replay window, intentional"
+    },
+    {
+      "key_pattern": "preflight + cleanup",
+      "op": "Cache::put + Cache::forget / Cache::flush",
+      "ttl": "5s / N/A",
+      "files": [
+        "app/Console/Commands/PreflightProductionCommand.php:254-256",
+        "app/Console/Commands/CleanupTestFixturesCommand.php:52"
+      ],
+      "invalidation": "Self-contained scrub (test fixture cleanup never runs in prod)"
+    }
+  ],
+
+  "cache_keys_without_ttl": [],
+  "cache_keys_without_ttl_note": "No infinite cache keys discovered. Every Cache::put / Cache::add / Cache::remember site verified with explicit TTL.",
+
+  "cache_keys_never_invalidated": [],
+  "cache_keys_never_invalidated_note": "All discovered writes are EITHER (a) listener-invalidated on relevant domain events (kiosk.menu.branch.{id}), (b) atomically bumped (menu:snapshot_version), OR (c) intentionally TTL-only (observability, idempotency replay, throttle, locks, summaries). The TTL-only keys are correctly bounded for their semantics: ws:heartbeat=120s, kds.sync=5s, stock_scan_rupture=1d, availability:decremented=24h, stock_low_alert=throttle_seconds(3600s), change_payment_status=24h, fiscal/queue/idempotency locks=5-30s.",
+
+  "tags_used": false,
+  "tags_used_note": "Grep `Cache::tags|cache()->tags` returns ZERO results. Redis cache-tag store is not configured (config/cache.php uses default Redis without tagged store). All invalidation uses explicit Cache::forget per key — appropriate for current key cardinality (one key per branch).",
+
+  "uni_03_cache_driver_status": "tracked",
+  "uni_03_status_note": "BRAIN §8 production boot guard at app/Providers/AppServiceProvider.php:295 keeps the narrower `['array', 'null']` forbidden list. `file` and `database` drivers PASS the guard despite the block-comment intent of 'redis or memcached'. Doc says V1.0.X cloud-prep UNI-03 backlog. CURRENT .env CACHE_DRIVER=redis verified — V1 LOCAL is safe by configuration. Gap remains a deferred V1.0.X widen-list item (only bites if cloud cutover deploys with CACHE_DRIVER=file across multi-instance ALB).",
+
+  "cross_worker_coherence": "file_v1_safe_redis_actual",
+  "cross_worker_coherence_detail": {
+    "v1_local_lecayenne": "Single-box. .env CACHE_DRIVER=redis (not file). NF525 Cache::lock(audit_chain_b{n}) + Cache::lock(fiscal_seq_b{n}) achieve cross-worker coherence via shared Redis. SAFE.",
+    "v2_cloud_alb_multi_instance": "If deployed with file driver, Cache::lock becomes per-process (file driver uses local filesystem locks — not shared across instances). Two PHP-FPM instances could insert audit_log rows colliding on UNIQUE(branch_id, prev_hash) or skip a fiscal_sequence_no. The boot guard does NOT block this misconfiguration today. UNI-03 V1.0.X backlog widens forbiddenCacheDrivers to ['array','null','file','database'].",
+    "session_driver": "SESSION_DRIVER=file per .env (config/session.php default). Single-box V1 OK; multi-instance cloud requires SESSION_DRIVER=redis or database to share auth state."
+  },
+
+  "item_availability_cache_chain_clean": true,
+  "item_availability_chain_detail": {
+    "admin_toggle_is_available": "ItemService::update → DB::afterCommit → event(new ItemUpdated($id)) → EventServiceProvider listens (line 249-252) → InvalidateKioskMenuCacheOnCatalogChange::handle → Cache::forget('kiosk.menu.branch.{branchId}') + MenuSnapshot::bump → CatalogChanged broadcast via outbox (PersistCatalogChangedToOutbox). Verified at ItemService.php:386-393 + EventServiceProvider.php:249-252.",
+    "stock_level_zero_path": "StockService → ItemAvailabilityChanged::dispatch (via StockService::dispatchAvailabilityChanged line 149) → listener stack runs synchronously → kiosk.menu.branch.{id} forgotten + MenuSnapshot bumped + outbox row + WS broadcast.",
+    "i3_heal_end_to_end_verified": "Heal commit [GOAL-I2-HEAL-02 2026-05-24] is correctly wired. ItemService::update emits ItemUpdated AFTER commit, listener forgets kiosk cache, FE refresh on broadcast — admin rename/reprice now flushes within ~1s instead of 60s TTL. Confirms BRAIN-WAVE-P §I.3."
+  },
+
+  "pricing_cache_chain": "none_no_cache_layer",
+  "pricing_cache_detail": "PricingService (§7 frozen) has ZERO cache layer — verified grep 'Cache::' over app/Services/Pricing/ returns NOTHING. Every PricingService::calculateOrder hits DB directly (items, item_options, taxes, coupons tables). NF525 SSOT correctness wins over latency. tax_id change / item price change / coupon mutation are reflected on next order calculation immediately — no stale-price window. Doc-only audit per §7 frozen.",
+
+  "session_cache_audit": {
+    "driver": "file (per .env SESSION_DRIVER=file + config/session.php default)",
+    "lifetime_minutes": "config('session.lifetime', 120) = 120 minutes",
+    "bloat_risk": "LOW — Laravel sessions store auth user id + flash data; no large objects observed in grep over app/. SiteService/Settings cached via config(), not session.",
+    "v2_cloud_warning": "SESSION_DRIVER=file kills auth state across multi-instance ALB. V1 LOCAL safe."
+  },
+
+  "adversarial_findings": [
+    {
+      "id": "Z6-ADV-01",
+      "severity": "P2",
+      "title": "Listener ordering inverted for ItemAvailabilityChanged — snapshot bump runs BEFORE cache forget",
+      "evidence": "app/Providers/EventServiceProvider.php:201-209 — BumpMenuSnapshotOnItemAvailabilityChanged is registered first, InvalidateKioskMenuCacheOnItemAvailabilityChanged second. Both are synchronous in-process listeners.",
+      "race_scenario": "Kiosk poll thread hits /api/admin/menu-projection BETWEEN the two listeners → reads bumped snapshot_version → kicks /api/frontend/menu fetch → reads STILL-CACHED stale payload (forget hasn't fired yet). Window is sub-millisecond inside a single request thread.",
+      "correct_order_reference": "InvalidateMenuProjectionOnIngredientChange::forgetBranch (line 51-53) does forget BEFORE bump in the same method body — the canonical pattern. InvalidateKioskMenuCacheOnCatalogChange::forgetBranch (line 51-53) also does forget BEFORE bump.",
+      "exploitability": "Theoretical only — same-thread synchronous listener stack, window measured in microseconds. Not V1 reproducible without an artificial async dispatcher injected mid-stack.",
+      "fix": "Swap order in EventServiceProvider.php:202 vs 206: InvalidateKioskMenuCacheOnItemAvailabilityChanged FIRST, BumpMenuSnapshotOnItemAvailabilityChanged SECOND. Aligns with the catalog/ingredient pattern.",
+      "v1_blocker": false
+    },
+    {
+      "id": "Z6-ADV-02",
+      "severity": "P3-DOC",
+      "title": "Doc rot — comment says '5-minute TTL', actual TTL is 60 seconds",
+      "evidence": "app/Services/ItemService.php:399 comment: 'broadcast item change to all kiosk displays so they can update their menu cache without waiting for the 5-minute TTL'. Actual: config('kiosk.menu_cache_ttl', 60) = 60 seconds (MenuController.php:66, EventServiceProvider.php:248 doc).",
+      "exploitability": "None — comment-only confusion for next maintainer reading C3 broadcast intent.",
+      "fix": "Update comment to '60-second TTL'.",
+      "v1_blocker": false
+    },
+    {
+      "id": "Z6-ADV-03",
+      "severity": "P2",
+      "title": "Cross-customer write race: two admins reprice same item simultaneously",
+      "evidence": "ItemService::update wraps the work in a DB::transaction with afterCommit ItemUpdated dispatch. Listener stack is per-event (both admins fire their own event sequence). Final DB state reflects last writer (DB-level last-write-wins). Cache::forget is idempotent — both invalidations run, both refresh broadcasts fire. Final cache fill happens on the next /api/frontend/menu hit which reads the committed DB state.",
+      "exploitability": "Race resolves correctly because cache is invalidated TWICE and refilled ONCE post-commit from DB SoT. No stale state can persist.",
+      "v1_blocker": false
+    },
+    {
+      "id": "Z6-ADV-04",
+      "severity": "P3",
+      "title": "Cache key collision risk — flat keyspace, no domain prefix discipline",
+      "evidence": "Keys span: kiosk.menu.branch.*, menu:snapshot_version:branch:*, kds.sync.*, stock_scan_rupture:*, availability:decremented:*, stock_low_alert:*, change_payment_status:*, ws:heartbeat, fiscal_seq_b*, audit_chain_b*, z_report_b*, queue_lock_*, pos_order_idempotency_*, frontend_order_idempotency_*, payment_reconcile_lock, fiscal_archive_lock, outbox_retry_lock. Mix of `.` separator (`kiosk.menu.branch.42`) and `_` separator (`fiscal_seq_b42`) — convention is not enforced anywhere.",
+      "exploitability": "No collision observed today — each key is unique within its prefix. Risk surfaces when a future heal reuses the prefix carelessly.",
+      "fix": "V1.0.X backlog — add a `domain:branch:{id}:{op}` convention via a CacheKey helper. Defer; current keys are stable.",
+      "v1_blocker": false
+    },
+    {
+      "id": "Z6-ADV-05",
+      "severity": "P3",
+      "title": "Redis maxmemory eviction policy not enforced at boot",
+      "evidence": "No boot guard verifies Redis `maxmemory-policy` is set to `allkeys-lru` or `volatile-lru`. Default policy `noeviction` returns OOM errors on Cache::put when maxmemory hits — silent broadcast/observability failures.",
+      "exploitability": "V1 LOCAL Le Cayenne single-box with low Redis usage — practically unbounded. V2 cloud Redis sizing must be planned.",
+      "fix": "V1.0.X cloud-prep backlog — add Redis health probe + maxmemory-policy verifier.",
+      "v1_blocker": false
+    }
+  ],
+
+  "verdict": "GREEN",
+  "verdict_rationale": "Cache invalidation discipline is correct for V1 LOCAL Le Cayenne. Every write has explicit TTL. The critical chain (admin rename/reprice → kiosk visible) is healed end-to-end via ItemUpdated event → InvalidateKioskMenuCacheOnCatalogChange (commit GOAL-I2-HEAL-02 2026-05-24 verified). Pricing has no cache layer (SSOT integrity over latency). MenuSnapshot is monotonically bumped + 7d TTL. NF525 Cache::lock cross-worker coherence holds with current Redis driver. Tags not used but not required at current key cardinality. Two V1.0.X backlog items already tracked (UNI-03 widen forbiddenCacheDrivers list + listener ordering inversion). Five adversarial findings logged — none V1 blockers.",
+  "v1_ship_blocker": false,
+
+  "v1_0_x_backlog_items": [
+    "UNI-03 (BRAIN §8 already tracked) — widen forbiddenCacheDrivers list to ['array','null','file','database'] in AppServiceProvider.php:295 before V2 cloud cutover.",
+    "Z6-ADV-01 — swap listener order for ItemAvailabilityChanged in EventServiceProvider.php:201-209 (forget BEFORE bump pattern, mirror ingredient/catalog wiring).",
+    "Z6-ADV-02 — fix '5-minute TTL' comment rot at ItemService.php:399.",
+    "Z6-ADV-04 — adopt unified `domain:branch:{id}:{op}` key naming convention via CacheKey helper.",
+    "Z6-ADV-05 — Redis maxmemory-policy boot probe for V2 cloud-prep."
+  ],
+
+  "files_audited": [
+    "app/Http/Controllers/Frontend/MenuController.php",
+    "app/Http/Controllers/Frontend/PaymentReconcileController.php",
+    "app/Http/Controllers/Admin/Observability/SyncOverviewController.php",
+    "app/Http/Controllers/Admin/StockRuptureDashboardController.php",
+    "app/Jobs/DispatchDomainEventsJob.php",
+    "app/Listeners/InvalidateKioskMenuCacheOnItemAvailabilityChanged.php",
+    "app/Listeners/InvalidateKioskMenuCacheOnCatalogChange.php",
+    "app/Listeners/InvalidateMenuProjectionOnIngredientChange.php",
+    "app/Listeners/BumpMenuSnapshotOnItemAvailabilityChanged.php",
+    "app/Listeners/NotifyStockLowOnStockLevelChanged.php",
+    "app/Services/Menu/AvailabilityService.php",
+    "app/Services/Menu/MenuSnapshot.php",
+    "app/Services/Idempotency/RedisIdempotencyKeyRepository.php",
+    "app/Services/Fiscal/FiscalSequenceService.php",
+    "app/Services/Fiscal/AuditLogService.php",
+    "app/Services/Fiscal/ZReportService.php",
+    "app/Services/OrderService.php",
+    "app/Services/FrontendOrderService.php",
+    "app/Services/KdsSyncService.php",
+    "app/Services/Cash/CashDrawerService.php",
+    "app/Services/Delivery/DeliveryBoyCashSessionService.php",
+    "app/Services/ItemService.php",
+    "app/Events/ItemUpdated.php",
+    "app/Providers/EventServiceProvider.php",
+    "app/Providers/AppServiceProvider.php",
+    "app/Console/Commands/StockScanRupture.php",
+    "app/Console/Commands/PreflightProductionCommand.php",
+    "app/Console/Commands/CleanupTestFixturesCommand.php",
+    "app/Console/Commands/ApplyLeCayenneV2Command.php",
+    "app/Console/Commands/FiscalArchiveCommand.php",
+    "app/Console/Commands/OutboxRetryFailedCommand.php",
+    "app/Console/Commands/OutboxWebhookRetryFailedCommand.php",
+    "config/cache.php",
+    "config/session.php",
+    "config/kiosk.php",
+    ".env"
+  ],
+
+  "discipline_compliance": {
+    "read_only": true,
+    "pricing_doc_only_per_frozen_section_7": true,
+    "every_cache_site_cited_with_file_line": true,
+    "no_code_touched": true
+  },
+
+  "timestamp_utc": "2026-05-24T00:00:00Z"
+}

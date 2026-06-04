@@ -86,7 +86,15 @@
       :aria-label="$t('kiosk.order_type_label')"
       data-testid="kiosk-cart-order-type"
     >
-      <button type="button"
+      <!--
+        [wave-p-kiosk-2026-05-20 BORNE-001 heal] V1 dine-in gate.
+        Mirrors KioskIdleScreenComponent + PosComponent v-if="dineInEnabled"
+        per feedback_v1_dine_in_disabled_2026-05-06. The "Sur place" tile must
+        stay hidden until V2 floorplan ships — backend OrderRequest:213
+        rejects KIOSK order_type when pos_dine_in_enabled=false, so leaving
+        this button clickable creates a guaranteed 422 UX dead-end on V1.
+      -->
+      <button v-if="dineInEnabled" type="button"
         class="kiosk-order-type-btn"
         :class="{ active: orderType === ORDER_TYPE_KIOSK }"
         role="radio"
@@ -264,7 +272,7 @@
 
       <!-- Kiosk Phase 9.1.6 — Champ code promo (SSOT lecture-seule, revalidé
            serveur à /order). Affiche success / error inline. -->
-      <div class="kiosk-cart-promo" data-testid="kiosk-cart-promo">
+      <div v-if="discountsEnabled" class="kiosk-cart-promo" data-testid="kiosk-cart-promo">
         <div v-if="!promoCode" class="kiosk-cart-promo-form">
           <label for="kiosk-cart-promo-input" class="kiosk-cart-promo-label">
             {{ $t('kiosk.promo.label') }}
@@ -316,8 +324,8 @@
         </div>
       </div>
 
-      <!-- Bouton fidélité -->
-      <button type="button"
+      <!-- Bouton fidélité — masqué quand les remises sont désactivées (V1 F1-dormancy) -->
+      <button v-if="discountsEnabled" type="button"
         class="kiosk-btn-loyalty"
         @click="$router.push({ name: 'kiosk.loyalty' })"
         data-testid="kiosk-cart-loyalty-btn"
@@ -411,6 +419,33 @@ export default {
       promoLoading: 'promoLoading',
     }),
     ...mapGetters('kioskMenu', ['categories', 'selectedCategoryId', 'allItems']),
+    ...mapGetters('frontendSetting', { frontendSettingsList: 'lists' }),
+    /**
+     * [wave-p-kiosk-2026-05-20 BORNE-001 heal] V1 dine-in flag.
+     * Mirror of KioskIdleScreenComponent.dineInEnabled (verbatim guard
+     * pattern — typeof check rejects arrays/objects before string coerce so
+     * `String([1]) === '1'` cannot accidentally activate the flag).
+     * Defaults to FALSE so a regressed/empty backend stays safe (V1 mandate).
+     */
+    dineInEnabled() {
+      const s = this.frontendSettingsList || {};
+      const raw = s.pos_dine_in_enabled ?? s['pos.dine_in_enabled'] ?? 0;
+      const t = typeof raw;
+      if (t !== 'boolean' && t !== 'number' && t !== 'string') return false;
+      return String(raw) === '1' || raw === true;
+    },
+    /**
+     * [GOAL-GOLIVE-VAT10 / F1-dormancy 2026-05-31 Q2] Hide the coupon/promo form and
+     * the loyalty-redeem entry while discretionary discounts are disabled in V1, so a
+     * customer can't trigger the backend 422 dead-end. Exposed via
+     * window.foodkingConfig.discountsEnabled (master.blade.php). Defaults to FALSE so
+     * a missing/empty config stays safe (entries hidden = no dead-end).
+     */
+    discountsEnabled() {
+      return (typeof window !== 'undefined' && window.foodkingConfig)
+        ? window.foodkingConfig.discountsEnabled === true
+        : false;
+    },
     customerAllergenCodes() {
       const profile = this.$store?.getters?.['kioskSettings/customerProfile'];
       if (!profile || !Array.isArray(profile.declared_allergens)) return [];
@@ -421,6 +456,21 @@ export default {
       return shouldSkipKioskUpsellScreen(this.cartItems, this.categories);
     },
   },
+  /**
+   * [wave-p-kiosk-2026-05-20 BORNE-001 heal] Ensure frontendSetting/lists is
+   * populated so dineInEnabled computed can read pos_dine_in_enabled.
+   * KioskAppComponent loads via raw axios into globalState, NOT into the
+   * Vuex frontendSetting module — so the cart must dispatch independently.
+   * Best-effort: swallow errors and let the default (false) hold.
+   */
+  mounted() {
+    try {
+      const current = this.$store?.getters?.['frontendSetting/lists'];
+      if (!current || (Array.isArray(current) && current.length === 0)) {
+        this.$store?.dispatch?.('frontendSetting/lists').catch(() => {});
+      }
+    } catch (_e) { /* defaults to dineInEnabled=false — safe */ }
+  },
   methods: {
     ...mapActions('kioskCart', [
       'updateQuantity', 'removeItem', 'reset', 'markUpsellShown', 'popItem', 'setOrderType',
@@ -429,6 +479,15 @@ export default {
       'validatePromo', 'clearPromo',
       // [P-MEGA-05] Édition d'une ligne sans suppression intermédiaire.
       'startEditingCartItem',
+      // [bug-kiosk-valider-2026-05-21] Drop cart lines that became unavailable
+      // (manual 86, branch-specific flag) BEFORE the Valider click so the
+      // backend's PricingService availability guard cannot surface a 422.
+      // Persisted Vuex carts can outlive an admin availability flip when the
+      // kiosk missed the Echo broadcast (offline blip, app reload), so the
+      // pre-flight prune is the correct defense-in-depth — owner reported
+      // "ça marche parfois" after retries because subsequent clicks finally
+      // refreshed the menu cache and pruning silently dropped the stale line.
+      'pruneUnavailableLines',
     ]),
 
     // Kiosk Phase 9.1.6 — Applique un code promo via /api/frontend/promo/validate.
@@ -591,6 +650,36 @@ export default {
 
       this.quoteLoading = true;
       this.quoteError = null;
+
+      // [bug-kiosk-valider-2026-05-21] Pre-flight prune of cart lines whose
+      // catalog row is currently unavailable (manual 86 / branch flip the
+      // kiosk missed). Without this, the backend AvailabilityService rejects
+      // the whole quote with "Article N indisponible pour cette branche
+      // (manual)." → 422 surfaced as an error toast on the cart screen, owner
+      // reported a confusing UX ("erreur au panier, parfois ça disparait").
+      // The toast vanishes after 6s by design which matches the "parfois ça
+      // disparait" wording. Pruning here turns the 422 into a clean cart
+      // state plus an inline notice if anything was dropped.
+      const beforeCount = this.cartCount;
+      try { this.pruneUnavailableLines(); } catch (_) { /* defensive */ }
+      const afterCount = this.cartCount;
+      if (afterCount === 0) {
+        const msg = this.$t('kiosk.unavailable_items_pruned')
+          || 'Certains articles ne sont plus disponibles et ont été retirés du panier.';
+        this.quoteError = msg;
+        this.showToast(msg, 'warning', 6000);
+        this.quoteLoading = false;
+        return;
+      }
+      if (afterCount < beforeCount) {
+        // Surface a brief notice and let the user re-tap Valider — gives
+        // them the chance to review the updated total before paying.
+        const msg = this.$t('kiosk.unavailable_items_pruned')
+          || 'Certains articles ne sont plus disponibles et ont été retirés du panier.';
+        this.showToast(msg, 'warning', 4500);
+        this.quoteLoading = false;
+        return;
+      }
 
       try {
         await this.quoteOrder({ orderType: this.orderType });

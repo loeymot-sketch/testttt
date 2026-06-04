@@ -1,0 +1,133 @@
+{
+  "specialist": "RED",
+  "scope": "Adversarial integrity bypass paths: TRUNCATE bypass, raw DROP, FK enforcement divergence SQLite vs MySQL, BIGINT overflow, trigger evasion, soft-delete race conditions",
+  "method": "Read-only adversarial: what would a hostile insider OR a buggy deploy do that the existing immutability layer DOES NOT catch? Cross-reference fiscal triggers (audit_logs/z_reports/cash_movements/stock_movements) against the actual DELETE/UPDATE/TRUNCATE attack surface.",
+  "findings": [
+    {
+      "id": "RED-001",
+      "severity": "P0",
+      "title": "TRUNCATE TABLE bypasses ALL MySQL triggers — DDL not DML, immutability defeated",
+      "evidence_path": "Verified across migration docblocks: 2026_05_18_140000_add_stock_movements_immutability_triggers.php:54-56 + 2026_05_10_010000_secure_fiscal_audit_trail_immutability.php (referenced)",
+      "evidence_line": "2026_05_18_140000 line 54-56",
+      "evidence_excerpt": "TRUNCATE TABLE stock_movements bypasses MySQL triggers — mitigation = REVOKE TRUNCATE on prod DB user (deploy doc scope, not migration).",
+      "impact": "MySQL TRUNCATE is DDL — BEFORE DELETE / BEFORE UPDATE triggers do NOT fire. A DBA, deploy script, or compromised app user with TRUNCATE permission can erase: audit_logs (6-year NF525 retention), z_reports (fiscal closure evidence), cash_movements (cash audit), stock_movements (stock audit), order_payments (multi-tender breakdown). PRISON-TIME consequence if a tax inspection finds a TRUNCATE event in the binlog (and a binlog event for TRUNCATE IS recorded, FYI — but recovery from binlog is non-trivial). BRAIN explicitly flags this as 'owner-deferred' — but post 7/7 GO V1 LOCAL state and given the deploy is imminent, this remains the single most catastrophic integrity gap.",
+      "mitigation_present": "(a) BRAIN deploy doc says REVOKE TRUNCATE on prod DB user — owner-deferred. (b) MySQL binlog records the TRUNCATE event (forensic recovery possible but slow). (c) FreshOrderSeed command does NOT touch fiscal tables (only orders+order_items).",
+      "recommendation": "P0 BLOCKER for production migrate. Before V1 ship: (1) Verify DB GRANT in deploy doc (owner gate). (2) Add CI gate: `mysql -e \"SHOW GRANTS FOR 'app_user'\"` MUST NOT include TRUNCATE on tables: audit_logs, z_reports, cash_movements, stock_movements, order_payments, orders, order_items. (3) Document in PROJECT_BRAIN.md §8 NF525 Fiscal Invariants. (4) Optional belt-and-braces: MySQL 8.0+ supports DEFINER triggers on TRUNCATE-impossible CHECK constraints — but no real way to disallow TRUNCATE via DDL. The GRANT is the only defence."
+    },
+    {
+      "id": "RED-002",
+      "severity": "P1",
+      "title": "SQLite FK enforcement OFF by default — production runs MySQL but tests run SQLite, FK violations invisible in test suite",
+      "evidence_path": "config/database.php:43 + multiple migration docblocks",
+      "evidence_line": "config/database.php:43",
+      "evidence_excerpt": "'foreign_key_constraints' => env('DB_FOREIGN_KEYS', true),",
+      "impact": "Default IS true (good), so PHPUnit RefreshDatabase enables FK. BUT 5+ migration files and seeders explicitly `PRAGMA foreign_keys=OFF` then ON in their up() (2026_05_05_000020, 2026_05_16_140100, 2026_03_11_000000, MenuSeeder, ItemCategoryService). If an exception breaks between OFF and ON, the test session continues with FK_CHECKS=0 — any subsequent test in the same SQLite memory DB could insert orphan rows. PHPUnit reuses the in-memory DB across tests in a class via RefreshDatabase trait → cross-test contamination potential.",
+      "mitigation_present": "Most migrations wrap PRAGMA in try/finally or transaction blocks (verified for 2026_05_05_000020). MenuSeeder line 314 enables OFF outside try/catch — possible leak.",
+      "recommendation": "(1) Audit each PRAGMA foreign_keys=OFF site for try/finally wrapping. (2) Add a CI test sentinel that asserts PRAGMA foreign_keys returns 1 at the END of every test class teardown. (3) Refactor seeders to use Eloquent + cascade explicitly instead of disabling FKs."
+    },
+    {
+      "id": "RED-003",
+      "severity": "P1",
+      "title": "MySQL down() migration drop on z_reports + audit_logs is guarded — but the dropImmutabilityTriggers() helper is called BEFORE the env guard",
+      "evidence_path": "database/migrations/2026_04_22_000002_create_audit_logs_table.php",
+      "evidence_line": "62-83",
+      "evidence_excerpt": "public function down(): void {\n    if (app()->environment('production')) {\n        throw new \\RuntimeException(...)\n    }\n    $this->dropImmutabilityTriggers();\n    if (Schema::hasTable('audit_logs')) {\n        Schema::drop('audit_logs');\n    }\n}",
+      "impact": "CORRECT ORDER actually — env guard FIRST (lines 70-76), then drop triggers (line 78), then drop table (lines 80-82). I was checking for the inverse pattern and it's not present here. Good. RED-classifies as a check-and-confirm: the env guard pattern is consistent across audit_logs + z_reports + audit_logs_branch_prev_unique index.",
+      "mitigation_present": "Correct ordering.",
+      "recommendation": "No action. RED-team confirmed defence sound. Document this pattern as the canonical NF525 down() template in CLAUDE.md §8."
+    },
+    {
+      "id": "RED-004",
+      "severity": "P1",
+      "title": "audit_logs immutability triggers can be DROPPED via raw DDL by a DBA — no DDL-protection layer",
+      "evidence_path": "database/migrations/2026_04_22_000002_create_audit_logs_table.php:143-155",
+      "evidence_line": "143-155",
+      "evidence_excerpt": "private function dropImmutabilityTriggers(): void {\n    DB::unprepared('DROP TRIGGER IF EXISTS audit_logs_no_update');\n    DB::unprepared('DROP TRIGGER IF EXISTS audit_logs_no_delete');\n}",
+      "impact": "A DBA with TRIGGER privilege can drop the audit_logs immutability triggers, then UPDATE/DELETE rows freely, then RE-CREATE the triggers (replaying the migration's create block). MySQL binlog records DROP TRIGGER + UPDATE + CREATE TRIGGER — forensic recovery possible. Identical class to RED-001: defence is GRANT-level only.",
+      "mitigation_present": "GRANT level (deploy doc owner-deferred).",
+      "recommendation": "Same as RED-001: REVOKE TRIGGER privilege on prod DB user for tables audit_logs, z_reports, cash_movements, stock_movements. Document in deploy doc. CI gate `SHOW GRANTS` check before V1 ship."
+    },
+    {
+      "id": "RED-005",
+      "severity": "P2",
+      "title": "fiscal_sequence_no BIGINT overflow — non-issue but task asked: confirmed 9.2 quintillion ceiling",
+      "evidence_path": "database/migrations/2026_04_22_000001_add_fiscal_sequence_no_to_orders.php:28",
+      "evidence_line": "28",
+      "evidence_excerpt": "$table->unsignedBigInteger('fiscal_sequence_no')->nullable()->after('total');",
+      "impact": "unsignedBigInteger = 0 to 18,446,744,073,709,551,615 (~18.4 quintillion). At 1M orders/day per branch = 50 billion years. Not a real risk. Worth noting because task specifically asked.",
+      "mitigation_present": "Type choice itself.",
+      "recommendation": "No action. Document in BRAIN that fiscal_sequence_no is BIGINT and overflow is not a credible threat."
+    },
+    {
+      "id": "RED-006",
+      "severity": "P1",
+      "title": "Soft-delete RACE: BranchScope filters by deleted_at IS NULL implicitly via SoftDeletes trait — concurrent soft-delete + read could expose deleted row",
+      "evidence_path": "app/Models/Order.php (uses SoftDeletes trait) + app/Models/Scopes/BranchScope.php (no deleted_at handling)",
+      "evidence_line": "Order.php:11,17 / BranchScope.php (full file)",
+      "evidence_excerpt": "// Order uses SoftDeletes which auto-adds `WHERE deleted_at IS NULL`.\n// BranchScope adds `WHERE branch_id = X`.\n// No SELECT...FOR UPDATE in user-facing queries.",
+      "impact": "Adversarial scenario: a kiosk user is checking out, the cashier soft-deletes the order via admin UI between READ and WRITE. The READ returned a non-deleted row (deleted_at=NULL); the kiosk's UPDATE happens after the soft-delete commits. Default MySQL REPEATABLE READ isolation MIGHT save us via snapshot — but only within a transaction. The kiosk path uses idempotency keys + payment locks (FrontendOrderService et al.) which mitigate.",
+      "mitigation_present": "Idempotency middleware + Cache::lock + SELECT FOR UPDATE in payment-critical paths (FrontendOrderService:1023 reference area).",
+      "recommendation": "Audit which write paths use SELECT FOR UPDATE on orders. POS finalize/cancel + Kiosk payment-confirm paths verified to use it. Reconcile-pending (PaymentReconcileController:194-247) uses withoutGlobalScope + locking — sound. Document in BRAIN that any new admin write on Order MUST be wrapped in FOR UPDATE if it competes with frontend writes."
+    },
+    {
+      "id": "RED-007",
+      "severity": "P1",
+      "title": "Order soft-delete + restore-disabled = an order can be 'lost' if the only soft-delete path is OrderService::destroy",
+      "evidence_path": "app/Models/Order.php:108-116",
+      "evidence_line": "108-116",
+      "evidence_excerpt": "static::restoring(function (self $order) {\n    throw new \\RuntimeException('Order::restore() is disabled — ...');\n});",
+      "impact": "Restore is blocked. If an order is accidentally soft-deleted (admin clicked the wrong row), the only recovery is via raw SQL `UPDATE orders SET deleted_at=NULL WHERE id=X`. That bypasses Eloquent so the restore-block doesn't fire, but it ALSO doesn't fire the `restoring`/`restored` events — and ARCH-004 explains that OrderAddress + OrderCoupon were HARD deleted alongside, so the restored Order is permanently broken. Tested deliberate behaviour but the soft-delete UI itself is the threat surface.",
+      "mitigation_present": "OrderService::destroy() likely has confirmation UI (not verified in this audit).",
+      "recommendation": "Verify the admin UI requires confirmation for soft-delete. Consider adding a 'reason' field to deletion_log (table exists per 2026_04_15_230200) and surface it in the admin UI. Defensive UI design — out of WI-3 DB scope but flagged."
+    },
+    {
+      "id": "RED-008",
+      "severity": "P2",
+      "title": "WH-3 anchor: daily_reset_at DATE column + Carbon::today() = TZ mismatch — VERIFIED FIXED in code",
+      "evidence_path": "reports/audit/wave-h-2026-05-19/WH-3-bug003-RESET-STALE-QUOTA-TZ/STATUS.md + app/Services/Menu/AvailabilityService.php:291",
+      "evidence_line": "AvailabilityService.php:291",
+      "evidence_excerpt": "$today = Carbon::today(config('app.timezone'))->toDateString();",
+      "impact": "WH-3 caught: DATE column vs MySQL session TZ=UTC vs app TZ=Paris. Fix applied: use Carbon::today(config('app.timezone'))->toDateString() to bind a Paris-local Y-m-d. RED-team checks: are there OTHER DATE columns with similar mismatch? Inventory: business_date on orders (DATE), daily_reset_at on item_branch_availability (DATE). Both treated consistently in services post-fix. NO other DATE columns found in active critical paths.",
+      "mitigation_present": "WH-3 healed.",
+      "recommendation": "No new finding. Confirms WH-3 anchor + sister-services pattern (Carbon::today(tz)) applied consistently."
+    },
+    {
+      "id": "RED-009",
+      "severity": "P2",
+      "title": "Concurrent fiscal_sequence_no allocation race — Cache::lock(5s) + SELECT FOR UPDATE = triple defence, BUT cache driver downtime risks",
+      "evidence_path": "BRAIN §8 Fiscal Sequence + FiscalSequenceService.php (referenced)",
+      "evidence_line": "BRAIN §8",
+      "evidence_excerpt": "Cache::lock 5s + DB FOR UPDATE = triple défense concurrent",
+      "impact": "If Redis is down, Cache::lock fails. Falls back to DB FOR UPDATE only — still safe but loses one layer. Adversarial scenario: Redis OOM + 100 concurrent kiosk orders = some get gaps in fiscal_sequence_no if FOR UPDATE timeout < transaction time. UNIQUE(branch_id, fiscal_sequence_no) catches obvious duplicates; gaps are silent.",
+      "mitigation_present": "FiscalSequenceRetry cron (2026_05_09_200000 fiscal_alloc_error_at flag).",
+      "recommendation": "No action — defence-in-depth IS the design. Document in monitoring runbook: alert if Redis lock failure rate >0 for >1min. Out of WI-3 scope."
+    },
+    {
+      "id": "RED-010",
+      "severity": "P1",
+      "title": "stock_movements idempotency_key NULL allows duplicate inserts when caller forgets to populate",
+      "evidence_path": "database/migrations/2026_04_27_143130_create_stock_movements_table.php:19",
+      "evidence_line": "19",
+      "evidence_excerpt": "$table->string('idempotency_key')->nullable()->unique('stock_movements_idempotency_unique');",
+      "impact": "UNIQUE on a nullable column: MySQL/SQLite allow multiple NULL rows. If the writer (StockService etc.) forgets to set idempotency_key, the immutability triggers prevent UPDATE/DELETE so a duplicate becomes permanent NF525-grade junk in the audit. RED-team: are there any code paths that insert stock_movements without idempotency_key? Need StockMovement::create or DB::table inserts inspection.",
+      "mitigation_present": "Service layer populates idempotency_key from event correlation (order_id + reason combo).",
+      "recommendation": "Audit StockMovement::create call sites for idempotency_key presence. Tighten model layer: add `static::creating(fn($sm) => $sm->idempotency_key ?? throw new InvariantViolation('stock_movements must have idempotency_key'))`. 3-LOC defensive add."
+    }
+  ],
+  "summary": {
+    "p0_count": 1,
+    "p1_count": 5,
+    "p2_count": 3,
+    "p3_count": 0,
+    "highest_impact_finding": "RED-001 (TRUNCATE TABLE bypasses ALL MySQL triggers — fiscal evidence erasable via DDL; GRANT-level defence required at deploy)",
+    "next_class_of_finding": "RED-002 + RED-004 — DDL-level attack surface (PRAGMA foreign_keys, DROP TRIGGER). Application-layer triggers are necessary but not sufficient; the DB GRANT layer is the closing argument."
+  },
+  "adversarial_paths_NOT_finding_issues": [
+    "audit_logs UPDATE/DELETE via Eloquent: blocked by both model and DB triggers (defence-in-depth confirmed).",
+    "z_reports UPDATE/DELETE: same defence shape, blocked.",
+    "fiscal_sequence_no monotonic per branch: UNIQUE(branch_id, fiscal_sequence_no) + Cache::lock + FOR UPDATE triple defence. Gap-handling via fiscal_alloc_error_at + retry cron. Sound.",
+    "Kiosk Sanctum kiosk:order ability: 6+ controllers check tokenCan() consistently.",
+    "BranchScope coverage of 22 models matches BRAIN §9 list.",
+    "FK enforcement in MySQL prod: foreign_key_constraints=true default + most cascade chains documented and intentional."
+  ]
+}

@@ -65,6 +65,18 @@ return [
             'root'  => env('AWS_ROOT'),
         ],
 
+        // [GOAL-HEAL-SEC-001 2026-05-23] Firebase Admin SDK service-account JSON
+        // disk. Stores under storage/app/firebase (NOT symlinked into public/storage,
+        // unlike the 'public' disk). Used by NotificationSetting media collection
+        // 'notification-file' so that admin-uploaded Firebase Admin private keys
+        // never become web-fetchable. Phase B.3 Security RED-team finding B3.2-001.
+        'firebase_private' => [
+            'driver'     => 'local',
+            'root'       => storage_path('app/firebase'),
+            'visibility' => 'private',
+            'throw'      => false,
+        ],
+
     ],
 
     /*

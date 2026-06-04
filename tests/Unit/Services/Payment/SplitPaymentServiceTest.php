@@ -6,6 +6,7 @@ use App\Enums\PosPaymentMethod;
 use App\Models\Branch;
 use App\Models\Order;
 use App\Models\OrderPayment;
+use App\Models\PaymentTerminal;
 use App\Models\User;
 use App\Services\Cash\CashDrawerService;
 use App\Services\Payments\SplitPaymentService;
@@ -41,14 +42,34 @@ class SplitPaymentServiceTest extends TestCase
         ]);
     }
 
+    /**
+     * [F-SPLIT-PHANTOM-CARD-001 2026-05-17] Active TPE for CARD tranches.
+     * Without this row the new mandatory terminal_id rule would reject every
+     * CARD tranche — these unit tests focus on amount/audit, not TPE policy.
+     */
+    private function createActiveTerminal(int $branchId): PaymentTerminal
+    {
+        return PaymentTerminal::create([
+            'branch_id'    => $branchId,
+            'name'         => 'TPE Unit',
+            'gateway_type' => PaymentTerminal::GATEWAY_MANUAL,
+            'fee_percent'  => 0,
+            'fee_fixed'    => 0,
+            'status'       => PaymentTerminal::STATUS_ACTIVE,
+        ]);
+    }
+
     public function test_validate_happy_path_two_tranches_cash_card(): void
     {
         $service = app(SplitPaymentService::class);
+        // [F-SPLIT-PHANTOM-CARD-001] CARD tranche requires an active terminal.
+        $branch = Branch::factory()->create(['id' => 1]);
+        $terminal = $this->createActiveTerminal($branch->id);
 
         // Doit ne PAS throw.
         $service->validateBreakdown([
             ['mode' => PosPaymentMethod::CASH, 'amount' => 10.00, 'tendered' => 10.00],
-            ['mode' => PosPaymentMethod::CARD, 'amount' => 15.00],
+            ['mode' => PosPaymentMethod::CARD, 'amount' => 15.00, 'terminal_id' => $terminal->id],
         ], orderTotal: 25.00, branchId: 1);
 
         $this->assertTrue(true); // pas d'exception = succès
@@ -122,6 +143,8 @@ class SplitPaymentServiceTest extends TestCase
     {
         $this->seedSpatieRoles();
         $order = $this->createOrder(25.00, branchId: 1);
+        // [F-SPLIT-PHANTOM-CARD-001] CARD tranche requires an active terminal.
+        $terminal = $this->createActiveTerminal((int) $order->branch_id);
 
         // [Sprint 1B 2026-05-16] CASH tranche path needs an authenticated
         // cashier with an OPEN cash drawer session on the order's branch.
@@ -137,7 +160,7 @@ class SplitPaymentServiceTest extends TestCase
 
         $persisted = $service->persistTranches($order, [
             ['mode' => PosPaymentMethod::CASH, 'amount' => 10.00, 'tendered' => 12.00, 'change' => 2.00],
-            ['mode' => PosPaymentMethod::CARD, 'amount' => 15.00, 'reference' => '1234'],
+            ['mode' => PosPaymentMethod::CARD, 'amount' => 15.00, 'reference' => '1234', 'terminal_id' => $terminal->id],
         ]);
 
         $this->assertCount(2, $persisted);
@@ -182,12 +205,16 @@ class SplitPaymentServiceTest extends TestCase
     public function test_persist_atomicity_rollback_when_validation_fails(): void
     {
         $order = $this->createOrder(25.00, branchId: 1);
+        // [F-SPLIT-PHANTOM-CARD-001] Provide a valid terminal so the CARD
+        // tranche failure is genuinely the missing-tendered CASH tranche
+        // (atomicity assertion), not the new CARD terminal_id guard.
+        $terminal = $this->createActiveTerminal((int) $order->branch_id);
         $service = app(SplitPaymentService::class);
 
         try {
             // 2e tranche cash sans tendered → throws → 1ère NE doit PAS rester
             $service->persistTranches($order, [
-                ['mode' => PosPaymentMethod::CARD, 'amount' => 10.00],
+                ['mode' => PosPaymentMethod::CARD, 'amount' => 10.00, 'terminal_id' => $terminal->id],
                 ['mode' => PosPaymentMethod::CASH, 'amount' => 15.00], // pas de tendered → fail
             ]);
             $this->fail('ValidationException attendue.');

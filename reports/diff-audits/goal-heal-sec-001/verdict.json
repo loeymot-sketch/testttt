@@ -1,0 +1,88 @@
+{
+  "agent": "H-SEC-001",
+  "task": "GOAL-HEAL-SEC-001 — Firebase Admin SDK service-account JSON relocation to non-public storage",
+  "phase_source": "Phase B.3 Security RED-team finding B3.2-001 (CRITICAL)",
+  "verdict": "CLEAN-FIX",
+  "timestamp_utc": "2026-05-23T15:08:00Z",
+  "git_head_pre": "8be02fb16763c2950e8224e98b69242d1e35cea7",
+  "commit_sha": "9da21c7cdf7a56b988d3e8521c522076ab4a493b",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "files_modified": [
+    "app/Models/NotificationSetting.php",
+    "app/Services/FirebaseService.php",
+    "database/seeders/NotificationTableSeeder.php",
+    "config/filesystems.php",
+    "public/.htaccess",
+    ".gitignore",
+    "storage/app/.gitignore"
+  ],
+  "files_added": [
+    "public/file/.htaccess",
+    "scripts/deploy/nginx-deny-sensitive-files.conf",
+    "tests/Feature/Security/FirebaseKeyStorageSecurityTest.php",
+    "storage/app/firebase/.gitignore"
+  ],
+  "files_removed_from_git_index": [
+    "public/file/service-account-file.json"
+  ],
+  "files_moved_on_disk": [
+    {
+      "from": "public/file/service-account-file.json",
+      "to": "storage/app/firebase/service-account-file.json",
+      "sha256_unchanged": true,
+      "size_bytes": 2387,
+      "project_id": "foodking-inilabs",
+      "client_email": "firebase-adminsdk-kpdbd@foodking-inilabs.iam.gserviceaccount.com",
+      "classification": "DEMO key (upstream iniLabs vendor, not Le Cayenne production)"
+    }
+  ],
+  "frozen_zone_files_touched": [],
+  "frozen_zone_diff_lines": 0,
+  "nf525_chain_changed": false,
+  "tests_run": {
+    "sentinel_new": {
+      "file": "tests/Feature/Security/FirebaseKeyStorageSecurityTest.php",
+      "result": "GREEN",
+      "tests": 6,
+      "assertions": 21
+    },
+    "regression_fcm_payment_confirm": {
+      "file": "tests/Feature/Frontend/PaymentConfirmFcmFailureTest.php",
+      "result": "GREEN",
+      "tests": 1,
+      "assertions": 4
+    },
+    "regression_push_notification_tenant": {
+      "file": "tests/Feature/Foundation/PushNotificationTenantIsolationTest.php",
+      "result": "GREEN",
+      "tests": 3,
+      "assertions": 3
+    },
+    "regression_fcm_template_naming": {
+      "file": "tests/Feature/Sentinels/FcmTemplateNamingSentinelTest.php",
+      "result": "GREEN",
+      "tests": 3,
+      "assertions": 11
+    }
+  },
+  "vulnerability_closed": true,
+  "vulnerability_closure_proof": [
+    "1. public/file/service-account-file.json no longer exists on disk and is removed from git index (git rm).",
+    "2. New 'firebase_private' filesystem disk in config/filesystems.php points to storage/app/firebase (NOT symlinked into public/storage).",
+    "3. NotificationSetting::registerMediaCollections() pins the 'notification-file' media collection to firebase_private disk — admin-uploaded production Firebase JSON will land under storage/app/firebase/ instead of storage/app/public/ (the public-disk default).",
+    "4. FirebaseService::getAccessToken() resolves the JSON path via $media->getPath() on the firebase_private disk, removing the prior parse_url('/storage') public-asset coupling.",
+    "5. .gitignore adds belt-and-braces globs for /public/file/*.json|pem|key|p12|crt to prevent re-commit.",
+    "6. public/.htaccess + public/file/.htaccess add Apache-side credential extension denials (defense-in-depth).",
+    "7. scripts/deploy/nginx-deny-sensitive-files.conf provides the nginx equivalent for production deploy.",
+    "8. Sentinel FirebaseKeyStorageSecurityTest asserts (a) absent public file, (b) firebase_private disk config, (c) media collection pin, (d) FirebaseService uses Spatie path resolver, (e) .gitignore globs, (f) .htaccess deny rule — 6 tests / 21 assertions all green."
+  ],
+  "owner_action_required": [
+    "Per the original task instructions: rotate the demo iniLabs Firebase key with the upstream vendor IF it's still active in project foodking-inilabs.",
+    "Owner: confirm Le Cayenne has NOT yet uploaded a REAL production Firebase Admin JSON via the admin UI in the affected period (2026-03-06 to 2026-05-23). If they have, the real key may also have been web-accessible briefly and must be rotated via Google Cloud Console + git history scrubbed via BFG.",
+    "If Le Cayenne plans to start using FCM admin push from the server in production, the admin uploads the real key via Settings > Notification (the upload flow now correctly lands it on firebase_private disk — no further action needed for the upload itself).",
+    "On a fresh deploy/clone, the DEMO seeder block (gated by $envService->getValue('DEMO')) will silently skip because storage/app/firebase/service-account-file.json is gitignored. This is correct: Le Cayenne runs in production mode (not DEMO), so the seeder branch never executes anyway."
+  ],
+  "notes_advisor_caught": [
+    "Original heal prompt described a fix path that didn't account for the Spatie MediaLibrary indirection — the file isn't read by a hard-coded public_path() in NotificationService.php; it's read by FirebaseService.php via the media collection URL. Without the registerMediaCollections() disk pin, moving the source file alone would NOT prevent admin-uploaded REAL keys from landing under public/storage/ (the default MEDIA_DISK=public). The actual fix re-plumbs the disk binding via a new firebase_private disk and pins the media collection to it. The original sentinel suggestion (asserting NotificationService::storage_path(...) usage) would have been a false-positive sentinel checking for code that never existed."
+  ]
+}

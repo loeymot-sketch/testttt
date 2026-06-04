@@ -40,6 +40,7 @@ use App\Http\Requests\PaginateRequest;
 use App\Libraries\QueryExceptionLibrary;
 use Smartisan\Settings\Facades\Settings;
 use App\Http\Requests\OrderStatusRequest;
+use App\Domain\Order\AutoPrepareOnPaidPolicy;
 use App\Domain\Order\OrderStateMachine;
 use App\Services\CouponService;
 use App\Services\Pricing\DiscountCalculator;
@@ -488,6 +489,18 @@ class FrontendOrderService
                     $calculatedDiscount
                 );
 
+                // [GOAL-GOLIVE-VAT10 / F1-dormancy 2026-05-30] Single fiscal gate
+                // for the customer-facing kiosk/web path. After coupon (SSOT or
+                // legacy) + kiosk loyalty redeem, $calculatedDiscount holds the
+                // total discretionary discount. At a non-zero VAT rate the frozen
+                // PricingService/ZReportService compute per-line TVA on the
+                // PRE-discount base → a discounted order signs a fiscally-incorrect
+                // NF525 Z (the F1 defect). Loyalty AUTO-accrues, so this path is
+                // reachable with zero admin action — it MUST be gated by code, not
+                // data. Refuse any non-zero discount until F1 is fixed under a
+                // lock-plan (same master flag as POS/admin: pos.manual_discount_enabled).
+                $this->assertDiscretionaryDiscountAllowed((float) $calculatedDiscount);
+
                 $this->saveFrontendOrderWithQueueNumber(function () use ($request, $totalTax, $realSubtotal, $calculatedDiscount, $isKioskMachineOrder, $idempotencyKey): void {
                     $this->frontendOrder->order_serial_no = date('dmy') . $this->frontendOrder->id;
                     $this->frontendOrder->total_tax = round($totalTax, 2);
@@ -578,6 +591,20 @@ class FrontendOrderService
                     $this->frontendOrder->status = OrderStatus::ACCEPT;
                     $this->frontendOrder->save();
                     $statusChangedAfterCreate = true;
+                }
+
+                // [Wave M / Heal Z2 P1 — 2026-05-19] OrderCreated::dispatch
+                // moved INSIDE the closure (was previously fired via helper
+                // `dispatchNewOrderSignals` AFTER `});` at line ~605). With
+                // transactionLevel()>0 the DispatchableAfterCommit trait
+                // (`app/Events/Concerns/DispatchableAfterCommit.php:31-39`)
+                // registers via afterCommit() — broadcast fires after
+                // outermost commit, is DROPPED on rollback. Mail/SMS/Push
+                // queue jobs remain post-`});` via control flow (their own
+                // queue dedupe story is sufficient). Sentinel:
+                // `tests/Feature/Sync/OrderCreatedDispatchPlacementSentinelTest`.
+                if ($shouldDispatchNewOrderSignals) {
+                    OrderCreated::dispatch($this->frontendOrder);
                 }
             });
 
@@ -760,6 +787,25 @@ class FrontendOrderService
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
+        }
+    }
+
+    /**
+     * [GOAL-GOLIVE-VAT10 / F1-dormancy 2026-05-30] Customer-facing (kiosk/web)
+     * fiscal-correctness gate for ANY discretionary discount (coupon + kiosk
+     * loyalty redeem). Mirrors OrderService::assertDiscretionaryDiscountAllowed.
+     * At a non-zero VAT rate the frozen PricingService/ZReportService compute
+     * per-line TVA on the PRE-discount base → a discounted order signs a
+     * fiscally-incorrect NF525 Z (F1, dormant only at 0% VAT). Refused in V1
+     * until F1 is fixed under a lock-plan (pos.manual_discount_enabled = the
+     * discretionary-discount master flag).
+     */
+    private function assertDiscretionaryDiscountAllowed(float $discount): void
+    {
+        if ($discount > 0.0 && config('pos.manual_discount_enabled') !== true) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'discount' => "Les remises (coupon, fidélité) sont désactivées en V1 (correction fiscale TVA/HT en attente).",
+            ]);
         }
     }
 
@@ -1082,8 +1128,16 @@ class FrontendOrderService
         }
 
         $promoted = false;
+        // [Wave M / Heal Z5 P1-C — 2026-05-19] Captures state required by
+        // the post-transaction flag write. The flag MUST be persisted
+        // OUTSIDE the parent DB::transaction (see comment at the raw
+        // DB::table('orders') call below) — so we collect the intent
+        // inside the closure and act on it once the transaction has
+        // settled. Audit reference: RED-Z5 §B F-Z5-P1-C.
+        $allocFailed = false;
+        $allocFailureError = null;
 
-        DB::transaction(function () use ($frontendOrder, &$promoted) {
+        DB::transaction(function () use ($frontendOrder, &$promoted, &$allocFailed, &$allocFailureError) {
             $locked = FrontendOrder::where('id', $frontendOrder->id)
                 ->lockForUpdate()
                 ->first();
@@ -1152,39 +1206,36 @@ class FrontendOrderService
                         'source_surface'     => $locked->source_surface ?? null,
                     ]);
                 } catch (\Throwable $e) {
-                    // [iter14 SPECIALIST-3 / FISCAL-ORPHAN-RETRY]
-                    // Audit iter13 ORDER-PATH P1: previously this branch
-                    // re-threw, rolling back the entire transaction and
-                    // leaving the row PAID+PENDING+seq=NULL with no marker
-                    // — invisible to KDS, excluded from Z, unrecoverable
-                    // unless the caller had its own retry. If the caller
-                    // crashed (one-shot webhook, payment provider callback)
-                    // the order silently became an NF525 orphan.
+                    // [iter14 SPECIALIST-3 / FISCAL-ORPHAN-RETRY] +
+                    // [Wave M / Heal Z5 P1-C — 2026-05-19 deferred flag write]
                     //
-                    // New behaviour: persist a `fiscal_alloc_error_at`
-                    // marker on the row so the
-                    // `foodking:fiscal:retry-alloc` cron can pick it up,
-                    // log on the fiscal channel, and return without
-                    // promoting (status stays PENDING — KDS still skips,
-                    // matching the old observable behaviour). The flag
-                    // write happens INSIDE the same transaction as the
-                    // alloc attempt (same closure), so there is no window
-                    // where the row is left both half-allocated and
-                    // unmarked.
-                    $locked->fiscal_alloc_error_at = now();
-                    $locked->save();
-
-                    Log::channel('fiscal')->error('kiosk.fiscal_sequence_alloc_failed', [
-                        'event'    => 'kiosk.fiscal_sequence_alloc_failed',
-                        'order_id' => $locked->id,
-                        'branch_id'=> $locked->branch_id,
-                        'error'    => $e->getMessage(),
-                        'flagged'  => true,
-                    ]);
+                    // History:
+                    //   - iter13 ORDER-PATH P1 (pre-iter14): catch re-threw,
+                    //     entire tx rolled back, row stayed PAID+PENDING+seq=NULL
+                    //     with NO marker — unrecoverable orphan if the caller
+                    //     also crashed.
+                    //   - iter14 (commit 3150992a7): catch set
+                    //     `$locked->fiscal_alloc_error_at = now(); $locked->save();`
+                    //     INSIDE this tx. Fixed the dominant case but if the
+                    //     save() itself threw (trigger, FK, DB hiccup) the
+                    //     throw bubbled out of the closure, the parent tx
+                    //     rolled back, flag lost — pre-iter14 orphan
+                    //     reproduced for a narrow nested-failure edge case
+                    //     (RED-Z5 §B F-Z5-P1-C).
+                    //   - Wave M: capture failure intent here (no in-tx save)
+                    //     and persist the flag via a raw DB::table()->update()
+                    //     OUTSIDE this transaction so the flag write cannot
+                    //     be rolled back together with the failed alloc tx.
+                    //     The raw update has its own try/catch so even a DB
+                    //     hiccup at flag-write time degrades to a log + no
+                    //     orphan (the row is in the same observable state
+                    //     as iter13-pre-fix, but the audit trail is intact).
+                    $allocFailed = true;
+                    $allocFailureError = $e;
 
                     // promoted stays false — caller sees no exception, KDS
                     // does not pick the order up (status still PENDING),
-                    // retry cron will retry and clear the flag on success.
+                    // retry cron will retry once the flag is set (below).
                     return;
                 }
             }
@@ -1192,7 +1243,112 @@ class FrontendOrderService
             $locked->status = OrderStatus::ACCEPT;
             $locked->save();
             $promoted = true;
+
+            // [Wave S-1 — P-OWNER 2026-05-20] Auto-transition ACCEPT → PREPARING
+            // for kiosk orders settled online via TPE (CARD / TICKET_RESTAURANT)
+            // — the kitchen receives the ticket already "en cours" without a
+            // second tap. Kiosk cash-at-counter never reaches this path
+            // (it stays UNPAID at creation and is collected via
+            // PaymentService::confirmCounterPayment), so no S-5 exception
+            // needed here.
+            //
+            // The transition lives INSIDE the same DB::transaction so an
+            // outer rollback (e.g. broadcast registration glitch) discards
+            // both the ACCEPT promotion and the PREPARING flip atomically —
+            // status never observed half-applied. OrderCreated::dispatch
+            // below picks up the fresh `$locked->status` (PREPARING when the
+            // policy fires) so PersistOrderCreatedToOutbox encodes the
+            // correct payload for KDS.
+            //
+            // OrderStateMachine::allows(ACCEPT, PREPARING) is true (line 45
+            // of OrderStateMachine.php). We use the historical
+            // `$locked->status = NEXT; ->save();` pattern per CLAUDE.md §7
+            // frozen-zone rule for FrontendOrderService — recordTransition
+            // is best-effort and called after save() to keep the audit
+            // chain consistent.
+            $sourceSurface = (string) ($locked->source_surface ?? 'kiosk');
+            if (AutoPrepareOnPaidPolicy::shouldPromote(
+                surface: $sourceSurface,
+                posPaymentMethod: $locked->pos_payment_method !== null
+                    ? (int) $locked->pos_payment_method
+                    : null,
+                isCounterCollect: false,
+            )) {
+                $locked->status = AutoPrepareOnPaidPolicy::nextStatus();
+                $locked->save();
+
+                OrderStateMachine::recordTransition(
+                    FrontendOrder::class,
+                    (int) $locked->id,
+                    OrderStatus::ACCEPT,
+                    OrderStatus::PREPARING,
+                    null,
+                    'auto_prepare_on_paid (Wave S-1 kiosk paid TPE)',
+                );
+            }
+
+            // [Wave M / Heal Z2 P1 — 2026-05-19 + advisor pivot 2026-05-19]
+            // OrderCreated::dispatch moved INSIDE the closure so
+            // DispatchableAfterCommit engages (transactionLevel()>0 →
+            // afterCommit). On rollback the broadcast is dropped — KDS
+            // never observes a ghost ACCEPT'd kiosk order.
+            //
+            // IMPORTANT — pass `$locked`, NOT the caller's `$frontendOrder`.
+            // Pre-Wave-M, the dispatch happened outside the closure AFTER
+            // `$frontendOrder->refresh()` (see line ~1275 below) so the
+            // event captured the fresh ACCEPT status + cleared
+            // fiscal_alloc_error_at. Inside the closure we hold the lock
+            // on `$locked`; that is the instance whose in-memory state
+            // mirrors the freshly-committed row. `$frontendOrder` (caller
+            // parameter) is NOT mutated by this method and would broadcast
+            // status=PENDING, which is exactly the symptom this heal is
+            // supposed to prevent. PersistOrderCreatedToOutbox reads
+            // `$order->status` into the payload (line 39 of that file) —
+            // so passing the stale instance would mark the broadcast
+            // ACCEPT-promotion event as still PENDING.
+            //
+            // The mail/SMS/push queue jobs at the bottom of this method
+            // continue to fire after the closure via control flow.
+            // Sentinel:
+            // `tests/Feature/Sync/OrderCreatedDispatchPlacementSentinelTest`.
+            OrderCreated::dispatch($locked);
         });
+
+        if ($allocFailed) {
+            // [Wave M / Heal Z5 P1-C — 2026-05-19] Persist the
+            // `fiscal_alloc_error_at` marker via a raw query OUTSIDE the
+            // closed-out parent transaction. Reasons:
+            //   1. Raw DB::table()->update() does not engage Eloquent
+            //      events, observers, or model boots — minimal failure
+            //      surface vs. $locked->save().
+            //   2. We are after `DB::transaction(...)` returned, so any
+            //      throw here cannot roll back the previously-attempted
+            //      (and rolled-back) alloc tx — they are independent.
+            //   3. Wrapped in its own try/catch so a flag-write hiccup
+            //      logs but does not propagate to the controller / kiosk
+            //      caller (mirroring iter14's "catch and degrade" pattern).
+            // Sentinel:
+            // `tests/Feature/Fiscal/FiscalAllocErrorFlagOutsideTxSentinelTest`.
+            try {
+                DB::table('orders')
+                    ->where('id', $frontendOrder->id)
+                    ->update(['fiscal_alloc_error_at' => now()]);
+            } catch (\Throwable $flagWriteError) {
+                Log::channel('fiscal')->error('kiosk.fiscal_alloc_error_flag_write_failed', [
+                    'event'    => 'kiosk.fiscal_alloc_error_flag_write_failed',
+                    'order_id' => $frontendOrder->id,
+                    'error'    => $flagWriteError->getMessage(),
+                ]);
+            }
+
+            Log::channel('fiscal')->error('kiosk.fiscal_sequence_alloc_failed', [
+                'event'    => 'kiosk.fiscal_sequence_alloc_failed',
+                'order_id' => $frontendOrder->id,
+                'branch_id'=> $frontendOrder->branch_id,
+                'error'    => $allocFailureError !== null ? $allocFailureError->getMessage() : 'unknown',
+                'flagged'  => true,
+            ]);
+        }
 
         if (!$promoted) {
             return false;
@@ -1215,15 +1371,44 @@ class FrontendOrderService
         SendOrderPush::dispatch(['order_id' => $frontendOrder->id, 'status' => OrderStatus::ACCEPT]);
         $this->dispatchOrderStatusSignals($frontendOrder, OrderStatus::PENDING, OrderStatus::ACCEPT);
 
+        // [Wave S-1 — P-OWNER 2026-05-20] When the auto-prepare policy fires,
+        // the order ended up in PREPARING (not ACCEPT) at the close of the
+        // transaction above. Fire a second OrderStatusChanged ACCEPT→PREPARING
+        // broadcast so PersistOrderStatusChangedToOutbox encodes both legs of
+        // the transition for the realtime KDS / Suivi UIs — passing the
+        // pre-`refresh()` ACCEPT alone (the legacy line) would leave KDS
+        // subscribers without an explicit "now en préparation" signal and
+        // they would only converge via the next poll. Dual-broadcast pattern
+        // matches OrderService::changeStatus' multi-leg historical contract.
+        if ((int) $frontendOrder->status === OrderStatus::PREPARING) {
+            $this->dispatchOrderStatusSignals(
+                $frontendOrder,
+                OrderStatus::ACCEPT,
+                OrderStatus::PREPARING
+            );
+        }
+
         return true;
     }
 
+    /**
+     * Helper for post-commit "new-order" queue jobs (mail / SMS / push).
+     *
+     * [Wave M / Heal Z2 P1 — 2026-05-19] The `OrderCreated::dispatch` call
+     * that used to live here has been hoisted into the wrapping
+     * `DB::transaction(...)` closure of each caller (`myOrderStore` +
+     * `finalizePaidKioskOrder`) so that the DispatchableAfterCommit trait
+     * engages via `transactionLevel()>0 → afterCommit()`. Queue-mode
+     * notifications below remain post-commit via control flow — they have
+     * their own queue-level dedupe story and do not need rollback safety.
+     * Sentinel:
+     * `tests/Feature/Sync/OrderCreatedDispatchPlacementSentinelTest`.
+     */
     private function dispatchNewOrderSignals(FrontendOrder $frontendOrder): void
     {
         SendOrderGotMail::dispatch(['order_id' => $frontendOrder->id]);
         SendOrderGotSms::dispatch(['order_id' => $frontendOrder->id]);
         SendOrderGotPush::dispatch(['order_id' => $frontendOrder->id]);
-        OrderCreated::dispatch($frontendOrder);
     }
 
     private function dispatchOrderStatusSignals(FrontendOrder $frontendOrder, int $oldStatus, int $newStatus): void

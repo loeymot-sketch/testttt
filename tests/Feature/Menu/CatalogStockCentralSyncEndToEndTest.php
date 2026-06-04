@@ -86,10 +86,18 @@ class CatalogStockCentralSyncEndToEndTest extends TestCase
 
         Cache::put("kiosk.menu.branch.{$branch->id}", ['stale' => true], 120);
 
-        $this->withoutMiddleware(PermissionMiddleware::class);
-        Sanctum::actingAs($kioskUser, ['kiosk:order']);
+        // [GOAL-2026-05-29] The admin catalog toggle MUST be driven by a legitimate
+        // ADMIN actor. BlockKioskTokenFromAdminRoutes (J-ADV-6 PATH-1, 2026-05-24)
+        // correctly refuses a kiosk-only token on /api/admin/* with 403 (closes a real
+        // privilege-escalation). A session/guard admin yields a TransientToken (passes
+        // the kiosk guard) and the Admin role satisfies permission:items_edit — so the
+        // old withoutMiddleware(PermissionMiddleware) hack is dropped. The kiosk token
+        // is used only for the /api/frontend/* surfaces below.
+        $adminUser = User::factory()->create(['branch_id' => 0]);
+        $adminUser->assignRole('Admin');
 
         $this
+            ->actingAs($adminUser, 'sanctum')
             ->withHeader('x-api-key', '123456')
             ->postJson('/api/admin/menu/availability/toggle', [
                 'item_id' => $item->id,
@@ -108,6 +116,9 @@ class CatalogStockCentralSyncEndToEndTest extends TestCase
         ]);
         $this->assertFalse(Cache::has("kiosk.menu.branch.{$branch->id}"));
 
+        // Frontend kiosk surface uses the legitimate kiosk:order token (allowed on
+        // /api/frontend/*; the admin actor above was only for the admin toggle).
+        Sanctum::actingAs($kioskUser, ['kiosk:order']);
         $kioskMenu = $this
             ->withHeader('x-api-key', '123456')
             ->getJson('/api/frontend/menu')

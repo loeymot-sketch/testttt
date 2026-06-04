@@ -113,6 +113,44 @@ class SealedOrderGuard
         );
     }
 
+    /**
+     * [WI-REFUND-PREZ 2026-06-04] Boolean predicate — is this order sealed
+     * (contained in a CLOSED Z window) right now?
+     *
+     * Reuses the EXACT same predicate as assertMutable() / assertSealed() so
+     * there is a single source of truth for "sealed?" semantics across
+     * destroy / changeStatus / aggregate / refund. Used by
+     * PosOrderController::refundWithCounterEntry to route a refund request to
+     * the correct path WITHOUT duplicating the seal logic on the client:
+     *   - sealed (post-Z)  → RefundWithCounterEntryService mirror counter-entry
+     *   - NOT sealed (pre-Z) → standard pre-Z OrderService::changeStatus(RETURNED)
+     *
+     * Semantics:
+     *   - feature flag off  → returns FALSE (guard no-op everywhere; the pre-Z
+     *     path is the safe default — same standard RETURNED refund the rollback
+     *     knob already routes mutations through).
+     *   - fiscal_sequence_no === null → FALSE (an unfiscalised draft / a pre-Z
+     *     POS order that has not been allocated a sequence yet is NOT sealed).
+     *   - otherwise sealed iff a CLOSED ZReport window contains created_at.
+     */
+    public function isSealed(Order $order): bool
+    {
+        if (!$this->isEnabled()) {
+            return false;
+        }
+
+        if ($order->fiscal_sequence_no === null) {
+            return false;
+        }
+
+        return ZReport::query()
+            ->where('branch_id', (int) $order->branch_id)
+            ->where('status', ZReport::STATUS_CLOSED)
+            ->where('opened_at', '<', $order->created_at)
+            ->where('closed_at', '>=', $order->created_at)
+            ->exists();
+    }
+
     private function isEnabled(): bool
     {
         return (bool) Config::get('fiscal.sealed_z_guard_enabled', true);

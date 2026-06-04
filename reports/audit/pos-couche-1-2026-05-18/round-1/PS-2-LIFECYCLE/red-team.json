@@ -1,0 +1,82 @@
+{
+  "role": "red-team",
+  "zone": "PS-2 POS Order Lifecycle — adversarial dispute, hidden defect hunting",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head": "b0bc75987f0a117b150c829b6e34e9d6bd2ccf41",
+  "timestamp": "2026-05-18T22:22:29+0200",
+  "scope": "parked-resume race, double-modify, edit-after-paid, branch-leak via parked-resume, cancel-after-fiscal-allocation, replay attacks, idempotency bypass.",
+  "findings": [
+    {
+      "id": "RED-PS2-01",
+      "severity": "P2",
+      "title": "ATTACK — Parked-resume race: cashier A recalls a parked ticket, cashier B (same user-ish or via session-share) tries to recall the same id.",
+      "evidence": "app/Services/PosParkedOrderService.php:74-103 — recall wraps `lockForUpdate()` + `delete()` in DB::transaction. Cashier B's transaction waits on the lock then returns null (because A already deleted). API responds 404 (ParkedOrderController.show line 54). Verdict: DEFENDED by row-level lock + 404 fallback. The implicit BranchScope on PosParkedOrder + the explicit (user_id, branch_id) triplet in the WHERE makes cross-cashier recall already 404. Same-cashier-two-tabs is naturally resolved by the first lock-then-delete. Audit trail gap: no AuditLogService::write on a successful recall, so post-mortem 'which cashier resumed cart X' answer comes only from ActionLog if/when the resumed cart gets committed.",
+      "verdict": "DEFENDED — track AuditLog gap as V1.0.2 enhancement (SEC-PS2-09)."
+    },
+    {
+      "id": "RED-PS2-02",
+      "severity": "P1",
+      "title": "ATTACK — Double-click cancel on PosOrdersTracker before the modal closes.",
+      "evidence": "resources/js/components/admin/pos/PosOrdersTrackerComponent.vue:687-720 confirmCancelOrder — guards `if (dlg.busy) return` at line 689 + sets `cancelDialog.busy = true` at line 695 + button disabled `:disabled=\"cancelDialog.busy\"` at line 311. CLIENT IS DEFENDED. Server-side: routes/api.php:892 has `idempotency` middleware on change-status BUT the Vue store posOrder.js:237 `changeStatus` action does NOT inject X-Idempotency-Key. Threat scenario: rapid network failure + retry by user, OR a browser extension that double-fires the click. Server-side OrderService::changeStatus has the same-status early-return at line 1750 (`if ($order->status === $toStatus) return;`) PLUS the OrderStatusTransition recordTransition that early-returns at line 140 on same-from-to. So even a successful replay creates ONE audit row, not two. Cashback would NOT double-execute because the second pass sees status=CANCELED already. Loyalty refundPoints same pattern. Verdict: PROTECTION RELIES ON the early-return guard. If a future code path forgets the same-status check (e.g. someone adds a side-effect outside the inner if block), the protection collapses. The idempotency middleware would close this defense-in-depth gap.",
+      "verdict": "HEAL — wire X-Idempotency-Key in posOrder.js store actions (changeStatus, changePaymentStatus, destroy, selectDeliveryBoy). Same single-file change as SEC-PS2-07."
+    },
+    {
+      "id": "RED-PS2-03",
+      "severity": "P3",
+      "title": "ATTACK — Edit-after-paid (modify composition of a PAID order).",
+      "evidence": "There is no edit-composition endpoint (recon grep confirmed). The only post-create mutations on an Order are status/payment_status/delivery_boy/destroy/refund-with-counter-entry. composition_snapshot is JSON frozen at creation (CLAUDE.md §8 NF525). Verdict: NOT POSSIBLE by API surface. ARCH-PS2-04 captures the scope decision.",
+      "verdict": "DEFENDED by absence of endpoint."
+    },
+    {
+      "id": "RED-PS2-04",
+      "severity": "P3",
+      "title": "ATTACK — Branch-leak via parked-resume (cashier on branch 5 recalls a parked id from branch 7).",
+      "evidence": "ParkedOrderController::resolveOperatorContext (line 72-101) returns (authId, branchId=$requestUser->branch_id) — branch_id from the AUTHED USER, NOT from the request body. PosParkedOrderService::recall (line 75) WHERE clauses on `user_id` + `branch_id` from those resolved values. Foreign-branch id → null → controller returns 404. Sentinel test: tests/Feature/Sentinels/ParkedOrderAdminBranchZeroSentinelTest.php:92 + tests/Feature/PosParkedOrderTest.php:150,182. Combined with the BranchScope global scope on PosParkedOrder (model boot line 40). Verdict: TRIPLE-DEFENDED.",
+      "verdict": "DEFENDED"
+    },
+    {
+      "id": "RED-PS2-05",
+      "severity": "P2",
+      "title": "ATTACK — Cancel-after-fiscal-allocation (cancel an order whose fiscal_sequence_no is already assigned, breaking NF525 gap-free chain).",
+      "evidence": "app/Services/OrderService.php:1830-1851 — when status moves to CANCELED/REJECTED/RETURNED, AuditLogService::write captures the order_serial_no + fiscal_sequence_no + total. The NF525 sealed-Z guard (line 1765-1788) is on RETURNED only — CANCELED/REJECTED transitions are operational pre-payment (per the comment at line 1761) and don't require a counter-entry mirror. BUT: a POS CASH order can be allocated a fiscal_sequence_no at posOrderStore time and THEN canceled BEFORE the Z report seals it. The chain stays gap-free because cancellation is a STATUS change, not a sequence-number deletion. fiscal_sequence_no on a canceled order is still emitted on the daily Z report as a 'canceled' line (NF525 requires this — chained, signed, never deleted). Verdict: This is correct NF525 behavior — canceled orders STAY in the chain with their sequence number. The risk would be: someone modifying fiscal_sequence_no on cancel. Code inspection confirms NO call site mutates fiscal_sequence_no during cancel. Belt-and-braces: app/Models/Order.php:fillable list includes fiscal_alloc_error_at but NOT fiscal_sequence_no — preventing mass-assignment.",
+      "verdict": "DEFENDED — fiscal_sequence_no immutable on cancel by absence of fillable + by code path."
+    },
+    {
+      "id": "RED-PS2-06",
+      "severity": "P1",
+      "title": "ATTACK — Idempotency replay with conflicting payload (POST change-status?key=X status=DELIVERED vs key=X status=CANCELED).",
+      "evidence": "app/Http/Middleware/IdempotencyKeyMiddleware.php:87-95 — if same key + different payload hash → 409 with IDEMPOTENCY_KEY_CONFLICT. Vue store would see 409 + header `idempotency-key-conflict`. posOrder.js:save() handles this at line 203-206 with a cashier-friendly toast, but the analogous changeStatus action does NOT (because it doesn't send a key in the first place). Verdict: server-side protection exists; client-side currently inert. Same heal as SEC-PS2-07 + RED-PS2-02.",
+      "verdict": "HEAL — same fix as SEC-PS2-07."
+    },
+    {
+      "id": "RED-PS2-07",
+      "severity": "P3",
+      "title": "ATTACK — destroy a paid order via the elevated `pos-destroy-paid` permission then attempt to undelete it.",
+      "evidence": "Order model boot at line 108-116 throws RuntimeException on restore(). The cascading address/coupon/orderItems hard-deletes are documented as one-way. AuditLogService::write at line 2260 captures the full snapshot pre-delete. Attacker with `pos-destroy-paid` could destroy a PAID order — but: (a) the action is audit-logged with actor_id + reason; (b) the destroyed order remains soft-deleted (visible to forensic queries with `->withTrashed()`); (c) the row cannot be revived. Threat is contained to legitimate elevated-permission actors. Belt-and-braces gap: the AuditLogService chain HMAC means tampering with the audit_log table requires HMAC forge, which is infeasible (24-byte secret).",
+      "verdict": "DEFENDED — privileged-actor abuse is mitigated by audit chain + role gating + reason requirement."
+    },
+    {
+      "id": "RED-PS2-08",
+      "severity": "P2",
+      "title": "ATTACK — parked discard race: cashier opens drawer, taps discard accidentally, parked cart vanishes with no recovery.",
+      "evidence": "resources/js/components/admin/pos/ParkedOrdersComponent.vue:84-91 — no confirm dialog before discard. PosParkedOrderService::discard line 195-202 hard-deletes. Tracker's cancel-order has a proper modal with reason+confirm. The asymmetry is a UX defect, not a security one — the cashier discards their OWN parked cart. Mitigation: simple browser confirm() is sufficient for V1. UX-PS2-05 captures the heal.",
+      "verdict": "HEAL — same fix as UX-PS2-05."
+    },
+    {
+      "id": "RED-PS2-09",
+      "severity": "P3",
+      "title": "ATTACK — concurrent parked.store with the same idempotency_token from two devices.",
+      "evidence": "app/Services/PosParkedOrderService.php:23-59 (park) — pre-check `where idempotency_token` (line 28) returns the existing row if found. If race: both pass the pre-check then try to create → unique index `pos_parked_user_idem_uniq` raises QueryException → caught at line 50, looks up the row again with firstOrFail, returns it. Both callers see the SAME parked row. Test: tests/Feature/PosParkedOrderTest.php:205 test_park_with_the_same_idempotency_token_creates_only_one_row.",
+      "verdict": "DEFENDED — application + DB unique index combo."
+    },
+    {
+      "id": "RED-PS2-10",
+      "severity": "P3",
+      "title": "ATTACK — manipulate `reason` field to spam SR (XSS / control characters).",
+      "evidence": "OrderStatusRequest::rules() at line 49-52 — `reason` is `sometimes nullable string max:700`. No XSS sanitization. The reason is stored in orders.reason and surfaced in OrderStatusTransition.reason + AuditLogService payload. Display layer: the Vue tracker modal uses `{{ ... }}` binding (HTML-escaped by Vue). The audit log is read by admin UI (Vue, same HTML-escaping). Backend re-emission via mail/SMS dispatchers (SendOrderMail at line 1714+1858) — if those dispatchers concat the reason into HTML mail, that's where stored-XSS materializes. Inspection of SendOrderMail is OUT OF SCOPE PS-2, but worth flagging to PS-4.",
+      "verdict": "DEFENDED on Vue surface; HANDOFF to PS-4 (receipts/mail) for downstream check."
+    }
+  ],
+  "summary": "10 adversarial scenarios tested. 5 fully DEFENDED by row-level locks + BranchScope + sealed-Z guard + audit chain HMAC + Vue HTML-escape. 3 P1/P2 require the same heal (idempotency-key client wiring + parked-discard confirm). 1 P2 UX-only (discard confirm). 1 P3 handoff to PS-4 (mail emission XSS surface). No P0 found — the lifecycle service layer is hardened beyond CV1 baseline.",
+  "produced_by": "PS-2 red-team specialist, autonomous"
+}

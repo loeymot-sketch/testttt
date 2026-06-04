@@ -56,12 +56,19 @@ export const cashDrawer = {
          * Fetch current OPEN session for the calling user (if any).
          * Returns null when no session is open — UI uses that to prompt
          * "Ouvrir la caisse".
+         *
+         * [Wave O / O-1 2026-05-20] Accepts optional `branchId` so the
+         * global Admin can target the dropdown-selected filiale.
+         * Back-compat: payload may be `null`, a plain integer, or `{ branchId }`.
          */
-        async loadCurrentSession({ commit }) {
+        async loadCurrentSession({ commit }, payload = null) {
+            const branchId = typeof payload === 'object' && payload !== null
+                ? payload.branchId
+                : payload;
             commit('setLoading', true);
             commit('setError', null);
             try {
-                const session = await CashDrawerService.currentSession();
+                const session = await CashDrawerService.currentSession(branchId);
                 commit('setCashDrawerSession', session);
                 return session;
             } catch (err) {
@@ -76,12 +83,24 @@ export const cashDrawer = {
         },
         /**
          * Open a session with the given opening_amount (€).
+         *
+         * [Wave O / O-1 2026-05-20] Accepts optional `branchId` so the global
+         * Admin can target the dropdown-selected filiale (required by the
+         * backend for branch_id=0 callers).
+         * Back-compat: payload may be a plain Number (legacy callers) or
+         * `{ openingAmount, branchId }`.
          */
-        async openSession({ commit }, openingAmount) {
+        async openSession({ commit }, payload) {
+            const openingAmount = typeof payload === 'object' && payload !== null
+                ? payload.openingAmount
+                : payload;
+            const branchId = typeof payload === 'object' && payload !== null
+                ? payload.branchId
+                : null;
             commit('setLoading', true);
             commit('setError', null);
             try {
-                const session = await CashDrawerService.openSession(openingAmount);
+                const session = await CashDrawerService.openSession(openingAmount, branchId);
                 commit('setCashDrawerSession', session);
                 commit('setMovements', []);
                 return session;

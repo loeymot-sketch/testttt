@@ -1,0 +1,363 @@
+{
+  "agent": "I.3 Hidden caching layers",
+  "phase": "I",
+  "task": "Map all caching layers + build invalidation matrix + verify stale-cache risk",
+  "run_timestamp": "2026-05-24T03:15:00+02:00",
+  "scope": "Read-only audit. No code changes. Evidence = file:line refs.",
+  "environment": {
+    "deployment": "V1 LOCAL Le Cayenne (single-box, prod target = Hetzner)",
+    "cache_driver_local": "file (per .env.example L195) / redis (per deploy.sh L158)",
+    "session_driver_local": "file (per .env.example L192)",
+    "broadcast_driver": "pusher (Soketi self-hosted, per deploy.sh L160)",
+    "production_target_php": "8.4 (per server-setup.sh L168-194)",
+    "opcache_extension": "php8.4-opcache installed (per server-setup.sh L183)",
+    "deploy_orchestrator": "scripts/deploy/deploy.sh (used) OR deploy/ansible/site.yml (alternative)"
+  },
+
+  "layers_mapped": [
+    {
+      "id": "L1",
+      "name": "Laravel application Cache",
+      "driver_local": "file",
+      "driver_prod": "redis (forced by deploy.sh L158)",
+      "boot_guard": "AppServiceProvider.php:214-222 (forbids 'array' + 'null' ONLY; 'file' + 'database' PASS)",
+      "guard_intent_vs_impl_gap": "Block comment says 'redis or memcached' but implementation only blocks array/null. UNI-03 V1.0.X backlog per CLAUDE.md §8.",
+      "known_keys": [
+        {"key": "kiosk.menu.branch.{id}", "ttl_seconds": 60, "writer": "MenuController.php:71", "config": "kiosk.menu_cache_ttl"},
+        {"key": "fiscal_seq_b{branchId}", "ttl_seconds": 5, "writer": "FiscalSequenceService.php:66 (lock only)"},
+        {"key": "audit_chain_b{branchId}", "ttl_seconds": "CHAIN_LOCK_TTL", "writer": "AuditLogService.php:101 (lock only)"},
+        {"key": "z_report_b{branchId}", "ttl_seconds": "LOCK_TTL_SECONDS", "writer": "ZReportService.php:79/192 (lock only)"},
+        {"key": "ws:heartbeat", "ttl_seconds": 120, "writer": "DispatchDomainEventsJob.php:129"},
+        {"key": "stock_scan_rupture:last_summary:branch:{id}", "ttl_seconds": 86400, "writer": "StockScanRupture.php:141"},
+        {"key": "Idempotency-Key (PENDING)", "ttl_seconds": 30, "writer": "RedisIdempotencyKeyRepository.php:75", "config": "idempotency.pending_ttl_seconds"},
+        {"key": "Idempotency-Key (COMPLETED)", "ttl_seconds": 86400, "writer": "IdempotencyKeyMiddleware.php:150", "config": "idempotency.ttl_seconds"},
+        {"key": "throttle:* (rate-limit counters)", "ttl_seconds": "decay_minutes per limiter", "writer": "Laravel framework"},
+        {"key": "spatie.permission.cache", "ttl_seconds": 86400, "writer": "Spatie auto-cached", "config": "vendor/spatie/laravel-permission/config/permission.php:145 (no project override found)"}
+      ],
+      "invalidation_listeners": [
+        "InvalidateKioskMenuCacheOnItemAvailabilityChanged.php (ItemAvailabilityChanged)",
+        "InvalidateKioskMenuCacheOnCatalogChange.php (ItemExtra/Variation availability, ItemCreated, ItemDeleted, Category*, StockLevelChanged, ComposerProfileChanged)",
+        "InvalidateMenuProjectionOnIngredientChange.php (IngredientAvailabilityChanged)"
+      ],
+      "applicable_in_v1_local": true
+    },
+    {
+      "id": "L2",
+      "name": "Config cache (php artisan config:cache)",
+      "frozen_at": "deploy time (deploy.sh L257)",
+      "invalidation_trigger": "re-run deploy.sh OR manual `php artisan config:clear && config:cache`",
+      "risk": "Operator edits .env post-deploy without re-caching → silently stale config",
+      "applicable_in_v1_local": true,
+      "production_recommendation": "Document: ANY .env edit on prod = mandatory `php artisan config:cache` (or full re-deploy)"
+    },
+    {
+      "id": "L3",
+      "name": "Route cache (php artisan route:cache)",
+      "frozen_at": "deploy time (deploy.sh L258)",
+      "closures_detected": [
+        {"file": "routes/api.php:143", "code": "Route::match(['get','post'], '/login', function () { return response()->json(['errors' => 'unauthenticated'], 401); })->name('login');"},
+        {"file": "routes/api.php:202", "code": "Route::post('/authcheck', function () { ... })"},
+        {"file": "routes/web.php:59", "code": "Route::get('/js/{forbiddenKioskAsset}', static fn () => abort(404))"},
+        {"file": "routes/console.php:17", "code": "Artisan::command('inspire', function () {...})  // console — not route:cache scope"}
+      ],
+      "closure_serialization_status": "Laravel 9+ uses Opis Closure → closures work with route:cache (per docs/gates/GATE_CV1-V1-PIVOT-PRODUCTION-CUTOVER_2026-05-04.md F4 'validé localement OK'). DEFER but verify in CI on prod-cached build.",
+      "applicable_in_v1_local": true,
+      "production_recommendation": "CI must run `php artisan route:cache && php artisan route:list` post-cache + smoke-test login/authcheck on a cached build before each prod deploy."
+    },
+    {
+      "id": "L4",
+      "name": "View cache (php artisan view:cache compiled Blade)",
+      "frozen_at": "deploy time (deploy.sh L259)",
+      "invalidation_trigger": "re-deploy OR `php artisan view:clear`",
+      "risk": "Blade source edits without view:clear = stale compiled .php. OPcache amplifies (see L5).",
+      "applicable_in_v1_local": true,
+      "production_recommendation": "deploy.sh already runs view:cache; OPcache reset (see L5) closes the second-order risk."
+    },
+    {
+      "id": "L5",
+      "name": "PHP OPcache (bytecode shared memory)",
+      "config_in_prod": "UNKNOWN — server-setup.sh L183 installs php8.4-opcache package, but NO opcache.ini override is shipped. Default for ondrej/php8.4 in apt = opcache.validate_timestamps=1, opcache.revalidate_freq=2.",
+      "deploy_orchestrator_behavior": "deploy.sh L290-313: restarts supervisorctl workers + reloads nginx; does NOT call `opcache_reset()`, does NOT restart php8.4-fpm. ansible/site.yml: same — no php-fpm handler, no opcache reset task.",
+      "risk_level": "AMBER if validate_timestamps=1 (default) — OPcache auto-revalidates within 2s. RED if owner ever sets validate_timestamps=0 for perf without amending deploy to reset OPcache — new bytecode would never load until php-fpm restart.",
+      "applicable_in_v1_local": false,
+      "applicable_in_prod": true,
+      "production_recommendation": "Either (a) ship an /etc/php/8.4/fpm/conf.d/99-foodking-opcache.ini with validate_timestamps=1 + revalidate_freq=2 (current safe default, document); OR (b) set validate_timestamps=0 AND add `systemctl reload php8.4-fpm` to deploy.sh L290 sequence + ansible handler."
+    },
+    {
+      "id": "L6",
+      "name": "HTTP browser cache for JS/CSS bundles",
+      "mix_versioning": "webpack.mix.js: `.version()` confirmed on app.js chain (line ~70). vendor extract uses the same chain → versioned.",
+      "manifest_format": "public/mix-manifest.json maps logical→`/js/app.js?id=<md5>` (query-string busting, NOT in-filename).",
+      "nginx_headers": "scripts/deploy/nginx.conf.template L145-150: `expires 30d; Cache-Control: public, max-age=2592000, immutable;` on /build/, /js/, /css/, /images/, /fonts/, /file/",
+      "verified_immutable_query_string_safety": "Query-string `?id=<hash>` IS part of URL — browsers re-fetch on hash change. The `immutable` directive applies to the same URL. SAFE.",
+      "risk": "If a deploy ships a JS edit BUT npx mix --production was skipped, the hash stays the same → browsers keep old bundle. deploy.sh L212 enforces `npx mix --production` so risk is operational only.",
+      "applicable_in_v1_local": true,
+      "production_recommendation": "Sentinel test: assert mix-manifest.json mtime > package.json mtime after deploy (catch skipped Mix build)."
+    },
+    {
+      "id": "L7",
+      "name": "Echo/Pusher subscription cache (browser)",
+      "client_init": "resources/js/bootstrap.js:293-350",
+      "reconnect_config": "activityTimeout: 30000ms, pongTimeout: 5000ms → stale connection detected ≤35s, pusher-js internal exponential backoff 1s→2s→4s→…→30s",
+      "auth_refresh_pattern": "window._refreshEchoAuth() called by auth.js post-login (bootstrap.js:355-360). Subscription_error rebinder forwards to wsService for SESSION_INVALID detection (bootstrap.js:362-369).",
+      "circuit_breaker": "WebSocketService.js: 4 disconnects within 30s → open breaker (decorrelated jitter)",
+      "re_subscribe_behavior": "DESIGN-TIME DOCUMENTED, RUNTIME-UNTESTED in this audit. pusher-js library auto-re-subscribes to channels on reconnect.",
+      "applicable_in_v1_local": true,
+      "production_recommendation": "Track Echo client `pusher:subscription_error` rate via metrics/log telemetry post-deploy."
+    },
+    {
+      "id": "L8",
+      "name": "Spatie permission cache",
+      "config": "vendor/spatie/laravel-permission/config/permission.php:145 — expiration_time = 24h",
+      "project_published_override": "NOT FOUND (no config/permission.php in repo)",
+      "auto_invalidation": "Spatie auto-flushes via Eloquent observer on Role/Permission CRUD (forgetCachedPermissions called by package internals)",
+      "manual_reset_command": "`php artisan permission:cache-reset` available (per docs/gates/GATE_CV1-V1-PIVOT-PRODUCTION-CUTOVER_2026-05-04.md H3)",
+      "risk": "If permission rows updated via raw SQL/mass UPDATE bypassing Eloquent (e.g. seeder edge cases), cache stays stale up to 24h. Seeder `IngredientPermissionSeeder` does call forgetCachedPermissions().",
+      "applicable_in_v1_local": true,
+      "production_recommendation": "Document: any DB hot-patch on roles/permissions tables MUST be followed by `php artisan permission:cache-reset`. Add to deploy.sh post-migration step OR to admin runbook."
+    },
+    {
+      "id": "L9",
+      "name": "Sanctum token cache (per-request)",
+      "token_lifecycle": "Loaded per request from personal_access_tokens table. Revoke = DB delete (LoginController.php:208 currentAccessToken()->delete()).",
+      "ttl_minutes": "480 (config/sanctum.php:50 — env SANCTUM_TOKEN_EXPIRATION, V1.0.1 backlog reduce to 60min)",
+      "in_flight_risk": "An already-authenticated request that is mid-execution when its token is deleted will COMPLETE (no per-request revalidation). Subsequent request = 401. Acceptable for V1 (no streaming long-poll endpoints touch sensitive mutations).",
+      "branch_status_revocation": "RevokeTokensOnBranchDeactivated listener fires on BranchStatusChanged (EventServiceProvider.php:277-280).",
+      "applicable_in_v1_local": true
+    }
+  ],
+
+  "invalidation_matrix": [
+    {
+      "trigger": "Admin toggles item availability (ItemAvailabilityChanged event)",
+      "invalidates": [
+        "L1 kiosk.menu.branch.{id} (InvalidateKioskMenuCacheOnItemAvailabilityChanged + BumpMenuSnapshotOnItemAvailabilityChanged)",
+        "L7 Echo broadcast via PersistItemAvailabilityChangedToOutbox → /private-branch.{id}"
+      ],
+      "missed_layers": [],
+      "verified_q9s1": "0-60s → ~1s mesuré empiriquement (CLAUDE.md / project Wave Polish Final 2026-05-21)",
+      "evidence": "EventServiceProvider.php:191-199"
+    },
+    {
+      "trigger": "Admin toggles extra/variation availability (ItemExtra/Variation*Changed)",
+      "invalidates": [
+        "L1 kiosk.menu.branch.{id} (InvalidateKioskMenuCacheOnCatalogChange — added Q9-S1 fix 2026-05-21)",
+        "L7 Echo broadcast via PersistCatalogChangedToOutbox"
+      ],
+      "missed_layers": [],
+      "evidence": "EventServiceProvider.php:204-225 (Q9-S1 owner Q2=fix comment)"
+    },
+    {
+      "trigger": "Admin updates item name OR price OR description (no availability change)",
+      "invalidates": ["NONE"],
+      "missed_layers": [
+        "L1 kiosk.menu.branch.{id} — STAYS STALE up to 60s (kiosk.menu_cache_ttl default)",
+        "L7 No Echo broadcast (no event dispatched)"
+      ],
+      "evidence": "ItemService.php:305-405 update() method — NO event::dispatch, NO Cache::forget. ItemObserver.php:14-24 only calls AllergenService::projectFlags. No ItemUpdated event class exists in app/Events.",
+      "severity": "AMBER — stale data is bounded by TTL (60s) but admin renaming the headline 'Big Burger' to 'Big Burger BBQ' would show old name on kiosk for up to 60s. Pricing edit could mislead customer for 60s (still backend-enforced at order POST so no incorrect charge — Pricing SSOT NF525 invariant holds)."
+    },
+    {
+      "trigger": "Admin updates role/permission via UI (Eloquent path)",
+      "invalidates": ["L8 spatie.permission.cache (auto-invalidated by package observer)"],
+      "missed_layers": [],
+      "evidence": "Spatie internals — verified via docs/gates/GATE_CV1-V1-PIVOT-PRODUCTION-CUTOVER_2026-05-04.md H3"
+    },
+    {
+      "trigger": "Migration runs (php artisan migrate --force)",
+      "invalidates": ["NONE automatically"],
+      "missed_layers": [
+        "L1 application cache: NOT cleared (Cache::flush not called)",
+        "L2 config cache: re-cached BEFORE migrate (deploy.sh L257 vs L252 — order is correct)",
+        "L5 OPcache: NOT reset (see L5 risk)"
+      ],
+      "evidence": "deploy.sh L221-260 sequence: pre-migrate-backup → migrate --force → config:cache → route:cache → view:cache. No `cache:clear` step.",
+      "severity": "AMBER — schema changes that affect cached payload shape (e.g. new column on items table that the kiosk menu serializer would include) would NOT propagate to kiosk until TTL expires (60s). Negligible because migrations on prod are rare and operator-scheduled."
+    },
+    {
+      "trigger": "PHP-FPM restart (manual or systemd)",
+      "invalidates": [
+        "L5 OPcache (in-process → wiped on worker death)",
+        "L1 in-memory cache slice if any (none currently — Redis is shared)"
+      ],
+      "missed_layers": [
+        "L1 Redis: SURVIVES (good for fiscal_seq, audit_chain, kiosk.menu cache continuity)",
+        "L2-L4 file caches: SURVIVE",
+        "L7 Echo client subscriptions on browsers: SURVIVE (reconnect from client side)"
+      ],
+      "evidence": "Standard PHP-FPM lifecycle; deploy.sh does not actually trigger php-fpm restart (see L5 risk H2)."
+    },
+    {
+      "trigger": "Branch deactivation (BranchStatusChanged with INACTIVE)",
+      "invalidates": [
+        "L9 Sanctum tokens for that branch (RevokeTokensOnBranchDeactivated, sync DB delete)",
+        "L7 Echo broadcast via PersistBranchStatusChangedToOutbox (T-6.4 Z7-V1.0.2-P2-01)"
+      ],
+      "missed_layers": [],
+      "evidence": "EventServiceProvider.php:277-280"
+    },
+    {
+      "trigger": "Logout (POST /api/auth/logout)",
+      "invalidates": [
+        "L9 single Sanctum token (PersonalAccessToken::delete)",
+        "Session: NO explicit invalidate/flush on API logout — but Sanctum SPA flows are token-based so session is N/A. Web-guard sessions: `Auth::guard('web')->logout()` invoked in LoginController.php:82,146 during login flow (not in API logout)."
+      ],
+      "missed_layers": [
+        "L1: nothing user-keyed in app cache that would need flush (none audited that key on user_id)"
+      ],
+      "evidence": "LoginController.php:193-254"
+    }
+  ],
+
+  "stale_cache_risks": [
+    {
+      "id": "I3-RISK-01",
+      "severity": "AMBER",
+      "name": "Item name/price update does NOT invalidate kiosk menu cache",
+      "discovery": "Cross-reference EventServiceProvider.php (no ItemUpdated event registered) + ItemService.php:305 update() (no event dispatch, no Cache::forget — verified via grep on dispatchesEvents/event(/Event::dispatch — only event(new ItemCreated) L289 and event(new ItemDeleted) L464 exist, neither fires from update()) + ItemObserver.php (only AllergenService::projectFlags, no Cache::forget on saved()) + Item model (no $dispatchesEvents) + admin ItemController.php (no Cache::remember/put/forget — no POS-side counter-cache on this path)",
+      "customer_visible": true,
+      "scenario": "Admin renames 'Big Burger' → 'Big Burger BBQ' or changes price 8.90€ → 9.50€. Kiosk shows OLD name/price for up to 60s (kiosk.menu_cache_ttl). Frontend Echo broadcast does NOT fire — no event published.",
+      "pricing_ssot_safety": "Order POST recomputes via PricingService — customer pays the NEW backend price even if kiosk showed OLD price. NF525 invariant held. UX risk only: customer 'I saw 8.90€ on screen, why is it 9.50€?'",
+      "fix_estimate": "Tiny — dispatch `CatalogChanged::dispatch('item', $item->id, 'updated', $branchId)` at the end of ItemService::update() OR add ItemObserver::updated() that calls Cache::forget on kiosk.menu.branch.* for active branches. Pattern exists (ItemCreated/Deleted both wire it).",
+      "track_as": "Recommend adding to V1.0.X backlog or running an inline heal in Phase J. Could become RED if owner ships catalogue price changes pre-rush hour and customers see stale screen prices."
+    },
+    {
+      "id": "I3-RISK-02",
+      "severity": "AMBER",
+      "name": "deploy.sh does NOT reset OPcache nor restart php8.4-fpm",
+      "discovery": "scripts/deploy/deploy.sh L290-313 + deploy/ansible/site.yml (no opcache handler)",
+      "customer_visible": "depends on OPcache config",
+      "scenario": "If prod php.ini has `opcache.validate_timestamps=0` (recommended for perf), git pull + composer install ships new .php files BUT OPcache keeps OLD bytecode in shared memory. App appears not to update. AppServiceProvider boot guards would NOT re-evaluate.",
+      "current_safety": "server-setup.sh installs php8.4-opcache but does NOT set validate_timestamps. Default for ondrej/php = 1 (auto-revalidate every 2s) → silently safe in V1 LOCAL where perf cost is acceptable.",
+      "fix_estimate": "Add to deploy.sh L290 sequence: `systemctl reload php8.4-fpm` (graceful reload, no dropped requests). Same in ansible/site.yml as handler. Cost: zero downtime, ~50ms reload. OR ship an opcache.ini override that pins validate_timestamps=1 + documents the trade-off.",
+      "track_as": "P2 — close before any owner toggles validate_timestamps=0 for perf. Currently latent."
+    },
+    {
+      "id": "I3-RISK-03",
+      "severity": "AMBER",
+      "name": "Cache driver guard intent mismatch — file/database drivers pass",
+      "discovery": "AppServiceProvider.php:214-222 (already documented as UNI-03 V1.0.X backlog per CLAUDE.md §8)",
+      "customer_visible": false,
+      "scenario": "Block comment L207-213 states 'redis or memcached', but the forbidden list at L215 is `['array', 'null']`. `file` and `database` drivers PASS the boot guard. In V1 LOCAL single-box Le Cayenne this is correct (file driver is fine for one PHP-FPM pool). Risk activates only on cloud cutover to ALB multi-instance.",
+      "current_safety": "V1 LOCAL ships with file or redis depending on .env. deploy.sh L158 forces redis in production guard table. Therefore prod IS redis. Latent code-level mismatch only.",
+      "fix_estimate": "Trivial — add `file` and `database` to `$forbiddenCacheDrivers` array when V2 SaaS multi-instance ships.",
+      "track_as": "Already V1.0.X UNI-03 backlog. NO action needed in Phase J."
+    },
+    {
+      "id": "I3-RISK-04",
+      "severity": "AMBER",
+      "name": "Operator .env edit on prod does not auto-invalidate config:cache",
+      "discovery": "deploy.sh L257 runs config:cache as part of deploy. Manual ssh + edit .env does NOT.",
+      "customer_visible": "depends",
+      "scenario": "Operator edits .env to flip POS_SIMULATION_HARDWARE for a debug session, restarts php-fpm — but AppServiceProvider reads from cached config (config:cache snapshot frozen at last deploy). Boot guard re-evaluation uses STALE values → potentially boots with cached unsafe value OR boots clean but flag never takes effect.",
+      "current_safety": "AppServiceProvider boot guards run on EVERY worker boot — they read config('cache.default'), config('pos.simulation_hardware'), etc. config() reads from CACHED config when config:cache is present. So a .env edit without `php artisan config:cache` is INVISIBLE.",
+      "fix_estimate": "Operational: document in scripts/deploy/README_DEPLOY.md that any .env edit MUST be followed by `php artisan config:cache && systemctl reload php8.4-fpm`. Add a `make refresh-config` Makefile target.",
+      "track_as": "Document in runbook; no code change needed."
+    }
+  ],
+
+  "negative_findings": [
+    {
+      "hunt": "H5 (Idempotency-Key cleanup)",
+      "verdict": "CLOSED",
+      "evidence": "RedisIdempotencyKeyRepository.php:75-83 uses `Cache::add($key, $val, $pendingTtl)` with pending_ttl_seconds=30s. Redis EX auto-expires. COMPLETED records use ttl_seconds=86400. No app-level cron needed. F-6-6-FIND-04 P2 already healed (G2-HEAL-04 PENDING TTL decouple)."
+    },
+    {
+      "hunt": "H7 (Cache::lock orphan for fiscal_sequence)",
+      "verdict": "CLOSED",
+      "evidence": "FiscalSequenceService.php:42 LOCK_TTL_SECONDS=5. Self-expires. No orphan risk even on SIGKILL."
+    },
+    {
+      "hunt": "H6 (Session driver logout)",
+      "verdict": "CLOSED",
+      "evidence": "API auth flow is Sanctum token (LoginController.php:193-254 deletes the PersonalAccessToken row, no session). Web fallback flow calls Auth::guard('web')->logout() (LoginController.php:82). Session driver = file (per .env.example L192) — files in storage/framework/sessions are removed by Laravel's session GC + Auth::logout() invalidates the session cookie token."
+    },
+    {
+      "hunt": "H8 (Q12 KDS bundle staleness)",
+      "verdict": "OUT-OF-SCOPE (covered by Q12 audit elsewhere). Mix manifest + nginx Cache-Control immutable + query-string hash = correct contract for L6."
+    },
+    {
+      "hunt": "L7 Echo re-subscribe",
+      "verdict": "DESIGN-TIME OK (pusher-js library auto-re-subscribes; bootstrap.js wires activityTimeout/pongTimeout for stale-detection). RUNTIME-UNTESTED in this audit."
+    }
+  ],
+
+  "production_recommendations": [
+    {
+      "id": "REC-1",
+      "priority": "P2",
+      "title": "Add ItemUpdated event + listener to invalidate kiosk menu cache on rename/price-edit",
+      "rationale": "I3-RISK-01 — customer-visible 60s stale window on admin item edits not affecting availability.",
+      "implementation_outline": "1) Create app/Events/ItemUpdated.php (mirror ItemCreated). 2) Dispatch from ItemService::update() L309 area. 3) Register in EventServiceProvider with InvalidateKioskMenuCacheOnCatalogChange + PersistCatalogChangedToOutbox listeners (same pattern as ItemCreated lines 232-235). 4) Add sentinel test asserting an event is dispatched when name/price changes."
+    },
+    {
+      "id": "REC-2",
+      "priority": "P2",
+      "title": "Add `systemctl reload php8.4-fpm` to deploy.sh post-cache step + ansible handler",
+      "rationale": "I3-RISK-02 — OPcache stale bytecode risk if owner ever enables validate_timestamps=0.",
+      "implementation_outline": "1) In deploy.sh after L259 (view:cache), insert `systemctl reload php8.4-fpm || true`. 2) In ansible/site.yml add a `notify: reload php-fpm` handler to the 'Artisan migrate' task. 3) Optional: ship /etc/php/8.4/fpm/conf.d/99-foodking-opcache.ini with explicit validate_timestamps=1 + revalidate_freq=2 as documented safe default."
+    },
+    {
+      "id": "REC-3",
+      "priority": "P3",
+      "title": "Add a sentinel test that mix-manifest.json mtime > git HEAD timestamp post-deploy",
+      "rationale": "Catch skipped `npx mix --production` step. L6 browser cache busting depends on the manifest hash actually updating.",
+      "implementation_outline": "Bash script in scripts/deploy/post-deploy-checks.sh: `test $(stat -c %Y public/mix-manifest.json) -gt $(git log -1 --format=%ct)` — call from deploy.sh L259."
+    },
+    {
+      "id": "REC-4",
+      "priority": "P3",
+      "title": "Document .env edit runbook: must run config:cache + reload php-fpm",
+      "rationale": "I3-RISK-04 — operator .env edit silently invisible due to config:cache snapshot.",
+      "implementation_outline": "Append to scripts/deploy/README_DEPLOY.md a 'Hot config patch' section: SSH > edit .env > `php artisan config:cache` > `systemctl reload php8.4-fpm`. Mention that this is the ONLY safe path for env edits without full re-deploy."
+    },
+    {
+      "id": "REC-5",
+      "priority": "P3",
+      "title": "Add `permission:cache-reset` to deploy.sh post-migrate step",
+      "rationale": "L8 — defensive: any migration that touches roles/permissions/role_has_permissions tables silently bypasses Spatie observer. Adding the explicit reset closes the gap.",
+      "implementation_outline": "Insert in deploy.sh after L252 migrate step: `sudo -u $APP_USER php $APP_DIR/artisan permission:cache-reset`."
+    }
+  ],
+
+  "evidence_files_consulted": [
+    "scripts/deploy/deploy.sh (L257 config:cache, L258 route:cache, L259 view:cache, L290-313 restart sequence)",
+    "scripts/deploy/server-setup.sh (L183 php8.4-opcache install, L193 systemctl enable php8.4-fpm)",
+    "scripts/deploy/nginx.conf.template (L145-150 30d immutable cache on /js/, /css/, /build/)",
+    "deploy/ansible/site.yml (no opcache handler, no php-fpm restart task)",
+    "app/Providers/AppServiceProvider.php (L214-222 cache driver boot guard — UNI-03)",
+    "app/Providers/EventServiceProvider.php (L191-239 cache invalidation listeners; NO ItemUpdated)",
+    "app/Listeners/InvalidateKioskMenuCacheOnItemAvailabilityChanged.php",
+    "app/Listeners/InvalidateKioskMenuCacheOnCatalogChange.php",
+    "app/Listeners/InvalidateMenuProjectionOnIngredientChange.php",
+    "app/Services/ItemService.php (L305-405 update — no event dispatch)",
+    "app/Observers/ItemObserver.php (no cache invalidation)",
+    "app/Services/Idempotency/RedisIdempotencyKeyRepository.php (L75 pending_ttl 30s)",
+    "app/Http/Middleware/IdempotencyKeyMiddleware.php (L102+L150 ttl_seconds 86400)",
+    "app/Services/Fiscal/FiscalSequenceService.php (L42 LOCK_TTL_SECONDS=5)",
+    "config/cache.php, config/session.php, config/sanctum.php, config/broadcasting.php, config/idempotency.php",
+    "vendor/spatie/laravel-permission/config/permission.php (L145 expiration_time 24h)",
+    "webpack.mix.js (`.version()` confirmed)",
+    "public/mix-manifest.json (query-string `?id=<md5>` busting confirmed)",
+    "resources/js/bootstrap.js (L293-369 Echo client init, activity/pong timeouts)",
+    "resources/js/services/WebSocketService.js (circuit breaker)",
+    "routes/api.php (L143 + L202 closures — Laravel 9+ Opis Closure serializable)",
+    "app/Http/Controllers/Auth/LoginController.php (L82, L146, L193-254 logout / session invalidation)"
+  ],
+
+  "top_3_stale_cache_risks": [
+    "I3-RISK-01: Item rename/price edit by admin = 60s stale on kiosk menu (no ItemUpdated event wired). Customer-visible. AMBER. Tiny fix.",
+    "I3-RISK-02: deploy.sh does NOT reset OPcache nor restart php8.4-fpm. AMBER today (validate_timestamps=1 default makes this latent), would become RED if owner toggles validate_timestamps=0 for perf. Add `systemctl reload php8.4-fpm` to deploy.sh.",
+    "I3-RISK-04: Operator .env hot-edit on prod is INVISIBLE because config:cache snapshot survives (AppServiceProvider boot guards re-evaluate from cached config). Runbook fix only — no code change."
+  ],
+
+  "production_monitoring_recommendations_top_3": [
+    "Alert on stale kiosk.menu.branch.{id} age — log invalidation events (already done in 3 listeners L73, L55, L64) → aggregate `[KioskMenu] cache invalidated` warn rate; spike on bulk admin edits = catalogue rebuild signature.",
+    "Alert on Idempotency-Key storage unavailability (IdempotencyMiddleware L126 logs 'storage unavailable' warning) — Redis down = orders block. Wave 5G F-007 history shows this is the highest-blast-radius cache failure mode.",
+    "Sentinel test in CI: `php artisan config:show cache.default` after `config:cache` must equal `redis` for production env — catches accidental .env drift that would only manifest at boot guard fail."
+  ],
+
+  "verdict": "AMBER",
+  "verdict_rationale": "L1+L3+L4+L6+L8+L9 are CORRECTLY wired for V1 LOCAL. L5 (OPcache) + L2 (config:cache on .env edits) are LATENT operational risks — no current customer-facing breakage but easy footguns for the next operator. I3-RISK-01 is the only finding with direct customer-visible impact (60s stale name/price on kiosk after admin edit). Pricing SSOT NF525 invariant holds (backend re-computes at order POST). 4 P2/P3 recommendations to land before V1.0.1 cloud-prep cut.",
+  "verdict_evidence_level": "HIGH — every claim has a file:line reference, no runtime testing required for the design-level claims, no opinion-only findings."
+}

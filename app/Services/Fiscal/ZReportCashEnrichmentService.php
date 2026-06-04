@@ -2,12 +2,16 @@
 
 namespace App\Services\Fiscal;
 
+use App\Models\AuditLog;
 use App\Models\CashDrawerSession;
 use App\Models\CashMovement;
+use App\Models\DeliveryBoyCashMovement;
+use App\Models\DeliveryBoyCashSession;
 use App\Models\OrderPayment;
 use App\Models\PaymentTerminal;
 use App\Models\ZReport;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -263,5 +267,321 @@ class ZReportCashEnrichmentService
         ZReport::query()->whereKey($report->id)->update($cash);
 
         return $report->refresh();
+    }
+
+    // -------------------------------------------------------------------
+    // [V1.0.2 Wave 6b-1.5 — 2026-05-18] DELIVERY CASH ENRICHMENT
+    // -------------------------------------------------------------------
+    //
+    // Path A (composition extension) — Planner H plan §7 line 315 :
+    //   "Extend ZReportCashEnrichmentService to also aggregate
+    //    delivery_boy_cash_sessions + delivery_boy_cash_movements per branch
+    //    per day".
+    //
+    // Frozen-zone discipline :
+    //   - ZReportService.php (signed-aggregate path) UNCHANGED.
+    //   - AuditLogService.php (HMAC chain writer) UNCHANGED.
+    //   - audit_logs rows NEVER written from this service — only READ.
+    //   - z_reports columns NEVER added/modified for delivery cash : the
+    //     aggregation is RUNTIME (computed on demand). If the caller wants
+    //     persistence, they emit a sidecar storage call (out of scope here
+    //     — there is no ZReportClosed event in the codebase yet, so no
+    //     listener is wired ; documented gap in evidence).
+    // -------------------------------------------------------------------
+
+    /**
+     * [V1.0.2 Wave 6b-1.5] Aggregate doorstep cash totals for a branch's Z
+     * window. Mirrors the half-open `(previousClose, closeAt]` window
+     * convention used by `persistForClosedReport()` so POS + delivery rows
+     * cover the exact same period.
+     *
+     * Counts ONLY sessions whose `closed_at` lies in the window — sessions
+     * that opened before `from` but closed inside the window land in the
+     * correct period. Sessions still OPEN are intentionally excluded (the
+     * physical count has not happened yet → not yet a fiscal fact).
+     *
+     * @return array{
+     *     delivery_cash_collected_total: float,
+     *     delivery_cash_change_given_total: float,
+     *     session_count: int,
+     *     sessions: list<array{
+     *         id: int,
+     *         delivery_boy_id: int,
+     *         opening_amount: float,
+     *         closing_amount: float,
+     *         expected_closing_amount: float,
+     *         variance: float,
+     *         status: string,
+     *         opened_at: ?string,
+     *         closed_at: ?string,
+     *     }>,
+     * }
+     */
+    public function enrichClose(int $branchId, Carbon $closeAt): array
+    {
+        // Window = (previousZClosedAt, closeAt]. First Z of a branch → from=null
+        // (whole history). Mirror persistForClosedReport L249-257 verbatim.
+        $previousClosedAt = ZReport::query()
+            ->where('branch_id', $branchId)
+            ->where('status', ZReport::STATUS_CLOSED)
+            ->where('closed_at', '<', $closeAt)
+            ->orderByDesc('closed_at')
+            ->value('closed_at');
+
+        $from = $previousClosedAt ? Carbon::parse((string) $previousClosedAt) : null;
+
+        // Filter on `closed_at` (NOT `opened_at`) so a session opened pre-window
+        // that closed during the window is correctly counted. Bypass BranchScope
+        // explicitly + filter by branch_id — service-level contract.
+        $sessionsQuery = DeliveryBoyCashSession::query()
+            ->withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
+            ->where('branch_id', $branchId)
+            ->whereIn('status', [
+                DeliveryBoyCashSession::STATUS_CLOSED,
+                DeliveryBoyCashSession::STATUS_RECONCILED,
+            ])
+            ->whereNotNull('closed_at')
+            ->where('closed_at', '<=', $closeAt);
+
+        if ($from) {
+            $sessionsQuery->where('closed_at', '>', $from);
+        }
+
+        $sessions = $sessionsQuery->orderBy('closed_at')->get();
+
+        if ($sessions->isEmpty()) {
+            return [
+                'delivery_cash_collected_total'    => 0.0,
+                'delivery_cash_change_given_total' => 0.0,
+                'session_count'                    => 0,
+                'sessions'                         => [],
+            ];
+        }
+
+        $sessionIds = $sessions->pluck('id')->all();
+
+        // Aggregate movements for the in-window sessions. We sum the IN
+        // (order_collect) and OUT (change_given) buckets separately so the
+        // Z report can show gross collected vs change rendered.
+        $movementAggregates = DeliveryBoyCashMovement::query()
+            ->withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
+            ->whereIn('delivery_boy_cash_session_id', $sessionIds)
+            ->select([
+                'type',
+                'direction',
+                DB::raw('SUM(amount) as amount_sum'),
+            ])
+            ->groupBy('type', 'direction')
+            ->get();
+
+        $collectedTotal   = 0.0;
+        $changeGivenTotal = 0.0;
+
+        foreach ($movementAggregates as $row) {
+            $amount = (float) $row->amount_sum;
+
+            if (
+                $row->type === DeliveryBoyCashMovement::TYPE_ORDER_COLLECT
+                && $row->direction === DeliveryBoyCashMovement::DIRECTION_IN
+            ) {
+                $collectedTotal += $amount;
+            } elseif (
+                $row->type === DeliveryBoyCashMovement::TYPE_CHANGE_GIVEN
+                && $row->direction === DeliveryBoyCashMovement::DIRECTION_OUT
+            ) {
+                $changeGivenTotal += $amount;
+            }
+            // adjustment / drawer_open / drawer_close intentionally excluded
+            // from the "collected vs change" totals — they live in the raw
+            // movements list (audit-side) but are not "fiscal cash" facts.
+        }
+
+        $sessionsOut = $sessions->map(fn (DeliveryBoyCashSession $s) => [
+            'id'                      => (int) $s->id,
+            'delivery_boy_id'         => (int) $s->delivery_boy_id,
+            'opening_amount'          => round((float) $s->opening_amount, 2),
+            'closing_amount'          => round((float) ($s->closing_amount ?? 0), 2),
+            'expected_closing_amount' => round((float) ($s->expected_closing_amount ?? 0), 2),
+            'variance'                => round((float) ($s->variance ?? 0), 2),
+            'status'                  => (string) $s->status,
+            'opened_at'               => $s->opened_at ? Carbon::parse((string) $s->opened_at)->toIso8601String() : null,
+            'closed_at'               => $s->closed_at ? Carbon::parse((string) $s->closed_at)->toIso8601String() : null,
+        ])->values()->all();
+
+        return [
+            'delivery_cash_collected_total'    => round($collectedTotal, 2),
+            'delivery_cash_change_given_total' => round($changeGivenTotal, 2),
+            'session_count'                    => $sessions->count(),
+            'sessions'                         => $sessionsOut,
+        ];
+    }
+
+    /**
+     * [V1.0.2 Wave 6b-1.5] Raw movement query exposed for audit reconciliation.
+     * Returns the DeliveryBoyCashMovement rows whose parent session closed in
+     * (start, end] for the given branch — same window semantics as
+     * `enrichClose()` to keep audit + aggregation consistent.
+     *
+     * @return Collection<int, DeliveryBoyCashMovement>
+     */
+    public function getDeliveryMovementsBetween(int $branchId, Carbon $start, Carbon $end): Collection
+    {
+        // Find sessions whose closed_at lies in (start, end] (matches the
+        // enrichClose window semantics).
+        $sessionIds = DeliveryBoyCashSession::query()
+            ->withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
+            ->where('branch_id', $branchId)
+            ->whereIn('status', [
+                DeliveryBoyCashSession::STATUS_CLOSED,
+                DeliveryBoyCashSession::STATUS_RECONCILED,
+            ])
+            ->whereNotNull('closed_at')
+            ->where('closed_at', '>', $start)
+            ->where('closed_at', '<=', $end)
+            ->pluck('id')
+            ->all();
+
+        if (empty($sessionIds)) {
+            return collect();
+        }
+
+        return DeliveryBoyCashMovement::query()
+            ->withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
+            ->whereIn('delivery_boy_cash_session_id', $sessionIds)
+            ->orderBy('id')
+            ->get();
+    }
+
+    /**
+     * [V1.0.2 Wave 6b-1.5] Cross-check : sum of
+     * `cash.delivery.movement.recorded` audit_log entries for a branch in
+     * (start, end] === sum of `delivery_boy_cash_movements` rows for the
+     * same window (signed).
+     *
+     * NF525 integrity probe — READ-ONLY. Never writes to audit_logs nor to
+     * delivery_boy_cash_movements. Designed for the closing-Z verification
+     * path and for ad-hoc operator audits.
+     *
+     * Sign convention :
+     *   - audit_log payload stores `amount` UNSIGNED + `direction` ∈ {in,out}.
+     *     We sum signed (in=+, out=-) to match movement.signedAmount().
+     *   - movements use DeliveryBoyCashMovement::signedAmount() — same sign.
+     *
+     * Discrepancies returned for forensics : each entry is keyed by source
+     * (audit_log row vs movement row) so an operator can pinpoint the drift.
+     *
+     * @return array{
+     *     ok: bool,
+     *     audit_total: float,
+     *     movements_total: float,
+     *     audit_count: int,
+     *     movements_count: int,
+     *     discrepancies: list<array{kind: string, detail: string}>,
+     * }
+     */
+    public function verifyConsistencyVsAuditLog(int $branchId, Carbon $start, Carbon $end): array
+    {
+        // Audit-side : query the per-branch audit chain by action namespace.
+        // The audit_logs table is global (one chain per branch_id), not subject
+        // to BranchScope — we filter by branch_id explicitly for clarity.
+        $auditRows = AuditLog::query()
+            ->where('branch_id', $branchId)
+            ->where('action', 'cash.delivery.movement.recorded')
+            ->where('created_at', '>', $start)
+            ->where('created_at', '<=', $end)
+            ->get();
+
+        $auditTotal = 0.0;
+        $auditCount = $auditRows->count();
+        $auditMovementIds = [];
+
+        foreach ($auditRows as $row) {
+            $payload = (array) ($row->payload ?? []);
+            $amount = (float) ($payload['amount'] ?? 0);
+            $direction = (string) ($payload['direction'] ?? '');
+            $movementId = isset($payload['movement_id']) ? (int) $payload['movement_id'] : null;
+
+            $signed = ($direction === DeliveryBoyCashMovement::DIRECTION_IN ? 1.0 : -1.0) * $amount;
+            $auditTotal += $signed;
+
+            if ($movementId !== null) {
+                $auditMovementIds[$movementId] = true;
+            }
+        }
+
+        // Movement-side : raw DB rows for the same window, signed via the model.
+        // We use `created_at` to mirror the audit-side timestamp predicate
+        // (audit_logs.created_at is the canonical event time — the movement
+        // row's created_at is written atomically inside the same transaction,
+        // see DeliveryBoyCashSessionService::recordMovement L355-372).
+        $movements = DeliveryBoyCashMovement::query()
+            ->withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
+            ->where('branch_id', $branchId)
+            ->where('created_at', '>', $start)
+            ->where('created_at', '<=', $end)
+            ->get();
+
+        $movementsTotal = 0.0;
+        $movementsCount = $movements->count();
+        $movementIds = [];
+
+        foreach ($movements as $m) {
+            $movementsTotal += $m->signedAmount();
+            $movementIds[(int) $m->id] = true;
+        }
+
+        $discrepancies = [];
+
+        if (abs($auditTotal - $movementsTotal) > 0.005) {
+            $discrepancies[] = [
+                'kind'   => 'sum_mismatch',
+                'detail' => sprintf(
+                    'audit signed-sum=%.2f vs movements signed-sum=%.2f (delta=%.2f)',
+                    $auditTotal,
+                    $movementsTotal,
+                    $auditTotal - $movementsTotal,
+                ),
+            ];
+        }
+
+        if ($auditCount !== $movementsCount) {
+            $discrepancies[] = [
+                'kind'   => 'count_mismatch',
+                'detail' => sprintf(
+                    'audit rows=%d vs movement rows=%d',
+                    $auditCount,
+                    $movementsCount,
+                ),
+            ];
+        }
+
+        // movement_id present in audit_logs but no row in delivery_boy_cash_movements
+        foreach (array_keys($auditMovementIds) as $auditMid) {
+            if (! isset($movementIds[$auditMid])) {
+                $discrepancies[] = [
+                    'kind'   => 'audit_orphan_movement_id',
+                    'detail' => "audit_logs payload references movement_id={$auditMid} but no row found in delivery_boy_cash_movements",
+                ];
+            }
+        }
+
+        // movement row exists but no matching audit_logs payload references it
+        foreach (array_keys($movementIds) as $mid) {
+            if (! isset($auditMovementIds[$mid])) {
+                $discrepancies[] = [
+                    'kind'   => 'movement_missing_audit_row',
+                    'detail' => "movement_id={$mid} has no `cash.delivery.movement.recorded` audit_log entry",
+                ];
+            }
+        }
+
+        return [
+            'ok'              => empty($discrepancies),
+            'audit_total'     => round($auditTotal, 2),
+            'movements_total' => round($movementsTotal, 2),
+            'audit_count'     => $auditCount,
+            'movements_count' => $movementsCount,
+            'discrepancies'   => $discrepancies,
+        ];
     }
 }

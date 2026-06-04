@@ -1,0 +1,105 @@
+{
+  "agent": "adversarial-B",
+  "scope": "S4 OSS + S5 Cash + S6 Stock + S7 Admin",
+  "mode": "READ-ONLY post-restore independent verification",
+  "timestamp_utc": "2026-05-25T10:30:00Z",
+  "status": "awaiting_gstack_input",
+  "gstack_findings_present": false,
+  "expected_inputs": {
+    "S4_findings_json": "reports/test-e2e/post-restore-deep-2026-05-25/round-1/S4-oss-findings.json",
+    "S5_findings_json": "reports/test-e2e/post-restore-deep-2026-05-25/round-1/S5-cash-findings.json",
+    "S6_findings_json": "reports/test-e2e/post-restore-deep-2026-05-25/round-1/S6-stock-findings.json",
+    "S7_findings_json": "reports/test-e2e/post-restore-deep-2026-05-25/round-1/S7-admin-findings.json"
+  },
+  "expected_inputs_present": {
+    "S4": false,
+    "S5": false,
+    "S6": false,
+    "S7": false
+  },
+  "screenshots_present": {
+    "deep-S4-oss": 0,
+    "deep-S5-cash": 0,
+    "deep-S6-stock": 1,
+    "deep-S7-admin": 3
+  },
+  "block_reason": "GStack S4-S7 has not yet written findings JSON nor populated screenshots for S4/S5. Cannot dispute findings that do not exist. Refused to substitute wave-final-2026-05-23 findings (different wave, different scope, pre-restore) — that would be fabricating a review of work that never happened.",
+  "disputes": {
+    "S4": [],
+    "S5": [],
+    "S6": [],
+    "S7": []
+  },
+  "disputed_keep_count": 0,
+  "disputed_discard_count": 0,
+  "independent_observations_from_available_screenshots": [
+    {
+      "id": "ADV-B-IND-01",
+      "system": "S7-admin",
+      "source_screenshot": "deep-S7-admin/S7-01-dashboard-mount.png",
+      "severity": "INFO",
+      "type": "observation",
+      "summary": "Admin dashboard mounts clean, no raw labels, all chips localised FR",
+      "evidence": "Tableau De Bord sidebar resolved FR. Header greet 'Bon Après-Midi !' is localised. 8 Accès rapides chips (POS, Commandes caisse, Suivi caisse (kanban), Écran cuisine, Suivi client, Catalogue, Ingrédients, Produits & Stock) + 2 second-row chips (Rapport caisses quotidien, Vue caisse unifiée) all labeled. Vue D'ensemble cards (Total ventes 0,00 €, Total commandes 0, Total articles menu 45). No 'Label.X' raw token visible.",
+      "scope_match": "S7 sidebar 404 / KPI integrity hunt — relevant",
+      "gstack_likely_to_flag": "Empty KPIs may be flagged as P2 'no traffic baseline'. Likely correct given post-restore zero-state.",
+      "missed_check_pending_GStack": "Cross-check KPI '45 articles' vs DB items.count(). Cross-check sidebar entries 78-perms-clickable. Cannot perform without HTML/API trace from GStack."
+    },
+    {
+      "id": "ADV-B-IND-02",
+      "system": "S7-admin",
+      "source_screenshot": "deep-S7-admin/S7-02-acces-rapides-chips.png",
+      "severity": "INFO",
+      "type": "observation",
+      "summary": "10 chips render in 2 rows, no overflow on this viewport, icons consistent",
+      "evidence": "Row1: POS | Commandes caisse | Suivi caisse (kanban) | Écran cuisine | Suivi client | Catalogue | Ingrédients | Produits & Stock. Row2: Rapport caisses quotidien | Vue caisse unifiée. All chips have icon + label, white bg, no truncation.",
+      "scope_match": "Persona owner / admin entry",
+      "missed_check_pending_GStack": "Click-through 404 audit on each chip — cannot do without DOM/route trace."
+    },
+    {
+      "id": "ADV-B-IND-03",
+      "system": "S7-admin",
+      "source_screenshot": "deep-S7-admin/S7-03-vue-ensemble-kpi.png",
+      "severity": "P2",
+      "type": "observation",
+      "summary": "Page-load skeleton/loader visible mid-mount (3 indeterminate bars centre-screen) — capture taken before async data resolved",
+      "evidence": "Screenshot shows everything else faded to ~10 % opacity and three dark progress bars at viewport centre — classic preload state. Means the test harness captured before networkidle.",
+      "scope_match": "KPI integrity (Wave Polish C-013) — affects evidence quality of any KPI screenshot",
+      "actionable": "GStack should re-capture S7-03 after waitForLoadState('networkidle') or explicit data-loaded selector. Not a product defect, a test-quality defect.",
+      "missed_check_pending_GStack": "Confirm GStack captured a stable post-load KPI frame anywhere; if only S7-03 exists, dispute as evidence-incomplete."
+    },
+    {
+      "id": "ADV-B-IND-04",
+      "system": "S6-stock",
+      "source_screenshot": "deep-S6-stock/S6-01-default-mount.png",
+      "severity": "P2",
+      "type": "observation",
+      "summary": "Stock page mount actually shows KDS columns (En préparation / Prêt), not stock rupture dashboard — possible spec-routing defect or filename mislabel",
+      "evidence": "File named 'S6-01-default-mount' under deep-S6-stock/, but the rendered page is the KDS kanban (two columns 'En préparation' magenta header + 'Prêt' green header, both empty). Top-right shows 'Tableau De Bord' + 'Bonjour Admin'. No stock cards, no Suppléments, no rupture toggle visible — none of the S6 expected DOM.",
+      "scope_match": "Critical — if S6 spec navigated to /kds instead of /admin/stock-rupture-dashboard, all S6 findings will be invalid by construction.",
+      "actionable": "Before disputing GStack S6 findings, parent must verify spec navigation URL. Likely spec bug or asset misplaced; either way, S6 evidence chain is suspect.",
+      "missed_check_pending_GStack": "Cross-axis dedupe / bulk toggle / Q9-S1 ΔT measurement — none observable in this screenshot."
+    }
+  ],
+  "verdict_per_system": {
+    "S4_OSS": "NO_INPUT_RECEIVED — 0 screenshots, 0 findings JSON. Cannot verdict.",
+    "S5_CASH": "NO_INPUT_RECEIVED — 0 screenshots, 0 findings JSON. Cannot verdict.",
+    "S6_STOCK": "BLOCKED_EVIDENCE_SUSPECT — only 1 screenshot present, and it appears to show KDS columns rather than the stock rupture dashboard. GStack S6 findings (when delivered) should be re-validated against correct route before dispute.",
+    "S7_ADMIN": "PARTIAL_OBSERVATION — 3 screenshots present, dashboard chrome looks clean (no raw labels, FR localisation OK, KPI cards render). Cannot verdict on sidebar 404 / KPI numeric integrity / PII without GStack DOM/API trace. One screenshot (S7-03) caught mid-load."
+  },
+  "top_3_disputes": [
+    "N/A — no GStack disputes to enter yet",
+    "N/A — awaiting findings",
+    "N/A — awaiting findings"
+  ],
+  "new_findings_missed_by_gstack": [
+    "ADV-B-IND-04 — S6 screenshot appears to show KDS, not stock dashboard. If GStack S6 spec routes to wrong URL, all S6 evidence is invalid. CHECK FIRST before any S6 verdict.",
+    "ADV-B-IND-03 — S7-03 capture happened mid-load (skeleton/loader visible). KPI value 'Total articles menu 45' from S7-01 is the stable reading; S7-03 should be discarded or recaptured after networkidle."
+  ],
+  "next_step_for_parent": "Re-dispatch adversarial-B once GStack S4/S5/S6/S7 findings JSON files are durable AND screenshot dirs are fully populated. Independent observations above remain valid regardless of GStack output.",
+  "owner_mandate_check": {
+    "no_cloud_until_owner_initiates": "respected — no cloud actions proposed",
+    "frozen_zones_diff": "respected — read-only mode, zero file edits outside this report",
+    "honest_evidence": "respected — refused to fabricate disputes against missing inputs"
+  }
+}

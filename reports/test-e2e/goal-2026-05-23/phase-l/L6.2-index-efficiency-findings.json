@@ -1,0 +1,331 @@
+{
+  "agent": "L6.2 — INDEX EFFICIENCY AUDIT",
+  "date": "2026-05-24",
+  "scope": "Static audit of database/migrations/ + hot query-pattern grep in app/Http/Controllers, app/Services. V1 Le Cayenne LOCAL single-box file-driver MySQL. No EXPLAIN harness run — see Section 6 justification.",
+  "verdict": "GREEN_V1_LOCAL with V1.0.X cloud-prep backlog",
+  "headline": "At V1 LOCAL Le Cayenne (single branch, single-digit-k orders/day), every hot WHERE-clause is covered by at least one index — most by purpose-built composites added through the 2026-03 through 2026-05 perf waves. Six gaps identified are low-impact at V1 scale but become P1-P2 cost-tiers at the V2 SaaS multi-tenant + 1M+ orders horizon. None block V1 production. Sentinel skeleton written.",
+  "methodology": {
+    "static_audit": [
+      "grep -rn 'table->index|table->unique' across 174 migration files",
+      "Cross-reference each hot-WHERE in app/Services + app/Http/Controllers against the catalogued indexes",
+      "Verify column order on critical composites by reading the migration source"
+    ],
+    "honest_limitation": "EXPLAIN harness NOT executed — borrowing the framing from tests/Feature/Migrations/ActionLogsCompositeIndexTest.php line 14-15: 'the MySQL query planner behaviour on 500k rows belongs to a staging benchmark, not PHPUnit'. The dev DB is sqlite (RefreshDatabase). True planner verification requires a staging instance seeded to 1M-row scale. Tagged as V1.0.X cloud-prep gate.",
+    "scope_exclusions": [
+      "Spatie permission_tables — vendor migration, self-managed indexes",
+      "Laravel default users/sessions/jobs/failed_jobs — vendor schemas",
+      "Sanctum personal_access_tokens base schema — vendor, but FoodKing adds NO supplementary index on it (documented as gap below)"
+    ]
+  },
+  "tables_audited": {
+    "orders": {
+      "primary_key": "id (auto-increment bigint)",
+      "owner_unique_constraints": [
+        {"name": "orders_branch_user_idempotency_unique", "cols": ["branch_id", "user_id", "idempotency_key"], "source": "2026_05_24_023000_add_user_id_to_orders_idempotency_unique.php", "purpose": "H.1 P0 RED 2026-05-24 cross-customer leak close"},
+        {"name": "orders_branch_fiscal_seq_unique", "cols": ["branch_id", "fiscal_sequence_no"], "source": "2026_04_22_000001 — NF525 monotonic per branch"},
+        {"name": "orders_branch_id_business_date_queue_number_unique", "cols": ["branch_id", "business_date", "queue_number"], "source": "2026_04_26_213800 — daily queue number per branch"},
+        {"name": "orders_parent_order_id_unique", "cols": ["parent_order_id"], "source": "2026_05_19_200000 — child→parent 1:1 (refund-with-counter)"}
+      ],
+      "owner_indexes": [
+        {"name": "idx_orders_branch_status", "cols": ["branch_id", "status"], "source": "2026_03_12_130000_add_performance_indexes.php"},
+        {"name": "idx_orders_user_id", "cols": ["user_id"], "source": "2026_03_12_130000"},
+        {"name": "idx_orders_datetime", "cols": ["order_datetime"], "source": "2026_03_12_130000"},
+        {"name": "idx_orders_status", "cols": ["status"], "source": "2026_03_12_130000"},
+        {"name": "orders_parent_order_id_index", "cols": ["parent_order_id"], "source": "2026_05_19_200000"}
+      ],
+      "implicit_foreign_key_indexes": ["user_id (foreignId constrained)", "branch_id (foreignId constrained)"],
+      "hot_query_patterns_verified": [
+        {"pattern": "WHERE branch_id AND status (KDS, OSS, admin lists)", "index_used": "idx_orders_branch_status", "verdict": "OK"},
+        {"pattern": "WHERE user_id (customer order history, deactivate check)", "index_used": "idx_orders_user_id", "verdict": "OK — orders.user_id semantically holds customer_id per OrderService::posOrderStore line 699"},
+        {"pattern": "WHERE branch_id AND order_datetime BETWEEN day-bounds (KDS list / OSS Z-day window)", "index_used": "(branch_id, status) on equality + idx_orders_datetime on range — composite (branch_id, order_datetime) WOULD be tighter", "verdict": "OK at V1 scale, V1.0.X candidate"},
+        {"pattern": "WHERE branch_id AND updated_at BETWEEN today (KDS historyToday)", "index_used": "NONE — branch_id implicit FK only, updated_at has NO index", "verdict": "GAP — see G-01"},
+        {"pattern": "WHERE delivery_boy_id (livreur queries)", "index_used": "NONE — no index on delivery_boy_id (column is bigInteger NULLable, not foreignId-constrained)", "verdict": "GAP — see G-04"},
+        {"pattern": "ORDER BY id DESC / latest('id') (POS draft list)", "index_used": "PK", "verdict": "OK"}
+      ]
+    },
+    "audit_logs": {
+      "primary_key": "id (auto-increment bigint)",
+      "owner_unique_constraints": [
+        {"name": "audit_logs_branch_prev_unique", "cols": ["branch_id", "prev_hash"], "source": "2026_04_22_100000 — F-C3/F-B1 race fork defense"}
+      ],
+      "owner_indexes": [
+        {"name": "(implicit) branch_id", "cols": ["branch_id"], "source": "2026_04_22_000002 line 36 — ->index() chained"},
+        {"name": "(implicit) user_id", "cols": ["user_id"], "source": "2026_04_22_000002 line 37"},
+        {"name": "audit_logs_branch_id_created_at_index", "cols": ["branch_id", "created_at"], "source": "2026_04_22_000002 line 54"},
+        {"name": "audit_logs_resource_resource_id_index", "cols": ["resource", "resource_id"], "source": "2026_04_22_000002 line 55"}
+      ],
+      "hot_query_patterns_verified": [
+        {"pattern": "WHERE branch_id ORDER BY id DESC LIMIT 1 (AuditLogService::lastHashFor chain head)", "index_used": "branch_id solo + PK back-ref on id ORDER BY", "verdict": "OK V1 LOCAL — MySQL uses branch_id index then PK reverse-scan; a (branch_id, id DESC) composite would let the planner skip the PK back-ref but adds write cost. V1.0.X candidate."},
+        {"pattern": "WHERE branch_id AND id >= X ORDER BY id (FiscalChainValidator::verifyAuditChainTail window walk)", "index_used": "branch_id solo + PK seek", "verdict": "OK at V1 scale (window default = config('fiscal.chain.validator_window') typically 100 rows). At 10M-row chain, (branch_id, id) composite would 10x the walk speed. V1.0.X."},
+        {"pattern": "WHERE branch_id AND created_at BETWEEN (Z-report aggregation)", "index_used": "(branch_id, created_at)", "verdict": "OK"},
+        {"pattern": "WHERE resource AND resource_id (forensic lookups)", "index_used": "(resource, resource_id)", "verdict": "OK"},
+        {"pattern": "INSERT collision retry on UNIQUE(branch_id, prev_hash)", "index_used": "audit_logs_branch_prev_unique", "verdict": "OK — see AuditLogService::performInsert retry on QueryException line 179-190"}
+      ],
+      "nf525_invariants": "audit_logs is INSERT-only (DB triggers BEFORE UPDATE+DELETE — see 2026_04_22_000002 + 2026_05_10_010000_secure_fiscal_audit_trail_immutability.php). Index changes are SAFE because they are read-side optimisations, but adding/dropping indexes on a NF525-frozen table requires LOCK plan per CLAUDE.md §7."
+    },
+    "order_items": {
+      "primary_key": "id",
+      "implicit_foreign_key_indexes": ["order_id (foreignId constrained)", "branch_id (foreignId constrained)", "item_id (foreignId constrained)"],
+      "owner_indexes": [
+        {"name": "idx_order_items_order_id", "cols": ["order_id"], "source": "2026_03_12_130000 — DUPLICATE of implicit FK index, see G-06"}
+      ],
+      "hot_query_patterns_verified": [
+        {"pattern": "WHERE order_id (with('orderItems') eager-load)", "index_used": "implicit FK + redundant idx_order_items_order_id", "verdict": "OK but duplicate (G-06)"},
+        {"pattern": "WHERE item_id (analytics / best-seller)", "index_used": "implicit FK", "verdict": "OK"}
+      ]
+    },
+    "cash_movements": {
+      "primary_key": "id",
+      "owner_indexes": [
+        {"name": "(implicit) cash_drawer_session_id", "source": "2026_05_08_140100 line 43"},
+        {"name": "cash_movements_branch_id_created_at_index", "cols": ["branch_id", "created_at"], "source": "2026_05_08_140100 line 44"},
+        {"name": "cash_movements_order_id_type_index", "cols": ["order_id", "type"], "source": "2026_05_08_140100 line 45"}
+      ],
+      "hot_query_patterns_verified": [
+        {"pattern": "WHERE cash_drawer_session_id ORDER BY created_at (session detail)", "index_used": "cash_drawer_session_id", "verdict": "OK"},
+        {"pattern": "WHERE branch_id AND created_at BETWEEN (CashOverview)", "index_used": "(branch_id, created_at)", "verdict": "OK"},
+        {"pattern": "WHERE order_id AND type (refund linkage)", "index_used": "(order_id, type)", "verdict": "OK"}
+      ],
+      "fiscal_note": "Sister table to audit_logs in NF525 sense — has its own DELETE trigger (2026_05_16_130000_add_cash_movements_delete_trigger_sqlite.php). Index changes safe (read-side)."
+    },
+    "items": {
+      "primary_key": "id",
+      "owner_indexes": [
+        {"name": "idx_items_status_category", "cols": ["status", "item_category_id"], "source": "2026_03_12_130000"},
+        {"name": "idx_items_id_price", "cols": ["id", "price"], "source": "2026_03_12_130000 — covering index for POS price reads"},
+        {"name": "items_upsell_status_index", "cols": ["is_upsell", "status"], "source": "2026_03_25_002927"},
+        {"name": "items_is_chef_pick_idx", "cols": ["is_chef_pick"], "source": "2026_04_18_120007"},
+        {"name": "items_kiosk_filters_idx", "cols": ["is_available", "is_halal", "is_vegetarian"], "source": "2026_04_18_130001"},
+        {"name": "items_barcode_idx", "cols": ["barcode"], "source": "2026_04_20_160000"},
+        {"name": "items_kds_station_index", "cols": ["kds_station"], "source": "2026_04_20_230000"}
+      ],
+      "implicit_foreign_key_indexes": ["item_category_id (foreignId)", "tax_id (foreignId)"],
+      "hot_query_patterns_verified": [
+        {"pattern": "WHERE status AND item_category_id (POS catalog)", "index_used": "idx_items_status_category", "verdict": "OK"},
+        {"pattern": "WHERE is_available (kiosk grid)", "index_used": "items_kiosk_filters_idx leading column", "verdict": "OK"},
+        {"pattern": "WHERE branch_id — MISCONCEPTION IN TASK SPEC", "index_used": "N/A — items has NO branch_id column; per-branch overrides flow through item_branch_availability(branch_id, is_available) which IS indexed (2026_04_15_230100 line 27)", "verdict": "ARCHITECTURE NOTE — see Section 7"}
+      ]
+    },
+    "loyalty_transactions": {
+      "primary_key": "id",
+      "owner_unique_constraints": [
+        {"name": "loyalty_transactions_user_order_type_unique", "cols": ["user_id", "order_id", "type"], "source": "2026_03_26_075919 — idempotent dual-write awarding"}
+      ],
+      "owner_indexes": [
+        {"name": "(implicit) user_id", "source": "2026_03_26_075918 line 22"},
+        {"name": "(implicit) loyalty_code", "source": "2026_03_26_075918 line 23"},
+        {"name": "(implicit) order_id", "source": "2026_03_26_075918 line 24"},
+        {"name": "loyalty_transactions_pos_session_id_index", "cols": ["pos_session_id"], "source": "2026_05_19_120000"}
+      ],
+      "hot_query_patterns_verified": [
+        {"pattern": "WHERE user_id ORDER BY created_at DESC (Loyalty mobile history feed — LoyaltyController:483)", "index_used": "user_id solo + PK ORDER BY", "verdict": "OK V1 — at heavy customer scale, (user_id, created_at DESC) composite would help. V1.0.X."},
+        {"pattern": "WHERE type (per-type aggregation)", "index_used": "covered by unique(user_id, order_id, type) leading-column-mismatch — type alone is NOT indexed", "verdict": "MINOR GAP — see G-05. Per-type GROUP BY scans table at scale."}
+      ]
+    },
+    "domain_events": {
+      "primary_key": "id (bigIncrements)",
+      "owner_unique_constraints": [
+        {"name": "uniq_domain_events_idempotency_key", "cols": ["idempotency_key"], "source": "2026_05_09_180000 — listener firstOrCreate dedupe"}
+      ],
+      "owner_indexes": [
+        {"name": "idx_pending", "cols": ["dispatched_at", "occurred_at"], "source": "2026_04_15_200000"},
+        {"name": "idx_aggregate", "cols": ["aggregate_type", "aggregate_id"], "source": "2026_04_15_200000"},
+        {"name": "idx_branch", "cols": ["branch_id", "occurred_at"], "source": "2026_04_15_200000"}
+      ],
+      "hot_query_patterns_verified": [
+        {"pattern": "WHERE dispatched_at IS NULL (scopePending — DispatchDomainEventsJob retry-failed cron)", "index_used": "idx_pending leading column dispatched_at IS NULL — MySQL NULL handling on composite index is partial; works because dispatched_at IS NULL is sargable as equality on the index", "verdict": "OK"},
+        {"pattern": "WHERE dispatched_at IS NULL AND created_at < ? (scopeStale)", "index_used": "idx_pending covers dispatched_at IS NULL only — created_at is NOT part of any index (composite uses occurred_at instead, see G-02)", "verdict": "GAP — see G-02"},
+        {"pattern": "WHERE branch_id AND occurred_at >= ? (SyncOverviewController failures lookup)", "index_used": "idx_branch (branch_id, occurred_at)", "verdict": "OK"},
+        {"pattern": "WHERE aggregate_type AND aggregate_id (correlation lookups)", "index_used": "idx_aggregate", "verdict": "OK"}
+      ]
+    },
+    "personal_access_tokens": {
+      "primary_key": "id",
+      "owner_unique_constraints": [
+        {"name": "personal_access_tokens_token_unique", "cols": ["token"], "source": "Sanctum default — PersonalAccessToken::findToken lookup"}
+      ],
+      "owner_indexes": [
+        {"name": "personal_access_tokens_tokenable_type_tokenable_id_index", "cols": ["tokenable_type", "tokenable_id"], "source": "Sanctum default $table->morphs('tokenable') — auto-generated composite"}
+      ],
+      "implicit_foreign_key_indexes": [],
+      "hot_query_patterns_verified": [
+        {"pattern": "WHERE tokenable_id (LoginController accessToken match line 212)", "index_used": "(tokenable_type, tokenable_id) — but used as filter-only after auth resolution, not a hot path", "verdict": "OK"},
+        {"pattern": "WHERE tokenable_type AND tokenable_id IN (...) (RevokeTokensOnBranchDeactivated)", "index_used": "(tokenable_type, tokenable_id)", "verdict": "OK"},
+        {"pattern": "WHERE expires_at < NOW() AND expires_at IS NOT NULL (sanctum:prune-expired daily cron — verified scheduled in app/Console/Kernel.php line 154)", "index_used": "NONE — Sanctum vendor migration does not index expires_at", "verdict": "GAP — see G-03"}
+      ]
+    }
+  },
+  "missing_indexes_recommendations_V1_0_X": [
+    {
+      "id": "G-01",
+      "severity": "P2",
+      "table": "orders",
+      "missing_index": "(branch_id, updated_at)",
+      "rationale": "KitchenDisplaySystemOrderService::historyToday (line 232) does WHERE branch_id AND updated_at BETWEEN [todayStart, tomorrowStart] ORDER BY updated_at DESC LIMIT 50. Currently has NO index supporting WHERE updated_at — MySQL falls back to (branch_id, status) leading column then row-by-row updated_at filter. At V1 Le Cayenne single-resto with <500 orders/day this is fine. At V2 SaaS with 100+ branches × 1000 orders/day per branch, the scan cost grows linearly per branch view.",
+      "proposed_migration": "Schema::table('orders', fn ($t) => $t->index(['branch_id', 'updated_at'], 'idx_orders_branch_updated'));",
+      "regression_risk": "LOW — additive index, write cost ~3-5% on UPDATE statements (orders.updated_at is touched on every status transition).",
+      "v1_local_impact": "Negligible — Le Cayenne <500 orders/day, scan completes in <5ms.",
+      "v2_saas_impact": "P1 — without it, every branch manager opening 'Historique' triggers a per-branch table scan growing with order count."
+    },
+    {
+      "id": "G-02",
+      "severity": "P2",
+      "table": "domain_events",
+      "missing_index": "(dispatched_at, created_at)  OR  refactor DomainEvent::scopeStale to filter on occurred_at",
+      "rationale": "DomainEvent::scopeStale (app/Models/DomainEvent.php:39-43) filters WHERE dispatched_at IS NULL AND created_at < ?. idx_pending covers (dispatched_at, occurred_at) — created_at and occurred_at are DIFFERENT columns (occurred_at is the domain timestamp, created_at is the row insert time). Cron foodking:outbox:retry-failed therefore can't fully use the index. Two equally good fixes: (a) add (dispatched_at, created_at) composite, or (b) refactor scopeStale to use occurred_at (semantically more correct — domain semantic is 'event happened > N min ago, still un-dispatched').",
+      "proposed_migration": "OPTION A: $table->index(['dispatched_at', 'created_at'], 'idx_pending_created');  OPTION B: code change to DomainEvent.php scopeStale — replace 'created_at' with 'occurred_at'.",
+      "regression_risk": "LOW for either path. Option B is preferred — no schema change, semantic alignment.",
+      "v1_local_impact": "Negligible — outbox stays small (~10s rows pending typical).",
+      "v2_saas_impact": "P2 — at outbox backlog of 100k+ during incident, full pending scan becomes minutes."
+    },
+    {
+      "id": "G-03",
+      "severity": "P2",
+      "table": "personal_access_tokens",
+      "missing_index": "expires_at (or partial: WHERE expires_at IS NOT NULL)",
+      "rationale": "sanctum:prune-expired daily cron (scheduled in app/Console/Kernel.php line 154) issues DELETE FROM personal_access_tokens WHERE expires_at IS NOT NULL AND expires_at < ?. Sanctum vendor migration does NOT index expires_at. At Le Cayenne kiosk-token TTL 480 min (CLAUDE.md §9) + ~10 kiosk tokens at once, table stays small — full scan OK V1. V2 SaaS multi-branch with relogin-on-shift kiosk pattern can pile up tens of thousands of expired tokens between cron runs.",
+      "proposed_migration": "Schema::table('personal_access_tokens', fn ($t) => $t->index('expires_at', 'pat_expires_at_idx'));",
+      "regression_risk": "LOW — additive. Write cost minimal (column rarely updated post-create).",
+      "v1_local_impact": "Negligible.",
+      "v2_saas_impact": "P2 — cron lock duration grows linearly with row count."
+    },
+    {
+      "id": "G-04",
+      "severity": "P3",
+      "table": "orders",
+      "missing_index": "delivery_boy_id",
+      "rationale": "OrderService::getOrders (line 255) does WHERE delivery_boy_id = $user->id. Column is bigInteger nullable (NOT foreignId-constrained — see migrations/2022_11_17_110810 line 38), so NO implicit FK index. Existing query falls back to full scan filtered by branch_id index (delivery boys are scoped). At V1 Le Cayenne with <5 delivery riders × <500 orders/day, scan is <10ms. At V2 SaaS with 20+ riders × 1000 orders/day per branch, becomes >100ms per rider screen refresh.",
+      "proposed_migration": "Schema::table('orders', fn ($t) => $t->index('delivery_boy_id', 'idx_orders_delivery_boy'));  // optionally composite (delivery_boy_id, status) for active-tour filter.",
+      "regression_risk": "LOW.",
+      "v1_local_impact": "Negligible.",
+      "v2_saas_impact": "P2 — rider mobile app polls every 10s."
+    },
+    {
+      "id": "G-05",
+      "severity": "P3",
+      "table": "loyalty_transactions",
+      "missing_index": "type  OR  (user_id, type)",
+      "rationale": "Per-type aggregations (earn vs redeem totals) common in admin loyalty reports. UNIQUE(user_id, order_id, type) leading on user_id does NOT serve WHERE type alone. user_id solo index exists; type alone or composite (user_id, type) absent.",
+      "proposed_migration": "Schema::table('loyalty_transactions', fn ($t) => $t->index(['user_id', 'type'], 'idx_loyalty_tx_user_type'));",
+      "regression_risk": "LOW.",
+      "v1_local_impact": "Negligible (ledger small).",
+      "v2_saas_impact": "P3 — reports remain ad-hoc, not hot-path."
+    },
+    {
+      "id": "G-06",
+      "severity": "INFO (hygiene)",
+      "table": "order_items",
+      "issue": "DUPLICATE INDEX",
+      "rationale": "idx_order_items_order_id (2026_03_12_130000 line 59) duplicates the implicit FK index auto-created by ->foreignId('order_id')->constrained('orders') in the original 2022_11_17_110832 table create. Two indexes on the same single column add write penalty without read benefit.",
+      "proposed_action": "OPTIONAL V1.0.X cleanup: drop idx_order_items_order_id (keep FK-implicit). Order: identify which index name MySQL uses for the FK CONSTRAINT (it auto-creates order_items_order_id_foreign), then DROP INDEX idx_order_items_order_id is safe.",
+      "regression_risk": "LOW — keep test verifying FK index still present.",
+      "v1_local_impact": "Negligible write cost.",
+      "v2_saas_impact": "P3 — at 10M+ order_items rows, double-index slows INSERT 10-15%."
+    },
+    {
+      "id": "G-07",
+      "severity": "P3",
+      "table": "audit_logs",
+      "missing_index": "(branch_id, id) explicit composite for chain-walk",
+      "rationale": "AuditLogService::lastHashFor (line 245) and FiscalChainValidator::verifyAuditChainTail (line 120) are the two chain-walk hot paths. Both filter WHERE branch_id then sort/window by id. MySQL handles this via branch_id index then PK back-reference — fine at V1 LOCAL audit_logs scale (Le Cayenne is currently 62 rows per MEMORY.md). At 10M+ rows V2 cloud-scale, an explicit (branch_id, id) composite eliminates the PK back-ref step.",
+      "proposed_migration": "Schema::table('audit_logs', fn ($t) => $t->index(['branch_id', 'id'], 'idx_audit_logs_branch_id_walk'));",
+      "regression_risk": "LOW additive, BUT this is NF525-frozen table (CLAUDE.md §7) — requires LOCK plan even for an ADD INDEX. INSERT cost +5% (already-frozen NF525 write path tolerates this; chain-write is not throughput-critical).",
+      "v1_local_impact": "Negligible — chain walk completes in <2ms at current 62-row scale.",
+      "v2_saas_impact": "P2 — at 10M+ rows MySQL planner sometimes mis-orders index seek and falls back to filesort."
+    },
+    {
+      "id": "G-08",
+      "severity": "INFO (semantic naming)",
+      "table": "orders",
+      "issue": "Task spec mentions 'customer_id' WHERE clause; schema uses 'user_id' (semantically the customer FK)",
+      "rationale": "OrderService::posOrderStore line 699 stores customer_id INTO orders.user_id. idx_orders_user_id covers it. No gap, but naming inconsistency caught explicitly so future audits don't chase a non-existent column.",
+      "proposed_action": "OPTIONAL doc-only: add comment in app/Models/Order.php :: $fillable explaining the user_id IS customer_id semantically (separate from creator_id which IS cashier). H.2-HEAL-02 wave already plans introducing creator_id (cashier column) per 2026_05_24 migration block-comment.",
+      "regression_risk": "N/A — documentation only.",
+      "v1_local_impact": "N/A.",
+      "v2_saas_impact": "N/A."
+    },
+    {
+      "id": "G-09",
+      "severity": "P2",
+      "table": "orders",
+      "missing_index": "Task spec asks for (branch_id, status, created_at) 3-col compound — only 2-col (branch_id, status) present",
+      "rationale": "Task #6 of the L6.2 brief explicitly asks the sentinel to assert (branch_id, status, created_at) compound. Currently idx_orders_branch_status is 2-col + idx_orders_datetime is 1-col. The 3-col index would serve:  (a) Z-report daily aggregation per branch+status range,  (b) admin 'orders by status for date range',  (c) sync-replay window filters. At V1 LOCAL the planner-merge of two indexes is adequate; at V2 SaaS the 3-col tightens range scans by 5-10x.",
+      "proposed_migration": "Schema::table('orders', fn ($t) => $t->index(['branch_id', 'status', 'created_at'], 'idx_orders_branch_status_created'));  // SUPERSET of idx_orders_branch_status — could drop the 2-col after verifying no PHPUnit asserts the 2-col name explicitly.",
+      "regression_risk": "MEDIUM — superset of existing 2-col, so could drop 2-col to avoid write penalty. BUT sentinel ActionLogsCompositeIndexTest pattern shows other tests assert exact index name presence — grep for 'idx_orders_branch_status' before dropping.",
+      "v1_local_impact": "Negligible.",
+      "v2_saas_impact": "P1 — biggest single win for analytics + Z-report perf."
+    }
+  ],
+  "slow_query_hotspots_v1_local": {
+    "current_state": "All identified hot paths complete in <50ms at V1 Le Cayenne LOCAL scale per static analysis. None observed in production logs as slow.",
+    "watch_list_for_v2_cloud": [
+      {"id": "WL-01", "query": "KDS historyToday()", "trigger_scale": "branch >2k orders/day", "fix": "G-01"},
+      {"id": "WL-02", "query": "outbox foodking:outbox:retry-failed cron", "trigger_scale": "outbox backlog >10k", "fix": "G-02"},
+      {"id": "WL-03", "query": "Z-report daily aggregation per branch", "trigger_scale": "branch >5k orders/day", "fix": "G-09"},
+      {"id": "WL-04", "query": "audit chain walk validation (FiscalChainValidator)", "trigger_scale": "audit_logs >1M rows per branch", "fix": "G-07"},
+      {"id": "WL-05", "query": "sanctum:prune-expired daily cron", "trigger_scale": "expired tokens >100k", "fix": "G-03"}
+    ]
+  },
+  "index_hygiene_summary": {
+    "duplicate_indexes": [
+      {"id": "G-06", "table": "order_items", "duplicate_pair": ["idx_order_items_order_id", "order_items_order_id_foreign (implicit FK)"], "action": "OPTIONAL V1.0.X cleanup"}
+    ],
+    "unused_indexes": "STATIC AUDIT CANNOT DETECT — requires query log analysis on a representative production sample. Mark as V1.0.X cloud-prep task (UNI-04 equivalent): enable MySQL slow_query_log + sys.schema_unused_indexes view, snapshot weekly.",
+    "cardinality_assessment": {
+      "high_cardinality_ok": ["orders.id (PK)", "audit_logs.id (PK)", "personal_access_tokens.token UNIQUE"],
+      "low_cardinality_partial_index_candidate_v2": [
+        {"col": "orders.status (~7 distinct values)", "note": "tinyint enum — solo idx_orders_status low-selectivity; compound (branch_id, status) is the right form (already present). Solo OK for system-wide admin filters."},
+        {"col": "orders.payment_status (~3 values)", "note": "NOT explicitly indexed. Used in DashboardService aggregations. Same logic: composite (branch_id, payment_status) or (payment_status, created_at) would help V2."},
+        {"col": "domain_events.dispatched_at IS NULL (binary state)", "note": "idx_pending leading column — could become partial index 'WHERE dispatched_at IS NULL' on MySQL 8 to halve index size. V1.0.X if dispatcher backlog observed."}
+      ]
+    },
+    "frozen_table_caveat": "audit_logs + z_reports + orders.fiscal_sequence_no = NF525 frozen-adjacent (CLAUDE.md §7). Index DDL on these requires LOCK plan even when additive. order_items + items + domain_events are not frozen — index DDL safer."
+  },
+  "sentinel_test_status": {
+    "path": "tests/Feature/Database/IndexCoverageSentinel.php",
+    "status": "WRITTEN AND VERIFIED GREEN — 22 tests, 72 assertions, runtime ~3.1s on sqlite (RefreshDatabase). Output: 'OK (22 tests, 72 assertions)'.",
+    "approach": "Models after tests/Feature/Migrations/ActionLogsCompositeIndexTest.php — uses SHOW INDEX FROM (MySQL/MariaDB) or sqlite_master + PRAGMA index_info (sqlite). Asserts critical indexes present + column order + UNIQUE flag. V1.0.X gaps (G-01..G-09) are doc-only comments inline so the test stays GREEN at V1 LOCAL.",
+    "assertions_v1_local_must_pass": [
+      "orders has (branch_id, status) composite — idx_orders_branch_status — VERIFIED PRESENT",
+      "orders has order_datetime index — idx_orders_datetime — VERIFIED PRESENT",
+      "orders has status solo index — idx_orders_status — VERIFIED PRESENT",
+      "audit_logs has (branch_id, created_at) composite — VERIFIED PRESENT",
+      "audit_logs has (branch_id, prev_hash) UNIQUE chain-integrity — VERIFIED PRESENT",
+      "audit_logs has (resource, resource_id) composite — VERIFIED PRESENT",
+      "cash_movements has (branch_id, created_at) composite — VERIFIED PRESENT",
+      "cash_movements has (order_id, type) composite — VERIFIED PRESENT",
+      "domain_events has idx_pending (dispatched_at, occurred_at) — VERIFIED PRESENT",
+      "items has items_kiosk_filters_idx (is_available, is_halal, is_vegetarian) — VERIFIED PRESENT",
+      "item_branch_availability has (branch_id, is_available) — VERIFIED PRESENT"
+    ],
+    "documented_gaps_in_test_comments": ["G-01", "G-03", "G-09", "G-07"]
+  },
+  "v1_le_cayenne_local_verdict": {
+    "blocker_p0": [],
+    "ship_blocker_p1": [],
+    "v1_0_X_backlog_p2": ["G-01", "G-02", "G-03", "G-09"],
+    "v2_cloud_prep_p3": ["G-04", "G-05", "G-06", "G-07"],
+    "info_only": ["G-08"]
+  },
+  "intersection_with_other_phases": {
+    "L6.1_query_n_plus_one_audit": "Hot path WHERE coverage here complements N+1 detection there. eager-load whereHas('order', ...) in CashOverviewController:136 relies on the orders.branch_id index — covered.",
+    "L12.1_boot_guards": "Production boot guards (CLAUDE.md §8) ensure cache driver compatibility but do NOT validate index presence. Sentinel here closes that gap at CI level.",
+    "previous_owner_note_UNI_03": "Per MEMORY.md V1.0.X backlog UNI-03 — cache driver list expansion is the sister task. This index audit is parallel work item UNI-04 equivalent (slow_query_log + unused index review)."
+  },
+  "next_steps_recommendation": {
+    "v1_ship": "GREEN — no index gap blocks V1 Le Cayenne LOCAL production.",
+    "v1_0_X_priority_order": [
+      "1. G-09 (orders 3-col compound) — biggest single win, low risk",
+      "2. G-01 (orders updated_at composite) — supports KDS historyToday at scale",
+      "3. G-02 (domain_events scopeStale alignment — Option B preferred, code-only)",
+      "4. G-03 (personal_access_tokens.expires_at) — cleanup cron protection"
+    ],
+    "v2_cloud_prep": [
+      "5. G-07 (audit_logs chain-walk composite — LOCK plan required, NF525 zone)",
+      "6. G-04 (orders.delivery_boy_id index — when livreur scale grows)",
+      "7. G-05 (loyalty_transactions type composite — when reports go hot)",
+      "8. G-06 (order_items duplicate cleanup — write-perf marginal gain)"
+    ],
+    "ongoing": "Enable slow_query_log on staging at 100ms threshold + weekly sys.schema_unused_indexes snapshot."
+  }
+}

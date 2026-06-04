@@ -60,7 +60,14 @@ class DeliveryQuoteService
 
         return [
             'distance_km' => round($distanceKm, 3),
-            'delivery_charge' => $this->deliveryFeeService->fromDistanceKm($distanceKm),
+            // [GOAL-COMPLEMENT-2026-05-18 Z-4 LIVREUR-Z4-ARCH-01 P0] DEL-5 wire-up.
+            // The loaded $branch (line 39) MUST flow into the fee calc so the
+            // per-branch delivery_fee_base / per_km / minimum columns added by
+            // migration 2026_05_18_100000 actually apply on the customer quote
+            // path. Without this argument the branch-aware code path was dead
+            // and every customer DELIVERY quote returned the legacy fallback.
+            // CLAUDE.md §9 SaaS multi-tenant invariant.
+            'delivery_charge' => $this->deliveryFeeService->fromDistanceKm($distanceKm, $branch),
         ];
     }
 

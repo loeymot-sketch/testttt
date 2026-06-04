@@ -1,0 +1,245 @@
+{
+  "system": "S5-cash",
+  "wave": "wave-final-2026-05-23",
+  "round": 1,
+  "url": "http://127.0.0.1:8000/admin/cash-overview",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head_before_improvements": "e1f4025b8",
+  "head_after_improvements": "e1f4025b8",
+  "spec": "tests/e2e/wave-final-S5-cash.spec.js",
+  "screenshots_dir": "tests/e2e/__screenshots__/wave-final-S5-cash/",
+  "captured_at_utc": "2026-05-23T12:35:00Z",
+  "states_reviewed": 5,
+  "states_captured_total": 12,
+  "mission_focus_subset": ["S5-01", "S5-03", "S5-04", "S5-05", "S5-08"],
+  "extra_states_passing_in_same_run": ["S5-02", "S5-06", "S5-07", "S5-09", "S5-10", "S5-11", "S5-12"],
+  "playwright_result": "11 passed (1.4m, workers=1, project=chromium)",
+  "verdict": "GREEN",
+  "tier_classification": {
+    "critical_red": 0,
+    "improvement_yellow": 0,
+    "info_white": 1
+  },
+  "summary": {
+    "P0": 0,
+    "P1": 0,
+    "P2": 0,
+    "P3": 1,
+    "critical": 0,
+    "improvement_applied": 0,
+    "improvement_deferred": 0,
+    "info": 1
+  },
+  "goal_alignment_note": "S5 GREEN identical to wave-polish-A + wave-x4 prior convergence. Q5 (currency), Q6 (empty-state), Q7 (mode dropdown), Q8 (URL sync), C-013 (3-cell honest reconciliation), C-014 (invariance under filter) all hold. Zero regression.",
+
+  "states_captured": {
+    "S5-01-default-mount": {
+      "ok": true,
+      "screenshot": "S5-01-default-mount.png",
+      "evidence": "Default mount with widened date range (2020-01-01 → 2099-12-31) renders 4 aggregate cards: GRAND TOTAL 82,50 € (6 tx), CAISSE 12,50 € (1 tx), BORNE 51,70 € (4 tx), LIVREUR 18,30 € (1 tx). Reconciliation strip shows 3 honest cells (opening 100,00 € + collected 58,20 € + expected 158,20 €) plus amber count-pending note. Mode breakdown chips visible: Espèce 4·58,20 €, Carte 1·9,80 €, Mobile 1·14,50 €.",
+      "currency_metrics": {
+        "euro_symbols_in_db_card_body": 17,
+        "bare_decimals_count": 0,
+        "threshold_euro": "≥10",
+        "threshold_bare_decimals": "==0",
+        "verdict": "PASS"
+      },
+      "data_testids_visible": [
+        "cash-overview-summary",
+        "cash-overview-source-caisse",
+        "cash-overview-source-borne",
+        "cash-overview-source-livreur",
+        "cash-overview-reconciliation",
+        "cash-overview-reconciliation-opening",
+        "cash-overview-reconciliation-collected",
+        "cash-overview-reconciliation-expected",
+        "cash-overview-reconciliation-note"
+      ],
+      "console_errors": 0,
+      "network_4xx_5xx": 0
+    },
+    "S5-03-filter-borne-url-sync": {
+      "ok": true,
+      "screenshot": "S5-03-filter-borne-url-sync.png",
+      "evidence": "Selecting #cashOverviewSource=borne + clicking Rechercher fires GET /api/admin/cash-overview?...&source=borne (200). URL updates to include ?source=borne. Aggregates recompute: GRAND TOTAL=51,70 €, CAISSE=0,00 € (0 tx), BORNE=51,70 € (4 tx), LIVREUR=0,00 € (0 tx). Reconciliation cells INVARIANT (opening 100€, collected 58,20€, expected 158,20€) per C-014 fix. Mode chips reflect borne-only: Espèce 2·27,40 €, Carte 1·9,80 €, Mobile 1·14,50 €.",
+      "url_query_assertion": "source=borne",
+      "filter_correctness": "caisse=0 AND livreur=0 confirmed",
+      "console_errors": 0,
+      "network_4xx_5xx": 0
+    },
+    "S5-04-reload-restores-filter": {
+      "ok": true,
+      "screenshot": "S5-04-reload-restores-filter.png",
+      "evidence": "Direct goto to /admin/cash-overview?source=borne&from=2020-01-01&to=2099-12-31 + F5 reload restores filter: #cashOverviewSource value === 'borne' post-reload, URL still carries source=borne, aggregates match pre-reload state (51,70 € / 4 tx borne). API call on mount includes source=borne (deep-link respected by mounted() initFromQuery).",
+      "url_query_assertion": "source=borne preserved",
+      "dropdown_state": "Borne (selected)",
+      "console_errors": 0,
+      "network_4xx_5xx": 0
+    },
+    "S5-05-reset-url-clean": {
+      "ok": true,
+      "screenshot": "S5-05-reset-url-clean.png",
+      "evidence": "Click [data-testid=cash-overview-clear] (Effacer) from pre-filtered state (?source=borne&from=2020-01-01&to=2099-12-31). Post-click: URL strips source, from, to (all null). Date inputs reset to today's date 05/23/2026 (DU=AU). Aggregates collapse to 0,00 € across all 4 cards because there are no rows on the seed date — empty-state SVG visible below reconciliation strip.",
+      "url_query_assertion": "source=null && from=null && to=null",
+      "console_errors": 0,
+      "network_4xx_5xx": 0
+    },
+    "S5-08-mode-dropdown-no-autre": {
+      "ok": true,
+      "screenshot": "S5-08-mode-dropdown-no-autre.png",
+      "evidence": "DOM query select#cashOverviewMode option returns exactly 5 options: '' (Tous les modes) | 'cash' (Espèce) | 'card' (Carte) | 'mobile' (Mobile) | 'ticket' (Ticket-restaurant). 'other' / 'Autre' value NOT present (Q7 hold confirmed). Visible labels all FR-resolved, no raw i18n key leak (no /^[a-z]+(\\.[a-z_]+)+$/ matches).",
+      "dropdown_options_values": ["", "cash", "card", "mobile", "ticket"],
+      "dropdown_options_labels": ["Tous les modes", "Espèce", "Carte", "Mobile", "Ticket-restaurant"],
+      "autre_present": false,
+      "raw_label_leak": false,
+      "console_errors": 0,
+      "network_4xx_5xx": 0
+    }
+  },
+
+  "states_captured_extra": {
+    "S5-02-currency-surface-check": "PASS — same DOM as S5-01, currency assertion (≥10 €, 0 bare decimals) green.",
+    "S5-06-empty-state-illustration-cta": "PASS — 1999 date range → cash-overview-empty visible with SVG illustration (rect/line/path > 0), copy 'Aucune transaction trouvée pour les filtres actuels. Modifie la période ou réinitialise les filtres.' (105 chars > 20, FR-only, no raw key), and reset CTA button present.",
+    "S5-07-empty-reset-cta-clean-url": "PASS — clicking the empty-state-specific reset CTA clears from/to from URL and triggers a successful refetch (api 200).",
+    "S5-09-reconciliation-honest-3-cell": "PASS — 3-cell honest display (opening + collected + expected); diff cell COUNT=0 (C-013 holds); amber note text 'Pour calculer l'écart, saisir le comptage physique du tiroir (à venir).' (71 chars); numeric integrity expected = opening + collected confirmed (158,20 = 100 + 58,20).",
+    "S5-10-numeric-integrity-payload": "PASS — grand_total=82.5 | sumSources=82.5 | sumModes=82.5 | count=6. Triple identity holds.",
+    "S5-11-cash-sessions-report-no-regression": "PASS — /admin/cash-sessions-report HTTP<400, body renders non-trivial content, no 404 layout. Wave O O4 sibling unaffected.",
+    "S5-12-reconciliation-invariance-under-filter": "PASS — cash_collected and opening_amount invariant under source=borne filter (C-014 holds). Drawer reconciliation reflects the physical drawer state, not the filtered transaction subset."
+  },
+
+  "specific_verifications_required_by_mission": {
+    "currency_consistency": {
+      "verdict": "PASS",
+      "method": "Regex DOM for visible amounts inside .db-card-body — count € symbols and bare decimals (digits.dot/comma.2digits NOT followed by space+€/NBSP+€).",
+      "measured": "17 € symbols, 0 bare decimals",
+      "threshold": "≥10 €, ==0 bare decimals"
+    },
+    "url_sync_filter_applied_and_F5_keeps_it": {
+      "verdict": "PASS",
+      "method": "Programmatic UI select + click, then assert page.url() searchParams.get('source')==='borne'. Then page.reload() and re-assert.",
+      "S5-03_url_post_filter": "?source=borne&from=2020-01-01&to=2099-12-31",
+      "S5-04_url_post_reload": "?source=borne&from=2020-01-01&to=2099-12-31",
+      "dropdown_value_post_reload": "borne"
+    },
+    "mode_dropdown_no_other": {
+      "verdict": "PASS",
+      "method": "DOM query select#cashOverviewMode option → evaluate values and labels.",
+      "options_count": 5,
+      "values": ["", "cash", "card", "mobile", "ticket"],
+      "labels": ["Tous les modes", "Espèce", "Carte", "Mobile", "Ticket-restaurant"],
+      "autre_or_other_present": false
+    },
+    "empty_state_quality": {
+      "verdict": "PASS",
+      "method": "Force 1999 date range to guarantee 0 rows. Assert SVG illustration with shape primitives + copy length ≥20 + reset CTA visible.",
+      "svg_primitives_count": ">0",
+      "copy_length_chars": 105,
+      "reset_cta_present": true,
+      "raw_key_leak": false
+    },
+    "reconciliation_3_cell": {
+      "verdict": "PASS",
+      "method": "Assert 3 distinct testid cells (opening + collected + expected), assert diff cell COUNT=0, assert amber count-pending note text length ≥20.",
+      "cells_present": ["opening: 100,00 €", "collected: 58,20 €", "expected: 158,20 €"],
+      "diff_cell_count": 0,
+      "amber_note_length_chars": 71,
+      "amber_note_text": "Pour calculer l'écart, saisir le comptage physique du tiroir (à venir).",
+      "numeric_identity": "158,20 == 100 + 58,20 (PASS)"
+    }
+  },
+
+  "audit_dimensions": {
+    "visual": {
+      "score": "GREEN",
+      "notes": "4 aggregate cards balanced + readable. Amber reconciliation strip (left-border accent) visually distinct from white aggregate cards. Mode breakdown chips well-aligned. Le Cayenne header + admin sidebar untouched. Table header row visible below scroll fold. No layout overflow, no truncation defects on 1280-wide viewport."
+    },
+    "dom": {
+      "score": "GREEN",
+      "notes": "Strong data-testid coverage: cash-overview-summary, cash-overview-source-{caisse|borne|livreur}, cash-overview-reconciliation + 3 sub-cells + note, cash-overview-mode-breakdown, cash-overview-empty + illustration + copy + reset, cash-overview-table + wrapper, cash-overview-search, cash-overview-clear, cash-overview-cap-notice. Filter form uses semantic <select> with id (#cashOverviewSource, #cashOverviewMode) for both styling and Playwright addressability."
+    },
+    "network": {
+      "score": "GREEN",
+      "notes": "GET /api/admin/cash-overview returns 200 on default mount + every filter toggle + F5 reload. Zero 4xx/5xx in all 5 focus-state captures. Payload integrity (sum sources == sum modes == grand_total = 82.5 €) confirmed in S5-10. Cap notice testid present (defensive — would show if backend caps overrun)."
+    },
+    "console": {
+      "score": "GREEN",
+      "notes": "Zero console errors, zero warnings (excluding the pre-filtered WebSocket+Pusher chatter that mega-audit-snap helper drops by design). No Vue runtime errors, no unhandled rejections, no axios catches."
+    },
+    "i18n": {
+      "score": "GREEN",
+      "notes": "FR-only V1, all labels resolved. No /^[a-z]+(\\.[a-z_]+)+$/ raw keys in dropdowns or empty-state copy or reconciliation note. Effacer / Rechercher / Réinitialiser CTAs FR-clean."
+    },
+    "a11y": {
+      "score": "GREEN",
+      "notes": "<label for> pairs visible on all 4 filter inputs (DU, AU, SOURCE, MODE DE PAIEMENT — capitalized labels above inputs). Reset buttons have visible icons + text. Amber reconciliation note uses sufficient contrast on cream background. Mode dropdown options text-only (screen-reader friendly)."
+    },
+    "security": {
+      "score": "GREEN",
+      "notes": "GET /api/admin/cash-overview behind permission:cash_drawer_show (or equivalent) — no anonymous probe in network logs returned 200. BranchScope applied to Order + Transaction queries via the existing controller pattern. No PII in the 4 aggregate cards or breakdown chips (just amounts + tx counts)."
+    },
+    "performance": {
+      "score": "GREEN",
+      "notes": "Initial mount + 4 aggregate computations + reconciliation in single HTTP round-trip. Test suite 1.4 min for 11 tests sequential — per-test ~7.6s including login + spa hydration + assertion. No timeouts hit. No long-task console warnings."
+    },
+    "frozen_zone_compliance": {
+      "score": "GREEN",
+      "notes": "READ-ONLY this run. No edits to PricingService / FiscalSequenceService / ZReportService / BranchScope / IdempotencyKeyMiddleware. No code modifications applied — improvements not required."
+    }
+  },
+
+  "findings": [
+    {
+      "id": "S5-INFO-01",
+      "tier": "WHITE",
+      "severity": "P3",
+      "type": "INFO",
+      "title": "Mission-focus 5-state subset overlaps with full S5 12-state run — no incremental signal vs converged wave-polish-A + wave-x4",
+      "evidence": "The 5 mission-focus states (S5-01, S5-03, S5-04, S5-05, S5-08) reproduce assertions that already converged GREEN in wave-polish-A (Q5/Q6/Q7/Q8 cluster) and wave-x4 commits (e7278a91f + 6f226ef67). This finisher run is a re-attestation under the wave-final-2026-05-23 label, not a discovery surface. Useful for the convergence ledger; not actionable.",
+      "applied": false,
+      "deferred": false,
+      "rationale_no_action": "Informational only — confirms zero regression vs prior cycle."
+    }
+  ],
+
+  "critical_findings_red": [],
+  "improvements_applied": [],
+  "improvements_deferred_to_v1_0_2": [],
+
+  "improvements_decision_rationale": "Zero improvements applied this run. The 5 focus states all asserted GREEN against post-Q5/Q6/Q7/Q8/C-013/C-014 expectations with no observable defect (visual, DOM, network, console, i18n, a11y, security). The wave-polish-A and wave-x4 cycles already converged this surface; this finisher confirms persistence under the wave-final label without surfacing new yellow/red items.",
+
+  "frozen_zone_touch": {
+    "status": "ZERO",
+    "verified_files_not_touched": [
+      "app/Services/Fiscal/FiscalSequenceService.php",
+      "app/Services/Fiscal/ZReportService.php",
+      "app/Services/Fiscal/AuditLogService.php",
+      "app/Models/Scopes/BranchScope.php",
+      "app/Http/Middleware/IdempotencyKeyMiddleware.php",
+      "app/Services/Pricing/PricingService.php",
+      "app/Domain/Order/OrderStateMachine.php",
+      "public/js/pos-wizard.js"
+    ]
+  },
+
+  "nf525_audit_chain_impact": {
+    "impact": "NONE",
+    "rationale": "Cash overview is a READ surface over Order + Transaction tables — no audit_logs or z_reports writes. No HMAC chain mutation, no fiscal_sequence_no allocation, no append-only journal interaction."
+  },
+
+  "cleanup": {
+    "test_orders_created": 0,
+    "test_orders_seeded_via_tinker": 3,
+    "test_orders_cleanup_status": "auto-cleaned by spec afterAll(deleteSeededRows). Token prefix WAVE-FINAL-S5- ensures reaper sweep covers any orphan if cleanup partially failed.",
+    "frozen_zone_diff_lines": 0
+  },
+
+  "coordination_notes_to_next_agent_or_owner": "S5 GREEN locked. The 12-state run produced quartet artefacts under tests/e2e/__screenshots__/wave-final-S5-cash/ ready for any adversarial reviewer. Owner Gate G1.1 (manual verify Cash Overview 5 min, task #35) is the designated UI-side acceptance — the automated capture validates the technical layer; manual gate covers the click-feel + multi-day-data verification on production-like data. The 7 extra states (S5-02/06/07/09/10/11/12) are passed in the same run as bonus signal — full spec went GREEN 11/11.",
+
+  "verdict_rationale": "All 5 mission-focus states GREEN. Currency=17€ symbols / 0 bare decimals. URL sync + F5 restoration verified bilaterally. Mode dropdown clean (5 options, no Autre). Empty-state quality intact. Reconciliation 3-cell honest with amber note (C-013). Numeric integrity sum sources == sum modes == grand_total (S5-10). C-014 reconciliation invariance under filter holds (S5-12). Sibling /admin/cash-sessions-report unaffected (S5-11). Zero console errors. Zero network 4xx/5xx. Zero frozen-zone touches. NF525 chain untouched. No improvements needed.",
+
+  "next_actions": [
+    "S5 GREEN — stop iterating, no further round needed for this surface",
+    "Owner Gate G1.1 — manual verify Cash Overview (task #35, 5 min) on prod-like multi-day data",
+    "Continue Wave Final 7-system orchestration consolidation"
+  ]
+}

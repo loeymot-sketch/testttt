@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Rules\ValidPhone;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 use Illuminate\Foundation\Http\FormRequest;
 
 class WaiterRequest extends FormRequest
@@ -33,10 +34,11 @@ class WaiterRequest extends FormRequest
                 'max:190',
                 Rule::unique("users", "email")->ignore($this->route('waiter.id'))
             ],
+            // [2026-05-18 PR-D T5 heal] V1 GO-LIVE staff password policy.
             'password'              => [
                 $this->route('waiter.id') ? 'nullable' : 'required',
                 'string',
-                'min:6'
+                Password::min(12)->letters()->numbers(),
             ],
             'username'              => [
                 'nullable',
@@ -45,7 +47,7 @@ class WaiterRequest extends FormRequest
             ],
             'device_token'          => ['nullable', 'string'],
             'web_token'             => ['nullable', 'string'],
-            'password_confirmation' => [$this->route('waiter.id') ? 'nullable' : 'required', 'string', 'min:6'],
+            'password_confirmation' => [$this->route('waiter.id') ? 'nullable' : 'required', 'string', 'min:12'],
             'phone'                 => [
                 'nullable',
                 'string',
@@ -63,7 +65,7 @@ class WaiterRequest extends FormRequest
     {
         $validator->after(function ($validator) {
             if ($this->password !== $this->password_confirmation) {
-                $validator->errors()->add('password_confirmation', 'The password confirmation does not match.');
+                $validator->errors()->add('password_confirmation', __('auth.password_confirmation_mismatch'));
             }
         });
     }

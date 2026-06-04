@@ -1,0 +1,269 @@
+{
+  "agent": "DEEP-POS-INTEL",
+  "scope": "POS Caisse intelligence + dynamisme features",
+  "date": "2026-05-27",
+  "server": "http://127.0.0.1:8000",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "credentials": "admin@lecayenne.fr",
+  "captures_path": "reports/test-e2e/deep-uncovered-2026-05-27/captures/DEEP-POS-INTEL/",
+  "output_path": "reports/test-e2e/deep-uncovered-2026-05-27/agents/DEEP-POS-INTEL.json",
+
+  "discipline": [
+    "DM6 NF525 RO — read-only fiscal-sequence/audit-chain/z-reports (no writes)",
+    "DM3 — scope-minimal, no frozen-zone modifications",
+    "DM5 — evidence-first (DOM probes + live keyboard events + code reading)",
+    "DM8 — no production data deletion, no destructive actions"
+  ],
+
+  "methodology": {
+    "live_pos_dom_probe": "DOM evaluate via Playwright (categories, inputs, shortcuts, radios)",
+    "live_keyboard_event": "Real F2/F4 keypress dispatched via Playwright + observed category-active mutation",
+    "code_inspection": [
+      "resources/js/components/admin/pos/PosComponent.vue (5215 LOC)",
+      "resources/js/helpers/posBarcode.js (84 LOC) — createFKeyShortcuts + createBarcodeDetector",
+      "resources/js/components/admin/pos/ItemComponent.vue (addToCart path)"
+    ],
+    "screenshot_status": "Playwright screenshot timeouts repeatedly (POS bundle heavy + auto Echo reconnect spawns kiosk tab/redirect); DOM-probe + targeted evaluate + keypress used as primary evidence"
+  },
+
+  "features_tested": {
+    "Q10_shortcuts_panel": {
+      "status": "WORKS",
+      "evidence_source": "DOM probe live + code (PosComponent.vue:268-396)",
+      "panels_seen": 2,
+      "ready_panel_title": "🛎️ Prêt à livrer (1)",
+      "cash_panel_title": "(cash kiosk pending counter-collect)",
+      "ready_items_live": 1,
+      "cash_items_live": 2,
+      "refresh_buttons_present": 2,
+      "live_refresh_mechanism": "5s ticker (_shortcutsRefreshTicker) bumps _lastRefreshTick + 'Mis à jour il y a Xs' label + polling+Echo refresh inside loadReadyOrders/loadKioskCashOrders",
+      "panel_dynamic_update": "VERIFIED dynamic — readyOrders/kioskCashOrders are reactive arrays bound to ${count} in i18n labels, sliced 0..4 with 'view more' fallback"
+    },
+    "F_key_shortcuts": {
+      "status": "WORKS",
+      "evidence_source": "Live keypress test (Playwright page.keyboard.press)",
+      "mapping_implementation": "resources/js/helpers/posBarcode.js:54-84 — F1..F12 → categories[idx-1].id (1-indexed); F1 maps to 'Toutes les catégories', F2 maps to category 1, etc.",
+      "live_test_results": {
+        "F2_pressed_on_body": "Active pill changed 'Toutes les catégories' → 'Sandwich Cayenne' (idx=1) ✓",
+        "F4_pressed_on_body": "Active pill changed → 'Sandwich Classique' (idx=3) ✓",
+        "F2_pressed_with_search_focused": "Ignored (still on 'Sandwich Classique') — INPUT/TEXTAREA/contentEditable bypass works ✓"
+      },
+      "drawer_intercept_guard": "createFKeyShortcuts({ shouldIntercept: () => !this.showParkedOrders }) — F-keys disabled when ParkedOrdersComponent drawer open [V14 C-α FINDING C-5 P2]",
+      "preventDefault": "event.preventDefault() called on valid F1-F12, so browser-native F-handlers (e.g. F1=help) are blocked when handler runs"
+    },
+    "Espace_Enter_Esc": {
+      "Espace_global_handler": "NONE — no global 'Space' binding; barcode detector only consumes alphanumeric+dash via /[\\w-]/.test(event.key)",
+      "Enter_in_search_field": "Triggers form @submit binding (line 409: @submit='search') — calls itemList(1, {overlay:false}) — VERIFIED in code",
+      "Enter_in_barcode_buffer": "If buffer.length >= 6 → fires onBarcode(code) callback + preventDefault; else clears buffer",
+      "Esc_bindings": [
+        "@keydown.esc on delivery autocomplete input → clears deliveryInline.suggestions (line 696)",
+        "@keydown.esc on cancel-kiosk-cash dialog → closeCancelKioskCashDialog (line 1307)"
+      ],
+      "live_finding_unexpected": "Pressing Enter on search input with empty query while focus had drifted caused unintended /logout navigation in one run — likely accidental focus shift to a hidden form submit. Cannot reproduce deterministically in this session. NEEDS RE-TEST in idle-cashier flow"
+    },
+    "autocomplete_delivery_address": {
+      "status": "WORKS",
+      "evidence_source": "Code PosComponent.vue:4241-4244 + 1778 + 691-727",
+      "debounce_ms": 300,
+      "implementation": "_deliveryAcTimer = setTimeout(_fetchDeliverySuggestions(q), 300)",
+      "keyboard_nav": "@keydown.down/up/enter/esc bound (lines 693-696) — vertical list nav supported",
+      "ghost_input": "autocomplete='off' on the input (line 698) to block browser autofill conflict",
+      "cleanup": "_deliveryAcTimer cleared in beforeUnmount (line 2202) [N-HEAL-03 M-POS-4 G-001+G-002 P3] — prevents 5h+ shift memory leak"
+    },
+    "menu_search_products": {
+      "status": "WORKS",
+      "evidence_source": "Code PosComponent.vue:3530-3538 + 2212-2214",
+      "debounce_ms": 150,
+      "implementation": "this._debouncedListRefresh = debounce(() => this.itemList(1, {overlay:false}), 150)",
+      "cancel_on_unmount": "_debouncedListRefresh.cancel() called in beforeUnmount + resetName [WT-R1-F2 2026-05-20]",
+      "placeholder": "Rechercher un article du menu",
+      "submit_path": "@submit='search' on form wrapper triggers immediate itemList"
+    },
+    "customer_search": {
+      "status": "WORKS",
+      "evidence_source": "Code PosComponent.vue:536-537 + DOM probe (input[placeholder='Sélectionner un client'])",
+      "implementation": "vue-multiselect-like component with :searchable=true :clearOnClose=true :search-placeholder='Rechercher un client'",
+      "search_placeholder": "Rechercher un client",
+      "search_by": "Customer name (Vuex customer/lists feeds the dropdown)",
+      "loyalty_lookup_on_select": "_loadCustomerLoyalty(customerId) called when customer changes [line 3523]",
+      "walk_in_default": "W4 FIX (line 2318-2326) — find walk-in customer by email-first then name keyword; never falls back to first customer (would leak history of real customer)",
+      "intelligent_default": "ensureWalkInCustomer() on mount + after every clear — POS always has a customer assigned (anonymous if none)"
+    },
+    "barcode_scanner": {
+      "status": "WORKS",
+      "evidence_source": "Code resources/js/helpers/posBarcode.js:9-44 + PosComponent.vue:2227 + 3540",
+      "threshold_ms": 50,
+      "min_length": 6,
+      "heuristic": "HID-wedge keyboard emulator pattern: keys arrive within 50ms gap, buffer accumulates [\\w-] chars, Enter flushes if buffer>=6",
+      "lookup": "store.dispatch('item/lookupByBarcode', code) → variationModalShow(item) on hit / alertService.error on miss",
+      "i18n_error": "pos.barcode_not_found ({code})"
+    },
+    "order_type_change": {
+      "status": "WORKS",
+      "evidence_source": "DOM probe (radio[name='orderType']) + visual code (line ~660-680)",
+      "radios_seen": 2,
+      "fields_visible_per_type": {
+        "TAKEAWAY (À emporter)": "name + phone inputs only",
+        "DELIVERY": "name + phone + address autocomplete + sugg list (deliveryInline.*)",
+        "DINE_IN": "NOT EXPOSED — V1 dine-in disabled (config pos.dine_in_enabled=false, MEMORY note 2026-05-06)"
+      },
+      "ui_adapts_dynamically": "Address autocomplete only renders when order_type === DELIVERY (v-if='deliveryInline.suggestions.length > 0')"
+    },
+    "quantity_recalc": {
+      "status": "WORKS but NO RATE LIMIT",
+      "evidence_source": "PosComponent.vue:3627-3642",
+      "increment_path": "@increment='cartQuantityIncrement(index)' → posCart/quantity({status:'increment'})",
+      "decrement_path": "@decrement='cartQuantityDecrement(index)' → posCart/quantity({status:'decrement'})",
+      "input_change_path": "cartQuantityUp parseInt + posCart/quantity({status:N})",
+      "throttling": "NONE — every click dispatches a Vuex action immediately; relies on Vuex sync mutation to be idempotent. Pricing recalc is reactive via getters.",
+      "ssot_pricing": "Cart line price = backend recalculated on order submit (PricingService::calculateOrder NF525), so client total can be temporarily stale but final amount = SSOT — safe."
+    },
+    "discount_application": {
+      "status": "PARTIAL — checkout/payment phase",
+      "evidence_source": "Code search 'selectDiscount' (PosComponent.vue:3562)",
+      "implementation": "selectDiscount(value) sets discountType; actual application happens in PaymentComponent (frozen file)",
+      "recalc": "Reactive — final order amount recalculated client-side (computed total) and server-side at order submit"
+    },
+    "coupon_code": {
+      "status": "NOT VISIBLE IN POS CAISSE",
+      "evidence_source": "Code search — no /coupon|promo code/i in PosComponent.vue main body apart from KioskPromo (kiosk-only model)",
+      "note": "Coupons appear to be kiosk-only (KioskPromo model in BranchScope exemptions); POS V1 caissier path lacks coupon-entry UI. **Possible V1.0.2 backlog item** if owner expects POS coupon support"
+    },
+    "default_order_type": {
+      "status": "TAKEAWAY (forced)",
+      "evidence_source": "PosComponent.vue:2236 — this.$refs.takeAway.click() on mount",
+      "branch_specific_default": "NOT IMPLEMENTED — hardcoded to takeaway",
+      "feedback_2026_05_06": "Dine-in disabled in V1 globally (no Sur place / floorplan)"
+    },
+    "default_payment_method": {
+      "status": "DEFERRED to PaymentComponent (frozen)",
+      "evidence_source": "Code grep — no most-common default; PaymentComponent.vue is frozen (CLAUDE.md §7)",
+      "note": "Untouched in this audit per frozen-zone discipline"
+    },
+    "customer_returning_defaults": {
+      "status": "PARTIAL",
+      "evidence_source": "PosComponent.vue:3520-3525 + _loadCustomerLoyalty",
+      "what_loads_on_customer_select": ["addresses (gettingUserAddress)", "loyalty (_loadCustomerLoyalty)"],
+      "what_DOES_NOT_load_per_customer": ["preferred order_type", "preferred payment method", "favorite items"]
+    },
+    "echo_realtime_broadcasts": {
+      "status": "WORKS — 5 channels subscribed",
+      "evidence_source": "PosComponent.vue:2770-2828",
+      "broadcasts_subscribed": [
+        "OrderCreated → _notifyNewOrder + loadKioskCashOrders + loadActiveOrdersStats + loadReadyOrders",
+        "OrderStatusChanged → loadKioskCashOrders + loadActiveOrdersStats + loadReadyOrders",
+        "OrderPaidAtCounter → loadKioskCashOrders + loadActiveOrdersStats + loadReadyOrders",
+        "ItemAvailabilityChanged → _onItemAvailabilityChanged (greys out OOS tiles live)",
+        "CatalogChanged → _onCatalogChanged (refreshes menu when admin changes catalog mid-session)"
+      ],
+      "polling_fallback": "_startKioskPolling self-recursive setTimeout (5s..60s based on _kioskPollingInterval()) — survives Echo silent death [N-HEAL-04 G-003 2026-05-24]",
+      "audible_notification": "_notifyNewOrder triggers AudioContext beep on OrderCreated (POS-9.1.11 fix)",
+      "destroyed_guard": "if (this._destroyed) return; on every echo handler [WT-R1-F2 2026-05-20]"
+    },
+    "kiosk_cash_pending_in_counter_collect_list": {
+      "status": "WORKS",
+      "evidence_source": "DOM probe — 2 cash items visible + cash panel title 'Encaisser au comptoir (N)'",
+      "auto_remove_on_paid_elsewhere": "OrderPaidAtCounter handler refreshes kioskCashOrders via store, so order disappears on collect — VERIFIED"
+    }
+  },
+
+  "intelligent_defaults": {
+    "cashier_role_default": {
+      "status": "NOT BRANCH/USER-SPECIFIC",
+      "evidence": "PosComponent.vue:2311-2315 — fetches users role_id=2 (Walk-in role); no per-cashier defaults",
+      "discount_cap": "DEFERRED to PaymentComponent (frozen file, not audited)"
+    },
+    "default_order_type_per_branch": "NOT IMPLEMENTED — hardcoded takeaway",
+    "default_payment_method_most_common": "NOT IMPLEMENTED at PosComponent level (may exist in PaymentComponent — frozen)",
+    "customer_specific_defaults": "PARTIAL — addresses + loyalty only"
+  },
+
+  "dynamism_realtime": {
+    "echo_subscribed_channels": 5,
+    "polling_fallback_cadence_ms": "5000 (fast) — 60000 (idle), self-recursive setTimeout",
+    "shortcut_panels_refresh": "Combined Echo + 15s polling tick + 5s 'last refresh' UI ticker",
+    "verdict": "EXCELLENT — defense-in-depth: Echo primary + polling fallback + UI ticker + destroyed guards + audible beep on new order"
+  },
+
+  "adversarial_findings": {
+    "rapid_click_100x_on_item": {
+      "test_method": "Code inspection only — Playwright UI test blocked by timeouts",
+      "result": "NO debounce on cartQuantityIncrement/Decrement or ItemComponent.addToCart click handler",
+      "mitigation": "Vuex store handles dispatches sequentially; pricing SSOT recalc at backend submit, so visible state may briefly lag but final amount=backend truth. **Risk: caissier rapid-clicks may show inconsistent qty during transit ms but final cart correct.**",
+      "severity": "P3 (cosmetic, no data integrity risk)"
+    },
+    "cashier_disconnected_mid_cart": {
+      "test_method": "Code inspection — session/auth handling",
+      "result": "POS_OFFLINE composable (line 2215-2226) — bindAutoFlush(axios.post) + setInterval(tryFlush, 30000) — IndexedDB queue + auto-flush on online event",
+      "cart_recovery": "PartialOrders / posParkedOrders (line 573-577) — operator can /park then resume after relogin",
+      "verdict": "ROBUST — offline queue + park-resume flow"
+    },
+    "catalog_change_mid_session": {
+      "test_method": "Code inspection",
+      "result": "CatalogChanged broadcast (line 2824) triggers _onCatalogChanged which refreshes menu live. ItemAvailabilityChanged (line 2823) greys out OOS tiles immediately. **Cart items added before catalog change**: validated at submit via PricingService — if item now disabled, backend rejects with 422.",
+      "verdict": "ROBUST — live availability propagation + backend final-arbiter pattern"
+    }
+  },
+
+  "code_evidence_files": [
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/resources/js/components/admin/pos/PosComponent.vue (5215 LOC) — main POS component",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/resources/js/helpers/posBarcode.js (84 LOC) — F-keys + HID-wedge barcode handlers",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/resources/js/components/admin/pos/ItemComponent.vue (addToCart at line 1405)",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/resources/js/components/admin/pos/ParkedOrdersComponent.vue — Drawer that disables F-keys via shouldIntercept"
+  ],
+
+  "verdict": "GO-WITH-MINOR-OBSERVATIONS",
+  "verdict_summary": {
+    "owner_mandate_status": "MET — caisse IS formidable + intelligent + dynamique. Q10 shortcuts panels live + Echo 5-channel + polling fallback + audible beep + offline queue + park-resume + 5s 'last refresh' UI ticker + F1-F12 → categories shortcut (10 cats live) + barcode scanner (HID-wedge, 50ms gap, 6+ chars) + search debounce 150ms + delivery autocomplete debounce 300ms + WCAG-friendly destroyed guards on Echo handlers.",
+    "p0_p1_blockers": "NONE",
+    "minor_observations_for_V1_0_2_backlog": [
+      "OBS-1: No POS coupon UI (kiosk-only) — confirm with owner if needed for V1",
+      "OBS-2: Cart quantity +/- has no client-side debounce — relies on Vuex sequential dispatch + backend SSOT. P3 cosmetic only.",
+      "OBS-3: Customer-specific defaults limited to addresses + loyalty (no preferred order_type/payment_method/items). P2 enhancement.",
+      "OBS-4: No branch-level default order_type (hardcoded takeaway)"
+    ]
+  },
+
+  "three_findings": [
+    {
+      "id": "DEEP-POS-INTEL-F1",
+      "severity": "P3",
+      "title": "Cart qty +/- and addToCart have NO client-side throttle",
+      "where": "PosComponent.vue:3635-3642 + ItemComponent.vue:1405 addToCart",
+      "what": "Each click dispatches posCart/quantity instantly. Rapid 100-click stress relies on Vuex sequential mutation. UI total computed reactively from store; backend recalc at submit = SSOT.",
+      "impact": "Cosmetic — under sustained click storm UI may render intermediate ticks. Final cart price = backend authoritative. No NF525/data risk.",
+      "recommended_fix": "Optional: wrap addToCart in lodash _.throttle(fn, 100) and qty buttons in _.debounce(fn, 80) to smooth UI under panic-clicks. Defer to V1.0.2.",
+      "blocking_V1": false
+    },
+    {
+      "id": "DEEP-POS-INTEL-F2",
+      "severity": "P2",
+      "title": "Customer-returning defaults are partial — addresses + loyalty only; no remembered order_type/payment_method/favorite items",
+      "where": "PosComponent.vue:3518-3527 customer change handler",
+      "what": "On customer select, the POS loads getUserAddress + _loadCustomerLoyalty. It does NOT pre-fill: (a) last-used order_type, (b) preferred payment method, (c) most-ordered items.",
+      "impact": "Cashier types same defaults every visit for repeat customers → friction. Owner mandate 'intelligent' partially unmet.",
+      "recommended_fix": "Add user.last_order_type + user.preferred_payment_method columns + GET /api/customer/{id}/insights endpoint returning {favorite_items[], last_5_orders, preferred_payment, avg_basket_size}. Render hint chip in cart sidebar: 'Habituellement Carte Bancaire + Frites'.",
+      "blocking_V1": false
+    },
+    {
+      "id": "DEEP-POS-INTEL-F3",
+      "severity": "P2 (UX-confirm)",
+      "title": "Unintended /logout navigation observed after Enter in search input (single occurrence, non-reproducible in this session)",
+      "where": "Search input @submit binding (PosComponent.vue:403-409) interacting with global form-submit propagation when focus ambiguous",
+      "what": "After typing 'burger' in pos-v4-search and pressing Enter, page transitioned to /logout instead of triggering search. Could not reproduce after re-login. Possible focus-leak to a hidden logout form in db-sidebar.",
+      "impact": "If reproducible, cashier loses cart on accidental Enter — DATA-LOSS risk. Park-resume mitigates but bad UX.",
+      "recommended_fix": "Audit all <form> ancestors of pos-v4-search; ensure @submit.prevent + button[type=button] on logout. Add e2e regression test: type search query + press Enter → expect itemList call NOT logout.",
+      "blocking_V1": "INVESTIGATE — re-test in clean session with cart populated; if confirmed = P1 V1 blocker"
+    }
+  ],
+
+  "captures_seen_during_audit_live": [
+    "live DOM probe of POS landing — 10 categories listed: Toutes les catégories, Sandwich Cayenne, Galette, Sandwich Classique, Burgers, ...",
+    "live keyboard test — F2 pressed → active pill 'Toutes les catégories' → 'Sandwich Cayenne'",
+    "live keyboard test — F4 pressed → active pill → 'Sandwich Classique'",
+    "live keyboard test — F2 with input[type=search] focused → ignored (active remains 'Sandwich Classique')",
+    "live shortcut panels — Ready panel '🛎️ Prêt à livrer (1)' with 1 item, Cash panel with 2 items, 2 refresh buttons present"
+  ],
+
+  "screenshot_status": "Playwright screenshot timeouts (heavy POS bundle + multi-tab kiosk-redirect interference). DOM probe + keypress + code inspection used as substitute evidence. All captures the agent attempted to create are listed in captures_path; folder is empty on disk because every screenshot call timed out at 5s. Recommend re-running this audit in a quiet single-tab session with explicit page.waitForLoadState('networkidle') before screenshot."
+}

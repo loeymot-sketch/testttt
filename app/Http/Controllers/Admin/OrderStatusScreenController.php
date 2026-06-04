@@ -7,6 +7,7 @@ use App\Enums\Status;
 use App\Models\Branch;
 use App\Http\Resources\CDSPopularItemResource;
 use App\Http\Resources\CDSOrderDetailsResource;
+use App\Http\Resources\PosShortcutOrderResource;
 use App\Services\OrderStatusScreenOrderService;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
@@ -24,7 +25,11 @@ class OrderStatusScreenController extends AdminController
     public function index(): \Illuminate\Http\Response | \Illuminate\Http\Resources\Json\AnonymousResourceCollection | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory
     {
         try {
-            return CDSOrderDetailsResource::collection($this->orderStatusScreenOrderService->list());
+            // [test-e2e fix A-001 round-1 2026-05-21] PosShortcutOrderResource
+            // exposes `total` so the authenticated POS shortcut widget can
+            // render the right amount on Prêt-à-livrer rows. The public wall
+            // display (publicIndex) keeps CDSOrderDetailsResource (no PII).
+            return PosShortcutOrderResource::collection($this->orderStatusScreenOrderService->list());
         } catch (HttpException $http) {
             throw $http;
         } catch (Exception $exception) {

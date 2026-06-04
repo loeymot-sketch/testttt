@@ -20,7 +20,10 @@ class SubscriberController extends AdminController
     {
         parent::__construct();
         $this->subscriberService = $subscriberService;
-        $this->middleware(['permission:subscribers'])->only('index', 'destroy', 'export');
+        // [GOAL-2026-05-30 SUB-1] Gate sendEmail too: POST /admin/subscriber/send-email is a
+        // mutating mass-email to the entire subscriber base; it was missing from the only()
+        // list, so any authenticated staff (without permission:subscribers) could trigger it.
+        $this->middleware(['permission:subscribers'])->only('index', 'destroy', 'export', 'sendEmail');
     }
 
     public function index(PaginateRequest $request): \Illuminate\Http\Response | \Illuminate\Http\Resources\Json\AnonymousResourceCollection | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory

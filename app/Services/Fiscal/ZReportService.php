@@ -357,15 +357,33 @@ class ZReportService
             ->get();
 
         $totalTtc = 0.0;
-        $totalHt  = 0.0;
-        $totalTva = 0.0;
         $byMethod = [];
-        $byTaxRate = [];
         $orderCount = 0;
 
         foreach ($orders as $o) {
-            $this->applyOrderToTotals($o, 1, $totalTtc, $totalHt, $totalTva, $byMethod);
+            $this->applyOrderToTotals($o, 1, $totalTtc, $byMethod);
             $orderCount++;
+        }
+
+        // [LOCK_ZREPORT_REFUND_NETTING / P0 #2 — 2026-05-29] Counter-entry refund
+        // mirrors (RefundWithCounterEntryService) are created IN the current window
+        // (created_at = now) with a pre-NEGATED total + parent_order_id set, so they
+        // miss BOTH the positive $orders loop above (RETURNED is in $terminalStatuses,
+        // excluded) AND the post-Z adjustment block below (which requires
+        // created_at <= $from). Without this, the refund's negative reached the signed
+        // total NOWHERE → the daily Z overstated revenue by the refunded amount
+        // (campaign repro: total_ttc=0 vs expected -55). Apply each here with its
+        // already-negated total so the refund nets into the signed total_ttc/ht/tva.
+        // No double-count: the post-Z block needs created_at<=$from (mirror is
+        // in-window) and $preZRefundCount is count-only. Status-flip-in-place refunds
+        // (parent_order_id NULL) stay evidence-only per M-08 — untouched here. The
+        // mirror is already in $preZRefundCount, so refund_count is unchanged.
+        $counterEntryRefundMirrors = (clone $windowQuery)
+            ->where('status', OrderStatus::RETURNED)
+            ->whereNotNull('parent_order_id')
+            ->get();
+        foreach ($counterEntryRefundMirrors as $mirror) {
+            $this->applyOrderToTotals($mirror, 1, $totalTtc, $byMethod);
         }
 
         // M-08 policy:
@@ -397,34 +415,41 @@ class ZReportService
                 ->get();
 
             foreach ($postZCanceled->concat($postZReturned) as $o) {
-                $this->applyOrderToTotals($o, -1, $totalTtc, $totalHt, $totalTva, $byMethod);
+                $this->applyOrderToTotals($o, -1, $totalTtc, $byMethod);
             }
         }
 
         $cancelCount = $preZCancelCount + $postZCanceled->count();
         $refundCount = $preZRefundCount + $postZReturned->count();
 
-        // [POS-9-H.2.8 / F-B6]
-        // Populate total_by_tax_rate by summing order_items.tax_amount
-        // grouped by tax_rate, scoped to the exact same order set we
-        // just aggregated. Using order_items (the already-persisted,
-        // server-recomputed pricing from POS-9.1.8) avoids re-running
-        // PricingService and guarantees consistency with the individual
-        // receipts that are referenced by fiscal_sequence_no.
-        $byTaxRate = [];
-        $byTaxRate = $this->taxBreakdownForOrders($orders->pluck('id')->all(), 1, $byTaxRate);
-        $adjustmentOrderIds = $postZCanceled->concat($postZReturned)->pluck('id')->all();
-        $byTaxRate = $this->taxBreakdownForOrders($adjustmentOrderIds, -1, $byTaxRate);
+        // [LOCK_ZREPORT_F1_DISCOUNT_NETTING — 2026-05-31] total_by_tax_rate is the
+        // SINGLE SOURCE OF TRUTH for the tax decomposition: total_tva is derived from
+        // it (array_sum) and total_ht from total_ttc - total_tva, so the NF525 identity
+        // total_tva == Σ total_by_tax_rate holds EXACTLY in the signed payload (and
+        // total_ttc == total_ht + total_tva by construction). Refund mirrors are
+        // included in the breakdown call too, so they contribute symmetrically to both
+        // total_tva and per-rate buckets (closes a pre-existing asymmetry where mirrors
+        // hit total_tva via applyOrderToTotals but never reached byTaxRate). Each order
+        // is scaled by its own discount-netting ratio inside taxBreakdownForOrders, so
+        // F1 (TVA on the post-discount base) is applied uniformly here.
+        $byTaxRate = $this->taxBreakdownForOrders($orders, 1, []);
+        $byTaxRate = $this->taxBreakdownForOrders($counterEntryRefundMirrors, 1, $byTaxRate);
+        $adjustmentOrders = $postZCanceled->concat($postZReturned);
+        $byTaxRate = $this->taxBreakdownForOrders($adjustmentOrders, -1, $byTaxRate);
         $byTaxRate = array_map(fn ($v) => round((float) $v, 2), $byTaxRate);
         ksort($byTaxRate);
+
+        $totalTva = (float) array_sum($byTaxRate);
+        $totalTtcRounded = round($totalTtc, 2);
+        $totalHt = round($totalTtcRounded - $totalTva, 2);
 
         // Normalise rounding to 2 decimals so the signed aggregates are stable.
         $byMethod = array_map(fn ($v) => round((float) $v, 2), $byMethod);
         ksort($byMethod);
 
         return [
-            'total_ttc'         => round($totalTtc, 2),
-            'total_ht'          => round($totalHt,  2),
+            'total_ttc'         => $totalTtcRounded,
+            'total_ht'          => $totalHt,
             'total_tva'         => round($totalTva, 2),
             'total_by_method'   => $byMethod,
             'total_by_tax_rate' => $byTaxRate,
@@ -627,32 +652,66 @@ class ZReportService
         return $this->sealing->signZReport($branchId, $prevHash, $sequenceNo, $aggregates, $closedAt);
     }
 
-    private function applyOrderToTotals(Order $order, int $sign, float &$totalTtc, float &$totalHt, float &$totalTva, array &$byMethod): void
+    /**
+     * [LOCK_ZREPORT_F1_DISCOUNT_NETTING 2026-05-31] Per-order TTC + byMethod only.
+     * TVA / HT are no longer computed here — they are derived from total_by_tax_rate
+     * (the SSOT for the tax decomposition) in aggregate(), so the NF525 identity
+     * total_tva == Σ total_by_tax_rate holds exactly in the signed payload.
+     */
+    private function applyOrderToTotals(Order $order, int $sign, float &$totalTtc, array &$byMethod): void
     {
-        $totalTtc += $sign * (float) ($order->total ?? 0);
-        $totalHt  += $sign * (float) ($order->total_ht ?? ($order->subtotal ?? 0));
-        $totalTva += $sign * (float) ($order->total_tax ?? 0);
+        $ttc = (float) ($order->total ?? 0);
+        $totalTtc += $sign * $ttc;
 
         $method = (string) ($order->pos_payment_method ?: ($order->payment_method ?: 'unknown'));
-        $byMethod[$method] = ($byMethod[$method] ?? 0.0) + ($sign * (float) ($order->total ?? 0));
+        $byMethod[$method] = ($byMethod[$method] ?? 0.0) + ($sign * $ttc);
     }
 
     /**
-     * @param array<int, int> $orderIds
+     * [LOCK_ZREPORT_F1_DISCOUNT_NETTING] Discount-netting ratio for an order:
+     * (subtotal - discount) / subtotal, clamped to [0,1]. Returns 1.0 when there is
+     * no discount (or no positive subtotal) so non-discount aggregation is unchanged.
+     * Scaling the immutable pre-discount per-line TVA by this ratio yields the
+     * fiscally-correct post-discount TVA (proportional allocation across rate buckets).
+     */
+    private function orderDiscountRatio(Order $order): float
+    {
+        $subtotal = (float) ($order->subtotal ?? 0);
+        $discount = (float) ($order->discount ?? 0);
+        if ($discount <= 0.0 || $subtotal <= 0.0) {
+            return 1.0;
+        }
+
+        return max(0.0, min(1.0, ($subtotal - $discount) / $subtotal));
+    }
+
+    /**
+     * @param iterable<\App\Models\Order> $orders
      * @param array<string, float> $byTaxRate
      * @return array<string, float>
+     *
+     * [LOCK_ZREPORT_F1_DISCOUNT_NETTING] Sums per-rate TVA across the given orders,
+     * scaling each order's per-rate tax_amount by its discount-netting ratio so a
+     * discounted order contributes its POST-discount TVA per bucket (F1 fix). The
+     * GROUP BY is now per (order_id, tax_rate) so the per-order ratio can be applied
+     * before summation. For non-discount orders the ratio is 1.0 → identical to the
+     * prior straight SUM, so existing breakdowns are byte-identical.
      */
-    private function taxBreakdownForOrders(array $orderIds, int $sign, array $byTaxRate): array
+    private function taxBreakdownForOrders(iterable $orders, int $sign, array $byTaxRate): array
     {
-        if ($orderIds === []) {
+        $ratios = [];
+        foreach ($orders as $o) {
+            $ratios[(int) $o->id] = $this->orderDiscountRatio($o);
+        }
+        if ($ratios === []) {
             return $byTaxRate;
         }
 
         $rows = DB::table('order_items')
-            ->selectRaw('tax_rate, SUM(tax_amount) AS total_tax_for_rate')
-            ->whereIn('order_id', $orderIds)
+            ->selectRaw('order_id, tax_rate, SUM(tax_amount) AS total_tax_for_rate')
+            ->whereIn('order_id', array_keys($ratios))
             ->whereNotNull('tax_rate')
-            ->groupBy('tax_rate')
+            ->groupBy('order_id', 'tax_rate')
             ->get();
 
         foreach ($rows as $r) {
@@ -660,8 +719,9 @@ class ZReportService
             // inconsistent precision ("10", "10.00", "5.5"), so we
             // cast through float to canonicalise and then back to
             // string for a stable JSON-encoded signed payload.
-            $key = rtrim(rtrim(number_format((float) $r->tax_rate, 2, '.', ''), '0'), '.');
-            $byTaxRate[$key] = ($byTaxRate[$key] ?? 0.0) + ($sign * (float) $r->total_tax_for_rate);
+            $key   = rtrim(rtrim(number_format((float) $r->tax_rate, 2, '.', ''), '0'), '.');
+            $ratio = $ratios[(int) $r->order_id] ?? 1.0;
+            $byTaxRate[$key] = ($byTaxRate[$key] ?? 0.0) + ($sign * (float) $r->total_tax_for_rate * $ratio);
         }
 
         return $byTaxRate;

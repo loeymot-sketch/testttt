@@ -1,0 +1,178 @@
+{
+  "task": "Wave E T5 — BACKUP + Restore DR drill",
+  "executed_at": "2026-05-29T00:52+02:00",
+  "executor": "Claude Code Opus 4.7 (1M)",
+  "scope": "read+test only on local dev DB (foodking @ MySQL 9.6.0)",
+  "verdict": "BACKUP_DR_READY",
+  "confidence": "HIGH",
+
+  "tests": {
+    "T1_backup_exists_and_integrity": {
+      "status": "PASS",
+      "evidence": {
+        "storage/backups/db-daily/": [
+          {"file": "daily-2026-05-21.sql.gz", "size_bytes": 91136, "mtime": "21 mai 06:50"},
+          {"file": "daily-2026-05-23.sql.gz", "size_bytes": 165888, "mtime": "23 mai 23:01"},
+          {"file": "daily-2026-05-28.sql.gz", "size_bytes": 76800, "mtime": "28 mai 11:15"},
+          {"file": "daily-2026-05-29.sql.gz", "size_bytes": 169619, "mtime": "29 mai 00:51 (this drill)"}
+        ],
+        "gzip_integrity": {
+          "daily-2026-05-21.sql.gz": "OK",
+          "daily-2026-05-23.sql.gz": "OK",
+          "daily-2026-05-28.sql.gz": "OK",
+          "daily-2026-05-29.sql.gz": "OK (created mid-drill)"
+        },
+        "head_of_sql": "MySQL dump 10.13 Distrib 9.6.0 macos26.2 arm64 — Database: foodking — Server 9.6.0 — utf8mb4"
+      }
+    },
+
+    "T2_artisan_command": {
+      "status": "PASS",
+      "evidence": {
+        "command_signature": "foodking:backup-daily {--min-bytes=1024} {--warn-bytes=1048576} {--dry-run} {--no-rotate} {--keep-daily=30} {--keep-monthly=12} {--keep-quarterly=24}",
+        "command_class": "app/Console/Commands/Backup/RunDailyBackup.php",
+        "dry_run_output": "[backup-daily] driver=mysql target=daily-2026-05-29.sql.gz — [dry-run] would dump mysqldump",
+        "live_run_output": "[backup-daily] driver=mysql target=daily-2026-05-29.sql.gz — dump under warn-bytes threshold (169619 < 1048576) — plausible on fresh local DB — OK wrote daily-2026-05-29.sql.gz (169619 bytes)",
+        "observability_log_event": "{\"event\":\"backup.daily.ok\",\"file\":\".../daily-2026-05-29.sql.gz\",\"size_bytes\":169619,\"driver\":\"mysql\"}",
+        "design_features_verified": [
+          "Atomic publish via .partial → rename()",
+          "Idempotent: re-running on same day skips dump + still rotates",
+          "Failure marker storage/backups/.last-failure (absent = healthy)",
+          "Snapshot consistency: --single-transaction (InnoDB no-lock)",
+          "Sanity floor: --min-bytes=1024 hard fail / --warn-bytes=1MB soft warn",
+          "GTID fix: --set-gtid-purged=OFF (drill 2026-05-21 caught + fixed)",
+          "1h timeout on mysqldump",
+          "MYSQL_PWD env (password never on argv)"
+        ]
+      }
+    },
+
+    "T3_schema_integrity": {
+      "status": "PASS",
+      "evidence": {
+        "create_table_count_in_backup": 88,
+        "table_count_source_db": 88,
+        "match": true,
+        "method": "gunzip -c daily-2026-05-29.sql.gz | grep -c 'CREATE TABLE'"
+      }
+    },
+
+    "T4_critical_tables_presence": {
+      "status": "PASS",
+      "evidence": {
+        "expected_tables": ["audit_logs", "z_reports", "orders", "order_items", "items", "branches", "users"],
+        "found_in_backup": ["audit_logs", "branches", "items", "order_items", "orders", "users", "z_reports"],
+        "match": "7/7"
+      }
+    },
+
+    "T5_restore_drill_on_sandbox": {
+      "status": "PASS",
+      "evidence": {
+        "method": "DROP+CREATE foodking_restore_test sandbox → gunzip -c | mysql foodking_restore_test → compare row counts + NF525 chain head",
+        "sandbox_db": "foodking_restore_test (created + restored + verified + dropped within drill)",
+        "mysqldump_restore_exit_code": 0,
+        "row_count_comparison": {
+          "audit_logs":   {"source": 126, "restore": 126, "diff": 0},
+          "z_reports":    {"source": 5,   "restore": 5,   "diff": 0},
+          "orders":       {"source": 191, "restore": 191, "diff": 0},
+          "items":        {"source": 59,  "restore": 59,  "diff": 0},
+          "tables_total": {"source": 88,  "restore": 88,  "diff": 0}
+        },
+        "nf525_chain_head": {
+          "source_last_id": 126,
+          "source_last_hash_prefix": "e2d58bdd5d048385",
+          "restore_last_id": 126,
+          "restore_last_hash_prefix": "e2d58bdd5d048385",
+          "bit_identical": true,
+          "interpretation": "NF525 hash chain head bit-identical between source and restored DB. Chain integrity preserved end-to-end through backup → restore."
+        },
+        "cleanup": "DROP DATABASE foodking_restore_test executed OK"
+      }
+    },
+
+    "T6_cron_schedule": {
+      "status": "PASS",
+      "evidence": {
+        "kernel_definition": "app/Console/Kernel.php:122 — $schedule->command('foodking:backup-daily')->dailyAt('03:00')->name('foodking-backup-daily')->withoutOverlapping(60)->onOneServer();",
+        "timezone": "Europe/Paris (config/app.php: 'timezone' => env('TIMEZONE') ?: 'Europe/Paris')",
+        "schedule_list_output": "0  3  * * *  php artisan foodking:backup-daily ...  Next Due: dans 2 heures",
+        "withoutOverlapping_minutes": 60,
+        "onOneServer": true,
+        "retention_design": {
+          "daily": "30 days (storage/backups/db-daily/daily-YYYY-MM-DD.sql.gz)",
+          "monthly": "12 months (storage/backups/db-monthly/monthly-YYYY-MM.sql.gz, copied day-1 of month)",
+          "quarterly": "24 quarters = 6 years (storage/backups/db-quarterly/quarterly-YYYY-QN.sql.gz, copied day-1 of Jan/Apr/Jul/Oct) — satisfies NF525 Article L102 B CGI"
+        },
+        "rotation_idempotency": "Verified in code: copy is no-op if monthly/quarterly file already exists; prune by mtime (robust to clock drift); orphan .partial cleanup >24h old"
+      }
+    }
+  },
+
+  "owner_setup_status": {
+    "crontab_line_required": "* * * * * cd /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt && php artisan schedule:run >> /dev/null 2>&1",
+    "doc": "scripts/db/CRONTAB_SETUP.md",
+    "verification_command": "crontab -l | grep schedule:run",
+    "claim_in_BRAIN": "Wave Polish Final 2026-05-21 — Q14 owner decision shipped + restore drill PASS (scripts/db/RESTORE_DRILL_2026-05-21.md)",
+    "today_drill_aligns_with": "scripts/db/RESTORE_DRILL_2026-05-21.md — same methodology, fresh data, same result class"
+  },
+
+  "frozen_zone_compliance": {
+    "files_touched_by_this_drill": [
+      "storage/backups/db-daily/daily-2026-05-29.sql.gz (NEW — backup artifact, expected output)",
+      "storage/logs/observability-2026-05-29.log (APPENDED — backup.daily.ok + backup.daily.size_low events)",
+      "reports/test-e2e/supervisor-wave-e-2026-05-29/BACKUP-DR/findings.json (NEW — this report)"
+    ],
+    "frozen_files_modified": "0 — drill is read+restore-to-sandbox only; sandbox dropped at end",
+    "nf525_chain_modified": "0 — mysqldump SELECT-only; BEFORE DELETE triggers irrelevant",
+    "production_db_modified": "0 — restore target was disposable sandbox foodking_restore_test"
+  },
+
+  "issues_found": [
+    {
+      "severity": "INFO",
+      "id": "BACKUP-INFO-01",
+      "title": "Backup size 169KB under warn-bytes 1MB threshold",
+      "details": "Today's backup is 169619 bytes (~170KB), triggering soft warn (warn-bytes=1MB default). This is expected on a dev/local DB with sparse data (126 audit_logs, 5 z_reports, 191 orders, 59 items). For a real Le Cayenne production DB after a few weeks of operation, the size will naturally cross 1MB and warn will silence. Already logged as backup.daily.size_low — observability lane working as designed.",
+      "action_required": "None for V1 dev. In production, monitor that warn ceases ~2-4 weeks post-go-live; if it persists, investigate (could indicate truncation or empty DB).",
+      "blocker": false
+    },
+    {
+      "severity": "INFO",
+      "id": "BACKUP-INFO-02",
+      "title": "Missing daily backups for 2026-05-22 and 2026-05-24..27",
+      "details": "Daily dir contains only 21, 23, 28, 29. Missing 22, 24, 25, 26, 27. Most likely because: (a) cron wasn't enabled in user's crontab between those dates, OR (b) machine off / Laravel scheduler not invoked on those days. The Wave Polish Final 2026-05-21 doc notes 'owner setup required' for cron — owner physical action.",
+      "action_required": "Owner: verify `crontab -l | grep schedule:run` returns the schedule:run line. If missing, paste from scripts/db/CRONTAB_SETUP.md. Already part of '3 owner-physical actions on-site' tracked in BRAIN bootstrap (alongside .env flip + Ansible CVP0-1).",
+      "blocker": false
+    },
+    {
+      "severity": "INFO",
+      "id": "BACKUP-INFO-03",
+      "title": "Monthly + quarterly dirs empty (expected on dev)",
+      "details": "db-monthly/ and db-quarterly/ contain only .gitkeep. This is expected because today is 2026-05-29, not day-1 of a month/quarter. The rotation logic only copies on day-1 (Kernel docblock + RunDailyBackup::rotate verified in code review).",
+      "action_required": "Next month rollover (2026-06-01) will create monthly-2026-06.sql.gz. Next quarter rollover (2026-07-01) will create quarterly-2026-Q3.sql.gz. No action.",
+      "blocker": false
+    }
+  ],
+
+  "summary": {
+    "verdict": "BACKUP_DR_READY",
+    "all_6_tests_pass": true,
+    "restore_drill_today_PASS": true,
+    "nf525_chain_bit_identical_after_restore": true,
+    "row_count_diff_total": 0,
+    "schema_table_diff": 0,
+    "critical_tables_7_of_7": true,
+    "cron_registered": true,
+    "timezone_correct": "Europe/Paris",
+    "retention_compliant_nf525": "24 quarters = 6 years (Article L102 B CGI)",
+    "observability_log_entries": true,
+    "failure_marker_absent": true,
+    "drill_doc_proof_exists": "scripts/db/RESTORE_DRILL_2026-05-21.md",
+    "ship_blocker": false,
+    "post_cycle_recommendation": "Owner physical action — confirm crontab schedule:run line present on production box; gap of 5 missing daily files (22/24/25/26/27) hints cron may have been intermittent. Already in tracked BRAIN owner-physical-actions backlog."
+  },
+
+  "budget_used_minutes": 22,
+  "word_count_estimate": 790
+}

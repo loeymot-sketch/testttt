@@ -1,0 +1,379 @@
+{
+  "agent": "Z2 Domain Event + Outbox",
+  "wave": "BRAIN-WAVE-P 2026-05-24",
+  "owner_mandate": "ultra raisonne structure et synchronisation — focus event-driven sync mesh",
+  "discipline": "READ-ONLY · file:line citations · counts verified vs BRAIN.md claims",
+  "scope_root": "app/Events + app/Listeners + app/Domain/Events + app/Jobs/DispatchDomainEventsJob.php + app/Providers/EventServiceProvider.php",
+
+  "events_total": 37,
+  "events_total_breakdown": {
+    "domain_business_events": 24,
+    "notification_send_events": 12,
+    "observability_events": 1,
+    "note": "37 = find app/Events -maxdepth 1 -name '*.php' (excluding Concerns/)",
+    "concerns_trait_file": "app/Events/Concerns/DispatchableAfterCommit.php"
+  },
+
+  "listeners_total": 42,
+  "listeners_total_breakdown": {
+    "wired_in_event_service_provider": 41,
+    "service_invoked_misplaced": 1,
+    "service_invoked_listener_file": "app/Listeners/DispatchKdsTicket.php — invoked as service from app/Services/KitchenDisplaySystemOrderService.php:33 (architectural smell: 'Listener'-named class used imperatively, not registered in $listen array)"
+  },
+
+  "after_commit_pattern_count": 24,
+  "after_commit_pattern_details": {
+    "implementation": "Event-side trait `App\\Events\\Concerns\\DispatchableAfterCommit` (app/Events/Concerns/DispatchableAfterCommit.php:27-74)",
+    "intercepts_static_dispatch": "Yes — overrides dispatch()/dispatchIf/dispatchUnless to call DB::afterCommit() when transactionLevel() > 0",
+    "drops_on_rollback": "Yes — closure on DB::afterCommit never fires if outer transaction rolls back",
+    "events_using_trait": [
+      "BranchStatusChanged.php:_use_trait",
+      "CatalogChanged.php:5+_trait",
+      "CategoryCreated.php:9",
+      "CategoryDeleted.php:9",
+      "CategoryUpdated.php:_trait",
+      "ComposerProfileChanged.php:_trait",
+      "ComposerProfilePublished.php:12",
+      "CouponChanged.php:16",
+      "IngredientAvailabilityChanged.php:11",
+      "ItemAvailabilityChanged.php:23",
+      "ItemCreated.php:_trait",
+      "ItemDeleted.php:9",
+      "ItemExtraAvailabilityChanged.php:21",
+      "ItemUpdated.php:19",
+      "ItemVariationAvailabilityChanged.php:21",
+      "OrderCanceled.php:19",
+      "OrderCreated.php:_trait",
+      "OrderPaidAtCounter.php:10",
+      "OrderPaymentStatusChanged.php:_trait",
+      "OrderStatusChanged.php:_trait",
+      "OrderTableChanged.php:27",
+      "RefundCreated.php:20",
+      "SettingsUpdated.php:_trait",
+      "StockLevelChanged.php:_trait"
+    ],
+    "events_NOT_using_trait_intentional": [
+      "OutboxBroadcastSwallowedEvent.php — fired inside DB::afterCommit hook already, doesn't need trait",
+      "StockDecrementFailedEvent.php — fired via event(new …) inside DB::afterCommit hook in DecrementStockOnOrderCreated.php:46",
+      "12 Send* notification events (SendOrderMail/Sms/Push, SendResetPassword, SendSmsCode, etc.) — outside transaction by design, fire via Notification jobs"
+    ],
+    "BRAIN_drift_finding": {
+      "brain_claim": "I.4 finding mentions '11 ShouldHandleEventsAfterCommit listeners'",
+      "empirical_truth": "ZERO listeners implement Illuminate\\Contracts\\Events\\ShouldHandleEventsAfterCommit (grep -r returned no matches)",
+      "actual_implementation": "Pattern is EVENT-SIDE: 24 events use `App\\Events\\Concerns\\DispatchableAfterCommit` trait",
+      "impact": "Anyone reading BRAIN expects to find ShouldHandleEventsAfterCommit listener-interface adoption — they won't. The semantics are equivalent (broadcast deferred until commit) but the lookup keyword differs",
+      "remediation": "Update BRAIN.md to reflect event-side trait + add a cross-reference note in `app/Listeners/_README.md` (or CLAUDE.md §9) explaining the chosen direction"
+    }
+  },
+
+  "orphan_events": [
+    {
+      "event": "App\\Events\\ComposerProfilePublished",
+      "dispatched_at": "app/Services/Composer/ComposerProfileService.php:168 — `ComposerProfilePublished::dispatch((int) $fresh->id)`",
+      "wired_in_event_service_provider": false,
+      "evidence": "grep -n 'ComposerProfilePublished' app/Providers/EventServiceProvider.php returned ZERO matches",
+      "impact": "Admin publishes a composer profile — event fires silently, no broadcast, no cache invalidation. Sibling event `ComposerProfileChanged` IS wired (EventServiceProvider.php:269-272) so the publish flow on line 169 also dispatches it; the `ComposerProfilePublished` event becomes dead-typed-signal. Still a code smell — either wire it (broadcast publication separately to admin UI) or remove the dispatch.",
+      "severity": "P2",
+      "note": "ComposerProfileService.php:168 also dispatches ComposerProfileChanged on line 169 with change_type='published' so the catalog broadcast cascade IS triggered — but consumers cannot react specifically to a 'profile went live' event"
+    }
+  ],
+
+  "orphan_listeners": [
+    {
+      "listener": "App\\Listeners\\DispatchKdsTicket",
+      "file": "app/Listeners/DispatchKdsTicket.php:11",
+      "wired_in_event_service_provider": false,
+      "invoked_as": "service — app/Services/KitchenDisplaySystemOrderService.php:29-33 holds a DispatchKdsTicket instance and calls $this->kdsTicketDispatcher->dispatch($order, $oldStatus, $newStatus)",
+      "internally_dispatches": "OrderStatusChanged::dispatch($order, $oldStatus, $newStatus) at app/Listeners/DispatchKdsTicket.php:17",
+      "severity": "P3 — architectural smell only",
+      "rationale": "Class is located under app/Listeners/ which conventionally signals an event-listener role. The class is actually a domain service. Either move it to app/Services/Kds/ or rename to reflect imperative dispatch role."
+    }
+  ],
+
+  "rethrow_in_listener": [
+    {
+      "finding": "NO LISTENER currently re-throws on exception",
+      "verification": "grep -rn 'throw new\\|throw \\$' app/Listeners/ returned ZERO matches (excluding test/ paths)",
+      "context": "EventServiceProvider listener-position commentary at lines 137-146 + 174-196 documents that Persist*ToOutbox listeners MUST run BEFORE side-effect listeners (FCM, loyalty, stock release) because Laravel sync dispatcher (vendor/.../Events/Dispatcher.php:233-269) halts cascade on listener throw. Currently all listeners wrap their body in try/catch envelopes — discipline confirmed.",
+      "exemplars": [
+        "PersistOrderPaymentStatusChangedOnRefundCreated.php:79-138 — DB::transaction internal + dispatch wrapped in nested try/catch (lines 88-122 + 128-147)",
+        "DecrementStockOnOrderCreated.php:32-62 — WG-2 'failure isolation' policy: log + StockDecrementFailedEvent + return (no rethrow)",
+        "DecrementItemAvailabilityOnOrder.php:53 — same WG-2 pattern",
+        "PersistOrderCreatedToOutbox.php:74-104 — DispatchDomainEventsJob::dispatch + nested OutboxBroadcastSwallowedEvent dispatch, both try/catch absorbed"
+      ],
+      "adversarial_risk": "Future listener added without the try/catch envelope WILL halt cascade. No sentinel test currently validates the wrap-discipline. Wave Q candidate."
+    }
+  ],
+
+  "before_commit_dispatches": [
+    {
+      "path": "app/Console/Commands/MenuHealLightV3Command.php:590",
+      "code": "event(new CatalogChanged(...))",
+      "wrapped_in_DB_afterCommit": false,
+      "inside_transaction": false,
+      "trait_engaged": false,
+      "race_risk": "LOW — CLI heal command runs outside HTTP request, no concurrent reader of the catalog at execution time. event(new X) bypasses trait dispatch() but since transactionLevel()==0 at this point, the trait would dispatch immediately anyway → semantically equivalent.",
+      "severity": "P3 — code-discipline smell only",
+      "remediation_recommendation": "Prefer CatalogChanged::dispatch(...) over event(new CatalogChanged(...)) for parity with the rest of the codebase (87 ::dispatch sites vs 7 event(new …) sites for trait-using events)"
+    },
+    {
+      "path": "app/Console/Commands/MenuHealLightV31BurgerCommand.php:477",
+      "code": "event(new CatalogChanged(...))",
+      "wrapped_in_DB_afterCommit": false,
+      "inside_transaction": false,
+      "severity": "P3 — same pattern as above",
+      "remediation_recommendation": "Same fix"
+    },
+    {
+      "finding_summary": "The 7 `event(new X)` usages in app/Services/* are ALL properly wrapped in DB::afterCommit() (ItemService.php:289+391+473, ItemCategoryService.php:118+150+185+224, AvailabilityService.php:609). No production-path race risk detected.",
+      "verified_evidence": "grep DB::afterCommit + event(new immediately preceded by DB::afterCommit closure"
+    }
+  ],
+
+  "skip_outbox_writes": [
+    {
+      "finding": "All canonical sync events route through Persist*ToOutbox (12 listeners). NO sync-critical event dispatched without an outbox-persisting listener.",
+      "verification": "Cross-checked each event in EventServiceProvider $listen array against the Persist*ToOutbox set",
+      "coverage_matrix": {
+        "OrderCreated": "PersistOrderCreatedToOutbox.php (EventServiceProvider.php:154-160)",
+        "OrderStatusChanged": "PersistOrderStatusChangedToOutbox.php (EventServiceProvider.php:147-152)",
+        "OrderPaidAtCounter": "PersistOrderPaidAtCounterToOutbox.php (EventServiceProvider.php:161-163)",
+        "OrderPaymentStatusChanged": "PersistOrderPaymentStatusChangedToOutbox.php (EventServiceProvider.php:165-167)",
+        "OrderTableChanged": "PersistOrderTableChangedToOutbox.php (EventServiceProvider.php:198-200)",
+        "ItemAvailabilityChanged": "PersistCatalogChangedToOutbox + PersistItemAvailabilityChangedToOutbox (EventServiceProvider.php:201-209)",
+        "ItemExtraAvailabilityChanged": "PersistItemExtraAvailabilityChangedToOutbox + PersistCatalogChangedToOutbox (EventServiceProvider.php:214-228)",
+        "ItemVariationAvailabilityChanged": "PersistItemVariationAvailabilityChangedToOutbox + PersistCatalogChangedToOutbox (EventServiceProvider.php:229-235)",
+        "CatalogChanged": "PersistCatalogChangedToOutbox (EventServiceProvider.php:239-241)",
+        "CouponChanged": "PersistCouponChangedToOutbox (EventServiceProvider.php:279-281)",
+        "SettingsUpdated": "PersistSettingsUpdatedToOutbox (EventServiceProvider.php:285-287)",
+        "BranchStatusChanged": "PersistBranchStatusChangedToOutbox (EventServiceProvider.php:294-297)"
+      },
+      "uncovered_events": [
+        "OrderCanceled — no Persist*ToOutbox listener, only stock/availability release side-effects (EventServiceProvider.php:170-173). Sync to KDS/POS/Kiosk relies on OrderStatusChanged being dispatched separately by the caller (OrderService.php:1918 + 2093 do this).",
+        "RefundCreated — bridges to OrderPaymentStatusChanged via PersistOrderPaymentStatusChangedOnRefundCreated (EventServiceProvider.php:182-196), which IS persisted. No direct refund-outbox row, but the broadcast happens via the bridged event.",
+        "IngredientAvailabilityChanged — bridges to CatalogChanged via InvalidateMenuProjectionOnIngredientChange (line 37 of that listener). No direct outbox row but the cascade reaches outbox.",
+        "ComposerProfilePublished — orphan (see orphan_events). No outbox row, no broadcast. Listed as P2."
+      ]
+    }
+  ],
+
+  "persist_to_outbox_no_escalation_count": 9,
+  "persist_to_outbox_audit": {
+    "BRAIN_claim": "I.4 finding: 8 of 11 Persist*ToOutbox listeners use Log::warning only (no escalation)",
+    "empirical_truth_2026_05_24": {
+      "total_persist_to_outbox_listeners": 12,
+      "with_OutboxBroadcastSwallowedEvent_escalation": 3,
+      "with_Log_warning_only_no_typed_event": 9,
+      "drift_from_brain": "BRAIN said 8/11. Actual count is 9/12. Drift = +1 listener added (PersistBranchStatusChangedToOutbox added 2026-05-18 per its file timestamp) AND +1 silent listener (the new one was added without the OutboxBroadcastSwallowedEvent escalation pattern that 3 others were retrofitted with by WJ-4 WI-5 OBS-OUTBOX-01 2026-05-19)."
+    },
+    "escalating_listeners_3_of_12": [
+      "PersistOrderCreatedToOutbox.php — gates WJ-4-WI5-OBSOUTBOX01 (lines 74-104) — uses Log::error + OutboxBroadcastSwallowedEvent dispatch",
+      "PersistOrderStatusChangedToOutbox.php — gates WJ-4-WI5-OBSOUTBOX01 (lines 81-111) — same pattern",
+      "PersistOrderPaymentStatusChangedToOutbox.php — gates WJ-4-WI5-OBSOUTBOX01 — same pattern (per grep count 5 escalation lines + 4 OutboxBroadcastSwallowedEvent refs)"
+    ],
+    "silent_listeners_9_of_12": [
+      "PersistBranchStatusChangedToOutbox.php — Log::warning only",
+      "PersistCatalogChangedToOutbox.php:115 — Log::warning only (test-e2e-fix-E-001-round-3 gate)",
+      "PersistCouponChangedToOutbox.php — Log::warning only",
+      "PersistItemAvailabilityChangedToOutbox.php — Log::warning only",
+      "PersistItemExtraAvailabilityChangedToOutbox.php — Log::warning only",
+      "PersistItemVariationAvailabilityChangedToOutbox.php — Log::warning only",
+      "PersistOrderPaidAtCounterToOutbox.php — Log::warning only",
+      "PersistOrderTableChangedToOutbox.php — Log::warning only",
+      "PersistSettingsUpdatedToOutbox.php — Log::warning only"
+    ],
+    "impact": "If queue worker + cron `outbox:retry-failed` go down simultaneously (deploy window, infra failure), the 9 silent listeners' inline dispatch failures emit Log::warning ONLY — production alerting tiers that grep Log::error or structured-event pipelines miss the signal entirely. Outbox rows ARE persisted (cron will eventually retry), but the operator pager stays silent during the window when manual intervention is needed.",
+    "remediation_low_cost": "Apply WJ-4-WI5-OBSOUTBOX01 pattern to the 9 silent listeners: replace Log::warning with Log::error + OutboxBroadcastSwallowedEvent dispatch in nested try/catch. ~10 LOC × 9 files = 90 LOC, zero frozen-zone touch, zero behavior change on the happy path.",
+    "estimated_effort": "1 sprint H-style, no risk"
+  },
+
+  "critical_sync_path_coverage": {
+    "OrderCreated__KDS_broadcast": {
+      "status": "VERIFIED",
+      "chain": "OrderService.php:583 → OrderCreated::dispatch → DispatchableAfterCommit trait → DB::afterCommit fires → EventServiceProvider listeners cascade in order: [PersistOrderCreatedToOutbox (SSOT FIRST), DecrementItemAvailabilityOnOrder, DecrementStockOnOrderCreated, SendFcmOnOrderCreated] → DispatchDomainEventsJob (high queue, 6 tries, [1,5,15,60,300]s backoff) → BroadcastManager::connection()->broadcast(['private-branch.{branch_id}'], 'OrderCreated', envelope)",
+      "halt_cascade_protection": "Persist*ToOutbox runs FIRST so even if FCM/stock listeners throw, the outbox row is written. WG-2 listener isolation policy ensures none of the 3 trailing listeners re-throw.",
+      "evidence_files": "EventServiceProvider.php:147-152, DispatchDomainEventsJob.php:40-50, PersistOrderCreatedToOutbox.php:62"
+    },
+    "OrderStatusChanged__OSS_update": {
+      "status": "VERIFIED",
+      "chain": "Multiple OrderService.php callers (1834, 1909, 2084) + FrontendOrderService.php:752+1386 → OrderStatusChanged::dispatch → DispatchableAfterCommit → [PersistOrderStatusChangedToOutbox FIRST, AwardLoyaltyPointsOnDelivery, SendFcmOnOrderStatusChange]",
+      "channel": "private-branch.{branch_id}",
+      "broadcast_as": "OrderStatusChanged",
+      "outbox_dedup_strategy": "idempotency_key = sha1(EventType.ORDER_STATUS_CHANGED|order_id|old|new|correlation_id) — same correlation collapses dup listener fires; legitimate status reverts (DELIVERED↔RETURNED admin override) get fresh row via different correlation_id",
+      "evidence_files": "PersistOrderStatusChangedToOutbox.php:21-67, EventServiceProvider.php:147-152"
+    },
+    "PaymentCompleted__Receipt_auditlog_outbox": {
+      "status": "VERIFIED",
+      "chain": "PaymentService.php:409 OrderPaidAtCounter::dispatch + PaymentService.php:423 OrderStatusChanged::dispatch + OrderService.php:2255 OrderPaymentStatusChanged::dispatch (3 distinct payment-flow events)",
+      "outbox_listeners": "PersistOrderPaidAtCounterToOutbox + PersistOrderStatusChangedToOutbox + PersistOrderPaymentStatusChangedToOutbox",
+      "fiscal_chain_writeup": "Fiscal sequence allocation handled by separate FiscalSequenceService (CLAUDE.md §8 frozen zone) — outbox row carries `fiscal_sequence_no` in payload (EventContract.php:58 lists it as REQUIRED for ORDER_PAYMENT_CONFIRMED).",
+      "evidence_files": "EventContract.php:55-76 + EventServiceProvider.php:161-167"
+    },
+    "RefundCreated__cascade": {
+      "status": "VERIFIED — listener-order discipline critical and documented",
+      "chain": "PaymentService.php:187 (cashBack) + RefundWithCounterEntryService.php:401 + Stripe.php:442 → RefundCreated::dispatch → 4 listeners in order: [PersistOrderPaymentStatusChangedOnRefundCreated (bridge to OPSC + broadcast), ReleaseStockOnRefundCreated, ReleaseAvailabilityOnRefundCreated, ClawbackLoyaltyPointsOnRefund (last — GOAL-J2-HEAL-07)]",
+      "halt_protection": "EventServiceProvider.php:174-196 documents the position rationale — bridge MUST be first because Laravel sync dispatcher halts on throw. PersistOrderPaymentStatusChangedOnRefundCreated.php:79-122+128-147 internal try/catch ensures bridge never propagates upward.",
+      "evidence_files": "EventServiceProvider.php:182-196, PersistOrderPaymentStatusChangedOnRefundCreated.php:49-57 (PHPDoc) + :88-147 (impl)"
+    },
+    "ItemUpdated__Kiosk_cache_invalidate": {
+      "status": "VERIFIED — heal landed 2026-05-24 (GOAL-I2-HEAL-02 phase I.3 RISK-01 AMBER)",
+      "chain": "ItemService.php:391 → DB::afterCommit(event(new ItemUpdated($id))) → EventServiceProvider.php:249-252 → [InvalidateKioskMenuCacheOnCatalogChange, PersistCatalogChangedToOutbox]",
+      "frontend_invalidation": "InvalidateKioskMenuCacheOnCatalogChange forgets `kiosk.menu.branch.{id}` cache key (TTL 60s prior to heal); admin rename/reprice now flushes BE cache immediately instead of waiting 60s",
+      "evidence_files": "ItemUpdated.php:1-26 (new file, heal commit), EventServiceProvider.php:246-256"
+    },
+    "StockChanged__Kiosk_availability_fan_out": {
+      "status": "VERIFIED",
+      "chain": "StockService.php:145+151+447 → StockLevelChanged::dispatch + ItemAvailabilityChanged::dispatch → EventServiceProvider.php:201-209+273-277 → [BumpMenuSnapshotOnItemAvailabilityChanged, InvalidateKioskMenuCacheOnItemAvailabilityChanged, InvalidateKioskMenuCacheOnCatalogChange, PersistCatalogChangedToOutbox, PersistItemAvailabilityChangedToOutbox, NotifyStockLowOnStockLevelChanged]",
+      "evidence_files": "StockService.php:145-152 + EventServiceProvider.php:201-209"
+    }
+  },
+
+  "adversarial_findings": [
+    {
+      "id": "Z2-ADV-01",
+      "title": "Event dispatched inside DB::transaction — rollback leaves listeners NOT fired",
+      "severity": "P3 (no actual bug — design works as intended)",
+      "analysis": "DispatchableAfterCommit trait (app/Events/Concerns/DispatchableAfterCommit.php:33-39) registers via DB::afterCommit() when transactionLevel() > 0. Rollback drops the closure silently. This is the DESIRED behavior — preventing the WG-2 'phantom broadcast on rollback' class of bugs. Verified semantically correct. The trait is locked by sentinel `tests/Feature/Sync/OrderCreatedDispatchPlacementSentinelTest` per OrderService.php:581.",
+      "test_present": true
+    },
+    {
+      "id": "Z2-ADV-02",
+      "title": "Event listener throws → broadcasts already in flight?",
+      "severity": "P2 — empirically mitigated, but no sentinel locks the wrap-discipline",
+      "analysis": "Laravel sync dispatcher (vendor/laravel/framework/src/Illuminate/Events/Dispatcher.php:233-269) halts cascade on listener throw. ALL current listeners wrap body in try/catch envelopes (verified via grep `throw new\\|throw \\$` returning ZERO in app/Listeners/). A future listener added without the envelope WOULD halt cascade — and the Persist*ToOutbox listener-FIRST positioning mitigates only the canonical order/payment paths. There is no sentinel test that validates wrap-discipline (e.g., AST check that every Listener::handle() top-level body is wrapped in try/catch).",
+      "remediation": "Add `ListenerThrowDisciplineSentinelTest` to Wave Q backlog: scan app/Listeners/*.php, assert each public handle()/__invoke() method body contains a top-level try/catch OR uses isolation_pattern_marker comment."
+    },
+    {
+      "id": "Z2-ADV-03",
+      "title": "Event-loop infinite — Listener dispatches Event A which triggers Listener B which dispatches Event A again",
+      "severity": "P3 — no infinite loop detected, deliberate fan-out exists",
+      "analysis": "Closest pattern: `InvalidateMenuProjectionOnIngredientChange` (listener of IngredientAvailabilityChanged) dispatches CatalogChanged (line 37). CatalogChanged listeners do NOT dispatch IngredientAvailabilityChanged anywhere. Verified via grep. Cascade terminates at PersistCatalogChangedToOutbox. Pattern is intentional fan-out, documented in EventServiceProvider.php:236-238 + InvalidateMenuProjectionOnIngredientChange.php:37-47.",
+      "secondary_observation": "ItemAvailabilityChanged listener PersistCatalogChangedToOutbox writes outbox row with type=CATALOG_CHANGED — NOT MENU_ITEM_AVAILABILITY_CHANGED. The two coexist because PersistItemAvailabilityChangedToOutbox also runs (EventServiceProvider.php:208), writing the typed event. Both flow to broadcast — frontend reconciles via event_type discriminator."
+    },
+    {
+      "id": "Z2-ADV-04",
+      "title": "Queue worker DOWN — what events accumulate without TTL?",
+      "severity": "P1 — only partially mitigated for V1 LOCAL",
+      "analysis": "Outbox: DispatchDomainEventsJob lives on `high` queue. Worker down → DomainEvent row persists with dispatched_at=null. Mitigation ladder: (1) `foodking:outbox:rescue` every minute re-queues attempts<5 (Kernel.php:40-43), (2) `foodking:outbox:monitor --threshold=10` every minute raises Log::error + non-zero exit (Kernel.php:50-53), (3) `foodking:outbox:retry-failed --since=24h` hourly picks up terminal failures (Kernel.php:64-69), (4) `foodking:outbox:prune --older-than-days=90` daily caps growth (Kernel.php:119+). V1 LOCAL has no pager — operator must monitor outbox:monitor exit code via supervisor. NotificationSend* events (12 events) use Laravel notifications via the default queue connection — `QUEUE_CONNECTION=sync` per CLAUDE.md §8 production-boot-guard semantics in V1 LOCAL fires synchronously inside the HTTP request → no accumulation risk in V1 but FCM/SMS failures become user-visible latency.",
+      "v1_residual_risk": "If outbox:monitor cron itself fails to run (cron daemon down), the third defense layer goes silent. Wave Q backlog: external healthcheck (e.g., systemd timer with mail-on-failure) for the schedule:run process."
+    },
+    {
+      "id": "Z2-ADV-05",
+      "title": "Persisted outbox row but channel/broadcast_as NULL — silent drop",
+      "severity": "P2 (defensive handling exists)",
+      "analysis": "DispatchDomainEventsJob.php:100 guards `$domainEvent->channel !== null && $domainEvent->broadcast_as !== null` — if either is null, broadcast skipped silently after the dispatched_at claim is committed. There's a `warnCatalogChannelsNullIfNeeded` helper referenced in ItemService.php:396 + ComposerProfileService.php — same pattern likely elsewhere. The current EventContract.php:55-76 REQUIRED_PAYLOAD_KEYS enforcement runs at broadcast time (after the row exists), so a malformed listener that sets channel=null would still create the row but never broadcast. This silently goes to dispatched_at=now() AND payload-invalid path is NOT triggered.",
+      "remediation": "Add DB-level NOT NULL on `domain_events.channel` + `broadcast_as` if no legitimate use case for null exists (verify via SELECT COUNT(*) FROM domain_events WHERE channel IS NULL OR broadcast_as IS NULL across history before NOT-NULLing)."
+    },
+    {
+      "id": "Z2-ADV-06",
+      "title": "OutboxBroadcastSwallowedEvent doc-stale claim 'intentionally unwired'",
+      "severity": "P3 (doc only)",
+      "analysis": "app/Events/OutboxBroadcastSwallowedEvent.php:26-31 PHPDoc says 'Intentionally **unwired** (no listener registered in EventServiceProvider)' — but EventServiceProvider.php:303-305 registers EscalateOutboxBroadcastSwallowed as a listener since HEAL B.2 2026-05-19.",
+      "remediation": "1-line doc fix on OutboxBroadcastSwallowedEvent.php:26 — change to 'Wired to EscalateOutboxBroadcastSwallowed since HEAL B.2 2026-05-19. SaaS V1.0.2 can replace with provider-specific bridge'."
+    },
+    {
+      "id": "Z2-ADV-07",
+      "title": "DispatchableAfterCommit semantics differ if event(new X) used instead of X::dispatch()",
+      "severity": "P3 (currently no production-path violation)",
+      "analysis": "Trait only intercepts STATIC dispatch (X::dispatch()) — not the `event(new X)` function-helper path which Laravel routes directly through the event dispatcher with no after-commit check. 7 sites in app/Services/* use `event(new X)` but ALL are properly wrapped in DB::afterCommit() (verified via grep correlation). 2 CLI command sites (MenuHealLightV3Command.php:590 + MenuHealLightV31BurgerCommand.php:477) use `event(new CatalogChanged)` OUTSIDE any transaction — semantically equivalent to dispatch() at transactionLevel=0 (no risk in CLI context).",
+      "footgun_risk": "Future contributor copies `event(new ItemUpdated($id))` from ItemService.php:392 WITHOUT the surrounding DB::afterCommit wrapper → silent before-commit broadcast. No sentinel test currently catches this.",
+      "remediation": "Wave Q backlog: rename trait method to make `event(new X)` callable into a static factory pattern, OR add AST sentinel that detects `event(new <TraitUserClass>)` outside DB::afterCommit closures."
+    }
+  ],
+
+  "top_3_critical_sync_gaps_for_owner_report": [
+    {
+      "rank": 1,
+      "id": "Z2-GAP-01",
+      "title": "9 of 12 Persist*ToOutbox listeners silent on broadcast swallow (Log::warning only, no OutboxBroadcastSwallowedEvent escalation)",
+      "severity": "P1 (V1 LOCAL operator pager-blindness during deploy windows)",
+      "scope": "PersistBranchStatusChangedToOutbox, PersistCatalogChangedToOutbox, PersistCouponChangedToOutbox, PersistItemAvailabilityChangedToOutbox, PersistItemExtraAvailabilityChangedToOutbox, PersistItemVariationAvailabilityChangedToOutbox, PersistOrderPaidAtCounterToOutbox, PersistOrderTableChangedToOutbox, PersistSettingsUpdatedToOutbox",
+      "fix_cost": "~90 LOC, 9 files, zero frozen-zone, zero behavior change on happy path",
+      "fix_pattern": "Apply WJ-4-WI5-OBSOUTBOX01 retrofit (already proven on PersistOrderCreatedToOutbox + PersistOrderStatusChangedToOutbox + PersistOrderPaymentStatusChangedToOutbox)"
+    },
+    {
+      "rank": 2,
+      "id": "Z2-GAP-02",
+      "title": "BRAIN.md drift: claim '11 ShouldHandleEventsAfterCommit listeners' empirically false — zero listeners implement the Laravel interface; pattern is event-side `DispatchableAfterCommit` trait on 24 events",
+      "severity": "P2 (documentation drift causing investigator confusion)",
+      "evidence": "grep -rln 'ShouldHandleEventsAfterCommit' app/ returned ZERO matches. grep -rln 'use DispatchableAfterCommit' app/Events/ returned 24 matches.",
+      "fix_cost": "BRAIN.md §9 + add cross-reference in app/Listeners/README or CLAUDE.md §9 explaining the chosen direction",
+      "downstream_impact": "Next agent auditing for after-commit semantics will grep the WRONG keyword and emit incorrect findings (Wave-P-style hallucination cluster)"
+    },
+    {
+      "rank": 3,
+      "id": "Z2-GAP-03",
+      "title": "Orphan event `ComposerProfilePublished` — dispatched but no listener wired",
+      "severity": "P2 (admin publication flow has no dedicated broadcast — relies on sibling ComposerProfileChanged dispatch on next line)",
+      "evidence": "app/Services/Composer/ComposerProfileService.php:168 dispatches ComposerProfilePublished. app/Providers/EventServiceProvider.php has NO $listen entry for this event class.",
+      "fix_choice": "Either (a) wire to a dedicated listener that broadcasts a 'profile.published' event with composer profile snapshot to admin UI, OR (b) remove the dispatch and rely on ComposerProfileChanged with change_type='published' which IS wired (line 169 of the same service)",
+      "owner_decision_needed": "Does admin UI need a typed 'profile went live' broadcast distinct from 'profile changed'? If yes → option (a). If no → option (b)."
+    }
+  ],
+
+  "secondary_findings": [
+    "Z2-SEC-01: DispatchKdsTicket misplaced in app/Listeners/ — actually a service. Architectural smell only, no functional issue.",
+    "Z2-SEC-02: OutboxBroadcastSwallowedEvent.php:26 PHPDoc claims 'intentionally unwired' — stale since HEAL B.2 wired EscalateOutboxBroadcastSwallowed at EventServiceProvider.php:303-305.",
+    "Z2-SEC-03: 2 CLI heal commands (MenuHealLightV3Command + MenuHealLightV31BurgerCommand) use `event(new CatalogChanged(...))` bypassing trait dispatch — semantically equivalent at transactionLevel=0 but breaks parity with rest of codebase (87 `::dispatch` sites).",
+    "Z2-SEC-04: DispatchDomainEventsJob.php:128-132 'best-effort ws:heartbeat cache write' — Cache::put('ws:heartbeat', ...) inside the dispatch path. Works as a liveness signal but adds Cache I/O on every dispatch — micro-perf consideration only.",
+    "Z2-SEC-05: No sentinel test locks the 'listener wrap in try/catch' discipline. Future un-wrapped listener WILL halt the dispatch cascade — Wave Q backlog item."
+  ],
+
+  "evidence_summary": {
+    "events_total_evidence": "find app/Events -maxdepth 1 -name '*.php' -type f | wc -l → 37",
+    "listeners_total_evidence": "find app/Listeners -maxdepth 1 -name '*.php' -type f | wc -l → 42",
+    "after_commit_trait_usage_evidence": "grep -rln 'use DispatchableAfterCommit' app/Events/ | wc -l → 24",
+    "no_should_handle_events_after_commit_evidence": "grep -rln 'ShouldHandleEventsAfterCommit' app/ → empty",
+    "persist_outbox_listeners_evidence": "ls app/Listeners/Persist*ToOutbox.php | wc -l → 12",
+    "escalation_pattern_count_evidence": "for each Persist*ToOutbox: grep -c 'OutboxBroadcastSwallowedEvent' → 4 in 3 files (OrderCreated, OrderStatusChanged, OrderPaymentStatusChanged), 0 in 9 others",
+    "silent_listeners_count": "12 - 3 = 9",
+    "orphan_event_evidence": "grep -rn 'ComposerProfilePublished' app/Providers/EventServiceProvider.php → empty; dispatched at ComposerProfileService.php:168",
+    "rethrow_evidence": "grep -rn 'throw new\\|throw \\$' app/Listeners/ → empty (excluding tests)",
+    "before_commit_dispatch_evidence": "Inspected both `event(new CatalogChanged(...))` sites — fired at end of CLI heal commands outside any transaction. No risk in V1 production path."
+  },
+
+  "verdict": "AMBER",
+  "verdict_rationale": {
+    "GREEN_aspects": [
+      "Solid atomic-claim pattern in DispatchDomainEventsJob (Phase 1 lockForUpdate + dispatched_at flag)",
+      "Retry curve 1/5/15/60/300s × 6 tries documented + validated",
+      "Idempotency keys deterministic per event class with correlation_id discriminator on revertible flows",
+      "Sync-queue cascade discipline — all listeners wrap in try/catch isolation envelopes",
+      "Escalation infrastructure exists (OutboxBroadcastSwallowedEvent + EscalateOutboxBroadcastSwallowed + fiscal log channel + 400-day retention)",
+      "Cron ladder operationally sound (rescue:every-minute + monitor:every-minute + retry-failed:hourly + prune:daily)",
+      "Critical sync paths all covered for V1: OrderCreated/StatusChanged/PaymentConfirmed/Refund/ItemUpdated/StockChanged",
+      "PaymentStatusChanged refund-bridge listener positioning hardened via HEAL-PLAN-D.3"
+    ],
+    "AMBER_drivers": [
+      "9/12 Persist*ToOutbox silent on swallow (P1 if simultaneous worker+cron failure)",
+      "BRAIN.md doc drift on after-commit pattern keyword (P2 investigator confusion)",
+      "ComposerProfilePublished orphan event (P2 silent admin UI gap or dead-typed-signal)",
+      "OutboxBroadcastSwallowedEvent.php:26 PHPDoc stale (P3 doc only)",
+      "No sentinel locking listener wrap-discipline (P3 future-proof gap)",
+      "No DB-level NOT NULL on domain_events.channel/broadcast_as (P2 silent broadcast skip risk)"
+    ],
+    "RED_blockers": "None — all critical V1 sync paths function correctly. Issues are operational hardening / observability tier, not correctness."
+  },
+
+  "remediation_summary_for_wave_q_backlog": {
+    "P1": [
+      "Z2-GAP-01: Retrofit 9 Persist*ToOutbox listeners with WJ-4-WI5-OBSOUTBOX01 escalation pattern (~90 LOC, 1 sprint, 0 frozen-zone)"
+    ],
+    "P2": [
+      "Z2-GAP-02: Fix BRAIN.md drift on after-commit pattern (1 doc edit)",
+      "Z2-GAP-03: Decide owner-gate: wire or remove ComposerProfilePublished dispatch",
+      "Z2-ADV-05: NOT NULL domain_events.channel + broadcast_as (1 migration after history audit)"
+    ],
+    "P3": [
+      "Z2-ADV-02: Add ListenerThrowDisciplineSentinelTest (AST or string-scan)",
+      "Z2-ADV-06: Fix OutboxBroadcastSwallowedEvent.php:26 PHPDoc",
+      "Z2-ADV-07: Add AST sentinel for `event(new <TraitUser>)` outside DB::afterCommit",
+      "Z2-SEC-01: Relocate DispatchKdsTicket from app/Listeners/ to app/Services/Kds/",
+      "Z2-SEC-03: Migrate 2 CLI heal command `event(new …)` to `::dispatch(…)` for parity"
+    ]
+  },
+
+  "file_path": "reports/test-e2e/goal-2026-05-23/phase-p/Z2-domain-event-outbox.json",
+  "wave": "P · BRAIN-WAVE-P 2026-05-24 · agent Z2",
+  "discipline_compliance": "READ-ONLY · every claim cited file:line · BRAIN counts re-verified empirically · adversarial questions answered with evidence"
+}

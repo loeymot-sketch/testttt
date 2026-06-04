@@ -350,13 +350,32 @@ class OutboxPipelineHealthSentinelTest extends TestCase
     }
 
     /**
-     * Test 4 — PayloadMismatchException is NOT silently rescued.
+     * Test 4 — PayloadMismatchException short-circuits the retry curve and
+     * still preserves the pager-grade prefix.
      *
-     * Bonus invariant: if the envelope is malformed (missing item_id/status),
-     * EventContract::assertEnvelopeValid throws PayloadMismatchException and
-     * phase 3b sets last_error = "contract_violation: ...". Pager-grade
-     * alerts grep on this prefix. If a future refactor strips the prefix or
-     * swallows the exception, this test breaks loud.
+     * [F-3 SYNC P1 V1.0.1 update — 2026-05-19]
+     * Behaviour was changed from "rethrow PayloadMismatchException" to
+     * "$this->fail($e) then return". Rationale: contract violations are NOT
+     * retry-recoverable — the payload itself is malformed — so re-attempting
+     * 6 times (tries=6, backoff [1,5,15,60,300]s) wastes 6 'high' queue
+     * messages per bad event. $this->fail() still routes the event to
+     * failed_jobs and triggers DispatchDomainEventsJob::failed() (the
+     * pager-grade Log::error emit), so the contract_violation: prefix in
+     * last_error is preserved.
+     *
+     * Source: reports/audit/foundation-2026-05-18/round-1/F-3-SYNC/STATUS.md §P1
+     *         "PayloadMismatchException retry loop"
+     * Companion sentinel:
+     *   tests/Feature/Sentinels/PayloadMismatchFailOnceSentinelTest.php
+     *
+     * Invariants preserved (the ORIGINAL Bonus Invariant goal):
+     *   (a) the contract_violation: prefix is in last_error for pager grep
+     *   (b) the broadcaster is never invoked on contract violation
+     *   (c) phase 3b reset still runs (dispatched_at = NULL)
+     *
+     * NEW invariant (this update locks in):
+     *   (d) handle() does NOT rethrow PayloadMismatchException — fail() is
+     *       called instead so Laravel does not re-queue.
      */
     public function test_contract_violation_preserves_pager_grade_prefix(): void
     {
@@ -385,21 +404,29 @@ class OutboxPipelineHealthSentinelTest extends TestCase
         $this->app->instance(BroadcastManager::class, $manager);
         $this->app->instance('broadcast.manager', $manager);
 
-        $caught = null;
+        $threw = false;
         try {
             (new DispatchDomainEventsJob($event->id))->handle();
         } catch (PayloadMismatchException $e) {
-            $caught = $e;
+            $threw = true;
         }
 
-        $this->assertNotNull(
-            $caught,
-            'PayloadMismatchException MUST be thrown so failed_jobs records the '
-            . 'terminal failure with the right error_class for monitoring.'
+        // [F-3 SYNC P1] Invariant (d): handle() MUST NOT rethrow.
+        $this->assertFalse(
+            $threw,
+            'DispatchDomainEventsJob::handle MUST NOT rethrow PayloadMismatchException — '
+            . '$this->fail($e) routes the event directly to failed_jobs and stops the '
+            . '6-attempt $backoff curve. See reports/audit/foundation-2026-05-18/round-1/'
+            . 'F-3-SYNC/STATUS.md §P1 "PayloadMismatchException retry loop". Companion '
+            . 'sentinel: tests/Feature/Sentinels/PayloadMismatchFailOnceSentinelTest.php'
         );
 
         $event->refresh();
+
+        // Invariant (c): phase 3b reset still runs.
         $this->assertNull($event->dispatched_at, 'Phase 3b reset is mandatory.');
+
+        // Invariant (a): pager-grade prefix preserved (CORE original contract).
         $this->assertStringStartsWith(
             'contract_violation:',
             (string) $event->last_error,

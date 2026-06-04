@@ -1,0 +1,294 @@
+{
+  "agent": "J-ADV-6 Hostile trust escalation attacker",
+  "timestamp": "2026-05-24",
+  "scope": "FoodKing Le Cayenne V1 — trust boundary attack surface (Anonymous → Customer → Cashier → Manager → Admin → Cross-branch admin)",
+  "methodology": "Static code analysis of 15 escalation scenarios (E1-E15), followed by EMPIRICAL PHPUnit verification of the top finding via Sanctum::actingAs + HTTP probe.",
+  "escalation_scenarios": [
+    {
+      "id": "E1",
+      "name": "Kiosk customer (kiosk:order token) → Cashier (admin/pos route access)",
+      "verified": "EMPIRICALLY_EXPLOITABLE",
+      "severity": "RED",
+      "evidence_file": "app/Http/Controllers/Admin/PosController.php:51 + routes/api.php:262,276",
+      "details": "Spatie permission:pos middleware checks Auth::user()->can('pos') — token abilities (tokenCan) are NEVER consulted on /api/admin/* routes. The kiosk-login flow (KioskMachineLoginController:98-102) mints a Sanctum token with ['kiosk:order'] ability BUT under the user_id of the human User backing the kiosk-machine. If that User has the 'pos' Spatie permission (or is Admin with Permission::all()), the kiosk-only token passes /api/admin/pos guards."
+    },
+    {
+      "id": "E2",
+      "name": "Cashier → Manager (escalate role via Permission API)",
+      "verified": "DEFENSE_VERIFIED",
+      "severity": "GREEN",
+      "evidence_file": "app/Http/Controllers/Admin/PermissionController.php:33 + RoleController.php:21",
+      "details": "Both PermissionController and RoleController constructors apply middleware(['permission:settings']) on all read+write methods (post M-R3-P0-A heal). Cashier with permission:pos_operate cannot grant themselves permission:items_manage — POST /api/admin/setting/permission/{role} requires permission:settings which cashier lacks."
+    },
+    {
+      "id": "E3",
+      "name": "Manager (branch_id>0) → Admin (branch_id=0 self-edit)",
+      "verified": "DEFENSE_VERIFIED",
+      "severity": "GREEN",
+      "evidence_file": "app/Http/Requests/AdministratorRequest.php:67-103 (withValidator after-hook)",
+      "details": "AdministratorRequest withValidator explicitly blocks any non-Admin/Tenant Admin from setting branch_id=0 OR omitting branch_id entirely (bug_011 R3 T-2.2.1 Sec S-3 heal 2026-05-19). The fix covers BOTH store AND update verbs and treats null and 0 identically — closing the M-R3-P0-E heal residual."
+    },
+    {
+      "id": "E4",
+      "name": "Admin → Super-Admin (Tenant Admin shadow-role mint)",
+      "verified": "DEFENSE_VERIFIED",
+      "severity": "GREEN",
+      "evidence_file": "app/Http/Requests/RoleRequest.php:40-43",
+      "details": "POST /api/admin/setting/role { name: 'Tenant Admin' } would historically grant super-admin treatment in 9 production files that dual-gate on hasRole('Admin') || hasRole('Tenant Admin'). The M-R3-P0-C heal added Rule::notIn(['Tenant Admin']) to RoleRequest, making the reserved name un-creatable via API — provision via seeder only."
+    },
+    {
+      "id": "E5",
+      "name": "Cross-branch admin (Branch Manager of branch 1 accesses branch 2)",
+      "verified": "DEFENSE_VERIFIED",
+      "severity": "GREEN",
+      "evidence_file": "app/Http/Controllers/Admin/AdminController.php:15-40 (authorizeBranchScope/authorizeWritableBranchScope) + StockRuptureDashboardController.php:244-267 (scopedBranches)",
+      "details": "All audited withoutGlobalScope callsites pair the scope bypass with an EXPLICIT branchId check (StockRupture:255, PosOrderController:142, PosLoyaltyController:53). The shared authorizeBranchScope helper enforces (Admin/Tenant Admin bypass) OR (user.branch_id === requested branch_id), aborting 403 otherwise."
+    },
+    {
+      "id": "E6",
+      "name": "KioskMachine credentials → admin (default creds `kiosk-lecayenne / kiosk123`)",
+      "verified": "EXPLOITABLE",
+      "severity": "RED",
+      "evidence_file": "app/Console/Commands/EnsureKioskMachineCommand.php:23-25 + database/seeders/KioskMachineTableSeeder.php:44-53",
+      "details": "Default kiosk machine credentials `kiosk-lecayenne / kiosk123` are documented + hard-coded as defaults in the recovery CLI command. KioskMachineTableSeeder is blocked in production (line 21) but EnsureKioskMachineCommand is NOT — admin can re-run it in prod (--force) and reset the kiosk machine to default creds. The seeder/command binds the kiosk machine to admin@lecayenne.fr (user_id=1, role=Admin, branch_id=0) — making the kiosk-machine token effectively an admin-scoped token under the kiosk:order ability."
+    },
+    {
+      "id": "E7",
+      "name": "Customer Sanctum token → admin access / IDOR on other customer order",
+      "verified": "DEFENSE_VERIFIED",
+      "severity": "GREEN",
+      "evidence_file": "app/Services/FrontendOrderService.php:656-667 (show + abort if user_id mismatch)",
+      "details": "FrontendOrderService::show() enforces (int) $frontendOrder->user_id === (int) Auth::id() and aborts 403 otherwise. myOrder index also filters where user_id = auth user id (L100). Customer cannot fetch other customer's orders via /api/frontend/order/show/{frontendOrder}."
+    },
+    {
+      "id": "E8",
+      "name": "User soft-delete bypass — Sanctum token issued before delete still valid",
+      "verified": "DEFENSE_VERIFIED",
+      "severity": "GREEN",
+      "evidence_file": "app/Http/Middleware/EnsureUserStatusActive.php (Sprint H1 Z6-06 2026-05-17)",
+      "details": "Middleware runs on every authenticated request, reads users.status FRESH from DB (single SELECT, bypassing model cache), revokes currentAccessToken AND returns 401 if status != ACTIVE. Pairs with H1.1 ability-scope tightening + H1.2 mass-assignment strip."
+    },
+    {
+      "id": "E9",
+      "name": "Webhook listener → admin call (services without auth context)",
+      "verified": "DEFENSE_VERIFIED",
+      "severity": "GREEN",
+      "evidence_file": "app/Services/OrderService.php (60+ occurrences of Auth::check() ? Auth::id() : null)",
+      "details": "Services systematically use Auth::check() ? Auth::id() : null defensively for actor/cashier/driver/user fields. Listener-driven actions write null user_id intentionally — audit_logs entries from listeners are attributed null (per H2-HEAL-02 acknowledged pattern). No silent privilege inheritance from listener call chains."
+    },
+    {
+      "id": "E10",
+      "name": "API key + admin token swap (stolen admin token reuse)",
+      "verified": "EXPLOITABLE_BY_DESIGN_DOCUMENTED",
+      "severity": "AMBER",
+      "evidence_file": "resources/views/admin-pos-v4.blade.php:98 + resources/views/master.blade.php:134",
+      "details": "API key (config('app.api_key')) is embedded into HTML served to ALL public kiosk pages via @json. ANY visitor to a kiosk-rendered page (publicly accessible terminal) can extract the API key. Therefore x-api-key middleware (ApiKeyMiddleware.php) is NOT a defense layer for any attacker who can browse to a kiosk URL — they get the key by view-source. Only the Sanctum auth_token + branch isolation prevent escalation."
+    },
+    {
+      "id": "E11",
+      "name": "Branch deactivation race — stale token issued in race window",
+      "verified": "DEFENSE_VERIFIED",
+      "severity": "GREEN",
+      "evidence_file": "app/Listeners/RevokeTokensOnBranchDeactivated.php (Wave 5G R10 heal 2026-05-17)",
+      "details": "BranchStatusChanged event triggers PersonalAccessToken bulk delete scoped to tokenable_type=User::class for branch_id matches. Tokens issued in the race window pre-delete are deleted post-delete; tokens issued post-delete are issued against a now-inactive branch — token resolves a User whose branch is inactive but middleware EnsureUserStatusActive still validates status freshly per request."
+    },
+    {
+      "id": "E12",
+      "name": "Spatie permission cache stale on role change",
+      "verified": "DEFENSE_VERIFIED",
+      "severity": "GREEN",
+      "evidence_file": "vendor/spatie/laravel-permission cache invalidation + H.1.5 hardening sprint verified",
+      "details": "Spatie ships built-in cache invalidation on role/permission grant via PermissionRegistrar — H.1.5 sprint verified the wiring stays correct."
+    },
+    {
+      "id": "E13",
+      "name": "Password reset OTP brute-force",
+      "verified": "PARTIAL_DEFENSE_LOW_RISK",
+      "severity": "AMBER",
+      "evidence_file": "app/Http/Controllers/Auth/ForgotPasswordController.php:44 (random_int 100000-999999) + routes/api.php:165-169 (throttle:3,60 + throttle:5,1 + throttle:5,1)",
+      "details": "Reset OTP is 6 digits (~900k combos). Per-IP throttle is 5/min on verify-code + 5/min on reset-password. Brute-force per-IP requires ~125 days. Distributed botnet (e.g. 1000 IPs) reduces to ~3 hours — STILL outside OTP expiry window (default 10min = 600s). Realistic exploitability: LOW against a single target, but does NOT protect against a determined attacker w/ 100K+ source IPs (1.8 min per code attempt → can land within 10-min expiry). Password reset token from verifyCode is 64-char str_random (32-byte) — strong."
+    },
+    {
+      "id": "E14",
+      "name": "Sanctum token swap (customer attempts to use stolen admin token)",
+      "verified": "DEFENSE_VERIFIED",
+      "severity": "GREEN",
+      "evidence_file": "vendor/laravel/sanctum Guard.php (tokenable_id ownership)",
+      "details": "Sanctum resolves the token's tokenable User via PersonalAccessToken.tokenable_id — there is no per-request 'owner check' to bypass; the token IS the authentication. The exploit reduces to 'token theft', not 'token swap'. Stolen admin token = admin access (well-known). Mitigation: short TTL + tokens revoked on logout (LoginController:155) + on password reset (ForgotPasswordController:181)."
+    },
+    {
+      "id": "E15",
+      "name": "Direct DB privilege escalation (cashier shell → UPDATE users.role)",
+      "verified": "DEFENSE_DOCUMENTED_NOT_AUDITED",
+      "severity": "AMBER",
+      "evidence_file": "CLAUDE.md §8 (Ansible task CVP0-1 commit f840c3ef5 — GRANT-level REVOKE on audit_logs + z_reports)",
+      "details": "Project documents GRANT-level REVOKE for fiscal tables (audit_logs, z_reports) preventing TRUNCATE bypass. NOT documented: REVOKE on users / role_has_permissions / model_has_permissions tables. If cashier obtains DB shell access (which would require already-significant compromise), there's no documented schema-level barrier preventing UPDATE users SET role=Admin via direct SQL. Out of scope for typical app-layer escalation but worth a hardening note."
+    }
+  ],
+  "escalation_paths_found": [
+    {
+      "id": "PATH-1-E1+E6",
+      "name": "Kiosk-Token-Inherits-Admin-Powers (E1 + E6 hybrid) — EMPIRICALLY VERIFIED",
+      "severity": "RED",
+      "verification": "EMPIRICAL — PHPUnit test executed live, confirmed 2xx response on /api/admin/pos-order with kiosk-only ['kiosk:order'] Sanctum token under admin user_id",
+      "verification_evidence": "Ran 2 Sanctum::actingAs($admin, ['kiosk:order']) + POST /api/admin/pos/quote returned 422 (validation failure, NOT 401/403 auth failure); GET /api/admin/pos-order returned 200 with {data:[]} payload. Spatie permission:pos middleware did NOT block. Test files deleted after verification.",
+      "kill_chain": [
+        "1. KioskMachineTableSeeder (line 47) and EnsureKioskMachineCommand (line 53) bind the kiosk machine to admin@lecayenne.fr (user_id=1, role=Admin, branch_id=0).",
+        "2. KioskMachineLoginController:98-102 creates a Sanctum token with abilities=['kiosk:order'] BUT tokenable_id = admin user.",
+        "3. Attacker extracts public x-api-key from any kiosk page HTML source (E10: blade @json embed).",
+        "4. Attacker steals the kiosk-machine Sanctum token (browser localStorage on a publicly-accessible kiosk terminal, OR sniffed during HTTP traffic if HTTPS not enforced).",
+        "5. Attacker POSTs to /api/admin/pos/* with both stolen credentials. Spatie permission:pos middleware checks Auth::user()->can('pos'). Auth::user() = admin (per tokenable_id) → returns TRUE (admin has all permissions). Route executes.",
+        "6. BranchScope.php:33-36 checks $userBranch === 0 → admin's branch_id=0 → SCOPE BYPASSED, cross-branch reads/writes allowed.",
+        "7. Attacker has full admin POS access (orders, refunds, redeems, deletes) under a kiosk-only token."
+      ],
+      "blast_radius": "All /api/admin/* routes gated ONLY by permission:* middleware (no tokenCan check). This includes POS orders read/write/destroy, branch CRUD if delete route added, customer CRUD, cash drawer operations, etc.",
+      "missed_by_sentinel": "tests/Feature/KioskScopeIsolationTest.php — the existing test uses a User with no Admin role (just branch_id=branch->id), so the test PASSES whether or not the Spatie-vs-Sanctum gap exists. Production scenario (kiosk → admin user) is NOT exercised."
+    },
+    {
+      "id": "PATH-2-E13-distributed",
+      "name": "Password-Reset OTP Distributed Brute-Force",
+      "severity": "AMBER",
+      "verification": "STATIC ANALYSIS — math validation only",
+      "kill_chain": [
+        "1. Attacker enumerates target email (e.g. admin@lecayenne.fr from public kiosk pages or social).",
+        "2. Triggers POST /api/auth/forgot-password — throttle 3/60 per IP, single email triggers OTP issuance.",
+        "3. Distributed botnet POSTs to /api/auth/forgot-password/verify-code with 6-digit candidates — at 5 attempts/min/IP × 100K IPs = 500K attempts/min vs. 900K total combos = 1.8 min worst case.",
+        "4. OTP expiry default = 10 min (otp_expire_time=TEN). Window EXCEEDS brute-force needs by 5x.",
+        "5. On success, attacker gets reset_token (64-char) → POST /api/auth/forgot-password/reset-password → new admin password + all-tokens-revoked + fresh ['*'] auth_token issued."
+      ],
+      "blast_radius": "Targeted admin account compromise. Realistic only against high-value targets with attacker resources (botnet).",
+      "missed_by_sentinel": "tests/Feature/Sentinels/PasswordResetMinLengthSentinelTest exists for password complexity but NO sentinel asserts per-account rate limit (current limiter is per-IP only)."
+    },
+    {
+      "id": "PATH-3-E10-api-key-public",
+      "name": "API Key as Public-by-Design",
+      "severity": "AMBER",
+      "verification": "STATIC — file inspection",
+      "kill_chain": [
+        "1. config('app.api_key') is @json-embedded in admin-pos-v4.blade.php:98 and master.blade.php:134.",
+        "2. Both blade views render to anonymous unauth visitors (admin login screen, kiosk public surfaces).",
+        "3. Anyone with a browser → view-source → grep apiKey → has the static API key.",
+        "4. x-api-key middleware therefore provides ZERO defense against any web-accessible attacker — only against random script kiddies."
+      ],
+      "blast_radius": "Removes API key as a defense layer. All security relies on Sanctum auth + Spatie permissions + BranchScope. Worth re-evaluating the API key as 'defense in depth theater' — if it's by design, document explicitly; if not, refactor."
+    }
+  ],
+  "defenses_verified": [
+    {
+      "id": "DEF-1",
+      "name": "AdministratorRequest withValidator blocks branch_id=0 mint for non-super-admin (E3)",
+      "file": "app/Http/Requests/AdministratorRequest.php:67-103"
+    },
+    {
+      "id": "DEF-2",
+      "name": "RoleRequest blocks 'Tenant Admin' name creation via API (E4)",
+      "file": "app/Http/Requests/RoleRequest.php:40-43"
+    },
+    {
+      "id": "DEF-3",
+      "name": "EnsureUserStatusActive revokes token + 401s per-request on status change (E8)",
+      "file": "app/Http/Middleware/EnsureUserStatusActive.php"
+    },
+    {
+      "id": "DEF-4",
+      "name": "FrontendOrderService::show + myOrder enforce user_id == Auth::id() (E7 IDOR)",
+      "file": "app/Services/FrontendOrderService.php:656-667, :100"
+    },
+    {
+      "id": "DEF-5",
+      "name": "AdminController authorizeBranchScope + authorizeWritableBranchScope helpers gate withoutGlobalScope callsites (E5)",
+      "file": "app/Http/Controllers/Admin/AdminController.php:15-40"
+    },
+    {
+      "id": "DEF-6",
+      "name": "PermissionController + RoleController require permission:settings on read AND write (E2)",
+      "file": "app/Http/Controllers/Admin/PermissionController.php:33"
+    },
+    {
+      "id": "DEF-7",
+      "name": "RevokeTokensOnBranchDeactivated listener bulk-deletes tokens on branch INACTIVE (E11)",
+      "file": "app/Listeners/RevokeTokensOnBranchDeactivated.php"
+    },
+    {
+      "id": "DEF-8",
+      "name": "LoginController and ForgotPasswordController revoke prior tokens on relogin/reset (E14)",
+      "file": "app/Http/Controllers/Auth/LoginController.php:155 + ForgotPasswordController.php:181"
+    },
+    {
+      "id": "DEF-9",
+      "name": "GuestSignupController refuses to mint guest token for staff/admin phone (E7 staff impersonation)",
+      "file": "app/Http/Controllers/Auth/GuestSignupController.php:102-105"
+    },
+    {
+      "id": "DEF-10",
+      "name": "OrderRequest::authorize enforces tokenCan('kiosk:order') on frontend order routes (E1 partial — frontend only, NOT admin)",
+      "file": "app/Http/Requests/OrderRequest.php:37-84"
+    }
+  ],
+  "top_5_escalation_vectors": [
+    "1. RED — PATH-1 (E1+E6 hybrid): Kiosk-only token can call /api/admin/* because Spatie permission:pos middleware checks Auth::user()->can() not tokenCan(). When kiosk-machine is bound to admin user (default Le Cayenne config), the kiosk-only token inherits ALL admin privileges. EMPIRICALLY VERIFIED via PHPUnit Sanctum::actingAs + HTTP probe — GET /api/admin/pos-order returned 200 with kiosk:order-only token.",
+    "2. AMBER — PATH-3 (E10): API key (config('app.api_key')) is publicly embedded in blade @json — removes x-api-key middleware as a real defense layer. All security relies on Sanctum + Spatie + BranchScope.",
+    "3. RED — E6: Default kiosk credentials `kiosk-lecayenne / kiosk123` are publicly known via documentation + EnsureKioskMachineCommand defaults. Combined with PATH-1, gives unauth-to-admin access on any production deployment that did not rotate the default password.",
+    "4. AMBER — PATH-2 (E13): Distributed botnet brute-force of 6-digit reset OTP fits within default 10-min expiry. Per-IP rate limit (5/min) does not scale defense to distributed attackers.",
+    "5. AMBER — E15: No documented DB-level GRANT/REVOKE on users / role_has_permissions tables (vs. audit_logs and z_reports which DO have schema-level REVOKE per CVP0-1). Post-shell-compromise privilege escalation has no schema barrier."
+  ],
+  "defenses_with_blind_spots": [
+    {
+      "sentinel": "tests/Feature/KioskScopeIsolationTest.php",
+      "claim": "test_kiosk_token_cannot_access_admin_dashboard asserts 400/401/403/405",
+      "blind_spot": "Test User has branch_id=$branch->id (regular branch user, no Admin role). It passes because the user lacks the Spatie 'pos' permission, NOT because the token ability scope blocks the request. Production-actual case (Le Cayenne kiosk bound to admin@lecayenne.fr) is NOT exercised — the test masks the gap."
+    }
+  ],
+  "remediation_recommendations": [
+    {
+      "priority": "P0",
+      "id": "REM-1",
+      "name": "Add ability-aware admin middleware",
+      "action": "Create a middleware (e.g. RequireNotKioskOnlyToken) registered before permission:* on /api/admin/* routes, that aborts 403 if Auth::user()->currentAccessToken()->abilities exactly equals ['kiosk:order'] (i.e., explicitly NOT '*'). Place AFTER auth:sanctum, BEFORE permission:*. Closes PATH-1 without breaking session-auth or wildcard-token paths.",
+      "files_to_modify": "app/Http/Kernel.php (register middleware alias), routes/api.php:262,276 (add to /admin/* prefix groups)",
+      "frozen_zone_touch": "No"
+    },
+    {
+      "priority": "P0",
+      "id": "REM-2",
+      "name": "Bind kiosk-machine to a dedicated kiosk user, NOT admin",
+      "action": "Refactor KioskMachineTableSeeder + EnsureKioskMachineCommand to create/use a kiosk-only User with EnumRole::CUSTOMER (or new EnumRole::KIOSK_MACHINE) instead of binding to admin@lecayenne.fr. Defense-in-depth — even if PATH-1 not fixed, the kiosk token user has no admin permissions to leverage.",
+      "files_to_modify": "database/seeders/KioskMachineTableSeeder.php, app/Console/Commands/EnsureKioskMachineCommand.php",
+      "frozen_zone_touch": "No"
+    },
+    {
+      "priority": "P1",
+      "id": "REM-3",
+      "name": "Add sentinel covering the exact production scenario",
+      "action": "Add tests/Feature/Sentinels/KioskTokenCannotEscalateToAdminSentinelTest.php that mirrors PATH-1 exactly: admin user (branch_id=0, role=Admin) bound to kiosk machine, token=['kiosk:order'], assert /api/admin/pos returns 403. This baseline-locks the fix and prevents regression.",
+      "files_to_modify": "tests/Feature/Sentinels/ (new)",
+      "frozen_zone_touch": "No"
+    },
+    {
+      "priority": "P1",
+      "id": "REM-4",
+      "name": "Document API key as public-by-design OR move to per-request signature",
+      "action": "Either (a) explicitly document that x-api-key is NOT a security boundary and remove from the threat model, OR (b) replace with HMAC-signed request signature (timestamp + body hash) that is not exposed to client HTML. Current state is 'security theater' — defense in depth claim but zero actual protection.",
+      "files_to_modify": "docs/AUTHZ_MATRIX.md OR app/Http/Middleware/ApiKeyMiddleware.php + resources/views/master.blade.php",
+      "frozen_zone_touch": "Yes — resources/views/master.blade.php may be sensitive"
+    },
+    {
+      "priority": "P2",
+      "id": "REM-5",
+      "name": "Tighten reset OTP rate limit to per-account",
+      "action": "Replace throttle:5,1 on /api/auth/forgot-password/verify-code with a custom limiter keyed by email (not IP). e.g. 3 attempts per 10 min per email. Closes PATH-2 distributed botnet brute-force.",
+      "files_to_modify": "app/Providers/RouteServiceProvider.php + routes/api.php:166-167",
+      "frozen_zone_touch": "No"
+    },
+    {
+      "priority": "P2",
+      "id": "REM-6",
+      "name": "Force-rotate default kiosk password on first boot",
+      "action": "EnsureKioskMachineCommand should refuse to use 'kiosk123' default in production (similar to UserTableSeeder admin block at line 21) OR force a random password + emit to admin dashboard.",
+      "files_to_modify": "app/Console/Commands/EnsureKioskMachineCommand.php",
+      "frozen_zone_touch": "No"
+    }
+  ],
+  "verdict": "RED",
+  "verdict_rationale": "ONE confirmed-empirically RED escalation path (PATH-1 E1+E6 hybrid) verified via PHPUnit + Sanctum::actingAs + live HTTP probe returning 200 on /api/admin/pos-order with kiosk:order-only token. Multiple defenses (E2, E3, E4, E5, E7, E8, E9, E11, E12, E14) are properly in place. The escalation requires (a) kiosk token theft (publicly-exposed kiosk terminal) + (b) public API key (already public via blade @json). On Le Cayenne LOCAL single-resto V1 with hard-wired physical access controls, the practical exploit window is narrow but NON-ZERO. For V2 SaaS multi-resto cloud deployment, this becomes a P0 ship blocker."
+}

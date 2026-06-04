@@ -18,6 +18,8 @@ class Branch extends Model
         'siret', 'vat_intra', 'register_id', 'legal_footer',
         // [Sprint H3 DEL-5 2026-05-17] Branch-configurable delivery fee
         'delivery_fee_base', 'delivery_fee_per_km', 'delivery_fee_minimum',
+        // [DEL-FEE whole-km 2026-06-01] free radius covered by base, +per_km/started-km beyond
+        'delivery_fee_free_km',
         // [Sprint H3 DEL-8 2026-05-17] Branch-configurable delivery minimum order
         'delivery_minimum_order',
     ];
@@ -44,6 +46,7 @@ class Branch extends Model
         'delivery_fee_base'    => 'decimal:2',
         'delivery_fee_per_km'  => 'decimal:2',
         'delivery_fee_minimum' => 'decimal:2',
+        'delivery_fee_free_km' => 'decimal:2',
         // [Sprint H3 DEL-8 2026-05-17] decimal:2 for order-minimum threshold
         'delivery_minimum_order' => 'decimal:2',
     ];

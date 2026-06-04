@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Events\SettingsUpdated;
 use App\Http\Requests\CurrencyRequest;
 use App\Http\Requests\PaginateRequest;
 use App\Http\Resources\CurrencyResource;
@@ -32,7 +33,10 @@ class CurrencyController extends AdminController
     public function store(CurrencyRequest $request) : CurrencyResource | \Illuminate\Http\Response | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory
     {
         try {
-            return new CurrencyResource($this->currencyService->store($request));
+            $resource = new CurrencyResource($this->currencyService->store($request));
+            // [Wave 5G R9 heal 2026-05-17] Fan-out settings.updated -> outbox.
+            SettingsUpdated::dispatch(['currency']);
+            return $resource;
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }
@@ -41,7 +45,10 @@ class CurrencyController extends AdminController
     public function update(CurrencyRequest $request, Currency $currency) : CurrencyResource | \Illuminate\Http\Response | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory
     {
         try {
-            return new CurrencyResource($this->currencyService->update($request, $currency));
+            $resource = new CurrencyResource($this->currencyService->update($request, $currency));
+            // [Wave 5G R9 heal 2026-05-17] Fan-out settings.updated -> outbox.
+            SettingsUpdated::dispatch(['currency']);
+            return $resource;
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }
@@ -51,6 +58,8 @@ class CurrencyController extends AdminController
     {
         try {
             $this->currencyService->destroy($currency);
+            // [Wave 5G R9 heal 2026-05-17] Fan-out settings.updated -> outbox.
+            SettingsUpdated::dispatch(['currency']);
             return response('', 202);
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);

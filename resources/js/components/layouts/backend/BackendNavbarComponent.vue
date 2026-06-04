@@ -92,16 +92,30 @@
                 :aria-label="sidebar ? $t('button.close') : $t('button.menu')"
                 :class="sidebar ? 'fa-align-left' : 'fa-bars'"></button>
 
+            <!-- [UR3-A1 V1.0.2 Wave D1] Profile dropdown — ARIA + keyboard nav additive over dropdown.js -->
             <div class="dropdown-group">
-                <button class="dropdown-btn flex items-center gap-2">
+                <button
+                    class="dropdown-btn flex items-center gap-2"
+                    ref="profileTrigger"
+                    :id="profileMenuTriggerId"
+                    :aria-expanded="profileMenuOpen ? 'true' : 'false'"
+                    aria-haspopup="menu"
+                    :aria-controls="profileMenuId"
+                    @keydown.escape="closeProfileMenu"
+                    @keydown.down.prevent="openProfileMenuAndFocusFirst">
                     <img class="flex-shrink-0 w-9 h-9 object-cover rounded-lg" :src="authInfo.image" alt="avatar">
                         <!-- [iter15-mega-fix A-009/A-012 round-7 2026-05-10] No JS chop ".."; CSS ellipsis + :title for full name on hover/SR -->
                         <h3 class="whitespace-nowrap text-sm capitalize text-left leading-[17px]">{{ $t('label.hello') }} <b
                             :title="authInfo.name"
                             class="block font-semibold text-[#111827] overflow-hidden text-ellipsis whitespace-nowrap max-w-[160px]">{{ authInfo.name }}</b></h3>
-                    <i class="lab lab-arrow-down text-xs ml-1.5 lab-font-size-14"></i>
+                    <i class="lab lab-arrow-down text-xs ml-1.5 lab-font-size-14" aria-hidden="true"></i>
                 </button>
                 <div
+                    :id="profileMenuId"
+                    role="menu"
+                    :aria-labelledby="profileMenuTriggerId"
+                    ref="profileMenu"
+                    @keydown.escape="closeProfileMenu"
                     class="dropdown-list fixed sm:absolute top-[75px] sm:top-12 ltr:right-0 rtl:left-0 z-[60] rounded-xl w-full h-[calc(100dvh_-_75px)] overflow-y-auto sm:h-auto sm:w-[360px] p-4 shadow-paper bg-white transition-all duration-300 scale-y-0 origin-top">
                     <div class="w-fit mx-auto text-center mb-5">
                         <figure
@@ -124,35 +138,44 @@
                         <h3 :title="authInfo.name" class="font-medium text-sm leading-6 capitalize mb-0.5 overflow-hidden text-ellipsis whitespace-nowrap max-w-[260px] mx-auto">{{ authInfo.name }}
                         </h3>
                         <p class="text-xs mb-0.5">{{ authInfo.email }}</p>
-                        <p dir="ltr" class="text-xs">{{ authInfo.country_code }}{{ authInfo.phone }}</p>
+                        <!-- [UR1-002 V1.0.2 Wave B1] phoneDisplay SSOT — mirrors App\Support\PhoneDisplay::safe -->
+                        <p dir="ltr" class="text-xs">{{ safePhone(authInfo.phone) ? (authInfo.country_code || '') + safePhone(authInfo.phone) : '' }}</p>
                         <h3 class="font-medium text-sm leading-6 capitalize mb-0.5">{{ authInfo.currency_balance }}</h3>
                     </div>
-                    <nav>
+                    <!-- [UR3-A1 V1.0.2 Wave D1] role="none" makes <nav> transparent to AT so role="menu"
+                         on the outer container correctly owns the role="menuitem" children per ARIA spec
+                         (fixes axe aria-required-children + aria-required-parent). -->
+                    <nav role="none">
                         <a v-if="isPosV4Shell" href="/admin/profile/edit-profile"
+                            role="menuitem" tabindex="-1"
                             class="paper-link transition w-full flex items-center gap-3.5 py-3 border-b last:border-none border-[#EFF0F6]">
-                            <i class="lab lab-edit lab-font-size-17"></i>
+                            <i class="lab lab-edit lab-font-size-17" aria-hidden="true"></i>
                             <span class="text-sm leading-6 capitalize">{{ $t('button.edit_profile') }}</span>
                         </a>
                         <router-link v-else :to="{ name: 'admin.profile.editProfile' }"
+                            role="menuitem" tabindex="-1"
                             class="paper-link transition w-full flex items-center gap-3.5 py-3 border-b last:border-none border-[#EFF0F6]">
-                            <i class="lab lab-edit lab-font-size-17"></i>
+                            <i class="lab lab-edit lab-font-size-17" aria-hidden="true"></i>
                             <span class="text-sm leading-6 capitalize">{{ $t('button.edit_profile') }}</span>
                         </router-link>
 
                         <a v-if="isPosV4Shell" href="/admin/profile/change-password"
+                            role="menuitem" tabindex="-1"
                             class="paper-link transition w-full flex items-center gap-3.5 py-3 border-b last:border-none border-[#EFF0F6]">
-                            <i class="lab lab-key lab-font-size-17"></i>
+                            <i class="lab lab-key lab-font-size-17" aria-hidden="true"></i>
                             <span class="text-sm leading-6 capitalize">{{ $t('button.change_password') }}</span>
                         </a>
                         <router-link v-else :to="{ name: 'admin.profile.changePassword' }"
+                            role="menuitem" tabindex="-1"
                             class="paper-link transition w-full flex items-center gap-3.5 py-3 border-b last:border-none border-[#EFF0F6]">
-                            <i class="lab lab-key lab-font-size-17"></i>
+                            <i class="lab lab-key lab-font-size-17" aria-hidden="true"></i>
                             <span class="text-sm leading-6 capitalize">{{ $t('button.change_password') }}</span>
                         </router-link>
 
                         <button @click="logout()"
+                            role="menuitem" tabindex="-1"
                             class="paper-link transition w-full flex items-center gap-3.5 py-3 border-b last:border-none border-[#EFF0F6]">
-                            <i class="lab lab-logout lab-font-size-17"></i>
+                            <i class="lab lab-logout lab-font-size-17" aria-hidden="true"></i>
                             <span class="text-sm leading-6 capitalize">{{ $t('button.logout') }}</span>
                         </button>
                     </nav>
@@ -189,6 +212,8 @@ import appService from "../../../services/appService";
 import { initializeApp } from "firebase/app";
 import { getMessaging, getToken, onMessage } from "firebase/messaging";
 import axios from "axios";
+// [UR1-002 V1.0.2 Wave B1] phoneDisplay SSOT — mirrors App\Support\PhoneDisplay::safe
+import { safePhone } from "../../../helpers/phoneDisplay";
 
 export default {
     name: "BackendNavbarComponent",
@@ -221,6 +246,14 @@ export default {
                 url: "",
                 orderType: null
             },
+            // [UR3-A1 V1.0.2 Wave D1] Profile dropdown ARIA + keyboard state.
+            // Vue 3 has no `_uid` — generate unique IDs once for aria-controls/aria-labelledby.
+            // `profileMenuOpen` is mirrored from the dropdown.js `.active` class via MutationObserver
+            // (dropdown.js remains the SSOT for open/close to avoid double-toggling).
+            profileMenuId: 'profile-menu-' + Math.random().toString(36).slice(2, 10),
+            profileMenuTriggerId: 'profile-menu-trigger-' + Math.random().toString(36).slice(2, 10),
+            profileMenuOpen: false,
+            profileMenuObserver: null,
         }
     },
     computed: {
@@ -276,6 +309,24 @@ export default {
         },
     },
     mounted() {
+        // [UR3-A1 V1.0.2 Wave D1] Observe `.active` class on profile menu DOM node
+        // (toggled by public/themes/default/js/dropdown.js) to mirror state into
+        // `profileMenuOpen` for reactive `aria-expanded` binding.
+        this.$nextTick(() => {
+            if (this.$refs.profileMenu && typeof MutationObserver !== 'undefined') {
+                this.profileMenuObserver = new MutationObserver(() => {
+                    const isOpen = this.$refs.profileMenu &&
+                        this.$refs.profileMenu.classList.contains('active');
+                    if (this.profileMenuOpen !== isOpen) {
+                        this.profileMenuOpen = isOpen;
+                    }
+                });
+                this.profileMenuObserver.observe(this.$refs.profileMenu, {
+                    attributes: true,
+                    attributeFilter: ['class'],
+                });
+            }
+        });
         appService.responsiveLoad();
         this.$store.dispatch("globalState/set", { topSidebar: this.sidebarOpen });
         this.$store.dispatch("defaultAccess/show").then(res => {
@@ -343,7 +394,48 @@ export default {
             }
         }, 5000);
     },
+    beforeUnmount() {
+        // [UR3-A1 V1.0.2 Wave D1] Tear down profile-menu class observer to prevent leaks.
+        if (this.profileMenuObserver) {
+            this.profileMenuObserver.disconnect();
+            this.profileMenuObserver = null;
+        }
+    },
     methods: {
+        // [UR1-002 V1.0.2 Wave B1] phoneDisplay SSOT proxy for template access.
+        safePhone(phone) {
+            return safePhone(phone);
+        },
+        // [UR3-A1 V1.0.2 Wave D1] Profile dropdown keyboard handlers.
+        // Note: open/close SSOT is dropdown.js — these helpers manually replicate
+        // its `.active`/`.rotated` toggle so keyboard parity holds without racing.
+        closeProfileMenu() {
+            if (this.$refs.profileMenu) {
+                this.$refs.profileMenu.classList.remove('active');
+            }
+            if (this.$refs.profileTrigger) {
+                this.$refs.profileTrigger.classList.remove('rotated');
+                this.$nextTick(() => {
+                    if (this.$refs.profileTrigger) this.$refs.profileTrigger.focus();
+                });
+            }
+        },
+        openProfileMenuAndFocusFirst() {
+            // If menu is closed, trigger the document-level click handler in
+            // dropdown.js by clicking the trigger (which will also close any other
+            // open dropdown). If already open, just move focus to first menuitem.
+            if (!this.profileMenuOpen && this.$refs.profileTrigger) {
+                this.$refs.profileTrigger.click();
+            }
+            this.$nextTick(() => {
+                const menu = this.$refs.profileMenu;
+                if (!menu) return;
+                const items = menu.querySelectorAll('[role="menuitem"]');
+                if (items && items.length > 0) {
+                    items[0].focus();
+                }
+            });
+        },
         textShortener: function (text, number = 30) {
             return appService.textShortener(text, number);
         },
@@ -470,7 +562,8 @@ export default {
                 headerDiv?.classList.remove('active', 'hidden');
                 document?.exitFullscreen();
             };
-            document.removeEventListener('mousemove', handleMouseMove);
+            // [GOAL-2026-05-29 BTN-P2] removed dangling handleMouseMove ref (never
+            // defined — refactor leftover) that threw ReferenceError on the OSS wall.
         },
 
         fullScreen: function (event) {
@@ -508,7 +601,9 @@ export default {
                 } else if (elem.msRequestFullscreen) {
                     elem.msRequestFullscreen();
                 }
-                document.addEventListener('mousemove', handleMouseMove);
+                // [GOAL-2026-05-29 BTN-P2] removed dangling handleMouseMove addEventListener
+                // (never defined) — it threw ReferenceError right after requestFullscreen(),
+                // breaking the OSS fullscreen cursor-reveal. Fullscreen toggle now works clean.
             } else {
                 if (document.exitFullscreen) {
                     document.exitFullscreen();
@@ -519,7 +614,7 @@ export default {
                 } else if (document.msExitFullscreen) {
                     document.msExitFullscreen();
                 }
-                document.removeEventListener('mousemove', handleMouseMove);
+                // [GOAL-2026-05-29 BTN-P2] removed dangling handleMouseMove ref (never defined).
             }
         }
     }

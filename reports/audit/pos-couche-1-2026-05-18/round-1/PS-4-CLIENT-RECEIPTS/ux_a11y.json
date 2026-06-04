@@ -1,0 +1,100 @@
+{
+  "specialist": "UX/A11y",
+  "zone": "PS-4 POS Client management + Receipts",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head": "d3dc4c2c6",
+  "scope": ["Receipt print preview accessibility", "Duplicata visibility (legal requirement)", "Kiosk-mode receipt persistence (F5 / accidental reload)", "Error feedback on print-receipt API failures"],
+  "verdict": "PASS_WITH_FINDINGS",
+  "summary": "Receipt modal has correct ARIA role/label, two-state print buttons with aria-busy, BYPASS marker with role=status + aria-live=polite, hidden v-print buttons correctly excluded from tab order (tabindex=-1 + aria-hidden). DuplicataMarker exposes role=status + aria-live=polite + visible 2px dashed red border with print-color-adjust:exact (legally required visibility on thermal printer). i18n keys label.duplicata / label.fiscal_ticket_no / label.legal_mentions / label.audit_fingerprint exist in fr.json and resolve via $t fallback. Three findings: (1) audit_emitted=false is silently ignored by the print client flow (operator never sees the SIEM-relevant warning); (2) re-print modal PosOrderReceiptComponent has NO duplicata marker (mirror of ARCH-PS4-002); (3) the BYPASS marker emoji prefix may produce odd VoiceOver output (minor).",
+  "findings": [
+    {
+      "id": "UX-PS4-001",
+      "title": "Receipt modal accessibility is well-formed",
+      "severity": "INFO",
+      "files": [
+        "resources/js/components/admin/pos/ReceiptComponent.vue"
+      ],
+      "evidence": "L7: `role=\"document\"` + `:aria-label=\"$t('a11y.receipt_preview')\"` on the modal root. L19-23: close button uses aria-label=button.close. L25-44: print buttons use :aria-busy when isPrinting + disabled when isPrinting (prevents both keyboard and pointer re-entry). L46-60: hidden v-print buttons have tabindex=-1 + aria-hidden=true (correctly excluded from tab order). L9-17: BYPASS marker uses role=status + aria-live=polite + data-testid for E2E. Tax-lines table (L168-179) uses semantic <table><thead><tbody> with scope=col headers. The paper-print zone (#print-receipt-client / #print-receipt-kitchen) is rendered for both print AND DOM so screen readers can navigate it before triggering print.",
+      "recommendation": "Solid. No action."
+    },
+    {
+      "id": "UX-PS4-002",
+      "title": "audit_emitted=false from print-receipt API is silently swallowed — operator never sees SIEM-relevant warning",
+      "severity": "P2",
+      "files": [
+        "resources/js/components/admin/pos/ReceiptComponent.vue",
+        "app/Http/Controllers/Admin/Pos/PosReceiptPrintController.php"
+      ],
+      "evidence": "PosReceiptPrintController L77-104 returns `audit_emitted` in the JSON response. The backend doc-comment explicitly states (L21-28) that audit chain failure must be surfaced to the UI so the manager can be warned. ReceiptComponent.vue handlePrintClientClick (L490-531) reads ONLY `data?.receipt_print_count` and discards the rest of the payload. There is no alert/toast when audit_emitted=false. A chain-loss event (fiscal-relevant) would print successfully and never reach the operator's attention. The 5xx-style alertService.warning paths (L506-517) handle HTTP errors but not the audit_emitted=false in a 200 response.",
+      "recommendation": "P2 heal-allowed: after `this.localPrintCount = ...` line at L501-504, add `if (data?.audit_emitted === false) alertService.warning(this.$t('pos.receipt_audit_chain_warning'));`. Add the i18n key with safe fallback. NF525 ops impact: ensures the manager can flag to SIEM that a fiscal write failed. Frozen-zone impact: zero (ReceiptComponent is not in the frozen list). Safe to heal in this audit if time permits — see STATUS.md for decision."
+    },
+    {
+      "id": "UX-PS4-003",
+      "title": "Re-print history modal (PosOrderReceiptComponent) lacks DUPLICATA visibility on the paper ticket",
+      "severity": "P2",
+      "files": [
+        "resources/js/components/admin/posOrders/PosOrderReceiptComponent.vue"
+      ],
+      "evidence": "This component does not import ReceiptDuplicataMarker (mirror finding of ARCH-PS4-002). A manager opening an old order from /admin/posOrders and clicking print will produce a paper ticket missing the legally-required DUPLICATA marker. Note: the user-facing day-to-day re-print path goes through PosOrdersTrackerComponent → ReceiptComponent which IS correct, so this is a latent surface, not the primary flow. NF525 risk: if a manager uses this admin surface for re-printing customer tickets, the paper will not carry the DUPLICATA mark.",
+      "recommendation": "P2 — V1.0.2 backlog. Either (a) consolidate the two receipt components, or (b) port the duplicata marker + NF525 footer block + POST print-receipt call to PosOrderReceiptComponent. Owner Aurore confirmation needed: which surface do managers actually use day-to-day?"
+    },
+    {
+      "id": "UX-PS4-004",
+      "title": "Kiosk receipt persistence — F5 recovery is correct and PII-safe",
+      "severity": "INFO",
+      "files": [
+        "tests/js/kioskReceiptPersistence.spec.js"
+      ],
+      "evidence": "Phase 9.1.12 helper has TTL (1h default, custom-respectful), version gating (refuses incompatible snapshots), corruption resilience (purges + null on broken JSON), no-localStorage no-op, anti-PII guard. The TTL ensures that a forgotten kiosk in idle state does not preserve order data for the next customer beyond a reasonable window.",
+      "recommendation": "Solid. Keep TTL at 1h — short enough to prevent customer-data carry-over, long enough to survive accidental F5."
+    },
+    {
+      "id": "UX-PS4-005",
+      "title": "Duplicata marker visibility — print-color-adjust + 2px dashed red — legally compliant",
+      "severity": "INFO",
+      "files": [
+        "resources/js/components/admin/pos/ReceiptDuplicataMarker.vue"
+      ],
+      "evidence": "L44-57 .receipt-duplicata-marker has `border: 2px dashed #d92626`, uppercase, letter-spacing 0.05em, font-weight 700, AND -webkit-print-color-adjust:exact / color-adjust:exact / print-color-adjust:exact so the red border + color survive black-and-white thermal printer driver coercion. role=status + aria-live=polite for screen-reader announcement when the count flips. @media print { page-break-inside:avoid } so the marker does not split across two rolls. The fallback `DUPLICATA #N` is used if $t resolves to the key (key-not-found case) — ensures the legal text appears even with i18n missing keys.",
+      "recommendation": "Excellent. Keep."
+    },
+    {
+      "id": "UX-PS4-006",
+      "title": "BYPASS marker emoji-first content may produce odd VoiceOver speech",
+      "severity": "P3",
+      "files": [
+        "resources/js/components/admin/pos/ReceiptComponent.vue"
+      ],
+      "evidence": "L17 renders `{{ bypassPrintingMarker }}` which defaults (L392) to `🔧 MODE TEST — IMPRESSION BYPASSÉE`. The emoji is not wrapped in aria-hidden=true, so VoiceOver will speak `wrench mode test impression bypassée`. Cosmetic, not blocking.",
+      "recommendation": "Low priority. Replace with `<span aria-hidden=\"true\">🔧</span> MODE TEST — IMPRESSION BYPASSÉE` or strip the emoji from the i18n string and add it via separate aria-hidden span. V1.0.2 polish."
+    },
+    {
+      "id": "UX-PS4-007",
+      "title": "Print-button emoji not aria-hidden in ReceiptComponent toolbar",
+      "severity": "P3",
+      "files": [
+        "resources/js/components/admin/pos/ReceiptComponent.vue"
+      ],
+      "evidence": "L32 (kitchen 👨‍🍳), L42 (client 🧾): emoji rendered as text content. The button has an aria-busy + a sibling <span> with the i18n label, but the emoji is part of the accessible name. Result: VoiceOver speaks `man cook button print kitchen ticket`. Minor UX paper-cut.",
+      "recommendation": "Wrap emoji in aria-hidden=\"true\" or use a CSS background-icon. V1.0.2 polish."
+    },
+    {
+      "id": "UX-PS4-008",
+      "title": "Walk-in customer lookup endpoint returns a structured response — no UX issue",
+      "severity": "INFO",
+      "files": [
+        "app/Http/Controllers/Admin/PosController.php"
+      ],
+      "evidence": "Returns {status, data: {id, name, email}} — used by the cashier UI to pre-fill the customer block. No localisation needed (sentinel). 403 if missing perm — handled by the global axios error interceptor (assumed).",
+      "recommendation": "No action."
+    }
+  ],
+  "metrics": {
+    "files_read": 6,
+    "lines_audited": 760,
+    "tests_validated": 2,
+    "wcag_violations": 0,
+    "a11y_observations": 3
+  },
+  "wall_clock_min": 8
+}

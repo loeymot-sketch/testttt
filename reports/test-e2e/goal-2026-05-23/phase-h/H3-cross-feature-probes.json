@@ -1,0 +1,119 @@
+{
+    "started_at": "2026-05-24T00:09:24+00:00",
+    "pre_state": {
+        "audit_count": 97,
+        "fiscal_seq": 219,
+        "chain": "+ branch=1 CHAIN OK\n  + branch=2 CHAIN OK\n  + branch=3 CHAIN OK\n  + branch=4 CHAIN OK\n  + branch=5 CHAIN OK\nSWEEP COMPLETE \u2014 CHAIN OK on every active branch (5 total)"
+    },
+    "probes": [
+        {
+            "id": "PROBE-1",
+            "title": "POS direct-sale + admin toggle availability \u2014 parallel",
+            "pos_quote_minted": true,
+            "results": [
+                {
+                    "status": 201,
+                    "body_excerpt": "{\"data\":{\"id\":943,\"order_serial_no\":\"240526943\",\"queue_number\":\"A0220\",\"token\":null,\"parent_order_id\":null,\"subtotal\":2.5,\"discount\":0,\"total_tax\":0,\"total\":2.5,\"delivery_charge\":0,\"subtotal_currency_"
+                },
+                {
+                    "status": 200,
+                    "body_excerpt": "{\"ok\":true,\"item_id\":2,\"branch_id\":1,\"is_available\":false,\"unavailable_reason\":null}"
+                }
+            ],
+            "pos_status": 201,
+            "toggle_status": 200,
+            "audit_delta": 0,
+            "fiscal_delta": 1,
+            "nf525_chain_after": "+ branch=1 CHAIN OK\n  + branch=2 CHAIN OK\n  + branch=3 CHAIN OK\n  + branch=4 CHAIN OK\n  + branch=5 CHAIN OK\nSWEEP COMPLETE \u2014 CHAIN OK on every active branch (5 total)",
+            "verdict": "GREEN \u2014 POS sale persisted + toggle persisted + chain intact"
+        },
+        {
+            "id": "PROBE-2",
+            "title": "Kiosk order + admin toggle of SAME item \u2014 parallel",
+            "kiosk_quote_minted": true,
+            "results": [
+                {
+                    "status": 201,
+                    "body_excerpt": "{\"data\":{\"id\":944,\"order_serial_no\":\"240526944\",\"queue_number\":\"A0221\",\"token\":\"H3-P2-T-1b62e7a6\",\"parent_order_id\":null,\"subtotal\":2.5,\"discount\":0,\"total_tax\":0,\"total\":2.5,\"delivery_charge\":0,\"subt"
+                },
+                {
+                    "status": 200,
+                    "body_excerpt": "{\"ok\":true,\"item_id\":2,\"branch_id\":1,\"is_available\":false,\"unavailable_reason\":null}"
+                }
+            ],
+            "kiosk_status": 201,
+            "toggle_status": 200,
+            "audit_delta": 0,
+            "fiscal_delta": 0,
+            "nf525_chain_after": "+ branch=1 CHAIN OK\n  + branch=2 CHAIN OK\n  + branch=3 CHAIN OK\n  + branch=4 CHAIN OK\n  + branch=5 CHAIN OK\nSWEEP COMPLETE \u2014 CHAIN OK on every active branch (5 total)",
+            "verdict": "GREEN \u2014 graceful resolution + chain intact"
+        },
+        {
+            "id": "PROBE-3a",
+            "title": "KDS bump twice in parallel (StateMachine race guard)",
+            "target_order_id": 943,
+            "results": [
+                {
+                    "status": 202,
+                    "body_excerpt": ""
+                },
+                {
+                    "status": 409,
+                    "body_excerpt": "{\"status\":false,\"message\":\"Order status was updated elsewhere \\u2014 please refresh the KDS.\"}"
+                }
+            ],
+            "statuses": [
+                202,
+                409
+            ],
+            "audit_delta": 0,
+            "fiscal_delta": 0,
+            "nf525_chain_after": "+ branch=1 CHAIN OK\n  + branch=2 CHAIN OK\n  + branch=3 CHAIN OK\n  + branch=4 CHAIN OK\n  + branch=5 CHAIN OK\nSWEEP COMPLETE \u2014 CHAIN OK on every active branch (5 total)",
+            "verdict": "GREEN \u2014 exactly-one-wins via StateMachine guard, chain intact"
+        },
+        {
+            "id": "PROBE-3b",
+            "title": "KDS bump on a JUST-refunded order (scope mandate)",
+            "quote_minted": true,
+            "order_id": 945,
+            "order_create_status": 201,
+            "refund_status": 422,
+            "refund_body_excerpt": "{\"success\":false,\"message\":\"Order 945 is not in a CLOSED Z window \\u2014 operation \\\"refund-with-counter-entry\\\" requires a sealed (post-Z) parent. Use the standard pre-Z path instead.\"}",
+            "bump_after_refund_status": 202,
+            "bump_after_refund_body_excerpt": "",
+            "audit_delta": 0,
+            "fiscal_delta": 1,
+            "nf525_chain_after": "+ branch=1 CHAIN OK\n  + branch=2 CHAIN OK\n  + branch=3 CHAIN OK\n  + branch=4 CHAIN OK\n  + branch=5 CHAIN OK\nSWEEP COMPLETE \u2014 CHAIN OK on every active branch (5 total)",
+            "verdict": "INVESTIGATE"
+        },
+        {
+            "id": "PROBE-4",
+            "title": "kiosk-cash collect + counter-cancel \u2014 parallel on SAME order",
+            "quote_minted": true,
+            "order_create_status": 201,
+            "order_id": 946,
+            "results": [
+                {
+                    "status": 200,
+                    "body_excerpt": "{\"data\":{\"id\":946,\"order_serial_no\":\"240526946\",\"queue_number\":\"A0223\",\"token\":\"H3-P4-T-1b7958a6\",\"parent_order_id\":null,\"subtotal\":17.5,\"discount\":0,\"total_tax\":0,\"total\":17.5,\"delivery_charge\":0,\"su"
+                },
+                {
+                    "status": 422,
+                    "body_excerpt": "{\"status\":false,\"message\":\"This order is not a pending kiosk counter payment.\"}"
+                }
+            ],
+            "collect_status": 200,
+            "cancel_status": 422,
+            "audit_delta": 1,
+            "fiscal_delta": 1,
+            "nf525_chain_after": "+ branch=1 CHAIN OK\n  + branch=2 CHAIN OK\n  + branch=3 CHAIN OK\n  + branch=4 CHAIN OK\n  + branch=5 CHAIN OK\nSWEEP COMPLETE \u2014 CHAIN OK on every active branch (5 total)",
+            "verdict": "GREEN \u2014 exactly-one-wins via state guard, chain intact"
+        }
+    ],
+    "finished_at": "2026-05-24T00:09:27+00:00",
+    "post_state": {
+        "audit_count": 98,
+        "fiscal_seq": 222,
+        "chain": "+ branch=1 CHAIN OK\n  + branch=2 CHAIN OK\n  + branch=3 CHAIN OK\n  + branch=4 CHAIN OK\n  + branch=5 CHAIN OK\nSWEEP COMPLETE \u2014 CHAIN OK on every active branch (5 total)"
+    }
+}

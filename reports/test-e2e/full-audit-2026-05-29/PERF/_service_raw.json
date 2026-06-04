@@ -1,0 +1,116 @@
+{
+    "frontend_menu": {
+        "label": "KioskMenuService->build($branch)",
+        "error": null,
+        "elapsed_ms": 236.25,
+        "query_count": 46,
+        "queries_db_time_ms": 116.3,
+        "n_plus_1": [
+            {
+                "count": 11,
+                "shape": "select * from `media` where `media`.`model_id` in (?) and `media`.`model_type` = ?"
+            },
+            {
+                "count": 8,
+                "shape": "select * from `stock_levels` where `branch_id` = ? and ((`stockable_type` = ? and `stockable_id` in (?, ?)) or (`stockable_type` = ? and `stockable_id` in (?, ?, ?, ?, ?)) or (`stockable_type` = ? and"
+            },
+            {
+                "count": 8,
+                "shape": "select * from `item_branch_availability` where `branch_id` = ? and `item_id` in (?)"
+            }
+        ]
+    },
+    "frontend_menu_warm": {
+        "label": "KioskMenuService->build($branch) WARM",
+        "error": null,
+        "elapsed_ms": 136.83,
+        "query_count": 46,
+        "queries_db_time_ms": 61.84,
+        "n_plus_1": [
+            {
+                "count": 11,
+                "shape": "select * from `media` where `media`.`model_id` in (?) and `media`.`model_type` = ?"
+            },
+            {
+                "count": 8,
+                "shape": "select * from `stock_levels` where `branch_id` = ? and ((`stockable_type` = ? and `stockable_id` in (?, ?)) or (`stockable_type` = ? and `stockable_id` in (?, ?, ?, ?, ?)) or (`stockable_type` = ? and"
+            },
+            {
+                "count": 8,
+                "shape": "select * from `item_branch_availability` where `branch_id` = ? and `item_id` in (?)"
+            }
+        ]
+    },
+    "kds_sync": {
+        "label": "KdsSyncService->sync(branch=1, since=-15min)",
+        "error": null,
+        "elapsed_ms": 32.58,
+        "query_count": 7,
+        "queries_db_time_ms": 18.93,
+        "n_plus_1": []
+    },
+    "kds_index": {
+        "label": "Order::query for KDS index",
+        "error": null,
+        "elapsed_ms": 1.05,
+        "query_count": 1,
+        "queries_db_time_ms": 0.82,
+        "n_plus_1": []
+    },
+    "oss_index": {
+        "label": "OSS index \u2014 Order::with(items)",
+        "error": null,
+        "elapsed_ms": 0.75,
+        "query_count": 1,
+        "queries_db_time_ms": 0.57,
+        "n_plus_1": []
+    },
+    "dashboard_total_sales": {
+        "label": "Dashboard total-sales aggregate",
+        "error": null,
+        "elapsed_ms": 1.26,
+        "query_count": 1,
+        "queries_db_time_ms": 1.15,
+        "n_plus_1": []
+    },
+    "dashboard_realtime": {
+        "label": "Dashboard realtime",
+        "error": null,
+        "elapsed_ms": 4.06,
+        "query_count": 4,
+        "queries_db_time_ms": 3.56,
+        "n_plus_1": []
+    },
+    "item_index": {
+        "label": "Item index with relations",
+        "error": null,
+        "elapsed_ms": 0.43,
+        "query_count": 1,
+        "queries_db_time_ms": 0.33,
+        "n_plus_1": []
+    },
+    "pos_order_index": {
+        "label": "POS orders index \u2014 last 30 days",
+        "error": null,
+        "elapsed_ms": 1.2,
+        "query_count": 1,
+        "queries_db_time_ms": 1.05,
+        "n_plus_1": []
+    },
+    "cash_overview": {
+        "label": "Cash overview \u2014 Transaction join orders",
+        "error": null,
+        "elapsed_ms": 2.12,
+        "query_count": 2,
+        "queries_db_time_ms": 1.1,
+        "n_plus_1": []
+    },
+    "observability_outbox": {
+        "label": "Outbox overview aggregate",
+        "error": null,
+        "elapsed_ms": 11.94,
+        "query_count": 3,
+        "queries_db_time_ms": 11.49,
+        "n_plus_1": []
+    }
+}

@@ -1,0 +1,237 @@
+{
+  "l01b": [
+    {
+      "iter": 1,
+      "orderId": 257,
+      "queueNumber": "A0109",
+      "t1": 1780002983688,
+      "t2": 1780002983820,
+      "latency_ms": 132,
+      "observed": true,
+      "error": null
+    },
+    {
+      "iter": 2,
+      "orderId": 258,
+      "queueNumber": "A0110",
+      "t1": 1780002983949,
+      "t2": 1780002984081,
+      "latency_ms": 132,
+      "observed": true,
+      "error": null
+    },
+    {
+      "iter": 3,
+      "orderId": 259,
+      "queueNumber": "A0111",
+      "t1": 1780002984217,
+      "t2": 1780002984359,
+      "latency_ms": 142,
+      "observed": true,
+      "error": null
+    },
+    {
+      "iter": 4,
+      "orderId": 260,
+      "queueNumber": "A0112",
+      "t1": 1780002984491,
+      "t2": 1780002984633,
+      "latency_ms": 142,
+      "observed": true,
+      "error": null
+    },
+    {
+      "iter": 5,
+      "orderId": 261,
+      "queueNumber": "A0113",
+      "t1": 1780002984763,
+      "t2": 1780002984899,
+      "latency_ms": 136,
+      "observed": true,
+      "error": null
+    },
+    {
+      "iter": 6,
+      "orderId": 262,
+      "queueNumber": "A0114",
+      "t1": 1780002985035,
+      "t2": 1780002985181,
+      "latency_ms": 146,
+      "observed": true,
+      "error": null
+    },
+    {
+      "iter": 7,
+      "orderId": 263,
+      "queueNumber": "A0115",
+      "t1": 1780002985331,
+      "t2": 1780002985465,
+      "latency_ms": 134,
+      "observed": true,
+      "error": null
+    },
+    {
+      "iter": 8,
+      "orderId": 264,
+      "queueNumber": "A0116",
+      "t1": 1780002985586,
+      "t2": 1780002985726,
+      "latency_ms": 140,
+      "observed": true,
+      "error": null
+    },
+    {
+      "iter": 9,
+      "orderId": 265,
+      "queueNumber": "A0117",
+      "t1": 1780002985874,
+      "t2": 1780002986023,
+      "latency_ms": 149,
+      "observed": true,
+      "error": null
+    },
+    {
+      "iter": 10,
+      "orderId": 266,
+      "queueNumber": "A0118",
+      "t1": 1780002986147,
+      "t2": 1780002986273,
+      "latency_ms": 126,
+      "observed": true,
+      "error": null
+    }
+  ],
+  "l03b": [
+    {
+      "orderId": 257,
+      "t1": 1780002986274,
+      "t2": 1780002986467,
+      "latency_ms": 193,
+      "observed": true
+    },
+    {
+      "orderId": 258,
+      "t1": 1780002986467,
+      "t2": 1780002986629,
+      "latency_ms": 162,
+      "observed": true
+    },
+    {
+      "orderId": 259,
+      "t1": 1780002986629,
+      "t2": 1780002986813,
+      "latency_ms": 184,
+      "observed": true
+    },
+    {
+      "orderId": 260,
+      "t1": 1780002986813,
+      "t2": 1780002986982,
+      "latency_ms": 169,
+      "observed": true
+    },
+    {
+      "orderId": 261,
+      "t1": 1780002986982,
+      "t2": 1780002987194,
+      "latency_ms": 212,
+      "observed": true
+    },
+    {
+      "orderId": 262,
+      "t1": 1780002987194,
+      "t2": 1780002987380,
+      "latency_ms": 186,
+      "observed": true
+    },
+    {
+      "orderId": 263,
+      "t1": 1780002987380,
+      "t2": 1780002987559,
+      "latency_ms": 179,
+      "observed": true
+    },
+    {
+      "orderId": 264,
+      "t1": 1780002987559,
+      "t2": 1780002987743,
+      "latency_ms": 184,
+      "observed": true
+    },
+    {
+      "orderId": 265,
+      "t1": 1780002987744,
+      "t2": 1780002987916,
+      "latency_ms": 172,
+      "observed": true
+    },
+    {
+      "orderId": 266,
+      "t1": 1780002987916,
+      "t2": 1780002988076,
+      "latency_ms": 160,
+      "observed": true
+    }
+  ],
+  "l04b": [
+    {
+      "iter": 1,
+      "t1": 1780002988076,
+      "t2": null,
+      "latency_ms": null,
+      "observed": false
+    },
+    {
+      "iter": 2,
+      "t1": 1780002993719,
+      "t2": null,
+      "latency_ms": null,
+      "observed": false
+    },
+    {
+      "iter": 3,
+      "t1": 1780002999296,
+      "t2": null,
+      "latency_ms": null,
+      "observed": false
+    },
+    {
+      "iter": 4,
+      "t1": 1780003004893,
+      "t2": null,
+      "latency_ms": null,
+      "observed": false
+    },
+    {
+      "iter": 5,
+      "t1": 1780003010523,
+      "t2": null,
+      "latency_ms": null,
+      "observed": false
+    }
+  ],
+  "summary": {
+    "L01b_kiosk_kds_api": {
+      "n": 10,
+      "ok": 10,
+      "avg_ms": 138,
+      "median_ms": 140,
+      "p95_ms": 149,
+      "max_ms": 149,
+      "min_ms": 126
+    },
+    "L03b_kds_api_bump": {
+      "n": 10,
+      "ok": 10,
+      "avg_ms": 180,
+      "median_ms": 184,
+      "p95_ms": 212,
+      "max_ms": 212,
+      "min_ms": 160
+    },
+    "L04b_stock_kiosk_menu_api": {
+      "n": 5,
+      "ok": 0
+    }
+  }
+}

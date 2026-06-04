@@ -49,6 +49,18 @@ class PosOrderController extends AdminController
         Request $request,
         \App\Services\Order\RefundWithCounterEntryService $service
     ): \Illuminate\Http\JsonResponse {
+        // [HEAL-4 / PROPOSAL-02 — V101-02 2026-05-26] Permission gate.
+        // Granted ONLY to Admin (Permission::all()) + Branch Manager (explicit).
+        // POS Operator does NOT get this permission by default (mass-refund
+        // vector mitigation per PROPOSAL_POS_REFUND_UI_2026-05-25 §8 risk #1).
+        // Owner can grant manually via /admin/role/{id}/edit UI if needed.
+        // Fail-fast BEFORE validation to surface the authz error cleanly.
+        abort_unless(
+            \Illuminate\Support\Facades\Auth::user()?->can('pos-refund') ?? false,
+            403,
+            'Insufficient permission to issue refund.'
+        );
+
         $validated = $request->validate([
             'reason' => ['required', 'string', 'min:3', 'max:700'],
         ]);
@@ -60,11 +72,79 @@ class PosOrderController extends AdminController
             abort(403, 'Cross-branch refund denied.');
         }
 
+        // ─────────────────────────────────────────────────────────────────────
+        // [WI-REFUND-PREZ 2026-06-04] Single endpoint, server-side path-selection.
+        //
+        // The "sealed?" predicate is the SSOT — it lives server-side in
+        // SealedOrderGuard, never duplicated on the client. We branch here so the
+        // owner's "Rembourser" CTA works for BOTH cases through ONE route:
+        //
+        //   • Sealed (post-Z, parent inside a CLOSED Z window) → NF525 counter-
+        //     entry mirror via RefundWithCounterEntryService (parent immutable).
+        //     Response carries the mirror (mode='counter_entry').
+        //
+        //   • NOT sealed (pre-Z, parent still in the open Z) → the EXISTING,
+        //     already-working pre-Z refund: OrderService::changeStatus(RETURNED)
+        //     with the reason. This sets status=RETURNED, fires cashBack() (money
+        //     returned to the drawer/customer via the order's `transaction`),
+        //     refunds loyalty points, and appends an `order.returned` audit row.
+        //     The parent is captured in the still-open Z (no fiscal gap, no
+        //     mirror). Response carries mode='pre_z' + mirror=null.
+        //
+        // NOTE on payment_status: we deliberately do NOT flip the parent's
+        // payment_status to REFUNDED. PaymentStateMachine defines
+        // `PAID => []` (app/Domain/Order/PaymentStateMachine.php:17) — a PAID
+        // order CANNOT transition to REFUNDED; changePaymentStatus() would throw
+        // InvalidArgumentException(422). This matches the post-Z path, where the
+        // parent also stays PAID and only the MIRROR carries REFUNDED. The
+        // canonical "refunded" representation of a parent in this codebase is
+        // status=RETURNED + cashBack + audit — which is exactly what the pre-Z
+        // path produces. Widening the PaymentStateMachine is a fiscal-adjacent
+        // owner-gated change, intentionally out of scope here.
+        // ─────────────────────────────────────────────────────────────────────
+        $isSealed = app(\App\Services\Order\SealedOrderGuard::class)->isSealed($order);
+
+        if (!$isSealed) {
+            try {
+                return $this->refundPreZ($order, (string) $validated['reason']);
+            } catch (HttpException $http) {
+                // 403 cross-branch / role guards from OrderService::changeStatus
+                // must reach the client intact (multi-tenant security signal).
+                throw $http;
+            } catch (\Illuminate\Validation\ValidationException $ve) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $ve->getMessage(),
+                ], 422);
+            } catch (\Throwable $t) {
+                // OrderService::changeStatus throws Exception(.., 422) for an
+                // invalid status transition; InvalidArgumentException(422) is
+                // possible from downstream guards. Surface a clean 422 for those,
+                // 500 for anything genuinely unexpected.
+                $code = (int) $t->getCode();
+                if ($code === 422) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => $t->getMessage(),
+                    ], 422);
+                }
+                \Illuminate\Support\Facades\Log::error('refund-pre-z failed', [
+                    'order_id' => $order->id,
+                    'error'    => $t->getMessage(),
+                ]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to process pre-Z refund: ' . $t->getMessage(),
+                ], 500);
+            }
+        }
+
         try {
             $mirror = $service->execute($order, (string) $validated['reason']);
 
             return response()->json([
                 'success' => true,
+                'mode'    => 'counter_entry',
                 'data'    => new OrderDetailsResource($mirror->load('orderItems')),
                 'meta'    => [
                     'parent_order_id'           => (int) $order->id,
@@ -78,6 +158,31 @@ class PosOrderController extends AdminController
             ], 422);
         } catch (HttpException $http) {
             throw $http;
+        } catch (\Illuminate\Database\QueryException $qe) {
+            // [HEAL-A.3-bis 2026-05-19 / Z8 P0-1] UNIQUE(parent_order_id) violation.
+            // A mirror already exists for this parent — surface as a stable 409
+            // with friendly code, NOT a generic 500. The DB-level UNIQUE (heal
+            // A.3, migration 2026_05_19_200000) is the primary defense above
+            // the dormant RefundWithCounterEntryService:73-78 status-flip guard.
+            // Two distinct X-Idempotency-Key values that both pass the
+            // idempotency middleware would otherwise produce a double mirror
+            // (double Z negative against a single sale) before this catch.
+            if (($qe->errorInfo[0] ?? null) === '23000') {
+                return response()->json([
+                    'success' => false,
+                    'code'    => 'MIRROR_ALREADY_EXISTS',
+                    'message' => 'Counter-entry already exists for this parent order.',
+                ], 409);
+            }
+            \Illuminate\Support\Facades\Log::error('refund-with-counter-entry db error', [
+                'order_id' => $order->id,
+                'sqlstate' => $qe->errorInfo[0] ?? null,
+                'error'    => $qe->getMessage(),
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Database error during counter-entry refund.',
+            ], 500);
         } catch (\Throwable $t) {
             \Illuminate\Support\Facades\Log::error('refund-with-counter-entry failed', [
                 'order_id' => $order->id,
@@ -88,6 +193,58 @@ class PosOrderController extends AdminController
                 'message' => 'Failed to create counter-entry refund: ' . $t->getMessage(),
             ], 500);
         }
+    }
+
+    /**
+     * [WI-REFUND-PREZ 2026-06-04] Pre-Z refund branch of refundWithCounterEntry.
+     *
+     * Reuses the EXISTING, already-working pre-Z refund path
+     * (OrderService::changeStatus → OrderStatus::RETURNED) verbatim — we do NOT
+     * reinvent or modify OrderService. The transition DELIVERED→RETURNED (and
+     * other terminal→RETURNED edges) is legal in OrderStateMachine; changeStatus
+     * validates the reason (required ≤700), runs cashBack() when the order has a
+     * `transaction`, refunds loyalty points, and writes the `order.returned`
+     * audit row — all guarded by SealedOrderGuard::assertMutable() which permits
+     * pre-Z mutation (the inverse of assertSealed). No mirror is produced; the
+     * negative is captured in the still-open Z (no fiscal gap).
+     *
+     * Returns the same envelope shape as the post-Z path so the single frontend
+     * handler (PosRefundModal + onRefundCompleted) is tolerant of both modes:
+     * `data` = refreshed parent, `meta.mirror_fiscal_sequence_no` = null.
+     */
+    private function refundPreZ(Order $order, string $reason): \Illuminate\Http\JsonResponse
+    {
+        // Build a synthetic OrderStatusRequest so OrderService::changeStatus
+        // (type-hinted to OrderStatusRequest) resolves $request->status,
+        // $request->reason and its inner $request->validate(). authorize() does
+        // not run on a manually-created FormRequest — already gated above by
+        // abort_unless(can('pos-refund')) + the cross-branch check.
+        $statusRequest = OrderStatusRequest::create('/', 'POST', [
+            'status' => \App\Enums\OrderStatus::RETURNED,
+            'reason' => $reason,
+        ]);
+        $statusRequest->setContainer(app())->setRedirector(app('redirect'));
+        $statusRequest->setUserResolver(fn () => \Illuminate\Support\Facades\Auth::user());
+
+        $refunded = $this->orderService->changeStatus($order, $statusRequest);
+
+        // changeStatus returns Order on success, or array on caught failure.
+        if (is_array($refunded)) {
+            return response()->json([
+                'success' => false,
+                'message' => $refunded['message'] ?? 'Pre-Z refund failed.',
+            ], 422);
+        }
+
+        return response()->json([
+            'success' => true,
+            'mode'    => 'pre_z',
+            'data'    => new OrderDetailsResource($refunded->fresh()?->load('orderItems') ?? $refunded),
+            'meta'    => [
+                'parent_order_id'           => (int) $order->id,
+                'mirror_fiscal_sequence_no' => null,
+            ],
+        ], 200);
     }
 
     public function index(
@@ -105,11 +262,15 @@ class PosOrderController extends AdminController
         int|string $order
     ): \Illuminate\Http\Response|OrderDetailsResource|\Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\Routing\ResponseFactory {
         try {
-            // RED-team P0 fix 2026-05-17 + sentinel OrderShowBranchGuardSentinelTest:44 (expect 403 not 404):
-            // Lookup with withoutGlobalScope INTERNAL to apply EXPLICIT branch guard.
-            // BranchScope alone returns 404 ModelNotFoundException (leaks via no info disclosure) +
-            // controller catches Exception → 422 (sentinel fails). Use explicit 403 deny.
-            $order = Order::withoutGlobalScope(BranchScope::class)->findOrFail($order);
+            // RED-team Wave 5I A.1 timing-leak fix 2026-05-18: catch ModelNotFoundException
+            // and unify with 403 to prevent existence enumeration (foreign-branch order id
+            // returns 403, non-existent id also 403 — single response shape, no info leak).
+            // BranchScope + sentinel OrderShowBranchGuardSentinelTest:44 expect 403 baseline.
+            try {
+                $order = Order::withoutGlobalScope(BranchScope::class)->findOrFail($order);
+            } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+                abort(403, 'Cross-branch access denied');
+            }
             abort_unless(
                 auth()->user()?->branch_id === 0 || $order->branch_id === auth()->user()?->branch_id,
                 403,
@@ -174,6 +335,12 @@ class PosOrderController extends AdminController
     {
         try {
             return new OrderDetailsResource($this->orderService->selectDeliveryBoy($order, $request));
+        } catch (HttpException $http) {
+            // [GOAL-2026-05-18 P0-LIV-01] OrderService::selectDeliveryBoy now
+            // calls abort(403)/abort(422) for cross-branch + role guards. Let
+            // the HttpException reach the client intact — masking it as a
+            // generic 422 would defeat the multi-tenant security signal.
+            throw $http;
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }

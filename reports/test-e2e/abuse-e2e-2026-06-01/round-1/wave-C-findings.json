@@ -1,0 +1,84 @@
+{
+  "wave": "C",
+  "round": 1,
+  "states_reviewed": 13,
+  "_capture_provenance": "FRESH artifacts captured 2026-06-03 03:59 (mtime). This file OVERWRITES a prior 02:16 draft that analyzed a DIFFERENT artifact set (recall order 4110). THIS round's recalled/bumped order is 4116 (05b change-status/4116 -> 202, 06 recall/4116 -> 200). All evidence below re-cited against artifacts actually inspected this round.",
+  "_method": "All 4 sibling files (png+dom.html+console.json+network.json) inspected for every state; PNGs read with vision (full-res + sips 2-3x crops of card headers). Empty network.json/console.json on states 03/04/05a/06b/07/08/09-aria-live are EXPECTED (mega-audit recorder only logs responses status>=400 OR duration>2000ms, and console only on warn/error) — NOT failed/vacuous captures.",
+  "findings": [
+    {
+      "id": "C-001",
+      "state_artifact": "test-e2e-C/02-pile-with-cards.png",
+      "category": "text_truncation",
+      "severity": "P2",
+      "evidence": "REPRODUCED THIS ROUND (vision, sips 2x crop /tmp top-left quadrant of 02-pile-with-cards.png): card N°C691736 header renders the red elapsed timer clipped at the card's orange right border so only '8299' shows; the trailing ':10' seconds AND the 'Attente' label are shaved off. DOM truth (02-pile-with-cards.dom.html .kds-card__elapsed) = '8299:10' (also '8309:10','8289:10' on the other seeds; state 04 '8305', state 06b '8295'/'8285'). ROOT CAUSE (CSS extracted this round): .kds-card has `overflow: hidden`; the KDS-R1-01 heal already gave .kds-card__queue/.kds-card__elapsed/.kds-card__elapsed-wrap `flex-shrink:0; overflow:visible` (so flex never COMPRESSES the timer) but the parent card's overflow:hidden still SHAVES anything overrunning the card's right edge. A 4-digit-minute value 'N°C691736  8299:10' exceeds the card content budget -> trailing edge clipped. MEASURED-P1 RULE: clip cuts the timer SECONDS + the static 'Attente' label, NOT a critical word — queue id (C691736), item name (Menu Frites+Boisson), allergens (Gluten·Lait) and the 'Prêt' CTA are all fully intact -> P2, NOT P1. THRESHOLD VERIFIED: 3-digit-minute timers render FULLY (state 01/03/05a/09-aria show '191:15','175:50','164:57','35:51','20:28' all uncut inside their cards). Clip starts only >999 min (>16.6h elapsed). The 4-digit values here are produced by the spec's DELIBERATE backdate to 2026-05-28 12:00 (~138h, disclosed in spec lines 144-147) to force FIFO front-slot ordering; a production order at 16h+ unbumped is abnormal and even then loses only the (operationally irrelevant) seconds. KDS is an internal kitchen surface, not customer-facing.",
+      "fix_hint": "resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue (NOT frozen): roll the elapsed timer over to H:MM:SS or an 'NN+ min' badge past 99 min so an abnormally-aged ticket reads sanely AND is narrower than 4 digits; this both fixes the clip and improves legibility. Alternatively trim .kds-card__main gap/padding ~6px at the tight breakpoint. Verify against a real ≤2-digit timer first (those already fit) before churning layout. P2: non-blocking, disclose-only.",
+      "status": "open"
+    },
+    {
+      "id": "C-002",
+      "state_artifact": "test-e2e-C/02-pile-with-cards.png",
+      "category": "element_overlap",
+      "severity": "P2",
+      "evidence": "NOT OPEN THIS ROUND (latent / does not manifest). The '! +N en attente' overflow chip (.kds-overflow-chip, position:absolute top:16px right:16px z-index:100) is NOT rendered on any captured state: grep of 01/02/03/04/09-aria .dom.html returns 0 rendered '+N en attente' text nodes (the string `\\+[0-9]+ en attente` matches NONE) — only 4 static .kds-overflow-chip* CSS rules exist. The board carried ≤8 active cards every capture so the KdsV2Grid slice(0,8) overflow branch (Wave N safety net) never fired. The 'LOCAL' banner tag renders cleanly/unobscured in 01/03/04/10. If the chip ever renders (>8 active orders) both nodes are non-interactive status elements (chip role=status, tag a <span>) so even then it is P2 disclose-only, never the clickable-overlap P1. Recorded latent.",
+      "fix_hint": "resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue (.kds-banner / .kds-overflow-chip, NOT frozen): when overflow>0 reserve banner right-padding equal to the chip width, or place the chip below the banner row, so the LOCAL tag is never sat on. Only matters at >8 active orders.",
+      "status": "closed"
+    },
+    {
+      "id": "C-003",
+      "state_artifact": "test-e2e-C/02-pile-with-cards.png",
+      "category": "color_contrast",
+      "severity": "P2",
+      "evidence": "VERIFIED PASS THIS ROUND (not a finding). The food-safety .kds-card__allergen-pill rule extracted from 02-pile-with-cards.dom.html this round = `background:#C2410C; color:#FFFFFF; font-size:10px; font-weight:800`. Computed WCAG ratio #FFFFFF on #C2410C = 5.18:1 -> PASSES AA 4.5:1 (10px/800 not eligible for the large-bold 3:1 exception). Visually confirmed: 'ALLERGIE' header pill + 'Allergènes: Gluten·Lait' pill legible white-on-dark-orange in 02/05a/06/08. No brand-palette violation (#C2410C is Tailwind orange-700, mandated Cayenne #F4501E untouched). On record for category-4 clearance.",
+      "fix_hint": "No action. #C2410C clears AA.",
+      "status": "closed"
+    },
+    {
+      "id": "C-004",
+      "state_artifact": "test-e2e-C/02-pile-with-cards.png",
+      "category": "color_contrast",
+      "severity": "P2",
+      "evidence": "VERIFIED PASS THIS ROUND (and moot — chip not rendered, see C-002). The .kds-overflow-chip rule extracted this round = `background:#F4501E; color:#1A1A1A; font-size:16px; font-weight:700`. Computed WCAG ratio #1A1A1A on #F4501E = 4.98:1 -> PASSES AA 4.5:1 (dark text on brand primary, no #F4501E change). On record for category-4 clearance.",
+      "fix_hint": "No action. #1A1A1A on #F4501E clears AA.",
+      "status": "closed"
+    },
+    {
+      "id": "C-005",
+      "state_artifact": "test-e2e-C/09-error-banner-on-5xx.png",
+      "category": "silent_error",
+      "severity": "P3",
+      "evidence": "CLOSED / category-6 silent_error DOES NOT FIRE. The spec injected a real 503 on the list poll (09-error-banner-on-5xx.network.json: GET /api/admin/kds-order?paginate=0&order_column=id&order_by=desc -> 503; console.json: 'Failed to load resource: ... 503 (Service Unavailable)'). The DOM surfaces a VISIBLE alert: 09-error-banner-on-5xx.dom.html contains exactly one `<div role=\"alert\" class=\"Vue-Toastification__toast-body\">Service indisponible — réessayez dans quelques instants.</div>` inside `Vue-Toastification__toast--error top-right` (red toast top-right in the PNG, with warning icon + dismiss X). Copy is the product's localized FRENCH ($t error handler), distinct from the stub's ENGLISH body ('Service Unavailable (Wave-C audit stub)') -> proves the real frontend 5xx handler ran, not coincidence. Protocol category-6 (silent_error P0) requires NO role=alert -> does not apply. The persistent-indicator gap is tracked separately as C-007.",
+      "fix_hint": "No product fix for category-6. (The spec's embedded comment block ~lines 593-606 claiming 'V2 chef sees NO visible error indicator' is stale/incorrect vs rendered behavior — optionally correct it.)",
+      "status": "closed"
+    },
+    {
+      "id": "C-006",
+      "state_artifact": "test-e2e-C/06-recall-drawer-badge.png",
+      "category": "audit_integrity",
+      "severity": "P3",
+      "evidence": "Spec recall block (test-e2e-abuse-C-kds.spec.js lines ~484-540) is `if (recallVisible) { hard-assert 200 + badge } else { capture-only, no fail }`. THIS round it triggered correctly: 06-recall-drawer-badge.network.json shows POST /api/admin/kds-order/recall/4116 -> HTTP 200; the history drawer (06 PNG) shows 'N°C63D5FB PRÊT' + orange 'RAPPELÉ' badge; board re-injection present (06b-recall-board-reinjection.dom.html + 09-aria-live-region.dom.html carry `data-testid=\"kds-card-recall-badge-4116\"` role=status aria-live=polite aria-label 'Commande N°C63D5FB rappelée en cuisine'). So NOT a finding now. But a FUTURE round where the recall button silently fails to MOUNT takes the else-branch and PASSES VACUOUSLY — the exact 'silent path on a critical assertion' the mandate hunts. Test-infra only, not a product defect.",
+      "fix_hint": "tests/e2e/test-e2e-abuse-C-kds.spec.js: when recallVisible===false, fail or mark the run partial instead of capture-only, OR assert the deterministic precondition that the recall button MUST be present for a just-bumped PREPARED order inside its 60s window. Test-infra only.",
+      "status": "open"
+    },
+    {
+      "id": "C-007",
+      "state_artifact": "test-e2e-C/09-error-banner-on-5xx.png",
+      "category": "silent_error",
+      "severity": "P2",
+      "evidence": "DEGRADED PERSISTENT-OBSERVABILITY (P2, not P0 — the role=alert toast DOES fire, see C-005, so the protocol's silent_error P0 trigger does not apply). OWNER-RELEVANT FRAMING: on a SUSTAINED list-poll 5xx with WS up, the KDS resting state (09-error-banner-on-5xx.png) is the cheerful empty board — illustration + bold 'Aucune commande en cours' + 'Les nouvelles commandes apparaîtront ici' — PIXEL-IDENTICAL to a healthy caught-up kitchen (compare 10-empty-pile-state.png). The ONLY error signal is the ~5s auto-dismissing toast. After it dismisses, a chef walking up reads 'kitchen caught up' while the server is actually erroring. The PERSISTENT 'OFFLINE / connection lost since Nm Ns' indicator can NEVER fire on the V2 path: KdsStatusBanner.vue:74 gates that banner on `offlineSince && Date.now()-offlineSince > 60_000`, fed by `v2OfflineSince` which is DECLARED null (KitchenDisplaySystemComponent.vue:1220), BOUND at :38, and ASSIGNED NOWHERE (grep v2OfflineSince resources/js = exactly 2 hits: decl + binding, zero writes). Partial compensation (why P2 not higher): the WS-DOWN case is separately wired (KdsStatusBanner.vue:101 fallbackMode warning banner). Net: list-poll-5xx-with-WS-up is the uncovered case.",
+      "fix_hint": "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue (NOT frozen): in the list() poll-failure handler / _raiseKdsErrorBanner, set `this.v2OfflineSince = this.v2OfflineSince || Date.now()` when status>=500 or network-drop, and reset to null on the next successful poll / _clearKdsErrorBanner — so KdsStatusBanner's offlineSince>60s persistent OFFLINE banner actually fires on V2 during a sustained outage instead of leaving a chef on a false 'caught up' empty board. P2: non-blocking, disclose-only.",
+      "status": "open"
+    }
+  ],
+  "summary": {
+    "P0": 0,
+    "P1": 0,
+    "P2": 5,
+    "P3": 2,
+    "open_P0": 0,
+    "open_P1": 0,
+    "open_P2": 2,
+    "open_P3": 1
+  },
+  "_open_breakdown": "Open this round: C-001 (P2 truncation), C-007 (P2 degraded observability), C-006 (P3 test-infra). Closed/not-open: C-002 (latent overlap, chip not rendered), C-003 + C-004 (contrast verified PASS), C-005 (silent_error does not fire — visible role=alert toast).",
+  "verdict": "GREEN"
+}

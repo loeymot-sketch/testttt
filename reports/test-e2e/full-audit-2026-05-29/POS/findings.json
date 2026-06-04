@@ -1,0 +1,160 @@
+{
+  "audit": "FoodKing FULL AUDIT 2026-05-29 — POS Caisse + Plan B encashment",
+  "head": "5032dc158",
+  "branch": "feature/mobile-app-le-cayenne-2026-05-10",
+  "scope": "POS Caisse complete: login, cash drawer, wizard, Counter Collect Plan B, payment cycles, refund Z-window, Z report, receipt+NFC",
+  "method": "Read-only code+DB+config audit (Playwright browser locked by parallel task #215). Live HTTP via curl, deep PHP+DB introspection.",
+  "constraints_verified": {
+    "frozen_zones_session_local_diff": "0 LOC (clean — git diff HEAD on all 13 §7 files = empty)",
+    "frozen_zones_branch_lifetime_diff": "6170 LOC across 13/13 §7 files vs origin/main (pre-existing baseline, NOT this session)",
+    "nf525_chain_pre": "164 entries, hash 6f8a8d725aa3e935 — CHAIN OK",
+    "nf525_chain_post": "165 entries (delta = 1 user.login from curl test), hash b6ae905bc439954f — CHAIN OK",
+    "frozen_zone_files_modified_by_audit": [],
+    "no_push": true,
+    "no_no_verify": true,
+    "config_kiosk_payment_route_all_to_counter": true,
+    "config_pos_simulation_hardware": true
+  },
+  "verdict_overall": "MOSTLY-PASS_WITH_2_FINDINGS",
+  "summary": "POS payment + refund + Z-report code is well-architected with strong authz (permission:pos / pos-orders / pos-refund / cash.reconcile.variance.override), defense-in-depth (race detection via collector audit, UNIQUE(parent_order_id), 409 conflict semantics, afterCommit listeners), and idempotency throughout. Plan B Counter Collect modal route closures (routes/api.php:799-887) correctly gate on can('pos'), enforce branch_id scoping pre-resource, and rate-limit. Refund mirror service correctly enforces parent.fiscal_sequence_no NOT NULL (RefundWithCounterEntryService.php:57), preserving parent immutability + chains a fresh sequence number in the current Z window. 2 fixture-grade DB anomalies surfaced (P2 only — not user-impacting, not blocking).",
+  "workflows": [
+    {
+      "id": "W1-login",
+      "name": "Admin login → /admin/pos",
+      "status": "PASS",
+      "evidence": "GET /admin/pos 200 (size=10614) via curl-authenticated session. Admin user id=1 with all 4 critical perms verified: can('pos')=1, can('pos-orders')=1, can('pos-refund')=1, can('cash.reconcile.variance.override')=1.",
+      "files": ["app/Http/Controllers/Admin/Pos/CashDrawerSessionController.php:31"]
+    },
+    {
+      "id": "W2-cash-drawer",
+      "name": "Cash drawer open/close + manager-gate",
+      "status": "PASS",
+      "evidence": "CashDrawerSessionController:31 enforces middleware permission:pos at constructor. Variance override path :334 enforces 403 unless $isOwner OR $user->can('cash.reconcile.variance.override') — Admin auto-gets via Permission::all(). 2 open sessions currently in DB (1 stale opened 2026-05-28 18:27, 1 closed/reconciled with +10 variance accepted by admin). Audit: cash_drawer_sessions schema includes open_user_lock, closed_by_user_id, reconciled_by_user_id, variance_reason — full audit trail.",
+      "files": [
+        "app/Http/Controllers/Admin/Pos/CashDrawerSessionController.php:31",
+        "app/Http/Controllers/Admin/Pos/CashDrawerSessionController.php:334-337"
+      ]
+    },
+    {
+      "id": "W3-wizard",
+      "name": "Wizard 4 templates (sandwich/burger/bowl/menu_formule)",
+      "status": "PARTIAL",
+      "evidence": "DB item_wizard_profiles has 10 PUBLISHED profiles — but only Petite Frites + Grande Frites (1 step each) + 8 Bowl variants (Frites/Riz × Mariné/Curry/Tandoori/Crispy, 3 steps each). NO explicit profile rows for sandwich Cayenne / burger / menu_formule. These categories likely use auto-derived wizard via OrderService/PricingService composition_snapshot path (4 separate write sites verified at OrderService:484, :916, :1430 + PricingService:291). Not a defect per se — owner audit expected explicit profiles for all 4 templates per task #132 spec; investigation reveals current architecture uses fallback derivation for non-bowl/frites items.",
+      "files": [
+        "app/Services/Pricing/PricingService.php:266-291 (composition_snapshot SSOT)",
+        "app/Services/OrderService.php:484,916,1430 (3 mirror sites)"
+      ],
+      "notes": "Compile-time wizard template kind absent; profile.template column stores literal string 'custom'."
+    },
+    {
+      "id": "W4-counter-collect-plan-b",
+      "name": "Counter Collect modal Plan B (kiosk → POS encashment)",
+      "status": "PASS",
+      "evidence": "Plan B inflow: 60 kiosk orders currently in PENDING_COUNTER awaiting POS encashment. Route closures (routes/api.php:799-887) implement full Plan B with: (1) can('pos') gate, (2) auth->branch_id scoping pre-collection resource, (3) throttle:pos-order-update + idempotency middleware, (4) typed PaymentAlreadyCollectedException → 409 with error_code='payment_already_collected' for cross-cashier races, (5) V5.5 sister-guard same-cashier 200 no-op preserving counter_payment_confirmed audit row attribution. confirmCounterPayment() allowed modes: CASH, CARD, MOBILE_BANKING, OTHER, TICKET_RESTAURANT (PaymentService:203-209) — all 5 modes wired. cancelCounterPayment + collectKioskCash sibling paths also gated identically.",
+      "files": [
+        "routes/api.php:799-887",
+        "app/Services/PaymentService.php:193-309",
+        "app/Services/PaymentService.php:590 (cancelCounterPayment)"
+      ]
+    },
+    {
+      "id": "W5-payment-cycles",
+      "name": "Payment cash + card + SPLIT + ticket-restaurant",
+      "status": "PASS",
+      "evidence": "All 5 PosPaymentMethod modes whitelisted in PaymentService::confirmCounterPayment:203. TICKET_RESTAURANT separately wired in PaymentGateway::TICKET_RESTAURANT (=5) + PaymentReconcileController:207 + OrderController:172 + OrderService:1732. SplitPaymentService persists 1..N rows in order_payments in same parent transaction with audit log (SplitPaymentService.php:25, :170, :247). PosOrderRequest:117 validates card 4-digit min/max + other modes string max:200.",
+      "files": [
+        "app/Services/PaymentService.php:203-209",
+        "app/Services/Payments/SplitPaymentService.php:170-260",
+        "app/Http/Requests/PosOrderRequest.php:117"
+      ]
+    },
+    {
+      "id": "W6-refund-z-window",
+      "name": "Refund counter-entry + Z-window enforcement",
+      "status": "PASS",
+      "evidence": "PosOrderController::refundWithCounterEntry:58-72 enforces (a) permission pos-refund (denies POS Operator role by default), (b) cross-branch fail-fast 403 for non-Admin. RefundWithCounterEntryService:57 hard-rejects parent.fiscal_sequence_no===null with 'use standard pre-Z RETURNED path instead' — explicit Z-window discriminator. UNIQUE(parent_order_id) DB constraint (migration 2026_05_19_200000) is primary defense; catch on errorInfo='23000' → stable 409 + code MIRROR_ALREADY_EXISTS for double-spend race via dual idempotency keys. Mirror order copies composition_snapshot per RefundWithCounterEntryService:149.",
+      "files": [
+        "app/Http/Controllers/Admin/PosOrderController.php:47-128",
+        "app/Services/Order/RefundWithCounterEntryService.php:55-149"
+      ]
+    },
+    {
+      "id": "W7-z-report-close",
+      "name": "Z report close + chain extend",
+      "status": "PASS",
+      "evidence": "ZReportService::close:180 runs chainValidator()->assertChainIntegrity() BEFORE reserving new sequence (line 200), then assembles window with windowQuery (>$from) — RefundWithCounterEntryService mirrors are explicitly counted in current window (line 372 + 384). Pre-Z cancel/refund counted via updated_at since status-transition path keyed on transition time (line 398-401). HMAC chain documented at top of file 'HMAC chained on top of the previous Z report of the same branch'. Post-audit fiscal:verify-chain --all returns 'CHAIN OK' on branch 1 (z_reports count=5 unchanged).",
+      "files": [
+        "app/Services/Fiscal/ZReportService.php:180-396",
+        "app/Services/Fiscal/FiscalChainValidator.php"
+      ]
+    },
+    {
+      "id": "W8-receipt-nfc",
+      "name": "Receipt print + NFC pickup + parked-order",
+      "status": "PASS-by-route",
+      "evidence": "Route POST /api/pos/orders/{order}/print-receipt → PosReceiptPrintController::increment with idempotency middleware (routes/api.php:888). NFC lookup POST /api/pos/customers/lookup-by-nfc → CustomerNfcLookupController (line 919). Parked orders CRUD wired (line 891-896). Live HTTP test not run (browser locked) — route registration + middleware composition validated.",
+      "files": ["routes/api.php:888,891-896,919"]
+    }
+  ],
+  "findings": [
+    {
+      "id": "POS-FA29-P2-01",
+      "severity": "P2",
+      "category": "Data integrity (fixture leakage)",
+      "title": "24/151 order_items have NULL composition_snapshot — 2 of them are fiscalized",
+      "details": "Order #226 + #227 (today's RefundWithCounterEntry test fixture pair, fiscal_sequence_no=38, 39, source=pos type=1) carry order_items with NULL composition_snapshot. The 22 others are order_type=10 with empty source_surface — older fixture rows pre-V1.0.2 SSOT enforcement. NF525 invariant 'composition_snapshot non-NULL on fiscalized orders' is technically VIOLATED on 2 rows. Not user-impacting (test fixtures), but a strict Z-window audit could surface these.",
+      "evidence": "DB query: order_items LEFT JOIN orders WHERE composition_snapshot IS NULL AND fiscal_sequence_no IS NOT NULL → 2 rows (oi#161, oi#162 mapped to orders #226+#227).",
+      "files": ["app/Services/Order/RefundWithCounterEntryService.php:149"],
+      "reproduction": "php artisan tinker --execute='echo DB::table(\"order_items as oi\")->join(\"orders as o\",\"o.id\",\"=\",\"oi.order_id\")->whereNull(\"oi.composition_snapshot\")->whereNotNull(\"o.fiscal_sequence_no\")->count();'",
+      "recommendation": "Cleanup migration: backfill composition_snapshot from items.composition + selected_options for legacy rows, OR add assertion in RefundWithCounterEntryService:149 that parent.orderItems[*].composition_snapshot is not null before mirroring. Defer to V1.0.X data-cleanup wave.",
+      "blocker": false,
+      "owner_gate": false
+    },
+    {
+      "id": "POS-FA29-P2-02",
+      "severity": "P2",
+      "category": "Wizard coverage gap (data, not code)",
+      "title": "Only Bowls + Frites have explicit wizard profiles in DB — sandwich/burger/menu_formule rely on derivation",
+      "details": "DB query: item_wizard_profiles WHERE is_published=1 → 10 rows, all template='custom'. Inspecting items: 2× Frites (Petite, Grande) + 8× Bowl variants. Sandwich Cayenne / Big Burger / menu_formule items have NO explicit profile row. Per task spec these should each have a published profile for visible/auditable composition rules. Code path still works via PricingService::composition_snapshot derivation, but the audit-spec target 'Wizard 4 templates' is data-incomplete.",
+      "evidence": "PUBLISHED wizard profiles (10): all bowls + frites only. Sandwich Cayenne / burger profiles ABSENT.",
+      "files": ["database/seeders/*WizardProfile*.php (not present)"],
+      "recommendation": "Seed published wizard profiles for sandwich/burger/tacos/menu_formule items in next catalog wave. Currently safe — composition derivation handles flow.",
+      "blocker": false,
+      "owner_gate": false
+    }
+  ],
+  "passed_checks": [
+    "Frozen-zone session-local diff = 0 LOC (13/13 §7 files untouched)",
+    "NF525 chain CHAIN OK pre + post (164 → 165, +1 user.login)",
+    "Plan B routing config: kiosk.payment_route_all_to_counter=true",
+    "Plan B inflow: 60 PENDING_COUNTER kiosk orders ready for POS encashment",
+    "Counter Collect race protection: PaymentAlreadyCollectedException → 409 with error_code",
+    "Refund: pos-refund permission denies POS Operator role by default",
+    "Refund: cross-branch refund denied 403 for non-Admin users (defense-in-depth)",
+    "Refund: UNIQUE(parent_order_id) DB constraint prevents double mirror",
+    "Z-window: ZReportService validates historical chain BEFORE new sequence reservation",
+    "Z-window: cancel/refund pre-Z counted via updated_at; mirror refunds counted in current window",
+    "Idempotency middleware on all mutating POS routes (cash-drawer.open, counter-collect.confirm, change-status, refundWithCounterEntry, redeem-loyalty)",
+    "Throttle: pos-quote / pos-order-create / pos-order-update applied appropriately",
+    "Authz: permission:pos-orders on destroy/export/change-status/changePaymentStatus/selectDeliveryBoy/reorderItems/refundWithCounterEntry",
+    "Authz: permission:pos-orders|pos on index/show (read-only OR write)",
+    "Listeners: PersistOrderPaidAtCounterToOutbox, PersistKdsOrderRecalledToOutbox use DB::afterCommit (no race on uncommitted state)",
+    "i18n FR: cash_session_* keys present (Ouvrir la caisse, Clôturer la caisse, Fond de caisse initial, Mouvements de caisse, Aucune caisse ouverte, Gestion de la caisse, Encaissement commande livrée)",
+    "TICKET_RESTAURANT mode wired across PosPaymentMethod (5) + PaymentGateway (5) + PaymentService + DashboardService + OrderService"
+  ],
+  "playwright_live_status": "BROWSER_LOCKED",
+  "playwright_live_reason": "Parallel task #215 holds /Users/1millnonstop/Library/Caches/ms-playwright/mcp-chrome-9b44929 — concurrent /full-audit orchestration. Code+DB+route audit covers POS scope without live capture; visual DOM regression would require --isolated flag or browser release.",
+  "screenshots_dir": "/tmp/foodking-full-audit-2026-05-29/pos/",
+  "screenshots": ["_login.html", "_post-login.html", "_pos-page.html"],
+  "screenshots_note": "HTML responses captured via curl (Playwright browser locked). _pos-page.html shows server-rendered Vue shell with lang=fr, app id container, 0 raw labels (Label.X / pos.foo / [object Object] / 0undefined) in static HTML. Mount-time DOM not captured.",
+  "db_deltas": {
+    "audit_logs": { "pre": 164, "post": 165, "delta": 1, "delta_source": "1 user.login from audit curl" },
+    "orders": { "pre": 191, "post": 197, "delta": 6, "delta_source": "concurrent parallel agents (task #215)" },
+    "order_payments": { "pre": 2, "post": 2, "delta": 0 },
+    "z_reports": { "pre": 5, "post": 5, "delta": 0 },
+    "cash_drawer_sessions_open": 2
+  },
+  "ship_decision": "GO for POS Caisse + Plan B (workflow + code + authz quality grade A). The 2 P2 findings are data-quality (fixture legacy + missing wizard profile rows) — NOT NF525 fiscal-chain breach, NOT auth bypass, NOT idempotency vulnerability, NOT race. Strong defense-in-depth observed throughout. Live Playwright DOM regression test should be re-run post-task#215 release to confirm 0 raw labels post-mount + visual catalogue render.",
+  "duration_minutes": 40,
+  "word_count_estimate": 1180
+}

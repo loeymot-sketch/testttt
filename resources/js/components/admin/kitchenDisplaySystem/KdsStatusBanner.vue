@@ -15,7 +15,7 @@
   Owner-acceptable: SYNC · LOCAL tag on the right when any banner is shown.
 -->
 <template>
-  <div v-if="bannerData" :class="['kds-banner', `kds-banner--${bannerData.level}`]" role="status">
+  <div v-if="bannerData" :class="['kds-banner', `kds-banner--${bannerData.level}`, { 'kds-banner--reserve-gutter': reserveRightGutter }]" role="status">
     <div class="kds-banner__main">
       <span class="kds-banner__icon" :style="{ background: bannerData.iconBg }">
         <svg
@@ -64,6 +64,9 @@ export default {
         fallbackMode: { type: Boolean, default: false },    // WS down, polling
         adminPollingHint: { type: Boolean, default: false },// cross-branch view
         bumpLocalOnlyNotice: { type: Boolean, default: false },
+        // [FIX-4 C-002 2026-06-02] reserve a right gutter so the banner tag
+        // (e.g. "LOCAL") does not sit under the overflow chip in KdsV2Grid.
+        reserveRightGutter: { type: Boolean, default: false },
     },
     computed: {
         bannerData() {
@@ -194,6 +197,14 @@ export default {
     font-weight: 700;
     letter-spacing: 0.15em;
     opacity: 0.85;
+}
+/* [FIX-4 C-002 2026-06-02] When the KdsV2Grid overflow chip is active it sits
+   absolute top-right and would overlap this banner's tag (e.g. "LOCAL").
+   Reserve a right gutter so the tag clears the chip.
+   NOTE: 152px is an ESTIMATE (chip ~120px + right:16px + gap) and is
+   i18n-dependent — MUST be visually confirmed in the fix-wave capture. */
+.kds-banner--reserve-gutter {
+    padding-right: 152px;
 }
 
 @media (prefers-reduced-motion: reduce) {

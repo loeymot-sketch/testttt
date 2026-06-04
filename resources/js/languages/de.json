@@ -126,7 +126,12 @@
         "kiosk_machines": "Kiosk Machines",
         "ingredients": "Zutaten",
         "advanced_tools": "Erweiterte Werkzeuge",
-        "demo_wizard_advanced": "Demo erweiterter Wizard"
+        "demo_wizard_advanced": "Demo erweiterter Wizard",
+        "communications": "Kommunikation",
+        "users": "Benutzer",
+        "accounts": "Konten",
+        "reports": "Berichte",
+        "setup": "Einrichtung"
     },
     "label": {
         "previous": "Vorherige",
@@ -268,6 +273,7 @@
         "catalog_metric_categories": "Kategorien",
         "catalog_metric_active": "aktiv",
         "catalog_metric_unavailable": "nicht verfügbar",
+        "rupture": "AUSVERKAUFT",
         "catalog_action_products": "Produkte",
         "catalog_action_categories": "Kategorien",
         "catalog_action_offers": "Angebote",

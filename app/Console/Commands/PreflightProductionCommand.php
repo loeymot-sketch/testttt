@@ -44,6 +44,8 @@ class PreflightProductionCommand extends Command
         $this->line('');
 
         $this->checkAppEnv();
+        $this->checkDiskSpace();
+        $this->checkSchedulerInstalled();
         $this->checkAppDebug();
         $this->checkAppKey();
         $this->checkTimezone();
@@ -56,10 +58,92 @@ class PreflightProductionCommand extends Command
         $this->checkOpsCommandAvailability();
         $this->checkFiscalSecrets();
         $this->checkFiscalVerifyChain();
+        $this->checkMenuVat();
+        $this->checkPosSimulationHardware();
+        $this->checkManualDiscountGate();
         $this->checkDatabaseReachable();
         $this->checkCacheReachable();
 
         return $this->report();
+    }
+
+    /**
+     * [GOAL-GOLIVE-VAT10 2026-05-30] CRITICAL: every active menu item must carry
+     * a non-zero VAT (10% TTC). A 0%/NULL-tax item boots fine (no boot guard
+     * covers it) but every receipt + signed Z would be fiscally wrong. This also
+     * catches a stale/partial menu seed (too few items) before deploy — the
+     * single check that makes "the receipt is legally correct" verifiable.
+     */
+    private function checkMenuVat(): void
+    {
+        if (! \Illuminate\Support\Facades\Schema::hasTable('items')) {
+            $this->addFinding('WARNING', 'MENU_VAT', 'items table missing — cannot verify VAT.');
+            return;
+        }
+
+        $activeItems = \App\Models\Item::query()->where('status', \App\Enums\Status::ACTIVE)->count();
+        if ($activeItems === 0) {
+            $this->addFinding('CRITICAL', 'MENU_VAT', 'No active menu items — the box would open with an empty/unseeded catalogue.');
+            return;
+        }
+
+        // An item is fiscally wrong if its tax is NULL or resolves to a 0% rate.
+        $zeroRateTaxIds = \App\Models\Tax::query()->where('tax_rate', 0)->pluck('id')->all();
+        $wrong = \App\Models\Item::query()
+            ->where('status', \App\Enums\Status::ACTIVE)
+            ->where(function ($q) use ($zeroRateTaxIds) {
+                $q->whereNull('tax_id');
+                if (! empty($zeroRateTaxIds)) {
+                    $q->orWhereIn('tax_id', $zeroRateTaxIds);
+                }
+            })
+            ->count();
+
+        if ($wrong > 0) {
+            $this->addFinding('CRITICAL', 'MENU_VAT', "{$wrong}/{$activeItems} active items carry NULL/0% VAT — receipts + Z would be fiscally wrong. Run `php artisan fiscal:assign-menu-vat`.");
+        } else {
+            $this->ok('MENU_VAT', "{$activeItems} active items, all on a non-zero VAT rate");
+        }
+
+        // Completeness sanity: the canonical Le Cayenne menu is 45 items. A much
+        // smaller count means the menu did not seed completely (e.g. a stale
+        // `migrate:fresh --seed` that produced only the handful of matching
+        // config groups). WARNING (not CRITICAL — the owner may trim the menu),
+        // but it surfaces the seed-parity gap before opening.
+        $canonicalFloor = 40;
+        if ($activeItems < $canonicalFloor) {
+            $this->addFinding('WARNING', 'MENU_COUNT', "Only {$activeItems} active items — the canonical Le Cayenne menu is 45. Verify the menu seeded completely (the committed config/menu.php seed does NOT reproduce the canonical catalogue; preserve the validated DB menu).");
+        } else {
+            $this->ok('MENU_COUNT', "{$activeItems} active items (canonical ~45)");
+        }
+    }
+
+    /**
+     * [GOAL-GOLIVE-VAT10 / B3] CRITICAL in production: POS_SIMULATION_HARDWARE
+     * must be false — true bypasses the cash-drawer-open requirement (NF525 cash
+     * trail). Mirrors the AppServiceProvider boot guard.
+     */
+    private function checkPosSimulationHardware(): void
+    {
+        if (config('pos.simulation_hardware') === true) {
+            $this->addFinding('CRITICAL', 'POS_SIMULATION_HARDWARE', 'POS_SIMULATION_HARDWARE=true bypasses the cash-drawer cash trail (NF525). Set false for production.');
+        } else {
+            $this->ok('POS_SIMULATION_HARDWARE', 'false (cash-drawer discipline enforced)');
+        }
+    }
+
+    /**
+     * [GOAL-GOLIVE-VAT10 / F1-dormancy] WARNING: manual POS discounts enabled
+     * while the F1 discount→HT/TVA split (frozen) is unfixed → a discounted
+     * order signs a fiscally-incorrect Z. V1 default is OFF.
+     */
+    private function checkManualDiscountGate(): void
+    {
+        if (config('pos.manual_discount_enabled') === true) {
+            $this->addFinding('WARNING', 'POS_MANUAL_DISCOUNT', 'Manual POS discounts ENABLED while F1 (discounted-order TVA split) is unfixed — discounted orders would sign a fiscally-wrong Z. Keep OFF until F1 is fixed under a lock-plan.');
+        } else {
+            $this->ok('POS_MANUAL_DISCOUNT', 'disabled (F1 dormant)');
+        }
     }
 
     private function checkAppEnv(): void
@@ -70,6 +154,62 @@ class PreflightProductionCommand extends Command
         } else {
             $this->ok('APP_ENV', 'production');
         }
+    }
+
+    /**
+     * [OPS-2 2026-06-04] CRITICAL: the box hit 100% disk twice, taking the
+     * app offline (failed writes to laravel.log / sessions / fiscal archive).
+     * Refuse to flip the symlink onto a node that is already near-full. 2 GB
+     * is the operational floor that leaves room for a day of logs + a Z
+     * close + the J-1 fiscal archive write before `storage:cleanup` runs.
+     */
+    private function checkDiskSpace(): void
+    {
+        $free = @disk_free_space(base_path());
+        if ($free === false) {
+            $this->addFinding('WARNING', 'DISK_SPACE', 'Could not determine free disk space on the deploy volume.');
+            return;
+        }
+
+        $freeGb = $free / (1024 ** 3);
+        $minGb = 2.0;
+        if ($free < $minGb * (1024 ** 3)) {
+            $this->addFinding('CRITICAL', 'DISK_SPACE', sprintf(
+                'Only %.2f GB free on the deploy volume (floor %.0f GB). The box hit 100%% disk twice — free space before deploying. Run `php artisan storage:cleanup`.',
+                $freeGb,
+                $minGb
+            ));
+        } else {
+            $this->ok('DISK_SPACE', sprintf('%.2f GB free (floor %.0f GB)', $freeGb, $minGb));
+        }
+    }
+
+    /**
+     * [OPS-2 2026-06-04] WARNING: nothing in the boot guards verifies that
+     * `schedule:run` is actually installed in cron/launchd. If it is not,
+     * every scheduled lane silently stops — including `storage:cleanup`
+     * (disk fills), the heartbeat, the outbox monitor, and the J-1 fiscal
+     * archive. Detection is platform-fragile (containers run the scheduler
+     * differently), so this is a WARNING — but `--strict` still blocks, and
+     * an operator deploying to a classic VM/box gets the catch they need.
+     */
+    private function checkSchedulerInstalled(): void
+    {
+        $crontab = @shell_exec('crontab -l 2>/dev/null') ?: '';
+        $launchd = @shell_exec('launchctl list 2>/dev/null') ?: '';
+        $haystack = $crontab . "\n" . $launchd;
+
+        if (stripos($haystack, 'schedule:run') !== false) {
+            $this->ok('SCHEDULER_CRON', 'schedule:run found in crontab/launchd');
+            return;
+        }
+
+        if (trim($crontab) === '' && trim($launchd) === '') {
+            $this->addFinding('WARNING', 'SCHEDULER_CRON', 'Could not read crontab/launchd to verify `schedule:run` is installed. Confirm the scheduler runs every minute (otherwise storage:cleanup, heartbeat, outbox monitor and the J-1 fiscal archive never fire).');
+            return;
+        }
+
+        $this->addFinding('WARNING', 'SCHEDULER_CRON', '`schedule:run` was NOT found in crontab/launchd. Install `* * * * * php artisan schedule:run` — without it storage:cleanup never runs (disk fills) and the J-1 fiscal archive never writes.');
     }
 
     private function checkAppDebug(): void

@@ -1,0 +1,10 @@
+{
+  "found": true,
+  "name": "Menu (Frites + Boisson)",
+  "src": "http://127.0.0.1:8000/images/menu/menu-frites-boisson.png?v=1779329809",
+  "naturalWidth": 800,
+  "naturalHeight": 800,
+  "isMenuPhoto": true,
+  "isDefaultPlaceholder": false,
+  "rendered": true
+}

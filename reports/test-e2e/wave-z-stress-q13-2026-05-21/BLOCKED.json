@@ -1,0 +1,86 @@
+{
+  "status": "BLOCKED",
+  "execution_attempted_at": "2026-05-21",
+  "spec_path": "tests/e2e/wave-z-stress-sync-3-kiosk.spec.js",
+  "spec_authored_in_commit": "7544b64b4 (Phase 2G)",
+  "executor_branch_head": "08c3faaee",
+  "owner_choice": "Q13 STRESS-TEST execution",
+  "verdict_short": "Spec has 5 distinct authoring defects (3 spec-internal, 2 helper/design). Defects 1-3 patched in spec; defects 4-5 require Phase 2G author rework (design-level: payment_method choice + parallel auth contract).",
+  "pre_test_setup_completed": {
+    "env_KIOSK_ORDER_RATE_LIMIT": {
+      "original": 60,
+      "set_to": 200,
+      "restored_to": 60,
+      "note": "Restored at end. Floor in spec is 60 so original 60 doesn't trigger skip but provides zero burst headroom — 200 is the correct stress value."
+    },
+    "caches_cleared": true,
+    "baseline_fiscal_sequence_no": 32,
+    "server_status": "HTTP 200 on /login",
+    "auto_login_local_bypass": true
+  },
+  "defects_found_during_execution": [
+    {
+      "id": 1,
+      "severity": "blocker",
+      "scope": "spec-internal",
+      "location_in_spec": "lines 207-213 (resolveStressItem helper)",
+      "description": "Spec uses whereDoesntHave('wizardProfile', ...) but Item model has no such Eloquent relation. Item.php declares only: variations, extras, addons, category, tax, orders, offer, allergens. ItemWizardProfile.belongsTo(Item) exists but reverse is not declared.",
+      "evidence": "BadMethodCallException Call to undefined method App\\Models\\Item::wizardProfile().",
+      "patch_status": "PATCHED IN SPEC (subquery on item_wizard_profiles table replacing the missing relation)"
+    },
+    {
+      "id": 2,
+      "severity": "blocker",
+      "scope": "spec-internal",
+      "location_in_spec": "lines 264, 311, 327 (all placeKioskOrder call sites)",
+      "description": "placeKioskOrder defaults orderType=ORDER_TYPE_KIOSK=25 (helper line 365). OrderRequest.php:220-231 rejects order_type=KIOSK for kiosk tokens when pos_dine_in_enabled=false (V1 default), with FR message: 'Le service sur place est désactivé en V1 — les commandes borne doivent être à emporter.'",
+      "evidence": "HTTP 422 store stage with errors.order_type set by OrderRequest::withValidator V1 dine-in guard. rush-sync-flow.spec.js documents and overrides with orderType: 10 (TAKEAWAY).",
+      "patch_status": "PATCHED IN SPEC (orderType: 10 added to all 3 placeKioskOrder call sites)"
+    },
+    {
+      "id": 3,
+      "severity": "blocker",
+      "scope": "helper kiosk-order.js + spec choice mismatch",
+      "location_in_helper": "tests/e2e/helpers/kiosk-order.js lines 466-494 (payment-confirm path)",
+      "description": "Helper's payment-confirm submits payment_method without amount_cents. PaymentConfirmRequest:43 requires amount_cents (int >=1). Also: payment-confirm endpoint only accepts CARD/TPE flows — payment_method=CASH (1) is rejected ('The selected payment method is invalid').",
+      "evidence": "HTTP 422 payment-confirm with errors {payment_method, amount_cents}. rush-sync-flow.spec.js documents this and uses skipPaymentConfirm: true + manual confirm with amount_cents.",
+      "patch_status": "PARTIALLY ADDRESSED — spec patched to orderType:10 but the payment-confirm cash path remains broken upstream. To make the spec usable with PAYMENT_CASH it must either: (a) call placeKioskOrder with skipPaymentConfirm:true AND not assert fiscal_sequence_count, or (b) switch to PAYMENT_CARD with skipPaymentConfirm:true + manual payment-confirm including amount_cents."
+    },
+    {
+      "id": 4,
+      "severity": "design-blocker",
+      "scope": "spec-design",
+      "location_in_spec": "spec uses PAYMENT_CASH (line 262) but asserts fiscal_sequence_count == orders_count (line 482)",
+      "description": "Kiosk CASH orders do NOT allocate fiscal_sequence_no at create. Per CLAUDE.md §8, allocation happens at create only for KIOSK PAID (card) orders. Cash kiosk orders sit status=4 pay=15 fiscal=NULL until later close. The assertion 'every placed order must have fiscal_sequence_no allocated' cannot pass with PAYMENT_CASH.",
+      "evidence": "After diag run with order_type=10 + PAYMENT_CASH + skipPaymentConfirm: 5 orders created in DB, status=4, fiscal_sequence_no=NULL on all (verified via tinker). Confirmed by CLAUDE.md §8 'Fiscal Sequence: Allocation à création d'order (kiosk paid) ou close (POS cash)'.",
+      "patch_status": "NOT PATCHED — design issue. Spec must switch PAYMENT_CASH → PAYMENT_CARD (with manual TPE simulation) OR drop the fiscal-allocation-at-create assertion. Decision requires Phase 2G author input."
+    },
+    {
+      "id": 5,
+      "severity": "design-blocker",
+      "scope": "auth-helper contract under multi-context parallelism",
+      "location_in_helper": "tests/e2e/helpers/kiosk-order.js + auto-login interceptor at public/js/app.js:71808-71905",
+      "description": "Three parallel chromium contexts each navigate /kiosk/login → 3 simultaneous auth/kiosk-login POSTs. KioskMachineLoginController.php:96 deletes prior 'kiosk-token' records on each login. Across 3 contexts impersonating the same machine, token revocation races. The 401 interceptor's _inFlightKioskLogin coalescer is per-context (kioskCart.js module state), not cross-context, so it cannot dedupe across browser contexts.",
+      "evidence": "Diag run captured Vuex token mutating mid-flight: 695→697 between orders 0→1, with 401 cascade. Token mismatch helper-vs-Vuex (Vuex=695, helper-cache=696) confirmed by direct localStorage probe.",
+      "patch_status": "NOT PATCHED — requires redesign. Options: (a) ONE shared bearer token pre-minted in beforeAll, then each context manually populates Vuex.kioskCart.kioskToken + disables auto-login by nulling window.foodkingConfig.kioskAutoLogin pre-evaluate; or (b) use separate kiosk-machine credentials per context (3 distinct machine users) so revocation doesn't cross. (a) is the safer path."
+    }
+  ],
+  "positive_signals_captured": {
+    "auto_login_via_kiosk_login": "WORKING — KioskLoginComponent.autoLogin() correctly populates Vuex.kioskCart.kioskToken within ~500ms",
+    "quote_endpoint_after_prime": "WORKING — frontend/order/quote returns 200 with valid signature when Vuex has live token (curl probe + diag spec)",
+    "store_endpoint_with_orderType_10": "WORKING — frontend/order POST creates order rows with valid IDs, status=4 (PENDING), order_type=10 (TAKEAWAY)",
+    "idempotency_middleware": "PRESENT and enforced — middleware on routes/api.php:1227 confirmed",
+    "rate_limit_clear_helper": "WORKING — clearFoodKingRateLimits() in tests/e2e/helpers/rate-limit.js successfully resets kiosk-login + kiosk-orders buckets"
+  },
+  "fiscal_chain_status_before_run": "Not stressed — execution blocked at order placement layer. Pre-existing chain remains intact (no DELETE/TRUNCATE attempted). Recommend `php artisan fiscal:verify-chain` as periodic baseline check independent of this spec.",
+  "recommendation_to_owner": "Phase 2G author should rework the spec OR delegate the rework to a single agent in a fresh session armed with this BLOCKED.json. Two options: (A) MINIMAL — make the spec actually-runnable by patching defects 3+4+5 (helper rework, switch to PAYMENT_CARD path, fix shared-token auth contract). Effort: ~2h. (B) ARCHITECTURAL — keep the spec stub but supplement with a separate non-Playwright stress proof using direct API calls (curl loop or php artisan command) that issues 50 kiosk:order requests with idempotency keys. Bypasses Vuex/auto-login pathology. Effort: ~1h. Owner Q13 stress-test intent is verifiable either way; this current spec just needs design closure.",
+  "files_modified_during_execution_unCommitted": [
+    "tests/e2e/wave-z-stress-sync-3-kiosk.spec.js — defects 1, 2 patched + scaffolding for defects 3+5 (Vuex prime helper added, syncVuexKioskTokenFromHelper added). NOT enough to ship as 'EXECUTED-pass' commit — defects 4+5 dominate."
+  ],
+  "files_unchanged": [
+    "tests/e2e/helpers/kiosk-order.js — NOT modified (heavily used by other specs; modification deferred to owner-gated patch)",
+    "app/Models/Item.php — NOT modified (NOT frozen but adding wizardProfile relation was overscope when subquery suffices)",
+    "all frozen-zone files (FiscalSequenceService, ZReportService, AuditLogService, BranchScope, OrderStateMachine, IdempotencyKeyMiddleware) — NOT modified, NF525 chain intact"
+  ],
+  "commit_status": "NOT COMMITTED — partial execution. Working tree has spec edits as investigation artifacts; owner decides whether to keep, revert, or rework."
+}

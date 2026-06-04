@@ -6,6 +6,7 @@ const OrderStatusScreenComponent = () => import(/* webpackChunkName: "admin-oss"
 export default [
     {
         path: "/admin/order-status-screen",
+        alias: "/order-status-screen",
         component: OrderStatusScreenComponent,
         name: "admin.order-status-screen",
         meta: {

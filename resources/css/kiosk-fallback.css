@@ -1,4 +1,87 @@
 /**
+ * Kiosk owner request 2026-05-21 — disable dark mode entirely.
+ *
+ * Owner instruction: "je veux plus l'icône de changer de thème ça veut dire
+ * Dark ou bien Light parce que c'est inutile laisse en mode Light c'est tout".
+ *
+ * Implementation (non-frozen — KioskAppComponent.vue is in CLAUDE.md §7) :
+ *   1. Hide the theme-toggle button completely (visual + a11y).
+ *   2. Override `[data-kiosk-theme="dark"]` (which Vue still sets when
+ *      localStorage `foodking:kiosk-theme=dark` is present) with the FULL
+ *      light-mode variable set, mirror KioskAppComponent.vue:1143-1190
+ *      `.kiosk-app.kiosk-theme--light` declarations. This guarantees the
+ *      kiosk renders light even if localStorage was previously set to dark.
+ *
+ * No frozen-zone touch. No JS change. CSS-only override.
+ */
+.kiosk-theme-toggle,
+.ks-theme-toggle {
+  display: none !important;
+}
+
+/*
+ * !important on every var is mandatory: KioskAppComponent.vue defines the
+ * dark defaults inside `<style scoped>`, which Vue compiles into the
+ * `kiosk-shell.js` CSS-in-JS chunk loaded AFTER this global file. Without
+ * !important, the scoped declarations win on equal specificity → home/idle/
+ * main pages stayed dark while later pages (whose vars cascade from this
+ * override) flipped light. Owner-reported "moitié Dark moitié Light" 2026-05-21.
+ *
+ * Targeting BOTH the attribute selector AND the class selector so we win
+ * regardless of whether Vue is currently flipping between them on mount.
+ */
+.kiosk-app[data-kiosk-theme="dark"],
+.kiosk-app.kiosk-theme--dark,
+.kiosk-app {
+  --kiosk-primary:       #F4501E !important;
+  --kiosk-primary-dark:  #A90014 !important;
+  --kiosk-primary-soft:  #FFF0F2 !important;
+  --kiosk-primary-light: rgba(244, 80, 30, 0.08) !important;
+  --kiosk-success:       #1B8A3A !important;
+  --kiosk-error:         #C21E2F !important;
+  --kiosk-warning:       #B8730B !important;
+  --kiosk-info:          #2563EB !important;
+
+  --kiosk-bg:            #FFFBF5 !important;
+  --kiosk-bg-2:          #FFFFFF !important;
+  --kiosk-bg-3:          #F7F3EC !important;
+  --kiosk-surface:       #FFFFFF !important;
+  --kiosk-surface-alt:   #F7F3EC !important;
+  --kiosk-surface-strong:#FFFFFF !important;
+  --kiosk-border:        #EEE6D9 !important;
+  --kiosk-border-strong: #D9C9B8 !important;
+
+  --kiosk-dark:          #FFFBF5 !important;
+  --kiosk-dark-2:        #FFFFFF !important;
+  --kiosk-dark-3:        #F7F3EC !important;
+
+  --kiosk-text:          #1A1A1A !important;
+  --kiosk-text-2:        #3F3435 !important;
+  --kiosk-text-muted:    #5A5A5A !important;
+  --kiosk-text-mute:     #7D7374 !important;
+  --kiosk-text-on-red:   #FFFFFF !important;
+  --kiosk-border-light:  rgba(0, 0, 0, 0.06) !important;
+
+  --kiosk-page-bg:
+    linear-gradient(180deg, #FFF9F0 0%, #FFFFFF 48%, #FFF0F2 100%) !important;
+  --kiosk-idle-bg:
+    linear-gradient(180deg, #FFFFFF 0%, #FFF1F3 44%, #F4501E 100%) !important;
+  --kiosk-idle-text: #210006 !important;
+  --kiosk-idle-muted: #4A2A2F !important;
+  --kiosk-idle-card-bg: #111111 !important;
+  --kiosk-idle-card-text: #FFFFFF !important;
+  --kiosk-product-media-bg: radial-gradient(circle at 32% 24%, #FFFFFF, #F7F3EC 68%) !important;
+  --kiosk-theme-control-bg: rgba(255, 255, 255, 0.90) !important;
+
+  --kiosk-shadow:        0 2px 8px rgba(20, 20, 20, 0.06) !important;
+  --kiosk-shadow-card:   0 8px 24px rgba(20, 20, 20, 0.09) !important;
+  --kiosk-shadow-lift:   0 18px 42px rgba(20, 20, 20, 0.14) !important;
+  --kiosk-shadow-cta:    0 14px 30px rgba(244, 80, 30, 0.28) !important;
+  --kiosk-shadow-modal:  0 24px 48px rgba(26, 26, 26, 0.24) !important;
+  --kiosk-shadow-sticky: 0 -8px 24px rgba(0, 0, 0, 0.08) !important;
+}
+
+/**
  * Kiosk hardware fallback (P-MEGA W7.B) — global safety net for
  * print-failed receipt visibility (ID selector; works alongside scoped SFC styles).
  */

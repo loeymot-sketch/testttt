@@ -1,0 +1,32 @@
+import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
+
+/**
+ * [GOAL-2026-05-29 F6 DEAD-BUTTON-FIX] The KDS "Annuler bump" (recall) button
+ * was a dead button: routes/api.php:1160 puts the `idempotency` middleware on
+ * POST /admin/kds-order/recall/{order}, which REQUIRES an X-Idempotency-Key
+ * header — but KdsHistoryDrawer.recall() POST'd WITHOUT it, so it ALWAYS 422'd,
+ * and the catch then set recalledMap[id] (faking a RAPPELÉ badge) while the order
+ * was never recalled. Confirmed by the from-roots adversarial campaign + verified
+ * directly against the route middleware.
+ * Fix: send a stable per-minute X-Idempotency-Key (mirrors POS counter-collect /
+ * livreur cash), and stop faking the badge on a genuine 422 (window expired) —
+ * only 409 (already recalled by a peer) marks recalled. This sentinel locks both.
+ */
+const src = readFileSync(
+  resolve(process.cwd(), 'resources/js/components/admin/kitchenDisplaySystem/KdsHistoryDrawer.vue'),
+  'utf-8',
+);
+
+describe('KDS recall ("Annuler bump") — idempotency header + honest 422 handling', () => {
+  it('sends an X-Idempotency-Key on the recall POST (route requires it)', () => {
+    expect(src).toMatch(/axios\.post\(\s*`admin\/kds-order\/recall\/\$\{order\.id\}`[\s\S]*?X-Idempotency-Key/);
+  });
+
+  it('does NOT fake a recalled badge on a 422 (only 409 marks recalled)', () => {
+    // The old bug: `if (status === 409 || status === 422) { recalledMap = ... }`.
+    expect(src).not.toMatch(/status\s*===\s*409\s*\|\|\s*status\s*===\s*422/);
+    expect(src).toMatch(/if\s*\(\s*status\s*===\s*409\s*\)/);
+  });
+});

@@ -51,6 +51,9 @@ class PosOrderBL2AuditCallSitesTest extends TestCase
             'broadcasting.default' => 'log',
             'pricing.use_ssot_service' => true,
             'fiscal.audit_secret' => str_repeat('a', 48),
+            // [GOAL-GOLIVE-VAT10 / F1-dormancy 2026-05-30] This suite exercises
+            // the manual-discount audit path; enable the flag (V1 default OFF).
+            'pos.manual_discount_enabled' => true,
         ]);
 
         Settings::group('order_setup')->set([

@@ -1,7 +1,7 @@
 import { createStore } from "vuex";
 
 import createPersistedState from "vuex-persistedstate";
-import { auth } from "./modules/auth";
+import { auth, sanitizePendingPhone } from "./modules/auth";
 import { company } from "./modules/company";
 import { itemCategory } from "./modules/itemCategory";
 import { itemAttribute } from "./modules/itemAttribute";
@@ -88,6 +88,7 @@ import { posFloorplan } from './modules/posFloorplan';
 import { posParked } from './modules/posParked';
 import { posCustomer } from './modules/posCustomer';
 import { posOrder } from './modules/posOrder';
+import { orderHistory } from './modules/orderHistory';
 import { cashDrawer } from './modules/cashDrawer';
 import { transaction } from './modules/transaction';
 import { notificationAlert } from './modules/notificationAlert';
@@ -215,6 +216,7 @@ export default new createStore({
         posParked,
         posCustomer,
         posOrder,
+        orderHistory,
         cashDrawer,
         transaction,
         notificationAlert,
@@ -243,6 +245,32 @@ export default new createStore({
     },
     plugins: [
         createPersistedState({
+            // [UR4-002 V1.0.2 Wave A1] Override default getState to sanitize
+            // the `auth.authInfo.phone` field on rehydrate. vuex-persistedstate
+            // bypasses mutations on boot (calls `store.replaceState(savedState)`
+            // directly), so the auth mutation-level sanitize alone cannot scrub
+            // pre-existing polluted localStorage from sessions that ran before
+            // backend PhoneDisplay::safe (commit afc094091) was deployed. Without
+            // this override, legacy `PENDING_CREATE_<hex>` sentinels survive
+            // page reloads forever for already-onboarded users.
+            //
+            // We preserve the default JSON.parse + try/catch contract from
+            // vuex-persistedstate/src/index.ts so unparseable storage falls back
+            // to `undefined` (= fresh store, no rehydrate) instead of crashing.
+            getState: (key, storage) => {
+                const value = storage.getItem(key);
+                try {
+                    const parsed = typeof value === "string"
+                        ? JSON.parse(value)
+                        : (typeof value === "object" ? value : undefined);
+                    if (parsed && parsed.auth && parsed.auth.authInfo) {
+                        parsed.auth.authInfo = sanitizePendingPhone(parsed.auth.authInfo);
+                    }
+                    return parsed;
+                } catch (err) {
+                    return undefined;
+                }
+            },
             paths: [
                 "auth",
                 "globalState",

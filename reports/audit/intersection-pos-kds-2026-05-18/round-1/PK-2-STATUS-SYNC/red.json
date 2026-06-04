@@ -1,0 +1,104 @@
+{
+  "specialist": "RED",
+  "zone": "PK-2 Status Sync — adversarial probes against transitions, undo, recall, concurrency",
+  "mode": "read-only",
+  "scope": "Probe the bidirectional sync for race holes, replay attacks, downgrade attempts, concurrent-station bumps, recall-outside-window, expected_status spoofing.",
+  "probes": [
+    {
+      "id": "PK-2-RED-01",
+      "name": "Double-bump race — same chef double-taps Prêt on V2 grid",
+      "scenario": "Chef double-taps Prêt within 200ms. KdsV2Grid.onCtaTap (line 181) cancels any pending timeout (line 183-185), so only ONE PATCH ever fires after 3s. No double-execute possible CLIENT-SIDE.",
+      "server_side_assertion": "Even if a malicious double-fire reached the server, OrderStateMachine::apply (line 215-220) returns early when fromLocked==next (idempotent). Second tx commits no audit row.",
+      "verdict": "SAFE"
+    },
+    {
+      "id": "PK-2-RED-02",
+      "name": "Bump-then-undo race — chef hits Prêt, then Undo at 2999ms",
+      "scenario": "Race between clearTimeout (line 201) and the timeout firing the PATCH. JS event loop guarantees: if Undo handler queues before timeout completes, clearTimeout prevents the PATCH. If the timeout fires first (>=3000ms), the PATCH is already sent and Undo is no-op (toast disappears anyway).",
+      "edge_case_concern": "Browser tab going to background → setTimeout throttles to 1Hz, so the 3s window may stretch to >3s. Chef sees toast still visible after 3s and hits Undo, but the PATCH may have already fired in the foreground tab. Server side: lockForUpdate idempotent — first wins, no corruption. UX: toast 'Annulation effectuée' is shown but order is actually PREPARED on backend.",
+      "verdict": "MINOR_UX_HOLE — not a defect, but worth a sentinel"
+    },
+    {
+      "id": "PK-2-RED-03",
+      "name": "Recall outside 60s window (legacy localStorage path)",
+      "scenario": "kds.recallItem (resources/js/store/modules/kds.js:71): if now - bump_ts >= 60000 -> return {ok:false, reason:'grace_expired'}. Boundary: at exactly 60000ms, `>=` triggers reject. At 59999ms, accept.",
+      "evidence_test": "No existing test on this boundary. Bypass impossible — even with localStorage tampering, the backend status (which is the source of truth for actual order state) is unaffected.",
+      "verdict": "SAFE"
+    },
+    {
+      "id": "PK-2-RED-04",
+      "name": "Status downgrade attempt PREPARED -> PENDING from KDS endpoint",
+      "scenario": "Malicious chef sends POST /api/admin/kds-order/change-status/{id} with status=PENDING(0), expected_status=PREPARED(8). KdsOrderStatusRequest:25 -> Rule::in([4,7,8]) on status -> 422 with validation error.",
+      "evidence_test": "Sentinel KdsTransitionWhitelistSentinelTest covers CANCELED-from-KDS (line 28-47); the Rule::in whitelist guarantees PENDING/DELIVERED/REJECTED/RETURNED are all rejected at FormRequest layer.",
+      "verdict": "SAFE — defense at FormRequest"
+    },
+    {
+      "id": "PK-2-RED-05",
+      "name": "Status downgrade attempt PREPARED -> ACCEPT from KDS endpoint",
+      "scenario": "Status=ACCEPT(4), expected_status=PREPARED(8). FormRequest passes Rule::in. Service layer: KitchenReleaseRule::canTransition(8,4) -> false (line 47-48 only allows ACCEPT->PREPARING or PREPARING->PREPARED). OrderStateMachine::allows(8,4) -> false (line 54-55 only OUT_FOR_DELIVERY|DELIVERED). Result: 422 invalid_status_transition.",
+      "additional_defense": "Even before transition check: expected_status PREPARED matches fromLocked(8), so 409 conflict check does NOT trip. The forward-only rule rejects.",
+      "verdict": "SAFE — service layer rejects illegal regression"
+    },
+    {
+      "id": "PK-2-RED-06",
+      "name": "Concurrent bump from TWO stations to same order — both expecting PREPARING -> PREPARED",
+      "scenario": "Chef A station=1 and Chef B station=2 both fetch order in PREPARING. Both send POST with status=PREPARED, expected_status=PREPARING simultaneously.",
+      "trace": "Tx_A acquires row lock, reads fromLocked=PREPARING, expected matches, writes PREPARED, commits. Tx_B blocks on lock during Tx_A. Tx_A releases. Tx_B acquires, reads fromLocked=PREPARED, expected=PREPARING -> abort 409.",
+      "outcome": "Exactly one transition recorded, one OrderStatusChanged event dispatched, one PersistOrderStatusChangedToOutbox row written. Both chefs receive different responses (A: 202, B: 409). B's client refresh fixes the UI.",
+      "test_gap": "KdsChangeStatusConcurrencyTest covers stale-in-memory-vs-DB; KdsExpectedStatusConflictTest covers second-call-after-first-commit. NEITHER explicitly covers two-station-simultaneous via DB::transaction parallelism. By inspection it's safe but locks behavior is implicit.",
+      "verdict": "SAFE_BUT_TEST_GAP — recommend a sentinel that explicitly opens two pdo connections + races them",
+      "recommended_sentinel": "tests/Feature/Sentinels/KdsConcurrentStationBumpSentinelTest.php — fork two transactions via parallel pdo handles, assert exactly one 202 + one 409, exactly one row in order_status_transitions."
+    },
+    {
+      "id": "PK-2-RED-07",
+      "name": "expected_status spoofing — chef sends expected=ACCEPT but order is PREPARED",
+      "scenario": "Status=PREPARED, expected_status=ACCEPT. FormRequest passes (Rule::in). Service: fromLocked=PREPARED(8) != expected=ACCEPT(4) -> abort 409. Even though the (4,8) transition WOULD be allowed if real, the optimistic check refuses because the actor's view is stale.",
+      "verdict": "SAFE — by design"
+    },
+    {
+      "id": "PK-2-RED-08",
+      "name": "Cross-branch attack via expected_status forgery",
+      "scenario": "Branch-2 chef attempts POST against Branch-3's order_id, sending plausible status+expected_status. Service line 182-185: userBranchId=2 != locked.branch_id=3 -> abort 403. Branch check is INSIDE the locked transaction, so no TOCTOU.",
+      "verdict": "SAFE — branch isolation holds post-lock"
+    },
+    {
+      "id": "PK-2-RED-09",
+      "name": "Replay attack via X-Idempotency-Key after role revocation",
+      "scenario": "Chef bumps order at t=0 (success 202, cached). At t=12h chef role is revoked. At t=12h+1s, replay with SAME key + payload. Middleware (IdempotencyKeyMiddleware:86-96) returns cached 202 BEFORE controller authorize runs.",
+      "current_state": "Latent: today IDEMPOTENCY_MIDDLEWARE_ENABLED=true but front-end does NOT send the header (see SRE-06), so no cache write happens. Once SRE-06 is fixed, this replay vector activates.",
+      "verdict": "REVIEW — paired with SEC-05. Low practical impact (chef firings rare within 24h TTL), but worth a sentinel.",
+      "recommended_sentinel": "tests/Feature/Sentinels/IdempotencyReplayPostRoleRevokeSentinelTest.php — assert second call with same key returns 403, not cached 202, when the actor's permission was revoked between calls."
+    },
+    {
+      "id": "PK-2-RED-10",
+      "name": "Auto-promote bypass — second chef station arrives without disabling watcher",
+      "scenario": "Two stations both running KdsV2Grid. Both watch visibleOrders. New order arrives in ACCEPT. BOTH stations' watchers fire auto-promote almost simultaneously.",
+      "trace": "Both emit change-status. Both reach onV2ChangeStatus, build kdsStatusPayload(order, PREPARING). axios.post fires. Server: tx_A wins lock, writes PREPARING. Tx_B sees fromLocked=PREPARING != expected=ACCEPT -> 409. Vuex catch line 42-44 dispatches lists refresh.",
+      "verdict": "SAFE — server semantics protect; UX flicker possible on station B. The auto-promote design note in kdsAutoTransition.js:11-12 acknowledges multi-station as a future concern."
+    },
+    {
+      "id": "PK-2-RED-11",
+      "name": "Listener replay attack via correlation_id forgery",
+      "scenario": "PersistOrderStatusChangedToOutbox uses correlation_id in idempotency key (line 31). An attacker who could forge X-Correlation-ID could create extra DomainEvent rows for same (old,new) tuple.",
+      "evidence": "X-Correlation-ID is request-attached; for an internal request, no validation. However, the listener runs server-side ONLY (no external API to dispatch OrderStatusChanged directly). Forgery would require RCE.",
+      "verdict": "SAFE — no remote forgery vector"
+    },
+    {
+      "id": "PK-2-RED-12",
+      "name": "Broadcast lost during Pusher outage — KDS misses POS-side transitions",
+      "scenario": "POS marks order PREPARING. Pusher is down. DispatchKdsTicket.dispatch -> OrderStatusChanged dispatched, but websocket broadcast fails (caught in try/catch at OrderService:1865, logged as warning).",
+      "compensating_control": "PersistOrderStatusChangedToOutbox still writes the DomainEvent row + DispatchDomainEventsJob fires (PR-C T2 reframe heal). KDS polling fallback (KdsSyncService 5s when degraded) detects the new state via /api/admin/kds-order/sync. AdminPollingHint banner notifies the chef.",
+      "verdict": "DEGRADED_BUT_RECOVERED — design intentionally fail-soft, polling closes the gap"
+    }
+  ],
+  "summary": {
+    "safe_count": 9,
+    "review_count": 1,
+    "test_gap_count": 2,
+    "exploited_count": 0
+  },
+  "test_gaps_identified": [
+    "PK-2-RED-06 — Concurrent station bump sentinel (multi-pdo race)",
+    "PK-2-RED-09 — Idempotency replay post-role-revoke sentinel"
+  ]
+}

@@ -1,0 +1,216 @@
+{
+  "zone": "Z-2-OSS",
+  "mode": "AUDIT-ONLY",
+  "session": "goal-complement-2026-05-18",
+  "synth_timestamp": "2026-05-18T18:50:00+02:00",
+  "head_at_audit": "ec0d4924114af7d4a90c0c9d66db6865236a10cc",
+  "branch_at_audit": "pr/mobile-app-real-e2e-heal-2026-05-18",
+  "nf525_baseline_unchanged": true,
+  "specialist_reports": [
+    "reports/audit/goal-complement-2026-05-18/round-1/Z-2-OSS/architect.json",
+    "reports/audit/goal-complement-2026-05-18/round-1/Z-2-OSS/security.json",
+    "reports/audit/goal-complement-2026-05-18/round-1/Z-2-OSS/ux-a11y.json",
+    "reports/audit/goal-complement-2026-05-18/round-1/Z-2-OSS/sre.json",
+    "reports/audit/goal-complement-2026-05-18/round-1/Z-2-OSS/red.json"
+  ],
+  "session_a_heals_attested_intact": [
+    {
+      "ref": "Wave 3b KDS-ADV3B-01 (c2613cab0)",
+      "scope": "TZ-aware Paris-to-UTC conversion in OrderStatusScreenOrderService::list() lines 77-81 + listForBranch() lines 208-211",
+      "sentinel": "tests/Feature/Services/SisterServicesTzAwareTest.php",
+      "verdict": "INTACT"
+    },
+    {
+      "ref": "Wave 3c KDS-ADV3C-04 (downstream of c2613cab0 — dirty WIP)",
+      "scope": "Stale-prune now('UTC')->subHours(N) in OrderStatusScreenOrderService::list() line 108 + listForBranch() line 228",
+      "sentinel": "tests/Feature/Services/SisterServicesTzAwareV2Test.php (test_oss_list_stale_prune_binds_utc_now + test_oss_listForBranch_stale_prune_binds_utc_now)",
+      "verdict": "INTACT"
+    },
+    {
+      "ref": "Wave 3c KDS-ADV3C-08",
+      "scope": "Cadence clamp [CADENCE_FLOOR_MS=250, CADENCE_CEILING_MS=60_000] in OssSyncService._clampCadence() — both intervalMsWhenConnected and intervalMsWhenDisconnected",
+      "sentinel": "tests/js/ossSyncFallback.spec.js (cadence + 5xx backoff)",
+      "verdict": "INTACT (start-time only — see Z2-SRE-02 forward gap)"
+    },
+    {
+      "ref": "GOAL Round 2 Impl C P0-OSS-01 (c138b32dd)",
+      "scope": "Chime gate authBranchId()<=0 in _playReadySound + audio-listener wrap in mounted() — PreparingAndReadyComponent.vue",
+      "sentinel": "tests/js/ossChimePublicWall.spec.js (7 tests covering both fixes)",
+      "verdict": "INTACT"
+    },
+    {
+      "ref": "GOAL Round 2 Impl C P1-OSS-01 (c138b32dd)",
+      "scope": "WCAG AA contrast heal text-[#2AC769] → text-[#0E7C3A] in PRÊT column",
+      "sentinel": "tests/js/ossChimePublicWall.spec.js (WCAG AA describe block, 2 tests)",
+      "verdict": "INTACT (5.30:1 contrast vs white, clears AA 4.5:1 threshold)"
+    },
+    {
+      "ref": "RED R-3 fail-closed allowlist (2026-05-18)",
+      "scope": "whereIn('order_type', [KIOSK, TAKEAWAY]) in both list() and listForBranch() — POS/DELIVERY/DINING_TABLE blocked from customer wall",
+      "sentinel": "tests/Feature/OSS/OssCustomerScreenFilterTest.php",
+      "verdict": "INTACT"
+    }
+  ],
+  "deferred_heal_recommendations": [
+    {
+      "id": "Z2-ARCH-01",
+      "severity": "P2",
+      "title": "list() vs listForBranch() byte-identical drift — comment-only enforcement",
+      "specialist": "Architect",
+      "ticket": "V1.0.2-OSS-DRIFT-GUARD",
+      "scope_minimal_heal": "Extract private buildBaseQuery(?int $branchScope) → both list() and listForBranch() call it. Add fixture-compare regression test.",
+      "files_touched_estimate": "1 service + 1 new test",
+      "blast_radius": "low"
+    },
+    {
+      "id": "Z2-ARCH-02",
+      "severity": "P2",
+      "title": "Public wall has no Echo subscription — polling-only (2s cadence on disconnect)",
+      "specialist": "Architect",
+      "ticket": "V1.0.2-OSS-PUBLIC-ECHO",
+      "scope_minimal_heal": "If V1.0.2 SaaS adopts service-account walls, build public-presence channel broadcasting only CDSOrderDetailsResource shape",
+      "blast_radius": "none today (single-branch FR Le Cayenne)"
+    },
+    {
+      "id": "Z2-ARCH-03",
+      "severity": "P1",
+      "title": "VisibilityChange burst-poll bypasses cadence clamp ceiling",
+      "specialist": "Architect (RED confirmed via Z2-RED-06 bounded by backend rate-limiter)",
+      "ticket": "V1.0.2-OSS-BURST-CLAMP",
+      "scope_minimal_heal": "Either document accepted UX behavior OR enforce max(visibilityBurstMinIntervalMs, CADENCE_FLOOR_MS) at _burstPoll entry. Add ossSyncFallback.spec.js case.",
+      "blast_radius": "low (backend throttle 60/min/IP caps the worst case)"
+    },
+    {
+      "id": "Z2-ARCH-04",
+      "severity": "P2",
+      "title": "Document Echo/OssSyncService de-dup contract (_echoMarkedReady canonical guard)",
+      "specialist": "Architect",
+      "ticket": "V1.0.2-OSS-DOC",
+      "scope_minimal_heal": "Docstring update in OssSyncService.js referencing component-side de-dup set",
+      "blast_radius": "none"
+    },
+    {
+      "id": "Z2-SEC-02",
+      "severity": "P2",
+      "title": "Public branch enumeration via ?branch_id query param",
+      "specialist": "Security",
+      "ticket": "V1.0.2-OSS-BRANCH-PROBE",
+      "scope_minimal_heal": "Add Branch::where('id', $branchId)->where('status', Status::ACTIVE)->exists() guard in publicIndex + publicMostPopularItems",
+      "blast_radius": "low (throttled 60/min/IP, no PII)"
+    },
+    {
+      "id": "Z2-SEC-03",
+      "severity": "P2",
+      "title": "No 429 rate-limit regression test for throttle:oss-public",
+      "specialist": "Security",
+      "ticket": "V1.0.1+2-OSS-RATE-LIMIT-TEST",
+      "scope_minimal_heal": "Create tests/Feature/OSS/OssPublicRateLimitTest.php — 70 req/60s assert 60×200 + 10×429",
+      "blast_radius": "coverage gap, throttle still active in prod"
+    },
+    {
+      "id": "Z2-UX-02",
+      "severity": "P2",
+      "title": "PopularItemComponent <img alt=\"\"> empty",
+      "specialist": "UX/A11y",
+      "ticket": "V1.0.1+1-OSS-POPULAR-ALT",
+      "scope_minimal_heal": "PopularItemComponent.vue:15 — replace alt=\"\" with :alt=\"item.name\"",
+      "blast_radius": "single screen-reader impact"
+    },
+    {
+      "id": "Z2-UX-03",
+      "severity": "P2",
+      "title": "Missing oss_main_aria + oss_popular_region_aria keys in de/bn locales",
+      "specialist": "UX/A11y",
+      "ticket": "V1.0.2-OSS-I18N-DE-BN",
+      "scope_minimal_heal": "Add 2 keys to de.json + bn.json",
+      "blast_radius": "none for V1 (FR-only)"
+    },
+    {
+      "id": "Z2-UX-04",
+      "severity": "P1",
+      "title": "No Lighthouse CI gate for OSS a11y ≥95",
+      "specialist": "UX/A11y",
+      "ticket": "V1.0.1+1-LIGHTHOUSE-CI",
+      "scope_minimal_heal": "Phase 2 orchestrator-level: stand up .github/workflows/lighthouse-ci.yml + tests/lighthouse/oss-public.json. Coordinate with Z-8.",
+      "blast_radius": "regression coverage gap"
+    },
+    {
+      "id": "Z2-UX-05",
+      "severity": "P3",
+      "title": "No per-viewport text scaling for queue numbers",
+      "specialist": "UX/A11y",
+      "ticket": "V1.0.2-OSS-MOBILE-RESCALE",
+      "scope_minimal_heal": "Add md:text-[40px] text-[24px] responsive variant",
+      "blast_radius": "none for V1 TV-wall use case"
+    },
+    {
+      "id": "Z2-UX-06",
+      "severity": "P3",
+      "title": "AR direction (RTL) unverified at OSS root",
+      "specialist": "UX/A11y",
+      "ticket": "V1.0.2-OSS-AR-RTL",
+      "scope_minimal_heal": "Playwright capture /admin/order-status-screen?lang=ar 1920×1080 verify bidi",
+      "blast_radius": "none for FR-only V1"
+    },
+    {
+      "id": "Z2-SRE-02",
+      "severity": "P1",
+      "title": "Cadence clamp applied only on start() — not on runtime config refresh",
+      "specialist": "SRE (confirmed via RED Z2-RED-03)",
+      "ticket": "V1.0.2-OSS-RUNTIME-CLAMP-DOC",
+      "scope_minimal_heal": "Document set-once-per-mount semantic OR wire _clampCadence at each tick (option (a) is simpler V1 path)",
+      "blast_radius": "low — no production CDN-mutate observed"
+    },
+    {
+      "id": "Z2-SRE-03",
+      "severity": "P2",
+      "title": "No observability beacon for sustained production disconnect",
+      "specialist": "SRE",
+      "ticket": "V1.0.2-OSS-OBSERVABILITY",
+      "scope_minimal_heal": "When OssSyncService disconnects >60s in production, emit one beacon to /api/admin/observability per disconnect window",
+      "blast_radius": "ops blind-spot"
+    },
+    {
+      "id": "Z2-SRE-04",
+      "severity": "P2",
+      "title": "Echo re-subscription on reconnect — no visible test sentinel",
+      "specialist": "SRE",
+      "ticket": "V1.0.2-OSS-ECHO-RECONNECT-TEST",
+      "scope_minimal_heal": "Add tests/js/ossEchoReconnect.spec.js mirroring orderStatusScreenOssSync.spec.js static-source style",
+      "blast_radius": "coverage gap"
+    },
+    {
+      "id": "Z2-RED-04-PROMOTED",
+      "severity": "P2",
+      "title": "Global Admin (branch_id=0) treated as public wall by chime gate — design choice ambiguity",
+      "specialist": "RED",
+      "ticket": "V1.0.2-OSS-CHIME-ADMIN-NOTE",
+      "scope_minimal_heal": "Document design choice in PreparingAndReadyComponent.vue comment (already partially documented in Impl C heal comment)",
+      "blast_radius": "low UX expectation mismatch"
+    }
+  ],
+  "score_summary": {
+    "p0_new": 0,
+    "p0_pre_heal_resolved": 4,
+    "p1_new": 0,
+    "p1_forward_looking": 3,
+    "p2_new": 1,
+    "p2_pre_existing_deferred": 8,
+    "p3_pre_existing_deferred": 3,
+    "total_findings": 15,
+    "session_a_heals_intact": 6,
+    "blocking_for_v1": 0,
+    "blocking_for_orchestrator_phase_2_merge": 0
+  },
+  "verification_evidence": {
+    "vitest_oss_pass_count": "17/17 PASSED (4 spec files: ossChimePublicWall.spec.js + ossWakeLockOnMount.spec.js + ossSyncFallback.spec.js + orderStatusScreenOssSync.spec.js — 927ms duration)",
+    "frozen_zone_diff": "0 (no Z-2 writes — AUDIT-ONLY mode honored)",
+    "dirty_files_untouched": [
+      "public/js/admin-oss.js",
+      "app/Services/OrderStatusScreenOrderService.php"
+    ]
+  },
+  "verdict": "AUDIT-ONLY VALIDATED. Session-A heal sufficiency confirmed. 0 new P0/P1 blocking findings. 15 findings persisted (6 attested intact + 9 deferred V1.0.1+1 / V1.0.2). All 5 specialists converged: RED-team disputes failed empirically, sentinel tests disprove regression hypotheses, no net-new P0/P1 emerges.",
+  "next_round_required": false,
+  "rationale_no_round_2": "AUDIT-ONLY mode does not require 2-cycle convergence per §A.2 step 4b. Deferred-heal recommendations queued; orchestrator can dispatch heal sub-agents in subsequent passes."
+}

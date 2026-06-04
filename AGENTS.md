@@ -1,6 +1,14 @@
 # FoodKing – Cursor Agent Operating Contract
 
-> **Routine production (non négociable)** — Dès l’ouverture du dépôt ou d’une session agent : **ne pas attendre** qu’un humain dise « lis AGENTS ». La boucle **`run-cycle <TASK_ID>`** (voir **`.cursor/commands/run-cycle.md`**) est le chemin **par défaut** pour toute modification **code produit** dans une mission traçable. Rappel court à la racine : **`BOUCLE.md`**.
+> ⚠️ **SCOPE DISAMBIGUATION (CTO audit 2026-05-16 — P1-26 close)**
+>
+> Ce document est le contrat opérationnel **pour les agents Cursor / Codex**. Pour les sessions **Claude Code orchestrator**, le document de référence est **`CLAUDE.md`** (load-bearing, auto-chargé par Claude Code).
+>
+> En cas de **contradiction** entre AGENTS.md et CLAUDE.md sur le rôle de Claude (orchestrateur vs lecture-seule, edits autorisés, gates), **CLAUDE.md prévaut pour les sessions Claude**. Cf. CLAUDE.md §1 (Core Identity) + §5 (LOOP discipline) + §10 (Decision framework — human gates).
+>
+> Les sections de ce fichier qui décrivent les workflows Cursor (`.cursor/commands/run-cycle.md`, `.cursor/ACTIVE_CYCLE.md`, MASTERPLAY, etc.) restent autoritaires pour Cursor / Codex.
+
+> **Routine production (non négociable)** — Dès l’ouverture du dépôt ou d’une session agent Cursor : **ne pas attendre** qu’un humain dise « lis AGENTS ». La boucle **`run-cycle <TASK_ID>`** (voir **`.cursor/commands/run-cycle.md`**) est le chemin **par défaut** pour toute modification **code produit** dans une mission traçable. Rappel court à la racine : **`BOUCLE.md`**.
 
 ## 0. Quick start contract — read this first
 

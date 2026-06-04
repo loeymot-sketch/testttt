@@ -1,0 +1,225 @@
+{
+  "agent": "B1-P6",
+  "mission": "Borne x Staff-newbie — what can go wrong unsupervised",
+  "persona": "Nouvelle recrue staff seule de soir / sans formation profonde",
+  "date": "2026-05-25",
+  "server": "http://127.0.0.1:8000",
+  "branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "head_baseline": "a6ed32807",
+  "discipline": "DM6 RO + DM3 + DM5 + DM8",
+  "method": "Read-only inspection — HTML curl + Vue source + i18n keys + docs gates + UAT runbook",
+  "states_captured": [
+    {
+      "id": "S1",
+      "name": "Curl /kiosk/idle — raw HTML aide/help scan",
+      "evidence": {
+        "http_status": 200,
+        "size_bytes": 10408,
+        "grep_aide_help_appeler_assistance": "0 matches (HTML shell — Vue mount target only)",
+        "match_found_in_shell": "staffOnlyMode flag (V1 feature flag, NOT a customer-facing button)"
+      },
+      "verdict": "No aide/help button visible in idle HTML shell. Vue SPA mounts here — actual buttons appear via runtime."
+    },
+    {
+      "id": "S2",
+      "name": "Read KioskAppComponent.vue (FROZEN per §7) — confirm no aide button",
+      "evidence": {
+        "file": "resources/js/components/frontend/kiosk/KioskAppComponent.vue",
+        "lines": 1576,
+        "grep_aide_help_appeler": "0 customer-aide button found",
+        "ui_elements_present": [
+          "kiosk-theme-toggle (sun/moon)",
+          "kiosk-init-overlay (loading)",
+          "kiosk-init-error ($t kiosk.app.service_unavailable + retry only)",
+          "kiosk-cart-bar (cart shortcut)",
+          "kiosk-offline-indicator (info badge)",
+          "kiosk-abandoned-indicator (warn — text mentions 'please alert staff' but no button)",
+          "kiosk-offline-conflict-cta (Voir — modal only)",
+          "KioskInactivityOverlayComponent (Je suis la / Abandonner)",
+          "KioskToastComponent"
+        ],
+        "event_listeners_root_router_view": "@add-to-cart, @go-to-cart, @start-order, @reset-kiosk (4 events)",
+        "@call-staff_listener": "ABSENT — never wired in KioskAppComponent.vue line 121-128"
+      },
+      "verdict": "FROZEN KioskAppComponent has no inline aide/help button. service_unavailable + abandoned indicators reference staff in text but provide no actionable button. @call-staff emit from KioskErrorNetworkComponent is BLACK-HOLE (no parent listener)."
+    },
+    {
+      "id": "S3",
+      "name": "Customer-support workflow + error procedure docs",
+      "evidence": {
+        "docs_searched": [
+          "docs/MAINTENANCE.md (zero staff-customer procedure)",
+          "docs/DEPLOIEMENT.md (zero customer workflow)",
+          "docs/DESIGN_BRIEF_KIOSK_2026.md (Ecran 15 = staff PIN maintenance, NOT customer help)",
+          "docs/runbooks/ (3 files, none customer-facing)",
+          "docs/hardware/UAT_COMPOSER_2026-04-27.md — 'Kiosk remains locked, no staff escape' (PENDING UAT)",
+          "docs/gates/GATE_LOG.md — HG-KIOSK-LOCKED-CUSTOMER-SURFACE: approved 'no admin route, hidden admin tap, or kiosk-to-caisse navigation on customer kiosk; staff intervention from caisse/admin only'"
+        ],
+        "gate_design_intent": "Customer kiosk is DELIBERATELY LOCKED — staff intervention happens FROM CAISSE/ADMIN, not from kiosk UI",
+        "no_documented_procedure_for_newbie_staff_alone_at_night": true,
+        "no_panic_button_documented": true,
+        "no_help_modal_documented": true
+      },
+      "verdict": "Owner gate explicitly chose LOCKED-customer surface (no escape, no help button). Workflow assumes staff WATCHES the kiosk physically + intervenes from caisse. Zero documented runbook for newbie staff alone."
+    },
+    {
+      "id": "S4",
+      "name": "Grep i18n help/aide/assistance/staff",
+      "evidence": {
+        "fr_json_hits": {
+          "kiosk.error.call_staff": "Prevenir un membre de l'equipe (line 1501) — used ONLY in KioskErrorNetworkComponent",
+          "kiosk.pay_screen.tpe_stuck_help": "Si l'ecran ne repond plus, utilisez Annuler le paiement (line 1623 hint TEXT, no button to call staff)",
+          "kiosk.pay_screen.payment_sync_failed": "Le paiement a ete accepte mais la borne n'a pas pu confirmer... Merci d'appeler un membre du personnel (line 1635 TEXT only, no button)",
+          "kiosk.app.offline_abandoned_one": "{n} commande non envoyee — prevenez le staff (line 92 TEXT only, no button)",
+          "kiosk.a11y.audio": "Assistance audio (line 1640 — audio assistance NOT staff)",
+          "kiosk.app.service_unavailable": "Service indisponible (line 45 — has retry button, NO staff button)"
+        },
+        "actionable_buttons_count": 1,
+        "passive_text_count": 5,
+        "kiosk_idle_screen_specific": "ZERO help/aide key referenced — idle has NO help affordance"
+      },
+      "verdict": "1 actionable staff button exists (network-error screen), but its emit is unwired. 5 other mentions are passive TEXT instructing customer to 'please alert staff' — no button affordance. Idle/categories/wizard/cart/payment screens have NO staff button."
+    },
+    {
+      "id": "S5",
+      "name": "Adversarial scoring — newbie staff scenario stress",
+      "scenarios": [
+        {
+          "scenario": "Customer stuck mid-wizard (e.g. confused by Big Burger 5 steps)",
+          "what_borne_offers": "No help button. KioskInactivityOverlayComponent fires after confirmMs (default 15s) — offers 'Je suis la' / 'Abandonner' only",
+          "newbie_staff_action_required": "Physically watch all kiosks + spot frozen UI + walk over + reset via... ???",
+          "documented_recovery": "NONE in runbooks. Staff must reach via PIN backdoor on Ecran 15 (triple-tap, undocumented for new hire)",
+          "risk_score_for_newbie_solo": "P0 - SEVERE - newbie cannot rescue stuck customer without coaching"
+        },
+        {
+          "scenario": "Erreur paiement (CB declined / TPE freeze)",
+          "what_borne_offers": "kiosk.pay_screen.tpe_stuck_help displays TEXT 'use Annuler le paiement' — no staff button. payment_sync_failed shows TEXT 'Merci d'appeler un membre du personnel' — no button",
+          "newbie_staff_action_required": "Customer reads French text + verbally calls staff. Newbie has zero procedure script — no documented 'if payment fails do X then Y'",
+          "documented_recovery": "PENDING UAT step in docs/hardware/UAT_COMPOSER_2026-04-27.md says 'no staff escape'",
+          "risk_score_for_newbie_solo": "P0 - SEVERE - newbie sees customer in panic + has no script + no remote panel to assist"
+        },
+        {
+          "scenario": "Customer does not understand wizard (5 steps Big Burger)",
+          "what_borne_offers": "Wizard runs autonomously. No inline help icon, no tooltip with hostess avatar, no 'I need help' button anywhere",
+          "newbie_staff_action_required": "Walk over physically + operate wizard for customer + manage queue behind",
+          "documented_recovery": "NONE — no help-customer-with-borne playbook",
+          "risk_score_for_newbie_solo": "P1 - HIGH - workable but stressful at peak hour for solo newbie"
+        },
+        {
+          "scenario": "Help inline (tooltip, info bubble, FAQ)",
+          "what_borne_offers": "ZERO — no '?' icon, no info bubble, no FAQ overlay. wizard-step.help.toggle_show keys exist (admin context only — Ecran 15 staff maintenance, not customer)",
+          "newbie_staff_action_required": "Customer cannot self-help. Staff must manually intervene each time",
+          "documented_recovery": "NONE",
+          "risk_score_for_newbie_solo": "P1 - HIGH - increases staff workload mechanically"
+        },
+        {
+          "scenario": "Newbie procedure docs (errors / customer panic / reset borne)",
+          "what_codebase_offers": "Zero customer-support runbook. Only NF525 + maintenance + sync runbooks (operator/sysadmin)",
+          "documented_recovery": "NONE",
+          "risk_score_for_newbie_solo": "P0 - SEVERE - hire-night newbie has zero printed/digital procedure"
+        }
+      ],
+      "design_decision_context": "Owner gate HG-KIOSK-LOCKED-CUSTOMER-SURFACE (2026-04-27) explicitly chose LOCKED customer surface — staff intervention via caisse, not kiosk UI. This is deliberate, not an oversight. But it assumes staff is TRAINED + PRESENT, which contradicts 'newbie alone at night' persona.",
+      "scores": {
+        "help_button_present_on_idle": 0,
+        "help_button_present_on_wizard": 0,
+        "help_button_present_on_payment": 0,
+        "actionable_staff_cta_count_across_all_kiosk_screens": 1,
+        "actionable_cta_actually_wired_to_listener": 0,
+        "newbie_staff_can_recover_unaided_score": 1,
+        "documentation_runbook_for_customer_support_score": 0,
+        "overall_unsupervised_safety_score_out_of_10": 2.5
+      }
+    }
+  ],
+  "findings": [
+    {
+      "id": "B1-P6-F01",
+      "severity": "P1",
+      "title": "kiosk.error.call_staff button emit is BLACK-HOLE — not wired to any parent listener",
+      "evidence": "KioskErrorNetworkComponent.vue:46 declares emits ['retry', 'call-staff']. KioskErrorNetworkComponent.vue:66 emits 'call-staff'. KioskAppComponent.vue:124-127 ONLY listens @add-to-cart, @go-to-cart, @start-order, @reset-kiosk. No router-view ancestor catches @call-staff. Clicking the secondary 'Prevenir un membre de l'equipe' button on network-error screen fires logEvent('error_call_staff') analytics ping only — no toast, no caisse notification, no audio alert, no LED. Customer + newbie staff get ZERO observable feedback.",
+      "impact": "Customer believes staff was alerted; newbie staff has no panel/alert showing 'kiosk #X needs help'; both wait silently. UX trust broken.",
+      "fix_proposal": "Either (a) wire @call-staff in KioskAppComponent.vue to dispatch a kiosk-help-requested event over WebSocket to caisse + POS toast OR (b) remove the button entirely + reword hint TEXT to 'please go to the counter'. Currently button is misleading.",
+      "files_affected": [
+        "resources/js/components/frontend/kiosk/KioskErrorNetworkComponent.vue",
+        "resources/js/components/frontend/kiosk/KioskAppComponent.vue (FROZEN per CLAUDE.md §7 — would need LOCK)"
+      ],
+      "frozen_zone_touch_required": true
+    },
+    {
+      "id": "B1-P6-F02",
+      "severity": "P0",
+      "title": "No customer-help affordance on idle / categories / wizard / payment / cart — only on network-error screen",
+      "evidence": "i18n grep across kiosk lang FR: exactly 1 actionable staff button key (kiosk.error.call_staff). 5 other mentions are passive paragraph TEXT in error states (tpe_stuck_help, payment_sync_failed, offline_abandoned_one/many, payment_sync_failed) which require customer to read French + walk to counter unaided. NO help button on idle screen (S1+S2). NO help button on categories. NO help button in wizard (S5 scenario 3). NO inline '?' tooltip anywhere.",
+      "impact": "Newbie staff alone at night cannot remotely see which kiosk needs help. Customer with confusion (wizard 5 steps, payment error, allergen question) has zero self-help. Owner gate HG-KIOSK-LOCKED-CUSTOMER-SURFACE chose this on purpose — but the gate assumed trained staff watching. Newbie-alone persona breaks the assumption.",
+      "fix_proposal": "Either (a) accept gate decision + add MANDATORY staff training procedure doc (runbook 'borne-customer-support-V1.md') OR (b) revisit gate with owner: add a discrete 'i' help icon top-right that opens a modal showing FAQ + 'Call staff' button that fires WebSocket signal to caisse. Currently the gate + zero runbook = newbie hire night = customer abandons + lost revenue + bad review.",
+      "files_affected": [
+        "MISSING: docs/runbooks/KIOSK_CUSTOMER_SUPPORT_NEWBIE_STAFF.md",
+        "OPTIONAL Phase B revisit: KioskAppComponent.vue + new KioskHelpButtonComponent.vue (FROZEN — needs LOCK)"
+      ],
+      "frozen_zone_touch_required": "depends — runbook MD = no frozen touch; UI fix = frozen touch with LOCK"
+    },
+    {
+      "id": "B1-P6-F03",
+      "severity": "P1",
+      "title": "kiosk-abandoned-indicator + service_unavailable display passive TEXT 'please alert staff' but no actionable button — relies on customer literacy + initiative",
+      "evidence": "KioskAppComponent.vue:84-97 renders kiosk-abandoned-indicator with text 'X commande(s) non envoyee(s) — prevenez le staff'. KioskAppComponent.vue:42-49 renders service_unavailable with retry button only. No 'Notify staff now' button. No audio chime. No LED color. No backend push to caisse. Customer who is stressed/doesnt read French simply walks away without notifying anyone — money lost + offline order stuck.",
+      "impact": "Offline-pending orders accumulate silently when customer abandons; newbie staff has no dashboard/alert showing 'kiosk #2 has 3 abandoned orders'. NF525 audit chain unaffected (orders not committed), but UX + revenue impact real.",
+      "fix_proposal": "Cross-surface signal: when offlineAbandoned>0, fire a Reverb event 'kiosk-abandoned' to channel branch.{branchId}.staff that displays a POS+OSS toast 'Kiosk #X has X abandoned orders — assist customer'. Listener exists in routes/channels.php (verified). No frozen-zone touch on KioskAppComponent strictly required if signal originates from offline-queue helper.",
+      "files_affected": [
+        "resources/js/helpers/kioskOfflineQueue.js",
+        "routes/channels.php (kiosk-staff broadcast channel — already authz'd per docs/BUSINESS_RULES.md)",
+        "POS toast handler (POS-side)",
+        "Test surface: tests/e2e/kiosk-abandoned-staff-notify.spec.js (NEW)"
+      ],
+      "frozen_zone_touch_required": false
+    }
+  ],
+  "adversarial_dispute": {
+    "self_red_team_questions": [
+      "Q: Is the LOCKED-customer surface actually the right design? A: Owner gate 2026-04-27 explicitly approved it for V1. Reopening = scope creep. Findings B1-P6-F02 proposes runbook + optional Phase B, not gate reversal.",
+      "Q: Is the dead @call-staff emit a real defect? A: YES — verified by direct read of KioskAppComponent:124-127 (no @call-staff listener) + KioskErrorNetworkComponent:66 (emit fires). Analytics ping is the only side effect.",
+      "Q: Is 'newbie staff alone at night' a real V1 persona? A: Yes — Le Cayenne V1 LOCAL single-resto context implies skeleton crew at non-peak hours. CLAUDE.md §2 mentions 'staff (branch_id>0) scoped' — does not assume training depth.",
+      "Q: Are the passive TEXT mentions ('please alert staff') sufficient? A: For trained staff watching, yes. For newbie alone + unfamiliar customer, NO — no audio, no visual signal on POS, no LED. Pure text in French = single point of failure."
+    ],
+    "convergence_after_self_dispute": "Findings hold. F01 (P1) is unambiguous defect (dead emit). F02 (P0) is design-gate question — proposes runbook fix (no frozen touch) as V1.0 + optional UI revisit as V1.0.X backlog. F03 (P1) is cross-surface signal gap — fixable without frozen-zone touch via offline-queue helper + existing Reverb channel."
+  },
+  "verdict": "P0=1 (F02 — missing newbie-staff runbook + no help affordance design), P1=2 (F01 dead emit, F03 cross-surface gap). Frozen-zone diff: 0 LOC required for F02 runbook + F03 cross-surface fix. F01 fix touches FROZEN KioskAppComponent (would need LOCK). The borne is DELIBERATELY locked per owner gate — but the gate assumes trained staff. Newbie-alone persona is unsupported by current docs+UI. NF525 chain not affected by any finding.",
+  "recommendations_ranked": [
+    {
+      "rank": 1,
+      "action": "Write docs/runbooks/KIOSK_CUSTOMER_SUPPORT_NEWBIE_STAFF.md (markdown only — 0 frozen touch, 0 LOC code change). Covers: stuck wizard recovery, payment error script, offline-pending visibility, reset borne procedure, escalation tree."
+    },
+    {
+      "rank": 2,
+      "action": "Fix F03 cross-surface signal in kioskOfflineQueue.js (helper, not frozen) — fire branch.{branchId}.staff Reverb event on offlineAbandoned>0 + add POS/OSS toast listener. New E2E spec to lock contract."
+    },
+    {
+      "rank": 3,
+      "action": "Owner-gate question: keep F01 broken @call-staff button (and reword text to 'walk to counter') OR LOCK_KIOSK_APP to wire @call-staff to Reverb. Recommend reword (rank 3a) over LOCK (rank 3b) for V1 safety."
+    },
+    {
+      "rank": 4,
+      "action": "V1.0.X backlog: revisit HG-KIOSK-LOCKED gate with new persona evidence — consider discrete '?' help icon top-right + FAQ modal + call-staff WebSocket. Requires owner gate refresh."
+    }
+  ],
+  "frozen_zone_diff": "0 LOC touched during this audit (read-only DM3)",
+  "nf525_chain_impact": "NF525 chain UNCHANGED — this audit performed zero writes (DM6 RO). last_hash=a59e47cbe474f799 audit_logs=67 unchanged.",
+  "tests_run": "0 (DM3 read-only audit — no test execution requested by mission spec)",
+  "files_inspected": [
+    "resources/js/components/frontend/kiosk/KioskAppComponent.vue (FROZEN, 1576 LOC, line-by-line @event scan)",
+    "resources/js/components/frontend/kiosk/KioskErrorNetworkComponent.vue (74 LOC, full file)",
+    "resources/js/components/frontend/kiosk/KioskIdleScreenComponent.vue (grep)",
+    "resources/js/components/frontend/kiosk/KioskCategoriesComponent.vue (grep)",
+    "resources/js/components/frontend/kiosk/KioskWizardComponent.vue (FROZEN, grep)",
+    "resources/js/languages/fr.json (full grep aide/help/staff/appeler)",
+    "resources/js/languages/en.json (full grep)",
+    "resources/js/router/modules/kioskRoutes.js (verify error.network route)",
+    "docs/MAINTENANCE.md, docs/DEPLOIEMENT.md (grep)",
+    "docs/runbooks/*.md (3 files — verified zero customer-support runbook)",
+    "docs/hardware/UAT_COMPOSER_2026-04-27.md (UAT pending entries)",
+    "docs/gates/GATE_LOG.md (HG-KIOSK-LOCKED-CUSTOMER-SURFACE 2026-04-27 confirmed approved)",
+    "docs/DESIGN_BRIEF_KIOSK_2026.md (Ecran 15 staff maintenance = NOT customer help)",
+    "HTML curl /kiosk/idle (200 OK 10408 bytes — Vue shell)"
+  ]
+}

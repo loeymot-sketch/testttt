@@ -90,6 +90,9 @@ class PosTicketRestaurantPaymentTest extends TestCase
         $this->assertSame(PosPaymentMethod::TICKET_RESTAURANT, (int) $order->pos_payment_method);
         $this->assertSame('TR-998877', (string) $order->pos_payment_note);
         $this->assertSame(PaymentStatus::PAID, (int) $order->payment_status);
-        $this->assertSame(OrderStatus::ACCEPT, (int) $order->status);
+        // [Wave S-1 — 2026-05-20] Owner P-OWNER Wave S-1: POS direct paid
+        // (including TICKET_RESTAURANT) auto-advances to PREPARING. No S-5
+        // carve-out applies — TR is not the kiosk cash-at-counter path.
+        $this->assertSame(OrderStatus::PREPARING, (int) $order->status);
     }
 }

@@ -1,0 +1,45 @@
+{
+  "start_ts": "2026-05-28T17:49:39.633Z",
+  "task": "#186 GOAL E2E — KDS kitchen worker journey",
+  "captures": [
+    {
+      "slug": "K09-after-bump-no-toast",
+      "file": "K09-after-bump-no-toast.png",
+      "ts": "2026-05-28T17:50:43.156Z",
+      "url": "http://localhost:8000/admin/kitchen-display-system"
+    }
+  ],
+  "consoleErrors": [
+    {
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "ts": "2026-05-28T17:50:42.402Z"
+    }
+  ],
+  "pageErrors": [],
+  "networkFailures": [],
+  "seededOrders": [],
+  "transitions": [],
+  "findings": [
+    {
+      "test": "K08",
+      "taskBriefClaim": "floor 250ms / ceiling 60s (Wave 2c heal)",
+      "actualCode": "KitchenDisplaySystemComponent.vue:1878 — binary 5000ms (WS down) / 60000ms (WS up), hardcoded HEAL B.3 2026-05-19",
+      "observed_intervals_ms": [],
+      "observed_avg_ms": 0,
+      "observed_min_ms": 0,
+      "observed_max_ms": 0,
+      "list_requests_count": 0,
+      "drift_note": "Task brief 250ms floor / Wave 2c attribution is STALE. Real cadence is 5s or 60s. Reported as P3 doc drift."
+    },
+    {
+      "test": "K09",
+      "taskBriefClaim": "Undo toast (Wave 5G) on bump",
+      "actualCode": "KdsV2Grid.vue:109 — KdsUndoToast REMOVED Wave V 2026-05-21 by owner mandate (\"enlève cette sécurité\")",
+      "undoToastDomCount": 0,
+      "drift_note": "Task brief requirement #8 contradicted by Wave V owner mandate. Documented as P2 spec drift."
+    }
+  ],
+  "computed_ctas": [],
+  "ariaLabels": [],
+  "rawLabelsDetected": []
+}

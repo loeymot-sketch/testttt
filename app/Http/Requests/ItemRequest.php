@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Models\Allergen;
 use App\Rules\IniAmount;
+use App\Rules\NoDangerousFileExtension;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -13,11 +14,20 @@ class ItemRequest extends FormRequest
     /**
      * Determine if the user is authorized to make this request.
      *
+     * V1.0.2 BUILD-6 heal: defense-in-depth — ItemController middleware enforces
+     * `permission:items_create` on store/import/duplicate and `permission:items_edit`
+     * on update/changeImage; FormRequest accepts either since the same class is injected
+     * on both verbs. Any future route bypass still authz-checks against the items family.
+     *
      * @return bool
      */
     public function authorize(): bool
     {
-        return true;
+        $user = $this->user();
+        if ($user === null) {
+            return false;
+        }
+        return $user->can('items_create') || $user->can('items_edit');
     }
 
     /**
@@ -70,7 +80,9 @@ class ItemRequest extends FormRequest
             'order'            => ['required', 'numeric'],
             'variations'       => ['nullable', 'json'],
             'extras'           => ['nullable', 'json'],
-            'image'            => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
+            // [GOAL-L2-HEAL-02 2026-05-24] Phase L7.1-V1: NoDangerousFileExtension
+            // blocks .pht / double-extension polyglot attacks.
+            'image'            => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048', new NoDangerousFileExtension()],
         ];
     }
 

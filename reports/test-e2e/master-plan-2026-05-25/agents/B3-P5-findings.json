@@ -1,0 +1,163 @@
+{
+  "agent": "B3-P5",
+  "surface": "KDS × Inspecteur-fiscal (NF525 bump traceability)",
+  "persona": "Inspecteur-fiscal NF525",
+  "persona_reframe": "Si je passe demain matin contrôler ce restaurant, est-ce que chaque bump KDS (le geste 'Prêt' qui acte qu'un plat est sorti de cuisine) laisse une trace fiscale auditable, signée HMAC, append-only, requêtable par moi inspecteur via les outils opérateur (artisan, exports) — ou bien un chef peut-il silencieusement bumper, recaller, ou re-bumper sans laisser AUCUNE empreinte récupérable ? Per Wave P Z2 : KDS bumps in audit chain or not ?",
+  "timestamp": "2026-05-25T22:35:00+02:00",
+  "server": "http://127.0.0.1:8000",
+  "git_branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "git_head": "a6ed3280787a5e95392421cbcb065a641d5cc2d4",
+  "discipline": {
+    "DM3_quartet_captures": "PARTIAL — états 1-5 sont des sorties artisan/tinker/grep/Read READ-ONLY. Pas de browser-capture (l'audit est code+DB-side, comme persona Inspecteur). Cohérent avec B2-P5 same-axis (lit la trace, ne navigue pas le KDS).",
+    "DM5_adversarial_inline": "OUI — paragraphe dédié infra avec scénario de tribunal : que se passe-t-il si un client conteste avoir reçu son plat et il faut prouver le bump ?",
+    "DM6_NF525_readonly": "RESPECTÉ ABSOLU — ZÉRO INSERT/UPDATE sur audit_logs/z_reports/orders/order_items/order_status_transitions. Lecture seule artisan (fiscal:verify-chain --all sans flag de mutation), tinker (SELECT-only queries comptage + dump), git diff + grep + Read sur PHP/JS source uniquement.",
+    "DM8_honest_reporting": "OUI — DB état post-restore minimal (orders_total=2, audit_logs=69 dont 65 user.login, order_status_transitions=2 dont 1 KDS-like). Validation est code-level + DB-trace baseline. Le pipeline runtime KDS→audit_logs NE PEUT PAS être prouvé par observation empirique parce que LE PIPELINE N'EXISTE PAS dans le code — c'est une absence structurelle, pas un trou de données."
+  },
+  "states_audited": [
+    {
+      "id": 1,
+      "name": "fiscal:verify-chain --all (chain integrity baseline)",
+      "command": "php artisan fiscal:verify-chain --all",
+      "exit_code": 1,
+      "raw_output": "- branch=1 TAMPER:\n      * audit_logs.id=34\nSWEEP COMPLETE — TAMPER detected on 1/1 branches (exec_errors=0)",
+      "interpretation": "Chain breach unique sur audit_logs.id=34 = known E2E-13 dev tamper baselined (cf B2-P5 + baseline.txt). Aucune autre breach. Chain reste signée HMAC du début à id=34 et de id=35 jusqu'à la queue actuelle. AUCUN KDS-event identifiable dans la chaîne — confirmation négative immédiate.",
+      "evidence": "artisan output direct (READ-ONLY, no DB mutation)"
+    },
+    {
+      "id": 2,
+      "name": "Tinker READ-ONLY: audit_logs WHERE action LIKE kds/bump/kitchen/order_status/recall",
+      "command": "tinker SELECT id,branch_id,user_id,action,resource,resource_id,created_at FROM audit_logs WHERE action LIKE '%kds%' OR action LIKE '%bump%' OR action LIKE '%kitchen%' OR action LIKE '%order_status%' OR action LIKE '%recall%'",
+      "exit_code": 0,
+      "raw_output": "MATCHES: 0\nACTION DISTRIBUTION (top 20):\n  user.login                                         65\n  payment.method_restricted                          1\n  cash.session.opened                                1\n  z_report.closed                                    1\n  tamper.attempt                                     1\nTOTAL audit_logs: 69",
+      "interpretation": "ZÉRO. Aucune ligne d'audit_logs ne porte une action liée au KDS. La distribution complète des actions (5 distinctes sur 69 rows) montre que les seules choses tracées sont : login utilisateur (×65), restriction de moyen de paiement (×1), ouverture caisse (×1), clôture Z (×1), tentative de tamper (×1). PAS UNE seule mention de bump, recall, kitchen_release, kds_*, ou order_status_change. **L'inspecteur ne peut donc PAS requêter le bump par audit_logs — la donnée n'y est pas écrite.**",
+      "evidence": "tinker output (READ-ONLY SELECT seulement)"
+    },
+    {
+      "id": 3,
+      "name": "Read KitchenDisplaySystemOrderService.php — chercher AuditLogService::write",
+      "command": "grep -n 'AuditLogService|audit_logs|auditLog' app/Services/KitchenDisplaySystemOrderService.php && grep -n 'OrderStateMachine::recordTransition' app/Services/KitchenDisplaySystemOrderService.php",
+      "exit_code": "1 (grep AuditLog = 0 match) + 0 (grep recordTransition = 1 match)",
+      "raw_output": "AuditLogService matches: 0 (grep status code 1, no match)\nrecordTransition matches: line 299 — OrderStateMachine::recordTransition(Order::class, $locked->id, $fromLocked, $newStatus, auth()->id(), null);",
+      "interpretation": "Le service KDS ne référence JAMAIS AuditLogService. Il appelle uniquement OrderStateMachine::recordTransition() à la ligne 299 de changeStatus(). recordTransition écrit dans order_status_transitions (ligne 145 de OrderStateMachine.php), pas dans audit_logs. **Conclusion structurelle : le pipeline de bump KDS n'est tout simplement pas câblé sur la chaîne fiscale HMAC.** L'écriture est best-effort (try/catch log+swallow ligne 156-158 de OrderStateMachine.php), donc en cas d'exception même la trace order_status_transitions est silencieusement perdue.",
+      "evidence": "grep + Read sur PHP source (READ-ONLY)"
+    },
+    {
+      "id": 4,
+      "name": "FROZEN AuditLogService.php diff vs main fork (merge-base)",
+      "command": "git diff -w --shortstat $(git merge-base main HEAD) HEAD -- app/Services/Fiscal/AuditLogService.php",
+      "exit_code": 0,
+      "raw_output": "1 file changed, 33 insertions(+), 6 deletions(-) (whitespace-ignored)\nFull diff: 1 file changed, 97 insertions(+), 70 deletions(-) (style+Pint reformat included)",
+      "interpretation": "ATTENTION — le mandate de mission dit 'diff = 0 vs baseline'. Le réel diff -w est +33/-6 LOC (NON zéro). Le commit qui touche le fichier est `048761103 \"uoo\"` du 21 avril 2026 (avant fork de la branche actuelle MAIS après le dernier merge-base baseline main 9638a3d81). Inspection sémantique : les changements sont (a) ajout d'un wrap try/catch/finally autour de write() pour émettre un breadcrumb [FISCAL_TIMING] structuré (logging only — n'altère pas la chaîne), et (b) trim()-normalisation de prev_hash/current_hash dans verifyChain() pour tolérer un whitespace résiduel dans des rows legacy. AUCUN changement du HMAC (computeHash inchangé), AUCUN changement de la sémantique chain (read tail → lock → INSERT inchangé), AUCUN changement de assertion production-safe. **Verdict diff : non-zéro mais sémantiquement bénin pour la chain integrity — fiscal:verify-chain reste signé HMAC et identique à l'ancienne implémentation pour toutes les rows non-whitespace-corrupted. Néanmoins, le mandate `Frozen-zone diff = 0` est techniquement violé.** À surfacer.",
+      "evidence": "git diff + Read sur le fichier (READ-ONLY)"
+    },
+    {
+      "id": 5,
+      "name": "Adversarial — 'Can chef bump silently without audit?'",
+      "command": "trace end-to-end : KitchenDisplaySystemController::changeStatus → KitchenDisplaySystemOrderService::changeStatus → OrderStateMachine::recordTransition (best-effort) → table order_status_transitions",
+      "exit_code": "n/a (analyse code-flow)",
+      "raw_output": "[1] controller (KitchenDisplaySystemController.php L41-44) delegate to KitchenDisplaySystemOrderService::changeStatus — NO AuditLog call.\n[2] service (KitchenDisplaySystemOrderService.php L251-333) does the DB-locked status update + OrderStateMachine::recordTransition(... actorId, null) — NO AuditLog call.\n[3] recordTransition (OrderStateMachine.php L132-159) INSERTs into order_status_transitions WRAPPED IN try/catch + Log::warning swallow on failure — NO AuditLog call.\n[4] Item-level 'bump' (chef tap 'Prêt' on a single item) is 100% client-side — resources/js/store/modules/kds.js::bumpItem() writes to a browser localStorage map via persistMap() — NO backend round-trip, NO audit_logs, NO order_status_transitions.\n[5] Item-level 'recall' (resources/js/store/modules/kds.js::recallItem()) is ALSO 100% client-side — deletes the localStorage key within a 60s grace window — NO backend round-trip, NO audit trace anywhere.\n[6] Order-level transitions (ACCEPT→PREPARING, PREPARING→PREPARED) DO hit the backend, DO insert into order_status_transitions (verified empirically: id=4 order=5 7→8 actor=2, the ONLY KDS-like transition row in the DB) — but DO NOT touch audit_logs.",
+      "interpretation": "**OUI — un chef PEUT bumper silencieusement.** Trois scénarios distincts :\n\n(a) **Item bump/recall (granular geste 'Prêt' sur 1 item)** : 100% localStorage côté navigateur Vuex store. Si l'inspecteur saisit le poste KDS et vide le localStorage (ou ouvre la console JS), TOUT l'historique des bumps individuels est perdu. **Zéro trace fiscale possible.**\n\n(b) **Order bump (chef valide la commande entière passe PREPARED)** : laisse une row dans order_status_transitions (id=4 dans la DB courante), mais cette row n'est PAS chaînée HMAC, PAS append-only au sens NF525 (table régulière sans BEFORE DELETE trigger ni REVOKE de UPDATE/DELETE — confirmé par absence de migration équivalente à audit_logs). De plus l'insertion est best-effort try/catch Log::warning swallow — si la DB hoquette, la trace est silencieusement perdue ET la transition d'ordre persiste quand même via $locked->save() ligne 297 qui est DANS la transaction MAIS recordTransition ligne 299 est aussi DANS la transaction, donc une exception sur recordTransition rollback ENTIER => transition annulée. PRÉCISION : try/catch swallow est sur la branche OrderStateMachine::recordTransition (statique, hors transaction), MAIS la version appelée par KDS est DANS DB::transaction du service KDS (lignes 257-309) — donc si recordTransition jette, la transaction rollback et le bump est annulé. **Le bump est donc transactionnellement cohérent avec sa trace order_status_transitions… MAIS cette table n'est pas une chaîne HMAC NF525.**\n\n(c) **Audit-chain bypass quasi-systémique** : l'inspecteur qui demande `php artisan fiscal:verify-chain --all` voit la chaîne audit_logs intacte (sauf le tamper baselined id=34) et conclut 'tout va bien'. **Mais cette chaîne contient ZÉRO ligne KDS**. L'inspecteur n'a aucun moyen via les outils fiscaux standard de remonter à un bump.\n\n**Conclusion adversariale tribunal-grade** : si demain un client conteste 'mon plat n'a jamais été marqué Prêt à 14h15' et exige une preuve fiscale signée — FoodKing ne peut PAS produire de preuve depuis audit_logs. La meilleure preuve disponible est une row order_status_transitions non-signée, non-chaînée, dans une table régulière. Selon les exigences NF525 strictes (loi de finance — 'tout enregistrement de mouvement de TVA/encaissement doit être inviolable'), ceci EST une lacune. **Mitigation factuelle** : la VENTE elle-même (paid/encaissement) génère une row fiscal_sequence_no + composition_snapshot + (parfois) une row audit_logs — donc la facture est inviolable. Le bump KDS n'a pas d'impact TVA ni encaissement, donc il pourrait raisonnablement être hors-champ NF525. **Mais la mission Wave P Z2 demande explicitement la question** : 'KDS bumps in audit chain or not ?'. Réponse factuelle : **NOT**.",
+      "evidence": "grep + Read sur 4 fichiers PHP (KitchenDisplaySystemController, KitchenDisplaySystemOrderService, OrderStateMachine, KitchenReleaseRule) + 2 fichiers JS (admin-kds.js compiled, resources/js/store/modules/kds.js source) + tinker SELECT sur order_status_transitions"
+    }
+  ],
+  "kds_audit_coverage_summary": {
+    "audit_logs_kds_rows": 0,
+    "audit_logs_total_rows": 69,
+    "audit_logs_action_distribution": {
+      "user.login": 65,
+      "payment.method_restricted": 1,
+      "cash.session.opened": 1,
+      "z_report.closed": 1,
+      "tamper.attempt": 1
+    },
+    "order_status_transitions_total_rows": 2,
+    "order_status_transitions_kds_like_rows": 1,
+    "order_status_transitions_signed_hmac": false,
+    "order_status_transitions_append_only_trigger": false,
+    "order_status_transitions_grant_revoke_protection": false,
+    "kitchen_release_rule_canTransition_pairs": ["ACCEPT→PREPARING", "PREPARING→PREPARED"],
+    "kitchen_release_rule_reverse_allowed": false,
+    "item_bump_persistence": "client-side localStorage only (resources/js/store/modules/kds.js::bumpItem)",
+    "item_recall_persistence": "client-side localStorage only with 60s grace window (resources/js/store/modules/kds.js::recallItem)",
+    "item_bump_backend_trace": "NONE",
+    "item_recall_backend_trace": "NONE",
+    "order_level_bump_backend_trace": "order_status_transitions row (best-effort try/catch swallow inside DB::transaction)",
+    "order_level_bump_fiscal_chain_trace": "NONE",
+    "inspector_query_path_audit_logs": "returns 0 rows for any KDS-related action filter",
+    "inspector_query_path_order_status_transitions": "returns rows but unsigned + mutable + table-level deletable"
+  },
+  "findings": [
+    {
+      "id": "B3-P5-F1",
+      "severity": "P1",
+      "category": "NF525 / Audit coverage gap",
+      "title": "ZÉRO ligne audit_logs n'est écrite pour aucune transition KDS — order-level bump ni item-level bump/recall",
+      "evidence": "audit_logs WHERE action LIKE '%kds%' OR '%bump%' OR '%kitchen%' OR '%order_status%' OR '%recall%' retourne 0 rows sur les 69 lignes existantes. Grep AuditLogService dans app/Services/KitchenDisplaySystemOrderService.php : 0 match. Grep AuditLogService dans tous les Listeners/Events KDS-side (DispatchKdsTicket, OrderStatusChanged, PersistOrderStatusChangedToOutbox, AwardLoyaltyPointsOnDelivery, SendFcmOnOrderStatusChange) : 0 match avec audit_logs.write.",
+      "impact": "Un inspecteur NF525 qui requête php artisan fiscal:verify-chain --all OU qui SELECT * FROM audit_logs ne pourra JAMAIS trouver l'historique des bumps KDS. La chain HMAC est inviolable POUR les events qu'elle reçoit, mais elle ne reçoit aucun event KDS. Si une vérification fiscale exige de prouver qu'un plat a quitté la cuisine à 14h15, FoodKing n'a aucune preuve signée HMAC à produire.",
+      "mitigations_existing": "(a) La vente elle-même (paiement) émet fiscal_sequence_no + composition_snapshot frozen — donc la FACTURE est NF525-couverte. (b) order_status_transitions capture les transitions order-level mais c'est une table régulière, sans HMAC chain, sans BEFORE DELETE trigger, et l'écriture est best-effort try/catch swallow. (c) DispatchKdsTicket envoie un event Outbox pour le KDS mais ne touche pas audit_logs.",
+      "owner_decision_required": "Décider si KDS bumps doivent entrer dans la chain audit_logs (compliance NF525 stricte) ou rester hors-champ (interprétation que NF525 ne couvre que les mouvements TVA/encaissement, pas les states production cuisine). Si IN — câbler un AuditLogService::write dans KitchenDisplaySystemOrderService::changeStatus + un listener pour DispatchKdsTicket. Si OUT — documenter explicitement dans docs/NF525_SCOPE.md que les bumps KDS sont volontairement hors-chain.",
+      "frozen_zone_touch_if_fixed": "AuditLogService.php = frozen — l'ajout d'un caller depuis KitchenDisplaySystemOrderService NE touche PAS le service frozen lui-même. KitchenDisplaySystemOrderService.php n'est PAS dans la liste frozen CLAUDE.md §7 → safe à éditer."
+    },
+    {
+      "id": "B3-P5-F2",
+      "severity": "P2",
+      "category": "Architecture / Client-side state opacity",
+      "title": "Bump et recall granulaires (item-level) sont 100% localStorage — l'inspecteur ne peut RIEN voir",
+      "evidence": "resources/js/store/modules/kds.js L55-85 : bumpItem({orderId, itemId}) ne fait QU'UN persistMap(next) qui écrit dans le store Vuex + localStorage du navigateur. Aucun axios call. Aucun PATCH backend. recallItem({orderId, itemId, now}) idem, avec une fenêtre de 60 secondes de grace côté JS. Cherché côté backend dans routes/, app/Http/Controllers/Admin/ : zéro route 'recall' KDS-related (les seules recall sont dans PosParkedOrder).",
+      "impact": "Si un chef tape 'Prêt' sur 5 items distincts d'une commande, puis recall 2 d'entre eux, puis re-bump 1, puis ferme l'onglet — l'historique COMPLET est dans son localStorage de navigateur. Si un autre chef ouvre KDS sur un autre poste, il voit un état Vuex DIFFÉRENT (chaque navigateur a son propre localStorage). L'inspecteur fiscal qui regarde le serveur n'a AUCUNE preuve de qui a bumpé quoi quand. La row order_status_transitions ne capture QUE le passage final ACCEPT→PREPARING ou PREPARING→PREPARED de la commande entière, pas l'historique granulaire item-par-item.",
+      "mitigations_existing": "Wave V 2026-05-21 a SUPPRIMÉ le KdsUndoToast et fait passer le 'Prêt' chef en PATCH-immédiat sur l'order entière (mentionné dans public/js/admin-kds.js L3042-3050 commentaire compilé). Donc l'order-level transition EST persistée. Mais le bump granulaire item-par-item reste localStorage-only.",
+      "owner_decision_required": "Si l'audit fiscal granulaire est requis pour défendre des litiges 'mon item n'a jamais été préparé' — câbler item-level bump sur une nouvelle table kds_item_bumps + audit_logs row. Sinon, documenter que l'item-bump est UX-only et non-auditable."
+    },
+    {
+      "id": "B3-P5-F3",
+      "severity": "P3",
+      "category": "Mission constraint deviation / Frozen-zone diff",
+      "title": "AuditLogService.php a un diff +33/-6 LOC vs merge-base main — le mandate 'Frozen-zone diff = 0' est techniquement violé mais le changement est sémantiquement neutre pour la chain HMAC",
+      "evidence": "git merge-base main HEAD = b8b4fb76b. git diff -w --shortstat b8b4fb76b HEAD -- app/Services/Fiscal/AuditLogService.php = '1 file changed, 33 insertions(+), 6 deletions(-)'. Commit responsable = 048761103 'uoo' (21 avril 2026). Analyse sémantique : (a) wrap try/catch/finally autour de write() pour émettre [FISCAL_TIMING] breadcrumb structuré via Log::channel('stack') — logging-only, n'altère pas la chain. (b) trim()-normalisation de $row->prev_hash + $row->current_hash dans verifyChain() pour tolérer whitespace résiduel sur rows legacy — robustness fix qui ne change PAS le HMAC computeHash().",
+      "impact": "Pour la mission B3-P5, le mandate '4. Verify FROZEN AuditLogService.php diff = 0 vs baseline' n'est pas littéralement satisfait. Cependant, l'inspection sémantique montre que (i) le secret HMAC computeHash est identique, (ii) la séquence read-tail → lock → INSERT est identique, (iii) la sémantique de verifyChain est plus robuste (trim) mais NON moins stricte (un row tampered ne passe toujours pas). La chain runtime fiscal:verify-chain --all retourne le MÊME résultat sur la DB courante (tamper id=34 seul) qu'avant le commit 048761103.",
+      "owner_decision_required": "Décider si baseline pour le check 'frozen-zone diff' = main HEAD actuel ou merge-base. Si merge-base, ajuster la baseline du sentinel. Si main HEAD actuel — le diff EST 0 (les deux commits HEAD et main partagent 9638a3d81 comme dernier commit sur ce fichier, mais 048761103 a réécrit la zone après — donc côté branche heal/cms-pr1-quickwins-2026-05-18 le diff vs main HEAD est non-zéro).",
+      "remediation": "Aucune action requise sur le code. Cette finding est métadonnée discipline DM6 : DM6_NF525_readonly ABSOLU est RESPECTÉ (cette session n'a écrit AUCUNE ligne) — la violation potentielle vient d'un commit historique antérieur à cette session."
+    }
+  ],
+  "adversarial_inline": {
+    "scenario": "Tribunal de commerce — un client conteste avoir reçu son plat 'Le Suprême' commandé à 14h12 le 25/05/2026, prétend qu'il a attendu 45 minutes et que personne n'a rien préparé. FoodKing doit produire des preuves fiscales signées de la chronologie cuisine.",
+    "what_foodking_can_produce": "(a) Le ticket de caisse NF525 signé avec fiscal_sequence_no + composition_snapshot + audit_logs row 'order.paid' (s'il existe — actuellement audit_logs ne contient AUCUN order.paid sur la DB courante post-restore, mais le pipeline est censé l'écrire en runtime POS encaissement — à vérifier en agent séparé). (b) Une row order_status_transitions id=X montrant ACCEPT→PREPARING à T+2min puis PREPARING→PREPARED à T+15min (si bump effectué) — NON signée HMAC, dans une table régulière modifiable au niveau DB par un admin.",
+    "what_foodking_cannot_produce": "(a) Une trace HMAC-signée du moment exact où le chef a tappé 'Prêt' sur la commande. (b) Aucune trace de quel chef (user_id) a effectué le bump si OrderStateMachine::recordTransition jette une exception (try/catch swallow). (c) Aucune trace granulaire item-par-item — si le chef a bumpé Suprême + Frites + Coca individuellement via le store Vuex localStorage, ces 3 micro-decisions sont définitivement perdues côté serveur.",
+    "verdict_tribunal": "FoodKing peut probablement prouver la VENTE (NF525 strict) mais pas la PRÉPARATION. L'avocat adverse argumenterait : 'les transitions order_status ne sont pas dans la chaîne fiscale, elles sont dans une table régulière, donc la chronologie cuisine peut avoir été falsifiée par n'importe quel admin avec accès DB' — argument techniquement correct sur ce code-base.",
+    "honest_caveat": "NF525 stricto sensu ne couvre que les mouvements de TVA / encaissement / clôture Z. La 'chronologie cuisine' n'est PAS un champ NF525. Donc cette absence pourrait être hors-scope. **Mais la question Wave P Z2 demande factuellement 'in audit chain or not?' — réponse : NOT.**"
+  },
+  "verdict": {
+    "answer_to_wave_p_z2_question": "KDS bumps NOT in audit chain",
+    "kds_audit_coverage_score": "1/10 (1 = exists basic order_status_transitions row for order-level transitions ; 0 for item-level + 0 for HMAC chain + 0 for recall + 0 for tampering protection)",
+    "production_readiness_for_strict_nf525_compliance": "INSUFFICIENT — V1 ship-able sous interpretation 'NF525 = vente seulement', INSUFFISANT sous interpretation 'NF525 = inviolabilité fonctionnelle complète' (lecture extensive).",
+    "p1_blocker_v1_ship": false,
+    "p1_blocker_v1_ship_rationale": "L'absence de trace KDS dans audit_logs n'empêche PAS le ship V1 Le Cayenne — la VENTE elle-même est couverte. C'est un V1.0.2/V1.0.3 backlog item, pas un V1 STOP.",
+    "owner_followup_items": [
+      "Q1 — Décider strict-vs-permissive interprétation NF525 pour les events KDS",
+      "Q2 — Si strict : câbler AuditLogService::write dans KitchenDisplaySystemOrderService::changeStatus (P2 effort ~2h)",
+      "Q3 — Si strict + granular : nouvelle migration kds_item_bumps + endpoint POST/DELETE backend + Vuex action async + audit_logs row (P1 effort ~1 jour)",
+      "Q4 — Documenter dans docs/NF525_SCOPE.md la position retenue (1 paragraphe)"
+    ]
+  },
+  "files_audited_readonly": [
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Services/Fiscal/AuditLogService.php",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Services/KitchenDisplaySystemOrderService.php",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Domain/Order/OrderStateMachine.php",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Domain/Kds/KitchenReleaseRule.php",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/app/Http/Controllers/Admin/KitchenDisplaySystemController.php",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/resources/js/store/modules/kds.js",
+    "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/public/js/admin-kds.js (compiled, grep-only)"
+  ],
+  "commands_executed_readonly": [
+    "php artisan fiscal:verify-chain --all",
+    "php artisan tinker --execute='AuditLog SELECT only' (multiple variants)",
+    "git merge-base main HEAD",
+    "git diff -w --shortstat $(git merge-base main HEAD) HEAD -- app/Services/Fiscal/AuditLogService.php",
+    "git log --oneline HEAD -- app/Services/Fiscal/AuditLogService.php",
+    "grep -rn 'AuditLogService|audit_logs|auditLog' app/Services/KitchenDisplaySystemOrderService.php",
+    "grep -rln 'AuditLogService' app/",
+    "grep -rln 'changeStatus|KitchenDisplaySystemOrderService' app/Http/Controllers/",
+    "grep -A20 'PREPARED.*PREPARING|kitchen.*revert|canTransition' app/Domain/Kds/KitchenReleaseRule.php"
+  ],
+  "writes_performed": "NONE — DM6 NF525_readonly ABSOLU respected. Zero INSERT/UPDATE/DELETE on audit_logs, z_reports, orders, order_items, order_status_transitions, or any other table. Only file written = this JSON in reports/test-e2e/master-plan-2026-05-25/agents/B3-P5-findings.json."
+}

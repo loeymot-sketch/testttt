@@ -1,0 +1,141 @@
+{
+  "agent": "B3-P1",
+  "surface": "KDS /admin/kitchen-display-system",
+  "persona": "Chef-rush",
+  "persona_reframe": "Sous coup de feu (5+ tickets back-to-back, allergie qui arrive, livreur qui attend, caisse qui balance un nouveau ticket TAKEAWAY toutes les 30s), qu'est-ce que l'écran cuisine MASQUE au chef et qu'est-ce qu'il LUI INTERDIT de corriger une fois qu'il a tapé Prêt par erreur ? Owner mandate verbatim : « écran de cuisine, je peux pas y accéder aux archives parce que je peux par exemple avoir fait valider une commande par erreur avec rapidité, je vais revenir pour la corriger ».",
+  "timestamp": "2026-05-25T22:30:00+02:00",
+  "server": "http://127.0.0.1:8000",
+  "git_branch": "heal/cms-pr1-quickwins-2026-05-18",
+  "git_head": "a6ed32807",
+  "discipline": {
+    "DM3_quartet_captures": "PARTIAL — state-1 shell capturé via curl unauthenticated (10173 bytes, HTTP 200) — pattern Laravel SPA catchall identique à B1-P1/B2-P1. States 2-5 sont du raisonnement code-driven sur les 3 frozen-scope KDS surfaces (KdsV2Grid.vue 546 LOC + KdsOrderCard.vue 752 LOC + KdsHistoryDrawer.vue 454 LOC) + OrderStateMachine.php grep ciblé (lignes 30/52/54/79/92/108/163/189/222/282/304) + routes/api.php:1146-1148 + git show 5e646503b (commit HEAL-01). PAS de captures browser-driven (Playwright MCP non utilisé en sub-agent). DM8: signalé honnêtement, à l'identique du pattern B1-P1 et B2-P1.",
+    "DM5_adversarial_inline": "OUI — paragraphe dédié infra (state 5 + verdict)",
+    "DM6_NF525_readonly": "RESPECTÉ — zéro INSERT/UPDATE sur audit_logs/z_reports/fiscal_sequences. Lecture seule des 3 SFC + OrderStateMachine + routes/api.php + git log. Le curl GET /admin/kitchen-display-system renvoie le shell SPA sans accès au feed orders (auth-gated par middleware admin Spatie).",
+    "DM8_honest_reporting": "OUI — 3 critical findings tous rigoureusement traçables aux fichiers/lignes lus. OWNER MANDATE GAP (revert PREPARED→PREPARING) verified ABSENT et documenté en V1.0.2 backlog explicite par les développeurs eux-mêmes (KdsHistoryDrawer.vue:138-142 commentaire HTML). Scope KDS-only — convergence cross-surface (POS↔Kiosk↔KDS sync timing Q9-S1) déférée à l'agent de synthèse master-plan."
+  },
+  "states_audited": [
+    {
+      "id": 1,
+      "name": "KDS shell load — GET /admin/kitchen-display-system",
+      "evidence": "curl -L -o /tmp/kds-curl.html http://127.0.0.1:8000/admin/kitchen-display-system → HTTP 200, 10173 bytes, Content-Type: text/html. Shell SPA Laravel identique pattern catchall — auth check côté client après mount Vue.",
+      "route": "GET /admin/kitchen-display-system",
+      "render_mode": "Coquille SPA Vue mounted client-side après admin login Spatie (permission `kitchen-display-system`). Le rendu actif des cards passe par KitchenDisplaySystemComponent.vue → KdsV2Grid.vue (v2_enabled flag) ou v-else legacy 4-column.",
+      "chef_relevance": "Aucune donnée chef émise au shell. NOTE : le 10173 bytes est EXACTEMENT la même taille que B1-P1 (kiosk/idle) et B2-P1 (admin/pos) — confirme que l'auth admin n'est pas révélée en SSR (cohérent CLAUDE.md §8 boot guard NF525). Le feed orders + polling 5s est strictement post-auth via axios admin/kds-orders.",
+      "observations": [
+        "Réutilise la coquille SPA Laravel catchall (10173 bytes constant inter-route — pattern observé sur 3 surfaces différentes B1/B2/B3)",
+        "Aucune fuite d'identifiant kitchen ou de feed orders en HTML inline — auth admin gate est respecté côté serveur",
+        "Tout le rendu actif (FIFO grid, cards, overflow chip, drawer historique) est mounted client-side après auth — toute mesure du feed réel impose un Playwright authenticated, hors scope sub-agent"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "KdsV2Grid.vue + KdsOrderCard.vue + KdsHistoryDrawer.vue — lecture intégrale",
+      "evidence": "KdsV2Grid.vue 546 LOC lus en full + KdsOrderCard.vue 752 LOC lus en full + KdsHistoryDrawer.vue 454 LOC lus en full.",
+      "render_mode": "3 Vue 3 SFCs imbriqués : KdsV2Grid (orchestrateur 4×2 FIFO + clavier [A]–[H] + ticker 1s + overflow chip + recently-served strip) → KdsOrderCard × 8 max (stripe + header age-bucket + body items scrollable + footer CTA Prêt OR cash-pending badge) → KdsHistoryDrawer (slide-in right drawer read-only Wave X3).",
+      "chef_relevance": "STRUCTURE CONFIRMÉE intacte vs spec Wave U + Wave V + Wave N. La grid filtre activeOrders = ACCEPT(4)+PREPARING(7) seulement (KdsV2Grid:197-202), PREPARED(8) migre dans la recently-served strip (KdsV2Grid:208-219 + .kds-v2__served block 442-497) MAX 4 pills par updated_at desc. Le drawer historique est sibling, ouvert par bouton header parent (KitchenDisplaySystemComponent.vue) — read-only V1 par design.",
+      "observations": [
+        "KdsV2Grid:53-68 — la grid 4×2 = activeOrders.slice(0,8). Les 9+ orders ne sont PAS rendus en card (silencieusement déplacés hors grille).",
+        "KdsOrderCard:148-160 — footer CTA Prêt unique. Step-ladder logic préservé Wave Q-2 (1 tap ACCEPT→PREPARING, 2e tap PREPARING→PREPARED) — voir onCtaTap KdsV2Grid:324-346.",
+        "KdsHistoryDrawer:138-142 — commentaire HTML EXPLICITE : « V1.0.2 backlog: revert button (PREPARED → PREPARING). Blocked in V1 by OrderStateMachine §7 frozen-zone (forward-only). Requires LOCK plan + owner countersign before implementation. » — c'est la traduction écrite directe du OWNER MANDATE.",
+        "KdsHistoryDrawer:152-154 — statuts exposés : PREPARED(8) + OUT_FOR_DELIVERY(10) + DELIVERED(13). Lecture seule, pas de mutation.",
+        "Wave V removed KdsUndoToast — commentaire KdsV2Grid:108-115 confirme : « Component file kept for instant rollback. » Le 3s undo+optimistic toast a été RETIRÉ owner-mandated le 2026-05-21 à cause d'une race single-slot pendingTimeoutId qui annulait les PATCH précédents lors de chaînages rapides 3+ orders. Donc même la fenêtre de 3s qui aurait pu servir de mini-undo n'existe plus.",
+        "Wave S-2 cash-pending : KdsOrderCard:135-147 — badge passif EN ATTENTE ENCAISSEMENT remplace la CTA quand payment_pending_counter=true. Le shortcut [A]–[H] est gated KdsV2Grid:283-285. Sans impact sur le mandate revert mais confirme la précision du gating UI vs backend OrderStateMachine."
+      ]
+    },
+    {
+      "id": 3,
+      "name": "HEAL-01 +N en attente chip — verified LIVE",
+      "evidence": "KdsV2Grid.vue:70-88 (template chip + commentaire) + KdsV2Grid.vue:225-227 (computed overflowActiveCount) + KdsV2Grid.vue:404-440 (styles .kds-overflow-chip Cayenne red #F4501E + pulse + prefers-reduced-motion) + commit 5e646503b (feat(n-heal-01): KdsV2Grid +N en attente chip (M-KDS-6 F1 P0))",
+      "render_mode": "Vue v-if rendered chip — absolute position top:16px right:16px de .kds-v2 (position:relative), z-index:100. Visible quand overflowActiveCount > 0 (= activeOrders.length - 8 strictement positif).",
+      "chef_relevance": "CRITIQUE — c'est le safety net opérationnel que la M-KDS-6 F1 P0 attendait. Wave M empirique avait identifié : KdsV2Grid:55 slice(0,8) silently drop orders 9+ → owner verbatim mandate « chef peut sortir une commande incomplète ». Le chip HEAL-01 expose la queue invisible AU CHEF en temps réel. Cayenne red + pulse + role=status + aria-live=polite (visuel + screen reader simultanés). Le commit message explicite : « operational safety net BEFORE the full S3 PROPOSAL Option A/B/C layout redesign (owner-gate) ».",
+      "observations": [
+        "Computed CORRECT (correctness anchor advisor-pre-impl, commit message lignes 19-27) : overflowActiveCount = Math.max(0, activeOrders.length - 8). Lit activeOrders.length (= ACCEPT+PREPARING qui sont la partition réellement sliced par la grid) — PAS this.orders.length (qui aurait gonflé le compteur avec les PREPARED de la recently-served strip).",
+        "i18n suffix-only « +N en attente » fr.json — phrasing safe pour +1 ET +5 sans plural awkwardness. Equivalents en/ar key namespace label.kds_orders_waiting_more.",
+        "Pulse 2s ease-in-out infinite — disabled via @media (prefers-reduced-motion: reduce) pour opérateurs vestibular-sensitive (KdsV2Grid:436-440).",
+        "Position absolute top-right contenu dans .kds-v2 stacking context → reste sous tout overlay modal/drawer (z-index:100 mais parent contained — bon comportement quand drawer historique slide-in z:9000).",
+        "INDÉPENDANT du redesign S3 layout (Option A/B/C owner-gate, status: V1.0.2 PROPOSAL) — le chip est livré comme garde-fou immédiat, le redesign reste en backlog."
+      ]
+    },
+    {
+      "id": 4,
+      "name": "OWNER MANDATE GAP — undo button / revert PREPARED→PREPARING verified ABSENT",
+      "evidence": "Lecture full des 3 SFC + grep ciblé : (a) KdsOrderCard.vue n'expose QUE 1 CTA (button.kds-card__cta line 148-160) qui emit 'ready' → onCtaTap parent → emit change-status nextStatus calculé en step-ladder ACCEPT→PREPARING ou PREPARING→PREPARED (KdsV2Grid:329-339). Aucun bouton 'Annuler', 'Revenir', 'Undo' (b) KdsHistoryDrawer.vue:138-142 commentaire HTML explicite documente la décision : « V1.0.2 backlog: revert button (PREPARED → PREPARING). Blocked in V1 by OrderStateMachine §7 frozen-zone (forward-only). Requires LOCK plan + owner countersign before implementation. » (c) OrderStateMachine.php:54 case OrderStatus::PREPARED renvoie la liste des transitions autorisées — toutes vers l'avant. Aucune réversion permise (d) Header documentation KdsHistoryDrawer.vue:8-11 : « Read-only V1: revert PREPARED → PREPARING is intentionally NOT exposed here. OrderStateMachine (frozen §7) forbids reverse transitions, and the owner has classified this as 'secondaire' — revert is V1.0.2 backlog pending a LOCK plan + owner countersign. »",
+      "render_mode": "Aucun rendu — gap par absence intentionnelle, documentée 2 fois (commentaire header + commentaire inline) + bloquée backend par OrderStateMachine forward-only.",
+      "chef_relevance": "OWNER MANDATE TEL QUEL CONFIRMÉ : « je peux pas y accéder aux archives parce que je peux par exemple avoir fait valider une commande par erreur avec rapidité, je vais revenir pour la corriger ». Le gap est REAL. Le drawer historique permet la LECTURE de PREPARED+OUT+DELIVERED mais aucune ACTION corrective. Si chef tape Prêt par erreur en chaîne (3+ orders en <1s — pattern Wave V qui a justement supprimé l'undo 3s pour fixer une race), le ticket file vers PREPARED → recently-served strip → drawer historique, et le chef ne peut RIEN faire UI-side pour revenir à PREPARING. Owner Q9 = « cross-surface sync 0-60s → ~1s mesuré empiriquement » (memory entry project_wave_polish_final_2026-05-21) — confirme que la sync est rapide, donc tout ticket bumpé par erreur arrive en boucle aval (POS suivi / OSS écran client) immédiatement, aggravant le besoin d'undo.",
+      "observations": [
+        "Path B compensating action « queued not yet shipped » : la mention dans le mandate B3-P1 fait référence au PROPOSAL Path B (compensating order side-channel : créer une nouvelle order corrective au lieu de revert la précédente). Aucune trace de Path B implémenté dans la codebase auditée (grep négatif sur 'compensating', 'corrective_order', 'revert_prepared' sur les 3 SFC + OrderStateMachine). Le commentaire KdsHistoryDrawer:138-142 ne mentionne QUE Path A (revert direct via LOCK). Path B reste donc à PROPOSAL stage non-shipped, cohérent avec le mandate input.",
+        "Sécurité backend FROZEN-ZONE : OrderStateMachine.php est dans la frozen-zone §7 CLAUDE.md. Tout LOCK plan owner-countersigned devrait ajouter une transition réversible OR créer une nouvelle action AuditLog appended-only avec compensating event. Le commentaire backlog mentionne LOCK plan REQUIS — bonne discipline NF525 (compensating event > rewrite history).",
+        "Conséquence opérationnelle chef-rush actuelle V1 LOCAL : si chef bumpe par erreur, recovery actuel = (1) appeler caissier (2) caissier ouvre OSS / suivi POS et constate (3) si la commande est physique en cuisine, la refaire (perte produit) (4) si livraison déjà partie, contacter livreur. ZÉRO chemin auto-réversible UI ni backend. Le mandate est UNHEALED.",
+        "Le wording owner « écran de cuisine, je peux pas y accéder aux archives » suggère qu'owner croit que les archives sont CACHÉES. En réalité elles sont EXPOSÉES (drawer Wave X3 historique du jour) — c'est l'ACTION corrective qui manque, pas la visibilité. Confusion possible : owner a peut-être déjà entendu « ça arrive dans X3 » et n'a pas réalisé que X3 = read-only V1. À surfacer au master-plan de convergence."
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Adversarial M-KDS-6 chef-rush 5+ orders + N+9 silent slice",
+      "evidence": "KdsV2Grid.vue:53-68 — v-for sur activeOrders.slice(0,8) — strictly 8 cards visible. Ligne 64 placeholders pour stabilité grid quand <8. AUCUN scroll, AUCUN pagination, AUCUNE navigation 2e page. Seul signal de la file invisible = HEAL-01 chip si overflowActiveCount > 0.",
+      "render_mode": "Static slice — pas de virtualisation, pas de défilement, pas de carousel. La grid est dimensionnée 4×2 (4K = 5×2). En coup de feu chef-rush 5+ orders simultanés, tant que ≤8 orders ACCEPT|PREPARING, tout s'affiche. Dès 9+, la 9e+ disparait de l'attention chef sauf si chef lit le chip.",
+      "chef_relevance": "M-KDS-6 ADVERSARIAL CONFIRMÉ partiellement-mitigé : (a) HEAL-01 chip = mitigation visuelle (Cayenne red + pulse + role=status). MAIS (b) le chef ne peut pas CIBLER la 9e+ order — pas de scroll, pas de bouton « voir suivants », pas de [I][J] shortcut. Donc même averti, chef doit ATTENDRE qu'un slot se libère (1 PATCH Prêt → slot libre → la 9e prend ce slot par FIFO oldest-first parseOrderCreatedMs KdsV2Grid:182-193).",
+      "observations": [
+        "Chef-rush extrême (≥10 orders) : chef voit slots A-H (8 cards FIFO oldest top-left → newest bottom-right) + chip « +N en attente ». Pour traiter la 9e+ : (1) accélérer A→H par bumps, (2) un slot libère, (3) la plus ancienne ACCEPT|PREPARING en backlog est promue 8e par parseOrderCreatedMs (helpers/kdsDisplay.js). Pas de raccourci, pas de contrôle chef. Acceptable V1 LOCAL (Le Cayenne single-site).",
+        "Failure mode N+9 SLA breach : si la 9e+ stationne en file avec une horloge invisible (parseOrderCreatedMs côté backend), le bucket age critical (15min+) sera visible UNIQUEMENT quand elle atteindra le slot 8. Risque : un ticket à 12 min en backlog + 5 min en slot 8 = 17 min total mais elapsed-on-card lit createdMs donc affichera bien 17 min — OK, c'est cohérent (la valeur date de création du backend, pas de promotion). Donc pas de bug temporel masqué.",
+        "Chef silent visibility N+9 : chef peut développer une heuristique « si je vois +3, je sais qu'il y a 11 orders ». Mais aucune info qualitative — ALLERGIE en 9e+ position reste cachée (pas d'icône agrégée sur le chip). RECOMMANDATION V1.0.2 backlog : chip pourrait afficher [9-11] avec un sous-mini-pill alerte si une des 9e+ a hasAllergen=true (KdsOrderCard:254-256 orderHasAnyAllergen helper).",
+        "Allergie aggravée par rush : KdsOrderCard:48-54 pill ⚠ ALLERGIE rouge per-card. Mais si l'allergie est en 9e+ et chef rush, alerte invisible. CHEF-RUSH-FAILURE-MODE confirmé.",
+        "Q9-S1 cross-surface sync mention : memory entry indique « sync 0-60s → ~1s mesuré empiriquement » — donc tout PATCH KDS arrive sur POS suivi / OSS / kiosk-confirmation en ~1s. Cela amplifie l'impact d'un PATCH Prêt erroné (déjà visible client-side instantanément) → renforce le besoin du undo / compensating event. Le mandate UNHEALED a une criticité accrue par la sync rapide."
+      ]
+    }
+  ],
+  "critical_findings": [
+    {
+      "id": "B3-P1-F01",
+      "severity": "P0",
+      "title": "OWNER MANDATE GAP — Undo button / revert PREPARED→PREPARING absent (verified, documented V1.0.2 backlog)",
+      "owner_mandate_verbatim": "« écran de cuisine, je peux pas y accéder aux archives parce que je peux par exemple avoir fait valider une commande par erreur avec rapidité, je vais revenir pour la corriger »",
+      "verdict": "ABSENT — UNHEALED en V1. Documentation explicite V1.0.2 backlog par les développeurs eux-mêmes (KdsHistoryDrawer.vue:138-142 inline comment + KdsHistoryDrawer.vue:8-11 header doc). Bloqué backend par OrderStateMachine forward-only (frozen-zone §7 CLAUDE.md). LOCK plan + owner countersign requis.",
+      "evidence_files": [
+        "resources/js/components/admin/kitchenDisplaySystem/KdsHistoryDrawer.vue:8-11 (header doc 'Read-only V1')",
+        "resources/js/components/admin/kitchenDisplaySystem/KdsHistoryDrawer.vue:138-142 (inline backlog comment)",
+        "resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue:148-160 (single CTA Prêt forward-only)",
+        "resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue:108-115 (Wave V Undo Toast removed comment)",
+        "resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue:324-346 (onCtaTap step-ladder forward-only)",
+        "app/Domain/Order/OrderStateMachine.php:54 (PREPARED case — forward transitions only)"
+      ],
+      "path_b_status": "Path B (compensating action queued) NOT shipped. Aucune trace dans la codebase auditée. Reste en PROPOSAL stage.",
+      "operational_impact": "Chef-rush coup de feu : 0 chemin UI auto-réversible. Recovery actuel = chemin humain (chef → caissier → constat OSS → refaire produit OR contacter livreur). Q9-S1 sync rapide (~1s) propage l'erreur instantanément à POS suivi + OSS + kiosk-confirmation, accroissant le coût d'un PATCH erroné.",
+      "recommendation": "Cycle dédié : (1) LOCK plan OrderStateMachine ajout transition PREPARED→PREPARING ACTOR=chef + raison obligatoire (motif texte + AuditLog append-only). OR (2) Path B compensating order side-channel : créer order corrective sans rewrite de l'historique (préférable NF525). Owner-countersign mandatory."
+    },
+    {
+      "id": "B3-P1-F02",
+      "severity": "P0 HEALED",
+      "title": "M-KDS-6 F1 P0 overflow chip — HEAL-01 LIVE et correct",
+      "verdict": "VERIFIED LIVE — implémentation propre, computed correctement ancré sur activeOrders.length (advisor pre-impl correctness anchor), styles WCAG-compatible (Cayenne red #F4501E + pulse + prefers-reduced-motion + role=status + aria-live=polite).",
+      "evidence_files": [
+        "resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue:70-88 (template chip)",
+        "resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue:225-227 (computed overflowActiveCount)",
+        "resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue:404-440 (styles + animation + a11y)",
+        "git commit 5e646503b — feat(n-heal-01): KdsV2Grid +N en attente chip (M-KDS-6 F1 P0)"
+      ],
+      "residual_gap": "Chip purement quantitatif : indique '+N en attente' sans signaler si une des N+9 orders contient ALLERGIE ou est ancienne (bucket critical). RECOMMANDATION V1.0.2 backlog : enrichir le chip avec sous-pill ⚠ si one of N has hasAllergen=true (helper orderHasAnyAllergen déjà disponible KdsOrderCard:254-256). Non-bloquant V1."
+    },
+    {
+      "id": "B3-P1-F03",
+      "severity": "P1",
+      "title": "Chef-rush N+9 silent visibility incomplete — pas de scroll/pagination, pas de [I]+ shortcut",
+      "verdict": "PARTIAL MITIGATION — HEAL-01 expose la queue invisible quantitativement, mais le chef ne peut pas CIBLER une order spécifique au-delà du 8e slot (pas de scroll, pas de pagination, pas de [I][J][K] keyboard). Chef doit attendre qu'un slot se libère par FIFO. Acceptable V1 LOCAL single-site, à muscler avant V2 multi-site.",
+      "evidence_files": [
+        "resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue:53-68 (grid slice(0,8) strict)",
+        "resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue:138 (SHORTCUTS A-H only 8 letters)",
+        "resources/js/components/admin/kitchenDisplaySystem/KdsV2Grid.vue:269-290 (onKey limited to activeOrders.length cap)"
+      ],
+      "operational_impact": "À chef-rush extrême (≥10 orders) chef accepte la file invisible sans contrôle qualitatif. Allergie en 9e+ position → alerte ⚠ ALLERGIE rouge per-card devient invisible jusqu'à promotion FIFO en slot 8.",
+      "recommendation": "V1.0.2 backlog item dans S3 PROPOSAL Option A/B/C layout redesign (owner-gate). Pas P0 V1 LOCAL."
+    }
+  ],
+  "verdict": {
+    "owner_mandate_status": "GAP VERIFIED ABSENT — UNHEALED V1, V1.0.2 backlog documented",
+    "heal_01_status": "VERIFIED LIVE et correct (computed anchored on activeOrders.length, a11y, prefers-reduced-motion)",
+    "q9_s1_sync_relevance": "Sync ~1s observée (memory entry Wave Polish Final) AMPLIFIE l'impact du mandate UNHEALED — un PATCH erroné se propage instantanément cross-surface",
+    "kds_undo_absence": "CONFIRMED ABSENT — 4 sources convergentes (header doc KdsHistoryDrawer:8-11, inline comment KdsHistoryDrawer:138-142, OrderStateMachine.php:54 forward-only, KdsOrderCard.vue single-CTA forward-only)",
+    "production_readiness_v1_local": "PASS V1 LOCAL Le Cayenne single-site SOUS RÉSERVE de l'acceptation OWNER d'opérer sans undo (recovery humaine via caissier+OSS). Pour V2 multi-site OR si owner repriorise mandate, cycle dédié LOCK plan REQUIRED.",
+    "convergence_recommended": "Master-plan synthèse à reformuler à l'owner : (1) le mandate est CONFIRMÉ comme gap, (2) HEAL-01 est LIVE pour la visibilité +N, (3) la sync rapide Q9-S1 augmente la criticité du undo, (4) confusion possible owner « écran cuisine pas d'archives » VS réalité « archives présentes mais read-only V1 » à clarifier"
+  }
+}

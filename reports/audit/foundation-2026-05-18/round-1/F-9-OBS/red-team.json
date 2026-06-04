@@ -1,0 +1,140 @@
+{
+  "role": "red-team",
+  "system": "F-9 Observability",
+  "stance": "Adversarial — find PII leaks in logs, missing audit on critical action, dead path that should be observable, way to silence error logs, ways to forge or bypass observability signals",
+  "read_only": true,
+  "files_inspected": [
+    "app/Http/Controllers/HealthController.php",
+    "app/Http/Controllers/Admin/Observability/SyncOverviewController.php",
+    "app/Services/Observability/SyncMetricsRecorder.php",
+    "app/Services/Observability/SloMetricCollector.php",
+    "app/Jobs/Observability/SloEvaluatorJob.php",
+    "app/Services/Fiscal/AuditLogService.php",
+    "app/Services/Bypass/BypassAuditLogger.php",
+    "app/Services/FcmNotificationService.php",
+    "app/Http/Controllers/Frontend/LoyaltyController.php",
+    "app/Http/Controllers/Frontend/OrderController.php",
+    "app/Services/OrderService.php (multiple ActionLog::create sites)",
+    "app/Http/Controllers/Frontend/KioskEventController.php",
+    "routes/api.php"
+  ],
+  "findings_keep": [
+    {
+      "id": "RED-OBS-K1",
+      "title": "HMAC chain integrity is enforced at multiple layers",
+      "evidence": "AuditLogService.php:60-65 — UNIQUE(branch_id, prev_hash) constraint + Cache::lock + DB transaction + retry-on-UNIQUE-violation defense. Tamper detection via verifyChain() walks chain (line 23-25). DB triggers BEFORE DELETE on audit_logs documented in CLAUDE.md §8 (MySQL prod only, GRANT-level TRUNCATE mitigation).",
+      "verdict": "KEEP — RED cannot easily forge or skip a row without DB-admin privilege."
+    },
+    {
+      "id": "RED-OBS-K2",
+      "title": "Health full endpoint correctly IP-gated",
+      "evidence": "HealthController.php:15 assertFullHealthIpAllowed() called BEFORE building checks payload. Line 65-78 — config('app.health_ips_allowed', '') CSV match against request()->ip(). Empty CSV = open (dev), non-empty = whitelist. Failure path = abort(403).",
+      "verdict": "KEEP — sensitive payload (queue sizes, broadcast driver) not leaked publicly when configured."
+    },
+    {
+      "id": "RED-OBS-K3",
+      "title": "Client metrics whitelist prevents cardinality DDoS via metric_type spray",
+      "evidence": "SyncMetricsRecorder.php:46-52 ALLOWED_CLIENT_METRICS — strict 5-entry whitelist. StoreClientMetricsRequest.php:30 — Rule::in(SyncMetricsRecorder::ALLOWED_CLIENT_METRICS). Reject via Log::warning at SyncMetricsRecorder.php:96 if a non-whitelisted type sneaks through (defense in depth).",
+      "verdict": "KEEP — RED cannot inject arbitrary metric_types to balloon sync_metrics table cardinality."
+    },
+    {
+      "id": "RED-OBS-K4",
+      "title": "Client metric value capped at 600000 (10min) — prevents Number.MAX_SAFE_INTEGER attack",
+      "evidence": "StoreClientMetricsRequest.php:31 — 'metrics.*.value' => ['required', 'integer', 'min:0', 'max:600000']. Documented intent line 17 (line 16-18). Batch size capped at 200 entries (line 29).",
+      "verdict": "KEEP — buggy or hostile client can't poison percentile calculations with INT_MAX."
+    },
+    {
+      "id": "RED-OBS-K5",
+      "title": "Cross-branch read attempt returns explicit 403, not silent down-scope",
+      "evidence": "SyncOverviewController.php:211-215 resolveBranchScope — if branch-scoped user requests ?branch_id=other returns 403 instead of silently filtering to user's own branch. Comment line 184: 'no silent down-scoping that would mask a probing attempt'.",
+      "verdict": "KEEP — probing detection surfaces to authz log instead of being absorbed."
+    }
+  ],
+  "findings_heal": [
+    {
+      "id": "RED-OBS-RED1",
+      "title": "PII leak — customer name plaintext in ActionLog.details",
+      "evidence": "app/Services/OrderService.php:540-545 — ActionLog::create([..., 'details' => sprintf('Auteur: %s | Total: %s€ | Taxe: %s€ | Remise: %s€', Auth::check() ? Auth::user()->name : 'Client anonyme', ...)]). Auth::user()->name = customer's first+last name in plaintext.",
+      "exploit": "Database leak / table dump → attacker walks action_logs.details → enumerates customer names + order totals + amount discounted. ActionLog has no retention bound in code so this lives indefinitely.",
+      "impact": "RGPD/GDPR Article 5(1)(c) data minimization violation. SOC2 / PCI-DSS adjacent risk if cardholder context inferable.",
+      "verdict": "HEAL P1 — replace Auth::user()->name with user_id (already captured at line 537). Audit trail keeps actor reference, removes plaintext PII. Refactor at one site, then grep for similar Auth::user()->name in details JSON across all 11 ActionLog::create sites."
+    },
+    {
+      "id": "RED-OBS-RED2",
+      "title": "PII leak — exception->getMessage() may carry user input verbatim",
+      "evidence": "320 Log::info($exception->getMessage()) calls. SQL constraint violations dump column values (e.g. 'Duplicate entry user@example.com for key users_email_unique'). PaymentGateways/Stripe.php:98,143 — Stripe exception messages can include masked PAN tails. SMS gateways Twilio/Bulksms — message bodies passed in args may end up in exception.message on rate-limit.",
+      "exploit": "An attacker who can trigger a failure mode (duplicate-key, gateway error) gets their input echoed into a log that may rotate but lives 14d in default channel. Combined with insider/incident-response exposure = PII surface.",
+      "impact": "Coupled with H1 (severity mis-leveling), exceptions are info-level so they don't draw audit attention.",
+      "verdict": "HEAL — same fix as ARCH-OBS-H1 (structured logging) + use exception class only + first-line of trace, NOT message verbatim. Apply to gateways FIRST (highest signal-to-PII ratio)."
+    },
+    {
+      "id": "RED-OBS-RED3",
+      "title": "FCM token first 20 chars logged — partial credential leak",
+      "evidence": "app/Services/FcmNotificationService.php:80 — Log::info('[FCM] Sent to token: ' . substr($token, 0, 20) . '...', ['title' => $title]). Line 94 — Log::error('[FCM] Exception: ' . $e->getMessage(), ['token' => substr($token, 0, 20) . '...']).",
+      "exploit": "FCM tokens have well-known structure (160+ chars, base64ish). First 20 chars = prefix + part of project ID; not enough alone to push, but combined with project ID (env-readable post-leak) narrows brute-force.",
+      "impact": "Minor — FCM doesn't allow guess-and-check. But logging any portion of a credential is a finding in OWASP A09 / SOC2 audit.",
+      "verdict": "HEAL — log hash(token) suffix instead of substring. Or omit entirely; the user_id at line 80 already identifies the device."
+    },
+    {
+      "id": "RED-OBS-RED4",
+      "title": "Loyalty point manipulation log shows raw user IDs but not authorization context",
+      "evidence": "app/Http/Controllers/Frontend/LoyaltyController.php:236 — Log::info(\"Loyalty addPoints: {$pointsToAdd} pts added to user #{$user->id} by staff #{$caller->id}\"). Line 320 — similar for redeem. No branch_id, no current permission scope, no IP.",
+      "exploit": "Auditor reviewing a fraud claim sees the line but can't reconstruct authorization scope (was caller a manager? IP from store or remote?). Hard to prove a staff loyalty-point abuse case in court.",
+      "impact": "Audit-trail completeness gap — not a leak, but defense-against-fraud weak.",
+      "verdict": "HEAL P2 — promote to Log::channel('security')->info(..., context). Add branch_id, ip, caller role/permission set."
+    },
+    {
+      "id": "RED-OBS-RED5",
+      "title": "Health endpoint exposes ops info in 503 payload to anonymous callers",
+      "evidence": "HealthController.php:39-60 ready() — no IP gate. Returns subsystems array including queue_worker.stale_count + message='Queue worker appears down or lagging: 47 stale outbox events' (line 152-156) AND broadcast_config.message='QUEUE_CONNECTION=sync is incompatible...' (line 195-198). Anonymous attacker hammers /health/ready and reads internal state.",
+      "exploit": "Recon — attacker confirms queue worker is the weak link, knows broadcast driver, infers env. Combined with /health (which IS IP-gated) leaks app.version too — but /ready and /live aren't gated.",
+      "impact": "Information disclosure. ATT&CK T1592.002 Active Scanning: Hardware & Software identification.",
+      "verdict": "HEAL — gate /health/ready behind same assertFullHealthIpAllowed() OR sanitize the 503 payload to just {'status':'degraded'} for non-allowlisted IPs. Subsystems detail only when authenticated."
+    },
+    {
+      "id": "RED-OBS-RED6",
+      "title": "outboxDrainFailed mutating endpoint has no audit log",
+      "evidence": "SyncOverviewController.php:417-435 outboxDrainFailed — DB::table('failed_jobs')->where(..)->delete() returns $deleted count. No ActionLog::create, no Log::channel('security')->info, no audit_logs write. Endpoint is role:Admin|Tenant Admin gated (line 52), but the act of draining is not recorded.",
+      "exploit": "Insider Admin deletes evidence of fiscal/payment job failures before forensics. No record of who pressed the button.",
+      "impact": "Tamper-without-trace path on operational data. Not fiscal data (audit_logs HMAC chain intact), but operational dispute resolution is blind.",
+      "verdict": "HEAL P1 — wrap deletion in AuditLogService::write() OR at minimum Log::channel('security')->info('outbox.drain_failed', [actor_id, branch_id, deleted_count, older_than_hours, ip]). Same for outboxRetryFailed (line 377-406) which already returns count but logs nothing."
+    },
+    {
+      "id": "RED-OBS-RED7",
+      "title": "Telemetry sink is silently failopen (intended) but no monitoring of the failure rate",
+      "evidence": "SyncMetricsRecorder.php:108-128 — try/catch around DB::insert, on failure Log::warning + return. Comment line 120: 'Non-blocking invariant: telemetry MUST NOT break the calling flow.' Log goes to default channel (not 'observability'). No counter increment of failed metric writes.",
+      "exploit": "If sync_metrics table is read-only (Galera split, replica promotion lag), ALL telemetry silently drops. Dashboard panels go blank. Operators see 'no data' and assume system idle.",
+      "impact": "Meta-observability gap — observability service's own failure is invisible to observability.",
+      "verdict": "HEAL — emit Log::channel('observability')->warning on failure AND increment a 'sync_metrics.write_failures' counter in Cache (incr/get/reset pattern). Surface in dashboard panel as red banner."
+    }
+  ],
+  "findings_duplicate": [
+    {
+      "id": "RED-OBS-RED-D1",
+      "title": "PII pattern duplicated across 320 sites — single template-fix would eliminate",
+      "evidence": "All 320 Log::info($exception->getMessage()) calls follow identical pattern: try { ... } catch (Throwable $e) { Log::info($e->getMessage()); throw ... }. Most are in catch blocks of QueryException re-wrappers. A trait `LogsExceptionsConsistently::logCaught($e, $context)` would normalize.",
+      "verdict": "DUPLICATE — code-smell that compounds the RED impact. Heal-by-template (one trait, sweep callers in a separate cycle)."
+    }
+  ],
+  "findings_dead": [
+    {
+      "id": "RED-OBS-DEAD1",
+      "title": "Dead audit path — outboxRetryFailed has no log emission",
+      "evidence": "SyncOverviewController.php:377-406 outboxRetryFailed — for-loop over events, forceFill + save + DispatchDomainEventsJob::dispatch, no Log/Audit emit. Comment line 374-376 says 'idempotent', not 'unlogged'.",
+      "verdict": "DEAD — should emit at least one Log::channel('observability')->info per requeued batch with actor + count. Currently invisible to ops."
+    },
+    {
+      "id": "RED-OBS-DEAD2",
+      "title": "BypassAuditLogger writes to default channel — short retention bypasses 90d forensic intent",
+      "evidence": "BypassAuditLogger.php:32-37, 45-50 — Log::warning(...) NOT Log::channel('security')->warning. Security channel (90d) would be the obvious sink given the security-relevant nature of bypass mode.",
+      "exploit": "If bypass somehow activates in prod (despite AppServiceProvider guard at boot), evidence rotates in 14 days vs 90.",
+      "verdict": "DEAD/MIS-ROUTED — change channel binding to 'security'. Trivial heal also flagged by Architect (ARCH-OBS-H4)."
+    }
+  ],
+  "open_questions_for_owner": [
+    "Should /health/ready 503 payload be sanitized for anonymous callers (subsystems-detail behind IP gate)? Trade-off: K8s LB readiness probes typically don't authenticate but also typically run on private network.",
+    "Is the audit gap on outboxRetryFailed/outboxDrainFailed a P1 (admin action without trail) or P2 (low-frequency, post-incident triage acceptable)?",
+    "PII in ActionLog.details — should we GDPR-compliance-redact existing rows (one-time migration) or accept the legacy state and only fix forward?"
+  ],
+  "word_count_approx": 1490
+}
