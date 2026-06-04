@@ -100,7 +100,7 @@ function ScreenHome({ go, name = 'Ikyes' }) {
         </div>
 
         {/* marquee categories */}
-        <Marquee items={['🌶 Sauce Cayenne maison', '🥖 Sandwichs faluche', '🌮 Tacos & Big Tacos', '🥣 Bols Frites/Riz', '🍔 Burgers brioché', '🍟 Frites Cheddar', '🧒 Menu enfant', '⚡ Prêt en 8 min']}/>
+        <Marquee items={['🌶 Sauce Cayenne maison', '🥖 Sandwichs faluche', '🌮 Tacos M & L', '🥣 Bols Frites/Riz', '🍔 Burgers brioché', '🍟 Frites Cheddar', '🧒 Menu enfant', '⚡ Prêt en 8 min']}/>
 
         {/* featured signature card */}
         <div style={{ padding: '20px 20px 0' }}>
@@ -193,7 +193,7 @@ function ScreenHome({ go, name = 'Ikyes' }) {
           </div>
           <div style={{ width: 32, height: 4, background: 'var(--orange)', marginBottom: 12 }}/>
           <h3 className="lc-display" style={{ margin: 0, fontSize: 26, color: 'var(--yellow)' }}>LE CAYENNE<br/>HÉNIN-BEAUMONT</h3>
-          <p style={{ margin: '12px 0 0', fontSize: 13, lineHeight: 1.5, color: 'rgba(255,255,255,0.75)' }}>Abdoullah en cuisine, fait maison chaque jour à Hénin-Beaumont. Sandwich Cayenne signature, bols gourmands, Tacos & Big Tacos — du peuple, pour le peuple.</p>
+          <p style={{ margin: '12px 0 0', fontSize: 13, lineHeight: 1.5, color: 'rgba(255,255,255,0.75)' }}>Abdoullah en cuisine, fait maison chaque jour à Hénin-Beaumont. Sandwich Cayenne signature, bols gourmands, tacos M & L — du peuple, pour le peuple.</p>
           <div style={{ marginTop: 18, paddingTop: 14, borderTop: '1px solid rgba(255,255,255,0.12)', display: 'flex', justifyContent: 'space-between', fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
             <span>Ouvert 11h — 00h</span>
             <span style={{ color: 'var(--orange)' }}>06 51 30 XX XX</span>

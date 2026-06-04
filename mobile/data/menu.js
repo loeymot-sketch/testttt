@@ -219,7 +219,7 @@
     { id: 2,  slug: 'galette',            name: 'Galette',            icon: '🌯', sort: 2,  wizard_template: 'sandwich', has_menu: true,  description: 'Galette traditionnelle ou Cayenne',              image: ASSET_BASE + 'cat-galette.png' },
     { id: 3,  slug: 'sandwich-classique', name: 'Sandwich Classique', icon: '🥖', sort: 3,  wizard_template: 'sandwich', has_menu: true,  description: 'Sandwich classique en pain faluche',             image: ASSET_BASE + 'cat-sandwich-classique.png' },
     { id: 4,  slug: 'burgers',            name: 'Burgers',            icon: '🍔', sort: 4,  wizard_template: 'sandwich', has_menu: true,  description: 'Chicken Burger ou Big Chicken, pain brioché',    image: ASSET_BASE + 'cat-burgers.png' },
-    { id: 5,  slug: 'tacos',              name: 'Tacos',              icon: '🌮', sort: 5,  wizard_template: 'tacos',    has_menu: true,  description: 'Tacos ou Big Tacos, sauce fromagère maison',     image: ASSET_BASE + 'cat-tacos.png' },
+    { id: 5,  slug: 'tacos',              name: 'Tacos',              icon: '🌮', sort: 5,  wizard_template: 'tacos',    has_menu: true,  description: 'Tacos M ou Tacos L, sauce fromagère maison',     image: ASSET_BASE + 'cat-tacos.png' },
     { id: 6,  slug: 'bols-gourmands',     name: 'Bols Gourmands',     icon: '🥣', sort: 6,  wizard_template: 'custom',   has_menu: false, description: 'Bowl Frites ou Riz × 4 viandes au choix',        image: ASSET_BASE + 'cat-bols-gourmands.png' },
     { id: 7,  slug: 'frites',             name: 'Frites',             icon: '🍟', sort: 7,  wizard_template: 'custom',   has_menu: false, description: 'Petite ou Grande, style au choix',               image: ASSET_BASE + 'cat-frites.png' },
     { id: 8,  slug: 'supplements',        name: 'Suppléments',        icon: '➕', sort: 8,  wizard_template: 'simple',   has_menu: false, description: 'Suppléments commandables séparément',            image: ASSET_BASE + 'cat-supplements.png' },
@@ -441,15 +441,15 @@
       { viandes: 1, has_crudites: true, has_menu_addon: true, has_sauce: true, is_featured: true, tags: ['NEW', 'XL'], emoji: '🍔', time: 12 }),
   ];
 
-  // ====== TACOS (cat 5) — [CAISSE-SYNC 2026-05-30] aligné caisse/borne : Tacos (1 viande) 8,50 · Big Tacos (2 viandes) 11,50
-  //   ⚠️ OVERRIDE owner board note 2026-05-30 (Tacos M/L 6,90/8,90) : la caisse/borne sert 8,50/11,50 LIVE (items 26/27).
-  //   La caisse est la source. Si 6,90/8,90 est le prix retail voulu, corriger la CAISSE (l'app reflète la caisse). ======
+  // ====== TACOS (cat 5) — owner decision 2026-06-04 : Tacos M (1 viande) 6,90 · Tacos L (2 viandes) 8,90 (prix "seul" / à la carte)
+  //   Owner a OVERRIDÉ le caisse-sync 2026-05-30 (DB items 26/27 = 8,50/11,50) → prix retail canonique = 6,90/8,90.
+  //   ⚠️ La caisse/borne DB porte ENCORE 8,50/11,50 : à corriger côté caisse (owner-gated) pour cohérence SSOT. ======
   const TACOS = [
-    mkItem(501, 'tacos-1-viande', 5, 'Tacos', 8.50,
+    mkItem(501, 'tacos-1-viande', 5, 'Tacos M', 6.90,
       '1 viande au choix · Frites maison · Sauce fromagère maison',
       { viandes: 1, has_crudites: false, has_menu_addon: true, has_sauce: false,
         is_featured: true, tags: ['SIGNATURE'], emoji: '🌮', time: 10 }),
-    mkItem(502, 'big-tacos-2-viandes', 5, 'Big Tacos', 11.50,
+    mkItem(502, 'big-tacos-2-viandes', 5, 'Tacos L', 8.90,
       '2 viandes au choix · Frites maison · Sauce fromagère maison',
       { viandes: 2, has_crudites: false, has_menu_addon: true, has_sauce: false,
         is_featured: true, tags: ['TOP'], emoji: '🌮', time: 12 }),

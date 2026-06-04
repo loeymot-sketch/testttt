@@ -170,13 +170,13 @@ Plateforme restaurant fast-food complète :
 
 ## §3 LAST DONE — Auto-managed
 
-**Menu price sync caisse/borne → frontends standalone 2026-05-30** (commit mobile `31d80fab6` sur `heal/cms-pr1-quickwins-2026-05-18` + commit web `aa4b84b` sur repo `/Users/1millnonstop/Downloads/web` main) :
-- SSOT = DB MySQL `foodking` items table (live, 45 items, last update 2026-05-30 19:40). `config/menu.php` STALE.
-- **4 drifts prix corrigés** (35 autres déjà alignés) : Sandwich Cayenne 7,50→7,00 · Sandwich Classique 7,00→6,50 · Tacos M 6,90→"Tacos" 8,50 · Tacos L 8,90→"Big Tacos" 11,50 · Menu formule 2,50→3,00.
-- ⚠️ **FLAG OWNER** : la sync OVERRIDE la board-note owner 2026-05-30 (Tacos M/L 6,90/8,90) car la caisse/borne sert 8,50/11,50 LIVE (consumer-safety). **Si 6,90/8,90 voulu → corriger la CAISSE** (l'app reflète la caisse).
-- Méthode advisor-validated : harness Node **frontend-vs-DB** (pas mobile-vs-web). Refs périmées nettoyées (orders "Tacos L 7,90" 3ème valeur, marquee/about/5 legal HTML, wizard label formule rendu dynamique anti-drift).
-- **Preuves** : DB-parity MOBILE 44/0/0 + WEB 44/0/0 · Preview MCP visual (SC 7,00 · Tacos 8,50 · Big Tacos 11,50) · arithmétique panier (Tacos+Menu 11,50 / Big Tacos+Menu 14,50 / SC×2 14,00) · sentinel mobile↔web GREEN · adversarial 7-angles GO 0 P0/P1.
-- Frontends restent STANDALONE (0 wireup API, 0 frozen-zone, 0 backend touch). Détail : `reports/menu-sync-2026-05-30/SYNC_REPORT.md` + `db-prices.tsv` (snapshot SSOT 45 items) + sentinel `tools/sentinel-codebase-parity.mjs`.
+**Menu price sync + TACOS OWNER OVERRIDE → frontends standalone 2026-05-30 → revert 2026-06-04** :
+- SSOT prix = DB MySQL `foodking` items table. `config/menu.php` STALE. Frontends STANDALONE (0 wireup API, 0 frozen-zone, 0 backend touch).
+- **3 drifts prix DÉFINITIFS** (alignés DB, conservés) : Sandwich Cayenne 7,50→**7,00** · Sandwich Classique 7,00→**6,50** · Menu formule 2,50→**3,00**.
+- ⛔ **TACOS = OWNER-CANONIQUE 6,90/8,90, PAS la DB.** Décision owner **2026-06-04** : « Tacos M/L 6,90/8,90 € seul » (prix à la carte). Noms = **Tacos M / Tacos L**. La 1ʳᵉ passe (05-30) avait synchronisé sur la DB (8,50/11,50, renommé Tacos/Big Tacos) → **REVERTÉ** dans les 2 frontends (commits revert 06-04).
+- ⚠️ **DIVERGENCE ASSUMÉE** : la DB caisse/borne (items 26/27) porte ENCORE 8,50/11,50. Les frontends affichent 6,90/8,90 (owner) — **intentionnellement divergent de la DB stale**. **NE PAS re-sync les Tacos vers la DB.** Question owner OUVERTE : corriger la caisse vers 6,90/8,90 (owner-gated) ou non.
+- **Preuves post-revert (honnêtes)** : DB-parity = **42 matched · 0 price-mismatch · 2 divergences intentionnelles** (Tacos M/L) — **PAS 44/0/0** · Preview MCP visual mobile+web (Tacos M **6,90** · Tacos L **8,90** · SC 7,00 conservé) · arithmétique (Tacos M+Menu **9,90** / Tacos L+Menu **11,90**) · sentinel mobile↔web **GREEN** (bougent ensemble).
+- Détail : `reports/menu-sync-2026-05-30/SYNC_REPORT.md` (headline flippé 06-04) + `db-prices.tsv` (snapshot DB **non-modifié** = 8,50/11,50, honnête) + sentinel `tools/sentinel-codebase-parity.mjs`.
 
 **Ultraplan cross-codebase 2026-05-28** (HEAD `d2a18bf31df74587d9c9b5e791b778fd753accf8`,
 branche `heal/cms-pr1-quickwins-2026-05-18`) :

@@ -81,7 +81,7 @@ function ScreenOnb1({ onNext, onSkip }) {
       onSkip={onSkip}
       eyebrow="01 — Bienvenue"
       title={<>Salut, c'est <span style={{ color: 'var(--orange)' }}>Le&nbsp;Cayenne</span></>}
-      body="Sandwichs Cayenne, Tacos & Big Tacos, bols gourmands — fait maison à Hénin-Beaumont. Du peuple, pour le peuple."
+      body="Sandwichs Cayenne, tacos M&L, bols gourmands — fait maison à Hénin-Beaumont. Du peuple, pour le peuple."
       accent="var(--orange)"
     />
   );
