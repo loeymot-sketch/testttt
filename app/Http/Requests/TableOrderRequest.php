@@ -54,6 +54,20 @@ class TableOrderRequest extends FormRequest
     public function withValidator($validator): void
     {
         $validator->after(function ($validator) {
+            // S17-01: V1 dine-in gate. This is the public QR table-order endpoint
+            // (dining_table_id required) — it is dine-in by nature. The POS path
+            // (PosOrderRequest) and kiosk path (OrderRequest) reject DINING_TABLE
+            // server-side when `pos_dine_in_enabled` is off, but this endpoint had
+            // NO gate, so anyone could create a dine-in order while V1 ships
+            // "à emporter only". Owner 2026-06-05: close the hole / honor the OFF
+            // flag (defaults false). Reject unconditionally when dine-in is off —
+            // the client cannot bypass by spoofing order_type.
+            if (! (bool) Settings::group('pos')->get('pos_dine_in_enabled', false)) {
+                $validator->errors()->add('order_type', 'Dine-in is disabled for this branch.');
+
+                return;
+            }
+
             if (request('order_type') == OrderType::DELIVERY && Settings::group('order_setup')->get("order_setup_delivery") == Activity::DISABLE) {
                 $validator->errors()->add('order_type', 'This order type is disabled now you can try another order type right now or call the management.');
             } else if (request('order_type') == OrderType::TAKEAWAY && Settings::group('order_setup')->get("order_setup_takeaway") == Activity::DISABLE) {
