@@ -42,7 +42,11 @@ class PosReceiptPrintController extends Controller
         // of the same ticket from two stations cannot lose a count.
         $updated = Order::query()
             ->whereKey($order)
-            ->where('branch_id', $branchId)
+            // Branch staff are scoped to their own branch (defense in depth
+            // on top of the global tenant scope). Admin (branch_id=0) is the
+            // owner/super-user and may reprint ANY branch's receipt — the
+            // same bypass the global BranchScope grants admin everywhere.
+            ->when($branchId > 0, fn ($q) => $q->where('branch_id', $branchId))
             ->update([
                 'receipt_print_count' => DB::raw('COALESCE(receipt_print_count, 0) + 1'),
             ]);
@@ -52,9 +56,9 @@ class PosReceiptPrintController extends Controller
         }
 
         $freshOrder = Order::query()
-            ->select(['id', 'receipt_print_count'])
+            ->select(['id', 'branch_id', 'receipt_print_count'])
             ->whereKey($order)
-            ->where('branch_id', $branchId)
+            ->when($branchId > 0, fn ($q) => $q->where('branch_id', $branchId))
             ->firstOrFail();
 
         $newCount = (int) $freshOrder->receipt_print_count;
@@ -64,7 +68,9 @@ class PosReceiptPrintController extends Controller
         // surfaced via `audit_emitted=false` in the response so the UI
         // can warn the manager, but the HTTP call still succeeds so
         // the cashier can deliver the printed paper to the customer.
-        $auditEmitted = $this->emitAudit($branchId, $userId, $freshOrder->id, $newCount, $isDuplicata);
+        // Attribute the NF525 print audit to the order's ACTUAL branch — an
+        // admin reprinting a branch order must audit on that branch, not on 0.
+        $auditEmitted = $this->emitAudit((int) $freshOrder->branch_id, $userId, $freshOrder->id, $newCount, $isDuplicata);
 
         return response()->json([
             'order_id' => $freshOrder->id,

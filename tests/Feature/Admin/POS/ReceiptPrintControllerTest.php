@@ -221,6 +221,41 @@ class ReceiptPrintControllerTest extends TestCase
         );
     }
 
+    /**
+     * [2026-06-04 final-validation P1-B] Admin (branch_id=0) is the owner /
+     * super-user and MUST be able to (re)print ANY branch's receipt — the
+     * same bypass the global BranchScope grants admin everywhere. Before this
+     * fix the controller scoped the update to the user's branch_id (=0), so
+     * admin hit `abort(404)` on every real (branch>0) order. The NF525 print
+     * audit must land on the ORDER's branch, not on branch 0.
+     */
+    public function test_admin_branch_zero_can_print_branch_order_and_audits_on_order_branch(): void
+    {
+        $admin = User::factory()->create(['branch_id' => 0]);
+        $admin->assignRole('Admin');
+
+        $order = $this->makeOrder(0); // belongs to $this->branch (branch > 0)
+
+        $this->actingAs($admin, 'sanctum')
+            ->postJson("/api/admin/pos/orders/{$order->id}/print-receipt")
+            ->assertOk()
+            ->assertJsonPath('order_id', $order->id)
+            ->assertJsonPath('receipt_print_count', 1)
+            ->assertJsonPath('audit_emitted', true);
+
+        $row = AuditLog::query()
+            ->where('action', 'pos.receipt.print')
+            ->where('resource_id', $order->id)
+            ->first();
+
+        $this->assertNotNull($row, 'Admin print must still emit a chained NF525 audit row.');
+        $this->assertSame(
+            $this->branch->id,
+            (int) $row->branch_id,
+            'Print audit must be attributed to the order branch, not branch 0.'
+        );
+    }
+
     private function makeOrder(int $printCount): Order
     {
         return Order::factory()->create([
