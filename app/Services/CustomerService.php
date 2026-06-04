@@ -127,6 +127,13 @@ class CustomerService
      */
     public function show(User $customer): User
     {
+        // S10-01: read-side defense-in-depth. The route binds {customer} to ANY
+        // User and the middleware only checks the CALLER's customers_show
+        // permission — so without this guard show() leaks any user's PII by id.
+        // Mirrors update()/destroy(); placed before the try so the 403 is not
+        // swallowed (the controller maps it to a 422 no-PII response either way).
+        $this->assertTargetRole($customer);
+
         try {
             if (!in_array(EnumRole::CUSTOMER, $this->blockRoles)) {
                 return $customer;
