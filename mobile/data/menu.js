@@ -181,7 +181,7 @@
 
   // Formules menu (heal-light v2 2026-05-14 — menu addon 3.00 → 2.50€)
   const FORMULES = [
-    { id: 'f-menu',    name: 'Menu (Frites + Boisson)', price: 2.50, has_drink: true, has_fries: true },
+    { id: 'f-menu',    name: 'Menu (Frites + Boisson)', price: 3.00, has_drink: true, has_fries: true },
     { id: 'f-frites',  name: 'Ajouter Frites',           price: 2.00, has_fries: true },
     { id: 'f-boisson', name: 'Ajouter Boisson',          price: 2.00, has_drink: true },
   ];
@@ -219,7 +219,7 @@
     { id: 2,  slug: 'galette',            name: 'Galette',            icon: '🌯', sort: 2,  wizard_template: 'sandwich', has_menu: true,  description: 'Galette traditionnelle ou Cayenne',              image: ASSET_BASE + 'cat-galette.png' },
     { id: 3,  slug: 'sandwich-classique', name: 'Sandwich Classique', icon: '🥖', sort: 3,  wizard_template: 'sandwich', has_menu: true,  description: 'Sandwich classique en pain faluche',             image: ASSET_BASE + 'cat-sandwich-classique.png' },
     { id: 4,  slug: 'burgers',            name: 'Burgers',            icon: '🍔', sort: 4,  wizard_template: 'sandwich', has_menu: true,  description: 'Chicken Burger ou Big Chicken, pain brioché',    image: ASSET_BASE + 'cat-burgers.png' },
-    { id: 5,  slug: 'tacos',              name: 'Tacos',              icon: '🌮', sort: 5,  wizard_template: 'tacos',    has_menu: true,  description: 'Tacos M ou Tacos L, sauce fromagère maison',     image: ASSET_BASE + 'cat-tacos.png' },
+    { id: 5,  slug: 'tacos',              name: 'Tacos',              icon: '🌮', sort: 5,  wizard_template: 'tacos',    has_menu: true,  description: 'Tacos ou Big Tacos, sauce fromagère maison',     image: ASSET_BASE + 'cat-tacos.png' },
     { id: 6,  slug: 'bols-gourmands',     name: 'Bols Gourmands',     icon: '🥣', sort: 6,  wizard_template: 'custom',   has_menu: false, description: 'Bowl Frites ou Riz × 4 viandes au choix',        image: ASSET_BASE + 'cat-bols-gourmands.png' },
     { id: 7,  slug: 'frites',             name: 'Frites',             icon: '🍟', sort: 7,  wizard_template: 'custom',   has_menu: false, description: 'Petite ou Grande, style au choix',               image: ASSET_BASE + 'cat-frites.png' },
     { id: 8,  slug: 'supplements',        name: 'Suppléments',        icon: '➕', sort: 8,  wizard_template: 'simple',   has_menu: false, description: 'Suppléments commandables séparément',            image: ASSET_BASE + 'cat-supplements.png' },
@@ -398,9 +398,9 @@
     return drinkSlugMap[formuleDrinkId] !== undefined ? drinkSlugMap[formuleDrinkId] : 1.50;
   }
 
-  // ====== SANDWICH CAYENNE (cat 1) — heal-light v2 prix 7.00→7.50 + Big Cayenne ======
+  // ====== SANDWICH CAYENNE (cat 1) — [CAISSE-SYNC 2026-05-30] prix DB 7.00 (était 7.50) + Big Cayenne 9.50 ======
   const SANDWICH_CAYENNE = [
-    mkItem(101, 'sandwich-cayenne-classique', 1, 'Sandwich Cayenne', 7.50,
+    mkItem(101, 'sandwich-cayenne-classique', 1, 'Sandwich Cayenne', 7.00,
       'Sauce Cayenne maison incluse · 1 viande au choix · Crudités · Suppléments optionnels',
       { viandes: 1, has_crudites: true, has_menu_addon: true, sauce_locked: 'Cayenne', has_sauce: false,
         is_featured: true, tags: ['SIGNATURE'], emoji: '🌶️', is_spicy: true, time: 10 }),
@@ -421,9 +421,9 @@
         is_featured: true, tags: ['SIGNATURE'], emoji: '🌶️', is_spicy: true, time: 8 }),
   ];
 
-  // ====== SANDWICH CLASSIQUE (cat 3) — heal-light v2 prix 6.50→7.00 + Big Classique ======
+  // ====== SANDWICH CLASSIQUE (cat 3) — [CAISSE-SYNC 2026-05-30] prix DB 6.50 (était 7.00) + Big Classique 9.00 ======
   const SANDWICH_CLASSIQUE = [
-    mkItem(301, 'sandwich-classique-faluche', 3, 'Sandwich Classique', 7.00,
+    mkItem(301, 'sandwich-classique-faluche', 3, 'Sandwich Classique', 6.50,
       'Pain faluche · 1 viande · Sauce au choix · Crudités · Suppléments optionnels',
       { viandes: 1, has_crudites: true, has_menu_addon: true, has_sauce: true, time: 8, emoji: '🥖' }),
     mkItem(302, 'big-classique', 3, 'Big Classique', 9.00,
@@ -441,13 +441,15 @@
       { viandes: 1, has_crudites: true, has_menu_addon: true, has_sauce: true, is_featured: true, tags: ['NEW', 'XL'], emoji: '🍔', time: 12 }),
   ];
 
-  // ====== TACOS (cat 5) — owner decision 2026-05-30 : Tacos M (1 viande) 6,90 · Tacos L (2 viandes) 8,90 ======
+  // ====== TACOS (cat 5) — [CAISSE-SYNC 2026-05-30] aligné caisse/borne : Tacos (1 viande) 8,50 · Big Tacos (2 viandes) 11,50
+  //   ⚠️ OVERRIDE owner board note 2026-05-30 (Tacos M/L 6,90/8,90) : la caisse/borne sert 8,50/11,50 LIVE (items 26/27).
+  //   La caisse est la source. Si 6,90/8,90 est le prix retail voulu, corriger la CAISSE (l'app reflète la caisse). ======
   const TACOS = [
-    mkItem(501, 'tacos-1-viande', 5, 'Tacos M', 6.90,
+    mkItem(501, 'tacos-1-viande', 5, 'Tacos', 8.50,
       '1 viande au choix · Frites maison · Sauce fromagère maison',
       { viandes: 1, has_crudites: false, has_menu_addon: true, has_sauce: false,
         is_featured: true, tags: ['SIGNATURE'], emoji: '🌮', time: 10 }),
-    mkItem(502, 'big-tacos-2-viandes', 5, 'Tacos L', 8.90,
+    mkItem(502, 'big-tacos-2-viandes', 5, 'Big Tacos', 11.50,
       '2 viandes au choix · Frites maison · Sauce fromagère maison',
       { viandes: 2, has_crudites: false, has_menu_addon: true, has_sauce: false,
         is_featured: true, tags: ['TOP'], emoji: '🌮', time: 12 }),

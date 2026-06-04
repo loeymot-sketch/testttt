@@ -778,7 +778,10 @@ function ScreenStepRecap({ item, selections, setSelections, headingRef }) {
        item.slug && item.slug.indexOf('bowl-riz-') === 0 ? 'Riz basmati' : null)
     : null;
   const menuLabel = (() => {
-    if (selections.menuChoice === 'full') return 'Menu (Frites + Boisson) +2,50€';
+    // [CAISSE-SYNC 2026-05-30] price read from canonical FORMULES (was hardcoded 2,50€; DB caisse = 3,00€)
+    const _fMenu = ((window.LC && window.LC.menu && window.LC.menu.formules) || []).find(function (f) { return f.id === 'f-menu'; });
+    const _fMenuPrice = (_fMenu ? _fMenu.price : 3).toFixed(2).replace('.', ',').replace(',00', '');
+    if (selections.menuChoice === 'full') return 'Menu (Frites + Boisson) +' + _fMenuPrice + '€';
     if (selections.menuChoice === 'frites') return 'Ajouter Frites +2€';
     if (selections.menuChoice === 'boisson') return 'Ajouter Boisson +2€';
     // [test-e2e fix B-002/B-003 round-2 2026-05-11] surface "Sans formule" explicitly so
