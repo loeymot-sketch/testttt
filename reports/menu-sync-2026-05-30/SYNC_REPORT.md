@@ -27,10 +27,16 @@ La 1ʳᵉ passe (2026-05-30) avait aligné les Tacos sur la DB caisse (8,50/11,5
 → Les Tacos ont été **revertés** dans les 2 frontends : noms **Tacos M / Tacos L**, prix **6,90 / 8,90** (base "seul").
 Les 3 autres drifts (Sandwich Cayenne 7,00 · Classique 6,50 · Menu formule 3,00) **restent appliqués** (non concernés).
 
-⚠️ **Divergence assumée vs DB** : la DB caisse/borne (items 26/27) porte **ENCORE 8,50/11,50** (noms "Tacos"/"Big Tacos").
-Les frontends reflètent désormais le prix retail **owner-canonique** 6,90/8,90, **intentionnellement divergent** de la DB
-stale **en attente de la décision caisse** (corriger la caisse vers 6,90/8,90, owner-gated — voir question owner ouverte).
-Ne PAS re-synchroniser les Tacos vers la DB sans nouvelle instruction owner.
+✅ **CAISSE CORRIGÉE 2026-06-04 (owner-autorisé)** : suite à la question owner, l'owner a choisi « Corrige la caisse → 6,90/8,90 ».
+La DB caisse/borne a été mise à jour : **item 26 "Tacos" 8,50→6,90 · item 27 "Big Tacos" 11,50→8,90** (UPDATE SQL direct, V1 LOCAL,
+provenance auditable). Prix maintenant **cohérent partout** : app = web = caisse = borne = **6,90/8,90**.
+- Vérif app-layer : `KioskMenuService::build(branch 1)` (source menu de la borne) retourne Tacos 6,90 / Big Tacos 8,90 après `cache:clear`.
+- NF525 : `fiscal:verify-chain --all` → **CHAIN OK** (édition prix catalogue ≠ chaîne d'audit ; orders existants gardent leur `composition_snapshot` figé ; seuls les NOUVEAUX orders prennent 6,90/8,90).
+- `db-prices.tsv` régénéré depuis la DB live → reflète honnêtement 6,90/8,90.
+
+📝 **Résidu naming (follow-up optionnel, non-bloquant)** : la DB/caisse affiche encore les **noms** "Tacos" / "Big Tacos", tandis que
+app+web affichent "Tacos M" / "Tacos L". **Prix identiques** ; seule la convention de nommage diffère (pré-existante). Renommer les
+items DB toucherait POS/KDS/tickets — décision owner séparée. Proposé en follow-up : aligner les noms DB sur "Tacos M"/"Tacos L".
 
 ## Refs périmées nettoyées (au-delà des prix)
 - Marquee + restaurant card + onboarding (mobile) + about/footer/5 legal HTML (web) : naming Tacos cohérent "Tacos M & L" (revert post owner 06-04)
@@ -38,7 +44,7 @@ Ne PAS re-synchroniser les Tacos vers la DB sans nouvelle instruction owner.
 - Note : la valeur demo `orders.js` "Tacos L 7,90" est restaurée telle quelle (mock historique = prix-payé-à-l'époque, non normalisé — P2 accepté)
 
 ## Preuves (test après — exigé owner) — état post-revert 2026-06-04
-- **DB-parity (honnête)** : MOBILE & WEB = **42 matched · 0 price-mismatch · 2 divergences intentionnelles** (`Tacos M` 6,90 / `Tacos L` 8,90 ≠ DB `Tacos`/`Big Tacos` 8,50/11,50). ⚠️ **PAS 44/0/0** : les 2 Tacos divergent volontairement de la DB stale (décision owner) en attente du correctif caisse.
+- **DB-parity (honnête, post-correction caisse)** : MOBILE & WEB = **42 matched · 0 price-mismatch · 2 unmatched-par-NOM** (`Tacos M`/`Tacos L` côté frontend vs `Tacos`/`Big Tacos` côté DB). ⚠️ **PAS un mismatch de prix** : depuis la correction caisse 06-04, les **prix sont identiques** (6,90/8,90 des 2 côtés) ; le harness clé-par-nom les liste car la **convention de nommage** diffère (résidu cosmétique, follow-up).
 - **Visual Preview MCP** : Tacos M **6,90 €** (SIGNATURE) · Tacos L **8,90 €** (TOP) rendus sur **mobile ET web** ; Sandwich Cayenne 7,00 € conservé
 - **Arithmétique panier** (`priceFor()`, identique 2 trees) : Tacos M seul 6,90 · Tacos M+Menu **9,90** · Tacos L seul 8,90 · Tacos L+Menu **11,90**
 - **Sentinel mobile↔web** : **bit-identical GREEN** (41 slugs — les 2 trees bougent ensemble vers 6,90/8,90)
