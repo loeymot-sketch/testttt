@@ -170,6 +170,13 @@ Plateforme restaurant fast-food complète :
 
 ## §3 LAST DONE — Auto-managed
 
+**Ultra-review + E2E web & app 2026-06-04** (commits web `6416565` + mobile `534214639` + docs) :
+- Méthode : skill `test-e2e` (GStack static parallèle 15 zones + adversarial verify, 129 agents/7.1M tok) + E2E live piloté Preview MCP (2 frontends standalone). Anti-hallucination strict (rejoué live / file:line). Verdict : **WEB GO-after-heals, MOBILE GO**.
+- **Flows critiques ✅** : web commande Tacos end-to-end (wizard 7 étapes → panier → checkout → paiement → confirm #C-8242 + QR, totaux corrects) ; mobile loyalty redeem end-to-end (347−100=247, voucher LCY-967568).
+- **5 HEALED & live-vérifiés** : P0 filtres diététiques morts (41→3 spicy, screens.jsx:426 predicate map) · P1 ×2 CTAs home mortes (slug-vs-numeric-id, index.html:56 fallback) · P1 wizard "Menu complet" affichait +2,50 mais facturait +3,00 (web wizard-v2.jsx:93 + mobile screens-item-steps.jsx:525 → 3.00, drift du caisse-sync 05-30) · P2 search aria-label.
+- **17 SURFACED** (non auto-healed) : recap omet étapes cascade, promo-code perdu au checkout, order# non-déterministe, viandes max=1 (vérifier Tacos L), cluster a11y (cœur favori nested-button, modal dialog semantics, headings), **allergens "Allergènes : ." vide = décision sécurité/contenu OWNER**, cart pre-seed (owner-gate), cohérence loyalty cross-frontend.
+- 0 console error, sentinel mobile↔web GREEN, 0 backend frozen-zone. Détail : `reports/test-e2e/ultra-review-web-app-2026-06-04/ULTRA_REVIEW_REPORT.md` + `LIVE_FINDINGS.md`.
+
 **Menu price sync + TACOS OWNER OVERRIDE → frontends standalone 2026-05-30 → revert 2026-06-04** :
 - SSOT prix = DB MySQL `foodking` items table. `config/menu.php` STALE. Frontends STANDALONE (0 wireup API, 0 frozen-zone, 0 backend touch).
 - **3 drifts prix DÉFINITIFS** (alignés DB, conservés) : Sandwich Cayenne 7,50→**7,00** · Sandwich Classique 7,00→**6,50** · Menu formule 2,50→**3,00**.
