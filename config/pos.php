@@ -204,4 +204,41 @@ return [
         FILTER_VALIDATE_BOOLEAN,
         FILTER_NULL_ON_FAILURE,
     ) ?? false,
+
+    /*
+    |--------------------------------------------------------------------------
+    | Automatic POS receipt print on order paid-at-counter (2026-06-04)
+    |--------------------------------------------------------------------------
+    |
+    | Hardware: SAGA SGPR-200II thermal receipt printer (80mm, ESC/POS,
+    | RS232+USB+LAN, integrated 24V cash-drawer port). Connected over LAN —
+    | the backend sends the ESC/POS ticket straight to the printer's IP on
+    | port 9100 (escpos_tcp transport), so NO OS driver is required.
+    |
+    | When TRUE, the PrintPosReceiptOnOrderPaidAtCounter listener fires on
+    | every OrderPaidAtCounter (POS counter payment, and kiosk orders routed
+    | to counter collection — both are physically paid at the caisse). It
+    | renders the NF525 customer ticket server-side and sends it to the
+    | branch's receipt-station printer. The send is BEST-EFFORT: a printer
+    | offline / wrong IP NEVER fails or rolls back the fiscal order — the
+    | event already fired after commit, the failure is logged only.
+    |
+    | The FIRST physical impression is the original (receipt_print_count→1,
+    | no DUPLICATA marker). Any later manual reprint via the
+    | /print-receipt endpoint increments to 2+ and is correctly marked as a
+    | NF525 DUPLICATA. Set POS_AUTO_PRINT_RECEIPT=false to disable without a
+    | redeploy (falls back to the legacy on-screen / manual print only).
+    |
+    | `receipt_printer_station` is the `printers.station` value the resolver
+    | matches for the customer receipt printer (kitchen tickets use other
+    | stations). The kiosk uses its OWN printer via the Electron bridge and
+    | is unaffected by this backend path.
+    */
+    'auto_print_receipt' => filter_var(
+        env('POS_AUTO_PRINT_RECEIPT', true),
+        FILTER_VALIDATE_BOOLEAN,
+        FILTER_NULL_ON_FAILURE,
+    ) ?? true,
+
+    'receipt_printer_station' => env('POS_RECEIPT_PRINTER_STATION', 'receipt'),
 ];
