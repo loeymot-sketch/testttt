@@ -98,10 +98,10 @@ Z-reports signés HMAC, séquence gap-free, chaîne append-only 6 ans.
 - `verifyChain` historique vert AVANT == APRÈS (immuabilité prouvée).
 - Identités `Σ total_by_method == total_ttc` + `total_tva == Σ total_by_tax_rate` tenues.
 
-### Sub 4.2 — S13-02 : TVA par-commande — **P1, MEDIUM, NON-FROZEN (pas de LOCK)**
-**Anchor** : `OrderService::myOrderStore ~:551-572` (total_tax pré-remise) + `OrderDetailsResource:49/56/60`. Z-level déjà netté (F1). 
-**Tasks** : T-4.2.1 netter le `total_tax` par-commande sur la base post-remise (cohérence reçu↔Z) OU documenter l'asymétrie comme acceptée (décision owner légère).
-**Acceptance** : reçu d'une commande remisée affiche la même TVA que le Z ; test `tests/Feature/PosReceiptTaxLinesTest.php` (existant) étendu OU note d'acceptation.
+### Sub 4.2 — S13-02 : TVA par-commande — **P1, MEDIUM — CORRIGÉ : le fix propre est FROZEN**
+**Anchor (corrigé exec-audit 2026-06-05)** : la racine est `PricingService::calculateOrder` `$totalTax` pré-remise (`:317/323`), retourné non-netté dans `PricingResult` (`:364`) → TOUS les chemins (SSOT `OrderService:1043/1578` + legacy `:562/1048/1583`) stockent un `total_tax` pré-remise. `PricingService.php` est **FROZEN §7**. TTC mode confirmé → netter est sûr (total indépendant de total_tax). Détail : `FROZEN_RISK_AUDIT.md §S13-02 CORRECTED`.
+**Options (gate G4)** : (1) netter dans `PricingService` (propre, **FROZEN → LOCK_PRICINGSERVICE_TVA_NETTING**) ; (2) override `total_tax` aux 5 sites `OrderService` (non-frozen mais re-dérive ce que le SSOT possède → risque de divergence vs Z) ; (3) documenter l'asymétrie (Z déjà correct).
+**Acceptance** : reçu commande remisée TVA == Z TVA ; `OrderTotalHtDecompositionTest` + `PosReceiptTaxLinesTest` + `ZReportDiscountNettingTest` verts (identité TTC=HT+TVA).
 
 ---
 

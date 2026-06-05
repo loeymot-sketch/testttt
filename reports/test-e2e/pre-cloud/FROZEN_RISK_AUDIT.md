@@ -26,7 +26,11 @@
 
 **Tests:** `tests/Feature/Fiscal/ZReportSplitPaymentBucketingTest.php` (TO CREATE — split 30€cash+20€card → buckets 30/20 not 50; legacy fallback regression; split+discount ratio) · extend `ZReportDiscountNettingTest.php` · `RefundMirrorSplitPaymentTest.php` (existing) · `FiscalSealingHmacTest.php` (existing — sig determinism).
 
-**S13-02 split OUT of the frozen cluster:** Z-level TVA netting already done (F1). Residual = per-order `total_tax` written pre-discount at `OrderService myOrderStore` **~:551-572 (NON-FROZEN)** + surfaced by `OrderDetailsResource:49/56/60`. → **non-frozen MEDIUM task, no countersign.** Net order/receipt TVA to post-discount to match the Z, OR document the asymmetry as accepted.
+**S13-02 — CORRECTED 2026-06-05 (execution audit):** the clean fix is **FROZEN**. Verified: `PricingService::calculateOrder` computes `$totalTax = Σ per-line $taxPrice` PRE-discount (`:317`, `round :323`) and returns it un-netted in `PricingResult` (`:364`); the discount is applied only to the total (`:353`). So **all order paths** (SSOT `OrderService:1043/1578` + legacy `:562/1048/1583`) store a pre-discount `total_tax`, breaking `TTC = HT + TVA` on discounted orders (`Order::getTotalHt = total - total_tax`, `OrderTotalHtDecompositionTest`). **TTC mode confirmed** (`pricing.tax_inclusive_prices=true`) → netting `total_tax` is SAFE (total = subtotal − discount, independent of total_tax) and matches the Z's F1 ratio `(subtotal−discount)/subtotal`.
+- **Option 1 (clean, FROZEN):** net `totalTax` in `PricingService` (the SSOT) → `LOCK_PRICINGSERVICE_TVA_NETTING` (3rd LOCK). One source, matches Z exactly.
+- **Option 2 (non-frozen workaround, risky):** override `total_tax` at the 5 `OrderService` write-sites with `round($totalTax * ((subtotal−discount)/subtotal), 2)`. No LOCK, but OrderService re-derives what the SSOT owns → divergence risk if the Z netting ever changes; must be kept in lock-step with `taxBreakdownForOrders`.
+- **Option 3:** document the asymmetry as accepted (Z is already correct; only the per-order receipt over-states TVA on discounted orders — rare in V1).
+→ **Owner gate G4 now picks among 1/2/3** (was "net vs document"; the "net" path is frozen).
 
 ---
 
