@@ -94,6 +94,10 @@ class Order extends Model implements BroadcastableOrder
         'fiscal_alloc_error_at' => 'datetime',
         // [H.1 P1 AMBER 2026-05-24 / H2-HEAL-02] cashier attribution
         'creator_id' => 'integer',
+        // [S16-01] counter-collecting cashier attribution
+        'editor_id' => 'integer',
+        // [M10-01] NF525 queryable cash-skip marker
+        'cash_movement_skipped_at' => 'datetime',
     ];
 
     /**

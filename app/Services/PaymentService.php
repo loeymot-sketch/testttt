@@ -580,7 +580,22 @@ class PaymentService
      */
     private function flagCashMovementSkipped(Order $order): void
     {
+        // Transient flag for the HTTP response (the modal surfaces a warning toast).
         $order->cash_movement_skipped = true;
+
+        // [M10-01] NF525 cash trail — persist a QUERYABLE marker so EOD
+        // reconciliation can find paid-cash orders that recorded no cash_movement
+        // (no open drawer session). The transient flag above only reaches the
+        // response and then vanishes. Idempotent column write, scoped to the row;
+        // withoutEvents avoids re-firing model observers from this post-hoc hook.
+        if ($order->cash_movement_skipped_at === null) {
+            $order->cash_movement_skipped_at = now();
+            Order::withoutEvents(function () use ($order) {
+                Order::whereKey($order->id)->update([
+                    'cash_movement_skipped_at' => $order->cash_movement_skipped_at,
+                ]);
+            });
+        }
     }
 
     /**
