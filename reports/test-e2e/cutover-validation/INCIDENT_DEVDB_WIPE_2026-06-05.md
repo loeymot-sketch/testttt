@@ -21,6 +21,13 @@ Backup exists: **`storage/backups/db-daily/daily-2026-06-04.sql.gz`** (2026-06-0
 - The full PHPUnit suite result (2860/0) is unaffected (tests are self-contained; whatever DB they used, they passed). Vitest 1900/0, the AppLibrary fix (proven under config:cache), 8/8 visual, sync cascade, cloud-delta — all stand. The W5 dashboard data was real at capture time.
 - **The incident is itself cutover intelligence:** "running the test suite can nuke the operating DB" is a real go-live hazard → see dossier.
 
+## RESOLUTION 2026-06-05 (owner approved: "fix footgun everywhere, THEN restore")
+1. **Footgun fixed everywhere:**
+   - Tracked **DEVDB-GUARD** added (`tests/CreatesApplication.php`, commit ce15…/this branch): aborts any test run at app-boot (before `migrate:fresh`) unless the DB is `:memory:` sqlite or a `*test*` name. **Empirically proven: BLOCKS `foodking`, ALLOWS `foodking_test`.** Bypass `ALLOW_NON_TEST_DB=1`.
+   - All 4 worktrees that pointed `.env.testing` at `foodking` repointed → `foodking_test` (parent repo, `massive-e2e-0604`, `printer-saga-pos`, `pre-cloud-exec`).
+2. **Restored** `foodking` from `daily-2026-06-04.sql.gz` (exit 0): **branches=1, orders=3443, audit_logs=2556, items=59**. **NF525 chain re-attested: CHAIN OK (branch 1).** Server :8000 healthy (db/redis/queue ok).
+3. **Residual (data-freshness, not corruption):** the 06-04 daily backup predates a catalogue cleanup — restored **59 active items vs the canonical 45 SSOT**, and the ~14h of orders/audit between 06-04 00:05 and the wipe are not recoverable. **Follow-up (owner):** re-apply the catalogue curation to 45 (e.g. `MenuResetLeCayenne` / the cleanup that reduced 59→45) if the canonical 45-item menu is desired before cutover. NOT auto-run (catalogue change = owner domain).
+
 ## Systemic fix recommended (owner — applies to ALL worktrees / the repo)
 1. Make `phpunit.xml`'s sqlite override authoritative: `<env name="DB_CONNECTION" value="sqlite" force="true"/>` + `:memory:` force — so no `.env.testing` can repoint tests at a real DB. (Verify the suite passes on sqlite first; mysql-only tests already skip.)
 2. OR ensure EVERY worktree's `.env.testing` points at a `*_test` DB, never `foodking`.
