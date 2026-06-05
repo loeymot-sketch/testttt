@@ -3905,6 +3905,16 @@ export default {
             // cashier knows the order will sync when network returns.
             if (typeof navigator !== 'undefined' && navigator.onLine === false) {
                 try {
+                    // [M1-02] Offline CASH orders need a numeric pos_received_amount or
+                    // every replay 422s (PosOrderRequest requires it for CASH) and the
+                    // cash sale is silently lost. The payment modal can't open offline,
+                    // so default to exact cash = order total (cashier reconciles on sync).
+                    if ((this.checkoutProps.form.pos_received_amount === null
+                            || this.checkoutProps.form.pos_received_amount === undefined
+                            || this.checkoutProps.form.pos_received_amount === '')
+                        && Number(this.checkoutProps.form.pos_payment_method) === posPaymentMethodEnum.CASH) {
+                        this.checkoutProps.form.pos_received_amount = Number(this.grandTotal) || Number(this.checkoutProps.form.total) || 0;
+                    }
                     const queued = await this.enqueueOrder({ ...this.checkoutProps.form });
                     this.loading.isActive = false;
                     if (queued) {
