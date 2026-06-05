@@ -94,6 +94,10 @@ a clean fix (new frozen `PricingService` LOCK, or a frozen wizard rearchitecture
 V1-LOCAL single-restaurant envelope. Same disposition pattern as S13-02 (deferred) / M3-01 / M8-01.
 - **Backlog item**: `M3-02` — POS frites Grande/Cheddar upgrade (+2 €) not billed (pos_line_addons unpriced).
   Revisit if/when frites pricing is reworked or POS moves to the kiosk standalone-item model. NOT a V1 blocker.
+  **Scope note (broader than the two booleans):** the root cause is structural — `addonToPayload` builds the
+  whole frites line into `pos_line_addons`, which the server never prices. ANY surcharge on that addon line
+  (e.g. extra "Sauce frites") rides the same unpriced path; main-item supplements are fine (they price via the
+  Vue checkbox-sync). So the eventual fix is "**price the addon line**", not "price the two frites flags".
 - **No code changed.** Frozen `pos-wizard.js` + `PricingService` untouched (frozen-diff 0).
 - **Remote PR**: must NOT apply the §4 fix (invalid). If frites pricing is addressed later, use §11 option B or C under a fresh, correctly-scoped LOCK.
 
