@@ -9,11 +9,15 @@
 | **S6-01** | Tax/Currency UPDATE unique `ignore()` used a non-existent route param → every UPDATE 422'd. Fixed to route-model-bound `{tax}`/`{currency}`. | `9db57a803` |
 | **S17-01** | Public QR table-order endpoint had no dine-in gate → anyone could create a dine-in order. Now rejects when `pos_dine_in_enabled` off (owner). | `9cd2634f6` |
 | **S10-01** | `CustomerService::show()` leaked any user's PII by id (no target-role check). Added `assertTargetRole()` (mirrors update/destroy). | `340bfdfa4` |
+| **M6-001** | Cash-dominant balanced split (cash tranche < total) was 422'd by the single-tender cash guard in BOTH `PosOrderRequest` and `OrderService`. Both now skip when a `payment_breakdown` is present; split-sum validation preserved. | `f6a781a16` |
 
-W1 baseline + reconcile: `50df7c9ed`. **All new tests green; frozen-diff = 0; full PHPUnit
-regression running to confirm 2844+8.**
+W1 baseline + reconcile: `50df7c9ed`. **All new tests green; frozen-diff = 0.**
+**Full PHPUnit regression: 2848 passed + 4 failures = the documented cross-worktree
+plan-path traceability sentinels (F001/F006/F009/F013) which assert untracked
+`plans/*.md` exist — they PASS in the main checkout (23/23) and are unrelated to
+any code change. 0 real regression.**
 
-## Remaining active P1 = 16 (19 gate − 3 healed)
+## Remaining active P1 = 15 (19 gate − 4 healed)
 
 ### A. NON-FROZEN backend — next session, PHPUnit-verifiable
 - **W2 operator-identity (NF525 headline)**: M11-01, S11-02, S16-01. `ReceiptDataService.php:70`
@@ -23,9 +27,10 @@ regression running to confirm 2844+8.**
   no `creator()` relation; counter-collect cashier is only in the audit log today (S16-01). Decide:
   add `creator()`/`editor()` relations + set collector on counter-collect (no migration needed —
   columns exist) vs audit-chain resolution. NF525-sensitive — careful TDD.
-- **W3 money**: M6-001 (OrderService:1071 split-cash guard — hoist `$splitActive` per verdict §4),
-  M8-01 (PosOrderController two refund paths), M10-01 (PaymentService cash-no-drawer backend trail;
-  the modal already surfaces the warning — backend row still missing).
+- **W3 money** (M6-001 ✅ done): M8-01 (PosOrderController two divergent refund paths — pre-Z
+  `isSealed` vs `refundPreZ`, asymmetric side-effects), M10-01 (PaymentService cash-no-drawer
+  backend trail; the modal already surfaces the warning — backend queryable row still missing,
+  NF525-adjacent: design how to record an unsessioned cash collection).
 
 ### B. NON-FROZEN frontend — needs `npm run` rebuild + Playwright visual gate (separate batch)
 - S7-03 (remove App Debug toggle — owner), M4-02 (persist discount_reason on reload — owner),
