@@ -42,11 +42,19 @@ Every fix achievable without entering a frozen zone is done + tested. What's lef
   regression + production-flow review (kiosk/parked-recall/edit submit full composition?) — a dedicated careful
   pass, NOT a depleted-context rush. (No LOCK required; the frozen wizard UX polish is a separate optional item.)
 
-### 3. M3-02 — `public/js/pos-wizard.js` (FROZEN strict no-touch)
-- Frites supplements (Grande +1,00 / Cheddar +1,00) shown in the preview total but sent only as TEXT →
-  the server quote can't re-tariff → under-billing vs the preview.
-- **Options**: (a) wizard sends the upgrade as a structured priced addon (needs the frozen wizard → LOCK);
-  (b) server parses the menu_extras text to re-derive the upcharge (non-frozen but fragile). Owner pick.
+### 3. M3-02 — `public/js/pos-wizard.js` (FROZEN strict no-touch) — ⚠️ DEFECT-REALITY UNVERIFIED
+- **Catalog claim**: frites supplements (Grande +1,00 / Cheddar +1,00) shown in the preview total but sent
+  only as free-text → the server quote can't re-tariff → under-billing vs the preview.
+- **Verification status (honest)**: NOT confirmed by me. After M8-01 and M3-01 both collapsed to false-positives
+  on closer trace, I will not assert M3-02 is real on the catalog's word alone. A bounded grep of the frozen
+  wizard shows it uses BOTH `item_extras` (structured, ×3) AND `menu_extras` (text, ×2) + `sauce_supp` (×17) —
+  inconclusive as to which path the frites *style* upgrade takes. Counter-evidence that it may be a non-issue:
+  `FritesWizardComposerTest` shows the cheddar upgrade priced correctly (3,00 €) when sent as structured
+  `item_extras{id}` → if the real wizard does the same, the server re-tariffs and there is no under-billing.
+- **To confirm/refute (owner-optional, does NOT change the cloud verdict)**: one `pos-wizard.js` logic read OR a
+  single Playwright payload capture of a frites+cheddar add-to-cart (inspect the POSTed `item_extras` vs
+  `menu_extras`). If real → fix options: (a) wizard sends a structured priced addon (frozen → LOCK); (b) server
+  parses the `menu_extras` text to re-derive the upcharge (non-frozen but fragile). Owner pick — only if confirmed.
 
 ### 4. G-H — `resources/js/components/admin/pos/PaymentComponent.vue` (FROZEN §7) — your stated objective #1
 - Unified encaissement: you chose **"vraie fusion incluant le frozen"** (borne + caisse → one system,
