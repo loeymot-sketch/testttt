@@ -26,17 +26,23 @@ plan-path traceability sentinels (F001/F006/F009/F013) which assert untracked
 `plans/*.md` exist — they PASS in the main checkout (23/23) and are unrelated to
 any code change. 0 real regression.**
 
-## Remaining active P1 = 4 — ⭐ ALL NON-FROZEN P1 RESOLVED (15/19)
-Resolved (15): S6-01, S17-01, S10-01, M6-001, M11-01, S11-02, S16-01, M10-01, M8-01 (false-positive), S7-03, M4-02, S1-DASH-01, **M1-02, M1-01, M7-02**.
+## Remaining active P1 = 3 (ALL FROZEN) — ⭐ 16/19 RESOLVED (all non-frozen + M3-01 false-positive)
+Resolved (16): S6-01, S17-01, S10-01, M6-001, M11-01, S11-02, S16-01, M10-01, M8-01 (false-positive), S7-03, M4-02, S1-DASH-01, M1-02, M1-01, M7-02, **M3-01 (false-positive — server enforces omitted composition at the correct layer)**.
 Verified: **Vitest 1895/0** (3 skip; all sentinels green) · **PHPUnit (final run in progress, expected ~2857+/0 real)**. Frontend fixes LIVE in rebuilt bundles.
 **Remaining 4 are ALL FROZEN-ZONE → hard §7 rule, need your gate-G countersign (I cannot touch them without a LOCK + countersign):**
 - **M6-002, S13-02** — `ZReportService` (NF525 split-bucketing — *critical*, the RED finding shows split mis-attribution reaching the signed Z).
-- **M3-01, M3-02** — `pos-wizard.js` (strict no-touch). **M3-01 server-side path EMPIRICALLY PROVEN UNSAFE
-  as the catalog wrote it** (enforcing on `ItemAttribute.min_select` false-rejects bowls #28-32 because
-  attr#7 "Base bol" has NO backing wizard step, and would 422 live kiosk price previews via the shared
-  trait). Correct fix = enforce at the **`ItemWizardStep` layer**, order-creation requests only — a dedicated
-  full-context careful pass. Full landmine recipe + correct shape in `M3-01-CAREFUL-PASS-SPEC.md`. **M3-02**
-  (frites upcharge text-only) likely needs the wizard or a server-side payload parse.
+- **M3-01 = ✅ RESOLVED (FALSE POSITIVE).** Server ALREADY rejects an omitted mandatory composition at the
+  CORRECT layer — `PricingService::assertComposerStepConstraints` (`calculateOrder:110`, on every order path:
+  OrderService/FrontendOrderService/OrderQuoteService) throws 422 when a published-profile step's selected
+  total < min (incl. total=0 = omitted). Catalog inspected the wrong layer (`MultiVariationConstraint`/frozen
+  wizard), like M8-01. Regression-locked: `ComposerStepConstraintTest` (empty-selection→422, 13/13) +
+  `FritesWizardComposerTest` (frites no-sauce→422, 4/4). Writing the catalog's constraint check would have
+  duplicated enforcement + false-rejected (attr#7 Base bol has no profile; shared preview trait). The frozen
+  `pos-wizard.js` client-UX gap is cosmetic (server is authority). Detail: `M3-01-CAREFUL-PASS-SPEC.md`.
+- **M3-02** — `pos-wizard.js` (FROZEN). Frites upcharge text-only — needs the wizard (LOCK) or a server-side
+  menu_extras parse. NOTE: `FritesWizardComposerTest` shows the cheddar STYLE upgrade priced correctly when sent
+  as a structured `item_extras{id}` (PricingService re-tariffs → asserts 3,00 €); M3-02's residual risk is only
+  if the frozen wizard sends it as free-text `menu_extras` instead — a frozen-wizard read/fix (gate-G).
 - **G-H** — `PaymentComponent.vue` unified-encaissement fusion (you chose "vraie fusion incl. frozen").
 Plus non-P1: S7-03 UI-toggle cosmetic (frontend) + the live branch-push SYNC timing test (soketi up; needs a branch-staff session).
 

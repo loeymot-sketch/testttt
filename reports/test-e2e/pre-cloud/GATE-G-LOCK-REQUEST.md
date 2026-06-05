@@ -1,8 +1,14 @@
 # GATE-G — Frozen-zone LOCK request (owner countersign needed)
 
-**Date** 2026-06-05 · **Branch** `heal/pre-cloud-exec-2026-06-05` · **Status** 15/19 P1 resolved (ALL non-frozen).
-The remaining **4 active P1 all live in frozen-zone files** (CLAUDE.md §7). Per the hard rule, I will NOT
-touch them without this LOCK + your explicit countersign. This doc is the override request.
+**Date** 2026-06-05 · **Branch** `heal/pre-cloud-exec-2026-06-05` · **Status** 16/19 P1 resolved (15 non-frozen
+fixes + M3-01 proven false-positive). The remaining **3 active P1 all live in frozen-zone files** (CLAUDE.md §7):
+M6-002/S13-02 (`ZReportService`), M3-02 (`pos-wizard.js`), G-H (`PaymentComponent.vue`). Per the hard rule, I
+will NOT touch them without this LOCK + your explicit countersign. This doc is the override request.
+
+> **M3-01 UPDATE: RESOLVED (false-positive), NOT gated.** §2 below is retained for the record but needs no
+> countersign — the server already rejects omitted mandatory composition via
+> `PricingService::assertComposerStepConstraints` (`calculateOrder:110`), regression-locked
+> (ComposerStepConstraintTest 13/13 + FritesWizardComposerTest 4/4). See `M3-01-CAREFUL-PASS-SPEC.md`.
 
 ## Why we're here
 Verified: **PHPUnit 2857/0 real · Vitest 1895/0** (all sentinels green) · 28 commits · 0 frozen lines touched.

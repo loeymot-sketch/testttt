@@ -14,7 +14,7 @@ The 6 dimensions = **Technical · Interface · Logic/Reasoning · Synchronizatio
 |---|---|---|
 | Technical | ✅ | 8 box functionalities audited (Phase-2); healed M6-001 (split guard), M10-01 (cash-trail), operator cluster, M8-01 (verified). PHPUnit green. |
 | Interface | ✅ | Phase-3 `/admin/pos`: clean flat UI, FR, Cayenne brand, real menu (Tacos/Burgers/Bols/Frites), "À ENCAISSER BORNE (200)", stock banner. 0 console errors, 0 raw labels. |
-| Logic | ◐ | Validated: split-cash, cash-trail, operator-identity, refund cascade, discount-reason. **Residual M3-01**: server blocks *present-but-short* mandatory attrs (MultiVariationConstraint min_select) but not *entirely-omitted* — careful blast-radius pass. **M3-02** frites upcharge ⛔ frozen. |
+| Logic | ✅ | Validated: split-cash, cash-trail, operator-identity, refund cascade, discount-reason. **M3-01 RESOLVED (false-positive)**: server rejects an *entirely-omitted* mandatory composition via `PricingService::assertComposerStepConstraints` (`calculateOrder:110`, every order path) at the correct per-item published-step layer — regression-locked (ComposerStepConstraintTest 13/13 + FritesWizardComposerTest 4/4). **M3-02** frites upcharge ⛔ frozen (wizard text-vs-structured). |
 | Sync | ✅ | Encaissement-borne queue + `OrderStatusChanged` push (live E2E). |
 | Visual-Timing | ✅ | `/admin/pos` full load 6.1s captured (PERF-BOX-01 P3, flagged). |
 | Vision | ✅ | FR, single-branch "Le Cayenne (Principal)", NF525, frozen wizard untouched. |
@@ -73,9 +73,11 @@ The 6 dimensions = **Technical · Interface · Logic/Reasoning · Synchronizatio
 ---
 
 ## CLOUD-READINESS VERDICT
-- **GREEN now (no gate)**: S2 BORNE, S3 KDS, S4 OSS, S6 SYNC fully validated across all 6 dimensions; S5 CENTRAL fully validated; S1 CAISSE validated except the gated/careful-pass items below.
-- **15/19 P1 resolved + verified**; the realtime "total synchronization system" is proven live.
-- **Blocking for 100%/cloud sign-off** (require owner action, NOT silently bypassable):
-  1. **Gate-G countersign** → M6-002/S13-02 (`ZReportService` NF525 split-bucketing — *the* critical fiscal item), M3-02 (`pos-wizard.js`), G-H (`PaymentComponent` fusion). See `GATE-G-LOCK-REQUEST.md`.
-  2. **M3-01 careful pass** (non-frozen, blast-radius order-validation — full regression + production-flow review).
-- **Cloud go/no-go**: **GO once gate-G is countersigned + the 4 frozen items healed + M3-01 careful pass land** — at which point a final convergence ×2 + NF525 chain attestation closes it. Today: **15/19 + SYNC = ship-ready for everything not behind the frozen wall.**
+- **GREEN now (no gate)**: S2 BORNE, S3 KDS, S4 OSS, S6 SYNC fully validated across all 6 dimensions; S5 CENTRAL fully validated; S1 CAISSE validated except the 3 frozen items below.
+- **16/19 P1 resolved + verified** (all non-frozen + M3-01 false-positive); the realtime "total synchronization system" is proven live.
+- **Blocking for 100%/cloud sign-off** = **3 FROZEN items only** (require owner gate-G countersign, NOT silently bypassable — hard §7):
+  1. **M6-002 + S13-02** — `ZReportService` NF525 split-bucketing / TVA-netting (*the* critical fiscal item).
+  2. **M3-02** — `pos-wizard.js` frites upcharge (text-vs-structured).
+  3. **G-H** — `PaymentComponent.vue` unified-encaissement fusion (owner objective #1).
+  See `GATE-G-LOCK-REQUEST.md`.
+- **Cloud go/no-go**: **GO once gate-G is countersigned + the 3 frozen items healed** — at which point a final convergence ×2 + NF525 chain attestation closes it. Today: **16/19 + SYNC = ship-ready for everything not behind the frozen wall; the only remaining work is the 3 frozen heals, all needing your countersign.**
