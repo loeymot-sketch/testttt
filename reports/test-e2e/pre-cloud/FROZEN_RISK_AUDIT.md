@@ -32,6 +32,8 @@
 - **Option 3:** document the asymmetry as accepted (Z is already correct; only the per-order receipt over-states TVA on discounted orders — rare in V1).
 → **Owner gate G4 now picks among 1/2/3** (was "net vs document"; the "net" path is frozen).
 
+**S13-02 — RESOLVED for V1 = UNREACHABLE (execution-audit 2026-06-05, the M3-01/M8-01 pattern):** discounts (manual/coupon/loyalty) are **refused in production V1** — `assertDiscretionaryDiscountAllowed` (OrderService:2871-2878 + FrontendOrderService:803) throws when `config('pos.manual_discount_enabled') !== true`, whose **default is false** (config/pos.php:172; the F1-dormancy guard, comment :2886-2896: "so no discounted order can sign a wrong Z"). Empirical: **0 orders with discount>0** in the DB. → No discounted order can exist in V1 → the S13-02 order-vs-Z TVA mismatch cannot manifest. **No V1 heal needed (G4 = option 3 document-accept).** The order-side net (option 1/2) lands ONLY when discounts are re-enabled, coupled with the frozen F1 PricingService net — a post-V1 change, explicitly out of the V1 cloud gate. (NOTE: this worktree's env has `manual_discount_enabled=true` for dev; production V1 = default false.)
+
 ---
 
 ## M3-02 — `pos-wizard.js` frites under-billing (POS-only)

@@ -100,8 +100,7 @@ Z-reports signés HMAC, séquence gap-free, chaîne append-only 6 ans.
 
 ### Sub 4.2 — S13-02 : TVA par-commande — **P1, MEDIUM — CORRIGÉ : le fix propre est FROZEN**
 **Anchor (corrigé exec-audit 2026-06-05)** : la racine est `PricingService::calculateOrder` `$totalTax` pré-remise (`:317/323`), retourné non-netté dans `PricingResult` (`:364`) → TOUS les chemins (SSOT `OrderService:1043/1578` + legacy `:562/1048/1583`) stockent un `total_tax` pré-remise. `PricingService.php` est **FROZEN §7**. TTC mode confirmé → netter est sûr (total indépendant de total_tax). Détail : `FROZEN_RISK_AUDIT.md §S13-02 CORRECTED`.
-**Options (gate G4)** : (1) netter dans `PricingService` (propre, **FROZEN → LOCK_PRICINGSERVICE_TVA_NETTING**) ; (2) override `total_tax` aux 5 sites `OrderService` (non-frozen mais re-dérive ce que le SSOT possède → risque de divergence vs Z) ; (3) documenter l'asymétrie (Z déjà correct).
-**Acceptance** : reçu commande remisée TVA == Z TVA ; `OrderTotalHtDecompositionTest` + `PosReceiptTaxLinesTest` + `ZReportDiscountNettingTest` verts (identité TTC=HT+TVA).
+**✅ RÉSOLU POUR V1 = INATTEIGNABLE (exec-audit) :** remises (manuelle/coupon/fidélité) **refusées en V1 prod** (`assertDiscretionaryDiscountAllowed`, default `manual_discount_enabled=false`, garde F1-dormancy) ; **0 commande remisée** en DB → le mismatch S13-02 ne peut PAS se produire en V1. **G4 = option 3 (document-accept), aucun heal V1.** Le net order-side (option 1 frozen PricingService / option 2 OrderService) ne land QUE si les remises sont réactivées (post-V1, couplé au fix F1 frozen). Hors gate cloud V1.
 
 ---
 
