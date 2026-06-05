@@ -46,8 +46,13 @@ any code change. 0 real regression.**
     test asserting pre-Z refund releases stock + sets payment_status. NF525/inventory-sensitive → dedicated pass.
     **LESSON (this session): a grep-based read misled me; the adversary + direct line-by-line read caught it.
     Always line-by-line verify the exact guard, never infer from a nearby condition.**
-  - **M10-01** — PaymentService cash-no-drawer backend trail; the modal already surfaces the warning —
-    backend queryable row still missing. NF525-adjacent: design how to record an unsessioned cash collection.
+  - **M10-01 — scoped (verified):** `PaymentService::flagCashMovementSkipped()` (L581-584) only sets a
+    **transient in-memory** `$order->cash_movement_skipped = true` (no `->save()`; not a DB column) → the
+    unsessioned cash collection leaves NO persistent queryable trace (the modal warns, the flag vanishes).
+    **Fix recipe (bounded, non-frozen, TDD via sqlite — do NOT `migrate` the shared dev MySQL):** add a
+    nullable `orders.cash_movement_skipped_at` (migration file), set+persist it in `flagCashMovementSkipped`,
+    and expose an EOD reconciliation query (`whereNotNull('cash_movement_skipped_at')`). Test: collect cash
+    with no open session → column set + reconciliation finds it. NF525-adjacent (cash trail).
 
 ### B. NON-FROZEN frontend — needs `npm run` rebuild + Playwright visual gate (separate batch)
 - S7-03 (remove App Debug toggle — owner), M4-02 (persist discount_reason on reload — owner),
