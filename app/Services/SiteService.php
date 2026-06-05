@@ -4,7 +4,6 @@ namespace App\Services;
 
 
 use Exception;
-use App\Enums\Activity;
 use App\Models\Currency;
 use App\Http\Requests\SiteRequest;
 use Illuminate\Support\Facades\Log;
@@ -44,8 +43,11 @@ class SiteService
             $currency = Currency::find($request->site_default_currency);
             Settings::group('site')->set($request->validated() + ['site_default_currency_symbol' => $currency->symbol]);
 
+            // [S7-03] APP_DEBUG is INTENTIONALLY not written here. Letting Site
+            // settings flip APP_DEBUG in .env is a self-inflicted production boot
+            // failure (the prod boot-guard refuses APP_DEBUG=true) + a debug/secret
+            // leak vector. APP_DEBUG is ops/deploy-managed only. (Owner 2026-06-05.)
             $this->envService->addData([
-                'APP_DEBUG'              => $request->site_app_debug == Activity::ENABLE ? 'true' : 'false',
                 'TIMEZONE'               => $request->site_default_timezone,
                 'CURRENCY'               => $currency?->code,
                 'CURRENCY_SYMBOL'        => $currency?->symbol,
