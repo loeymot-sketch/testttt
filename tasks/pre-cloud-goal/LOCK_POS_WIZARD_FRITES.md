@@ -58,14 +58,34 @@
 - LOCK at `tasks/pre-cloud-goal/LOCK_POS_WIZARD_FRITES.md`.
 - Scope marker: `// [LOCK_POS_WIZARD_FRITES] M3-02 structured frites extras — safety-check approved 2026-06-__`.
 
-## §10. Owner sign-off (HUMAN GATE)
-> **DO NOT modify the frozen file until APPROVED below.**
+## §10. Owner sign-off (HUMAN GATE) — APPROVED 2026-06-05, but ⛔ EXECUTION HALTED (approach technically invalid)
+> Owner gave explicit countersign this session (AskUserQuestion): **"APPROVED + model Grande as size"**,
+> implementer = apply-locally. **However, execution is HALTED before any frozen edit** because §11
+> (post-approval verification) proves the approach this LOCK scoped is **technically invalid** — it would
+> modify the frozen file and still NOT bill the +2 €. Re-escalated to owner with corrected options. The
+> frozen `pos-wizard.js` was NOT touched.
 - **Owner**: Kossay (owner)
-- **Signed at**: ___________________
-- **Decision**: [ ] APPROVED  [ ] REJECTED  [ ] NEEDS CHANGES
-- **G2 size-model decision** (Grande as item #402/#403 vs priced variation): ___________________
-- **Comments/conditions**: ___________________
-- Patch sha after APPLIED: ___________________
+- **Signed at**: 2026-06-05 (approval received; execution blocked pending re-decision per §11)
+- **Decision**: [x] APPROVED (scope as written) — but [x] NEEDS CHANGES (scope is invalid, see §11)
+- **G2 size-model decision** (Grande as item #402/#403 vs priced variation): owner chose "model Grande as size" — but see §11: no priced channel exists for addon-item extras regardless of size modeling.
+- **Comments/conditions**: DO NOT apply the §4 fix as written. Awaiting owner re-decision among §11 options (DEFER recommended).
+- Patch sha after APPLIED: — (none; not applied)
+
+## §11. POST-APPROVAL VERIFICATION FINDING — the §4 fix is technically invalid (2026-06-05)
+**Empirical trace (worktree `pre-cloud-exec`, this session) overturns the §3 premise:**
+- The POS wizard's frites line is dispatched (`pos-wizard.js:4218` `data-wizard-pos-line-addons` → `ItemComponent.vue:1344`) into **`pos_line_addons`**, NOT into the priced `items[]`.
+- **`grep -rn "pos_line_addons" app/` = 0 hits.** The server NEVER reads `pos_line_addons` → the frites line's `item_extras` (whatever shape) is **pure client display metadata, never priced.**
+- The only server-priced channels (`PricingService.php`): main-line **`item_extras[]`** (`:169-191`) and **`item_addons[]`** (`:193-228`), both summed into `$unitSum` (`:233`).
+- **`item_extras` is cross-item-guarded** (`:182` → 422 `"Extra n'appartient pas à l'article"`): a frites ItemExtra cannot be attached to the sandwich main line. Even with the guard off it would mis-attribute the extra on the fiscal record (NF525 defect) — not a clean path.
+- **`item_addons` prices only `dbAddon->addonItem->price`** (fixed, role-ratio'd, `:224-228`): the frites BASE rides this via the menu-formule addon, but there is **no priced channel for addon-item upgrades** (Grande/Cheddar).
+- **`grep -rn "menu_extras" app/` = 0 hits** → confirmed never priced.
+
+**Consequence:** populating `item_extras{id}` at `:4153` (the §4 fix) touches the frozen file for nothing — the +2 € still drops. The defect is REAL (kiosk avoids it by modeling frites as standalone items #402/#403 on the priced `items[]`), but the V1 fix requires one of:
+- **(A) DEFER** — document as known minor post-V1 under-billing (+2 € only on the optional frites upgrade; pattern of S13-02/M3-01/M8-01). **RECOMMENDED** — lowest risk, matches V1 envelope.
+- **(B) Server-side addon-extra pricing** — make the server price `pos_line_addons[].item_extras`. Touches **`PricingService` (a DIFFERENT frozen file this LOCK never named, owner never signed)** → needs its own LOCK + countersign.
+- **(C) Frites-as-standalone-item rearchitecture** (kiosk #402/#403 pattern in POS) — large frozen `pos-wizard.js` change + cart restructure; highest risk.
+
+**Discipline note:** routing into `PricingService` under THIS pos-wizard LOCK would exceed the countersigned scope (the exact class of violation the harness blocked at `06e3f305f`). Therefore HALT + re-escalate, not silent scope-creep.
 
 ---
-**End of LOCK_POS_WIZARD_FRITES** — risk MEDIUM, POS-only (kiosk already correct). Note: this LOCK + the remote PR are the SAME work — do not double-apply (anti-duplication GOAL §0.5).
+**End of LOCK_POS_WIZARD_FRITES** — risk MEDIUM, POS-only (kiosk already correct). **STATUS: HALTED — approved scope invalid (§11); awaiting owner re-decision.** Note: this LOCK + the remote PR are the SAME work — do not double-apply (anti-duplication GOAL §0.5); the remote PR must also NOT apply the invalid §4 fix.
