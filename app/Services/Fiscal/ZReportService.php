@@ -663,6 +663,37 @@ class ZReportService
         $ttc = (float) ($order->total ?? 0);
         $totalTtc += $sign * $ttc;
 
+        // [LOCK_ZREPORT_SPLIT_BUCKETING] M6-002 per-tranche bucketing — safety-check approved 2026-06-05.
+        // Split-payment orders carry per-tranche `order_payments`; bucket each tranche's NET
+        // contribution (amount - change_amount) under its own `mode` so the signed total_by_method
+        // reflects the true per-method breakdown (a 30€ cash + 20€ card order must book 30/20, not
+        // 50 under the dominant tender). The last tranche absorbs any rounding/overpayment residual
+        // so Σ buckets == $ttc to the cent (NF525 identity). Forward-only: verifyChain() reads the
+        // STORED total_by_method, so historical signed Z are immutable regardless. Single-tender
+        // orders (no order_payments) keep the legacy pos_payment_method path byte-identical.
+        $tranches = $order->payments;
+        if ($tranches !== null && $tranches->isNotEmpty()) {
+            $nets = [];
+            $allocated = 0.0;
+            foreach ($tranches as $tranche) {
+                $net = round((float) $tranche->amount - (float) ($tranche->change_amount ?? 0), 2);
+                $nets[] = [(string) $tranche->mode, $net];
+                $allocated += $net;
+            }
+            // Reconcile any cent-level residual (rounding / tender-vs-total drift) onto the last
+            // tranche so the per-method buckets sum exactly to this order's TTC contribution.
+            $residual = round($ttc - $allocated, 2);
+            if ($residual !== 0.0) {
+                $last = count($nets) - 1;
+                $nets[$last][1] = round($nets[$last][1] + $residual, 2);
+            }
+            foreach ($nets as [$mode, $net]) {
+                $byMethod[$mode] = ($byMethod[$mode] ?? 0.0) + ($sign * $net);
+            }
+
+            return;
+        }
+
         $method = (string) ($order->pos_payment_method ?: ($order->payment_method ?: 'unknown'));
         $byMethod[$method] = ($byMethod[$method] ?? 0.0) + ($sign * $ttc);
     }
