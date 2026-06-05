@@ -130,6 +130,13 @@ export const posParked = {
             context.commit('REMOVE_PARKED', parkedOrder.id || id);
             context.commit('SET_LAST_RESTORED_PAYLOAD', restoredPayload);
 
+            // [M7-02] Carry the backend's unavailable-variation warnings (built by
+            // PosParkedOrderService) so the caller can surface them — the cashier MUST
+            // know the restored cart differs from what was parked (silent drops were
+            // discovered only at checkout). Combined with the client-side
+            // _recall_purged_item_ids (item-level 86'd lines) computed above.
+            restoredPayload._recall_warnings = parkedOrder.warnings || null;
+
             return restoredPayload;
         },
         discard(context, id) {

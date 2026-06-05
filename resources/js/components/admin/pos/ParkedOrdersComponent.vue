@@ -194,7 +194,22 @@ export default {
             try {
                 const payload = await this.$store.dispatch('posParked/recall', id);
                 this.$emit('restored', payload);
-                alertService.success(this.$t('pos.park_restore_success'));
+                // [M7-02] Surface unavailable-item / unavailable-variation drops so the
+                // cashier KNOWS the restored cart differs from what was parked. Before,
+                // an unconditional success toast hid the loss until checkout.
+                const purgedCount = Array.isArray(payload && payload._recall_purged_item_ids)
+                    ? payload._recall_purged_item_ids.length : 0;
+                const variationDrops = payload && payload._recall_warnings
+                    && Array.isArray(payload._recall_warnings.unavailable_variations)
+                    ? payload._recall_warnings.unavailable_variations.length : 0;
+                if (purgedCount > 0 || variationDrops > 0) {
+                    alertService.warning(
+                        this.$t('pos.park_restore_partial')
+                        || 'Commande restaurée, mais des articles/variations indisponibles ont été retirés — vérifiez le panier avant d\'encaisser.'
+                    );
+                } else {
+                    alertService.success(this.$t('pos.park_restore_success'));
+                }
             } catch (error) {
                 alertService.error(this.$t('pos.park_restore_error'));
             } finally {
