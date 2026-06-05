@@ -52,13 +52,22 @@ class ReceiptDataServiceWireInTest extends TestCase
             'register_id' => 'POS-001',
             'legal_footer' => 'Merci de votre visite.',
         ]);
-        $user = User::factory()->create([
+        // [M11-01] NF525 operator identity: orders.user_id = the CUSTOMER; the
+        // OPERATOR (cashier) lives on creator_id. Keep them DISTINCT so the
+        // operator_name assertion proves the receipt prints the cashier, not
+        // the customer.
+        $cashier = User::factory()->create([
             'branch_id' => $branch->id,
             'name' => 'Jane Operator',
         ]);
+        $customer = User::factory()->create([
+            'branch_id' => $branch->id,
+            'name' => 'Client Passage',
+        ]);
         $order = Order::factory()->create([
             'branch_id' => $branch->id,
-            'user_id' => $user->id,
+            'user_id' => $customer->id,
+            'creator_id' => $cashier->id,
             'order_type' => OrderType::POS,
             'pos_payment_method' => PosPaymentMethod::CASH,
             'pos_received_amount' => 50.00,
@@ -68,7 +77,7 @@ class ReceiptDataServiceWireInTest extends TestCase
         $order->refresh();
         $order->load(['branch', 'user', 'orderItems']);
 
-        return [$branch, $user, $order];
+        return [$branch, $cashier, $order];
     }
 
     /**
@@ -227,6 +236,11 @@ class ReceiptDataServiceWireInTest extends TestCase
         $this->assertSame('73282932000074', $payload['pos_siret']);
         $this->assertSame('FR12345678901', $payload['pos_vat_intra']);
         $this->assertSame('Merci de votre visite.', $payload['pos_legal_footer']);
-        $this->assertSame('Frontend Operator', $payload['operator_name']);
+        // [M11-01] A self-service kiosk FrontendOrder (UNPAID, not yet collected
+        // at the counter) has NO cashier operator — and must NEVER print the
+        // customer as the operator. operator_name is null until a collecting
+        // cashier is recorded (on the Order via confirmCounterPayment).
+        $this->assertNull($payload['operator_name']);
+        $this->assertNotSame('Frontend Operator', $payload['operator_name']);
     }
 }

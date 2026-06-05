@@ -67,8 +67,34 @@ final class ReceiptDataService
             'pos_siret' => optional($order->branch)->siret,
             'pos_vat_intra' => optional($order->branch)->vat_intra,
             'pos_legal_footer' => optional($order->branch)->legal_footer,
-            'operator_name' => optional($order->user)->name,
+            // [M11-01/S11-02/S16-01] NF525 operator identity. `orders.user_id`
+            // is the CUSTOMER (e.g. "Client passage") — printing it as the
+            // operator was wrong. The fiscal operator is the cashier: the
+            // counter-collecting cashier (editor_id, set by
+            // PaymentService::confirmCounterPayment) when a kiosk order is
+            // collected at the counter, else the POS creator (creator_id, set
+            // by OrderService::posOrderStore = Auth::id()).
+            'operator_name' => $this->resolveOperatorName($order),
             'created_at' => $order->created_at?->toIso8601String(),
         ];
+    }
+
+    /**
+     * Resolve the NF525 receipt operator (the cashier), never the customer.
+     * Column-based + a User lookup so it is safe for BOTH App\Models\Order and
+     * App\Models\FrontendOrder (the latter may not define creator/editor
+     * relations). Prefers the counter-collecting cashier (editor_id) over the
+     * POS creator (creator_id); null when no operator was ever recorded
+     * (self-service kiosk order not yet collected) — never the customer.
+     */
+    private function resolveOperatorName(BroadcastableOrder $order): ?string
+    {
+        $operatorId = ($order->editor_id ?? null) ?: ($order->creator_id ?? null);
+
+        if (! $operatorId) {
+            return null;
+        }
+
+        return optional(\App\Models\User::withTrashed()->find((int) $operatorId))->name;
     }
 }

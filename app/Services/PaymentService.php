@@ -329,6 +329,14 @@ class PaymentService
                 : null;
             $locked->pos_payment_note = $note;
 
+            // [S16-01] Record the COLLECTING cashier as the order's operator so the
+            // NF525 receipt prints them (a kiosk order is created with creator_id=NULL
+            // — self-service — so without this the receipt operator stayed blank/customer).
+            // editor_id is the fiscally-finalizing operator; ReceiptDataService prefers it.
+            if (Auth::check()) {
+                $locked->editor_id = (int) Auth::id();
+            }
+
             // [Wave S-1 — P-OWNER 2026-05-20] Auto-transition ACCEPT → PREPARING
             // the moment a counter-deferred kiosk order is collected by card /
             // MOBILE / TICKET / OTHER. The kitchen sees the ticket already

@@ -27,10 +27,14 @@ class PosReceiptFiscalExposureTest extends TestCase
             'register_id' => 'POS-001',
             'legal_footer' => 'Merci de votre visite.',
         ]);
+        // [M11-01] operator = cashier (creator_id); user_id = the customer. Kept
+        // distinct so the operator_name assertion proves cashier, not customer.
         $user = User::factory()->create(['branch_id' => $branch->id, 'name' => 'Jane Operator']);
+        $customer = User::factory()->create(['branch_id' => $branch->id, 'name' => 'Client Passage']);
         $order = Order::factory()->create([
             'branch_id' => $branch->id,
-            'user_id' => $user->id,
+            'user_id' => $customer->id,
+            'creator_id' => $user->id,
             'order_type' => OrderType::POS,
             'pos_payment_method' => PosPaymentMethod::CASH,
             'pos_received_amount' => 50.00,

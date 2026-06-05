@@ -175,6 +175,29 @@ class Order extends Model implements BroadcastableOrder
         return $this->belongsTo(User::class)->withTrashed();
     }
 
+    /**
+     * [M11-01/S16-01] The OPERATOR who created the order (the POS cashier).
+     * `orders.user_id` is the CUSTOMER (NF525 traceability); the operator is
+     * persisted on `creator_id` (OrderService::posOrderStore sets it = Auth::id()).
+     * Plain belongsTo(User) on creator_id — operators are always Users; the
+     * polymorphic creator_type column is unused (no morphTo defined).
+     */
+    public function creator(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(User::class, 'creator_id')->withTrashed();
+    }
+
+    /**
+     * [S16-01] The OPERATOR who last finalized the order fiscally — for a
+     * kiosk order collected at the counter, this is the COLLECTING cashier
+     * recorded by PaymentService::confirmCounterPayment. Receipt operator
+     * resolution prefers editor (collector) then creator (POS cashier).
+     */
+    public function editor(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(User::class, 'editor_id')->withTrashed();
+    }
+
     public function address(): \Illuminate\Database\Eloquent\Relations\HasOne
     {
         return $this->hasOne(OrderAddress::class);
