@@ -3693,8 +3693,10 @@ export default {
                     return alertService.error(this.$t('message.discount_reason_required') || 'A reason is required for any POS discount (min 3 characters).');
                 }
                 this.checkoutProps.form.discount_reason = reason;
+                this.$store.dispatch('posCart/discountReason', reason).then().catch(); // [M4-02] persist reason with cart
             } else {
                 this.checkoutProps.form.discount_reason = null;
+                this.$store.dispatch('posCart/discountReason', '').then().catch(); // [M4-02]
             }
 
             if (this.discountType == discountTypeEnum.FIXED) {
@@ -3821,6 +3823,16 @@ export default {
             // Sign-off owners: Tech Lead + Backend owner. Tracking: reports/audit/BACKLOG_POS_V4_W0PLUS_DISCOVERIES_2026-04-26.md §1.
             // Migration path: replace by backend-computed `quote/preview` endpoint (W2 deliverable per HYPERREVIEW §6.D2).
             this.checkoutProps.form.discount = Number(this.posDiscount) || 0;
+            // [M4-02] On a cart restored from localStorage (page reload), form.discount
+            // is rehydrated from the store but form.discount_reason is a fresh null —
+            // backend rejects discount>0 with no reason (422). Repopulate from the
+            // persisted store reason so the restored discount stays submittable.
+            if (this.checkoutProps.form.discount > 0 && !this.checkoutProps.form.discount_reason) {
+                const storedReason = this.$store.getters['posCart/discountReason'];
+                if (storedReason) {
+                    this.checkoutProps.form.discount_reason = storedReason;
+                }
+            }
             this.checkoutProps.form.delivery_charge = Number(this.checkoutProps.form.delivery_charge) || 0;
             this.checkoutProps.form.total = Number(this.grandTotal).toFixed(this.setting.site_digit_after_decimal_point);
             // @pricing-allowed-block end

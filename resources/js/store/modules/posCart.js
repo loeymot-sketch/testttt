@@ -39,6 +39,7 @@ function saveCartToStorage(state) {
             lists: state.lists,
             subtotal: state.subtotal,
             discount: state.discount,
+            discountReason: state.discountReason, // [M4-02]
             savedAt: Date.now(),
             branchId: _scope.branchId,
             userId: _scope.userId,
@@ -246,6 +247,10 @@ export const posCart = {
             lists: [],
             subtotal: 0,
             discount: 0,
+            // [M4-02] Persist the manual-discount REASON with the amount so a cart
+            // restored from localStorage (page reload) keeps it — else orderSubmit
+            // sent discount>0 with an empty reason and the backend 422'd invisibly.
+            discountReason: '',
             restoredFromStorage: false,
         };
     })(),
@@ -261,6 +266,9 @@ export const posCart = {
         },
         discount: function (state) {
             return state.discount;
+        },
+        discountReason: function (state) { // [M4-02]
+            return state.discountReason || '';
         },
         restoredFromStorage: function (state) {
             return state.restoredFromStorage || false;
@@ -521,10 +529,15 @@ export const posCart = {
             state.discount = payload;
             saveCartToStorage(state);
         },
+        discountReason: function (state, payload) { // [M4-02]
+            state.discountReason = (payload == null) ? '' : String(payload);
+            saveCartToStorage(state);
+        },
         resetCart: function (state) {
             state.lists = [];
             state.subtotal = 0;
             state.discount = 0;
+            state.discountReason = ''; // [M4-02]
             clearCartFromStorage();
             state.restoredFromStorage = false;
         },
@@ -540,11 +553,13 @@ export const posCart = {
                 state.lists = saved.lists.map((item) => shapePosListItem(item));
                 state.subtotal = saved.subtotal || 0;
                 state.discount = saved.discount || 0;
+                state.discountReason = saved.discountReason || ''; // [M4-02]
                 state.restoredFromStorage = saved.lists.length > 0;
             } else {
                 state.lists = [];
                 state.subtotal = 0;
                 state.discount = 0;
+                state.discountReason = ''; // [M4-02]
                 state.restoredFromStorage = false;
             }
         },
