@@ -73,7 +73,7 @@ FoodKing — restaurant SaaS platform
 
 ## 5. Current Open Risks
 
-- cloud SessionStart hook + `.claude/settings.json` proposed but not yet committed (auto-mode classifier blocked creation — needs explicit user permission)
+- cloud SessionStart hook + `.claude/settings.json` **intentionally deferred** (user decision 2026-06-05); web sessions install deps manually (`composer install` / `npm install`). Note: `.env` must be created before `composer install` (post-autoload `package:discover` hits the production BROADCAST_DRIVER guard otherwise).
 - production GO still gated: POS-9.2 / POS-9.3 `pending`; browser/device Anti-Gravity E2E never run; monolithic `php artisan test` memory-bound (use batch pipeline)
 - future gates not yet implemented as executable components
 - Graphiti intentionally postponed

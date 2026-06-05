@@ -70,5 +70,5 @@ no `.env` exists. **The cloud SessionStart hook must create `.env` from `.env.ex
 - [ ] Merge Kiosk P9.2 + P9.4 (verified, awaiting human gate).
 - [ ] Implement + verify POS-9.2, POS-9.3 (cloud cycle).
 - [ ] Run Playwright MCP critical flows on a configured kiosk runtime → `reports/antigravity/latest.md`.
-- [ ] Commit the cloud SessionStart hook + `.claude/settings.json` (blocked pending user permission — see migration summary).
+- [x] Cloud SessionStart hook — **intentionally skipped** (user decision 2026-06-05). Web sessions install deps manually; follow the §5 ordering (`.env` before `composer install`).
 - [ ] Re-run `scripts/run_php_feature_batches.sh all` + `npm test` green on the merge head.
