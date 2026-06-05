@@ -10,6 +10,7 @@
 | **S17-01** | Public QR table-order endpoint had no dine-in gate → anyone could create a dine-in order. Now rejects when `pos_dine_in_enabled` off (owner). | `9cd2634f6` |
 | **S10-01** | `CustomerService::show()` leaked any user's PII by id (no target-role check). Added `assertTargetRole()` (mirrors update/destroy). | `340bfdfa4` |
 | **M6-001** | Cash-dominant balanced split (cash tranche < total) was 422'd by the single-tender cash guard in BOTH `PosOrderRequest` and `OrderService`. Both now skip when a `payment_breakdown` is present; split-sum validation preserved. | `f6a781a16` |
+| **M11-01 / S11-02 / S16-01** | NF525 receipt operator was the CUSTOMER (`order->user`). Now = cashier: `editor_id` (counter-collecting cashier, newly recorded by `confirmCounterPayment`) ?? `creator_id` (POS cashier), null never customer. Added Order creator()/editor() relations; updated 3 bug-baking sentinels. 5 operator + 9 receipt tests green. | `e19bbe2d6` |
 
 W1 baseline + reconcile: `50df7c9ed`. **All new tests green; frozen-diff = 0.**
 **Full PHPUnit regression: 2848 passed + 4 failures = the documented cross-worktree
@@ -17,7 +18,7 @@ plan-path traceability sentinels (F001/F006/F009/F013) which assert untracked
 `plans/*.md` exist — they PASS in the main checkout (23/23) and are unrelated to
 any code change. 0 real regression.**
 
-## Remaining active P1 = 15 (19 gate − 4 healed)
+## Remaining active P1 = 12 (19 gate − 7 healed: S6-01, S17-01, S10-01, M6-001, M11-01, S11-02, S16-01)
 
 ### A. NON-FROZEN backend — next session, PHPUnit-verifiable
 - **W2 operator-identity (NF525 headline)**: M11-01, S11-02, S16-01. `ReceiptDataService.php:70`
