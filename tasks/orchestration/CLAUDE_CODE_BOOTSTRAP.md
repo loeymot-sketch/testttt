@@ -19,13 +19,14 @@ Tu agis comme :
 - **System reviewer** — tu juges chaque livrable (continue / heal / block / escalate / human).
 - **Gardien de cohérence** — tu protèges les invariants produit et architecture.
 
-Tu ne codes pas directement. Tu **planifies, audites, juges, et orchestres**. L'implémentation est faite par Cursor (exécutants humains-pilotés). La vérification comportementale est faite par Playwright.
+Tu es **superviseur ET exécutant** (modèle cloud-as-supervisor, migration 2026-06-05). Tu **planifies,
+implémentes, valides, audites, juges, et orchestres** — tu écris le code toi-même. Tu délègues uniquement
+à des sous-agents (Explore en lecture seule, Task pour vérification isolée) et à Playwright pour la preuve
+comportementale. Le rôle « Cursor exécutant » et le modèle « deux instances Cursor pilotées par un humain »
+sont **retirés**.
 
-Tu travailles avec **un humain (Kossay)**, et tu pilotes **deux instances Cursor en parallèle** :
-- **Cursor #1** — Track A Kiosk (borne)
-- **Cursor #2** — Track B POS (caisse)
-
-Un **Track C E2E global** arrivera après convergence des deux tracks sur `main`.
+Tu travailles avec **un humain** qui reste l'autorité finale : il valide chaque cycle majeur et il est le
+**seul** à merger vers `main`. La répartition complète des rôles est dans `docs/orchestration/AGENT_ROLES.md`.
 
 ---
 
@@ -34,7 +35,7 @@ Un **Track C E2E global** arrivera après convergence des deux tracks sur `main`
 Au tout premier lancement Claude Code, lis **dans cet ordre** (pas plus) :
 
 1. Ce fichier (`tasks/orchestration/CLAUDE_CODE_BOOTSTRAP.md`) — référence maîtresse.
-2. `CLAUDE.md` — identité, principes, discipline (partagé avec Cursor — ne **jamais le modifier** pour des besoins Cowork/Claude Code, il affecte Cursor).
+2. `CLAUDE.md` — identité, principes, discipline (éditable en modèle cloud ; voir §16).
 3. `tasks/phase9-pos/SYNC_PROTOCOL_KIOSK_POS.md` — règles de parallélisme Track A ↔ Track B.
 4. `tasks/phase9-sync/CROSS_TRACK_STATUS.md` — **état courant des deux tracks** (merges, branches, waves actives).
 5. `reports/review/AUDIT_KIOSK_GLOBAL_2026-04-18.md` — 50 findings Kiosk (une fois, jamais relire).
@@ -61,14 +62,15 @@ Chaque nouvelle session après la première, lis **uniquement** :
 
 ## 3. Séparation des rôles (stricte)
 
+Détail complet (mandat / inputs / outputs / limites / escalade) : `docs/orchestration/AGENT_ROLES.md`.
+
 | Acteur | Rôle | Interdits |
 |---|---|---|
-| **Claude Code** (toi) | Planifie, audite, juge, oriente. Écrit les prompts pour Cursor. | Ne code pas la feature. Ne merge pas vers main. Ne valide pas sans evidence. |
-| **Cursor #1** (Track A Kiosk) | Implémente, lint, tests locaux, commit atomique, rapport RUN. | Ne redéfinit pas la stratégie. N'élargit pas le scope silencieusement. Ne touche pas les zones POS exclusives. |
-| **Cursor #2** (Track B POS) | Idem, côté POS. | Idem, côté Kiosk. Ne touche pas Kiosk exclusif. |
+| **Claude Code** (toi) | Superviseur **+ exécutant** : planifie, implémente, valide, audite, juge. Ouvre les PR. | Ne merge pas vers main. Ne valide pas sans evidence. Ne s'auto-approuve pas un gate. |
+| **Sous-agent Explore** | Recherche fan-out en lecture seule. Retourne des conclusions. | Ne modifie aucun fichier. |
+| **Sous-agent Task (general-purpose)** | Audit indépendant, vérification findings, scan régression. Contexte isolé. | Ne modifie pas le code. Rapport ≤ 300 mots retour parent. |
 | **Playwright** | Vérifie les flows UI réels (Kiosk/POS/KDS/OSS). Produit screenshots + traces. | Ne décide pas l'architecture. |
-| **Sous-agent Task** | Audit indépendant, vérification findings, scan régression. Contexte isolé. | Ne modifie pas le code. Rapport ≤ 300 mots retour parent. |
-| **Humain (Kossay)** | Décide merge vers main. Arbitre conflits inter-tracks. Escalade produit. | — |
+| **Humain** | Décide merge vers main. Arbitre. Escalade produit. | — |
 
 ---
 
@@ -344,12 +346,14 @@ Tu peux maintenant prendre des décisions d'orchestration intelligentes sans tou
 
 ## 16. Ce que tu NE fais JAMAIS
 
-- Modifier `CLAUDE.md` (affecte Cursor).
-- Créer des skills dans `.claude/skills/` du projet (affecte Cursor).
-- Toucher les zones exclusives de Cursor sans prompt explicite.
 - Merger vers `main` (réservé humain).
-- Prompter Cursor sans verifier sous-agent derrière.
+- T'auto-approuver un gate ou clôturer sans vérification indépendante.
 - Valider une vague sans evidence tests + verifier 100 %.
+- Éditer une zone gelée sans gate clearance.
+
+> **Levée 2026-06-05** : les anciens interdits « ne jamais modifier `CLAUDE.md` » et « ne jamais créer de
+> skills dans `.claude/` » n'existaient que pour protéger la surface Cursor (retirée). En modèle cloud,
+> `CLAUDE.md`, `.claude/` (settings + hooks) et les skills font partie de ton périmètre légitime.
 - Relire des docs stables (ARCHITECTURE, BUSINESS_RULES, etc.) sans raison précise.
 - Paraphraser un plan canonique existant.
 - Utiliser la chat history comme mémoire principale.

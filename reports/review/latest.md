@@ -1,3 +1,7 @@
+> **SUPERSEDED (2026-06-05).** This 2026-03-31 verdict predates the merged Phase 9 / Phase H / fiscal work.
+> Current readiness is **`reports/review/CLOUD_SUPERVISOR_READINESS_2026-06-05.md`** (verdict: CONDITIONAL GO,
+> with the production gate documented). The verdict below is kept as historical record.
+
 # Review — Post-Stabilisation Readiness
 
 **Date**: 2026-03-31  

@@ -43,11 +43,12 @@ FoodKing — restaurant SaaS platform
 - branch operations
 - ordering flows
 
-### Current System Pattern
-- Claude = orchestrator / judge / planner
-- Cursor = strict executor
+### Current System Pattern (cloud-as-supervisor, since 2026-06-05)
+- Cloud Claude Code = supervisor **+** executor (plans, implements, validates, audits, judges)
+- Sub-agents = Explore (read-only search), general-purpose Task (isolated verification)
 - Playwright = behavioral verifier
-- Bot/pipeline = state transport and synchronization layer
+- Human = final authority / merge gate
+- (Retired: Cursor-as-executor, Cowork, state-transport bot.) Detail → `docs/orchestration/AGENT_ROLES.md`
 
 ### Current Status
 - All audit global cycles CLOSED: REALTIME_001, PAYMENT_SAFETY_001, KIOSK_RELIABILITY_001, PRODUCTION_READY_001
@@ -72,12 +73,10 @@ FoodKing — restaurant SaaS platform
 
 ## 5. Current Open Risks
 
-- bot pipeline runtime not yet implemented
-- full Claude orchestrator prompt not yet installed
+- cloud SessionStart hook + `.claude/settings.json` proposed but not yet committed (auto-mode classifier blocked creation — needs explicit user permission)
+- production GO still gated: POS-9.2 / POS-9.3 `pending`; browser/device Anti-Gravity E2E never run; monolithic `php artisan test` memory-bound (use batch pipeline)
 - future gates not yet implemented as executable components
-- Graphify not yet tested through isolated POC
 - Graphiti intentionally postponed
-- no full end-to-end Claude → Cursor → Playwright → Claude production cycle has run yet
 - [RISK-NEW] OrderService::changeStatus — $auth===false
   branch dispatches SendOrderMail/Sms/Push at L1286–1288
   BEFORE $order->save() at L1290. No DB::transaction in
@@ -159,8 +158,11 @@ No wildcard `*` permission found in Spatie roles. Admin role uses `givePermissio
 
 ## 8. Recent Important Decisions
 
-- The system will use Claude as the single central orchestrator and judge
-- Cursor remains the strict executor and must not become the strategist
+- **2026-06-05 — Migrated to cloud-as-supervisor.** Claude Code on the web is the sole supervisor **and**
+  executor; Cursor/Cowork and the state-transport bot are retired. Governance rewritten in place
+  (`CLAUDE.md` §4, `AGENTS.md`, `docs/orchestration/AGENT_ROLES.md`, bootstrap). Obsolete prohibitions
+  (never edit `CLAUDE.md`, never create `.claude/` skills) lifted.
+- The system uses Claude as the single central supervisor, judge, and executor
 - Playwright MCP is active and validated for local interactive verification
 - Multi-conversation Claude architecture is preferred over flat swarms
 - Memory will start simple and disciplined before adding heavier graph-based memory

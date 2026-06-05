@@ -1,40 +1,41 @@
-# FoodKing – Cursor Agent Operating Contract
+# FoodKing – Cloud Supervisor Operating Contract
 
 ## Engine
-Cursor local agent. No cloud orchestration. No external framework.
-Auto/Premium routing: disabled. Model selection is explicit per cycle.
+**Claude Code on the web (the "cloud") is the single supervisor AND executor.**
+It plans, implements, validates, audits, and judges every cycle itself, delegating only to
+sub-agents (read-only exploration, isolated verification) and to Playwright for behavioral
+evidence. There is no local Cursor executor and no external orchestration framework.
+
+> Migrated 2026-06-05 from the retired Cursor-local / Cowork model. The previous contract
+> ("Cursor local agent. No cloud orchestration.") is **superseded**. Historical Cursor-era
+> docs under `.cursor/`, `docs/orchestration/CURSOR_PHASE1_*`, and `tasks/phase9/` are kept
+> as record only and carry a superseded banner.
 
 ## Workflow
 PLAN → EXECUTE → VALIDATE → AUDIT → [HUMAN GATE | CLOSE]
 
-No phase may be skipped. Audit always precedes close.
+No phase may be skipped. Audit always precedes close. The cloud session drives all phases
+within one session, halting only on a hard gate condition (see Stop Conditions).
 
-## Model Roles
-| Model | Role |
-|---|---|
-| Claude | Plan, architect, orchestrate, audit |
-| GPT-5.4 | Complex implementation |
-| Composer | Routine edits, reports, summaries |
+## Agent roster
+The **ultra-detailed per-agent breakdown is the single source of truth** in
+[`docs/orchestration/AGENT_ROLES.md`](docs/orchestration/AGENT_ROLES.md) — mandate, inputs,
+outputs, hard limits, escalation triggers, and discipline rules for each agent. Summary:
 
-One PRIMARY_MODEL per cycle. Roles do not overlap.
-Full routing policy: `.cursor/routing.md`
+| Agent | Role | Never |
+|---|---|---|
+| **Cloud Claude Code** (you) | Supervisor + executor: plan, implement, test, audit, judge, open PRs | Merge to default branch; self-approve a gate; claim done without evidence |
+| **Explore sub-agent** | Read-only fan-out search across the codebase; returns conclusions | Edit files |
+| **general-purpose Task sub-agent** | Isolated audit / finding verification / regression scan (≤300-word report) | Edit code; make architecture decisions |
+| **Playwright MCP** | Real browser/device behavioral evidence on critical flows | Decide architecture or direction |
+| **Human** | Merge gate, inter-track arbitration, product escalation | — |
 
-## Authoritative multi-agent bounded cycle (SSOT)
-
-For **TASK_ID-driven** work in Cursor, this path is **authoritative** and overrides any conflicting step elsewhere in this document:
-
-1. **Command:** `.cursor/commands/run-cycle.md` (invoke with a `TASK_ID`, e.g. `run-cycle SMOKE-001`).
-2. **Cycle state:** `.cursor/ACTIVE_CYCLE.md` (`RUNNER_MODE: single-session`, `PHASE`, `PLAN_FILE`, `REPORT_FILE`, completion rows).
-3. **Plan artifact:** `plans/PLAN_[TASK_ID]_[DATE].md` per `.cursor/context/plan-context.md` (from `plans/PLAN_TEMPLATE.md` when applicable).
-4. **Phase instructions:** `.cursor/context/plan-context.md` (PLAN), `.cursor/context/execute-context.md` (EXECUTE), `.cursor/context/audit-context.md` (AUDIT); VALIDATE per `run-cycle.md` when `validate-context.md` is absent.
-
-**EXECUTE delegation:** Implementation is performed only after **explicit** delegation to the subagent matching `PRIMARY_MODEL` and routing intent (see `.cursor/routing.md` and **Step 2** in `run-cycle.md`): **`foodking-routine-implementer`** for Composer (routine), **`foodking-complex-implementer`** for GPT-5.4 (complex). Do not treat a cycle as properly executed if product edits were made without that delegation pattern (or the documented exception in `run-cycle.md`).
-
-Sections below labeled **Legacy workflow** remain valid for **PR-centric / review-loop** habits but **do not replace** this SSOT for bounded cycles.
+Architecture and subsystem detail: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ## Source of truth (extended)
 - README.md
-- docs/PROJECT_CONTINUITY_AND_VISION.md
+- CLAUDE.md (identity, principles, non-negotiables)
+- docs/orchestration/AGENT_ROLES.md (agent breakdown)
 - docs/ARCHITECTURE.md
 - docs/API_MAP.md
 - docs/AUTHZ_MATRIX.md
@@ -48,7 +49,6 @@ Sections below labeled **Legacy workflow** remain valid for **PR-centric / revie
 - docs/TEST_PLAN.md
 - docs/MASSIVE_TEST_PLAN.md
 - docs/SAAS_VISION.md
-- docs/CONTRIBUTING_QA_BOTS.md
 - workflows/qa-loop.md
 - workflows/task-routing.md
 - workflows/report-format.md
@@ -57,43 +57,30 @@ Sections below labeled **Legacy workflow** remain valid for **PR-centric / revie
 
 ## Stop Conditions
 Halt and generate a gate brief on any of:
-- Gate trigger detected
+- Gate trigger detected (schema migration, auth change, new external service, frozen-zone edit)
 - Scope expansion beyond declared boundary
 - FoodKing invariant violation
 - Two consecutive validation failures
 - Planning ambiguity unresolvable from task context
 
-## FoodKing Non-Negotiables
+## FoodKing Non-Negotiables (operational, code-level)
 - Backend is pricing SSOT — no frontend price logic
 - `OrderStatus` enum is authoritative — no hardcoded strings
 - `branch_id` = business data isolation — no cross-branch data bleed
-- Dispatch strictly after DB commit
+- Dispatch strictly after DB commit (`DB::afterCommit`)
 - `OrderService` / `FrontendOrderService` symmetry mandatory on any order change
+- `OrderStateMachine` is the sole authority for status transitions
+- NF525 fiscal compliance on POS (Z/X reports, immutable `audit_logs`)
 - Frozen zones require gate clearance before any edit
 
-## MCP
-Phase 1: Filesystem MCP only.
-Phase 2: Graphiti MCP (mémoire inter-cycles — décisions architecture, contexte passé, historique cycles).
-Phase 3: Playwright MCP (tests E2E automatiques sur flows critiques FoodKing).
-  Package : @playwright/mcp@latest (npx, pas d'install global)
-  Browser : Chromium
-  BASE_URL : http://localhost:8000
-  Config : .cursor/mcp/playwright.json
-  Flows couverts : POS Cash, POS Card, Kiosk, KDS, Auth refresh (F5)
-  Déclencheur : plan déclare playwright-mcp | playwright-critical-flow | playwright-full-e2e
-  Rapport : reports/antigravity/latest.md
-  Règle : le Planner-Orchestrator seul décide si un cycle requiert E2E — jamais auto-déclenché.
-  Server : github.com/getzep/graphiti — `mcp_server/graphiti_mcp_server.py`
-  Clone local : `/Users/1millnonstop/graphiti` (commit épinglé — voir `.cursor/mcp/graphiti.json`)
-  Backend : Neo4j AuraDB Free Tier
-  Config : `.cursor/mcp/graphiti.json` (gitignored — copier depuis `graphiti.json.example` vers `~/.cursor/mcp.json` si besoin)
-  Dépannage : `.cursor/mcp/GRAPHITI_TROUBLESHOOTING.md` (LiteLLM `healthy_count`, clé Moonshot 401, stop/restart proxy)
-  Scope : lecture avant PLAN (query subsystem), écriture après CLOSE (episode + décisions clés).
-  Group ID : `foodking` (isolation des entités FoodKing dans le graphe Graphiti)
-  Règle : ne jamais bloquer la phase PLAN si Graphiti est indisponible — continuer sans contexte.
+(These are the concrete enforcement of the principles in `CLAUDE.md` §3.)
 
-## Pre-Execution
-Run `.cursor/hooks/safety-check.sh` manually before every execution phase.
+## MCP
+- **GitHub MCP** — PRs, issues, CI status, reviews (cloud sessions have no `gh` CLI).
+- **Playwright MCP** — E2E on critical flows; `@playwright/mcp@latest`, Chromium, `BASE_URL http://localhost:8000`.
+  Flows: POS Cash, POS Card, Kiosk, KDS, Auth refresh (F5). Report → `reports/antigravity/latest.md`.
+  Only invoked when a plan declares `playwright-mcp` / `playwright-critical-flow` / `playwright-full-e2e`,
+  or a review verdict is `NEEDS_PLAYWRIGHT`.
 
 ## Artifact Locations
 | Artifact | Path |
@@ -102,206 +89,67 @@ Run `.cursor/hooks/safety-check.sh` manually before every execution phase.
 | Plans | `plans/` |
 | Reports | `reports/` |
 | Gate briefs | `docs/gates/` |
-| Routing policy | `.cursor/routing.md` |
-| Rules | `.cursor/rules/` |
+| Cloud session bootstrap | `tasks/orchestration/CLAUDE_CODE_BOOTSTRAP.md` |
 
 ---
 
-## Extended workflow — repository operating instructions
+## Cycle loop (how a unit of work flows)
 
-### Claude (Architect & Reviewer)
-Responsibilities:
-- Architecture decisions and reasoning
-- Root-cause analysis and debugging
-- Planning with explicit test strategy
-- Final review of implementation quality
-- Risky refactors and cross-module decisions
-- Auth/sync/pricing/state logic analysis
-- Determines **test strategy** in plan using the active vocabulary (see **Testing rules**)
-
-### Playwright / E2E verification (Critical QA)
-Responsibilities:
-- E2E testing (browser, Playwright MCP, complex flows)
-- Critical integration testing
-- Functional exploration
-- Structured QA reporting under `reports/antigravity/` (legacy directory name)
-- Only invoked when Claude's plan specifies **`playwright-critical-flow`**, **`playwright-full-e2e`**, or **`playwright-mcp`**, or when review verdict is **`NEEDS_PLAYWRIGHT`**
-
-### Bugbot (Passive Diff Scanner — NO authority)
-Responsibilities:
-- Automatically scans PR diffs for bugs, security issues, regressions, edge cases
-- Writes findings ONLY to `reports/review/bugbot-latest.md`
-- NEVER autonomous — generates a file and stops
-- NEVER communicates directly with Kimi or the Playwright / E2E executor outside the documented report chain
-- NEVER makes architectural decisions
-- Governed strictly by `.cursor/BUGBOT.md`
-
-### Cursor
-Orchestration environment
-
-## Legacy workflow (PR / review loop — optional)
-
-Use this loop for **historical PR-centric** review habits. It **does not** replace the **Authoritative multi-agent bounded cycle (SSOT)** above for `TASK_ID` + `run-cycle` work.
-
-### Normal Cycle (90% of cases)
-1. **Human** requests feature/fix
-2. **Claude** analyzes and may write a **narrative or scratch** plan in `reports/planning/latest.md` **only when not** using the bounded SSOT; for bounded cycles the plan **must** be `plans/PLAN_[TASK_ID]_[DATE].md` as in `plan-context.md`.
-   - Plan MUST specify test strategy: `no-test` | `static-inspection` | `local-validation` | `playwright-mcp` | `playwright-critical-flow` | `playwright-full-e2e` | `human-verification`
-3. **Human** validates plan (GO / MODIFY / STOP)
-4. **Kimi** MUST check FIRST: does `reports/review/bugbot-latest.md` exist?
-   - **YES** → Kimi **notifies the Human** with:
-     `ℹ️ Bugbot findings detected in reports/review/bugbot-latest.md — Claude review needed (ask Claude to fix when ready).`
-     Then Kimi **continues normally to step 5** without stopping.
-   - **NO** → Kimi continues normally to step 5
-5. **Kimi** (or **Cursor** per plan) implements following Claude's plan
-6. **Executor** runs **local-validation** (or other declared strategy) when the plan requires it (PHPUnit, Jest, etc.)
-7. **Executor** writes execution summary in `reports/execution/latest.md` with test results
-8. **Bugbot** (if PR exists) scans the diff → writes `reports/review/bugbot-latest.md` passively
-9. **Claude** reads `reports/review/bugbot-latest.md` (when Human convokes Claude) and decides:
-   - `ACCEPT` → not blocking, writes verdict in `reports/review/latest.md`
-   - `REQUEST_FIX` → writes a minimal correction plan for Kimi
-   - `ESCALATE` → schedules **Playwright / E2E verification** (only Claude can do this)
-10. **Claude** writes final review in `reports/review/latest.md` with verdict: **APPROVED** / **NEEDS_FIX** / **NEEDS_PLAYWRIGHT**
-11. **Kimi** deletes `reports/review/bugbot-latest.md` only after Claude writes `APPROVED` verdict
-12. **Human** validates final result
-
-### Playwright / E2E cycle (10% of cases - critical tests only)
-1. **Claude's plan** specifies **`playwright-critical-flow`** / **`playwright-full-e2e`** / **`playwright-mcp`** OR **Claude's review** says **`NEEDS_PLAYWRIGHT`**
-2. **Human** explicitly requests or authorizes the browser / E2E cycle when gating requires it
-3. **Playwright** (MCP or runner) executes E2E/browser/critical tests
-4. **Playwright** writes report in `reports/antigravity/latest.md`
-5. **Claude** analyzes report → back to Normal Cycle step 2
-
-## Task routing rules
-
-### Use Claude for:
-- Architecture decisions
-- Synchronization logic
-- Auth/authz
-- Pricing integrity
-- Risky refactors
-- Bug root-cause analysis
-- Cross-module decisions
-- Order lifecycle logic
-- State consistency
-- Planning (with test strategy)
-- Final review
-
-### Use Kimi for:
-- Localized code changes
-- UI implementation
-- CRUD endpoints
-- Simple wiring
-- Repetitive code generation
-- Limited-scope patches
-- Unit/integration testing (PHPUnit, Jest, Vitest)
-- Linting and formatting
-
-### Use Playwright / E2E verification for:
-- E2E testing (browser automation)
-- Complex integration flows
-- Critical business scenarios
-- Multi-device testing
-- Performance testing
-- Only when explicitly requested or when Claude's plan specifies **`playwright-critical-flow`**, **`playwright-full-e2e`**, or **`playwright-mcp`**
-
-## Repository behavior rules
-1. Always read relevant docs before proposing or implementing a change.
-2. Treat existing docs and workflow files as required operational context.
-3. Do not change code outside the requested scope.
-4. Do not touch unrelated modules.
-5. Do not modify architecture casually.
-6. Do not bypass server-side validations, pricing recalculation, authorization checks, or state transition rules.
-7. Preserve the existing business domain language.
-8. Respect all boundaries between:
-   - admin
-   - manager/cashier
-   - kiosk machine
-   - kitchen display
-   - frontend/customer flows
-9. Respect the documented order flow and device flow.
-10. If a change affects auth, sync, pricing, device behavior, or order states, explicitly mention the risk and propose tests.
-
-## Implementation rules
-1. Prefer small diffs.
-2. Prefer the simplest working change consistent with the architecture.
-3. Reuse existing services, controllers, patterns, and naming conventions where possible.
-4. If existing code is inconsistent, point it out before broad cleanup.
-5. Do not introduce new dependencies unless necessary and justified.
-6. If a task is large, first produce a plan, then implement in phases.
-7. After implementation, summarize:
-   - files changed
-   - why they changed
-   - risks
-   - test results (if **local-validation** or other test strategy ran)
+1. **PLAN** — Write a plan with explicit test strategy (`no-test` | `static-inspection` |
+   `local-validation` | `playwright-mcp` | `playwright-critical-flow` | `playwright-full-e2e` |
+   `human-verification`). Declare scope: subsystems touched, off-limits, invariants at risk.
+2. **EXECUTE** — Implement directly. Prefer small diffs, reuse existing services/patterns, no new
+   dependencies without justification. Use Explore sub-agents for fan-out search.
+3. **VALIDATE** — Run the declared test strategy (see Testing rules).
+4. **AUDIT** — Independently verify with a general-purpose Task sub-agent reading HEAD; produce a
+   `reports/review/VERIFY_*.md` (≤300 words). No close without 100% RESOLVED.
+5. **HUMAN GATE | CLOSE** — Escalate on any gate trigger; otherwise write the verdict to
+   `reports/review/latest.md` and close.
 
 ## Testing rules
-1. **Claude decides test strategy in the plan** (active vocabulary):
-   - **`local-validation`**: Unit/integration tests (PHPUnit, Jest, Vitest)
-   - **`playwright-mcp`** / **`playwright-critical-flow`** / **`playwright-full-e2e`**: E2E / browser / critical paths
-   - **`static-inspection`**: Read-only audit without running the full suite
-   - **`no-test`**: Trivial changes (docs, comments, formatting)
-   - **`human-verification`**: Explicit human sign-off required
+- The plan declares the strategy. Default to `local-validation` when uncertain.
+- **PHP**: use the batch pipeline `scripts/run_php_feature_batches.sh [auth-security|kiosk-pos-sync|admin-seeders-reports|all]`.
+  Tests run on SQLite `:memory:` (see `phpunit.xml`). The monolithic `php artisan test` is
+  memory-bound — prefer batches or `php -d memory_limit=512M artisan test <file>`.
+- **JS**: `npm test` (Vitest), `npm run production` for the build gate.
+- **E2E**: Playwright MCP per the MCP section → `reports/antigravity/latest.md`.
+- Prioritize: kiosk auth, pricing integrity, order creation, state transitions, KDS/OSS flows, authz boundaries, fiscal (Z/X, audit chain).
 
-2. **Executor runs `local-validation`** when the plan specifies it:
-   - Run PHPUnit for backend changes
-   - Run Jest/Vitest for frontend changes
-   - Run linter (phpcs, eslint)
-   - Include test results in execution summary
+## Implementation rules
+1. Prefer small diffs and the simplest change consistent with the architecture.
+2. Reuse existing services, controllers, patterns, naming.
+3. Point out inconsistent existing code before broad cleanup.
+4. No new dependencies unless necessary and justified.
+5. Large task → plan first, implement in phases.
+6. After implementation summarize: files changed, why, risks, test results.
 
-3. **Playwright / E2E** executes when the plan specifies **`playwright-mcp`**, **`playwright-critical-flow`**, or **`playwright-full-e2e`**:
-   - E2E browser testing
-   - Complex integration scenarios
-   - Critical business flows
-   - Generate detailed QA report under `reports/antigravity/`
+## Repository behavior rules
+1. Read relevant docs before proposing or implementing a change.
+2. Do not change code outside the requested scope, or touch unrelated modules.
+3. Do not modify architecture casually.
+4. Do not bypass server-side validation, pricing recalculation, authorization checks, or state transition rules.
+5. Preserve the existing business domain language.
+6. Respect boundaries between admin, manager/cashier, kiosk machine, kitchen display, and customer flows.
+7. Respect the documented order flow and device flow.
+8. If a change affects auth, sync, pricing, device behavior, or order states, state the risk and propose tests.
 
-4. Prioritize tests for:
-   - kiosk auth
-   - pricing integrity
-   - order creation
-   - state transitions
-   - KDS flows
-   - OSS/display flows
-   - authorization boundaries
-
-## Operational output rules
-- **Bounded SSOT cycles:** plan under `plans/` per `ACTIVE_CYCLE.md` / `plan-context.md`; execution evidence in `REPORT_FILE` and `reports/post_execute_latest.log` as in `run-cycle.md`.
-- **Legacy loop:** planning narrative may go to `reports/planning/latest.md` (with test strategy specified) when not using the bounded SSOT.
-- Execution summary goes to `reports/execution/latest.md` (with test results if applicable)
-- Review output goes to `reports/review/latest.md` (with verdict)
-- QA findings come from `reports/antigravity/latest.md` (only when Playwright / E2E verification is invoked; path name is legacy)
-- **Bugbot findings** go to `reports/review/bugbot-latest.md` (passive, read only by Claude)
-- Use the report format defined in `workflows/report-format.md`
-- See `.cursor/BUGBOT.md` for Bugbot operating rules
+## Reports discipline
+- Plans under `plans/`; gate briefs under `docs/gates/`; execution summaries in `reports/execution/latest.md`;
+  reviews/verdicts in `reports/review/latest.md`; E2E findings in `reports/antigravity/latest.md`.
+- Use the format in `workflows/report-format.md`. No new reporting structure without a plan-phase decision.
 
 ## Behavior in uncertainty
 - If docs and code disagree, say so explicitly.
-- If code and reports disagree, investigate first.
-- If the change is risky, stop and propose a safer phased approach.
-- If uncertain about test strategy, default to **`local-validation`** for safety.
-
-## Definition of good output
-A good result is:
-- scoped
-- consistent with docs
-- easy to review
-- safe to test
-- explicit about risk
-- explicit about test strategy
-- explicit about next steps
+- If code and reports disagree, investigate first (reports may be stale).
+- If a change is risky, stop and propose a safer phased approach.
 
 ## Workflow autonomy
-This workflow is semi-autonomous, not fully autonomous.
-Agents must automatically read the relevant project files and latest operational reports,
-but the human developer remains the final authority and explicitly validates each major cycle.
+Semi-autonomous, not fully autonomous. The cloud session reads the relevant files and latest reports
+and drives cycles itself, but the human remains the final authority and explicitly validates each major
+cycle and every merge to the default branch.
 
 ## Definition of success
-- architecture preserved
-- business rules respected
-- authorization intact
-- no unrelated regressions
-- tests passed (if applicable)
-- work easy to review
-- clear next step
+- architecture preserved · business rules respected · authorization intact · no unrelated regressions
+- tests passed (per declared strategy) · work easy to review · explicit risk · clear next step
 
-Before making important changes, first summarize the current architecture understanding in 5-10 lines.
+Before important changes, first summarize the current architecture understanding in 5–10 lines.

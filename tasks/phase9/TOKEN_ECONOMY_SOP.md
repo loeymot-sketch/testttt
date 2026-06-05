@@ -1,7 +1,7 @@
 # TOKEN ECONOMY SOP — FoodKing
 
-**Version.** 2026-04-18
-**S'applique à.** Tous les agents LLM actifs sur le projet (Cursor #1, Cursor #2, Cowork, Claude Code, sous-agents Task).
+**Version.** 2026-04-18 (cadre Cursor #1/#2/Cowork **retiré** le 2026-06-05 ; voir `docs/orchestration/AGENT_ROLES.md`)
+**S'applique à.** La session cloud superviseur+exécutant et ses sous-agents (Explore, Task). Les règles de discipline restent valides.
 **But.** Obtenir la même qualité de décision avec 50-70 % de tokens en moins.
 
 ---

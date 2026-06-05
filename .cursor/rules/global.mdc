@@ -1,10 +1,14 @@
 ---
-description: Always-on rules for the FoodKing Cursor local agent. Applied to every cycle, every model, every task.
+description: SUPERSEDED 2026-06-05 — historical Cursor-era rules. Active governance is AGENTS.md (cloud-as-supervisor) + docs/orchestration/AGENT_ROLES.md.
 globs: ["**/*"]
-alwaysApply: true
+alwaysApply: false
 ---
 
-# Global Rules – FoodKing
+> **SUPERSEDED (2026-06-05).** The project migrated to the cloud-as-supervisor model (Claude Code on the
+> web is the single supervisor + executor; Cursor is retired). This file is kept as historical record.
+> Active governance: `AGENTS.md`, `CLAUDE.md`, `docs/orchestration/AGENT_ROLES.md`.
+
+# Global Rules – FoodKing (historical, Cursor-era)
 
 ## Cycle Structure
 PLAN → EXECUTE → VALIDATE → AUDIT → [HUMAN GATE | CLOSE]

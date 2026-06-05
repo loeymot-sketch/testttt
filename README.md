@@ -4,11 +4,18 @@ Monolithe **Laravel 9** + **SPA Vue 3** (admin, caisse POS, KDS, écran client O
 
 ---
 
-## Nouvelle conversation Cursor, nouvel abonnement ou nouvel développeur — lire d’abord
+## Nouvelle session — lire d’abord
+
+> **Modèle d’orchestration : cloud-as-supervisor (depuis 2026-06-05).** Claude Code sur le web est le
+> **superviseur ET l’exécutant** unique ; Cursor/Cowork sont retirés. Point d'entrée d'une nouvelle
+> session : **[`tasks/orchestration/FIRST_PROMPT_CLAUDE_CODE.md`](tasks/orchestration/FIRST_PROMPT_CLAUDE_CODE.md)**
+> puis **[`tasks/orchestration/CLAUDE_CODE_BOOTSTRAP.md`](tasks/orchestration/CLAUDE_CODE_BOOTSTRAP.md)**.
+> Rôles détaillés : **[`docs/orchestration/AGENT_ROLES.md`](docs/orchestration/AGENT_ROLES.md)**.
+> Les guides « passation Cursor » ci-dessous restent une référence historique.
 
 Sans l’historique du chat précédent, le dépôt est conçu pour rester compréhensible via la doc et les rapports.
 
-### Passation express (5 min)
+### Passation express (5 min) — référence historique (Cursor)
 
 1. **[`docs/HANDOFF_NEW_CURSOR/00_INDEX.md`](docs/HANDOFF_NEW_CURSOR/00_INDEX.md)** — table des matières de la passation.  
 2. **[`docs/HANDOFF_NEW_CURSOR/PROMPT_DEMARRAGE_NOUVEAU_COMPTE.md`](docs/HANDOFF_NEW_CURSOR/PROMPT_DEMARRAGE_NOUVEAU_COMPTE.md)** — **prompt prêt à coller** dans le premier chat (nouveau compte Cursor).  

@@ -41,7 +41,7 @@ Claude’s mission is to:
 - protect business invariants
 - detect weak implementation and hidden risks
 - require validation and real evidence
-- coordinate execution through Cursor
+- execute the work directly (cloud supervisor + executor) and delegate only to sub-agents and Playwright
 - judge whether work should continue, be corrected, be blocked, or be escalated
 
 The goal is not speed alone.
@@ -66,28 +66,31 @@ The goal is production-grade correctness, coherence, reliability, and quality.
 
 ## 4. Role Separation
 
-### Claude
-Claude is the planner, judge, and orchestrator.
-Claude audits, scores, decides, and guides.
-Claude does not directly implement code as its main function.
+The project runs on the **cloud-as-supervisor** model: Claude Code on the web is the single
+supervisor **and** executor. The ultra-detailed per-agent breakdown lives in
+`docs/orchestration/AGENT_ROLES.md`; this section states only the separation of authority.
 
-### Cursor
-Cursor is the strict executor.
-Cursor implements, validates locally, runs required checks, and reports.
-Cursor must not redefine strategy or silently expand scope.
+### Claude Code (cloud) — supervisor + executor
+Claude is the planner, judge, and orchestrator, and also performs the implementation.
+Claude plans, implements, validates, audits, scores, decides, and guides — owning the full
+PLAN → EXECUTE → VALIDATE → AUDIT → [HUMAN GATE | CLOSE] loop within a single session.
+Claude never merges to the default branch and never self-approves a gate.
+
+### Sub-agents (delegated by Claude)
+- **Explore** — read-only fan-out search; returns conclusions, never edits.
+- **general-purpose Task** — isolated audit, finding verification, regression scan; reports back
+  (≤300 words); never edits code or decides architecture.
 
 ### Playwright
 Playwright is the real-world behavioral verifier.
 It provides evidence about actual user-facing flows and UI behavior.
 It does not decide architecture or project direction.
 
-### Bot / Pipeline
-The bot transports state:
-- latest outputs
-- status
-- logs
-- compact context
-- next-step handoff
+### Human
+The human is the final authority: merge gate, inter-track arbitration, and product escalation.
+
+> The retired Cursor-local / Cowork model (Cursor as executor, a state-transport bot) is no longer
+> in force as of the 2026-06-05 cloud-supervisor migration.
 
 ---
 

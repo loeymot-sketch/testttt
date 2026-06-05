@@ -1,6 +1,10 @@
 # FoodKing – Cursor Phase 1 Locked Plan
 
-Status: LOCKED
+> **SUPERSEDED (2026-06-05).** Historical record of the retired Cursor-local operating model. The project
+> now runs cloud-as-supervisor — see `AGENTS.md` and `docs/orchestration/AGENT_ROLES.md`. The
+> "no cloud orchestration" engine line below no longer applies.
+
+Status: LOCKED (historical)
 All core phase-1 file groups validated: Groups 1–4
 No core phase-1 configuration files remain unvalidated.
 
