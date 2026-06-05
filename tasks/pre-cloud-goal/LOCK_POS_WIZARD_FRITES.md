@@ -87,5 +87,15 @@
 
 **Discipline note:** routing into `PricingService` under THIS pos-wizard LOCK would exceed the countersigned scope (the exact class of violation the harness blocked at `06e3f305f`). Therefore HALT + re-escalate, not silent scope-creep.
 
+## §12. OWNER RE-DECISION 2026-06-05 — DEFER (post-V1 backlog)
+Presented §11's corrected options (AskUserQuestion). **Owner selected option (A): DEFER — document as known
+minor post-V1 under-billing.** Rationale: +2 € only on the optional frites Grande/Cheddar upgrade; cost of
+a clean fix (new frozen `PricingService` LOCK, or a frozen wizard rearchitecture) is disproportionate to a
+V1-LOCAL single-restaurant envelope. Same disposition pattern as S13-02 (deferred) / M3-01 / M8-01.
+- **Backlog item**: `M3-02` — POS frites Grande/Cheddar upgrade (+2 €) not billed (pos_line_addons unpriced).
+  Revisit if/when frites pricing is reworked or POS moves to the kiosk standalone-item model. NOT a V1 blocker.
+- **No code changed.** Frozen `pos-wizard.js` + `PricingService` untouched (frozen-diff 0).
+- **Remote PR**: must NOT apply the §4 fix (invalid). If frites pricing is addressed later, use §11 option B or C under a fresh, correctly-scoped LOCK.
+
 ---
-**End of LOCK_POS_WIZARD_FRITES** — risk MEDIUM, POS-only (kiosk already correct). **STATUS: HALTED — approved scope invalid (§11); awaiting owner re-decision.** Note: this LOCK + the remote PR are the SAME work — do not double-apply (anti-duplication GOAL §0.5); the remote PR must also NOT apply the invalid §4 fix.
+**End of LOCK_POS_WIZARD_FRITES** — **STATUS: DEFERRED post-V1 (owner decision 2026-06-05, §12).** Approved scope was invalid (§11); no frozen edit applied. Risk MEDIUM, POS-only. Anti-duplication: this LOCK + the remote PR are the SAME work — neither applies the invalid §4 fix (GOAL §0.5).
