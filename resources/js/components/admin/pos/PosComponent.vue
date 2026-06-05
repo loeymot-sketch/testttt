@@ -3672,12 +3672,16 @@ export default {
             }
             this.noSaleBusy = true;
             try {
-                const result = await Promise.resolve(kioskHardwareOpenDrawer());
-                if (result && result.ok === false) {
-                    alertService.error(this.$t('pos.no_sale_error'));
-                } else {
-                    alertService.info(this.$t('pos.no_sale_done'));
-                }
+                // [M1-01] Record the NF525 forensic audit of the no-sale drawer open on
+                // the BACKEND (route cash-drawer.open → CashDrawerController@open opens the
+                // drawer via the printer AND writes the F-7 audit). Previously only the
+                // local hardware bridge was called, so the i18n "Action tracée" promise was
+                // never actually traced server-side (and on web POS the bridge no-ops).
+                const idemKey = `pos-no-sale-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+                await axios.post('admin/pos/cash-drawer/open', {}, { headers: { 'X-Idempotency-Key': idemKey } });
+                // Best-effort local hardware nudge for Electron POS (web POS no-ops).
+                try { await Promise.resolve(kioskHardwareOpenDrawer()); } catch (_e) { /* bridge optional */ }
+                alertService.info(this.$t('pos.no_sale_done'));
             } catch (e) {
                 alertService.error(this.$t('pos.no_sale_error'));
             } finally {
