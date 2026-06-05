@@ -184,7 +184,14 @@ class PosOrderRequest extends FormRequest
             // sent a `total` (now nullable per POS-GA-F-47). The authoritative
             // total is computed server-side in OrderService::posOrderStore and
             // re-validated against pos_received_amount there.
-            if (request('pos_payment_method') == PosPaymentMethod::CASH
+            // M6-001: skip the single-tender "received >= total" check when a split
+            // breakdown is present — for a cash-dominant split, pos_received_amount is
+            // only the cash tranche (< total) yet the split SUM balances. The split
+            // total is validated (>= total) by SplitPaymentService. (payment_breakdown
+            // is already stripped above when the flag is off, so its presence ⇒ split on.)
+            $splitActive = ! empty($this->input('payment_breakdown')) && config('split_payment.enabled', false);
+            if (! $splitActive
+                && request('pos_payment_method') == PosPaymentMethod::CASH
                 && request()->filled('total')
                 && ((float) request('total') > (float) request('pos_received_amount'))) {
                 $validator->errors()->add('pos_received_amount', 'The received amount can not be less than the total amount.');

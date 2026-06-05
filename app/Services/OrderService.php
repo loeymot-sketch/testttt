@@ -1068,7 +1068,15 @@ class OrderService
                     // [AUDIT-P1-B] Server-side cash validation against the REAL computed total.
                     // The client-side check in PosOrderRequest uses the client-sent total (may differ).
                     // This check uses the server-recalculated total to ensure correct cash handling.
-                    if ($request->pos_payment_method == \App\Enums\PosPaymentMethod::CASH
+                    // M6-001: the single-tender cash guard must NOT fire for a split
+                    // payment. In a cash-dominant split, pos_received_amount is only the
+                    // cash tranche (< server total) while the breakdown SUM balances —
+                    // SplitPaymentService::persistTranches (below) validates sum >= total
+                    // and rolls back the whole order if it doesn't.
+                    $m6001Breakdown = (array) $request->input('payment_breakdown', []);
+                    $m6001SplitActive = ! empty($m6001Breakdown) && config('split_payment.enabled', false);
+                    if (! $m6001SplitActive
+                        && $request->pos_payment_method == \App\Enums\PosPaymentMethod::CASH
                         && $request->pos_received_amount !== null
                         && (float) $request->pos_received_amount < $this->order->total) {
                         throw new \InvalidArgumentException(

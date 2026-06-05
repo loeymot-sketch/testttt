@@ -162,6 +162,41 @@ class SplitPaymentEndToEndTest extends TestCase
         $this->assertSame((int) $this->branch->id, (int) $rows[1]->branch_id);
     }
 
+    /**
+     * M6-001 — a cash-DOMINANT balanced split (cash tranche < order total, the
+     * remainder on card) must NOT be rejected by the single-tender cash guard.
+     * The "received >= total" check exists in BOTH PosOrderRequest and
+     * OrderService; both must be skipped when a valid payment_breakdown is
+     * present — the split SUM (>= total) is what SplitPaymentService validates.
+     */
+    public function test_cash_dominant_split_with_received_below_total_is_accepted(): void
+    {
+        $this->actingAs($this->operator, 'sanctum');
+
+        $payload = $this->basePayload([
+            'pos_payment_method' => PosPaymentMethod::CASH,
+            'pos_received_amount' => 10, // cash tranche only — below the 25 total
+            'total' => 25,
+            'payment_breakdown' => [
+                ['mode' => PosPaymentMethod::CASH, 'amount' => 10.00, 'tendered' => 10.00, 'change' => 0.00],
+                ['mode' => PosPaymentMethod::CARD, 'amount' => 15.00, 'reference' => '4242', 'terminal_id' => $this->terminal->id],
+            ],
+        ]);
+
+        $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->postJson('/api/admin/pos', $this->payloadWithPosQuote($this->operator, $payload));
+
+        $response->assertStatus(201);
+
+        $rows = OrderPayment::where('order_id', $response->json('data.id'))->get();
+        $this->assertEqualsWithDelta(
+            25.00,
+            $rows->sum(fn ($r) => (float) $r->amount),
+            0.01,
+            'balanced cash-dominant split must persist tranches summing to the total'
+        );
+    }
+
     public function test_pos_create_without_payment_breakdown_legacy_single_tender_works(): void
     {
         $this->actingAs($this->operator, 'sanctum');
