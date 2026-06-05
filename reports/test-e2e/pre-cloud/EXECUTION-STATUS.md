@@ -13,6 +13,7 @@
 | **M11-01 / S11-02 / S16-01** | NF525 receipt operator was the CUSTOMER (`order->user`). Now = cashier: `editor_id` (counter-collecting cashier, newly recorded by `confirmCounterPayment`) ?? `creator_id` (POS cashier), null never customer. Added Order creator()/editor() relations; updated 3 bug-baking sentinels. 5 operator + 9 receipt tests green. | `e19bbe2d6` |
 | **M10-01** | Unsessioned cash collection left no queryable trace (transient in-memory flag). Added `orders.cash_movement_skipped_at` (migration) + persist; sessioned records a movement instead. 2 tests. | `6a43f9418` |
 | **M8-01 = FALSE POSITIVE** | Catalog/audit claimed pre-Z refund skips RefundCreated. Disproven: `changeStatus(RETURNED)` → `cashBack()` (OrderService:2166) → `RefundCreated::dispatch` (PaymentService:187) → full cascade. Added regression guards (stock RELEASED + payment_status=REFUNDED). Test-only, no code fix. | `c593b73b5` |
+| **S7-03 (backend)** | `SiteService` wrote APP_DEBUG to .env (prod-boot-failure vector). Removed entirely (ops-managed only); source sentinel locks it. The UI toggle removal is the only remaining cosmetic (frontend batch) — the **risk is closed**. | `a522eb1c9` |
 
 W1 baseline + reconcile: `50df7c9ed`. **All new tests green; frozen-diff = 0.**
 **Full PHPUnit regression: 2848 passed + 4 failures = the documented cross-worktree
@@ -20,9 +21,13 @@ plan-path traceability sentinels (F001/F006/F009/F013) which assert untracked
 `plans/*.md` exist — they PASS in the main checkout (23/23) and are unrelated to
 any code change. 0 real regression.**
 
-## Remaining active P1 = 10 — ⭐ ALL NON-FROZEN BACKEND CLOSED (8 healed + M8-01 false-positive)
-Healed: S6-01, S17-01, S10-01, M6-001, M11-01, S11-02, S16-01, M10-01. False-positive (regression-locked): M8-01.
-Remaining 10 = **0 backend** · 6 frontend (rebuild+visual) · 4 frozen-gated (countersign). Full suite 2856/0 real regression.
+## Remaining active P1 = 9 — ⭐ ALL NON-FROZEN BACKEND CLOSED + S7-03 risk neutralized
+Resolved (10): S6-01, S17-01, S10-01, M6-001, M11-01, S11-02, S16-01, M10-01, M8-01 (false-positive), S7-03 (backend).
+Remaining 9 = **0 backend** · **5 frontend, rebuild+visual** (M4-02, M7-02, M1-01, M1-02, S1-DASH-01; + S7-03 UI toggle cosmetic) · **4 frozen-gated, countersign** (M3-01, M3-02 `pos-wizard.js`→prefer server-side; M6-002, S13-02 `ZReportService`) + the G-H `PaymentComponent` fusion.
+
+### What the remaining 9 require (distinct from no-rebuild backend work)
+- **Frontend 5**: a build env — clone `node_modules` (APFS) + `npm run` to rebuild bundles, then per-fix edit → rebuild → Playwright visual gate. Heavy; a dedicated batch.
+- **Frozen 4 + G-H**: owner **gate-G countersign** (`/lock-plan`) for `ZReportService` (M6-002/S13-02, NF525-critical per the RED split-bucketing finding) + `PaymentComponent` fusion; M3-x prefer a server-side guard (enforce mandatory steps / re-tariff frites in the quote) to avoid touching the frozen wizard.
 
 ### A. NON-FROZEN backend — next session, PHPUnit-verifiable
 - **W2 operator-identity (NF525 headline)**: M11-01, S11-02, S16-01. `ReceiptDataService.php:70`
