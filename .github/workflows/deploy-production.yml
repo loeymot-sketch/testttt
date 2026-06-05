@@ -1,0 +1,88 @@
+name: Deploy production (OVH VPS)
+
+# CI/CD deploy for Le Cayenne V1 (single-box OVH VPS).
+#
+# DORMANT UNTIL READY: this only fires on push to the `production` branch
+# (which does not exist yet) or a manual run. It does NOTHING until the owner:
+#   1. provisions the OVH VPS + runs scripts/deploy/server-setup.sh + first deploy.sh
+#   2. adds the GitHub repo secrets below (Settings -> Secrets and variables -> Actions)
+#   3. creates a `production` branch (merge `main` into it to deploy)
+#
+# Required repo secrets:
+#   DEPLOY_HOST        VPS public IP or hostname (e.g. lecayenne.fr)
+#   DEPLOY_USER        deploy user on the VPS (e.g. deploy)
+#   DEPLOY_SSH_KEY     private SSH key (ed25519) whose public half is in the deploy user's authorized_keys
+#   DEPLOY_KNOWN_HOSTS output of: ssh-keyscan -t ed25519 <DEPLOY_HOST>   (pins the host key, prevents MITM)
+# Optional repo variables:
+#   DEPLOY_PATH        app dir on the VPS (default /var/www/lecayenne)
+#
+# Safety: attach this job to a GitHub Environment named "production" with a
+# required reviewer to get a manual approval gate before each live deploy
+# (Settings -> Environments -> production -> Required reviewers).
+
+on:
+  push:
+    branches: [production]
+  workflow_dispatch: {}
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to VPS
+    runs-on: ubuntu-latest
+    environment: production   # add a required reviewer here for a manual gate
+    steps:
+      - name: Guard — required secrets present
+        run: |
+          missing=0
+          for s in DEPLOY_HOST DEPLOY_USER DEPLOY_SSH_KEY DEPLOY_KNOWN_HOSTS; do
+            if [ -z "${!s}" ]; then echo "::error::missing secret $s"; missing=1; fi
+          done
+          [ "$missing" = 0 ] || { echo "Set the deploy secrets before deploying."; exit 1; }
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+
+      - name: Set up SSH (key + pinned known_hosts)
+        run: |
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "${{ secrets.DEPLOY_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Remote deploy (git pull + deploy.sh on the VPS)
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PATH: ${{ vars.DEPLOY_PATH || '/var/www/lecayenne' }}
+          GIT_SHA: ${{ github.sha }}
+        run: |
+          ssh -o BatchMode=yes "${DEPLOY_USER}@${DEPLOY_HOST}" bash -seo pipefail <<REMOTE
+            set -euo pipefail
+            cd "${DEPLOY_PATH}"
+            echo "Deploying ${GIT_SHA} to \$(hostname)"
+            git fetch --prune origin
+            git checkout --force "${GIT_SHA}"
+            # deploy.sh: backup -> composer --no-dev -> npm production -> migrate --force
+            #            -> config:cache/route:cache/view:cache -> boot dry-run -> restart workers
+            bash scripts/deploy/deploy.sh
+            php artisan fiscal:verify-chain --all
+          REMOTE
+
+      - name: Post-deploy health check
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+        run: |
+          for i in 1 2 3 4 5; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "https://${DEPLOY_HOST}/api/health" || true)
+            echo "health attempt $i -> $code"
+            [ "$code" = "200" ] && exit 0
+            sleep 5
+          done
+          echo "::error::health check did not return 200 after deploy"; exit 1
