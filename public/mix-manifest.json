@@ -1,9 +1,9 @@
 {
-    "/js/pos-app.js": "/js/pos-app.js?id=6514f4329c779e40646b938898476772",
-    "/js/app.js": "/js/app.js?id=1d0d8ab6e6fb32dffa67a0c420004fc2",
+    "/js/pos-app.js": "/js/pos-app.js?id=d90d5796de714c178269d58718d9e6c7",
+    "/js/app.js": "/js/app.js?id=16ee38c6c814ed8625a06e19deba90d0",
     "/js/manifest.js": "/js/manifest.js?id=6ef4009a40f250662227149f6928fc8e",
-    "/js/pos-shell.js": "/js/pos-shell.js?id=6765efb15d2ae8bd18e83c102738a33f",
-    "/js/admin-shell.js": "/js/admin-shell.js?id=ee7a11910595ee25d0bf2192810e4d6e",
+    "/js/pos-shell.js": "/js/pos-shell.js?id=79c4a377ef17eb90acc3b2516d4c25f2",
+    "/js/admin-shell.js": "/js/admin-shell.js?id=ee041ae0141ab033380547e820012cb1",
     "/js/admin-reports.js": "/js/admin-reports.js?id=d509423a64408d42e1e30bb79dd249f2",
     "/js/admin-kds.js": "/js/admin-kds.js?id=34b0af97b56254538a111671332b0eaa",
     "/js/admin-oss.js": "/js/admin-oss.js?id=5b5999ff095894e054661cc8293bd315",

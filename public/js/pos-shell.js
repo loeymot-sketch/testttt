@@ -2795,7 +2795,7 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
     restoreOrder: function restoreOrder(id) {
       var _this2 = this;
       return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee2() {
-        var payload, _t2;
+        var payload, purgedCount, variationDrops, _t2;
         return _regenerator().w(function (_context2) {
           while (1) switch (_context2.p = _context2.n) {
             case 0:
@@ -2813,7 +2813,16 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
             case 3:
               payload = _context2.v;
               _this2.$emit('restored', payload);
-              _services_alertService__WEBPACK_IMPORTED_MODULE_0__["default"].success(_this2.$t('pos.park_restore_success'));
+              // [M7-02] Surface unavailable-item / unavailable-variation drops so the
+              // cashier KNOWS the restored cart differs from what was parked. Before,
+              // an unconditional success toast hid the loss until checkout.
+              purgedCount = Array.isArray(payload && payload._recall_purged_item_ids) ? payload._recall_purged_item_ids.length : 0;
+              variationDrops = payload && payload._recall_warnings && Array.isArray(payload._recall_warnings.unavailable_variations) ? payload._recall_warnings.unavailable_variations.length : 0;
+              if (purgedCount > 0 || variationDrops > 0) {
+                _services_alertService__WEBPACK_IMPORTED_MODULE_0__["default"].warning(_this2.$t('pos.park_restore_partial') || 'Commande restaurée, mais des articles/variations indisponibles ont été retirés — vérifiez le panier avant d\'encaisser.');
+              } else {
+                _services_alertService__WEBPACK_IMPORTED_MODULE_0__["default"].success(_this2.$t('pos.park_restore_success'));
+              }
               _context2.n = 5;
               break;
             case 4:
@@ -6320,7 +6329,7 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
     // when the dev stub returns immediately.
     triggerNoSaleOpenDrawer: function () {
       var _triggerNoSaleOpenDrawer = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee0() {
-        var result, _t0;
+        var idemKey, _t0, _t1;
         return _regenerator().w(function (_context0) {
           while (1) switch (_context0.p = _context0.n) {
             case 0:
@@ -6332,29 +6341,44 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
             case 1:
               this.noSaleBusy = true;
               _context0.p = 2;
+              // [M1-01] Record the NF525 forensic audit of the no-sale drawer open on
+              // the BACKEND (route cash-drawer.open → CashDrawerController@open opens the
+              // drawer via the printer AND writes the F-7 audit). Previously only the
+              // local hardware bridge was called, so the i18n "Action tracée" promise was
+              // never actually traced server-side (and on web POS the bridge no-ops).
+              idemKey = "pos-no-sale-".concat(Date.now(), "-").concat(Math.random().toString(36).slice(2, 8));
               _context0.n = 3;
-              return Promise.resolve((0,_services_kioskHardware__WEBPACK_IMPORTED_MODULE_16__.openDrawer)());
+              return axios__WEBPACK_IMPORTED_MODULE_0__["default"].post('admin/pos/cash-drawer/open', {}, {
+                headers: {
+                  'X-Idempotency-Key': idemKey
+                }
+              });
             case 3:
-              result = _context0.v;
-              if (result && result.ok === false) {
-                _services_alertService__WEBPACK_IMPORTED_MODULE_15__["default"].error(this.$t('pos.no_sale_error'));
-              } else {
-                _services_alertService__WEBPACK_IMPORTED_MODULE_15__["default"].info(this.$t('pos.no_sale_done'));
-              }
-              _context0.n = 5;
-              break;
+              _context0.p = 3;
+              _context0.n = 4;
+              return Promise.resolve((0,_services_kioskHardware__WEBPACK_IMPORTED_MODULE_16__.openDrawer)());
             case 4:
-              _context0.p = 4;
-              _t0 = _context0.v;
-              _services_alertService__WEBPACK_IMPORTED_MODULE_15__["default"].error(this.$t('pos.no_sale_error'));
+              _context0.n = 6;
+              break;
             case 5:
               _context0.p = 5;
-              this.noSaleBusy = false;
-              return _context0.f(5);
+              _t0 = _context0.v;
             case 6:
+              _services_alertService__WEBPACK_IMPORTED_MODULE_15__["default"].info(this.$t('pos.no_sale_done'));
+              _context0.n = 8;
+              break;
+            case 7:
+              _context0.p = 7;
+              _t1 = _context0.v;
+              _services_alertService__WEBPACK_IMPORTED_MODULE_15__["default"].error(this.$t('pos.no_sale_error'));
+            case 8:
+              _context0.p = 8;
+              this.noSaleBusy = false;
+              return _context0.f(8);
+            case 9:
               return _context0.a(2);
           }
-        }, _callee0, this, [[2, 4, 5, 6]]);
+        }, _callee0, this, [[3, 5], [2, 7, 8, 9]]);
       }));
       function triggerNoSaleOpenDrawer() {
         return _triggerNoSaleOpenDrawer.apply(this, arguments);
@@ -6370,8 +6394,10 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
           return _services_alertService__WEBPACK_IMPORTED_MODULE_15__["default"].error(this.$t('message.discount_reason_required') || 'A reason is required for any POS discount (min 3 characters).');
         }
         this.checkoutProps.form.discount_reason = reason;
+        this.$store.dispatch('posCart/discountReason', reason).then()["catch"](); // [M4-02] persist reason with cart
       } else {
         this.checkoutProps.form.discount_reason = null;
+        this.$store.dispatch('posCart/discountReason', '').then()["catch"](); // [M4-02]
       }
       if (this.discountType == _enums_modules_discountTypeEnum__WEBPACK_IMPORTED_MODULE_13__["default"].FIXED) {
         if (this.subtotal < this.discount) {
@@ -6471,7 +6497,7 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
     orderSubmit: function () {
       var _orderSubmit = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee1() {
         var _this26 = this;
-        var walkInReady, isDelivery, today, seqKey, seq, ok, _branchId, queued, _t1;
+        var walkInReady, storedReason, isDelivery, today, seqKey, seq, ok, _branchId, queued, _t10;
         return _regenerator().w(function (_context1) {
           while (1) switch (_context1.p = _context1.n) {
             case 0:
@@ -6510,6 +6536,16 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
               // Sign-off owners: Tech Lead + Backend owner. Tracking: reports/audit/BACKLOG_POS_V4_W0PLUS_DISCOVERIES_2026-04-26.md §1.
               // Migration path: replace by backend-computed `quote/preview` endpoint (W2 deliverable per HYPERREVIEW §6.D2).
               this.checkoutProps.form.discount = Number(this.posDiscount) || 0;
+              // [M4-02] On a cart restored from localStorage (page reload), form.discount
+              // is rehydrated from the store but form.discount_reason is a fresh null —
+              // backend rejects discount>0 with no reason (422). Repopulate from the
+              // persisted store reason so the restored discount stays submittable.
+              if (this.checkoutProps.form.discount > 0 && !this.checkoutProps.form.discount_reason) {
+                storedReason = this.$store.getters['posCart/discountReason'];
+                if (storedReason) {
+                  this.checkoutProps.form.discount_reason = storedReason;
+                }
+              }
               this.checkoutProps.form.delivery_charge = Number(this.checkoutProps.form.delivery_charge) || 0;
               this.checkoutProps.form.total = Number(this.grandTotal).toFixed(this.setting.site_digit_after_decimal_point);
               // @pricing-allowed-block end
@@ -6598,6 +6634,13 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
                 break;
               }
               _context1.p = 9;
+              // [M1-02] Offline CASH orders need a numeric pos_received_amount or
+              // every replay 422s (PosOrderRequest requires it for CASH) and the
+              // cash sale is silently lost. The payment modal can't open offline,
+              // so default to exact cash = order total (cashier reconciles on sync).
+              if ((this.checkoutProps.form.pos_received_amount === null || this.checkoutProps.form.pos_received_amount === undefined || this.checkoutProps.form.pos_received_amount === '') && Number(this.checkoutProps.form.pos_payment_method) === _enums_modules_posPaymentMethodEnum__WEBPACK_IMPORTED_MODULE_20__["default"].CASH) {
+                this.checkoutProps.form.pos_received_amount = Number(this.grandTotal) || Number(this.checkoutProps.form.total) || 0;
+              }
               _context1.n = 10;
               return this.enqueueOrder(_objectSpread({}, this.checkoutProps.form));
             case 10:
@@ -6612,7 +6655,7 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
               break;
             case 11:
               _context1.p = 11;
-              _t1 = _context1.v;
+              _t10 = _context1.v;
               this.loading.isActive = false;
               _services_alertService__WEBPACK_IMPORTED_MODULE_15__["default"].error('Impossible de mettre la commande en file d\'attente offline.');
             case 12:
@@ -6635,7 +6678,7 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
     // is the single source of truth for replay logic + idempotency.
     tryManualFlush: function () {
       var _tryManualFlush = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee10() {
-        var res, _t10;
+        var res, _t11;
         return _regenerator().w(function (_context10) {
           while (1) switch (_context10.p = _context10.n) {
             case 0:
@@ -6656,7 +6699,7 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
               break;
             case 2:
               _context10.p = 2;
-              _t10 = _context10.v;
+              _t11 = _context10.v;
               _services_alertService__WEBPACK_IMPORTED_MODULE_15__["default"].error('Erreur lors de la synchronisation manuelle.');
             case 3:
               return _context10.a(2);
@@ -6932,7 +6975,7 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
     applyDeliveryChargeFromCoordinates: function applyDeliveryChargeFromCoordinates(latitude, longitude) {
       var _this31 = this;
       return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee11() {
-        var lat, lng, branchRes, distance, _err$response2, _t11;
+        var lat, lng, branchRes, distance, _err$response2, _t12;
         return _regenerator().w(function (_context11) {
           while (1) switch (_context11.p = _context11.n) {
             case 0:
@@ -6972,14 +7015,14 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
               return _context11.a(2, true);
             case 4:
               _context11.p = 4;
-              _t11 = _context11.v;
+              _t12 = _context11.v;
               _this31.loading.isActive = false;
               _this31.selectedAddress = {};
               _this31.checkoutProps.form.address_id = null;
               _this31.checkoutProps.form.delivery_distance_km = null;
               _this31.checkoutProps.form.delivery_charge = 0;
               _this31.showDeliveryGeocodeError();
-              _services_alertService__WEBPACK_IMPORTED_MODULE_15__["default"].info(((_err$response2 = _t11.response) === null || _err$response2 === void 0 || (_err$response2 = _err$response2.data) === null || _err$response2 === void 0 ? void 0 : _err$response2.message) || _this31.deliveryGeocodeError);
+              _services_alertService__WEBPACK_IMPORTED_MODULE_15__["default"].info(((_err$response2 = _t12.response) === null || _err$response2 === void 0 || (_err$response2 = _err$response2.data) === null || _err$response2 === void 0 ? void 0 : _err$response2.message) || _this31.deliveryGeocodeError);
               return _context11.a(2, false);
           }
         }, _callee11, null, [[1, 4]]);
@@ -7117,7 +7160,7 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
     ensureDeliveryCustomerAndAddress: function ensureDeliveryCustomerAndAddress() {
       var _this36 = this;
       return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee12() {
-        var deliveryAddress, customerId, customerRes, addrRes, _err$response3, msg, _t12;
+        var deliveryAddress, customerId, customerRes, addrRes, _err$response3, msg, _t13;
         return _regenerator().w(function (_context12) {
           while (1) switch (_context12.p = _context12.n) {
             case 0:
@@ -7199,9 +7242,9 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
               return _context12.a(2, true);
             case 9:
               _context12.p = 9;
-              _t12 = _context12.v;
+              _t13 = _context12.v;
               _this36.loading.isActive = false;
-              msg = ((_err$response3 = _t12.response) === null || _err$response3 === void 0 || (_err$response3 = _err$response3.data) === null || _err$response3 === void 0 ? void 0 : _err$response3.message) || 'Erreur lors de la sauvegarde de l\'adresse.';
+              msg = ((_err$response3 = _t13.response) === null || _err$response3 === void 0 || (_err$response3 = _err$response3.data) === null || _err$response3 === void 0 ? void 0 : _err$response3.message) || 'Erreur lors de la sauvegarde de l\'adresse.';
               _services_alertService__WEBPACK_IMPORTED_MODULE_15__["default"].error(msg);
               return _context12.a(2, false);
           }
@@ -7317,6 +7360,11 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
     return {
       selectedMode: 'CASH',
       cashReceivedRaw: '',
+      // [G-H unified-encaissement] Terminal-manuel (SumUp) reference — the cashier
+      // types the SumUp transaction ref after a manual card payment; persisted via
+      // the existing confirmCounterPayment `note` (no backend change). Owner spec:
+      // terminals not live → manual SumUp card→réf. Optional (CARD mode only).
+      cardReference: '',
       // [GOAL-2026-05-29 BUG-CASH-KEYPAD] true while the received field still
       // holds the auto-pre-filled order total untouched. The FIRST numpad/key
       // press then starts a FRESH entry instead of appending onto "8,50"
@@ -7413,6 +7461,7 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
           this.cashReceivedRaw = String(this.orderTotal.toFixed(2)).replace('.', ',');
           this.cashFieldPristine = true;
           this.selectedMode = 'CASH';
+          this.cardReference = '';
           this.submitting = false;
           // [GOAL-M-POS-2 2026-05-24] Auto-focus receivedInput on modal
           // open so the cashier can type-then-Enter without a mouse hop.
@@ -7507,6 +7556,21 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
     // avoiding two distinct POSTs racing into PaymentService::
     // confirmCounterPayment's DB::transaction + lockForUpdate.
     // Different orders and different modes produce distinct keys.
+    // [G-H unified-encaissement] Build the persisted note. For the manual
+    // Terminal (CARD/SumUp) path, append the cashier-entered reference so the
+    // SumUp transaction is traceable on the OrderPayment/audit (terminals are
+    // not wired live in V1 → manual card→réf per owner mandate). Trimmed; the
+    // ref is optional (empty → the plain mode note, unchanged behavior).
+    buildCollectNote: function buildCollectNote() {
+      if (this.selectedMode === 'CASH') {
+        return 'Encaissement borne au comptoir (SSOT modal)';
+      }
+      if (this.selectedMode === 'CARD') {
+        var ref = String(this.cardReference || '').trim();
+        return ref !== '' ? "Encaissement Terminal manuel (SumUp) \u2014 r\xE9f: ".concat(ref) : 'Encaissement Terminal manuel (SumUp) (SSOT modal)';
+      }
+      return "Encaissement borne ".concat(this.selectedMode, " (SSOT modal)");
+    },
     buildIdempotencyKey: function buildIdempotencyKey(orderId, modeInt) {
       var minuteBucket = Math.floor(Date.now() / 60000);
       return "pos-counter-collect-".concat(orderId, "-").concat(modeInt, "-").concat(minuteBucket);
@@ -7564,7 +7628,7 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
               return axios__WEBPACK_IMPORTED_MODULE_0__["default"].post("admin/pos/counter-collect/".concat(orderId, "/confirm"), {
                 mode: modeInt,
                 received: received,
-                note: _this2.selectedMode === 'CASH' ? 'Encaissement borne au comptoir (SSOT modal)' : "Encaissement borne ".concat(_this2.selectedMode, " (SSOT modal)")
+                note: _this2.buildCollectNote()
               }, {
                 headers: {
                   'X-Idempotency-Key': idempotencyKey
@@ -13847,16 +13911,26 @@ var _hoisted_27 = {
   "class": "cc-mode-info-text"
 };
 var _hoisted_28 = {
+  key: 0,
+  "class": "cc-card-ref",
+  "data-testid": "pos-counter-collect-card-ref-block"
+};
+var _hoisted_29 = {
+  "class": "cc-card-ref-label",
+  "for": "cc-card-ref-input"
+};
+var _hoisted_30 = ["placeholder", "aria-label"];
+var _hoisted_31 = {
   "class": "cc-modal-footer"
 };
-var _hoisted_29 = ["disabled"];
-var _hoisted_30 = ["disabled", "aria-disabled", "aria-busy"];
-var _hoisted_31 = {
+var _hoisted_32 = ["disabled"];
+var _hoisted_33 = ["disabled", "aria-disabled", "aria-busy"];
+var _hoisted_34 = {
   key: 0,
   "class": "cc-spinner",
   "aria-hidden": "true"
 };
-var _hoisted_32 = {
+var _hoisted_35 = {
   key: 1,
   "aria-hidden": "true"
 };
@@ -13871,14 +13945,14 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
         key: 0,
         "class": "cc-modal-overlay",
         "data-testid": "pos-counter-collect-modal",
-        onClick: _cache[6] || (_cache[6] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function () {
+        onClick: _cache[7] || (_cache[7] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function () {
           return $options.onCancel && $options.onCancel.apply($options, arguments);
         }, ["self"]))
       }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
         "class": "cc-modal",
         role: "dialog",
         "aria-label": _ctx.$t('label.encaisser_mode_title')
-      }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Header: hero total + queue number (mirror PaymentComponent design language) "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_3, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_4, [_cache[7] || (_cache[7] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+      }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Header: hero total + queue number (mirror PaymentComponent design language) "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_3, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_4, [_cache[8] || (_cache[8] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
         "aria-hidden": "true"
       }, "💳", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.encaisser_mode_title')), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
         type: "button",
@@ -13931,29 +14005,41 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
         onInput: $options.numpadInput,
         onBack: $options.numpadBack,
         onClear: $options.numpadClear
-      }, null, 8 /* PROPS */, ["aria-label", "onInput", "onBack", "onClear"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Rendu calc "), $options.cashChange > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_22, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_23, [_cache[8] || (_cache[8] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+      }, null, 8 /* PROPS */, ["aria-label", "onInput", "onBack", "onClear"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Rendu calc "), $options.cashChange > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_22, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_23, [_cache[9] || (_cache[9] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
         "aria-hidden": "true"
       }, "✨", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.change_due')), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_24, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatPrice($options.cashChange)), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.cashShort ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_25, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.cc_cash_short')), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
         key: 1
-      }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Card / Mobile / Ticket — single-tap confirm (no extra input) "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_26, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_27, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.modeHint), 1 /* TEXT */)])], 2112 /* STABLE_FRAGMENT, DEV_ROOT_FRAGMENT */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Footer: confirm + cancel "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_28, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+      }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Card / Mobile / Ticket — single-tap confirm. CARD = Terminal manuel\n             (SumUp) with an optional reference the cashier copies from the TPE. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_26, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_27, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.modeHint), 1 /* TEXT */), $data.selectedMode === 'CARD' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_28, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_29, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.encaisser_terminal_ref')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
+        id: "cc-card-ref-input",
+        "onUpdate:modelValue": _cache[4] || (_cache[4] = function ($event) {
+          return $data.cardReference = $event;
+        }),
+        type: "text",
+        inputmode: "text",
+        maxlength: "64",
+        "class": "cc-card-ref-input",
+        placeholder: _ctx.$t('label.encaisser_terminal_ref_placeholder'),
+        "data-testid": "pos-counter-collect-card-ref-input",
+        "aria-label": _ctx.$t('label.encaisser_terminal_ref')
+      }, null, 8 /* PROPS */, _hoisted_30), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.cardReference]])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])], 2112 /* STABLE_FRAGMENT, DEV_ROOT_FRAGMENT */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Footer: confirm + cancel "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_31, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
         type: "button",
         "class": "cc-cancel-btn",
         disabled: $data.submitting,
         "data-testid": "pos-counter-collect-cancel",
-        onClick: _cache[4] || (_cache[4] = function () {
+        onClick: _cache[5] || (_cache[5] = function () {
           return $options.onCancel && $options.onCancel.apply($options, arguments);
         })
-      }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.cancel')), 9 /* TEXT, PROPS */, _hoisted_29), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+      }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.cancel')), 9 /* TEXT, PROPS */, _hoisted_32), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
         type: "button",
         "class": "cc-confirm-btn",
         disabled: !$options.canConfirm || $data.submitting,
         "aria-disabled": !$options.canConfirm || $data.submitting,
         "aria-busy": $data.submitting,
         "data-testid": "pos-counter-collect-confirm",
-        onClick: _cache[5] || (_cache[5] = function () {
+        onClick: _cache[6] || (_cache[6] = function () {
           return $options.onConfirm && $options.onConfirm.apply($options, arguments);
         })
-      }, [$data.submitting ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_31)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_32, "✓")), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.submitting ? _ctx.$t('label.processing') : _ctx.$t('button.confirm_and_print')), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_30)])], 8 /* PROPS */, _hoisted_1)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)];
+      }, [$data.submitting ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_34)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_35, "✓")), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.submitting ? _ctx.$t('label.processing') : _ctx.$t('button.confirm_and_print')), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_33)])], 8 /* PROPS */, _hoisted_1)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)];
     }),
     _: 1 /* STABLE */
   })], 2112 /* STABLE_FRAGMENT, DEV_ROOT_FRAGMENT */);

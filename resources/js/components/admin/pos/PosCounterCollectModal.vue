@@ -143,13 +143,34 @@
           </p>
         </div>
 
-        <!-- Card / Mobile / Ticket — single-tap confirm (no extra input) -->
+        <!-- Card / Mobile / Ticket — single-tap confirm. CARD = Terminal manuel
+             (SumUp) with an optional reference the cashier copies from the TPE. -->
         <div
           v-else
           class="cc-mode-info"
           data-testid="pos-counter-collect-noncash-block"
         >
           <p class="cc-mode-info-text">{{ modeHint }}</p>
+          <div
+            v-if="selectedMode === 'CARD'"
+            class="cc-card-ref"
+            data-testid="pos-counter-collect-card-ref-block"
+          >
+            <label class="cc-card-ref-label" for="cc-card-ref-input">
+              {{ $t('label.encaisser_terminal_ref') }}
+            </label>
+            <input
+              id="cc-card-ref-input"
+              v-model="cardReference"
+              type="text"
+              inputmode="text"
+              maxlength="64"
+              class="cc-card-ref-input"
+              :placeholder="$t('label.encaisser_terminal_ref_placeholder')"
+              data-testid="pos-counter-collect-card-ref-input"
+              :aria-label="$t('label.encaisser_terminal_ref')"
+            />
+          </div>
         </div>
 
         <!-- Footer: confirm + cancel -->
@@ -228,6 +249,11 @@ export default {
     return {
       selectedMode: 'CASH',
       cashReceivedRaw: '',
+      // [G-H unified-encaissement] Terminal-manuel (SumUp) reference — the cashier
+      // types the SumUp transaction ref after a manual card payment; persisted via
+      // the existing confirmCounterPayment `note` (no backend change). Owner spec:
+      // terminals not live → manual SumUp card→réf. Optional (CARD mode only).
+      cardReference: '',
       // [GOAL-2026-05-29 BUG-CASH-KEYPAD] true while the received field still
       // holds the auto-pre-filled order total untouched. The FIRST numpad/key
       // press then starts a FRESH entry instead of appending onto "8,50"
@@ -307,6 +333,7 @@ export default {
           this.cashReceivedRaw = String(this.orderTotal.toFixed(2)).replace('.', ',');
           this.cashFieldPristine = true;
           this.selectedMode = 'CASH';
+          this.cardReference = '';
           this.submitting = false;
           // [GOAL-M-POS-2 2026-05-24] Auto-focus receivedInput on modal
           // open so the cashier can type-then-Enter without a mouse hop.
@@ -398,6 +425,24 @@ export default {
     // avoiding two distinct POSTs racing into PaymentService::
     // confirmCounterPayment's DB::transaction + lockForUpdate.
     // Different orders and different modes produce distinct keys.
+    // [G-H unified-encaissement] Build the persisted note. For the manual
+    // Terminal (CARD/SumUp) path, append the cashier-entered reference so the
+    // SumUp transaction is traceable on the OrderPayment/audit (terminals are
+    // not wired live in V1 → manual card→réf per owner mandate). Trimmed; the
+    // ref is optional (empty → the plain mode note, unchanged behavior).
+    buildCollectNote() {
+      if (this.selectedMode === 'CASH') {
+        return 'Encaissement borne au comptoir (SSOT modal)';
+      }
+      if (this.selectedMode === 'CARD') {
+        const ref = String(this.cardReference || '').trim();
+        return ref !== ''
+          ? `Encaissement Terminal manuel (SumUp) — réf: ${ref}`
+          : 'Encaissement Terminal manuel (SumUp) (SSOT modal)';
+      }
+
+      return `Encaissement borne ${this.selectedMode} (SSOT modal)`;
+    },
     buildIdempotencyKey(orderId, modeInt) {
       const minuteBucket = Math.floor(Date.now() / 60000);
       return `pos-counter-collect-${orderId}-${modeInt}-${minuteBucket}`;
@@ -442,9 +487,7 @@ export default {
           {
             mode: modeInt,
             received,
-            note: this.selectedMode === 'CASH'
-              ? 'Encaissement borne au comptoir (SSOT modal)'
-              : `Encaissement borne ${this.selectedMode} (SSOT modal)`,
+            note: this.buildCollectNote(),
           },
           {
             headers: { 'X-Idempotency-Key': idempotencyKey },
