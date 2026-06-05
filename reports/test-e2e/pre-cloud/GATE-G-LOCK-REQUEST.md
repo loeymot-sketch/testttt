@@ -21,11 +21,20 @@ Every fix achievable without entering a frozen zone is done + tested. What's lef
   with the RED split+refund finding together.
 - **Rollback**: revert the ZReportService patch; the chain is append-only so prior Z reports are untouched.
 
-### 2. M3-01 — `public/js/pos-wizard.js` (FROZEN strict no-touch) — **SERVER-SIDE PATH AVAILABLE (may NOT need this LOCK)**
-- No mandatory-step validation in the active single-page wizard → a Tacos with 0 viande/0 sauce is addable.
-- **Preferred (non-frozen)**: enforce mandatory-step completeness **server-side** in `OrderQuoteService` /
-  `PosOrderRequest` against the wizard/composition profile → rejects incomplete items at quote/creation
-  WITHOUT touching the frozen wizard. I can do this next pass without a LOCK. (Listed here for visibility.)
+### 2. M3-01 — `public/js/pos-wizard.js` (FROZEN) — **SERVER-SIDE PATH, but NF525/blast-radius careful pass (no LOCK needed)**
+- Frontend: the active single-page wizard never calls `canProceedFromStep` → a Tacos with 0 viande is *addable to cart*.
+- **Server reality (verified this session, corrects the catalog):** `MultiVariationConstraint` (wired to POS via
+  `PosOrderRequest:255` → `ValidatesOrderItemVariations`) ALREADY rejects a **present-but-short** mandatory
+  attribute (`min > 0 && totalQty < min`, MultiVariationConstraint:118). So a partially-incomplete composed
+  order IS blocked server-side. **The narrow real gap**: the constraint builds `$byAttr` only from attributes
+  PRESENT in the payload (`:90-104`), and skips items with zero `item_variations` (`:64`) → a mandatory
+  attribute **entirely omitted** is never failed.
+- **Fix (non-frozen, but careful)**: in `MultiVariationConstraint::validateCollectionKeyedByItemIndex`, also
+  load each item's REQUIRED attributes (`ItemAttribute` where `item_id IN (...)` AND `min_select > 0`) and fail
+  when a required attribute is absent from the payload. **Blast radius = ALL order creation (POS/kiosk/table)**
+  → a careless version false-rejects valid composed orders (worse than the bug). MUST be done with full PHPUnit
+  regression + production-flow review (kiosk/parked-recall/edit submit full composition?) — a dedicated careful
+  pass, NOT a depleted-context rush. (No LOCK required; the frozen wizard UX polish is a separate optional item.)
 
 ### 3. M3-02 — `public/js/pos-wizard.js` (FROZEN strict no-touch)
 - Frites supplements (Grande +1,00 / Cheddar +1,00) shown in the preview total but sent only as TEXT →
