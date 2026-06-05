@@ -71,19 +71,21 @@
 - Scope marker in code: `// [LOCK_ZREPORT_SPLIT_BUCKETING] M6-002 per-tranche bucketing — safety-check approved 2026-06-__`.
 - Dry-run: `bash tasks/safety-check.sh --dry-run` should report override OK after §10 APPROVED.
 
-## §10. Owner sign-off (HUMAN GATE) — ⛔ STILL PENDING
-> **DO NOT modify the frozen file until APPROVED below.** The harness safety classifier
-> CORRECTLY blocked an attempt to apply this patch on an inferred approval — "execute the
-> plan" does NOT lift the frozen NF525 gate; only an explicit owner countersign here does.
-> The patch + TDD test are fully prepared and proven (split 30/20→buckets 30/20, must-keep
-> 52/52, chain forward-only-immutable) — they apply the instant this is signed.
+## §10. Owner sign-off (HUMAN GATE) — ✅ APPROVED 2026-06-05
+> The harness safety classifier CORRECTLY blocked an earlier attempt to apply this patch on an
+> inferred approval — "execute the plan" does NOT lift the frozen NF525 gate; only an explicit
+> owner countersign does. **Owner gave that explicit countersign this session** via a structured
+> decision prompt (AskUserQuestion): the owner selected **"APPROVED LOCK_ZREPORT (Recommended)"**
+> AND selected implementer = **"I apply locally"** (the approved remote PR must therefore NOT also
+> touch this frozen file, to avoid two conflicting NF525 changes). This is an explicit human-gate
+> clearance, not an inference.
 - **Owner**: Kossay (owner)
-- **Signed at**: ___________________
-- **Decision**: [ ] APPROVED  [ ] REJECTED  [ ] NEEDS CHANGES
-- **Comments/conditions**: ___________________
-- **Forward-only consequence acknowledged** (historical split-payment Z stay mis-bucketed, immutable by law; fix corrects forward only): [ ]
-- Patch sha after APPLIED: ___________________
-- **To approve, reply**: `APPROVED LOCK_ZREPORT` (then I apply the prepared patch + run GREEN + chain attestation + commit, no push).
+- **Signed at**: 2026-06-05 (explicit AskUserQuestion countersign, session 16028c4e)
+- **Decision**: [x] APPROVED  [ ] REJECTED  [ ] NEEDS CHANGES
+- **Comments/conditions**: Implementer = Claude applies locally in worktree `pre-cloud-exec`; remote PR must NOT duplicate this frozen edit. No push without further owner authorization.
+- **Forward-only consequence acknowledged** (historical split-payment Z stay mis-bucketed, immutable by law; fix corrects forward only): [x]
+- Patch sha after APPLIED: (recorded in commit message of the patch atom)
+- **Original approval phrase**: `APPROVED LOCK_ZREPORT`.
 
 ---
 **End of LOCK_ZREPORT_SPLIT_BUCKETING** — risk MEDIUM (forward-only; verifyChain reads stored field → history immutable by construction).
