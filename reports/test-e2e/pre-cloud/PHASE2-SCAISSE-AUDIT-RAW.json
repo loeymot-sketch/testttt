@@ -1,0 +1,550 @@
+{
+  "summary": "S-CAISSE (the POS box) decomposed read-only audit — one agent per functionality, worktree-pinned, adversarial. Scores technical/logic/vision, maps to 19-P1, identifies live E2E surfaces.",
+  "agentCount": 9,
+  "logs": [],
+  "result": {
+    "audited": 8,
+    "NEEDS_FIX": [
+      "order-taking + POS wizard composition (item-add → cart → quote flow)",
+      "Manual discount + reason persistence across page reload",
+      "Park/Recall Order — backend service correctly builds warnings for unavailable variations and item dropouts; frontend silently ignores them and shows unconditional success toast. Cashier never discovers the restored cart differs from what was parked.",
+      "Payment/Encaissement (cash/TR/card/split + counter-collect) for FoodKing V1 POS single-branch Le Cayenne",
+      "Cash drawer session + reconciliation (open/close/reconcile lifecycle with NF525 variance gate and audit trail binding)",
+      "Refund pre-Z and post-Z — single endpoint (PosOrderController::refundWithCounterEntry) branches on SealedOrderGuard::isSealed() to route pre-Z orders to OrderService::changeStatus(RETURNED) and post-Z orders to RefundWithCounterEntryService. Expected: both paths dispatch RefundCreated to trigger identical cascades (stock release, availability release, loyalty clawback, payment-status broadcast). Actual: only post-Z path dispatches RefundCreated; pre-Z path skips it entirely (or conditionally if no prior payment TX exists), leaving stock/availability/loyalty side-effects incomplete.",
+      "Receipt + NF525 operator identity: ReceiptDataService resolves the operator_name field (printed on every POS receipt header) from order->user->name (the CUSTOMER), ignoring order->creator_id (the CASHIER), breaking NF525 conformance on operator attribution.",
+      "POS offline replay + idempotency: offline CASH order enqueueing, queue replay with X-Idempotency-Key, no-sale drawer audit POST",
+      "RED-box-dispute: Split-payment + Refund-mirror + Z-bucketing cross-functional defect"
+    ],
+    "VALIDATED": [],
+    "blockingFindings": [
+      {
+        "from": "order-taking + POS wizard composition (item-add → cart → quote flow)",
+        "severity": "P1",
+        "desc": "M3-01: No mandatory-step validation on add-to-cart. Single-page wizard handler (line 5850-5854) calls syncAndSubmit() directly without checking viandes/sauce/pain completeness. canProceedFromStep() (defined line 5149) is only called in the dead bindEvents() function (never invoked). Result: cashier can add a Tacos with 0 viande / 0 sauce to cart.",
+        "file_line": "public/js/pos-wizard.js:5850-5854 (handler) vs 5149-5226 (unused canProceedFromStep) vs 5288 (never-called bindEvents)",
+        "repro": "Open Tacos wizard, leave all viandes/sauces unselected (red 0/1 badge), click Ajouter au panier → cart increments, order totals 6,90 EUR."
+      },
+      {
+        "from": "order-taking + POS wizard composition (item-add → cart → quote flow)",
+        "severity": "P1",
+        "desc": "M3-02: Frites supplements (Grande Portion +1,00 / Cheddar Fondu +1,00) counted in client preview total (calculateRunningTotal line 1325-1326) but sent to server ONLY as text in menu_extras/instruction. Server PricingService never re-prices text instructions; server OrderQuoteService quote() receives items JSON, calls PricingService::calculateOrder() which reads item.item_extras (always empty on line 4153) and item.convert_price (addon base price only, not including frites). Result: preview shows full price but quote/charge lacks the frites upcharge, leading to underbilling.",
+        "file_line": "public/js/pos-wizard.js:1325-1326 (preview total adds frites prices) vs 4136-4159 (addonToPayload: item_extras always [], frites only in instruction text) vs app/Services/Order/OrderQuoteService.php:206-236 (calculatePricing calls PricingService, which ignores text).",
+        "repro": "Open Tacos menu, select Grande Portion frites (+1,00 shown in preview), click Ajouter au panier. Cart preview shows +1,00 in total. Send to quote: server returns total without the +1,00 frites charge. Chart/payment screen shows discrepancy."
+      },
+      {
+        "from": "Manual discount + reason persistence across page reload",
+        "severity": "P1",
+        "desc": "After cart reload (page refresh), discount is restored but discount_reason is lost → orderSubmit 422 rejects with 'A reason is required' even though the reason was provided initially",
+        "file_line": "resources/js/store/modules/posCart.js:34-45 (saveCartToStorage), :538-549 (hydrateFromScope)",
+        "repro": "1. Enter a cart item (e.g., Tacos 10€). 2. Apply 5€ discount with reason 'Geste commercial' (applyDiscount validates ✓). 3. Reload page. 4. Click Encaisser → orderSubmit. 5. Backend rejects 422: discount_reason validation fails (null instead of the entered reason)."
+      },
+      {
+        "from": "Park/Recall Order — backend service correctly builds warnings for unavailable variations and item dropouts; frontend silently ignores them and shows unconditional success toast. Cashier never discovers the restored cart differs from what was parked.",
+        "severity": "P1",
+        "desc": "M7-02: Recall silently drops unavailable variations — warnings built at backend (PosParkedOrderService.php:86-97) are never extracted or surfaced to the frontend. The recall action (posParked.js:80-133) extracts only payload_json from the backend response (line 83) and discards the sibling warnings object entirely. Frontend shows unconditional 'Commande restaurée avec succès' toast (ParkedOrdersComponent.vue:197) without checking for dropped items. The second avenue of loss: client-side item purge (posParked.js:111-126 computes _recall_purged_item_ids) is returned but never read by applyParkedSnapshot (PosComponent.vue:3474-3528).",
+        "file_line": "resources/js/store/modules/posParked.js:80-134 (recall action, line 83 drops warnings); resources/js/components/admin/pos/ParkedOrdersComponent.vue:186-203 (restoreOrder, line 197 unconditional toast); resources/js/components/admin/pos/PosComponent.vue:3474-3528 (applyParkedSnapshot never checks warnings or _recall_purged_item_ids)",
+        "repro": "Park a cart containing a Tacos with Merguez variation. Before recall, set Merguez to inactive via admin. Click Restore — cart is restored with Merguez silently dropped, but cashier sees only 'Commande restaurée avec succès' (no warning about dropped variation)."
+      },
+      {
+        "from": "Park/Recall Order — backend service correctly builds warnings for unavailable variations and item dropouts; frontend silently ignores them and shows unconditional success toast. Cashier never discovers the restored cart differs from what was parked.",
+        "severity": "P1",
+        "desc": "M7-02 technical gap: Backend recall() mutates database (deletes parked order row at PosParkedOrderService.php:99) inside a transaction triggered by a GET request. The deletion happens before the response is returned to the client, but if the response is dropped or the client fails to apply it, the parked ticket is permanently lost. This violates idempotency — a retry of the same GET produces 404 instead of returning the ticket again.",
+        "file_line": "app/Services/PosParkedOrderService.php:72-102 (recall method, line 99 deletes inside transaction); app/Http/Controllers/Admin/Pos/ParkedOrderController.php:48-59 (show endpoint calls recall immediately)",
+        "repro": "Call GET /api/admin/pos/parked-orders/{id}, receive 200 + data. Network cut before response fully consumed. Retry the same GET → 404 (parked ticket lost permanently)."
+      },
+      {
+        "from": "Payment/Encaissement (cash/TR/card/split + counter-collect) for FoodKing V1 POS single-branch Le Cayenne",
+        "severity": "P1",
+        "desc": "M6-002: Z-report total_by_method mis-buckets split payments — full order total is attributed to the dominant tender instead of distributed across order_payments tranches. M6-001 removal of single-tender guard widened this to affect both card-dominant and cash-dominant splits.",
+        "file_line": "app/Services/Fiscal/ZReportService.php:661-668 (applyOrderToTotals reads pos_payment_method only)",
+        "repro": "Create POS order with split [CARD 20€ + CASH 10€ → total 30€, dominant=CARD]. Z-report totals total_by_method['CARD']=30 instead of CARD:20/CASH:10. Refund scenario: card-dominant split reaches Z (cash-dominant would have been 422-rejected pre-M6-001-fix but is now accepted)."
+      },
+      {
+        "from": "Payment/Encaissement (cash/TR/card/split + counter-collect) for FoodKing V1 POS single-branch Le Cayenne",
+        "severity": "P1",
+        "desc": "M10-01: Cash-trail skip is transient/surfaced only, not persisted. When counter-collect CASH succeeds with no open drawer session, order goes PAID + flagCashMovementSkipped=true (in-memory) + warning toast. NO queryable row (audit_log or cash_movement) is written → end-of-day reconciliation cannot find the gap. TRAP-3 improved UX but did not satisfy M10-01's persistence requirement.",
+        "file_line": "app/Services/PaymentService.php:573-576 (flagCashMovementSkipped sets transient attribute only); OrderDetailsResource.php:80-83 (surfaces flag); PosCounterCollectModal.vue:465-483 (shows warning toast)",
+        "repro": "Kiosk counter-collect: CASH order, no open drawer session. Order reaches PAID, cash_movement_skipped flag shows in response, warning toast appears. Query CashMovement/AuditLog table — zero rows for this order's cash skip. No reconciliation trail."
+      },
+      {
+        "from": "Payment/Encaissement (cash/TR/card/split + counter-collect) for FoodKing V1 POS single-branch Le Cayenne",
+        "severity": "P1",
+        "desc": "S16-01: Collecting cashier is never recorded on the order at counter-collection time. Receipt 'Opérateur' will display the original kiosk-machine customer, not the POS cashier who accepted payment.",
+        "file_line": "app/Services/PaymentService.php:193-362 (confirmCounterPayment does not set editor_id/creator_id); app/Services/Receipt/ReceiptDataService.php:70 (resolves operator from user_id, not collector)",
+        "repro": "Kiosk sends order with user_id='Kiosk Machine'. Cashier A calls confirmCounterPayment(). Check printed receipt: 'Opérateur: Kiosk Machine' (should be 'Cashier A')."
+      },
+      {
+        "from": "Cash drawer session + reconciliation (open/close/reconcile lifecycle with NF525 variance gate and audit trail binding)",
+        "severity": "P1",
+        "desc": "CASH orders paid with no open drawer session create no queryable cash_movement row — flagCashMovementSkipped() only sets transient in-memory flag, reconciliation silently under-counts and cannot surface the gap",
+        "file_line": "app/Services/PaymentService.php:573-576",
+        "repro": "Execute payment for cash order when no CashDrawerSession exists for the cashier; order transitions PAID but no movement row is written; only transient toast appears; reconciliation expected_cash = opening + 0 (zero movements)"
+      },
+      {
+        "from": "Refund pre-Z and post-Z — single endpoint (PosOrderController::refundWithCounterEntry) branches on SealedOrderGuard::isSealed() to route pre-Z orders to OrderService::changeStatus(RETURNED) and post-Z orders to RefundWithCounterEntryService. Expected: both paths dispatch RefundCreated to trigger identical cascades (stock release, availability release, loyalty clawback, payment-status broadcast). Actual: only post-Z path dispatches RefundCreated; pre-Z path skips it entirely (or conditionally if no prior payment TX exists), leaving stock/availability/loyalty side-effects incomplete.",
+        "severity": "P1",
+        "desc": "Pre-Z refund (OrderService::changeStatus RETURNED) never dispatches RefundCreated event, breaking the cascade (stock release, availability release, loyalty clawback, payment-status broadcast). Post-Z path (RefundWithCounterEntryService line 415) correctly dispatches RefundCreated::dispatch($parent). Pre-Z path only calls PaymentService::cashBack() when $locked->transaction exists, and even then RefundCreated dispatch inside PaymentService::cashBack() can be skipped if no prior payment transaction exists (line 132-133 early-return). When cashBack() is not called, RefundCreated is NEVER dispatched. RefundCreated import missing from OrderService (line 21-46 shows OrderCanceled import but no RefundCreated import).",
+        "file_line": "app/Services/OrderService.php:2196-2203 (cashBack conditional block, NO RefundCreated dispatch) vs app/Services/Order/RefundWithCounterEntryService.php:415 (RefundCreated::dispatch($parent) present)",
+        "repro": "Create a pre-Z order with status=DELIVERED and no prior payment Transaction (or with pos_payment_method=CASH paid at counter). Call changeStatus(RETURNED) via PosOrderController::refundWithCounterEntry endpoint. Observe: status flips to RETURNED, cashBack Transaction row created IF prior payment exists, order.returned audit row appended. BUT stock-released_qty counter is NOT incremented (stock remains reserved), availability counter is NOT incremented, loyalty points are NOT clawed back (only refundPoints() is called directly at line 2203, missing the RefundCreated cascade), payment_status broadcast (PersistOrderPaymentStatusChangedOnRefundCreated listener) does NOT run. Post-Z mirror refund via same endpoint exhibits full cascade."
+      },
+      {
+        "from": "Refund pre-Z and post-Z — single endpoint (PosOrderController::refundWithCounterEntry) branches on SealedOrderGuard::isSealed() to route pre-Z orders to OrderService::changeStatus(RETURNED) and post-Z orders to RefundWithCounterEntryService. Expected: both paths dispatch RefundCreated to trigger identical cascades (stock release, availability release, loyalty clawback, payment-status broadcast). Actual: only post-Z path dispatches RefundCreated; pre-Z path skips it entirely (or conditionally if no prior payment TX exists), leaving stock/availability/loyalty side-effects incomplete.",
+        "severity": "P1",
+        "desc": "PaymentService::cashBack() early-returns without dispatching RefundCreated when order has NO prior 'payment'-type Transaction (line 132-133). This means pre-Z refunds of orders without a prior payment TX get NO stock/availability/loyalty cascade at all, even though OrderService::changeStatus calls refundPoints() (line 2203). Affects orders paid via zero-amount or deferred payment channels where no Transaction row was created during initial payment.",
+        "file_line": "app/Services/PaymentService.php:132-134 (early-return skips entire DB::transaction block including RefundCreated dispatch at line 187)",
+        "repro": "Create a PAID order with status=DELIVERED and NO prior Transaction row (payment_status=PAID set directly). Call changeStatus(RETURNED). PaymentService::cashBack() early-returns at line 132, NO RefundCreated dispatch, stock/availability/loyalty cascade NEVER runs."
+      },
+      {
+        "from": "Receipt + NF525 operator identity: ReceiptDataService resolves the operator_name field (printed on every POS receipt header) from order->user->name (the CUSTOMER), ignoring order->creator_id (the CASHIER), breaking NF525 conformance on operator attribution.",
+        "severity": "P1",
+        "desc": "Receipt Opérateur field resolves to CUSTOMER (order->user) instead of CASHIER (order->creator_id) — prints 'Client passage' on anonymous counter sales instead of the actual operator name",
+        "file_line": "app/Services/Receipt/ReceiptDataService.php:70",
+        "repro": "Ring a counter sale with Walking Customer (id=2, user_id=2, creator_id=3 [actual cashier]); call ReceiptDataService::buildForOrderModel($order); operator_name returns 'Client passage' (from user->name) instead of the cashier name (from creator_id)"
+      },
+      {
+        "from": "Receipt + NF525 operator identity: ReceiptDataService resolves the operator_name field (printed on every POS receipt header) from order->user->name (the CUSTOMER), ignoring order->creator_id (the CASHIER), breaking NF525 conformance on operator attribution.",
+        "severity": "P1",
+        "desc": "creator_id is captured from Auth::id() at order creation (OrderService line 2894-2898) but ReceiptDataService never reads it — the cashier identity data persists unused, breaking NF525 operator traceability",
+        "file_line": "app/Services/OrderService.php:2894-2898 vs app/Services/Receipt/ReceiptDataService.php:70",
+        "repro": "Query database: SELECT id, user_id, creator_id FROM orders WHERE user_id != creator_id LIMIT 1; ReceiptDataService::buildForOrderModel($order) ignores creator_id and returns user->name (customer) instead of resolving the creator user by ID"
+      },
+      {
+        "from": "POS offline replay + idempotency: offline CASH order enqueueing, queue replay with X-Idempotency-Key, no-sale drawer audit POST",
+        "severity": "P1",
+        "desc": "M1-02: Offline CASH order enqueued with pos_received_amount=null. PosComponent.vue offline branch skips payment modal, never populating amount. On replay, PosOrderRequest.php:118 rejects entry with 422 (CASH requires pos_received_amount). Queue treats as transient failure, replays forever, silently expires after TTL. Sale lost.",
+        "file_line": "resources/js/components/admin/pos/PosComponent.vue:3902 (offline enqueue before payment modal) + app/Http/Requests/PosOrderRequest.php:118 (validation mandate)",
+        "repro": "1. Go offline (navigator.onLine=false). 2. Enqueue CASH order via PosComponent orderSubmit. 3. Check IndexedDB: entry has pos_received_amount=null. 4. Go online. 5. tryFlush sends replay with null amount. 6. Server returns 422. 7. Queue marks failed but keeps entry. 8. Entry replays every flush, eventually purges by TTL without completing."
+      },
+      {
+        "from": "POS offline replay + idempotency: offline CASH order enqueueing, queue replay with X-Idempotency-Key, no-sale drawer audit POST",
+        "severity": "P1",
+        "desc": "M1-01: No-sale button never POSTs backend audit endpoint. PosComponent.vue triggerNoSaleOpenDrawer (lines 3669-3686) calls kioskHardwareOpenDrawer only. kioskHardware.js openDrawer (lines 259-263) invokes hardware bridge stub, returns success without calling backend POST /admin/pos/cash-drawer/open. CashDrawerController.php:25-77 open() method exists and implements NF525 audit trail via CashDrawerService::recordMovement(TYPE_DRAWER_OPEN) but is never reached. No audit record created.",
+        "file_line": "resources/js/components/admin/pos/PosComponent.vue:3669-3686 (triggerNoSaleOpenDrawer) + resources/js/services/kioskHardware.js:259-263 (openDrawer calls hardware only)",
+        "repro": "1. In POS, click 'No sale' drawer button. 2. kioskHardware.openDrawer() runs hardware stub. 3. Verify CashMovement table: no record created. 4. Verify CashDrawerSession table: no record created. 5. Backend audit endpoint /admin/pos/cash-drawer/open was never called. 6. NF525 audit trail missing."
+      },
+      {
+        "from": "RED-box-dispute: Split-payment + Refund-mirror + Z-bucketing cross-functional defect",
+        "severity": "P1",
+        "desc": "Z-report total_by_method completely ignores order_payments payment tranches and attributes entire order TTC to single pos_payment_method field. This mis-buckets ALL split-payment orders and their refund mirrors. applyOrderToTotals (ZReportService:661-668) queries order.pos_payment_method only, never iterates order_payments rows. Result: a CASH+CARD split-tender order shows as 100% CASH (or 100% CARD, depending on which field was last set) in Z-report per-method breakdown, even though backend correctly stored 50/50 split in order_payments. Refund mirrors (created by RefundWithCounterEntryService) correctly duplicate split-payment tranches into mirror's order_payments (line 196-221), but those ALSO get mis-bucketed by applyOrderToTotals since it ignores payment breakdown. Z-report net totals and per-rate TVA net correctly (by accident, since splits are same-order), but per-tender attribution is completely wrong, breaking reconciliation and per-terminal TPE attribution (Z6-P1-WGS).",
+        "file_line": "app/Services/Fiscal/ZReportService.php:661-668, :364, :386, :418",
+        "repro": "1. Create split-payment order: CASH 50€ + CARD 50€ (pos_payment_method left unset or set to CASH). 2. Verify order_payments has 2 rows: {mode: CASH, amount: 50}, {mode: CARD, amount: 50}. 3. Close Z-report. 4. Inspect Z->total_by_method: shows {CASH: 100} and {CARD: 0}, or vice-versa depending on fallback. Expected: {CASH: 50, CARD: 50}. 5. Create refund for that order (post-Z). 6. Close next Z. 7. Mirror also bucketed wrong: {CASH: -100} instead of {CASH: -50, CARD: -50}."
+      },
+      {
+        "from": "RED-box-dispute: Split-payment + Refund-mirror + Z-bucketing cross-functional defect",
+        "severity": "P1",
+        "desc": "Refund mirror receipt (from ReceiptDataService::buildForOrderModel) shows CUSTOMER name as operator_name instead of refunding cashier. Mirror order is created with user_id = parent.user_id (customer) at RefundWithCounterEntryService:110, and creator_id is never set. ReceiptDataService line 70 resolves operator_name = optional($order->user)->name, pulling customer name for both parent AND mirror receipts. S16-01 (collecting cashier not recorded on parent) + this defect compound: refund receipt operator attribution is doubly broken — shows the original CUSTOMER instead of the CASHIER who issued the refund.",
+        "file_line": "app/Services/Order/RefundWithCounterEntryService.php:110 + app/Services/Receipt/ReceiptDataService.php:70",
+        "repro": "1. Original order created by cashier Alice for customer Bob. 2. Create refund as cashier Charlie. 3. Print refund mirror receipt. 4. Operator field shows 'Bob' (customer), not 'Charlie' (cashier). Audit trail shows Charlie as the refund creator, but receipt attribution is wrong — NF525 non-compliance."
+      }
+    ],
+    "liveSurfaces": [
+      "http://127.0.0.1:8000/admin/pos",
+      "item-variation-modal (Tacos wizard)",
+      "[data-action=add-to-cart] button",
+      ".pos-v5-wizard-total or cart-total display",
+      "post-quote payment confirmation screen",
+      "http://127.0.0.1:8000/admin/pos (PosComponent cart + discount UI)",
+      "Discount input #pos-discount and reason input #pos-discount-reason",
+      "Apply discount button (applyDiscount CTA)",
+      "Encaisser/orderSubmit button (checkout modal trigger)",
+      "http://127.0.0.1:8000/admin/pos — click 'EN ATTENTE' button to open parked orders drawer",
+      "ParkedOrdersComponent.vue overlay — search and restore a parked order with unavailable variations (after deactivating an item/variation in the catalog)",
+      "PosComponent.vue checkout form — verify that after restore, the cart is shown with/without warning about dropped items",
+      "POST /api/admin/pos/parked-orders → GET /api/admin/pos/parked-orders/{id} — capture response timing and verify parked record is not deleted on the GET before client confirmation",
+      "fr.json 'pos.park_restore_success' message — confirm plain success text is shown (expected: 'Commande restaurée avec succès.')",
+      "Discard button click timing — verify no confirmation modal appears before deletion",
+      "POST /api/admin/pos (split payment creation payload with payment_breakdown)",
+      "GET /api/admin/pos-order/show/{id} (OrderDetailsResource cash_movement_skipped flag)",
+      "POST /api/admin/pos-order/confirm-counter-payment (counter-collect modal submit)",
+      "GET /api/admin/fiscal/z-report (daily Z close with total_by_method)",
+      "/api/admin/pos/cash-drawer/sessions/open",
+      "/api/admin/pos/cash-drawer/sessions/current",
+      "/api/admin/pos/cash-drawer/sessions/{id}/close",
+      "/api/admin/pos/cash-drawer/sessions/{id}/reconcile",
+      "/api/admin/pos/cash-drawer/sessions/{id}/movements",
+      "PosCashDrawerSessionDialog.vue mode=open",
+      "PosCashDrawerSessionDialog.vue mode=close with varianceRequiresReason block",
+      "http://127.0.0.1:8000/admin/pos/orders (order list + refund modal)",
+      "http://127.0.0.1:8000/api/admin/pos-order/{order}/refund-with-counter-entry (POST endpoint)",
+      "POS frontend component: PosRefundModal (vue) + onRefundCompleted handler",
+      "resources/js/components/admin/pos/ReceiptComponent.vue",
+      "resources/js/helpers/posReceiptBuilder.js",
+      "POS counter-sale receipt print/reprint modal showing operator name in header",
+      "resources/js/components/admin/pos/PosComponent.vue:3902 (offline CASH enqueue)",
+      "resources/js/composables/usePosOfflineState.js:47-57 (replay with X-Idempotency-Key)",
+      "resources/js/components/admin/pos/PosComponent.vue:3669-3686 (no-sale drawer trigger)",
+      "resources/js/services/kioskHardware.js:259-263 (hardware-only openDrawer stub)",
+      "app/Http/Controllers/Admin/Pos/CashDrawerController.php:25-77 (backend audit endpoint, never reached)",
+      "app/Http/Requests/PosOrderRequest.php:118 (CASH pos_received_amount validation)",
+      "config/idempotency.php:35,55 (required_routes for api/admin/pos and cash-drawer/open)",
+      "POST /api/pos (order creation with payment_breakdown)",
+      "GET /api/z-report (Z-close, total_by_method aggregation)",
+      "POST /api/pos-order/{order}/refund-with-counter-entry (refund mirror creation)",
+      "GET /api/order/{order}/receipt (refund mirror receipt printing)"
+    ],
+    "details": [
+      {
+        "dims": {
+          "technical": "GAP",
+          "logic": "GAP",
+          "vision": "OK"
+        },
+        "functionality": "order-taking + POS wizard composition (item-add → cart → quote flow)",
+        "verdict": "NEEDS_FIX",
+        "mappedP1": [
+          "M3-01",
+          "M3-02"
+        ],
+        "findings": [
+          {
+            "severity": "P1",
+            "desc": "M3-01: No mandatory-step validation on add-to-cart. Single-page wizard handler (line 5850-5854) calls syncAndSubmit() directly without checking viandes/sauce/pain completeness. canProceedFromStep() (defined line 5149) is only called in the dead bindEvents() function (never invoked). Result: cashier can add a Tacos with 0 viande / 0 sauce to cart.",
+            "file_line": "public/js/pos-wizard.js:5850-5854 (handler) vs 5149-5226 (unused canProceedFromStep) vs 5288 (never-called bindEvents)",
+            "repro": "Open Tacos wizard, leave all viandes/sauces unselected (red 0/1 badge), click Ajouter au panier → cart increments, order totals 6,90 EUR."
+          },
+          {
+            "severity": "P1",
+            "desc": "M3-02: Frites supplements (Grande Portion +1,00 / Cheddar Fondu +1,00) counted in client preview total (calculateRunningTotal line 1325-1326) but sent to server ONLY as text in menu_extras/instruction. Server PricingService never re-prices text instructions; server OrderQuoteService quote() receives items JSON, calls PricingService::calculateOrder() which reads item.item_extras (always empty on line 4153) and item.convert_price (addon base price only, not including frites). Result: preview shows full price but quote/charge lacks the frites upcharge, leading to underbilling.",
+            "file_line": "public/js/pos-wizard.js:1325-1326 (preview total adds frites prices) vs 4136-4159 (addonToPayload: item_extras always [], frites only in instruction text) vs app/Services/Order/OrderQuoteService.php:206-236 (calculatePricing calls PricingService, which ignores text).",
+            "repro": "Open Tacos menu, select Grande Portion frites (+1,00 shown in preview), click Ajouter au panier. Cart preview shows +1,00 in total. Send to quote: server returns total without the +1,00 frites charge. Chart/payment screen shows discrepancy."
+          }
+        ],
+        "liveSurfaces": [
+          "http://127.0.0.1:8000/admin/pos",
+          "item-variation-modal (Tacos wizard)",
+          "[data-action=add-to-cart] button",
+          ".pos-v5-wizard-total or cart-total display",
+          "post-quote payment confirmation screen"
+        ],
+        "evidence": "BRANCH VERIFICATION: heal/pre-cloud-exec-2026-06-05 (confirmed via `git branch --show-current`). CALL-PATH M3-01: renderSinglePage() invoked at line 4773 + 5135; bindSinglePageEvents() invoked at 4777 (the ACTIVE binder); add-to-cart handler at 5850-5854 inside bindSinglePageEvents calls syncAndSubmit() with no guard; canProceedFromStep defined 5149-5226 and called only once at 5457 inside bindEvents() (never invoked — only definition and one comment reference at 5493). PAYLOAD M3-02: addonToPayload() at line 4136 returns payload with: item_extras={extras:[],names:[]} (always empty, line 4153), instruction=buildMenuExtras() output (text), menu_extras=extras array (display only). buildMenuExtras() at 4084 constructs text strings like 'Grande Portion (+1,00)' and 'Cheddar Fondu (+1,00)' (lines 4088-4089); these prices are frontend-only display. Server PricingService.php receives items array, processes item.convert_price (addon base, from line 4150) and item.item_extras (empty), ignores item.instruction/menu_extras for pricing. No backend code found that re-prices frites additions.\", \"evidence\": \"Quote: calculateRunningTotal() sums frites prices at lines 1325-1326; same prices included in preview display lines 2259-2264. Sync: syncAndSubmit() at line 3708 calls buildWizardPosLineAddonsPayload() line 4077, which in turn calls addonToPayload() line 4208. No validation intercept between line 5852 handler and line 4267 event dispatch.\"}}]"
+      },
+      {
+        "dims": {
+          "technical": "GAP",
+          "logic": "GAP",
+          "vision": "OK"
+        },
+        "findings": [
+          {
+            "severity": "P1",
+            "desc": "After cart reload (page refresh), discount is restored but discount_reason is lost → orderSubmit 422 rejects with 'A reason is required' even though the reason was provided initially",
+            "file_line": "resources/js/store/modules/posCart.js:34-45 (saveCartToStorage), :538-549 (hydrateFromScope)",
+            "repro": "1. Enter a cart item (e.g., Tacos 10€). 2. Apply 5€ discount with reason 'Geste commercial' (applyDiscount validates ✓). 3. Reload page. 4. Click Encaisser → orderSubmit. 5. Backend rejects 422: discount_reason validation fails (null instead of the entered reason)."
+          }
+        ],
+        "verdict": "NEEDS_FIX",
+        "functionality": "Manual discount + reason persistence across page reload",
+        "evidence": "VERIFIED CODE:\n- config/pos.php:172-176: manual_discount_enabled defaults TRUE (post-F1-fix reactivation 2026-05-31)\n- OrderService.php:2880-2906: assertPosManualDiscountAllowed() checks discount_reason length >= 3 at line 2902\n- posCart.js:34-45 saveCartToStorage() persists: {lists, subtotal, discount, savedAt, branchId, userId} but NOT discount_reason\n- posCart.js:538-549 hydrateFromScope() restores state.discount from saved.discount but has no discount_reason to restore\n- PosComponent.vue:3687-3698 applyDiscount() sets checkoutProps.form.discount_reason = reason only on initial apply\n- PosComponent.vue:2552-2570 applyPosBranchScope() calls posCart/setScope → hydrateFromScope, which does NOT restore discount_reason\n- Tests present but do NOT cover reload scenario: PosDiscountTest.php (lines 104-150) validates initial discount apply but not persistence; discountReasonBindingTest.spec.js (lines 156-163) tests initial validation only",
+        "mappedP1": [
+          "M4-02"
+        ],
+        "liveSurfaces": [
+          "http://127.0.0.1:8000/admin/pos (PosComponent cart + discount UI)",
+          "Discount input #pos-discount and reason input #pos-discount-reason",
+          "Apply discount button (applyDiscount CTA)",
+          "Encaisser/orderSubmit button (checkout modal trigger)"
+        ]
+      },
+      {
+        "functionality": "Park/Recall Order — backend service correctly builds warnings for unavailable variations and item dropouts; frontend silently ignores them and shows unconditional success toast. Cashier never discovers the restored cart differs from what was parked.",
+        "verdict": "NEEDS_FIX",
+        "dims": {
+          "technical": "GAP",
+          "logic": "GAP",
+          "vision": "OK"
+        },
+        "findings": [
+          {
+            "severity": "P1",
+            "desc": "M7-02: Recall silently drops unavailable variations — warnings built at backend (PosParkedOrderService.php:86-97) are never extracted or surfaced to the frontend. The recall action (posParked.js:80-133) extracts only payload_json from the backend response (line 83) and discards the sibling warnings object entirely. Frontend shows unconditional 'Commande restaurée avec succès' toast (ParkedOrdersComponent.vue:197) without checking for dropped items. The second avenue of loss: client-side item purge (posParked.js:111-126 computes _recall_purged_item_ids) is returned but never read by applyParkedSnapshot (PosComponent.vue:3474-3528).",
+            "file_line": "resources/js/store/modules/posParked.js:80-134 (recall action, line 83 drops warnings); resources/js/components/admin/pos/ParkedOrdersComponent.vue:186-203 (restoreOrder, line 197 unconditional toast); resources/js/components/admin/pos/PosComponent.vue:3474-3528 (applyParkedSnapshot never checks warnings or _recall_purged_item_ids)",
+            "repro": "Park a cart containing a Tacos with Merguez variation. Before recall, set Merguez to inactive via admin. Click Restore — cart is restored with Merguez silently dropped, but cashier sees only 'Commande restaurée avec succès' (no warning about dropped variation)."
+          },
+          {
+            "severity": "P1",
+            "desc": "M7-02 technical gap: Backend recall() mutates database (deletes parked order row at PosParkedOrderService.php:99) inside a transaction triggered by a GET request. The deletion happens before the response is returned to the client, but if the response is dropped or the client fails to apply it, the parked ticket is permanently lost. This violates idempotency — a retry of the same GET produces 404 instead of returning the ticket again.",
+            "file_line": "app/Services/PosParkedOrderService.php:72-102 (recall method, line 99 deletes inside transaction); app/Http/Controllers/Admin/Pos/ParkedOrderController.php:48-59 (show endpoint calls recall immediately)",
+            "repro": "Call GET /api/admin/pos/parked-orders/{id}, receive 200 + data. Network cut before response fully consumed. Retry the same GET → 404 (parked ticket lost permanently)."
+          },
+          {
+            "severity": "P2",
+            "desc": "M7-01: Recall does not preserve discount_reason during park/restore cycle. buildParkedOrderSnapshot (posParked.js:11-27) captures discount amount but never captures discount_reason. During recall, applyParkedSnapshot (PosComponent.vue:3474-3528) never restores a discount_reason from the parked data. If a cart with a discount is parked and then recalled, the restored discount has no attached reason, causing a 422 rejection at checkout (backend enforces reason >= 3 characters per OrderService.php:2894-2898).",
+            "file_line": "resources/js/store/modules/posParked.js:11-27 (buildParkedOrderSnapshot never captures discount_reason); resources/js/components/admin/pos/PosComponent.vue:3474-3528 (applyParkedSnapshot line 3506 restores delivery_charge but no discount_reason)",
+            "repro": "Park a cart with a 5 EUR discount and reason 'Client VIP'. Recall. Attempt checkout → 422 'discount_reason is required (minimum 3 characters)' because discount_reason was never restored."
+          },
+          {
+            "severity": "P3",
+            "desc": "M7-03: Discard button deletes parked ticket with no confirmation modal. ParkedOrdersComponent.vue:204-215 (discardOrder) calls destroy immediately on click. Restore and Discard buttons sit adjacent (grid layout at line 468), inviting accidental deletion.",
+            "file_line": "resources/js/components/admin/pos/ParkedOrdersComponent.vue:84-91, 204-215",
+            "repro": "Tired cashier clicks Discard instead of Restore on a high-value parked ticket (no confirmation shown) → ticket is deleted with no undo."
+          },
+          {
+            "severity": "P2",
+            "desc": "M7-01 secondary: Recall consumes the parked order on GET before the client cart is fully rebuilt and verified. If the recall action (posParked.js:80-133) throws an exception after the backend has already returned (e.g., during dispatch('posCart/lists')) or if the frontend never calls restoreOrder (connection closed, modal closed), the parked order remains deleted with nothing to show.",
+            "file_line": "app/Services/PosParkedOrderService.php:99 (delete happens before response); resources/js/store/modules/posParked.js:85-90 (resetCart and populate cart happen after deletion is already committed)",
+            "repro": "Call recall via API, receive response with data, but before the cart.lists dispatch completes, the browser crashes → parked order is gone, cart state is inconsistent."
+          },
+          {
+            "severity": "P2",
+            "desc": "Test gap: PosParkedRecallVariationAvailabilityTest.php asserts the backend returns warnings.unavailable_variations (line 117-121, green), but no test asserts the cashier is shown a visual warning or alert. The green backend test masks the live defect (missing frontend surfacing).",
+            "file_line": "tests/Feature/PosParkedRecallVariationAvailabilityTest.php:91-122 (test_recall_drops_unavailable_variation_and_returns_warning asserts response JSON, not cashier-facing alert)",
+            "repro": "Run the test suite — all parked order tests pass. Deploy to live. Park a Tacos, deactivate a variation, recall — no warning shown despite test expecting it."
+          }
+        ],
+        "mappedP1": [
+          "M7-02"
+        ],
+        "liveSurfaces": [
+          "http://127.0.0.1:8000/admin/pos — click 'EN ATTENTE' button to open parked orders drawer",
+          "ParkedOrdersComponent.vue overlay — search and restore a parked order with unavailable variations (after deactivating an item/variation in the catalog)",
+          "PosComponent.vue checkout form — verify that after restore, the cart is shown with/without warning about dropped items",
+          "POST /api/admin/pos/parked-orders → GET /api/admin/pos/parked-orders/{id} — capture response timing and verify parked record is not deleted on the GET before client confirmation",
+          "fr.json 'pos.park_restore_success' message — confirm plain success text is shown (expected: 'Commande restaurée avec succès.')",
+          "Discard button click timing — verify no confirmation modal appears before deletion"
+        ],
+        "evidence": "**Backend code — warnings built but not surfaced:**\n- app/Services/PosParkedOrderService.php:86-97 builds unavailable_variations warnings and attaches to snapshot at line 95-97.\n- app/Http/Controllers/Admin/Pos/ParkedOrderController.php:48-59 calls recall() and returns response with parked order (which includes warnings).\n\n**Frontend code — warnings dropped and unconditional success shown:**\n- resources/js/store/modules/posParked.js:83 extracts only `restoredPayload = parkedOrder.payload_json || {}` — the warnings object (a sibling key in parkedOrder) is never extracted.\n- resources/js/store/modules/posParked.js:111-126 builds _recall_purged_item_ids client-side but stores it in restoredPayload (line 126) which is returned to ParkedOrdersComponent.\n- resources/js/components/admin/pos/ParkedOrdersComponent.vue:195-197 calls recall action and shows `alertService.success(this.$t('pos.park_restore_success'))` unconditionally regardless of payload contents.\n- resources/js/components/admin/pos/PosComponent.vue:3474-3528 applyParkedSnapshot never checks for _recall_purged_item_ids or warnings in the payload.\n\n**Test coverage gap:**\n- tests/Feature/PosParkedRecallVariationAvailabilityTest.php:91-122 asserts the backend returns warnings.unavailable_variations in the response JSON (assertion at line 117-121, green), but no test asserts cashier sees a warning via alertService.\n\n**Database mutation on GET (non-idempotent):**\n- app/Services/PosParkedOrderService.php:72-102 recall() method: line 99 executes `$parked->delete()` inside a DB::transaction before returning the snapshot.\n- This means the GET endpoint is destructive — calling it twice returns 404 on the second call, violating idempotency.\n\n**Translation proof:**\n- resources/js/languages/fr.json: 'pos.park_restore_success' = 'Commande restaurée avec succès.' (plain success, no qualifier for warnings).\n\n**Line-by-line evidence chain (M7-02 core):**\n1. Backend builds warnings: PosParkedOrderService.php:95-97 setAttribute('warnings', [...])\n2. Controller returns parkedOrder (which has warnings): ParkedOrderController.php:58 response()->json(['data' => $parkedOrder])\n3. Frontend drops warnings: posParked.js:83 restoredPayload = parkedOrder.payload_json (not parkedOrder itself)\n4. Frontend shows unconditional success: ParkedOrdersComponent.vue:197 alertService.success(...) (no condition on warnings)\n5. No UI check for dropped items: applyParkedSnapshot (PosComponent.vue:3474-3528) never reads warnings or _recall_purged_item_ids"
+      },
+      {
+        "functionality": "Payment/Encaissement (cash/TR/card/split + counter-collect) for FoodKing V1 POS single-branch Le Cayenne",
+        "verdict": "NEEDS_FIX",
+        "dims": {
+          "technical": "GAP",
+          "logic": "GAP",
+          "vision": "OK"
+        },
+        "findings": [
+          {
+            "severity": "P1",
+            "desc": "M6-002: Z-report total_by_method mis-buckets split payments — full order total is attributed to the dominant tender instead of distributed across order_payments tranches. M6-001 removal of single-tender guard widened this to affect both card-dominant and cash-dominant splits.",
+            "file_line": "app/Services/Fiscal/ZReportService.php:661-668 (applyOrderToTotals reads pos_payment_method only)",
+            "repro": "Create POS order with split [CARD 20€ + CASH 10€ → total 30€, dominant=CARD]. Z-report totals total_by_method['CARD']=30 instead of CARD:20/CASH:10. Refund scenario: card-dominant split reaches Z (cash-dominant would have been 422-rejected pre-M6-001-fix but is now accepted)."
+          },
+          {
+            "severity": "P1",
+            "desc": "M10-01: Cash-trail skip is transient/surfaced only, not persisted. When counter-collect CASH succeeds with no open drawer session, order goes PAID + flagCashMovementSkipped=true (in-memory) + warning toast. NO queryable row (audit_log or cash_movement) is written → end-of-day reconciliation cannot find the gap. TRAP-3 improved UX but did not satisfy M10-01's persistence requirement.",
+            "file_line": "app/Services/PaymentService.php:573-576 (flagCashMovementSkipped sets transient attribute only); OrderDetailsResource.php:80-83 (surfaces flag); PosCounterCollectModal.vue:465-483 (shows warning toast)",
+            "repro": "Kiosk counter-collect: CASH order, no open drawer session. Order reaches PAID, cash_movement_skipped flag shows in response, warning toast appears. Query CashMovement/AuditLog table — zero rows for this order's cash skip. No reconciliation trail."
+          },
+          {
+            "severity": "P1",
+            "desc": "S16-01: Collecting cashier is never recorded on the order at counter-collection time. Receipt 'Opérateur' will display the original kiosk-machine customer, not the POS cashier who accepted payment.",
+            "file_line": "app/Services/PaymentService.php:193-362 (confirmCounterPayment does not set editor_id/creator_id); app/Services/Receipt/ReceiptDataService.php:70 (resolves operator from user_id, not collector)",
+            "repro": "Kiosk sends order with user_id='Kiosk Machine'. Cashier A calls confirmCounterPayment(). Check printed receipt: 'Opérateur: Kiosk Machine' (should be 'Cashier A')."
+          }
+        ],
+        "mappedP1": [
+          "M6-001",
+          "M6-002",
+          "M10-01",
+          "S13-02",
+          "S16-01"
+        ],
+        "liveSurfaces": [
+          "POST /api/admin/pos (split payment creation payload with payment_breakdown)",
+          "GET /api/admin/pos-order/show/{id} (OrderDetailsResource cash_movement_skipped flag)",
+          "POST /api/admin/pos-order/confirm-counter-payment (counter-collect modal submit)",
+          "GET /api/admin/fiscal/z-report (daily Z close with total_by_method)"
+        ],
+        "evidence": "\nOrderService.php:1260-1267 shows M6-001 fix: `if (! $splitActive && (int) $request->pos_payment_method === \\App\\Enums\\PosPaymentMethod::CASH)` guards single-tender cash validation, allowing split CASH+CARD to pass.\n\nZReportService.php:661-668 applyOrderToTotals() code: `$method = (string) ($order->pos_payment_method ?: ($order->payment_method ?: 'unknown')); $byMethod[$method] = ($byMethod[$method] ?? 0.0) + ($sign * $ttc);` — reads dominant tender only, no order_payments distribution. No test coverage (grep for split in tests/Feature/Fiscal/ finds zero tests).\n\nPaymentService.php:573-576 flagCashMovementSkipped: `private function flagCashMovementSkipped(Order $order): void { $order->cash_movement_skipped = true; }` — transient attribute only, no DB write.\n\nOrderDetailsResource.php:80-83: `'cash_movement_skipped' => (bool) ($this->resource->cash_movement_skipped ?? false),` serializes the transient flag but does not require a persisted audit_log or cash_movement row.\n\nPosCashTrailTest.php:314-348 test_regression_kiosk_counter_collect_without_session_paid_no_movement: verifies order reaches PAID and no CashMovement row exists, but does not verify the transient flag or assert its presence in HTTP response.\n\nPaymentService.php:193-362 confirmCounterPayment: no assignment of editor_id, creator_id, or any cashier attribution at collection time (line ~300-330 are all payment_status/fiscal_seq/amount handling, no user FK).\n"
+      },
+      {
+        "functionality": "Cash drawer session + reconciliation (open/close/reconcile lifecycle with NF525 variance gate and audit trail binding)",
+        "verdict": "NEEDS_FIX",
+        "dims": {
+          "technical": "OK",
+          "logic": "GAP",
+          "vision": "OK"
+        },
+        "findings": [
+          {
+            "severity": "P1",
+            "desc": "CASH orders paid with no open drawer session create no queryable cash_movement row — flagCashMovementSkipped() only sets transient in-memory flag, reconciliation silently under-counts and cannot surface the gap",
+            "file_line": "app/Services/PaymentService.php:573-576",
+            "repro": "Execute payment for cash order when no CashDrawerSession exists for the cashier; order transitions PAID but no movement row is written; only transient toast appears; reconciliation expected_cash = opening + 0 (zero movements)"
+          },
+          {
+            "severity": "P3",
+            "desc": "UI variance threshold (>0.005€) stricter than backend (>2.00€ configured) — cashier cannot close drawer with legitimate 0.01€ variance that backend would accept",
+            "file_line": "resources/js/components/admin/cash/PosCashDrawerSessionDialog.vue:400-401",
+            "repro": "Close cash session with 100€ opening, 0 sales, count 100.01€ physically; UI blocks close requesting reason, backend would accept without reason"
+          }
+        ],
+        "mappedP1": [
+          "M10-01"
+        ],
+        "liveSurfaces": [
+          "/api/admin/pos/cash-drawer/sessions/open",
+          "/api/admin/pos/cash-drawer/sessions/current",
+          "/api/admin/pos/cash-drawer/sessions/{id}/close",
+          "/api/admin/pos/cash-drawer/sessions/{id}/reconcile",
+          "/api/admin/pos/cash-drawer/sessions/{id}/movements",
+          "PosCashDrawerSessionDialog.vue mode=open",
+          "PosCashDrawerSessionDialog.vue mode=close with varianceRequiresReason block"
+        ],
+        "evidence": "Backend CashDrawerService.php:502-521 calls findOpenSessionForUser(), when null calls flagCashMovementSkipped() at line 519. flagCashMovementSkipped definition (573-576) only does `$order->cash_movement_skipped = true;` with explicit comment '[TRAP-3 2026-06-04] ... it is never written to the DB'. PaymentServiceCashHookTest::confirm counter cash without session flags skipped movement for cashier only asserts the transient property, never queries cash_movements table. All 90 cash tests pass (CashDrawerServiceTest, CashDrawerEndpointsTest, CashVarianceGateTest, CashDrawerConcurrentSessionTest, RecordMovementLockTest, ZReportCashEnrichmentTest, PaymentServiceCashHookTest) but test suite has structural blind spot: no test creates a PAID cash order without open session and asserts queryable movement row exists."
+      },
+      {
+        "dims": {
+          "technical": "GAP",
+          "logic": "GAP",
+          "vision": "OK"
+        },
+        "findings": [
+          {
+            "severity": "P1",
+            "desc": "Pre-Z refund (OrderService::changeStatus RETURNED) never dispatches RefundCreated event, breaking the cascade (stock release, availability release, loyalty clawback, payment-status broadcast). Post-Z path (RefundWithCounterEntryService line 415) correctly dispatches RefundCreated::dispatch($parent). Pre-Z path only calls PaymentService::cashBack() when $locked->transaction exists, and even then RefundCreated dispatch inside PaymentService::cashBack() can be skipped if no prior payment transaction exists (line 132-133 early-return). When cashBack() is not called, RefundCreated is NEVER dispatched. RefundCreated import missing from OrderService (line 21-46 shows OrderCanceled import but no RefundCreated import).",
+            "file_line": "app/Services/OrderService.php:2196-2203 (cashBack conditional block, NO RefundCreated dispatch) vs app/Services/Order/RefundWithCounterEntryService.php:415 (RefundCreated::dispatch($parent) present)",
+            "repro": "Create a pre-Z order with status=DELIVERED and no prior payment Transaction (or with pos_payment_method=CASH paid at counter). Call changeStatus(RETURNED) via PosOrderController::refundWithCounterEntry endpoint. Observe: status flips to RETURNED, cashBack Transaction row created IF prior payment exists, order.returned audit row appended. BUT stock-released_qty counter is NOT incremented (stock remains reserved), availability counter is NOT incremented, loyalty points are NOT clawed back (only refundPoints() is called directly at line 2203, missing the RefundCreated cascade), payment_status broadcast (PersistOrderPaymentStatusChangedOnRefundCreated listener) does NOT run. Post-Z mirror refund via same endpoint exhibits full cascade."
+          },
+          {
+            "severity": "P1",
+            "desc": "PaymentService::cashBack() early-returns without dispatching RefundCreated when order has NO prior 'payment'-type Transaction (line 132-133). This means pre-Z refunds of orders without a prior payment TX get NO stock/availability/loyalty cascade at all, even though OrderService::changeStatus calls refundPoints() (line 2203). Affects orders paid via zero-amount or deferred payment channels where no Transaction row was created during initial payment.",
+            "file_line": "app/Services/PaymentService.php:132-134 (early-return skips entire DB::transaction block including RefundCreated dispatch at line 187)",
+            "repro": "Create a PAID order with status=DELIVERED and NO prior Transaction row (payment_status=PAID set directly). Call changeStatus(RETURNED). PaymentService::cashBack() early-returns at line 132, NO RefundCreated dispatch, stock/availability/loyalty cascade NEVER runs."
+          }
+        ],
+        "evidence": "File: app/Services/OrderService.php\n- Line 21: Uses OrderCanceled event: `use App\\Events\\OrderCanceled;`\n- Line 1 report: RefundCreated NOT imported (would appear on line ~21-46 with other events)\n- Line 2196-2201: Only calls `app(PaymentService::class)->cashBack()` when `$locked->transaction` is truthy\n- Line 2203: Calls `app(LoyaltyService::class)->refundPoints()` unconditionally for RETURNED\n- Line 2280-2286: Dispatches `OrderCanceled::dispatch()` only for CANCELED/REJECTED, NOT for RETURNED\n- NO dispatch of RefundCreated anywhere for RETURNED status\n\nFile: app/Services/PaymentService.php  \n- Line 132-134: `if (! $priorPayment) { return; }` early-returns, skipping entire DB::transaction block\n- Line 187: `RefundCreated::dispatch($order);` only fires inside the transaction that gets skipped on early-return\n- This means RefundCreated is NEVER dispatched if order has no prior 'payment'-type Transaction\n\nFile: app/Services/Order/RefundWithCounterEntryService.php\n- Line 415: `RefundCreated::dispatch($parent);` correctly dispatches for post-Z path\n- Shows the intended contract: RefundCreated should be dispatched after successful refund to trigger cascade\n\nFile: tests/Feature/Loyalty/LoyaltyClawbackOnRefundSentinelTest.php  \n- Line 105: `RefundCreated::dispatchNow($order);` shows RefundCreated MUST be dispatched for loyalty clawback listener to run\n- Demonstrates the cascade pattern that pre-Z path is missing\n\nFile: tests/Feature/Refund/PreZRefundViaEndpointTest.php\n- Lines 164-224: Test verifies pre-Z DELIVERED refund: status→RETURNED, cashBack recorded, NO mirror, audit row appended\n- BUT does NOT verify RefundCreated dispatch or stock/availability release\n- Test gap: missing assertion on RefundCreated event dispatch or side-effect verification\n\nCatalog reference: /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/reports/audit/pre-cloud-2026-06-04/PRE_CLOUD_REMEDIATION_CATALOG.json M8-01\n- Title: \"One 'Rembourser' button, two divergent server paths with asymmetric side-effects (pre-Z vs post-Z)\"  \n- Correction: \"dispatch RefundCreated::dispatch($order) so the SAME cascade (stock + availability + earned-points clawback + payment-status broadcast) runs for pre-Z refunds\"",
+        "functionality": "Refund pre-Z and post-Z — single endpoint (PosOrderController::refundWithCounterEntry) branches on SealedOrderGuard::isSealed() to route pre-Z orders to OrderService::changeStatus(RETURNED) and post-Z orders to RefundWithCounterEntryService. Expected: both paths dispatch RefundCreated to trigger identical cascades (stock release, availability release, loyalty clawback, payment-status broadcast). Actual: only post-Z path dispatches RefundCreated; pre-Z path skips it entirely (or conditionally if no prior payment TX exists), leaving stock/availability/loyalty side-effects incomplete.",
+        "verdict": "NEEDS_FIX",
+        "mappedP1": [
+          "M8-01"
+        ],
+        "liveSurfaces": [
+          "http://127.0.0.1:8000/admin/pos/orders (order list + refund modal)",
+          "http://127.0.0.1:8000/api/admin/pos-order/{order}/refund-with-counter-entry (POST endpoint)",
+          "POS frontend component: PosRefundModal (vue) + onRefundCompleted handler"
+        ]
+      },
+      {
+        "dims": {
+          "technical": "GAP",
+          "logic": "GAP",
+          "vision": "OK"
+        },
+        "findings": [
+          {
+            "severity": "P1",
+            "desc": "Receipt Opérateur field resolves to CUSTOMER (order->user) instead of CASHIER (order->creator_id) — prints 'Client passage' on anonymous counter sales instead of the actual operator name",
+            "file_line": "app/Services/Receipt/ReceiptDataService.php:70",
+            "repro": "Ring a counter sale with Walking Customer (id=2, user_id=2, creator_id=3 [actual cashier]); call ReceiptDataService::buildForOrderModel($order); operator_name returns 'Client passage' (from user->name) instead of the cashier name (from creator_id)"
+          },
+          {
+            "severity": "P2",
+            "desc": "Test false-green: ReceiptDataServiceWireInTest never models the production case where user_id != creator_id, so test passes despite the broken implementation",
+            "file_line": "tests/Feature/Receipt/ReceiptDataServiceWireInTest.php:59-66,91",
+            "repro": "Run: php artisan test tests/Feature/Receipt/ReceiptDataServiceWireInTest::test_receipt_data_service_build_for_order_model_returns_six_nf525_fields — PASSES (false green) because test sets user_id to the operator; add a second test case where user_id != creator_id and watch it fail"
+          },
+          {
+            "severity": "P1",
+            "desc": "creator_id is captured from Auth::id() at order creation (OrderService line 2894-2898) but ReceiptDataService never reads it — the cashier identity data persists unused, breaking NF525 operator traceability",
+            "file_line": "app/Services/OrderService.php:2894-2898 vs app/Services/Receipt/ReceiptDataService.php:70",
+            "repro": "Query database: SELECT id, user_id, creator_id FROM orders WHERE user_id != creator_id LIMIT 1; ReceiptDataService::buildForOrderModel($order) ignores creator_id and returns user->name (customer) instead of resolving the creator user by ID"
+          }
+        ],
+        "evidence": "\nANCHOR VERIFICATION (line-by-line, live code):\n\n1. ReceiptDataService.php:70 (current state on heal/pre-cloud-exec-2026-06-05):\n   ```php\n   'operator_name' => optional($order->user)->name,\n   ```\n   This reads `$order->user` (the customer, populated via belongsTo(User::class)->withTrashed() relation at Order.php:174-176), NOT the creator. For POS counter sales, `user_id` is typically 2 ('Client passage'), so the receipt prints \"Opérateur: Client passage\" — violating NF525 documentation (\"caissier ayant clôturé\").\n\n2. Order.php:59-66 (creator_id column definition and documentation):\n   ```php\n   // [H.1 P1 AMBER 2026-05-24 / H2-HEAL-02] NF525 6-year traceability:\n   // cashier attribution on POS-created orders. orders.user_id stores the\n   // CUSTOMER (Walking Customer id=2 for anonymous POS sales), not the\n   // operator. creator_id was previously NULL on every POS-created order\n   // — making it impossible to answer \"which cashier opened order X?\"\n   // from any persisted column or audit row. Now populated from\n   // Auth::id() at Order::create() time inside OrderService::posOrderStore.\n   'creator_id',\n   ```\n   Explicit documentation confirms the architecture: `user_id` = customer, `creator_id` = cashier (from Auth::id()).\n\n3. OrderService.php:2894-2898 (creator_id population):\n   ```php\n   // cashier. Persist the operator on creator_id so\n   // \"which cashier opened order X?\" is answerable from\n   // a persisted column (in addition to the audit_logs\n   // 'order.created.pos' event written below for the\n   // tamper-evident HMAC chain).\n   'creator_id' => Auth::check() ? (int) Auth::id() : null,\n   ```\n   Creator_id is reliably set to the authenticated cashier at POS order creation.\n\n4. Test file ReceiptDataServiceWireInTest.php:59-91:\n   - Line 59-61: Creates order with `user_id => $user->id` (sets user_id to operator for test)\n   - Line 91: Asserts `operator_name == 'Jane Operator'` (the user's name)\n   - **Gap**: No test case where `user_id != creator_id`. Test passes by accident (user == operator in the factory).\n\n5. Commit archaeology:\n   - `e02a88b2a`: \"fix(nf525): receipt Opérateur = cashier (creator_id) not customer (order->user)\" — applies a resolveOperatorName() method that reads creator_id first, falls back to user.\n   - `24ab46870`: \"fix(nf525): receipt Opérateur falls back to audit-row encashing cashier\" — alternative fix path.\n   - Both commits exist in `git log --all` but NOT on current branch (heal/pre-cloud-exec-2026-06-05); `git branch --contains e02a88b2a` returns only `massive-e2e-0604-wt`.\n\nACTIVE CATALOG MAPPING:\n- M11-01 (BOX, P1, NF525): \"Receipt 'Operateur' prints the CUSTOMER (Client passage), not the cashier\" — root ReceiptDataService.php:70 — EXACT MATCH\n- S11-02 (SYSTEMS, P1, NF525): \"POS printed receipt 'Opérateur' shows the CUSTOMER name, not the cashier\" — root ReceiptDataService.php:70 — EXACT MATCH (systems-side twin)\n- S16-01 (SYSTEMS, P1, NF525): \"Kiosk-counter-collected order never records the collecting cashier\" — root PaymentService.php + ReceiptDataService.php:70 — RELATED (separate entry point, same operator_name resolution sink)\n- M11-05 (BOX, P2, deadcode): \"ReceiptDataServiceWireInTest gives FALSE GREEN on operator_name\" — root test file — CONFIRMED (test never models user_id != creator_id)\n\nNF525 CONFORMANCE IMPACT:\nThe NF525 standard (French fiscal POS regulation) requires the receipt to identify \"caissier ayant clôturé\" (the operator who closed the transaction). The current code prints the customer identity instead, violating this requirement. The audit_logs table correctly captures the operator (user_id field populated from Auth::id()), but the printed/reprinted receipt artifact (the 6-year-archived fiscal record) carries the wrong name, making the physical audit trail non-conformant.\n",
+        "functionality": "Receipt + NF525 operator identity: ReceiptDataService resolves the operator_name field (printed on every POS receipt header) from order->user->name (the CUSTOMER), ignoring order->creator_id (the CASHIER), breaking NF525 conformance on operator attribution.",
+        "verdict": "NEEDS_FIX",
+        "mappedP1": [
+          "M11-01",
+          "S11-02",
+          "S16-01"
+        ],
+        "liveSurfaces": [
+          "http://127.0.0.1:8000/admin/pos",
+          "resources/js/components/admin/pos/ReceiptComponent.vue",
+          "resources/js/helpers/posReceiptBuilder.js",
+          "POS counter-sale receipt print/reprint modal showing operator name in header"
+        ]
+      },
+      {
+        "functionality": "POS offline replay + idempotency: offline CASH order enqueueing, queue replay with X-Idempotency-Key, no-sale drawer audit POST",
+        "verdict": "NEEDS_FIX",
+        "dims": {
+          "technical": "GAP",
+          "logic": "GAP",
+          "vision": "GAP"
+        },
+        "findings": [
+          {
+            "severity": "P1",
+            "desc": "M1-02: Offline CASH order enqueued with pos_received_amount=null. PosComponent.vue offline branch skips payment modal, never populating amount. On replay, PosOrderRequest.php:118 rejects entry with 422 (CASH requires pos_received_amount). Queue treats as transient failure, replays forever, silently expires after TTL. Sale lost.",
+            "file_line": "resources/js/components/admin/pos/PosComponent.vue:3902 (offline enqueue before payment modal) + app/Http/Requests/PosOrderRequest.php:118 (validation mandate)",
+            "repro": "1. Go offline (navigator.onLine=false). 2. Enqueue CASH order via PosComponent orderSubmit. 3. Check IndexedDB: entry has pos_received_amount=null. 4. Go online. 5. tryFlush sends replay with null amount. 6. Server returns 422. 7. Queue marks failed but keeps entry. 8. Entry replays every flush, eventually purges by TTL without completing."
+          },
+          {
+            "severity": "P1",
+            "desc": "M1-01: No-sale button never POSTs backend audit endpoint. PosComponent.vue triggerNoSaleOpenDrawer (lines 3669-3686) calls kioskHardwareOpenDrawer only. kioskHardware.js openDrawer (lines 259-263) invokes hardware bridge stub, returns success without calling backend POST /admin/pos/cash-drawer/open. CashDrawerController.php:25-77 open() method exists and implements NF525 audit trail via CashDrawerService::recordMovement(TYPE_DRAWER_OPEN) but is never reached. No audit record created.",
+            "file_line": "resources/js/components/admin/pos/PosComponent.vue:3669-3686 (triggerNoSaleOpenDrawer) + resources/js/services/kioskHardware.js:259-263 (openDrawer calls hardware only)",
+            "repro": "1. In POS, click 'No sale' drawer button. 2. kioskHardware.openDrawer() runs hardware stub. 3. Verify CashMovement table: no record created. 4. Verify CashDrawerSession table: no record created. 5. Backend audit endpoint /admin/pos/cash-drawer/open was never called. 6. NF525 audit trail missing."
+          },
+          {
+            "severity": "P2",
+            "desc": "Offline queue does not distinguish permanent (validation 422) from transient (5xx) failures. usePosOfflineState.js tryFlush (line 54) marks all errors as failed but keeps entry queued. No max-retry count or permanent-failure detection. Any validation error (not just CASH pos_received_amount) silently traps entries.",
+            "file_line": "resources/js/composables/usePosOfflineState.js:54-55 (markFailed keeps entry on any error)",
+            "repro": "1. Enqueue order with validation defect (e.g., missing required field). 2. Go online and flush. 3. Server returns 422. 4. markFailed records attempt but keeps entry. 5. Entry replays forever until TTL expires. 6. No way to surface this to cashier."
+          },
+          {
+            "severity": "P2",
+            "desc": "No UI feedback for stuck or expired offline queue entries. usePosOfflineState ref queueDepth shows count only. No display of: failed entries, retry counts, last-attempt timestamp, or expiration warning. Cashier has no visibility into queue health or recovery status.",
+            "file_line": "resources/js/composables/usePosOfflineState.js (no failed/stuck entry tracking) + resources/js/helpers/posOfflineQueue.js (no UI notification on purge)",
+            "repro": "1. Enqueue multiple CASH orders offline. 2. Go online with connectivity issues causing 422 rejections. 3. Observe queueDepth badge updates but no detail on which entries failed or why. 4. After 30 min, entries purge silently. 5. Cashier unaware sale was lost."
+          }
+        ],
+        "mappedP1": [
+          "M1-01",
+          "M1-02"
+        ],
+        "liveSurfaces": [
+          "resources/js/components/admin/pos/PosComponent.vue:3902 (offline CASH enqueue)",
+          "resources/js/composables/usePosOfflineState.js:47-57 (replay with X-Idempotency-Key)",
+          "resources/js/components/admin/pos/PosComponent.vue:3669-3686 (no-sale drawer trigger)",
+          "resources/js/services/kioskHardware.js:259-263 (hardware-only openDrawer stub)",
+          "app/Http/Controllers/Admin/Pos/CashDrawerController.php:25-77 (backend audit endpoint, never reached)",
+          "app/Http/Requests/PosOrderRequest.php:118 (CASH pos_received_amount validation)",
+          "config/idempotency.php:35,55 (required_routes for api/admin/pos and cash-drawer/open)"
+        ],
+        "evidence": "Verified via Read tool on: (1) PosComponent.vue:3902 shows offline branch enqueues before payment modal opens, defaulting pos_received_amount to null; (2) PosOrderRequest.php:118 shows validation rule 'pos_received_amount' => 'required' when pos_payment_method === CASH; (3) triggerNoSaleOpenDrawer at PosComponent.vue:3669-3686 calls kioskHardwareOpenDrawer only; (4) kioskHardware.js:259-263 invokes hardware bridge stub without backend POST; (5) CashDrawerController.php:25-77 shows backend open() method with CashDrawerService::recordMovement(TYPE_DRAWER_OPEN) at line 52, fully implemented but unreachable from frontend; (6) usePosOfflineState.js:54-55 shows markFailed keeps entry on any error; (7) IdempotencyKeyMiddleware.php frozen, properly implements Phase 1-3 guard, not the source of defect; (8) config/idempotency.php confirms middleware enabled and both api/admin/pos and api/admin/pos/cash-drawer/open are in required_routes list.\""
+      },
+      {
+        "functionality": "RED-box-dispute: Split-payment + Refund-mirror + Z-bucketing cross-functional defect",
+        "verdict": "NEEDS_FIX",
+        "dims": {
+          "technical": "GAP",
+          "logic": "GAP",
+          "vision": "OK"
+        },
+        "findings": [
+          {
+            "severity": "P1",
+            "desc": "Z-report total_by_method completely ignores order_payments payment tranches and attributes entire order TTC to single pos_payment_method field. This mis-buckets ALL split-payment orders and their refund mirrors. applyOrderToTotals (ZReportService:661-668) queries order.pos_payment_method only, never iterates order_payments rows. Result: a CASH+CARD split-tender order shows as 100% CASH (or 100% CARD, depending on which field was last set) in Z-report per-method breakdown, even though backend correctly stored 50/50 split in order_payments. Refund mirrors (created by RefundWithCounterEntryService) correctly duplicate split-payment tranches into mirror's order_payments (line 196-221), but those ALSO get mis-bucketed by applyOrderToTotals since it ignores payment breakdown. Z-report net totals and per-rate TVA net correctly (by accident, since splits are same-order), but per-tender attribution is completely wrong, breaking reconciliation and per-terminal TPE attribution (Z6-P1-WGS).",
+            "file_line": "app/Services/Fiscal/ZReportService.php:661-668, :364, :386, :418",
+            "repro": "1. Create split-payment order: CASH 50€ + CARD 50€ (pos_payment_method left unset or set to CASH). 2. Verify order_payments has 2 rows: {mode: CASH, amount: 50}, {mode: CARD, amount: 50}. 3. Close Z-report. 4. Inspect Z->total_by_method: shows {CASH: 100} and {CARD: 0}, or vice-versa depending on fallback. Expected: {CASH: 50, CARD: 50}. 5. Create refund for that order (post-Z). 6. Close next Z. 7. Mirror also bucketed wrong: {CASH: -100} instead of {CASH: -50, CARD: -50}."
+          },
+          {
+            "severity": "P1",
+            "desc": "Refund mirror receipt (from ReceiptDataService::buildForOrderModel) shows CUSTOMER name as operator_name instead of refunding cashier. Mirror order is created with user_id = parent.user_id (customer) at RefundWithCounterEntryService:110, and creator_id is never set. ReceiptDataService line 70 resolves operator_name = optional($order->user)->name, pulling customer name for both parent AND mirror receipts. S16-01 (collecting cashier not recorded on parent) + this defect compound: refund receipt operator attribution is doubly broken — shows the original CUSTOMER instead of the CASHIER who issued the refund.",
+            "file_line": "app/Services/Order/RefundWithCounterEntryService.php:110 + app/Services/Receipt/ReceiptDataService.php:70",
+            "repro": "1. Original order created by cashier Alice for customer Bob. 2. Create refund as cashier Charlie. 3. Print refund mirror receipt. 4. Operator field shows 'Bob' (customer), not 'Charlie' (cashier). Audit trail shows Charlie as the refund creator, but receipt attribution is wrong — NF525 non-compliance."
+          },
+          {
+            "severity": "P2",
+            "desc": "Refund mirror never captures discount_reason from parent order (unlike parked orders which also lose it, but that's a separate pre-Z defect). If parent was discounted with reason 'VIP discount', the mirror's audit trail records the refund but never captures which discount was being refunded. Operationally low-impact (cash is correct, mirror total nets correctly) but forensic gap — mirror reason field contains REFUND reason (line 129), not original discount reason.",
+            "file_line": "app/Services/Order/RefundWithCounterEntryService.php:117-118 (mirror.discount hardcoded 0, no discount_reason captured)",
+            "repro": "1. Create order for €100, apply €10 'VIP discount' reason. Total = €90. 2. Refund via counter-entry (post-Z). 3. Mirror created with total = -€90 (correct), but discount = 0 (asymmetric). 4. Mirror's reason field contains refund reason, not 'VIP discount'. 5. Refund receipt shows €90 refunded but never indicates the €10 discount was part of it."
+          }
+        ],
+        "mappedP1": [
+          "M6-002",
+          "S16-01"
+        ],
+        "liveSurfaces": [
+          "POST /api/pos (order creation with payment_breakdown)",
+          "GET /api/z-report (Z-close, total_by_method aggregation)",
+          "POST /api/pos-order/{order}/refund-with-counter-entry (refund mirror creation)",
+          "GET /api/order/{order}/receipt (refund mirror receipt printing)"
+        ],
+        "evidence": "\nZReportService::applyOrderToTotals (line 661-668) iterates orders but only reads pos_payment_method:\n```php\nprivate function applyOrderToTotals(Order $order, int $sign, float &$totalTtc, array &$byMethod): void\n{\n    $ttc = (float) ($order->total ?? 0);\n    $totalTtc += $sign * $ttc;\n    $method = (string) ($order->pos_payment_method ?: ($order->payment_method ?: 'unknown'));\n    $byMethod[$method] = ($byMethod[$method] ?? 0.0) + ($sign * $ttc);\n}\n```\n\nIt never queries OrderPayment::where('order_id', $order->id). This means split payments (stored in order_payments table with granular mode/amount/tendered per tranche) are completely ignored. The entire $ttc is bucketed to a single $method.\n\nRefundWithCounterEntryService correctly mirrors split-payment tranches (lines 196-221):\n```php\nforeach ($parentPayments as $payment) {\n    OrderPayment::create([\n        'order_id'      => $mirror->id,\n        'mode'          => (int) $payment->mode,\n        'amount'        => -1 * (float) ($payment->amount ?? 0),\n        ...\n    ]);\n}\n```\n\nBut those mirrored tranches are ALSO mis-bucketed because the same broken applyOrderToTotals is called for mirrors (line 386).\n\nReceiptDataService resolves operator_name at line 70:\n```php\n'operator_name' => optional($order->user)->name,\n```\n\nMirror order is created with user_id = parent.user_id (customer), so receipts for refunds show customer name, not refunding cashier.\n"
+      }
+    ]
+  }
+}
