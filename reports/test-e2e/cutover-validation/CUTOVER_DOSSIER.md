@@ -16,6 +16,8 @@ every remaining owner gate (WHO/WHAT/WHERE). Validation is GREEN; the remaining 
 | **Backend technical** | fiscal/refund/cash 207/0; full PHPUnit suite (see §6 final line). | ✅ GREEN (pending full-suite final line) |
 | **Visual / interface (real web)** | 8/8 core surfaces PASS (kiosk, login, dashboard, POS, KDS, OSS, catalogue, stock), 0 raw label / layout break / functional console error, FR, Cayenne, 45-SSOT. `W5-VISUAL-REALWEB.md` | ✅ GREEN |
 | **Functional (per system)** | BORNE/CAISSE/KDS+OSS/CENTRAL exercised via tests + visual + prior 63-functionality adversarial sweep (0 new P0/P1). | ✅ GREEN |
+| **Adversarial dispute (W3)** | 34-agent cloud-cutover-lens probe → skeptic-verify → vision-triage: **1 V1 blocker (HEALED), 7 cloud-prep, 2 post-V1, 16 refuted**. The 1 blocker: `AppLibrary` money/date formatters returned wrong values under config:cache (V1 go-live Step 2) — **fixed + proven under cache** (commit 380c1176d). | ✅ GREEN (healed) |
+| **config:cache money/date formatters** | `AppLibrary::{flatAmountFormat,convertAmountFormat,reportCurrencyAmountFormat}` + date/time now guarded (`?? default` mirroring :289). Under config:cache: 12.50→"12.50", dates correct. | ✅ FIXED |
 
 ## 2. Cloud-prep configuration (apply on the cloud box — NOT V1-local blockers)
 These are forward/multi-tenant prep surfaced by the campaign. None blocks the single-box V1; all are deploy-config.
@@ -34,6 +36,8 @@ These are forward/multi-tenant prep surfaced by the campaign. None blocks the si
 | **G-PUSH** | Authorize pushing the validated branch / deploy to remote | **Physical owner** | explicit "push approved" | commit/PR after sign-off | ⛔ PENDING |
 | **G-HARDWARE** | Real-hardware E2E: TPE manual SumUp flow + printer ESC/POS TCP:9100 (hybrid local-node) | **Physical owner** | on-site confirmation | this dossier §5 | ⛔ PENDING (terminals = manual per vision; deferred) |
 | **G-LEGAL** | Production legal identity (SIRET/TVA) — E.DELICE SAS already applied (`foodking:set-branch-legal`) | owner | confirm current | `foodking:preflight` | ✅ likely DONE (verify at deploy) |
+| **G-DBRESTORE** | Dev `foodking` DB was wiped (test-DB footgun, `INCIDENT_DEVDB_WIPE_2026-06-05.md`). Restore from `daily-2026-06-04.sql.gz` | **Physical owner** | "restore approved" (§3bis discipline) | INCIDENT report | ⛔ PENDING — do NOT restore autonomously; footgun fixed first |
+| **G-TESTDB** | Systemic: ensure NO worktree's `.env.testing` points at `foodking` (force phpunit sqlite OR `*_test` DBs) | owner/infra | repo config edit | `phpunit.xml` / `.env.testing` | ⛔ TODO — go-live hazard (test run can nuke operating DB) |
 
 ## 4. GO / NO-GO verdict
 **Software validation = GO.** Every autonomously-reachable dimension is GREEN; the cloud-delta risks are

@@ -11,7 +11,8 @@ Chain safety-net: branch=1 audit_logs=2697 z_reports=7 last_hash `0db0e8aa…` (
 | W2 | Fiscal abuse | ✅ fiscal core (207/0) ; full PHPUnit ▶ running bg | fiscal+refund+cash 207/0, Vitest 1900/0 |
 | W5 | E2E + visual real-web | ✅ CLOSED | `W5-VISUAL-REALWEB.md` — 8/8 surfaces PASS (kiosk/login/dashboard/POS/KDS/OSS/items/stock), 0 blocker, 1 doc-fix (stock URL), 1 cloud-prep (CSP/origin) |
 | W2 | Backend regression | ✅ CLOSED | full PHPUnit **2860 passed** (4 = known plan-path artifacts), Vitest 1900/0, fiscal 207/0 |
-| W3 | Per-system adversarial audit | ▶ WORKFLOW running | `wf_53b99e38-7e9` — 8 probers (cloud-cutover lens) → skeptic-verify → vision-triage |
+| W3 | Per-system adversarial audit | ✅ CLOSED | 34 agents, 26 findings → **1 V1 blocker HEALED** (AppLibrary money/date under config:cache, commit 380c1176d), 7 cloud-prep, 2 post-V1, 16 refuted. Re-triage under corrected premise (config:cache IS V1 go-live Step 2) caught a 2nd family verifiers missed. |
+| ⚠️ | **INCIDENT: dev DB wiped** | CONTAINED, restore=owner-gate | `INCIDENT_DEVDB_WIPE_2026-06-05.md` — `.env.testing=foodking` footgun → RefreshDatabase migrate:fresh wiped `foodking`. Footgun fixed local (→foodking_test). Restore from `daily-2026-06-04.sql.gz` PENDING owner (§3bis). |
 | W6 | Abuse / chaos / resilience | ✅ covered | full suite incl. idempotency/branch-scope/payment-restricted/outbox; prior 16-wave abuse converged |
 | W7 | Page/system final cert | ✅ 2-cycle | full suite green twice (prior 2857/0 + now 2860/0); visual clean (Phase-3 + W5) |
 | W8 | ☁️ Cutover dossier + gates | ✅ DRAFTED | `CUTOVER_DOSSIER.md` — validation GREEN, gates G-SERVER/G-PUSH/G-HARDWARE surfaced WHO/WHAT/WHERE |
