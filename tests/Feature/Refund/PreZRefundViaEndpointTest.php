@@ -169,6 +169,22 @@ class PreZRefundViaEndpointTest extends TestCase
         // NO closed Z window covering the order → pre-Z.
         $order = $this->makeOrder($branch, $customer, OrderStatus::DELIVERED, Carbon::now()->subMinutes(5));
 
+        // [M8-01] Stock-tracked line so we can assert the pre-Z refund RELEASES
+        // the decremented stock (via the RefundCreated cascade), exactly like the
+        // post-Z mirror path. on_hand 2 → 1 (decrement) → must return to 2 (refund).
+        $stockItem = \App\Models\Item::factory()->create();
+        \App\Models\OrderItem::query()->create([
+            'order_id' => $order->id, 'branch_id' => $branch->id, 'item_id' => $stockItem->id,
+            'quantity' => 1, 'price' => 1, 'discount' => 0, 'total_price' => 1,
+            'item_variations' => json_encode([]), 'item_extras' => json_encode([]),
+        ]);
+        \App\Models\StockLevel::query()->create([
+            'branch_id' => $branch->id, 'stockable_type' => \App\Models\Item::class,
+            'stockable_id' => $stockItem->id, 'on_hand' => 2, 'reserved' => 0,
+        ]);
+        app(\App\Services\Stock\StockService::class)->decrementForOrder($order->fresh('orderItems'));
+        $this->assertSame(1, (int) \App\Models\StockLevel::where('stockable_id', $stockItem->id)->value('on_hand'));
+
         $admin = $this->newAdmin($branch);
 
         $orderCountBefore = Order::withoutGlobalScopes()->count();
@@ -190,6 +206,25 @@ class PreZRefundViaEndpointTest extends TestCase
             OrderStatus::RETURNED,
             (int) $order->fresh()->status,
             'Pre-Z refund must set the parent order status to RETURNED.'
+        );
+
+        // [M8-01] Pre-Z refund must run the SAME RefundCreated cascade as the post-Z
+        // mirror path: the parent's payment_status flips to REFUNDED (the listener's
+        // pre-Z branch). Before the fix the cascade never fired on pre-Z, leaving
+        // payment_status=PAID and stock/availability un-released.
+        $this->assertSame(
+            \App\Enums\PaymentStatus::REFUNDED,
+            (int) $order->fresh()->payment_status,
+            'Pre-Z refund must dispatch RefundCreated → parent payment_status = REFUNDED.'
+        );
+
+        // [M8-01] Stock RELEASED back via the RefundCreated cascade (on_hand 1 → 2).
+        // Before the fix the pre-Z path never dispatched RefundCreated, so the
+        // decremented stock leaked (never returned on a refund).
+        $this->assertSame(
+            2,
+            (int) \App\Models\StockLevel::where('stockable_id', $stockItem->id)->value('on_hand'),
+            'Pre-Z refund must RELEASE the decremented stock via the RefundCreated cascade (M8-01).'
         );
 
         // cashBack recorded — money returned (a cash_back Transaction row).
