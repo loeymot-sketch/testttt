@@ -14,6 +14,8 @@
 | **M10-01** | Unsessioned cash collection left no queryable trace (transient in-memory flag). Added `orders.cash_movement_skipped_at` (migration) + persist; sessioned records a movement instead. 2 tests. | `6a43f9418` |
 | **M8-01 = FALSE POSITIVE** | Catalog/audit claimed pre-Z refund skips RefundCreated. Disproven: `changeStatus(RETURNED)` → `cashBack()` (OrderService:2166) → `RefundCreated::dispatch` (PaymentService:187) → full cascade. Added regression guards (stock RELEASED + payment_status=REFUNDED). Test-only, no code fix. | `c593b73b5` |
 | **S7-03 (backend)** | `SiteService` wrote APP_DEBUG to .env (prod-boot-failure vector). Removed entirely (ops-managed only); source sentinel locks it. The UI toggle removal is the only remaining cosmetic (frontend batch) — the **risk is closed**. | `a522eb1c9` |
+| **M4-02 (frontend)** | Manual-discount reason lost on cart reload → 422. Added `discountReason` to posCart (state/save/hydrate/getter/mutation/reset) + applyDiscount persists + orderSubmit repopulates. Real-module Vitest 4/4 + 28 regression. Built into bundles (dev rebuild, freshness green). | `7d05f7cdd` |
+| **S1-DASH-01 (frontend)** | Datepicker sent raw JS Date (Carbon-unparseable) → 422 → stale charts. `requestHandler` serializes Dates → YYYY-MM-DD (fixes all 4 dashboard components). Vitest 3/3. Built into bundles. | `9512e0ea2` |
 
 W1 baseline + reconcile: `50df7c9ed`. **All new tests green; frozen-diff = 0.**
 **Full PHPUnit regression: 2848 passed + 4 failures = the documented cross-worktree
@@ -21,13 +23,16 @@ plan-path traceability sentinels (F001/F006/F009/F013) which assert untracked
 `plans/*.md` exist — they PASS in the main checkout (23/23) and are unrelated to
 any code change. 0 real regression.**
 
-## Remaining active P1 = 9 — ⭐ ALL NON-FROZEN BACKEND CLOSED + S7-03 risk neutralized
-Resolved (10): S6-01, S17-01, S10-01, M6-001, M11-01, S11-02, S16-01, M10-01, M8-01 (false-positive), S7-03 (backend).
-Remaining 9 = **0 backend** · **5 frontend, rebuild+visual** (M4-02, M7-02, M1-01, M1-02, S1-DASH-01; + S7-03 UI toggle cosmetic) · **4 frozen-gated, countersign** (M3-01, M3-02 `pos-wizard.js`→prefer server-side; M6-002, S13-02 `ZReportService`) + the G-H `PaymentComponent` fusion.
+## Remaining active P1 = 7 — ⭐ ALL BACKEND + 2 FRONTEND DONE
+Resolved (12): S6-01, S17-01, S10-01, M6-001, M11-01, S11-02, S16-01, M10-01, M8-01 (false-positive), S7-03, **M4-02, S1-DASH-01**.
+Verified: **PHPUnit 2857/0 real · Vitest 1891/0** (3 skip; all sentinels green incl. bundle-freshness + KeyboardNav). Frontend build env validated — fixes are LIVE in the bundles, not "dead".
+Remaining 7 = **3 frontend, rebuild+visual** (M7-02 parked-recall warnings, M1-01 no-sale drawer audit, M1-02 offline cash null; + S7-03 UI toggle cosmetic) · **4 frozen-gated, countersign** (M3-01, M3-02 `pos-wizard.js`→prefer server-side; M6-002, S13-02 `ZReportService`) + the G-H `PaymentComponent` fusion.
 
-### What the remaining 9 require (distinct from no-rebuild backend work)
-- **Frontend 5**: a build env — clone `node_modules` (APFS) + `npm run` to rebuild bundles, then per-fix edit → rebuild → Playwright visual gate. Heavy; a dedicated batch.
-- **Frozen 4 + G-H**: owner **gate-G countersign** (`/lock-plan`) for `ZReportService` (M6-002/S13-02, NF525-critical per the RED split-bucketing finding) + `PaymentComponent` fusion; M3-x prefer a server-side guard (enforce mandatory steps / re-tariff frites in the quote) to avoid touching the frozen wizard.
+### Build-env lessons (this session, for the remaining frontend batch)
+- Clone `node_modules` via APFS (`cp -Rc`, ~13s); `npm run development` (Mix) builds worktree `resources/js`→`public/js`.
+- **`mix` skips rewriting unchanged bundles** → after editing a shared file (appService), some bundles stayed stale; a full rebuild (`prod` force-regenerates all) ensures the fix is actually IN the shipped bundle ("dead fix" guard).
+- **Never run full Vitest in the same script that triggers a build** — bundle-freshness + KeyboardNav (app.css) sentinels read built files and race the in-flight write. Build → settle → THEN Vitest.
+- **Frozen 4 + G-H**: owner **gate-G countersign** (`/lock-plan`) for `ZReportService` (M6-002/S13-02, NF525-critical per the RED split-bucketing finding) + `PaymentComponent` fusion; M3-x prefer a server-side guard to avoid touching the frozen wizard.
 
 ### A. NON-FROZEN backend — next session, PHPUnit-verifiable
 - **W2 operator-identity (NF525 headline)**: M11-01, S11-02, S16-01. `ReceiptDataService.php:70`
