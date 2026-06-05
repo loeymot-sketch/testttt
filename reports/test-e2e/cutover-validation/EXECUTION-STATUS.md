@@ -7,8 +7,8 @@ Chain safety-net: branch=1 audit_logs=2697 z_reports=7 last_hash `0db0e8aa…` (
 |---|---|---|---|
 | W0 | Pre-flight | ✅ CLOSED | backup branch, chain attested, infra UP (8000/8765 200, soketi OPEN, redis PONG), frozen baseline = M6-002 only |
 | W1 | ☁️ Cloud-delta | ✅ CLOSED | `W1-CLOUD-DELTA.md` — **NF525 chain config:cache-SAFE (proven)**, 0 V1 blocker, boot guards fire, 7 findings triaged (CLOUD-PREP/unreachable) |
-| W4 | Sync live under chaos | ▶ NEXT | closes SYNC-E2E-01 (real WS borne→KDS→OSS + degradation/recovery) |
-| W2 | Fiscal abuse | pending | |
+| W4 | Sync live under chaos | ✅ CLOSED | `W4-SYNC-LIVE.md` — **live cascade proven** (OrderCreated #8289 dispatched 5s), SYNC-E2E-01 CLOSED, 2 pending=synthetic test dead-letter, 1 cloud-prep (outbox sweeper SY-3) |
+| W2 | Fiscal abuse | ▶ RUNNING | full fiscal+refund+sentinel + backend regression |
 | W3 | Per-system audit (5) | pending | |
 | W5 | E2E + visual real-web | pending (light re-confirm — passed clean Phase-3) |
 | W6 | Abuse / chaos / resilience | pending |
