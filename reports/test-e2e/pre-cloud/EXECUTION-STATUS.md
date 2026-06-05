@@ -39,10 +39,13 @@ Verified: **Vitest 1895/0** (3 skip; all sentinels green) · **PHPUnit (final ru
   `FritesWizardComposerTest` (frites no-sauce→422, 4/4). Writing the catalog's constraint check would have
   duplicated enforcement + false-rejected (attr#7 Base bol has no profile; shared preview trait). The frozen
   `pos-wizard.js` client-UX gap is cosmetic (server is authority). Detail: `M3-01-CAREFUL-PASS-SPEC.md`.
-- **M3-02** — `pos-wizard.js` (FROZEN). Frites upcharge text-only — needs the wizard (LOCK) or a server-side
-  menu_extras parse. NOTE: `FritesWizardComposerTest` shows the cheddar STYLE upgrade priced correctly when sent
-  as a structured `item_extras{id}` (PricingService re-tariffs → asserts 3,00 €); M3-02's residual risk is only
-  if the frozen wizard sends it as free-text `menu_extras` instead — a frozen-wizard read/fix (gate-G).
+- **M3-02 = ✅ VERIFIED REAL (under-billing), FROZEN.** Code-verified: frites Grande/Cheddar are client-config-
+  priced booleans (pos-wizard.js:90-91,1325-1326,988-989) sent as `menu_extras` TEXT only (4159), no structured
+  `ItemExtra` id (4153). Server proof: `menu_extras` processed by 0 files in `app/`; no pricing code references
+  the frites settings (client-only, blade:132-133). Per NF525 SSOT (§8) the server re-tariffs from structured ids
+  → the +2,00 € upgrade is DROPPED → under-billing + receipt-vs-display mismatch. Fix is frozen either way
+  (wizard sends structured extras → LOCK, or PricingService re-derives → also §7 LOCK). **Revenue leak per
+  frites+upgrade sale — priority gate-G item.** Detail in `GATE-G-LOCK-REQUEST.md` §3.
 - **G-H** — `PaymentComponent.vue` unified-encaissement fusion (you chose "vraie fusion incl. frozen").
 Plus non-P1: S7-03 UI-toggle cosmetic (frontend) + the live branch-push SYNC timing test (soketi up; needs a branch-staff session).
 
