@@ -27,10 +27,19 @@ any code change. 0 real regression.**
   no `creator()` relation; counter-collect cashier is only in the audit log today (S16-01). Decide:
   add `creator()`/`editor()` relations + set collector on counter-collect (no migration needed —
   columns exist) vs audit-chain resolution. NF525-sensitive — careful TDD.
-- **W3 money** (M6-001 ✅ done): M8-01 (PosOrderController two divergent refund paths — pre-Z
-  `isSealed` vs `refundPreZ`, asymmetric side-effects), M10-01 (PaymentService cash-no-drawer
-  backend trail; the modal already surfaces the warning — backend queryable row still missing,
-  NF525-adjacent: design how to record an unsessioned cash collection).
+- **W3 money** (M6-001 ✅ done):
+  - **M8-01 — ⚠️ CATALOG PREMISE INCOMPLETE (verified this session, do NOT apply the catalog recipe blindly).**
+    Cascade mapped: `RefundCreated` → {PersistOrderPaymentStatusChanged, ReleaseStock, ReleaseAvailability}
+    (EventServiceProvider:197-203). Post-Z path dispatches it (`RefundWithCounterEntryService:415`).
+    BUT the pre-Z path `changeStatus(RETURNED)` **already dispatches `OrderCanceled`** for compensating
+    stock release (`OrderService:2277-2282`) → stock IS released pre-Z. So the catalog's "just dispatch
+    RefundCreated on pre-Z" would risk a **DOUBLE stock-release** unless `ReleaseStockOnRefundCreated` +
+    `ReleaseStockOnOrderCanceled` share an idempotent `released_qty` ledger. **Next pass MUST**: (1) verify
+    that idempotency empirically, (2) determine what's truly missing pre-Z (payment_status persist?
+    availability release?) and dispatch ONLY the missing listener(s) — not the whole RefundCreated. NF525/
+    inventory-sensitive → dedicated TDD.
+  - **M10-01** — PaymentService cash-no-drawer backend trail; the modal already surfaces the warning —
+    backend queryable row still missing. NF525-adjacent: design how to record an unsessioned cash collection.
 
 ### B. NON-FROZEN frontend — needs `npm run` rebuild + Playwright visual gate (separate batch)
 - S7-03 (remove App Debug toggle — owner), M4-02 (persist discount_reason on reload — owner),
