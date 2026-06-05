@@ -16,6 +16,9 @@
 | **S7-03 (backend)** | `SiteService` wrote APP_DEBUG to .env (prod-boot-failure vector). Removed entirely (ops-managed only); source sentinel locks it. The UI toggle removal is the only remaining cosmetic (frontend batch) — the **risk is closed**. | `a522eb1c9` |
 | **M4-02 (frontend)** | Manual-discount reason lost on cart reload → 422. Added `discountReason` to posCart (state/save/hydrate/getter/mutation/reset) + applyDiscount persists + orderSubmit repopulates. Real-module Vitest 4/4 + 28 regression. Built into bundles (dev rebuild, freshness green). | `7d05f7cdd` |
 | **S1-DASH-01 (frontend)** | Datepicker sent raw JS Date (Carbon-unparseable) → 422 → stale charts. `requestHandler` serializes Dates → YYYY-MM-DD (fixes all 4 dashboard components). Vitest 3/3. Built into bundles. | `9512e0ea2` |
+| **M1-02 (frontend)** | Offline CASH order enqueued `pos_received_amount=null` → replay 422 → cash sale lost. Offline branch now defaults received = order total (exact cash) for CASH before enqueue. Sentinel + regression. | `42929529d` |
+| **M1-01 (frontend)** | No-sale "Ouvrir tiroir" only called the local hardware bridge (no-op on web) → "Action tracée" unfulfilled. Now POSTs `admin/pos/cash-drawer/open` (printer drawer + F-7 NF525 audit). Sentinel green. | `2ff2d5088` |
+| **M7-02 (frontend)** | Parked-recall silently dropped unavailable items/variations (unconditional success). recall() carries backend warnings; restoreOrder() warns when items/variations were dropped. Sentinel + regression. | `f6a5356ec` |
 
 W1 baseline + reconcile: `50df7c9ed`. **All new tests green; frozen-diff = 0.**
 **Full PHPUnit regression: 2848 passed + 4 failures = the documented cross-worktree
@@ -23,10 +26,14 @@ plan-path traceability sentinels (F001/F006/F009/F013) which assert untracked
 `plans/*.md` exist — they PASS in the main checkout (23/23) and are unrelated to
 any code change. 0 real regression.**
 
-## Remaining active P1 = 7 — ⭐ ALL BACKEND + 2 FRONTEND DONE
-Resolved (12): S6-01, S17-01, S10-01, M6-001, M11-01, S11-02, S16-01, M10-01, M8-01 (false-positive), S7-03, **M4-02, S1-DASH-01**.
-Verified: **PHPUnit 2857/0 real · Vitest 1891/0** (3 skip; all sentinels green incl. bundle-freshness + KeyboardNav). Frontend build env validated — fixes are LIVE in the bundles, not "dead".
-Remaining 7 = **3 frontend, rebuild+visual** (M7-02 parked-recall warnings, M1-01 no-sale drawer audit, M1-02 offline cash null; + S7-03 UI toggle cosmetic) · **4 frozen-gated, countersign** (M3-01, M3-02 `pos-wizard.js`→prefer server-side; M6-002, S13-02 `ZReportService`) + the G-H `PaymentComponent` fusion.
+## Remaining active P1 = 4 — ⭐ ALL NON-FROZEN P1 RESOLVED (15/19)
+Resolved (15): S6-01, S17-01, S10-01, M6-001, M11-01, S11-02, S16-01, M10-01, M8-01 (false-positive), S7-03, M4-02, S1-DASH-01, **M1-02, M1-01, M7-02**.
+Verified: **Vitest 1895/0** (3 skip; all sentinels green) · **PHPUnit (final run in progress, expected ~2857+/0 real)**. Frontend fixes LIVE in rebuilt bundles.
+**Remaining 4 are ALL FROZEN-ZONE → hard §7 rule, need your gate-G countersign (I cannot touch them without a LOCK + countersign):**
+- **M6-002, S13-02** — `ZReportService` (NF525 split-bucketing — *critical*, the RED finding shows split mis-attribution reaching the signed Z).
+- **M3-01, M3-02** — `pos-wizard.js` (strict no-touch). **M3-01 has a likely server-side path** (enforce mandatory-step completeness in `OrderQuoteService`/`PosOrderRequest` against the wizard profile → no frozen touch); **M3-02** (frites upcharge text-only) likely needs the wizard or a server-side payload parse.
+- **G-H** — `PaymentComponent.vue` unified-encaissement fusion (you chose "vraie fusion incl. frozen").
+Plus non-P1: S7-03 UI-toggle cosmetic (frontend) + the live branch-push SYNC timing test (soketi up; needs a branch-staff session).
 
 ### Build-env lessons (this session, for the remaining frontend batch)
 - Clone `node_modules` via APFS (`cp -Rc`, ~13s); `npm run development` (Mix) builds worktree `resources/js`→`public/js`.
