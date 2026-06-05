@@ -28,16 +28,23 @@ any code change. 0 real regression.**
   add `creator()`/`editor()` relations + set collector on counter-collect (no migration needed —
   columns exist) vs audit-chain resolution. NF525-sensitive — careful TDD.
 - **W3 money** (M6-001 ✅ done):
-  - **M8-01 — ⚠️ CATALOG PREMISE INCOMPLETE (verified this session, do NOT apply the catalog recipe blindly).**
-    Cascade mapped: `RefundCreated` → {PersistOrderPaymentStatusChanged, ReleaseStock, ReleaseAvailability}
-    (EventServiceProvider:197-203). Post-Z path dispatches it (`RefundWithCounterEntryService:415`).
-    BUT the pre-Z path `changeStatus(RETURNED)` **already dispatches `OrderCanceled`** for compensating
-    stock release (`OrderService:2277-2282`) → stock IS released pre-Z. So the catalog's "just dispatch
-    RefundCreated on pre-Z" would risk a **DOUBLE stock-release** unless `ReleaseStockOnRefundCreated` +
-    `ReleaseStockOnOrderCanceled` share an idempotent `released_qty` ledger. **Next pass MUST**: (1) verify
-    that idempotency empirically, (2) determine what's truly missing pre-Z (payment_status persist?
-    availability release?) and dispatch ONLY the missing listener(s) — not the whole RefundCreated. NF525/
-    inventory-sensitive → dedicated TDD.
+  - **M8-01 — ✅ CATALOG RECIPE VALIDATED (my earlier "double-release" objection was a MISREAD — corrected
+    by Phase-1 adversarial reasoning-audit, then re-verified by me directly).**
+    CORRECTION: I had claimed pre-Z `changeStatus(RETURNED)` already releases stock via `OrderCanceled`.
+    FALSE — verified line-by-line: the `OrderCanceled` stock-release dispatch (`OrderService:2280`) AND the
+    cashback+loyalty cascade (`:2059-2068`) **both guard on `[CANCELED, REJECTED]` and EXCLUDE RETURNED**.
+    My error was conflating those with the *motif/counter-entry barrier* at `:2232` (which does include
+    RETURNED). A whole-app grep confirms **no `RefundCreated::dispatch` exists for the pre-Z RETURNED path**
+    (only Stripe / PaymentService / RefundWithCounterEntryService dispatch it). So the asymmetry is REAL:
+    pre-Z refunds run NO stock/availability/payment-status cascade. The catalog recipe (dispatch
+    `RefundCreated::dispatch($refunded)` after the successful `changeStatus(RETURNED)` in
+    `PosOrderController::refundPreZ:229`) is VALID and runs the cascade exactly ONCE (no double-release —
+    OrderCanceled never fires for RETURNED; pre-Z and post-Z are exclusive branches).
+    **One open trace before implementing**: `PreZRefundViaEndpointTest:196` asserts a `transactions` row on
+    RETURNED that my cascade reading didn't predict → fully trace the RETURNED cashback path, then TDD a
+    test asserting pre-Z refund releases stock + sets payment_status. NF525/inventory-sensitive → dedicated pass.
+    **LESSON (this session): a grep-based read misled me; the adversary + direct line-by-line read caught it.
+    Always line-by-line verify the exact guard, never infer from a nearby condition.**
   - **M10-01** — PaymentService cash-no-drawer backend trail; the modal already surfaces the warning —
     backend queryable row still missing. NF525-adjacent: design how to record an unsessioned cash collection.
 
