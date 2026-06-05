@@ -31,7 +31,12 @@ Resolved (15): S6-01, S17-01, S10-01, M6-001, M11-01, S11-02, S16-01, M10-01, M8
 Verified: **Vitest 1895/0** (3 skip; all sentinels green) · **PHPUnit (final run in progress, expected ~2857+/0 real)**. Frontend fixes LIVE in rebuilt bundles.
 **Remaining 4 are ALL FROZEN-ZONE → hard §7 rule, need your gate-G countersign (I cannot touch them without a LOCK + countersign):**
 - **M6-002, S13-02** — `ZReportService` (NF525 split-bucketing — *critical*, the RED finding shows split mis-attribution reaching the signed Z).
-- **M3-01, M3-02** — `pos-wizard.js` (strict no-touch). **M3-01 has a likely server-side path** (enforce mandatory-step completeness in `OrderQuoteService`/`PosOrderRequest` against the wizard profile → no frozen touch); **M3-02** (frites upcharge text-only) likely needs the wizard or a server-side payload parse.
+- **M3-01, M3-02** — `pos-wizard.js` (strict no-touch). **M3-01 server-side path EMPIRICALLY PROVEN UNSAFE
+  as the catalog wrote it** (enforcing on `ItemAttribute.min_select` false-rejects bowls #28-32 because
+  attr#7 "Base bol" has NO backing wizard step, and would 422 live kiosk price previews via the shared
+  trait). Correct fix = enforce at the **`ItemWizardStep` layer**, order-creation requests only — a dedicated
+  full-context careful pass. Full landmine recipe + correct shape in `M3-01-CAREFUL-PASS-SPEC.md`. **M3-02**
+  (frites upcharge text-only) likely needs the wizard or a server-side payload parse.
 - **G-H** — `PaymentComponent.vue` unified-encaissement fusion (you chose "vraie fusion incl. frozen").
 Plus non-P1: S7-03 UI-toggle cosmetic (frontend) + the live branch-push SYNC timing test (soketi up; needs a branch-staff session).
 
