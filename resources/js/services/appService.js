@@ -250,7 +250,19 @@ export default {
                 if (i !== 1) {
                     response += "&";
                 }
-                response += request + "=" + requests[request];
+                let value = requests[request];
+                // [S1-DASH-01] The datepicker passes a JS Date; its default
+                // toString() ("Tue Jun 03 2026 00:00:00 GMT+0200 (...)") is
+                // unparseable by the backend Carbon::parse → 422 → the chart
+                // silently keeps the STALE range. Serialize Dates to local
+                // YYYY-MM-DD (Carbon-friendly, timezone-stable, no off-by-one).
+                if (value instanceof Date && !isNaN(value)) {
+                    const y = value.getFullYear();
+                    const m = String(value.getMonth() + 1).padStart(2, '0');
+                    const d = String(value.getDate()).padStart(2, '0');
+                    value = `${y}-${m}-${d}`;
+                }
+                response += request + "=" + value;
             }
             i++;
         }
