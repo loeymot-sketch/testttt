@@ -115,6 +115,33 @@ echo "  OK — at $(git -C "$APP_DIR" rev-parse --short HEAD) on ${LECAYENNE_BRA
 # Re-own the tree to $APP_USER before those steps to avoid EACCES on re-deploys.
 chown -R "${APP_USER}:${APP_GROUP}" "$APP_DIR"
 
+# [CI real-time fix] soketi.json carries the Pusher app keys but is git-tracked
+# with placeholder keys ("app-key"); the reset above reverts the live file, so
+# soketi would then reject the real key the frontend bundle uses (-> KDS/borne
+# fall back to polling). Regenerate it from .env PUSHER_* (the source of truth)
+# so soketi and the browser agree on the key. .env is gitignored => preserved.
+if [[ -f "$APP_DIR/.env" ]]; then
+    _pid=$(grep -E '^PUSHER_APP_ID='     "$APP_DIR/.env" | cut -d= -f2-)
+    _pkey=$(grep -E '^PUSHER_APP_KEY='    "$APP_DIR/.env" | cut -d= -f2-)
+    _psec=$(grep -E '^PUSHER_APP_SECRET=' "$APP_DIR/.env" | cut -d= -f2-)
+    if [[ -n "$_pkey" ]]; then
+        cat > "$APP_DIR/soketi.json" <<SOKETI
+{
+  "debug": false,
+  "host": "127.0.0.1",
+  "port": 6001,
+  "appManager.driver": "array",
+  "appManager.array.apps": [
+    { "id": "${_pid}", "key": "${_pkey}", "secret": "${_psec}", "maxConnections": 200, "enableClientMessages": false, "enabled": true }
+  ]
+}
+SOKETI
+        chown "${APP_USER}:${APP_GROUP}" "$APP_DIR/soketi.json"
+        chmod 640 "$APP_DIR/soketi.json"
+        echo "  OK — soketi.json regenerated from .env PUSHER_* (frontend/soketi key match)."
+    fi
+fi
+
 # ---------- 3. .env scaffold --------------------------------------------------
 
 echo "[3/12] .env setup..."
