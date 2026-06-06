@@ -22,7 +22,13 @@ use Tests\TestCase;
  * missing. This sentinel pins:
  *
  *  (1) Kernel schedule registers `fiscal:close-all-active-branches` daily
- *      at 23:55 Europe/Paris with onOneServer + withoutOverlapping defenses.
+ *      at 23:59 Europe/Paris with onOneServer + withoutOverlapping defenses.
+ *      NOTE [GAP-HUNT 2026-05-25 PROPOSAL-Z-LOOP-GAP Path A]: close was
+ *      tightened 23:55 → 23:59 (and the Z-open partner 00:05 → 00:01) to
+ *      shrink the cross-midnight orphan window (where a fiscal_sequence_no
+ *      could land in no Z) from ~10 min to ~2 min. This sentinel predated
+ *      that change (authored 2026-05-23, never CI-collected) so it kept
+ *      asserting the stale 23:55; aligned to the shipped Kernel here 2026-06-06.
  *  (2) The artisan command class exists, is registered and invokable.
  *  (3) On a "dark" branch (no open Z), the command SKIPS silently and
  *      exits SUCCESS — does NOT throw. This is the critical behavior:
@@ -42,7 +48,7 @@ class ZCloseSafetyNetCronSentinel extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_kernel_registers_z_close_safety_net_lane_at_23_55_paris(): void
+    public function test_kernel_registers_z_close_safety_net_lane_at_23_59_paris(): void
     {
         /** @var Schedule $schedule */
         $schedule = $this->app->make(Schedule::class);
@@ -65,9 +71,10 @@ class ZCloseSafetyNetCronSentinel extends TestCase
         );
 
         $this->assertSame(
-            '55 23 * * *',
+            '59 23 * * *',
             (string) $entry->expression,
-            "Z-close safety-net must run daily at 23:55 (Paris) — same business_date as the transactions."
+            "Z-close safety-net must run daily at 23:59 (Paris) — same business_date as the transactions "
+            . '(GAP-HUNT 2026-05-25 tightened 23:55→23:59 to shrink the cross-midnight orphan window to ~2 min).'
         );
 
         $this->assertSame(

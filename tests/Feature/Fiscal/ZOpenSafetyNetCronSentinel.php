@@ -25,9 +25,14 @@ use Tests\TestCase;
  * This sentinel pins:
  *
  *  (1) Kernel schedule registers `fiscal:open-all-active-branches` daily
- *      at 00:05 Europe/Paris with onOneServer + withoutOverlapping defenses
- *      (mirrors lane #17 G2-HEAL-06 exactly so the close + open pair stays
- *      symmetric).
+ *      at 00:01 Europe/Paris with onOneServer + withoutOverlapping defenses
+ *      (paired with lane #17's 23:59 close so the close+open pair stays
+ *      symmetric). NOTE [GAP-HUNT 2026-05-25 PROPOSAL-Z-LOOP-GAP Path A]:
+ *      open was tightened 00:05 → 00:01 (and close 23:55 → 23:59) to shrink
+ *      the cross-midnight orphan window (where a fiscal_sequence_no could
+ *      land in no Z) from ~10 min to ~2 min. This sentinel predated that
+ *      change (authored 2026-05-24, never CI-collected) so it kept asserting
+ *      the stale 00:05; aligned to the shipped Kernel here 2026-06-06.
  *  (2) The artisan command class exists, is registered and invokable.
  *  (3) On a "dark" branch (no Z reports yet), the command OPENS a new Z
  *      and exits SUCCESS — this is the core behaviour the loop depends on.
@@ -48,7 +53,7 @@ class ZOpenSafetyNetCronSentinel extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_kernel_registers_z_open_safety_net_lane_at_00_05_paris(): void
+    public function test_kernel_registers_z_open_safety_net_lane_at_00_01_paris(): void
     {
         /** @var Schedule $schedule */
         $schedule = $this->app->make(Schedule::class);
@@ -71,10 +76,11 @@ class ZOpenSafetyNetCronSentinel extends TestCase
         );
 
         $this->assertSame(
-            '5 0 * * *',
+            '1 0 * * *',
             (string) $entry->expression,
-            "Z-open safety-net must run daily at 00:05 (Paris) — just after the 23:55 close, "
-            . 'so the new business_date starts with an OPEN Z ready for the morning shift.'
+            "Z-open safety-net must run daily at 00:01 (Paris) — just after the 23:59 close "
+            . '(GAP-HUNT 2026-05-25 tightened 00:05→00:01 to shrink the cross-midnight orphan '
+            . 'window to ~2 min), so the new business_date starts with an OPEN Z ready for the morning shift.'
         );
 
         $this->assertSame(

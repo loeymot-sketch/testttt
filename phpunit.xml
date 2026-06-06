@@ -10,6 +10,20 @@
         </testsuite>
         <testsuite name="Feature">
             <directory suffix="Test.php">./tests/Feature</directory>
+            <!-- [WP-06 2026-06-06 supervisor-audit] Collect authored guard
+                 sentinels named *Sentinel.php / *Parity.php as well. 17 such
+                 files (7 Security + 10 across Fiscal/Migration/Refund/Stripe/
+                 Orders/Database/Deploy) extended TestCase with real assertions
+                 but were SILENTLY NOT COLLECTED because they did not end in
+                 Test.php — authored guards that never ran in CI (the WP-06
+                 finding). Two (ZOpen/ZClose cron) had drifted to a stale
+                 schedule expectation, unnoticed, precisely because they never
+                 ran. Collecting by suffix is the root-cause fix: any future
+                 *Sentinel.php cannot silently re-orphan. Verified safe: no
+                 non-test *Sentinel.php/*Parity.php exists under tests/, and the
+                 suffixes are disjoint from Test.php (no double-collection). -->
+            <directory suffix="Sentinel.php">./tests/Feature</directory>
+            <directory suffix="Parity.php">./tests/Feature</directory>
         </testsuite>
         <!-- [F-017 Suite 7] Stress and load suite (rush midi simulation).
              Lives in tests/load/ per the F-017 plan. Tests are tagged
