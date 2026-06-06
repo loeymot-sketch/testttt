@@ -35,7 +35,7 @@ From `app/Http/Resources/KDSOrderDetailsResource.php:21+` (header fields) + `KDS
 | CAISSE (POS) | `OrderCreated` / `OrderStatusChanged` (collect, status) | KDS, OSS, customer tracker | WS push |
 | KDS | `OrderStatusChanged` (bump/recall) | OSS, customer tracker | WS push |
 | **KDS screen** | — | subscribes `branch.{id}` (chef `branch_id=1`) | Echo private |
-| **OSS public wall** | — | **POLLS, no push** | `OssSyncService.js:9` `intervalMsWhenConnected: 60_000` |
+| **OSS public wall** | — | **POLLS, no push** | service default `OssSyncService.js:9` is `60_000`, but the **public wall overrides to `intervalMsWhenConnected: 5_000`** (`PreparingAndReadyComponent.vue:263`, `isPublicWall`). Authed staff OSS keeps `60_000`. |
 | Customer web/app tracker | — | subscribes `branch.{id}` | Echo private |
 | CENTRAL dashboard | — | passive poll (~60s by design) | REST |
 
@@ -43,11 +43,11 @@ From `app/Http/Resources/KDSOrderDetailsResource.php:21+` (header fields) + `KDS
 - WS push: **~6 ms** (chef channel, living-sync 2026-05-29).
 - End-to-end status change (PREPARING→PREPARED → chef screen): **~512 ms**.
 - Cold first-paint after fix: **2292 → 269 ms** (sync heal F-LAT-01, `block_for=5`).
-- OSS public wall: **up to ~60 s stale** (poll, no push — §5; flagged as a customer-experience weak point).
+- OSS public wall: **up to ~5 s stale** (public wall polls at `intervalMsWhenConnected: 5_000`, healed from the prior ~60 s — §5). Authed staff OSS still ~60 s.
 
 ## 7. Degradation behavior (no data loss is the invariant)
 - **queue:work dies** → broadcasts stop; screens fall back to **poll** (KDS ~30s, admin ~60s) reading `orders` directly → **no data loss**, only latency. `domain_events` pile `dispatched_at=NULL`; `MonitorOutboxStaleness` detects (but only `Log::error` — alerting gap).
-- **soketi dies** → `WebSocketService` flips to UNAVAILABLE (reconnect circuit-breaker) → poll fallback. ⚠️ KDS "polling mode" banner is **suppressed when `APP_ENV=local`** (`KitchenDisplaySystemComponent.vue:1314-1321`) → on the local box the kitchen gets no visual cue.
+- **soketi dies** → `WebSocketService` flips to UNAVAILABLE (reconnect circuit-breaker) → poll fallback. The KDS "polling mode" banner is now **fail-safe-to-visible**: it renders whenever `!wsConnected` (`kdsSuppressFallbackBanner`, `KitchenDisplaySystemComponent.vue:1339`) — the old "hide when `APP_ENV=local`" gate was removed, so the local-box kitchen DOES get a visual cue. (Plus an admin-account-on-KDS hint, KDS-03.)
 - **Outbox** durably persists broadcast intents; crash-claimed orphans detected (`MonitorOutboxStaleness.php:49-102`).
 
 ## 8. Rules for any lane touching sync
