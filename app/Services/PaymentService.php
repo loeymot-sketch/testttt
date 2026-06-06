@@ -599,6 +599,27 @@ class PaymentService
     }
 
     /**
+     * [CASH-01] NF525 cash trail — persist a QUERYABLE marker when cash LEAVES
+     * the drawer (refund/cashback) with NO open session. Symmetric to
+     * flagCashMovementSkipped (the IN-path marker) but DISTINCT column because
+     * an OUT skip OVERSTATES expected cash whereas an IN skip understates it —
+     * the two must surface as separate reconciliation figures, never netted.
+     * Idempotent column write, scoped to the row; withoutEvents avoids
+     * re-firing model observers from this post-hoc hook.
+     */
+    private function flagCashMovementOutSkipped(Order $order): void
+    {
+        if ($order->cash_movement_out_skipped_at === null) {
+            $order->cash_movement_out_skipped_at = now();
+            Order::withoutEvents(function () use ($order) {
+                Order::whereKey($order->id)->update([
+                    'cash_movement_out_skipped_at' => $order->cash_movement_out_skipped_at,
+                ]);
+            });
+        }
+    }
+
+    /**
      * [AUDIT-F-003] Hook side-effect : enregistre le cashback comme movement
      * direction=out sur la session OPEN du caissier (si elle existe). Best-effort.
      */
@@ -606,11 +627,13 @@ class PaymentService
     {
         try {
             if (! Auth::check()) {
+                $this->flagCashMovementOutSkipped($order);
                 return;
             }
             $userId = (int) Auth::id();
             $branchId = (int) ($order->branch_id ?? 0);
             if ($branchId <= 0) {
+                $this->flagCashMovementOutSkipped($order);
                 return;
             }
 
@@ -623,6 +646,7 @@ class PaymentService
                     'branch_id' => $branchId,
                     'user_id'   => $userId,
                 ]);
+                $this->flagCashMovementOutSkipped($order);
                 return;
             }
 

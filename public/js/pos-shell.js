@@ -449,7 +449,7 @@ __webpack_require__.r(__webpack_exports__);
 
 var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
 // Module
-___CSS_LOADER_EXPORT___.push([module.id, "\n.pos-v5-qty[data-v-d6fb30f8] {\n    display: inline-flex;\n    align-items: center;\n    gap: var(--pos-v5-space-1);\n    padding: 3px;\n    background: var(--pos-v5-bg-subtle);\n    border: 1px solid var(--pos-v5-border);\n    border-radius: var(--pos-v5-radius-pill);\n}\n.pos-v5-qty--disabled[data-v-d6fb30f8] {\n    opacity: 0.5;\n    pointer-events: none;\n}\n.pos-v5-qty__btn[data-v-d6fb30f8] {\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    border-radius: var(--pos-v5-radius-pill);\n    background: var(--pos-v5-bg-panel);\n    color: var(--pos-v5-brand-red);\n    border: 1px solid var(--pos-v5-brand-red);\n    font-weight: var(--pos-v5-weight-extrabold);\n    line-height: 1;\n    cursor: pointer;\n    -webkit-appearance: none;\n       -moz-appearance: none;\n            appearance: none;\n    transition: background var(--pos-v5-duration-fast) var(--pos-v5-ease-standard),\n                color var(--pos-v5-duration-fast) var(--pos-v5-ease-standard),\n                border-color var(--pos-v5-duration-fast) var(--pos-v5-ease-standard),\n                transform var(--pos-v5-duration-fast) var(--pos-v5-ease-bounce);\n}\n.pos-v5-qty__btn[data-v-d6fb30f8]:hover:not(:disabled) {\n    background: var(--pos-v5-brand-red);\n    color: var(--pos-v5-ink-on-red);\n    transform: scale(1.06);\n}\n.pos-v5-qty__btn[data-v-d6fb30f8]:active:not(:disabled) {\n    transform: scale(0.96);\n}\n.pos-v5-qty__btn[data-v-d6fb30f8]:disabled {\n    opacity: 0.4;\n    cursor: not-allowed;\n}\n.pos-v5-qty__btn--trash[data-v-d6fb30f8] {\n    color: var(--pos-v5-danger);\n    border-color: var(--pos-v5-danger);\n}\n.pos-v5-qty__btn--trash[data-v-d6fb30f8]:hover:not(:disabled) {\n    background: var(--pos-v5-danger);\n    color: var(--pos-v5-ink-on-red);\n}\n.pos-v5-qty__value[data-v-d6fb30f8] {\n    border: 0;\n    background: transparent;\n    text-align: center;\n    font-family: var(--pos-v5-font-sans);\n    font-weight: var(--pos-v5-weight-extrabold);\n    color: var(--pos-v5-ink);\n    -webkit-appearance: textfield;\n            appearance: textfield;\n    -moz-appearance: textfield;\n    outline: none;\n}\n.pos-v5-qty__value[data-v-d6fb30f8]::-webkit-outer-spin-button,\n.pos-v5-qty__value[data-v-d6fb30f8]::-webkit-inner-spin-button {\n    -webkit-appearance: none;\n    margin: 0;\n}\n.pos-v5-qty__value[data-v-d6fb30f8]:focus {\n    background: var(--pos-v5-bg-panel);\n    border-radius: var(--pos-v5-radius-sm);\n    box-shadow: 0 0 0 2px var(--pos-v5-brand-red-soft);\n}\n\n/* === SIZES === */\n.pos-v5-qty--sm .pos-v5-qty__btn[data-v-d6fb30f8] { width: 22px; height: 22px; font-size: 11px;\n}\n.pos-v5-qty--sm .pos-v5-qty__value[data-v-d6fb30f8] { width: 24px; font-size: 12px; padding: 0 2px;\n}\n.pos-v5-qty--md .pos-v5-qty__btn[data-v-d6fb30f8] { width: 28px; height: 28px; font-size: 13px;\n}\n.pos-v5-qty--md .pos-v5-qty__value[data-v-d6fb30f8] { width: 36px; font-size: 14px; padding: 0 4px;\n}\n.pos-v5-qty--lg .pos-v5-qty__btn[data-v-d6fb30f8] { width: 36px; height: 36px; font-size: 16px;\n}\n.pos-v5-qty--lg .pos-v5-qty__value[data-v-d6fb30f8] { width: 48px; font-size: 16px; padding: 0 6px;\n}\n", ""]);
+___CSS_LOADER_EXPORT___.push([module.id, "\n.pos-v5-qty[data-v-d6fb30f8] {\n    display: inline-flex;\n    align-items: center;\n    gap: var(--pos-v5-space-1);\n    padding: 3px;\n    background: var(--pos-v5-bg-subtle);\n    border: 1px solid var(--pos-v5-border);\n    border-radius: var(--pos-v5-radius-pill);\n}\n.pos-v5-qty--disabled[data-v-d6fb30f8] {\n    opacity: 0.5;\n    pointer-events: none;\n}\n.pos-v5-qty__btn[data-v-d6fb30f8] {\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    border-radius: var(--pos-v5-radius-pill);\n    background: var(--pos-v5-bg-panel);\n    color: var(--pos-v5-brand-red);\n    border: 1px solid var(--pos-v5-brand-red);\n    font-weight: var(--pos-v5-weight-extrabold);\n    line-height: 1;\n    cursor: pointer;\n    -webkit-appearance: none;\n       -moz-appearance: none;\n            appearance: none;\n    transition: background var(--pos-v5-duration-fast) var(--pos-v5-ease-standard),\n                color var(--pos-v5-duration-fast) var(--pos-v5-ease-standard),\n                border-color var(--pos-v5-duration-fast) var(--pos-v5-ease-standard),\n                transform var(--pos-v5-duration-fast) var(--pos-v5-ease-bounce);\n}\n.pos-v5-qty__btn[data-v-d6fb30f8]:hover:not(:disabled) {\n    background: var(--pos-v5-brand-red);\n    color: var(--pos-v5-ink-on-red);\n    transform: scale(1.06);\n}\n.pos-v5-qty__btn[data-v-d6fb30f8]:active:not(:disabled) {\n    transform: scale(0.96);\n}\n.pos-v5-qty__btn[data-v-d6fb30f8]:disabled {\n    opacity: 0.4;\n    cursor: not-allowed;\n}\n.pos-v5-qty__btn--trash[data-v-d6fb30f8] {\n    color: var(--pos-v5-danger);\n    border-color: var(--pos-v5-danger);\n}\n.pos-v5-qty__btn--trash[data-v-d6fb30f8]:hover:not(:disabled) {\n    background: var(--pos-v5-danger);\n    color: var(--pos-v5-ink-on-red);\n}\n.pos-v5-qty__value[data-v-d6fb30f8] {\n    border: 0;\n    background: transparent;\n    text-align: center;\n    font-family: var(--pos-v5-font-sans);\n    font-weight: var(--pos-v5-weight-extrabold);\n    color: var(--pos-v5-ink);\n    -webkit-appearance: textfield;\n            appearance: textfield;\n    -moz-appearance: textfield;\n    outline: none;\n}\n.pos-v5-qty__value[data-v-d6fb30f8]::-webkit-outer-spin-button,\n.pos-v5-qty__value[data-v-d6fb30f8]::-webkit-inner-spin-button {\n    -webkit-appearance: none;\n    margin: 0;\n}\n.pos-v5-qty__value[data-v-d6fb30f8]:focus {\n    background: var(--pos-v5-bg-panel);\n    border-radius: var(--pos-v5-radius-sm);\n    box-shadow: 0 0 0 2px var(--pos-v5-brand-red-soft);\n}\n\n/* === SIZES === */\n/* [POS-ERG-04 FIX] sm stepper buttons raised 22px → 44px to meet the WCAG 2.1\n   touch-target minimum. `sm` is used ONLY by the in-cart stepper\n   (PosComponent.vue cart line) — verified no other consumer — so this does not\n   bloat any other layout. */\n.pos-v5-qty--sm .pos-v5-qty__btn[data-v-d6fb30f8] { width: 44px; height: 44px; font-size: 14px;\n}\n.pos-v5-qty--sm .pos-v5-qty__value[data-v-d6fb30f8] { width: 32px; font-size: 14px; padding: 0 2px;\n}\n.pos-v5-qty--md .pos-v5-qty__btn[data-v-d6fb30f8] { width: 28px; height: 28px; font-size: 13px;\n}\n.pos-v5-qty--md .pos-v5-qty__value[data-v-d6fb30f8] { width: 36px; font-size: 14px; padding: 0 4px;\n}\n.pos-v5-qty--lg .pos-v5-qty__btn[data-v-d6fb30f8] { width: 36px; height: 36px; font-size: 16px;\n}\n.pos-v5-qty--lg .pos-v5-qty__value[data-v-d6fb30f8] { width: 48px; font-size: 16px; padding: 0 6px;\n}\n", ""]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 
@@ -5975,8 +5975,26 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
     floatNumber: function floatNumber(e) {
       return _services_appService__WEBPACK_IMPORTED_MODULE_11__["default"].floatNumber(e);
     },
+    // [POS-ERG-03 FIX] POS-local FR currency formatter. The shared
+    // appService.currencyFormat renders en-US `0.90€` (toFixed → dot decimal,
+    // symbol glued) while the catalogue tiles show backend FR `0,90 €`.
+    // The cart/total/CTA totals went through appService → mismatched the
+    // catalogue. We DO NOT touch the shared appService (used by kiosk/web/
+    // table surfaces); we format FR locally instead: comma decimal, regular
+    // space group separators, a space before the symbol → `0,90 €` /
+    // `1 234,50 €`. Display-only (no call site re-parses this output —
+    // verified: all 5 usages are template interpolation; prices go to the
+    // backend as raw numbers via PricingService).
     currencyFormat: function currencyFormat(amount, decimal, currency, position) {
-      return _services_appService__WEBPACK_IMPORTED_MODULE_11__["default"].currencyFormat(amount, decimal, currency, position);
+      var digits = Number.isFinite(Number(decimal)) ? Number(decimal) : 2;
+      var symbol = currency != null ? String(currency) : '€';
+      var value = parseFloat(amount);
+      var safe = Number.isFinite(value) ? value : 0;
+      var fr = safe.toLocaleString('fr-FR', {
+        minimumFractionDigits: digits,
+        maximumFractionDigits: digits
+      });
+      return "".concat(fr, " ").concat(symbol);
     },
     openCanvas: function openCanvas(id) {
       return _services_appService__WEBPACK_IMPORTED_MODULE_11__["default"].openCanvas(id);
@@ -12213,7 +12231,7 @@ var _hoisted_9 = {
 };
 var _hoisted_10 = ["aria-label"];
 var _hoisted_11 = {
-  "class": "pos-v4-main md:w-[calc(100%-316px)] lg:w-[calc(100%-302px)] xl:w-[calc(100%-376px)]"
+  "class": "pos-v4-main md:w-[calc(100%-364px)] lg:w-[calc(100%-384px)] xl:w-[calc(100%-424px)]"
 };
 var _hoisted_12 = {
   "class": "pos-v5-operator-bar pos-v4-operator-bar",
@@ -12536,7 +12554,7 @@ var _hoisted_117 = {
 };
 var _hoisted_118 = {
   key: 0,
-  "class": "flex h-9 mb-2"
+  "class": "flex h-11 mb-2"
 };
 var _hoisted_119 = {
   "class": "dropdown-group"
@@ -12554,7 +12572,7 @@ var _hoisted_122 = {
   "class": "flex-1 text-start"
 };
 var _hoisted_123 = {
-  "class": "p-2 rounded-lg shadow-xl absolute top-10 ltr:right-0 rtl:left-0 z-10 bg-white transition-all duration-300 origin-top scale-y-0 dropdown-list w-full"
+  "class": "p-2 rounded-lg shadow-xl absolute top-11 ltr:right-0 rtl:left-0 z-10 bg-white transition-all duration-300 origin-top scale-y-0 dropdown-list w-full"
 };
 var _hoisted_124 = ["onClick"];
 var _hoisted_125 = {
@@ -12846,7 +12864,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "suppress-session-invalid": ""
   }), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_LoadingComponent, {
     props: $data.loading
-  }, null, 8 /* PROPS */, ["props"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_11, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("header", _hoisted_12, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_13, [_cache[53] || (_cache[53] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+  }, null, 8 /* PROPS */, ["props"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [POS-ERG-01 FIX] main width reserved to the ACTUAL fixed-cart footprint\n         per breakpoint (cart width + 12px right margin + 12px gap) so the\n         product grid's right column is never occluded by the cart panel:\n         cart md=340 lg=360 xl=400 ⇒ reserve 364 / 384 / 424. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_11, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("header", _hoisted_12, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_13, [_cache[53] || (_cache[53] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
     "class": "pos-v5-operator-bar__crown",
     "aria-hidden": "true"
   }, "👑", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_14, [_cache[51] || (_cache[51] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", {
@@ -13457,7 +13475,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
   }), 128 /* KEYED_FRAGMENT */)), $options.carts.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_116, _toConsumableArray(_cache[79] || (_cache[79] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "class": "pos-v5-cart__empty-icon",
     "aria-hidden": "true"
-  }, "🍽️", -1 /* CACHED */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", null, "Aucun article. Sélectionnez un produit dans la grille.", -1 /* CACHED */)])))) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 8 /* PROPS */, _hoisted_101), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n          [POS-V5] Cart footer — discount block + totals (PosV5TotalRow) +\n          CTA principal \"Encaisser X €\" (Q3 plan : montant intégré au bouton).\n        "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("footer", _hoisted_117, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Discount block "), $options.carts.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_118, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_119, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", _hoisted_120, [$data.discountType === $data.discountTypeEnum.PERCENTAGE ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_121, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.percentage")), 1 /* TEXT */)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_122, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.fixed")), 1 /* TEXT */)), _cache[80] || (_cache[80] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+  }, "🍽️", -1 /* CACHED */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", null, "Aucun article. Sélectionnez un produit dans la grille.", -1 /* CACHED */)])))) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 8 /* PROPS */, _hoisted_101), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n          [POS-V5] Cart footer — discount block + totals (PosV5TotalRow) +\n          CTA principal \"Encaisser X €\" (Q3 plan : montant intégré au bouton).\n        "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("footer", _hoisted_117, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Discount block "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [POS-ERG-05 FIX] discount row raised h-9 (36px) → h-11 (44px);\n                 the dropdown button / input / Apply are h-full so they inherit\n                 the 44px touch-target height. "), $options.carts.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_118, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_119, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", _hoisted_120, [$data.discountType === $data.discountTypeEnum.PERCENTAGE ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_121, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.percentage")), 1 /* TEXT */)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_122, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.fixed")), 1 /* TEXT */)), _cache[80] || (_cache[80] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
     "class": "lab lab-arrow-down-2 lab-font-size-17 mx-1"
   }, null, -1 /* CACHED */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("ul", _hoisted_123, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)([{
     name: _ctx.$t('label.percentage'),

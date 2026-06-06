@@ -196,8 +196,12 @@ export default {
 }
 
 /* === SIZES === */
-.pos-v5-qty--sm .pos-v5-qty__btn { width: 22px; height: 22px; font-size: 11px; }
-.pos-v5-qty--sm .pos-v5-qty__value { width: 24px; font-size: 12px; padding: 0 2px; }
+/* [POS-ERG-04 FIX] sm stepper buttons raised 22px → 44px to meet the WCAG 2.1
+   touch-target minimum. `sm` is used ONLY by the in-cart stepper
+   (PosComponent.vue cart line) — verified no other consumer — so this does not
+   bloat any other layout. */
+.pos-v5-qty--sm .pos-v5-qty__btn { width: 44px; height: 44px; font-size: 14px; }
+.pos-v5-qty--sm .pos-v5-qty__value { width: 32px; font-size: 14px; padding: 0 2px; }
 
 .pos-v5-qty--md .pos-v5-qty__btn { width: 28px; height: 28px; font-size: 13px; }
 .pos-v5-qty--md .pos-v5-qty__value { width: 36px; font-size: 14px; padding: 0 4px; }

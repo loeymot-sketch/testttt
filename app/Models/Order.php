@@ -98,6 +98,8 @@ class Order extends Model implements BroadcastableOrder
         'editor_id' => 'integer',
         // [M10-01] NF525 queryable cash-skip marker
         'cash_movement_skipped_at' => 'datetime',
+        // [CASH-01] NF525 queryable cash-OUT-skip marker (refund/cashback, no session)
+        'cash_movement_out_skipped_at' => 'datetime',
     ];
 
     /**

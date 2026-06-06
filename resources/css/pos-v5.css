@@ -65,7 +65,13 @@
 
 .pos-v5-operator-bar {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    /* [POS-ERG-02 FIX] brand column gets a hard floor (min 180px) so a dense
+       action nav (kiosk-cash + tracker + customer-screen + loyalty + no-sale +
+       cash-session) can never starve the brand/title to 0px. The nav track is
+       minmax(0, auto): it shrinks below its content and wraps within its own
+       column (.__actions already has flex-wrap: wrap) instead of overflowing
+       onto / overlapping the title. */
+    grid-template-columns: minmax(180px, 1fr) minmax(0, auto);
     align-items: center;
     gap: var(--pos-v5-space-5);
     padding: var(--pos-v5-space-3) var(--pos-v5-space-5);
@@ -781,7 +787,9 @@
     align-items: center;
     justify-content: center;
     gap: var(--pos-v5-space-1);
-    min-height: 36px;
+    /* [POS-ERG-05 FIX] order-type segmented items raised 36px → 44px min-height
+       to meet the WCAG 2.1 touch-target minimum. */
+    min-height: 44px;
     padding: var(--pos-v5-space-2) var(--pos-v5-space-3);
     background: transparent;
     border: 0;

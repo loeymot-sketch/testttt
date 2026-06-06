@@ -265,6 +265,21 @@ class CashOverviewController extends AdminController
             $isGlobalAdmin
         );
 
+        // [CASH-01 2026-06-06] Symmetric OUT-skip surfacing. A refund/cashback
+        // that left the drawer with NO open session writes no cash_movement
+        // direction=out → expected cash is OVERSTATED. The skip is marked
+        // durably on the order (cash_movement_out_skipped_at) by
+        // RefundWithCounterEntryService / PaymentService::recordCashBackMovement.
+        // We surface it in a DISTINCT block because IN and OUT skips are
+        // opposite-signed — netting them into one figure would corrupt the
+        // "cash manquant" banner.
+        $unrecordedCashOut = $this->summarizeUnrecordedCashOut(
+            $startBound,
+            $endBound,
+            $branchFilter,
+            $isGlobalAdmin
+        );
+
         return response()->json([
             'status' => true,
             'data'   => CashOverviewTransactionResource::collection($transactions),
@@ -273,6 +288,10 @@ class CashOverviewController extends AdminController
             // Flagged discrepancy block — non-null `count` > 0 means cash was
             // collected with no drawer session and is unaccounted in any session.
             'unrecorded_cash' => $unrecordedCash,
+            // [CASH-01] Symmetric OUT block — cash that LEFT the drawer (refund/
+            // cashback) with no session → expected cash overstated. Kept SEPARATE
+            // from `unrecorded_cash` (opposite sign, never netted).
+            'unrecorded_cash_out' => $unrecordedCashOut,
             'meta'         => [
                 'from'      => $startBound->toIso8601String(),
                 'to'        => $endBound->toIso8601String(),
@@ -355,6 +374,80 @@ class CashOverviewController extends AdminController
             'order_ids'            => $orderIds,
             'message'              => $count > 0
                 ? "{$count} encaissement(s) espèces sans session caisse — montant non rattaché à un fond de caisse (à régulariser)"
+                : null,
+        ];
+    }
+
+    /**
+     * [CASH-01 2026-06-06] Read-side detection of cash that LEFT the drawer
+     * (refund / cashback) with NO open drawer session — the symmetric OUT
+     * counterpart of summarizeUnrecordedCash.
+     *
+     * Unlike the IN path (which keys off cash `payment` Transactions), refunds
+     * and cashbacks do not write a `payment` Transaction, so this detector keys
+     * off the durable marker `orders.cash_movement_out_skipped_at` set by
+     * RefundWithCounterEntryService and PaymentService::recordCashBackMovement
+     * when the OUT cash_movement was skipped. We additionally require that NO
+     * OUT cash_movement was later recorded for the order (defensive: a marker
+     * left while a movement was eventually written should not be re-flagged).
+     *
+     * IMPORTANT: this is OPPOSITE-signed to the IN block — an OUT skip
+     * OVERSTATES expected cash. It is surfaced separately and never netted into
+     * `unrecorded_cash`.
+     *
+     * Pure aggregation, no write. `count == 0` is the healthy case.
+     *
+     * @return array{count:int, total:float, total_currency_price:string, order_ids:array<int,int>, message:?string}
+     */
+    private function summarizeUnrecordedCashOut(
+        Carbon $startBound,
+        Carbon $endBound,
+        ?int $branchFilter,
+        bool $isGlobalAdmin
+    ): array {
+        $query = Order::query()
+            // Window on WHEN THE CASH LEFT THE DRAWER (the refund/cashback
+            // moment), NOT when the order was placed. For the cashback path the
+            // marker sits on the original order, whose created_at may be days
+            // earlier — anchoring on created_at would mis-bucket the gap to a
+            // day on which no cash actually moved. cash_movement_out_skipped_at
+            // is stamped now() at the moment of the skip, the correct OUT analog
+            // of the IN path's Transaction.created_at.
+            ->whereNotNull('cash_movement_out_skipped_at')
+            ->whereBetween('cash_movement_out_skipped_at', [$startBound, $endBound])
+            // Defensive: exclude orders that DID end up with an OUT movement.
+            ->whereNotExists(function ($sub) {
+                $sub->select(\Illuminate\Support\Facades\DB::raw(1))
+                    ->from('cash_movements')
+                    ->whereColumn('cash_movements.order_id', 'orders.id')
+                    ->where('cash_movements.direction', \App\Models\CashMovement::DIRECTION_OUT);
+            })
+            // Livreur cash is reconciled through delivery_boy_cash_movements,
+            // never the drawer — exclude it (cry-wolf guard, mirrors IN path).
+            ->whereNull('delivery_boy_id');
+
+        if ($isGlobalAdmin) {
+            $query->withoutGlobalScope(BranchScope::class);
+        }
+        if ($branchFilter !== null) {
+            $query->where('branch_id', $branchFilter);
+        }
+
+        $rows = $query->get(['id', 'total']);
+
+        $count    = $rows->count();
+        // total kept POSITIVE (magnitude of cash that left the drawer); the
+        // mirror's `total` is negated, so use abs() for the displayed figure.
+        $total    = round((float) $rows->sum(fn ($o) => abs((float) $o->total)), 2);
+        $orderIds = $rows->pluck('id')->filter()->map(fn ($id) => (int) $id)->values()->all();
+
+        return [
+            'count'                => $count,
+            'total'                => $total,
+            'total_currency_price' => \App\Libraries\AppLibrary::currencyAmountFormat($total),
+            'order_ids'            => $orderIds,
+            'message'              => $count > 0
+                ? "{$count} remboursement(s)/rendu(s) espèces sans session caisse — sortie de caisse non rattachée à un fond de caisse (à régulariser)"
                 : null,
         ];
     }

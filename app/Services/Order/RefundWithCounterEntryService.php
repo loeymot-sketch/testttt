@@ -260,6 +260,10 @@ class RefundWithCounterEntryService
             // Reconciliation queries follow `cash_movements.order_id`
             // to the mirror — unambiguous "refund line" semantics.
             $cashService = app(CashDrawerService::class);
+            // [CASH-01] Track whether any CASH refund line left the drawer with
+            // NO open session — those cash-OUT skips would OVERSTATE expected
+            // cash and were previously only Log::info'd (invisible to EOD).
+            $cashOutSkipped = false;
             foreach ($parentPayments as $payment) {
                 /** @var OrderPayment $payment */
                 if ((int) $payment->mode !== PosPaymentMethod::CASH) {
@@ -273,6 +277,7 @@ class RefundWithCounterEntryService
                             'mirror_order_id' => $mirror->id,
                             'payment_id'      => $payment->id,
                         ]);
+                        $cashOutSkipped = true;
                         continue;
                     }
 
@@ -285,6 +290,7 @@ class RefundWithCounterEntryService
                             'branch_id'       => $branchId,
                             'user_id'         => Auth::id(),
                         ]);
+                        $cashOutSkipped = true;
                         continue;
                     }
 
@@ -308,7 +314,22 @@ class RefundWithCounterEntryService
                         'payment_id'      => $payment->id,
                         'error'           => $e->getMessage(),
                     ]);
+                    $cashOutSkipped = true;
                 }
+            }
+
+            // [CASH-01] Persist a durable, QUERYABLE OUT-skip marker on the
+            // mirror (the formal NF525 RETURN_OF entity that the reconciliation
+            // query follows). Mirrors the IN-path's cash_movement_skipped_at so
+            // CashOverviewController::summarizeUnrecordedCashOut can surface
+            // refund cash that left the drawer with no session. Idempotent.
+            if ($cashOutSkipped && $mirror->cash_movement_out_skipped_at === null) {
+                $mirror->cash_movement_out_skipped_at = now();
+                Order::withoutEvents(function () use ($mirror) {
+                    Order::whereKey($mirror->id)->update([
+                        'cash_movement_out_skipped_at' => $mirror->cash_movement_out_skipped_at,
+                    ]);
+                });
             }
 
             // 5) Audit trail — immutable forensic link parent ↔ mirror.

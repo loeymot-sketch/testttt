@@ -553,7 +553,13 @@ textarea:focus-visible,
 
 .pos-v5-operator-bar {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    /* [POS-ERG-02 FIX] brand column gets a hard floor (min 180px) so a dense
+       action nav (kiosk-cash + tracker + customer-screen + loyalty + no-sale +
+       cash-session) can never starve the brand/title to 0px. The nav track is
+       minmax(0, auto): it shrinks below its content and wraps within its own
+       column (.__actions already has flex-wrap: wrap) instead of overflowing
+       onto / overlapping the title. */
+    grid-template-columns: minmax(180px, 1fr) minmax(0, auto);
     align-items: center;
     gap: var(--pos-v5-space-5);
     padding: var(--pos-v5-space-3) var(--pos-v5-space-5);
@@ -1283,7 +1289,9 @@ textarea:focus-visible,
     align-items: center;
     justify-content: center;
     gap: var(--pos-v5-space-1);
-    min-height: 36px;
+    /* [POS-ERG-05 FIX] order-type segmented items raised 36px → 44px min-height
+       to meet the WCAG 2.1 touch-target minimum. */
+    min-height: 44px;
     padding: var(--pos-v5-space-2) var(--pos-v5-space-3);
     background: transparent;
     border: 0;
@@ -6042,6 +6050,9 @@ input:checked + div svg {
 .top-10 {
   top: 2.5rem;
 }
+.top-11 {
+  top: 2.75rem;
+}
 .top-12 {
   top: 3rem;
 }
@@ -10287,8 +10298,8 @@ input[type="search"]::-webkit-search-results-decoration { display: none; }
     width: 340px;
   }
 
-  .md\:w-\[calc\(100\%-316px\)\] {
-    width: calc(100% - 316px);
+  .md\:w-\[calc\(100\%-364px\)\] {
+    width: calc(100% - 364px);
   }
 
   .md\:w-auto {
@@ -10419,8 +10430,8 @@ input[type="search"]::-webkit-search-results-decoration { display: none; }
     width: 930px;
   }
 
-  .lg\:w-\[calc\(100\%-302px\)\] {
-    width: calc(100% - 302px);
+  .lg\:w-\[calc\(100\%-384px\)\] {
+    width: calc(100% - 384px);
   }
 
   .lg\:w-fit {
@@ -10474,8 +10485,8 @@ input[type="search"]::-webkit-search-results-decoration { display: none; }
     width: 400px;
   }
 
-  .xl\:w-\[calc\(100\%-376px\)\] {
-    width: calc(100% - 376px);
+  .xl\:w-\[calc\(100\%-424px\)\] {
+    width: calc(100% - 424px);
   }
 
   .xl\:\!max-w-\[305px\] {

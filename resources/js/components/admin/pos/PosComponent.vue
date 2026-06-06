@@ -72,7 +72,11 @@
     <ConnectionStatusBanner suppress-transient suppress-session-invalid />
     <LoadingComponent :props="loading" />
 
-    <div class="pos-v4-main md:w-[calc(100%-316px)] lg:w-[calc(100%-302px)] xl:w-[calc(100%-376px)]">
+    <!-- [POS-ERG-01 FIX] main width reserved to the ACTUAL fixed-cart footprint
+         per breakpoint (cart width + 12px right margin + 12px gap) so the
+         product grid's right column is never occluded by the cart panel:
+         cart md=340 lg=360 xl=400 ⇒ reserve 364 / 384 / 424. -->
+    <div class="pos-v4-main md:w-[calc(100%-364px)] lg:w-[calc(100%-384px)] xl:w-[calc(100%-424px)]">
         <header class="pos-v5-operator-bar pos-v4-operator-bar" role="banner">
             <div class="pos-v5-operator-bar__brand">
                 <div class="pos-v5-operator-bar__crown" aria-hidden="true">👑</div>
@@ -863,7 +867,10 @@
         -->
         <footer class="pos-v5-cart__foot pos-v4-cart-footer flex-shrink-0">
             <!-- Discount block -->
-            <div v-if="carts.length > 0" class="flex h-9 mb-2">
+            <!-- [POS-ERG-05 FIX] discount row raised h-9 (36px) → h-11 (44px);
+                 the dropdown button / input / Apply are h-full so they inherit
+                 the 44px touch-target height. -->
+            <div v-if="carts.length > 0" class="flex h-11 mb-2">
                 <div class="dropdown-group">
                     <button
                         type="button"
@@ -875,7 +882,7 @@
                         <i class="lab lab-arrow-down-2 lab-font-size-17 mx-1"></i>
                     </button>
                     <ul
-                        class="p-2 rounded-lg shadow-xl absolute top-10 ltr:right-0 rtl:left-0 z-10 bg-white transition-all duration-300 origin-top scale-y-0 dropdown-list w-full"
+                        class="p-2 rounded-lg shadow-xl absolute top-11 ltr:right-0 rtl:left-0 z-10 bg-white transition-all duration-300 origin-top scale-y-0 dropdown-list w-full"
                     >
                         <li
                             class="flex items-center gap-2 py-1 px-2.5 rounded-md cursor-pointer hover:bg-[var(--pos-v5-brand-red-soft)]"
@@ -3359,8 +3366,26 @@ export default {
         floatNumber: function (e) {
             return appService.floatNumber(e);
         },
+        // [POS-ERG-03 FIX] POS-local FR currency formatter. The shared
+        // appService.currencyFormat renders en-US `0.90€` (toFixed → dot decimal,
+        // symbol glued) while the catalogue tiles show backend FR `0,90 €`.
+        // The cart/total/CTA totals went through appService → mismatched the
+        // catalogue. We DO NOT touch the shared appService (used by kiosk/web/
+        // table surfaces); we format FR locally instead: comma decimal, regular
+        // space group separators, a space before the symbol → `0,90 €` /
+        // `1 234,50 €`. Display-only (no call site re-parses this output —
+        // verified: all 5 usages are template interpolation; prices go to the
+        // backend as raw numbers via PricingService).
         currencyFormat: function (amount, decimal, currency, position) {
-            return appService.currencyFormat(amount, decimal, currency, position);
+            const digits = Number.isFinite(Number(decimal)) ? Number(decimal) : 2;
+            const symbol = currency != null ? String(currency) : '€';
+            const value = parseFloat(amount);
+            const safe = Number.isFinite(value) ? value : 0;
+            const fr = safe.toLocaleString('fr-FR', {
+                minimumFractionDigits: digits,
+                maximumFractionDigits: digits,
+            });
+            return `${fr} ${symbol}`;
         },
         openCanvas: function (id) {
             return appService.openCanvas(id);

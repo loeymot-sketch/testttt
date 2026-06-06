@@ -62,6 +62,26 @@ class CashDrawerController extends AdminController
                         'user_id'    => $userId,
                         'printer_id' => $printerId,
                     ]);
+
+                    // [CASH-03] With no open session there is no CashMovement to
+                    // anchor the pop in the audit chain — yet a no-sale hardware
+                    // drawer pop is exactly the event NF525 forensics + the
+                    // i18n "Action tracée" promise require to be recorded.
+                    // Write a session-less audit_logs row directly so the gap is
+                    // closed. branch_id is guaranteed > 0 by the outer guard, so
+                    // AuditLogService::write will not hit its null-branch reject.
+                    app(\App\Services\Fiscal\AuditLogService::class)->write([
+                        'branch_id'   => $branchId,
+                        'user_id'     => $userId,
+                        'action'      => 'pos.cash_drawer.no_sale_pop',
+                        'resource'    => 'cash_drawer',
+                        'resource_id' => $printerId,
+                        'payload'     => [
+                            'reason'     => 'no_open_session',
+                            'printer_id' => $printerId,
+                            'source'     => 'hardware_drawer_pop',
+                        ],
+                    ]);
                 }
             } catch (Throwable $e) {
                 // Forensic write must never block the hardware response.
