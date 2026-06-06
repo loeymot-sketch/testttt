@@ -79,7 +79,13 @@ class LoyaltyController extends Controller
                 $user = User::where('phone', $phone)->first();
             }
 
-            if ($user && $user->status == 1) {
+            // [SUPERVISOR-AUDIT 2026-06-06] Accept BOTH legacy status 1 AND Status::ACTIVE (5)
+            // via the canonical isCustomerActive() helper. The POS add-customer form persists
+            // status=5, so the prior `== 1` gate 404'd caisse-created customers, leaving the
+            // lazy-mint dead and the owner's caisse-keyed loyalty accrual functionally broken.
+            // Sibling sites (scan()/isCustomerActive :884-888, PosRedemptionService :114-128)
+            // already accepted 1-or-5; this aligns check()/balance() with them.
+            if ($user && $this->isCustomerActive($user)) {
                 // Ensure the user has a loyalty code (may have registered by phone only)
                 if (!$user->loyalty_code) {
                     $user->loyalty_code = strtoupper(substr(md5(uniqid()), 0, 8));
