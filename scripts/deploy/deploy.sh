@@ -108,6 +108,13 @@ git -C "$APP_DIR" fetch origin
 git -C "$APP_DIR" reset --hard "origin/${LECAYENNE_BRANCH}"
 echo "  OK — at $(git -C "$APP_DIR" rev-parse --short HEAD) on ${LECAYENNE_BRANCH}"
 
+# [CI ownership fix] git ran as root, so any file it (re)wrote — e.g. public/*
+# bundles reverted from a prior `mix --production` build, or .git internals — is
+# now root-owned. The composer/npm/artisan steps below run as $APP_USER (www-data)
+# and must be able to overwrite them (mix rewrites public/mix-manifest.json).
+# Re-own the tree to $APP_USER before those steps to avoid EACCES on re-deploys.
+chown -R "${APP_USER}:${APP_GROUP}" "$APP_DIR"
+
 # ---------- 3. .env scaffold --------------------------------------------------
 
 echo "[3/12] .env setup..."
