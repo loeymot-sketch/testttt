@@ -160,7 +160,7 @@ function ScreenHome({ go, name = 'Ikyes' }) {
                   {it.tags[0] && <div style={{ position: 'absolute', top: 8, left: 8 }}><Tag t={it.tags[0]}/></div>}
                 </div>
                 <div style={{ marginTop: 8, fontSize: 13, fontWeight: 700 }}>{it.name}</div>
-                <div style={{ fontSize: 13, color: 'var(--orange)', fontWeight: 700, fontFamily: 'var(--font-mono)' }}>{it.price.toFixed(2).replace('.', ',')} €</div>
+                <div style={{ fontSize: 13, color: 'var(--orange-text)', fontWeight: 700, fontFamily: 'var(--font-mono)' }}>{it.price.toFixed(2).replace('.', ',')} €</div>
               </div>
             ))}
           </div>
@@ -180,7 +180,7 @@ function ScreenHome({ go, name = 'Ikyes' }) {
                   <div style={{ position: 'absolute', bottom: 8, left: 8 }}><Tag t="TOP"/></div>
                 </div>
                 <div style={{ marginTop: 6, fontSize: 12, fontWeight: 700 }}>{it.name}</div>
-                <div style={{ fontSize: 12, color: 'var(--orange)', fontWeight: 700, fontFamily: 'var(--font-mono)' }}>{it.price.toFixed(2).replace('.', ',')} €</div>
+                <div style={{ fontSize: 12, color: 'var(--orange-text)', fontWeight: 700, fontFamily: 'var(--font-mono)' }}>{it.price.toFixed(2).replace('.', ',')} €</div>
               </div>
             ))}
           </div>
@@ -280,9 +280,10 @@ function ScreenMenu({ go, cart, addToCart }) {
       {/* sticky cart bar */}
       {cart.length > 0 && (
         <div style={{ position: 'absolute', left: 16, right: 16, bottom: 96, zIndex: 8 }}>
-          <button onClick={() => go('cart')} className="lc-btn" style={{ background: 'var(--orange)', color: '#fff', width: '100%', height: 56, justifyContent: 'space-between', padding: '0 20px' }}>
+          {/* [W3 HEAL r2 P1-A11Y contrast] white-on-orange fill ≈3.1:1 (fail) → ink text (6.35:1); badge stays orange-text on white circle. */}
+          <button onClick={() => go('cart')} className="lc-btn" style={{ background: 'var(--orange)', color: 'var(--ink)', width: '100%', height: 56, justifyContent: 'space-between', padding: '0 20px' }}>
             <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span style={{ background: '#fff', color: 'var(--orange)', width: 24, height: 24, borderRadius: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700 }}>{cart.length}</span>
+              <span style={{ background: '#fff', color: 'var(--orange-text)', width: 24, height: 24, borderRadius: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700 }}>{cart.length}</span>
               Voir le panier
             </span>
             <span>{cart.reduce((s,i) => s+i.price*i.qty, 0).toFixed(2).replace('.', ',')} €</span>
@@ -389,8 +390,8 @@ function ScreenItem({ go, itemId, addToCart }) {
         <div style={{ padding: '24px 20px 0' }}>
           <div style={{ display: 'flex', gap: 6, marginBottom: 10, alignItems: 'center', flexWrap: 'wrap' }}>
             {(item.tags || []).map(t => <Tag key={t} t={t}/>)}
-            {item.is_halal && <span className="lc-pill" style={{ background: 'var(--green)', color: '#fff', fontSize: 9 }}>HALAL</span>}
-            {item.is_vegetarian && <span className="lc-pill" style={{ background: 'var(--green)', color: '#fff', fontSize: 9 }}>VEGGIE</span>}
+            {item.is_halal && <span className="lc-pill" style={{ background: 'var(--green-dark)', color: '#fff', fontSize: 9 }}>HALAL</span>}
+            {item.is_vegetarian && <span className="lc-pill" style={{ background: 'var(--green-dark)', color: '#fff', fontSize: 9 }}>VEGGIE</span>}
             <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--gray-4)', display: 'flex', alignItems: 'center', gap: 4, marginLeft: 'auto' }}>
               <I.StarFilled size={14} stroke="var(--orange)"/> 4.8
             </span>
@@ -410,7 +411,7 @@ function ScreenItem({ go, itemId, addToCart }) {
             <div style={{ marginTop: 24 }}>
               <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 10 }}>
                 <h3 className="lc-display" style={{ margin: 0, fontSize: 20 }}>Choisis {item.viandes} viande{item.viandes > 1 ? 's' : ''}</h3>
-                <span style={{ fontSize: 10, color: meatsOK ? 'var(--green)' : 'var(--orange-text)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>{meatIds.length}/{item.viandes}</span>
+                <span style={{ fontSize: 10, color: meatsOK ? 'var(--green-text)' : 'var(--orange-text)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>{meatIds.length}/{item.viandes}</span>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
                 {lcMenu.meats.map(m => {
@@ -448,7 +449,7 @@ function ScreenItem({ go, itemId, addToCart }) {
                         {s.is_spicy && <span>🌶️</span>}
                         {s.name}
                       </span>
-                      {on && !free && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--orange)', fontWeight: 700 }}>+0,50€</span>}
+                      {on && !free && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--orange-text)', fontWeight: 700 }}>+0,50€</span>}
                     </div>
                   );
                 })}
@@ -469,7 +470,7 @@ function ScreenItem({ go, itemId, addToCart }) {
                   return (
                     // [test-e2e fix B-005 round-2 2026-05-11] longhand to avoid React warning
                     <div key={c.id} onClick={() => toggleCrudite(c.id)} style={{ padding: '12px 8px', borderRadius: 12, border: on ? '2px solid var(--green)' : '2px solid var(--gray-2)', background: on ? '#E8F8ED' : 'var(--cream)', cursor: 'pointer', textAlign: 'center', textDecorationLine: on ? 'none' : 'line-through', textDecorationColor: 'var(--gray-3)' }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: on ? 'var(--green)' : 'var(--gray-3)' }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: on ? 'var(--green-text)' : 'var(--gray-3)' }}>
                         {on ? '✓' : '✕'} {c.name}
                       </div>
                     </div>
@@ -493,7 +494,7 @@ function ScreenItem({ go, itemId, addToCart }) {
                     <div key={s.id} className="lc-toggle-row" onClick={() => toggleSupplement(s.id)}>
                       <div style={{ flex: 1 }}>
                         <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)' }}>{s.name}</div>
-                        <div style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--orange)', fontWeight: 700, marginTop: 2 }}>+ {s.price.toFixed(2).replace('.', ',')} €</div>
+                        <div style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--orange-text)', fontWeight: 700, marginTop: 2 }}>+ {s.price.toFixed(2).replace('.', ',')} €</div>
                       </div>
                       <div className={`lc-checkbox ${on ? 'lc-checkbox--on' : ''}`}>
                         {on && <I.Check size={12} stroke="#fff" sw={3}/>}
@@ -519,7 +520,7 @@ function ScreenItem({ go, itemId, addToCart }) {
                     <div key={f.id || 'none'} onClick={() => setFormuleId(f.id)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', borderRadius: 12, border: on ? '2px solid var(--orange)' : '1.5px solid var(--gray-1)', background: on ? 'var(--orange-soft)' : 'var(--cream)', cursor: 'pointer' }}>
                       <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>{f.name}</span>
                       <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        {f.price > 0 && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--orange)', fontWeight: 700 }}>+ {f.price.toFixed(2).replace('.', ',')} €</span>}
+                        {f.price > 0 && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--orange-text)', fontWeight: 700 }}>+ {f.price.toFixed(2).replace('.', ',')} €</span>}
                         <span style={{ width: 18, height: 18, borderRadius: 999, border: on ? '5px solid var(--orange)' : '2px solid var(--gray-2)', background: '#fff' }}/>
                       </span>
                     </div>
@@ -705,7 +706,7 @@ function ScreenCart({ go, cart, setCart }) {
               )}
               <div className="lc-display" style={{ fontSize: 36, lineHeight: 1 }}>{total.toFixed(2).replace('.', ',')} €</div>
               {discount > 0 && (
-                <div data-testid="cart-discount-line" aria-live="polite" style={{ fontSize: 11, color: 'var(--green, #1FA653)', fontWeight: 700, marginTop: 2 }}>
+                <div data-testid="cart-discount-line" aria-live="polite" style={{ fontSize: 11, color: 'var(--green-text)', fontWeight: 700, marginTop: 2 }}>
                   Économie <span data-testid="cart-discount-amount">{discount.toFixed(2).replace('.', ',')} €</span> (code {promoCode})
                 </div>
               )}
@@ -893,7 +894,7 @@ function ScreenOrders({ go }) {
             )}
             {groups.map((g, gi) => (
               <div key={(g.date || '') + '-' + gi} style={{ marginBottom: 16 }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--orange)', letterSpacing: '0.22em', marginBottom: 8, paddingLeft: 4 }}>● {dateLabel(g.date)}</div>
+                <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--orange-text)', letterSpacing: '0.22em', marginBottom: 8, paddingLeft: 4 }}>● {dateLabel(g.date)}</div>
                 <div style={{ display: 'grid', gap: 8 }}>
                   {g.items.map(o => {
                     const summary = o.items_summary || (Array.isArray(o.items) ? o.items.map(i => i.name).join(' · ') : '');
@@ -906,11 +907,11 @@ function ScreenOrders({ go }) {
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                               <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--gray-3)' }}>#{o.id}</span>
                               <span style={{ width: 4, height: 4, borderRadius: 999, background: 'var(--gray-2)' }}/>
-                              <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--green)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>✓ {statusLabel}</span>
+                              <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--green-text)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>✓ {statusLabel}</span>
                             </div>
                             <div style={{ fontSize: 14, fontWeight: 700, lineHeight: 1.3 }}>{summary}</div>
                             <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 10 }}>
-                              <span style={{ fontFamily: 'var(--font-display)', fontSize: 22, color: 'var(--orange)' }}>{fmtEur(o.total)}</span>
+                              <span style={{ fontFamily: 'var(--font-display)', fontSize: 22, color: 'var(--orange-text)' }}>{fmtEur(o.total)}</span>
                               <span style={{ fontSize: 10, color: 'var(--gray-3)', fontWeight: 600 }}>+{points} pts</span>
                             </div>
                           </div>
@@ -1230,13 +1231,13 @@ function ScreenLoyalty({ go }) {
                   const missing = unlocked ? 0 : tier - balance;
                   return (
                     <div key={tier} data-testid={'reward-row-' + tier} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 14, background: unlocked ? '#E8F8ED' : 'var(--cream)', borderRadius: 14, border: unlocked ? '1.5px solid var(--green)' : '1.5px solid transparent' }}>
-                      <div style={{ width: 44, height: 44, borderRadius: 10, background: unlocked ? 'var(--green)' : 'var(--ink)', color: unlocked ? '#fff' : 'var(--yellow)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-display)', fontSize: 14, flexShrink: 0 }}>{tier}</div>
+                      <div style={{ width: 44, height: 44, borderRadius: 10, background: unlocked ? 'var(--green-dark)' : 'var(--ink)', color: unlocked ? '#fff' : 'var(--yellow)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-display)', fontSize: 14, flexShrink: 0 }}>{tier}</div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: 13, fontWeight: 700 }}>{matchingReward.icon} {matchingReward.name}</div>
                         <div style={{ fontSize: 11, color: 'var(--gray-4)', marginTop: 2 }}>{unlocked ? '✓ Disponible' : missing + ' pts manquants'}</div>
                       </div>
                       {unlocked && (
-                        <button onClick={() => go('redeem', { reward: matchingReward.id || tier })} data-testid={'reward-redeem-btn-' + tier} style={{ background: 'var(--green)', color: '#fff', border: 0, padding: '8px 14px', borderRadius: 999, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>UTILISER</button>
+                        <button onClick={() => go('redeem', { reward: matchingReward.id || tier })} data-testid={'reward-redeem-btn-' + tier} style={{ background: 'var(--green-dark)', color: '#fff', border: 0, padding: '8px 14px', borderRadius: 999, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>UTILISER</button>
                       )}
                     </div>
                   );

@@ -641,7 +641,7 @@
   font-weight: 700;
   font-size: 14px;
 }
-.rdl-hist-pts.earn  { color: var(--green); }
+.rdl-hist-pts.earn  { color: var(--green-text); } /* W3-r2 AA: green-as-small-text (was --green 3.16:1 fail) */
 .rdl-hist-pts.spend { color: var(--red); }
 
 

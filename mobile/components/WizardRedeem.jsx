@@ -162,11 +162,11 @@
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--gray-4)' }}>
                     <span>Coût</span>
-                    <span style={{ fontWeight: 700, color: 'var(--orange)' }}>−{reward.points_cost} pts</span>
+                    <span style={{ fontWeight: 700, color: 'var(--orange-text)' }}>−{reward.points_cost} pts</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 6, borderTop: '2px solid var(--ink)', marginTop: 6, fontSize: 13 }}>
                     <span style={{ fontWeight: 700 }}>Solde après</span>
-                    <span className="lc-display" style={{ fontSize: 22, color: balanceAfter >= 0 ? 'var(--green)' : 'var(--red)' }}>{balanceAfter} pts</span>
+                    <span className="lc-display" style={{ fontSize: 22, color: balanceAfter >= 0 ? 'var(--green-text)' : 'var(--red)' }}>{balanceAfter} pts</span>
                   </div>
                 </div>
 
