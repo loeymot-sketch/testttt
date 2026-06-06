@@ -56,24 +56,22 @@ jobs:
           printf '%s\n' "${{ secrets.DEPLOY_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
           chmod 644 ~/.ssh/known_hosts
 
-      - name: Remote deploy (git pull + deploy.sh on the VPS)
+      - name: Remote deploy (sudo deploy.sh on the VPS)
         env:
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
           DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
           DEPLOY_PATH: ${{ vars.DEPLOY_PATH || '/var/www/lecayenne' }}
-          GIT_SHA: ${{ github.sha }}
         run: |
-          ssh -o BatchMode=yes "${DEPLOY_USER}@${DEPLOY_HOST}" bash -seo pipefail <<REMOTE
-            set -euo pipefail
-            cd "${DEPLOY_PATH}"
-            echo "Deploying ${GIT_SHA} to \$(hostname)"
-            git fetch --prune origin
-            git checkout --force "${GIT_SHA}"
-            # deploy.sh: backup -> composer --no-dev -> npm production -> migrate --force
-            #            -> config:cache/route:cache/view:cache -> boot dry-run -> restart workers
-            bash scripts/deploy/deploy.sh
-            php artisan fiscal:verify-chain --all
-          REMOTE
+          # The VPS app dir is root-owned; deploy.sh is designed to run under sudo
+          # and does its OWN git (fetch + reset --hard origin/<branch>) then
+          # composer --no-dev -> npm ci + mix --production -> migrate --force ->
+          # config/route/view cache -> boot dry-run -> restart supervisor/nginx ->
+          # NF525 fiscal:verify-chain. ubuntu has passwordless sudo (no requiretty).
+          # .env is gitignored and preserved across deploys (DB creds, FISCAL_*,
+          # PUSHER_*, MIX_PUSHER_*, STAFF_ONLY_MODE), so real-time + staff-only mode
+          # survive; the npm rebuild re-bakes the MIX_PUSHER bundle from .env.
+          ssh -o BatchMode=yes "${DEPLOY_USER}@${DEPLOY_HOST}" \
+            "sudo LECAYENNE_REPO_URL='git@github.com:loeymot-sketch/testttt.git' LECAYENNE_BRANCH='production' APP_DIR='${DEPLOY_PATH}' bash ${DEPLOY_PATH}/scripts/deploy/deploy.sh"
 
       - name: Post-deploy health check
         env:
