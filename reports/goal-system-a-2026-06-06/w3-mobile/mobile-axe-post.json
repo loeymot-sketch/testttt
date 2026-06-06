@@ -1,0 +1,384 @@
+[
+  {
+    "surface": "07 Home",
+    "label": "07 Home",
+    "summary": {
+      "critical": 0,
+      "serious": 0,
+      "moderate": 30,
+      "minor": 0
+    },
+    "violations": [
+      {
+        "id": "heading-order",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "Heading levels should only increase by one",
+        "targets": [
+          {
+            "target": [
+              "div:nth-child(4) > div > div:nth-child(1) > div > .lc-display"
+            ],
+            "html": "<h3 class=\"lc-display\" style=\"margin: 12px 0px 4px; font-size: 30px; line-height: 0.9;\">SANDWICH CAYENNE<br></h3>"
+          }
+        ]
+      },
+      {
+        "id": "region",
+        "impact": "moderate",
+        "nodes": 29,
+        "help": "All page content should be contained by landmarks",
+        "targets": [
+          {
+            "target": [
+              ".lc-screen > div:nth-child(1) > div"
+            ],
+            "html": "<div style=\"position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; gap: 2px;\">"
+          },
+          {
+            "target": [
+              ".lc-screen > div:nth-child(2)"
+            ],
+            "html": "<div style=\"padding: 6px 20px 14px;\">"
+          },
+          {
+            "target": [
+              ".lc-marquee"
+            ],
+            "html": "<div class=\"lc-marquee\" style=\"background: var(--orange); padding: 12px 0px;\">"
+          },
+          {
+            "target": [
+              "div:nth-child(4) > div > div:nth-child(1) > div"
+            ],
+            "html": "<div>"
+          },
+          {
+            "target": [
+              "div:nth-child(4) > div > div:nth-child(2)"
+            ],
+            "html": "<div style=\"width: 150px; position: relative;\">"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "surface": "08 Menu",
+    "label": "08 Menu",
+    "summary": {
+      "critical": 0,
+      "serious": 0,
+      "moderate": 150,
+      "minor": 0
+    },
+    "violations": [
+      {
+        "id": "heading-order",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "Heading levels should only increase by one",
+        "targets": [
+          {
+            "target": [
+              "div:nth-child(3) > div:nth-child(1) > h3"
+            ],
+            "html": "<h3 class=\"lc-display\" style=\"margin: 0px; font-size: 24px;\">🥖 Sandwich Cayenne</h3>"
+          }
+        ]
+      },
+      {
+        "id": "landmark-unique",
+        "impact": "moderate",
+        "nodes": 2,
+        "help": "Landmarks should have a unique role or role/label/title (i.e. accessible name) combination",
+        "targets": [
+          {
+            "target": [
+              "div:nth-child(3) > div:nth-child(2) > div:nth-child(1) > div:nth-child(2) > div:nth-child(1) > div[aria-label=\"Allergènes : Gluten\"][role=\"region\"]"
+            ],
+            "html": "<div role=\"region\" aria-label=\"Allergènes : Gluten\" style=\"display: inline-flex; align-items: center; gap: 4px; padding: 2px 6px; background: var(--cream); border-radius: 999px; font-size: 9px; color:"
+          },
+          {
+            "target": [
+              "div:nth-child(10) > div:nth-child(2) > div:nth-child(1) > div:nth-child(2) > div:nth-child(1) > div[aria-label=\"Allergènes : Lactose\"][role=\"region\"]"
+            ],
+            "html": "<div role=\"region\" aria-label=\"Allergènes : Lactose\" style=\"display: inline-flex; align-items: center; gap: 4px; padding: 2px 6px; background: var(--cream); border-radius: 999px; font-size: 9px; color"
+          }
+        ]
+      },
+      {
+        "id": "region",
+        "impact": "moderate",
+        "nodes": 147,
+        "help": "All page content should be contained by landmarks",
+        "targets": [
+          {
+            "target": [
+              ".lc-screen > div:nth-child(1) > div"
+            ],
+            "html": "<div><h1 class=\"lc-display\" style=\"margin: 0px; font-size: 52px; line-height: 0.9;\">Menu</h1><div style=\"font-size: 12px; color: var(--gray-3); margin-top: 4px;\">11 catégories · 41 produits</div></div"
+          },
+          {
+            "target": [
+              ".lc-screen > div:nth-child(3) > div:nth-child(1)"
+            ],
+            "html": "<div style=\"display: flex; align-items: baseline; justify-content: space-between; padding: 0px 20px; margin-bottom: 10px;\">"
+          },
+          {
+            "target": [
+              ".lc-screen > div:nth-child(3) > div:nth-child(2) > div:nth-child(1) > div:nth-child(1)"
+            ],
+            "html": "<div style=\"width: 84px; height: 84px; border-radius: 12px; overflow: hidden; flex-shrink: 0; background: rgb(10, 10, 10);\">"
+          },
+          {
+            "target": [
+              "div:nth-child(3) > div:nth-child(2) > div:nth-child(1) > div:nth-child(2) > div:nth-child(1) > .lc-pill"
+            ],
+            "html": "<span class=\"lc-pill\" style=\"background: var(--ink); color: rgb(255, 217, 61); padding: 4px 9px; font-size: 9px;\">SIGNATURE</span>"
+          },
+          {
+            "target": [
+              "div:nth-child(3) > div:nth-child(2) > div:nth-child(1) > div:nth-child(2) > div:nth-child(3)"
+            ],
+            "html": "<div title=\"Sauce Cayenne maison incluse · 1 viande au choix · Crudités · Suppléments optionnels\" ...>"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "surface": "10 Cart",
+    "label": "10 Cart",
+    "summary": {
+      "critical": 0,
+      "serious": 0,
+      "moderate": 19,
+      "minor": 0
+    },
+    "violations": [
+      {
+        "id": "heading-order",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "Heading levels should only increase by one",
+        "targets": [
+          {
+            "target": [
+              "h3"
+            ],
+            "html": "<h3>Pour accompagner ?</h3>"
+          }
+        ]
+      },
+      {
+        "id": "region",
+        "impact": "moderate",
+        "nodes": 18,
+        "help": "All page content should be contained by landmarks",
+        "targets": [
+          {
+            "target": [
+              ".lc-screen > div:nth-child(1) > div:nth-child(2)"
+            ],
+            "html": "<div style=\"flex: 1 1 0%; display: flex; justify-content: center;\"><div style=\"font-size: 13px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase;\">PANIER</div></div>"
+          },
+          {
+            "target": [
+              ".lc-screen > div:nth-child(2)"
+            ],
+            "html": "<div style=\"padding: 8px 20px 0px;\"><h1 class=\"lc-display\" style=\"margin: 0px; font-size: 52px; line-height: 0.9;\">Ta<br>commande</h1><div style=\"margin-top: 8px; font-size: 13px; color: var(--gray-3)"
+          },
+          {
+            "target": [
+              ".lc-screen > div:nth-child(3) > div > div:nth-child(1)"
+            ],
+            "html": "<div style=\"width: 80px; height: 80px; border-radius: 12px; overflow: hidden; flex-shrink: 0; background: var(--ink);\">"
+          },
+          {
+            "target": [
+              "div:nth-child(3) > div > div:nth-child(2) > div:nth-child(1)"
+            ],
+            "html": "<div style=\"font-size: 14px; font-weight: 700;\">Cheddar</div>"
+          },
+          {
+            "target": [
+              "div:nth-child(3) > div > div:nth-child(2) > div:nth-child(2) > span"
+            ],
+            "html": "<span style=\"font-family: var(--font-mono); font-weight: 700; color: var(--orange-text);\">0,90 €</span>"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "surface": "11 Confirmation",
+    "label": "11 Confirmation",
+    "summary": {
+      "critical": 0,
+      "serious": 0,
+      "moderate": 8,
+      "minor": 0
+    },
+    "violations": [
+      {
+        "id": "region",
+        "impact": "moderate",
+        "nodes": 8,
+        "help": "All page content should be contained by landmarks",
+        "targets": [
+          {
+            "target": [
+              "div[data-screen-label=\"11 Confirmation\"] > div:nth-child(1) > div:nth-child(2)"
+            ],
+            "html": "<div style=\"flex: 1 1 0%; display: flex; justify-content: center;\">"
+          },
+          {
+            "target": [
+              "h1"
+            ],
+            "html": "<h1 class=\"lc-display\" style=\"margin: 8px 0px 0px; font-size: 36px; line-height: 0.9;\">C'est parti !</h1>"
+          },
+          {
+            "target": [
+              "p"
+            ],
+            "html": "<p style=\"margin: 4px 0px 0px; font-size: 12px; color: var(--ink);\">Commande <b>#C-5675</b> envoyée</p>"
+          },
+          {
+            "target": [
+              "div:nth-child(1) > div:nth-child(4)"
+            ],
+            "html": "<div style=\"display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; padding: 4px 10px; background: var(--ink); color: var(--yellow); border-radius: 999px; font-size: 9px; font-weight: 70"
+          },
+          {
+            "target": [
+              "div:nth-child(2) > div:nth-child(2) > div:nth-child(3)"
+            ],
+            "html": "<div style=\"display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;\">"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "surface": "12 Orders",
+    "label": "12 Orders",
+    "summary": {
+      "critical": 0,
+      "serious": 0,
+      "moderate": 2,
+      "minor": 0
+    },
+    "violations": [
+      {
+        "id": "region",
+        "impact": "moderate",
+        "nodes": 2,
+        "help": "All page content should be contained by landmarks",
+        "targets": [
+          {
+            "target": [
+              ".lc-screen > div:nth-child(1)"
+            ],
+            "html": "<div style=\"padding: 16px 20px 6px;\"><h1 class=\"lc-display\" style=\"margin: 0px; font-size: 52px; line-height: 0.9;\">Commandes</h1></div>"
+          },
+          {
+            "target": [
+              ".lc-tabs"
+            ],
+            "html": "<div class=\"lc-tabs\" role=\"tablist\" aria-label=\"Navigation principale\">"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "surface": "14 Loyalty",
+    "label": "14 Loyalty",
+    "summary": {
+      "critical": 0,
+      "serious": 0,
+      "moderate": 16,
+      "minor": 0
+    },
+    "violations": [
+      {
+        "id": "region",
+        "impact": "moderate",
+        "nodes": 16,
+        "help": "All page content should be contained by landmarks",
+        "targets": [
+          {
+            "target": [
+              ".lc-screen > div:nth-child(1) > div:nth-child(2) > div:nth-child(2)"
+            ],
+            "html": "<div style=\"flex: 1 1 0%; display: flex; justify-content: center;\"><div style=\"font-size: 11px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase;\">Carte fidélité</div></div>"
+          },
+          {
+            "target": [
+              ".lc-pulse"
+            ],
+            "html": "<div role=\"img\" aria-label=\"Code QR fidélité FK:A1B2C3D4, expire dans 4:59\" class=\"lc-pulse\" style=\"border-radius: 12px; padding: 4px; display: inline-block;\">"
+          },
+          {
+            "target": [
+              "div[data-testid=\"loyalty-qr\"] > div:nth-child(3)"
+            ],
+            "html": "<div style=\"margin-top: 10px; text-align: center;\"><div class=\"lc-eyebrow\" data-testid=\"loyalty-member-number\" style=\"color: var(--gray-4);\">LE CAYENNE FIDÉLITÉ</div><div style=\"font-family: var(--fon"
+          },
+          {
+            "target": [
+              "div[data-testid=\"loyalty-qr-countdown\"]"
+            ],
+            "html": "<div data-testid=\"loyalty-qr-countdown\" role=\"timer\" aria-label=\"Expire dans 4:59\" style=\"margin-top: 10px; di...\">"
+          },
+          {
+            "target": [
+              ".lc-screen > div:nth-child(1) > div:nth-child(4)"
+            ],
+            "html": "<div style=\"margin-top: 14px; text-align: center; font-size: 12px; color: var(--ink); font-weight: 600;\">Présente ce code à la caisse pour ajouter ou utiliser tes points</div>"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "surface": "09 Item Wizard",
+    "label": "09 Item Wizard",
+    "summary": {
+      "critical": 0,
+      "serious": 0,
+      "moderate": 3,
+      "minor": 0
+    },
+    "violations": [
+      {
+        "id": "region",
+        "impact": "moderate",
+        "nodes": 3,
+        "help": "All page content should be contained by landmarks",
+        "targets": [
+          {
+            "target": [
+              ".rdw-title"
+            ],
+            "html": "<div class=\"rdw-title\"><h1 tabindex=\"-1\" style=\"margin: 0px; outline: none;\">Viandes</h1></div>"
+          },
+          {
+            "target": [
+              ".rdw-progress"
+            ],
+            "html": "<div class=\"rdw-progress\" role=\"progressbar\" aria-label=\"Progression de la personnalisation\" aria-valuenow=\"1\" aria-valuemin=\"1\" aria-valuemax=\"5\" aria-valuetext=\"Étape 1 sur 5\">"
+          },
+          {
+            "target": [
+              "div[role=\"radiogroup\"]"
+            ],
+            "html": "<div role=\"radiogroup\" aria-label=\"Choisis 1 viandes\" style=\"display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;\">"
+          }
+        ]
+      }
+    ]
+  }
+]

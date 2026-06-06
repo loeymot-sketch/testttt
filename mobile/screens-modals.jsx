@@ -78,6 +78,15 @@ function ScreenStripe({ go, total = 33 }) {
           <div className="lc-display" style={{ fontSize: 44, lineHeight: 0.9, color: 'var(--ink)' }}>{total.toFixed(2).replace('.', ',')} €</div>
           <div style={{ fontSize: 12, color: 'var(--gray-3)', marginTop: 4 }}>Réservé sur ta CB jusqu'au retrait</div>
         </div>
+        {/* [W3 HEAL P1-HONESTY 2026-06-06] §0.2 mock boundary — this prototype is
+            decoupled: no real charge / no PSP. Reuse the wallet/opt-out disclosure
+            pattern (orange pill + cream info box). */}
+        <div style={{ margin: '14px 20px 0', background: 'var(--cream)', borderRadius: 12, padding: 12 }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', background: 'var(--orange)', color: 'var(--ink)', borderRadius: 999, fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase' }}>DÉMO</div>
+          <div style={{ marginTop: 8, fontSize: 11, color: 'var(--gray-4)', lineHeight: 1.5 }}>
+            Paiement & commande <b style={{ color: 'var(--ink)' }}>non synchronisés</b> — prototype de démonstration. Aucune carte n'est débitée, aucune commande n'est envoyée en cuisine.
+          </div>
+        </div>
         <div style={{ margin: '20px 20px 0', padding: 18, background: 'var(--cream)', borderRadius: 18 }}>
           <label style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--gray-3)' }}>Numéro de carte</label>
           <div style={{ marginTop: 8, padding: '14px 14px', background: '#fff', borderRadius: 12, fontFamily: 'var(--font-mono)', fontSize: 15, letterSpacing: '0.06em', color: 'var(--ink)', display: 'flex', justifyContent: 'space-between' }}>
@@ -250,8 +259,15 @@ function ScreenOrderDetail({ go, orderId = 'C-1234' }) {
               </div>
               <div className="lc-display" style={{ fontSize: 26, color: 'var(--yellow)' }}>+{Math.round(total)}</div>
             </div>
-            <div style={{ margin: '14px 20px 0', fontSize: 12, color: 'var(--gray-3)', textAlign: 'center' }}>
-              Payé en caisse · Reçu fiscal NF525 #{orderId}-R
+            {/* [W3 HEAL P1-HONESTY 2026-06-06] §0.2 mock boundary — badge ONLY; the
+                NF525 fiscal text is left intact per contract (whether a customer app
+                should show NF525 at all = owner gate G6). The badge marks this as
+                authored mock data, not real fiscal output. */}
+            <div style={{ margin: '14px 20px 0', textAlign: 'center' }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 6, padding: '4px 10px', background: 'var(--orange)', color: 'var(--ink)', borderRadius: 999, fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>DÉMO — non synchronisé</div>
+              <div style={{ fontSize: 12, color: 'var(--gray-3)' }}>
+                Payé en caisse · Reçu fiscal NF525 #{orderId}-R
+              </div>
             </div>
           </>
         ) : (

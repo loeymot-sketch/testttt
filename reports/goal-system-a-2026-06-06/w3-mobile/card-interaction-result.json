@@ -1,0 +1,8 @@
+{
+  "bodyTap": "09 Item Wizard Viandes",
+  "interaction": {
+    "type": "direct-add",
+    "before": "08 Menu",
+    "after": "08 Menu"
+  }
+}

@@ -53,14 +53,21 @@
     const expiringSoon = remainingMs < 60000;
 
     return (
-      <div data-testid="loyalty-qr" data-payload={payload} role="img" aria-label={'Code QR fidélité ' + payload + ', expire dans ' + countdownText}>
+      /* [W3 HEAL P1-A11Y-2 2026-06-06] nested-interactive (axe serious): role="img"
+         must NOT wrap the interactive "Régénérer" <button>. The outer container is now
+         a plain <div> (data-testid/data-payload preserved for tests); role="img" +
+         aria-label moved DOWN to wrap ONLY the visual QR/barcode, so the regen button
+         is a sibling of the image, not a descendant of role="img". */
+      <div data-testid="loyalty-qr" data-payload={payload}>
         {/* SR-only live region for QR refresh announcements */}
         <div ref={liveRegionRef} role="status" aria-live="polite" aria-atomic="true" style={{ position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', border: 0 }} />
-        {/* The actual QR/Barcode visual */}
+        {/* The actual QR/Barcode visual — role="img" scoped to the graphic only */}
         {mode === 'barcode' ? (
-          <window.BarcodeMock value={payload} width={264} height={88} />
+          <div role="img" aria-label={'Code QR fidélité ' + payload + ', expire dans ' + countdownText}>
+            <window.BarcodeMock value={payload} width={264} height={88} />
+          </div>
         ) : (
-          <div className={remainingMs > 0 && !expiringSoon ? 'lc-pulse' : ''} style={{ borderRadius: 12, padding: 4, display: 'inline-block' }}>
+          <div role="img" aria-label={'Code QR fidélité ' + payload + ', expire dans ' + countdownText} className={remainingMs > 0 && !expiringSoon ? 'lc-pulse' : ''} style={{ borderRadius: 12, padding: 4, display: 'inline-block' }}>
             <window.QRMock size={208} value={payload} />
           </div>
         )}

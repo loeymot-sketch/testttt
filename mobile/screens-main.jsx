@@ -154,7 +154,7 @@ function ScreenHome({ go, name = 'Ikyes' }) {
               <div key={it.id} onClick={() => go('item', it.id)} style={{ flex: '0 0 160px', cursor: 'pointer' }}>
                 <div style={{ position: 'relative', height: 160, borderRadius: 16, overflow: 'hidden', background: 'var(--cream)' }}>
                   <Slot id={it.slot} h="100%" radius={0} placeholder={it.name} src={it.image} alt={it.name}/>
-                  <button style={{ position: 'absolute', top: 8, right: 8, width: 32, height: 32, borderRadius: 999, background: '#fff', border: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <button type="button" aria-label={`Ajouter ${it.name} aux favoris`} onClick={e => { e.stopPropagation(); go('toast', { msg: 'Favoris — bientôt disponibles', kind: 'info' }); }} style={{ position: 'absolute', top: 8, right: 8, width: 32, height: 32, borderRadius: 999, background: '#fff', border: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
                     <I.Heart size={16}/>
                   </button>
                   {it.tags[0] && <div style={{ position: 'absolute', top: 8, left: 8 }}><Tag t={it.tags[0]}/></div>}
@@ -241,7 +241,14 @@ function ScreenMenu({ go, cart, addToCart }) {
               </div>
               <div style={{ padding: '0 20px', display: 'grid', gap: 10 }}>
                 {items.map(it => (
-                  <div key={it.id} role="button" tabIndex={0} aria-label={`Voir ${it.name} — ${it.price.toFixed(2).replace('.', ',')} €`} className="lc-tap" onClick={() => go('item', it.id)} onKeyDown={window.lcTapKey(() => go('item', it.id))} style={{ display: 'flex', gap: 14, padding: 12, background: 'var(--cream)', borderRadius: 16, cursor: 'pointer', alignItems: 'center' }}>
+                  /* [W3 HEAL P1-A11Y-2 2026-06-06] nested-interactive (axe serious ×41):
+                     mirror web ItemCard (HEAL T1-09). Outer container drops
+                     role/tabIndex/aria-label/onKeyDown — a plain <div onClick> is NOT
+                     an interactive ARIA node, so the inner +/personnalise <button> is no
+                     longer nested. Whole-card tap survives (onClick kept). The item NAME
+                     becomes the real focusable control (button reset to look like the div),
+                     so keyboard users can reach the detail view. */
+                  <div key={it.id} onClick={() => go('item', it.id)} style={{ display: 'flex', gap: 14, padding: 12, background: 'var(--cream)', borderRadius: 16, cursor: 'pointer', alignItems: 'center' }}>
                     <div style={{ width: 84, height: 84, borderRadius: 12, overflow: 'hidden', flexShrink: 0, background: '#0A0A0A' }}>
                       <Slot id={it.slot} h="100%" radius={0} placeholder={it.name} src={it.image} alt={it.name}/>
                     </div>
@@ -251,11 +258,11 @@ function ScreenMenu({ go, cart, addToCart }) {
                         {/* [D4 EU FIC 1169/2011] Allergens chip — disclosure légale obligatoire */}
                         <AllergenBadge allergens={it.allergens} size="sm"/>
                       </div>
-                      <div style={{ fontSize: 14, fontWeight: 700, lineHeight: 1.2 }}>{it.name}</div>
+                      <button type="button" aria-label={`Voir ${it.name} — ${it.price.toFixed(2).replace('.', ',')} €`} onClick={e => { e.stopPropagation(); go('item', it.id); }} style={{ background: 'transparent', border: 0, padding: 0, color: 'inherit', cursor: 'pointer', font: 'inherit', textAlign: 'left', display: 'block', width: '100%', fontSize: 14, fontWeight: 700, lineHeight: 1.2 }}>{it.name}</button>
                       {/* [test-e2e fix B-004 round-2 2026-05-11] CSS line-clamp 2 + tooltip — no more hard viewport clip */}
                       <div title={it.desc} style={{ fontSize: 11, color: 'var(--gray-4)', marginTop: 2, lineHeight: 1.35, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{it.desc}</div>
                       <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 700, color: 'var(--orange)' }}>{it.price.toFixed(2).replace('.', ',')} €</span>
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 700, color: 'var(--orange-text)' }}>{it.price.toFixed(2).replace('.', ',')} €</span>
                         {/* [Owner re-cadrage 2026-05-11 D3] Quick-add "+" : si item personnalisable (viandes / sauce / suppléments / menu_addon / frites_style),
                             ouvrir le wizard au lieu d'ajouter direct au panier avec composition vide. Pour desserts/boissons/items direct, garder add direct. */}
                         {(it.viandes > 0 || it.has_sauce || it.has_supplements !== false || it.has_menu_addon || it.has_frites_style)
@@ -403,7 +410,7 @@ function ScreenItem({ go, itemId, addToCart }) {
             <div style={{ marginTop: 24 }}>
               <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 10 }}>
                 <h3 className="lc-display" style={{ margin: 0, fontSize: 20 }}>Choisis {item.viandes} viande{item.viandes > 1 ? 's' : ''}</h3>
-                <span style={{ fontSize: 10, color: meatsOK ? 'var(--green)' : 'var(--orange)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>{meatIds.length}/{item.viandes}</span>
+                <span style={{ fontSize: 10, color: meatsOK ? 'var(--green)' : 'var(--orange-text)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>{meatIds.length}/{item.viandes}</span>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
                 {lcMenu.meats.map(m => {
@@ -647,7 +654,7 @@ function ScreenCart({ go, cart, setCart }) {
                     <span className="lc-stepper-val" aria-live="polite" aria-atomic="true">{it.qty}</span>
                     <button onClick={() => updateQty(idx, +1)} aria-label={`Augmenter la quantité de ${it.name}`}>+</button>
                   </div>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--orange)' }}>{(it.price*it.qty).toFixed(2).replace('.', ',')} €</span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--orange-text)' }}>{(it.price*it.qty).toFixed(2).replace('.', ',')} €</span>
                 </div>
               </div>
               <button onClick={() => remove(idx)} aria-label={`Retirer ${it.name} du panier`} style={{ background: 'transparent', border: 0, color: 'var(--gray-3)', cursor: 'pointer' }}><I.Trash size={16}/></button>
@@ -705,8 +712,11 @@ function ScreenCart({ go, cart, setCart }) {
             </div>
             <span style={{ fontSize: 11, color: 'var(--gray-3)' }}>TVA incluse</span>
           </div>
-          <button onClick={() => go('confirm')} className="lc-btn" style={{ marginTop: 10, background: 'var(--orange)', color: '#fff', width: '100%', height: 60, justifyContent: 'space-between', padding: '0 24px' }}>
-            Valider ma commande <I.Arrow size={18}/>
+          {/* [W3 HEAL P1-A11Y contrast 2026-06-06] white-on-orange fill = ~3:1 (fail).
+              Keep brand orange fill, switch label/arrow to ink (#0A0A0A on orange ≈ 6.5:1).
+              Mirrors the existing dark-on-bright pattern of .lc-btn--yellow. */}
+          <button onClick={() => go('confirm')} className="lc-btn" style={{ marginTop: 10, background: 'var(--orange)', color: 'var(--ink)', width: '100%', height: 60, justifyContent: 'space-between', padding: '0 24px' }}>
+            Valider ma commande <I.Arrow size={18} stroke="var(--ink)"/>
           </button>
         </div>
       )}
@@ -723,7 +733,9 @@ function ScreenConfirm({ go, order }) {
   const orderEta = (order && order.eta) || '—';
   return (
     <div data-screen-label="11 Confirmation" style={{ position: 'absolute', inset: 0, background: '#FFD93D', display: 'flex', flexDirection: 'column', paddingTop: 'var(--ios-safe-top)' }}>
-      <ScreenHeader left={<IconBtn bg="var(--ink)" color="#fff" onClick={() => go('home')} ariaLabel="Fermer la confirmation"><I.Close size={18}/></IconBtn>} center={<Logo size={12}/>}/>
+      {/* [W3 HEAL P1-A11Y contrast 2026-06-06] confirm bg = yellow #FFD93D; the Logo's
+          default accent #C2410C on yellow ≈ 3:1 (fail). Pass accent=ink for this header. */}
+      <ScreenHeader left={<IconBtn bg="var(--ink)" color="#fff" onClick={() => go('home')} ariaLabel="Fermer la confirmation"><I.Close size={18}/></IconBtn>} center={<Logo size={12} accent="var(--ink)"/>}/>
       <div style={{ flex: 1, padding: '4px 20px 20px', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ width: 56, height: 56, borderRadius: 999, background: 'var(--ink)', color: 'var(--orange)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxShadow: '4px 4px 0 var(--paper)' }}>
@@ -731,6 +743,9 @@ function ScreenConfirm({ go, order }) {
           </div>
           <h1 className="lc-display" style={{ margin: '8px 0 0', fontSize: 36, lineHeight: 0.9 }}>C'est parti !</h1>
           <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--ink)' }}>Commande <b>#{orderId}</b> envoyée</p>
+          {/* [W3 HEAL P1-HONESTY 2026-06-06] §0.2 mock boundary — the order is NOT
+              actually sent to the kitchen in this decoupled prototype. */}
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 8, padding: '4px 10px', background: 'var(--ink)', color: 'var(--yellow)', borderRadius: 999, fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>DÉMO — commande non synchronisée</div>
         </div>
         {/* QR ticket card */}
         <div style={{ marginTop: 12, background: '#fff', borderRadius: 18, padding: 14, position: 'relative' }}>
@@ -751,7 +766,7 @@ function ScreenConfirm({ go, order }) {
             </div>
             <div style={{ textAlign: 'right' }}>
               <div style={{ fontSize: 9, color: 'var(--gray-3)', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Total</div>
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, color: 'var(--orange)' }}>{orderTotal.toFixed(2).replace('.', ',')} €</div>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, color: 'var(--orange-text)' }}>{orderTotal.toFixed(2).replace('.', ',')} €</div>
             </div>
           </div>
         </div>
@@ -769,7 +784,7 @@ function ScreenConfirm({ go, order }) {
         </div>
         <div style={{ marginTop: 'auto', display: 'flex', gap: 8, paddingTop: 10 }}>
           <button onClick={() => go('home')} style={{ flex: 1, background: 'var(--ink)', color: '#fff', border: 0, height: 50, borderRadius: 999, fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', cursor: 'pointer' }}>Accueil</button>
-          <button onClick={() => go('orders')} className="lc-btn" style={{ background: 'var(--orange)', color: '#fff', flex: 1.6, height: 50, fontSize: 12 }}>Suivre →</button>
+          <button onClick={() => go('orders')} className="lc-btn" style={{ background: 'var(--orange)', color: 'var(--ink)', flex: 1.6, height: 50, fontSize: 12 }}>Suivre →</button>
         </div>
       </div>
     </div>
@@ -834,7 +849,9 @@ function ScreenOrders({ go }) {
                 <div key={o.id} role="button" tabIndex={0} aria-label={`Commande ${o.id} en cours — voir détails`} className="lc-tap" onClick={() => go('orderDetail', o.id)} onKeyDown={window.lcTapKey(() => go('orderDetail', o.id))} style={{ background: 'var(--ink)', color: '#fff', borderRadius: 20, padding: 20, position: 'relative', overflow: 'hidden', cursor: 'pointer', marginBottom: 12 }}>
                   <div style={{ position: 'absolute', top: -20, right: -20, width: 140, height: 140, opacity: 0.06 }}><I.Pepper size={140} stroke="#FF5A1F"/></div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span className="lc-pill" style={{ background: 'var(--orange)', color: '#fff' }}><span className="lc-status-dot" style={{ background: '#fff' }}/> {statusLabel}</span>
+                    {/* [W3 HEAL P1-A11Y contrast 2026-06-06] white-on-orange pill ≈ 3:1 (fail).
+                        Keep brand orange fill, switch label+dot to ink (≈ 6.5:1). */}
+                    <span className="lc-pill" style={{ background: 'var(--orange)', color: 'var(--ink)' }}><span className="lc-status-dot" style={{ background: 'var(--ink)' }}/> {statusLabel}</span>
                     <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'rgba(255,255,255,0.6)' }}>#{o.id}</span>
                   </div>
                   <div className="lc-display" style={{ fontSize: 36, marginTop: 14, color: 'var(--yellow)' }}>~{eta} MIN</div>
@@ -1103,7 +1120,7 @@ function ScreenLoyalty({ go }) {
                   <span>{balance} / {progress.target.points_cost} pts</span>
                   <span style={{ color: 'var(--yellow)' }}>{progress.target.name.toUpperCase()}</span>
                 </div>
-                <div role="progressbar" aria-valuenow={balance} aria-valuemax={progress.target.points_cost} aria-valuetext={balance + ' sur ' + progress.target.points_cost + ' points'} style={{ height: 8, background: 'rgba(255,255,255,0.12)', borderRadius: 999, overflow: 'hidden', position: 'relative' }}>
+                <div role="progressbar" aria-label="Progression vers la prochaine récompense" aria-valuenow={balance} aria-valuemax={progress.target.points_cost} aria-valuetext={balance + ' sur ' + progress.target.points_cost + ' points'} style={{ height: 8, background: 'rgba(255,255,255,0.12)', borderRadius: 999, overflow: 'hidden', position: 'relative' }}>
                   <div style={{ width: progress.pct + '%', height: '100%', background: 'linear-gradient(90deg, var(--yellow), var(--orange))' }}/>
                 </div>
                 <div style={{ marginTop: 8, fontSize: 12, fontWeight: 600 }}>
