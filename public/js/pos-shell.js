@@ -6648,6 +6648,14 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
               this.loading.isActive = false;
               if (queued) {
                 _services_alertService__WEBPACK_IMPORTED_MODULE_15__["default"].info("Commande mise en file d'attente (".concat(this.queueDepth, "). Synchronisation auto au retour r\xE9seau."));
+                // [OFF-02 FIX 2026-06-06] Clear the cart after a successful
+                // offline enqueue, mirroring the online success path. Without
+                // this the cart stays populated and a second pay click while
+                // still offline fires a SECOND enqueue (fresh idempotency key)
+                // → double order + double cash line on replay. resetCart()
+                // dispatches posCart/resetCart, clears form.token,
+                // resetDeliveryInline() and nulls currentLoyaltyOrder.
+                this.resetCart();
               } else {
                 _services_alertService__WEBPACK_IMPORTED_MODULE_15__["default"].warning('File d\'attente offline pleine. Réessayez à la reconnexion.');
               }

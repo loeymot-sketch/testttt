@@ -3923,6 +3923,14 @@ export default {
                     this.loading.isActive = false;
                     if (queued) {
                         alertService.info(`Commande mise en file d'attente (${this.queueDepth}). Synchronisation auto au retour réseau.`);
+                        // [OFF-02 FIX 2026-06-06] Clear the cart after a successful
+                        // offline enqueue, mirroring the online success path. Without
+                        // this the cart stays populated and a second pay click while
+                        // still offline fires a SECOND enqueue (fresh idempotency key)
+                        // → double order + double cash line on replay. resetCart()
+                        // dispatches posCart/resetCart, clears form.token,
+                        // resetDeliveryInline() and nulls currentLoyaltyOrder.
+                        this.resetCart();
                     } else {
                         alertService.warning('File d\'attente offline pleine. Réessayez à la reconnexion.');
                     }
