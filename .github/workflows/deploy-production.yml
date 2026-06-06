@@ -70,8 +70,11 @@ jobs:
           # .env is gitignored and preserved across deploys (DB creds, FISCAL_*,
           # PUSHER_*, MIX_PUSHER_*, STAFF_ONLY_MODE), so real-time + staff-only mode
           # survive; the npm rebuild re-bakes the MIX_PUSHER bundle from .env.
+          # HEALTH_URL points at the public hostname: nginx server_name only
+          # matches the host, so http://127.0.0.1/api/health hits the default
+          # server and 404s even though the app is healthy.
           ssh -o BatchMode=yes "${DEPLOY_USER}@${DEPLOY_HOST}" \
-            "sudo LECAYENNE_REPO_URL='git@github.com:loeymot-sketch/testttt.git' LECAYENNE_BRANCH='production' APP_DIR='${DEPLOY_PATH}' bash ${DEPLOY_PATH}/scripts/deploy/deploy.sh"
+            "sudo HEALTH_URL='https://${DEPLOY_HOST}/api/health' LECAYENNE_REPO_URL='git@github.com:loeymot-sketch/testttt.git' LECAYENNE_BRANCH='production' APP_DIR='${DEPLOY_PATH}' bash ${DEPLOY_PATH}/scripts/deploy/deploy.sh"
 
       - name: Post-deploy health check
         env:
