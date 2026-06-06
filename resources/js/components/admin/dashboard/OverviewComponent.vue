@@ -1,6 +1,6 @@
 <template>
     <LoadingComponent :props="loading" />
-    <div class="mb-9">
+    <div class="mb-9" data-testid="overview-widget">
         <h4 class="font-semibold text-[22px] leading-[34px] mb-3 capitalize">{{ $t("menu.overview") }}</h4>
         <div class="row">
             <div class="col-12 sm:col-6 xl:col-4">
@@ -54,40 +54,59 @@ export default {
             total_sales: null,
             total_orders: null,
             total_menu_items: null,
+            // [DASH-01 FIX] Auto-refresh timer handle (mirror RealtimeReportComponent).
+            timer: null,
         };
     },
     mounted() {
+        // Initial load shows the loading overlay…
         this.totalSales();
         this.totalOrders();
         this.totalMenuItems();
+        // [DASH-01 FIX] …then poll every 30s so the headline KPIs do not go
+        // stale until a full reload (siblings RealtimeReport/SlaAlerts already
+        // poll). Timer-driven refreshes are SILENT (no spinner flash).
+        this.timer = setInterval(this.refreshSilently, 30000);
+    },
+    beforeUnmount() {
+        // [DASH-01 FIX] Always clear the interval to avoid a leaked timer /
+        // post-unmount dispatch.
+        clearInterval(this.timer);
     },
     methods: {
-        totalSales: function () {
-            this.loading.isActive = true;
+        // [DASH-01 FIX] Silent refresh used by the interval — never toggles the
+        // loading overlay so the dashboard does not flash a spinner every 30s.
+        refreshSilently: function () {
+            this.totalSales(true);
+            this.totalOrders(true);
+            this.totalMenuItems(true);
+        },
+        totalSales: function (silent = false) {
+            if (!silent) this.loading.isActive = true;
             this.$store.dispatch("dashboard/totalSales").then((res) => {
                 this.total_sales = res.data.data.total_sales;
-                this.loading.isActive = false;
+                if (!silent) this.loading.isActive = false;
             }).catch((err) => {
-                this.loading.isActive = false;
+                if (!silent) this.loading.isActive = false;
             });
         },
 
-        totalOrders: function () {
-            this.loading.isActive = true;
+        totalOrders: function (silent = false) {
+            if (!silent) this.loading.isActive = true;
             this.$store.dispatch("dashboard/totalOrders").then((res) => {
                 this.total_orders = res.data.data.total_orders;
-                this.loading.isActive = false;
+                if (!silent) this.loading.isActive = false;
             }).catch((err) => {
-                this.loading.isActive = false;
+                if (!silent) this.loading.isActive = false;
             });
         },
-        totalMenuItems: function () {
-            this.loading.isActive = true;
+        totalMenuItems: function (silent = false) {
+            if (!silent) this.loading.isActive = true;
             this.$store.dispatch("dashboard/totalMenuItems").then((res) => {
                 this.total_menu_items = res.data.data.total_menu_items;
-                this.loading.isActive = false;
+                if (!silent) this.loading.isActive = false;
             }).catch((err) => {
-                this.loading.isActive = false;
+                if (!silent) this.loading.isActive = false;
             });
         },
     },

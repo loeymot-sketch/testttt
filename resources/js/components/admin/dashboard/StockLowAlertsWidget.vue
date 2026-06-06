@@ -9,7 +9,15 @@
                 </router-link>
             </div>
             <div class="db-card-body">
-                <p v-if="!loading.isActive && alerts.length === 0" class="text-sm text-gray-500">
+                <!-- [DASH-04 FIX] Distinct neutral error state on API failure —
+                     the widget previously swallowed the error into alerts=[] and
+                     showed the reassuring "Aucune alerte stock bas" (false-negative).
+                     Raw FR literal (no new i18n JSON key — out of this lane). -->
+                <div v-if="!loading.isActive && hasError" data-testid="stock-low-alerts-error" class="text-sm text-gray-500 flex items-center gap-2">
+                    <i class="lab lab-warning text-gray-400" aria-hidden="true"></i>
+                    <span>Données indisponibles</span>
+                </div>
+                <p v-else-if="!loading.isActive && alerts.length === 0" data-testid="stock-low-alerts-empty" class="text-sm text-gray-500">
                     {{ $t('label.no_low_alerts') }}
                 </p>
                 <div v-else-if="loading.isActive" class="py-6" />
@@ -51,6 +59,9 @@ export default {
         return {
             loading: { isActive: false },
             alerts: [],
+            // [DASH-04 FIX] Distinguish "fetched OK, genuinely empty" from
+            // "fetch failed" so the template never shows a false 'all good'.
+            hasError: false,
         };
     },
     mounted() {
@@ -90,8 +101,13 @@ export default {
             try {
                 const res = await axios.get('admin/stock/low-alerts');
                 this.alerts = res.data?.alerts ?? [];
+                // [DASH-04 FIX] Success → clear any prior error (self-heal).
+                this.hasError = false;
             } catch (_e) {
+                // [DASH-04 FIX] Flag the error instead of silently rendering an
+                // empty 'no low alerts' reassurance.
                 this.alerts = [];
+                this.hasError = true;
             } finally {
                 this.loading.isActive = false;
             }

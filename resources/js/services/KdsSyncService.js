@@ -238,9 +238,16 @@ export class KdsSyncService {
             return;
         }
 
-        const unsubscribe = this.wsService.on('state_change', ({ from, to } = {}) => {
+        const unsubscribe = this.wsService.on('state_change', (payload = {}) => {
+            // [KDS-01 FIX] The REAL WebSocketService emits { previous, current }
+            // (WebSocketService.js:233), NOT { from, to }. The old destructure
+            // left both undefined against the live service, so the cadence
+            // recompute always fell through to the disconnected branch. Accept
+            // the real field with a back-compat fallback to the legacy shape.
+            const to = payload.to ?? payload.current;
+            const from = payload.from ?? payload.previous;
             this._emit('state_change', { from, to });
-            this._recomputeCadence(this._reasonFromWsState(to || this.wsService.state));
+            this._recomputeCadence(this._reasonFromWsState(this._normalizeWsState(to ?? this._currentWsState())));
         });
 
         this._wsUnsubscribers.push(unsubscribe);
@@ -281,6 +288,51 @@ export class KdsSyncService {
         this._wsUnsubscribers.push(unsubscribeStorm);
     }
 
+    // [KDS-01 FIX] Read the transport state via the REAL public accessor.
+    // The production WebSocketService exposes getState() (WebSocketService.js:122)
+    // and isConnected() (~:118) — it has NO public `.state` property. The old
+    // code read `this.wsService?.state` (always undefined on the live service),
+    // so the whole connected/degraded/disconnected cadence ladder was dead code
+    // and the poller never paused while WS was up. We prefer getState(); the
+    // `.state` fallback keeps the legacy uppercase test doubles working.
+    _currentWsState() {
+        if (this.wsService && typeof this.wsService.getState === 'function') {
+            return this.wsService.getState();
+        }
+        return this.wsService?.state;
+    }
+
+    // [KDS-01 FIX] Normalize BOTH vocabularies into the internal WS_* constants:
+    //   - real service (lowercase): 'connected' / 'connecting' / 'disconnected'
+    //     / 'unavailable' / 'failed' / 'session_invalid' (WebSocketService:38-46)
+    //   - legacy test doubles (uppercase): 'CONNECTED' / 'RECONNECTING' /
+    //     'DEGRADED' / 'DISCONNECTED' / 'SESSION_INVALID'
+    // The real service has no RECONNECTING/DEGRADED — it emits 'connecting' /
+    // 'unavailable' / 'failed', mapped to the degraded/disconnected tiers.
+    // SAFE DEFAULT: anything unknown → DISCONNECTED, i.e. keep polling. We never
+    // pause the safety-net on an unrecognized state.
+    _normalizeWsState(raw) {
+        if (raw === undefined || raw === null) {
+            return WS_DISCONNECTED;
+        }
+        const s = String(raw).toUpperCase();
+        switch (s) {
+            case 'CONNECTED':
+                return WS_CONNECTED;
+            case 'CONNECTING':
+            case 'RECONNECTING':
+            case 'DEGRADED':
+                return WS_RECONNECTING;
+            case 'SESSION_INVALID':
+                return WS_SESSION_INVALID;
+            case 'DISCONNECTED':
+            case 'UNAVAILABLE':
+            case 'FAILED':
+            default:
+                return WS_DISCONNECTED;
+        }
+    }
+
     _reasonFromWsState(state) {
         if (state === WS_CONNECTED) {
             return 'ws_connected';
@@ -295,7 +347,11 @@ export class KdsSyncService {
     }
 
     _baseCadence() {
-        const wsState = this.wsService?.state;
+        // [KDS-01 FIX] Resolve via the real accessor + normalize both
+        // vocabularies so the connected→Infinity / degraded→~5s /
+        // disconnected→~10s ladder is actually live against the production
+        // WebSocketService (was dead code reading a non-existent `.state`).
+        const wsState = this._normalizeWsState(this._currentWsState());
         const cfg = this._cadenceOptions;
 
         if (wsState === WS_CONNECTED) {
@@ -384,6 +440,17 @@ export class KdsSyncService {
                 to: this._currentIntervalMs,
                 reason: 'backoff_5xx',
             });
+        } else {
+            // [KDS-02 FIX] Non-5xx HTTP errors (401 token mid-rotation, 403,
+            // 404, 429 rate-limit) reach _handleHttpError from inside the try
+            // block, so the catch-path _schedule() never runs. The finite
+            // _timer is a one-shot whose callback does NOT re-arm itself —
+            // continuation depends on forceSync() rescheduling. Without this
+            // reschedule a single transient 401/429 permanently HALTS the
+            // fallback poller and the kitchen silently loses its degradation
+            // safety-net. We re-arm at the CURRENT cadence (no back-off
+            // mutation — a 401 is not a server-overload signal like a 5xx).
+            this._schedule();
         }
 
         this._emit('error', {

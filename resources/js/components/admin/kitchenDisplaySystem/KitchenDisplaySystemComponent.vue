@@ -38,7 +38,7 @@
     :offline-since="v2OfflineSince"
     :list-at-cap="kdsOrderListAtCap"
     :fallback-mode="!wsConnected && !kdsSuppressFallbackBanner"
-    :admin-polling-hint="kdsIsCentralAdmin"
+    :admin-polling-hint="kdsIsCentralAdmin || kdsAdminNoPush"
     :bump-local-only-notice="!kdsHideBumpInfo"
     :auto-transition-enabled="v2AutoTransitionEnabled"
     :recall-active-ids="recallActiveIds"
@@ -93,8 +93,15 @@
       @click="dismissKdsErrorBanner"
     >✕</button>
   </div>
+  <!--
+    [KDS-03 FIX] OR kdsAdminNoPush so an admin account (branch_id<=0) on the
+    legacy KDS — which gets ZERO live push (subscribeEcho early-returns) — sees
+    the polling hint even on a single-branch install where kdsIsCentralAdmin is
+    suppressed by the branchCount>1 gate. Reuses label.kds_admin_polling_hint
+    ("Mode admin centralisé …"), no new i18n key, no security-logic change.
+  -->
   <div
-    v-if="kdsIsCentralAdmin"
+    v-if="kdsIsCentralAdmin || kdsAdminNoPush"
     class="kds-hint-banner kds-hint-banner--info"
     role="status"
   >
@@ -1363,6 +1370,22 @@ export default {
         // Fail-safe: if config probe throws, do NOT show the misleading banner.
         return false;
       }
+    },
+    // [KDS-03 FIX] An admin account (branch_id <= 0) viewing the KDS
+    // early-returns from subscribeEcho() (the branch Echo channel is
+    // branch-scoped), so it receives ZERO live push. But the WS transport is
+    // still 'connected' → wsConnected is true → the fallback banner stays
+    // hidden → the kitchen is SILENTLY blind to the missing real-time feed.
+    //
+    // kdsIsCentralAdmin is intentionally gated on branchCount > 1 (sentinel
+    // WT-B-R1-007) so on single-branch Le Cayenne the admin sees nothing. This
+    // computed is the TRUE degraded condition — admin-account-on-KDS, branch
+    // count irrelevant — and is OR-wired into both admin-polling banners so the
+    // degraded state is VISIBLE ("Mode admin centralisé …" / SYNC · ADMIN).
+    // We do NOT change the branch-scoping security early-return; we only make
+    // the already-degraded state explicit to the chef.
+    kdsAdminNoPush() {
+      return this.authBranchId() <= 0;
     },
     /** 45–49: backend plafond 50 — avertir avant d’atteindre la limite d’affichage */
     kdsOrderApproachingCap() {

@@ -1497,7 +1497,7 @@ import PosCashDrawerSessionDialog from "../cash/PosCashDrawerSessionDialog.vue";
 // shell so the cashier sees MODE DÉGRADÉ + queue depth + manual flush. Server
 // remains SSOT for fiscal_sequence_no (NF525 CLAUDE.md §8) — we only stash
 // item_id / quantity / option_ids / total_cents until reconnect.
-import { usePosOfflineState } from "../../../composables/usePosOfflineState";
+import { usePosOfflineState, shouldEnqueueOnSubmitFailure } from "../../../composables/usePosOfflineState";
 
 // [Phase-6 / T10–T12] Recherche menu, lecteur code-barres + F-keys, debounce,
 // `SkeletonGrid` sur chargement grille — perçu perfo (spinners discrets) ; pas de
@@ -2225,9 +2225,27 @@ export default {
         // the case where network came back without a clean offline→online edge
         // (e.g. flaky DNS, captive portal) and gives an upper bound on stale
         // cash sales sitting in IndexedDB.
-        this.bindAutoFlush(axios.post);
+        // [OFF-03 FIX 2026-06-06] Pass a result notifier so the composable's
+        // own online-event auto-flush tells the cashier when a background replay
+        // FAILED (it used to swallow the result silently). Reuses the same
+        // alertService messages as the manual "Synchroniser" button.
+        this.bindAutoFlush(axios.post, (res) => this.notifyAutoFlushResult(res));
         this._posOfflineFlushTimer = setInterval(() => {
-            try { this.tryFlush(axios.post); } catch (_e) { /* defensive */ }
+            try {
+                // [OFF-03 FIX] Route the 30s interval flush result through the
+                // same notifier, but in HEARTBEAT mode (silent on failed>0). A
+                // persistently-failing entry (sustained outage / repeated 5xx)
+                // would otherwise raise the "…en échec…" warning every 30s
+                // forever — the opposite of non-intrusive. Failure is surfaced on
+                // the high-value moments instead: the online-event edge (composable
+                // listener) and the manual "Synchroniser" button. The interval may
+                // still report a SUCCESS (synced>0) — that is a one-shot good-news
+                // toast, not a recurring nag.
+                const p = this.tryFlush(axios.post);
+                if (p && typeof p.then === 'function') {
+                    p.then((res) => this.notifyAutoFlushResult(res, { heartbeat: true })).catch(() => {});
+                }
+            } catch (_e) { /* defensive */ }
         }, 30000);
         // Initial flush attempt at mount (covers reload-while-offline-queue-pending).
         try { this.refreshOfflineQueue && this.refreshOfflineQueue(); } catch (_e) { /* defensive */ }
@@ -3933,41 +3951,96 @@ export default {
             // at replay time per NF525 CLAUDE.md §8) and toast soft so the
             // cashier knows the order will sync when network returns.
             if (typeof navigator !== 'undefined' && navigator.onLine === false) {
-                try {
-                    // [M1-02] Offline CASH orders need a numeric pos_received_amount or
-                    // every replay 422s (PosOrderRequest requires it for CASH) and the
-                    // cash sale is silently lost. The payment modal can't open offline,
-                    // so default to exact cash = order total (cashier reconciles on sync).
-                    if ((this.checkoutProps.form.pos_received_amount === null
-                            || this.checkoutProps.form.pos_received_amount === undefined
-                            || this.checkoutProps.form.pos_received_amount === '')
-                        && Number(this.checkoutProps.form.pos_payment_method) === posPaymentMethodEnum.CASH) {
-                        this.checkoutProps.form.pos_received_amount = Number(this.grandTotal) || Number(this.checkoutProps.form.total) || 0;
-                    }
-                    const queued = await this.enqueueOrder({ ...this.checkoutProps.form });
-                    this.loading.isActive = false;
-                    if (queued) {
-                        alertService.info(`Commande mise en file d'attente (${this.queueDepth}). Synchronisation auto au retour réseau.`);
-                        // [OFF-02 FIX 2026-06-06] Clear the cart after a successful
-                        // offline enqueue, mirroring the online success path. Without
-                        // this the cart stays populated and a second pay click while
-                        // still offline fires a SECOND enqueue (fresh idempotency key)
-                        // → double order + double cash line on replay. resetCart()
-                        // dispatches posCart/resetCart, clears form.token,
-                        // resetDeliveryInline() and nulls currentLoyaltyOrder.
-                        this.resetCart();
-                    } else {
-                        alertService.warning('File d\'attente offline pleine. Réessayez à la reconnexion.');
-                    }
-                } catch (_e) {
-                    this.loading.isActive = false;
-                    alertService.error('Impossible de mettre la commande en file d\'attente offline.');
-                }
+                await this.enqueueCurrentCheckout();
+                return;
+            }
+
+            // [OFF-01 FIX 2026-06-06] navigator.onLine===false is NOT the only
+            // way the server is unreachable: the interface can still report
+            // "online" while the box has lost its route to the backend (transport
+            // error / timeout / 5xx). The live order POST lives inside the FROZEN
+            // PaymentComponent (no failure emit we can hook), so we guard the
+            // pre-modal gate with a lightweight, side-effect-free preflight GET to
+            // a read-only POS endpoint. If the preflight signals a transport-level
+            // failure (server did NOT process anything — classified by
+            // shouldEnqueueOnSubmitFailure), we route the sale into the SAME
+            // enqueue path instead of opening the modal onto a doomed POST that
+            // would LOSE the sale. A reachable server (any HTTP response, incl.
+            // 4xx) → open the modal exactly as before. The preflight is timeout-
+            // bounded so a slow/dead network resolves the gate fast.
+            // RESIDUAL (documented, gate-G to fully close): a TOCTOU window where
+            // the server dies BETWEEN this preflight and the modal's POST still
+            // lands the failure inside frozen PaymentComponent (toast + manual
+            // retry). This heal closes the dominant "unreachable AT submit" case.
+            const reachable = await this.preflightServerReachable();
+            if (!reachable) {
+                await this.enqueueCurrentCheckout();
                 return;
             }
 
             this.loading.isActive = false;
             appService.modalShow('#orderpayment');
+        },
+        /**
+         * [OFF-01 FIX 2026-06-06] Side-effect-free reachability probe for the
+         * pre-modal gate. GETs a read-only POS endpoint (counter-collect/pending
+         * — pure query, no order/fiscal write, permission:pos) with a short
+         * timeout. Returns TRUE if the server answered with ANY HTTP status
+         * (incl. 4xx — server is alive, business logic decides at the real POST),
+         * FALSE only on a transport-level failure (no response / timeout / 5xx)
+         * where opening the payment modal would lose the sale. Never throws.
+         */
+        preflightServerReachable: async function () {
+            try {
+                await axios.get('admin/pos/counter-collect/pending', { timeout: 4000 });
+                return true;
+            } catch (err) {
+                // shouldEnqueueOnSubmitFailure === true  ⇒ transport failure / 5xx
+                //   ⇒ NOT reachable for order capture ⇒ enqueue.
+                // shouldEnqueueOnSubmitFailure === false ⇒ a real HTTP 4xx answer
+                //   ⇒ server IS reachable ⇒ proceed to modal (the real POST will
+                //   surface any business rejection through PaymentComponent).
+                return !shouldEnqueueOnSubmitFailure(err);
+            }
+        },
+        /**
+         * [OFF-01 + OFF-02 FIX 2026-06-06] Shared offline-enqueue path used by
+         * BOTH the navigator-offline gate AND the OFF-01 server-unreachable gate.
+         * Extracted verbatim from the original navigator.onLine===false block so
+         * the M1-02 CASH default + OFF-02 resetCart + queue-full handling stay
+         * single-sourced and identical across both entry points.
+         */
+        enqueueCurrentCheckout: async function () {
+            try {
+                // [M1-02] Offline CASH orders need a numeric pos_received_amount or
+                // every replay 422s (PosOrderRequest requires it for CASH) and the
+                // cash sale is silently lost. The payment modal can't open offline,
+                // so default to exact cash = order total (cashier reconciles on sync).
+                if ((this.checkoutProps.form.pos_received_amount === null
+                        || this.checkoutProps.form.pos_received_amount === undefined
+                        || this.checkoutProps.form.pos_received_amount === '')
+                    && Number(this.checkoutProps.form.pos_payment_method) === posPaymentMethodEnum.CASH) {
+                    this.checkoutProps.form.pos_received_amount = Number(this.grandTotal) || Number(this.checkoutProps.form.total) || 0;
+                }
+                const queued = await this.enqueueOrder({ ...this.checkoutProps.form });
+                this.loading.isActive = false;
+                if (queued) {
+                    alertService.info(`Commande mise en file d'attente (${this.queueDepth}). Synchronisation auto au retour réseau.`);
+                    // [OFF-02 FIX 2026-06-06] Clear the cart after a successful
+                    // offline enqueue, mirroring the online success path. Without
+                    // this the cart stays populated and a second pay click while
+                    // still offline fires a SECOND enqueue (fresh idempotency key)
+                    // → double order + double cash line on replay. resetCart()
+                    // dispatches posCart/resetCart, clears form.token,
+                    // resetDeliveryInline() and nulls currentLoyaltyOrder.
+                    this.resetCart();
+                } else {
+                    alertService.warning('File d\'attente offline pleine. Réessayez à la reconnexion.');
+                }
+            } catch (_e) {
+                this.loading.isActive = false;
+                alertService.error('Impossible de mettre la commande en file d\'attente offline.');
+            }
         },
         // [POS-OFFLINE-WIRE 2026-05-17] Manual flush trigger bound to the
         // banner "Synchroniser" button. Delegates to the composable which
@@ -3975,16 +4048,32 @@ export default {
         tryManualFlush: async function () {
             try {
                 const res = await this.tryFlush(axios.post);
-                if (res && !res.skipped) {
-                    if (res.synced > 0) {
-                        alertService.success(`${res.synced} commande(s) synchronisée(s).`);
-                    }
-                    if (res.failed > 0) {
-                        alertService.warning(`${res.failed} commande(s) en échec, retentée(s) plus tard.`);
-                    }
-                }
+                this.notifyAutoFlushResult(res);
             } catch (_e) {
                 alertService.error('Erreur lors de la synchronisation manuelle.');
+            }
+        },
+        // [OFF-03 FIX 2026-06-06] Single notifier for ALL flush paths (manual
+        // button, composable online-event auto-flush, 30s interval). The
+        // auto-flush paths used to swallow their result, so a FAILED background
+        // replay (e.g. server still rejecting on reconnect) was invisible — the
+        // cashier believed queued cash sales had synced. Surface the SAME
+        // alertService messages as the manual flush: warning on failed>0, success
+        // on synced>0. Silent when nothing happened (skipped / empty queue).
+        //
+        // opts.heartbeat=true (the 30s interval only): SUPPRESS the failure
+        // warning. A persistently-failing entry would otherwise nag every 30s
+        // indefinitely. Failure is surfaced on the high-value moments — the
+        // online-event edge (the cashier just reconnected and expects "did it
+        // replay?") and the manual button — not on the passive heartbeat.
+        notifyAutoFlushResult: function (res, opts) {
+            if (!res || res.skipped) return;
+            const heartbeat = !!(opts && opts.heartbeat);
+            if (res.synced > 0) {
+                alertService.success(`${res.synced} commande(s) synchronisée(s).`);
+            }
+            if (res.failed > 0 && !heartbeat) {
+                alertService.warning(`${res.failed} commande(s) en échec, retentée(s) plus tard.`);
             }
         },
         totalItems: function () {

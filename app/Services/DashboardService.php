@@ -383,7 +383,12 @@ class DashboardService
     public function totalMenuItems()
     {
         try {
-            return Item::count();
+            // [DASH-06 FIX 2026-06-06] Customer-facing semantic: the "Total articles
+            // menu" KPI must reflect the catalogue a customer actually sees, NOT the
+            // raw row count incl. INACTIVE / unpublished drafts. Counting every row
+            // let the headline drift above the 45-item V1 SSOT whenever a draft item
+            // existed. Restrict to status=ACTIVE (App\Enums\Status::ACTIVE).
+            return Item::where('status', \App\Enums\Status::ACTIVE)->count();
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
@@ -440,24 +445,72 @@ class DashboardService
     public function slaAlerts()
     {
         try {
-            // Commandes en PREPARING depuis plus de 15 minutes
-            $timeLimit = Carbon::now()->subMinutes(15);
-            $alerts = $this->orderQuery()
+            // [DASH-05 FIX 2026-06-06] Measure the "cuisine > 15 min" SLA from the
+            // REAL "entered PREPARING" instant, not orders.updated_at.
+            //
+            // updated_at is bumped by ANY later row write (payment flip, loyalty
+            // award, broadcast bookkeeping) so a genuinely-late ticket looked fresh
+            // and silently dropped off the alert list (false-negative — the kitchen
+            // was told everything is fine while a ticket aged 40 min).
+            //
+            // The authoritative instant lives in order_status_transitions
+            // (to_status=PREPARING, occurred_at), written by every status-change
+            // path (OrderService::changeStatus / KitchenDisplaySystemOrderService /
+            // OrderStateMachine::apply + POS auto-prepare). We read the MAX(occurred_at)
+            // PREPARING transition per order so a recall (re-enter PREPARING)
+            // correctly RESTARTS the clock.
+            //
+            // FALLBACK: rows that predate transition-recording (no PREPARING
+            // transition row) keep using updated_at — they must NOT silently vanish
+            // (that would be a new, worse false-negative). COALESCE(transition, updated_at).
+            $now = Carbon::now();
+            $timeLimit = $now->copy()->subMinutes(15);
+
+            // Candidate set: every PREPARING order in scope (gate unchanged).
+            $orders = $this->orderQuery()
                 ->where('status', OrderStatus::PREPARING)
-                ->where('updated_at', '<', $timeLimit)
                 ->with('user')
-                ->orderBy('updated_at', 'asc')
                 ->get();
 
-            return $alerts->map(function ($order) {
+            if ($orders->isEmpty()) {
+                return collect();
+            }
+
+            // One round-trip: latest PREPARING transition instant per order_id.
+            // (order_type stores the full model class — see OrderStateMachine::recordTransition.)
+            $preparingStartByOrderId = \App\Models\OrderStatusTransition::query()
+                ->where('order_type', Order::class)
+                ->where('to_status', OrderStatus::PREPARING)
+                ->whereIn('order_id', $orders->pluck('id')->all())
+                ->selectRaw('order_id, MAX(occurred_at) AS started_at')
+                ->groupBy('order_id')
+                ->pluck('started_at', 'order_id');
+
+            return $orders->map(function ($order) use ($preparingStartByOrderId, $now) {
+                // COALESCE: real PREPARING transition instant, else updated_at fallback.
+                $startedRaw = $preparingStartByOrderId[$order->id] ?? null;
+                $startedAt = $startedRaw !== null
+                    ? Carbon::parse($startedRaw)
+                    : $order->updated_at;
+
                 return [
                     'order_serial_no' => $order->order_serial_no,
                     'queue_number' => $order->queue_number,
-                    'time_preparing' => $order->updated_at->diffInMinutes(Carbon::now()),
+                    'time_preparing' => (int) $startedAt->diffInMinutes($now),
                     'total' => AppLibrary::currencyAmountFormat($order->total),
-                    'customer' => $order->user ? $order->user->name : 'N/A'
+                    'customer' => $order->user ? $order->user->name : 'N/A',
+                    '_started_at' => $startedAt,
                 ];
-            });
+            })
+            // Keep only true >15 min breaches, measured from the real clock.
+            ->filter(fn ($alert) => $alert['_started_at']->lt($timeLimit))
+            // Oldest first (longest-waiting ticket at the top).
+            ->sortBy(fn ($alert) => $alert['_started_at']->getTimestamp())
+            ->map(function ($alert) {
+                unset($alert['_started_at']);
+                return $alert;
+            })
+            ->values();
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);

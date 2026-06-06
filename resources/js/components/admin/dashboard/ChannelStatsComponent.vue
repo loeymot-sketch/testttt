@@ -1,5 +1,5 @@
 <template>
-    <div class="col-12 sm:col-12 xl:col-6 mb-6">
+    <div class="col-12 sm:col-12 xl:col-6 mb-6" data-testid="channel-stats-widget">
         <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 h-full">
             <h4 class="font-semibold text-lg text-gray-800 mb-6">Répartition par Canal (Aujourd'hui)</h4>
             
@@ -26,16 +26,28 @@ export default {
     name: "ChannelStatsComponent",
     data() {
         return {
-            stats: []
+            stats: [],
+            // [DASH-01 FIX] Auto-refresh timer handle (mirror RealtimeReportComponent).
+            timer: null
         }
     },
     mounted() {
         this.fetchData();
+        // [DASH-01 FIX] Poll every 30s so the channel breakdown does not go
+        // stale until a full reload.
+        this.timer = setInterval(this.fetchData, 30000);
+    },
+    beforeUnmount() {
+        // [DASH-01 FIX] Clear the interval to avoid a leaked timer.
+        clearInterval(this.timer);
     },
     methods: {
         fetchData() {
             this.$store.dispatch('dashboard/channelStatistics').then(res => {
                 this.stats = res.data.data;
+            }).catch(() => {
+                // Best-effort: keep last-known stats on a transient failure
+                // rather than wiping the chart.
             });
         },
         getColor(name) {

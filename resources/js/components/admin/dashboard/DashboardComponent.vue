@@ -62,6 +62,16 @@
         <ErrorBoundary><FeaturedItemsComponent/></ErrorBoundary>
         <ErrorBoundary><MostPopularItemsComponent/></ErrorBoundary>
     </div>
+    <!-- [DASH-03 FIX] CustomerStats (peak-hours histogram) + TopCustomers were
+         orphaned — the backend computed them (routes /customer-states +
+         /top-customers, DashboardService::customerStates/topCustomers) but
+         nothing rendered. Mounted here so the computed analytics surface.
+         Resource shapes verified: CustomerStatesResource → total_customers/times,
+         TopCustomerResource → name/image/order. -->
+    <div class="row">
+        <ErrorBoundary><CustomerStatsComponent/></ErrorBoundary>
+        <ErrorBoundary><TopCustomersComponent/></ErrorBoundary>
+    </div>
 </template>
 
 <script>
@@ -77,6 +87,9 @@ import RealtimeReportComponent from "./RealtimeReportComponent";
 import SlaAlertsComponent from "./SlaAlertsComponent";
 import ChannelStatsComponent from "./ChannelStatsComponent";
 import AuditTrailComponent from "./AuditTrailComponent";
+// [DASH-03 FIX] Mount the previously-orphaned customer analytics widgets.
+import CustomerStatsComponent from "./CustomerStatsComponent";
+import TopCustomersComponent from "./TopCustomersComponent";
 import ErrorBoundary from "../components/ErrorBoundary";
 import ENV from "../../../config/env";
 
@@ -95,6 +108,8 @@ export default {
         SlaAlertsComponent,
         ChannelStatsComponent,
         AuditTrailComponent,
+        CustomerStatsComponent,
+        TopCustomersComponent,
         ErrorBoundary
     },
     data() {

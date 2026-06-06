@@ -4652,10 +4652,32 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
     // the case where network came back without a clean offline→online edge
     // (e.g. flaky DNS, captive portal) and gives an upper bound on stale
     // cash sales sitting in IndexedDB.
-    this.bindAutoFlush(axios__WEBPACK_IMPORTED_MODULE_0__["default"].post);
+    // [OFF-03 FIX 2026-06-06] Pass a result notifier so the composable's
+    // own online-event auto-flush tells the cashier when a background replay
+    // FAILED (it used to swallow the result silently). Reuses the same
+    // alertService messages as the manual "Synchroniser" button.
+    this.bindAutoFlush(axios__WEBPACK_IMPORTED_MODULE_0__["default"].post, function (res) {
+      return _this2.notifyAutoFlushResult(res);
+    });
     this._posOfflineFlushTimer = setInterval(function () {
       try {
-        _this2.tryFlush(axios__WEBPACK_IMPORTED_MODULE_0__["default"].post);
+        // [OFF-03 FIX] Route the 30s interval flush result through the
+        // same notifier, but in HEARTBEAT mode (silent on failed>0). A
+        // persistently-failing entry (sustained outage / repeated 5xx)
+        // would otherwise raise the "…en échec…" warning every 30s
+        // forever — the opposite of non-intrusive. Failure is surfaced on
+        // the high-value moments instead: the online-event edge (composable
+        // listener) and the manual "Synchroniser" button. The interval may
+        // still report a SUCCESS (synced>0) — that is a one-shot good-news
+        // toast, not a recurring nag.
+        var p = _this2.tryFlush(axios__WEBPACK_IMPORTED_MODULE_0__["default"].post);
+        if (p && typeof p.then === 'function') {
+          p.then(function (res) {
+            return _this2.notifyAutoFlushResult(res, {
+              heartbeat: true
+            });
+          })["catch"](function () {});
+        }
       } catch (_e) {/* defensive */}
     }, 30000);
     // Initial flush attempt at mount (covers reload-while-offline-queue-pending).
@@ -6515,9 +6537,9 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
     orderSubmit: function () {
       var _orderSubmit = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee1() {
         var _this26 = this;
-        var walkInReady, storedReason, isDelivery, today, seqKey, seq, ok, _branchId, queued, _t10;
+        var walkInReady, storedReason, isDelivery, today, seqKey, seq, ok, _branchId, reachable;
         return _regenerator().w(function (_context1) {
-          while (1) switch (_context1.p = _context1.n) {
+          while (1) switch (_context1.n) {
             case 0:
               if (!(!this.carts || this.carts.length === 0)) {
                 _context1.n = 1;
@@ -6648,10 +6670,87 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
               // at replay time per NF525 CLAUDE.md §8) and toast soft so the
               // cashier knows the order will sync when network returns.
               if (!(typeof navigator !== 'undefined' && navigator.onLine === false)) {
+                _context1.n = 10;
+                break;
+              }
+              _context1.n = 9;
+              return this.enqueueCurrentCheckout();
+            case 9:
+              return _context1.a(2);
+            case 10:
+              _context1.n = 11;
+              return this.preflightServerReachable();
+            case 11:
+              reachable = _context1.v;
+              if (reachable) {
                 _context1.n = 13;
                 break;
               }
-              _context1.p = 9;
+              _context1.n = 12;
+              return this.enqueueCurrentCheckout();
+            case 12:
+              return _context1.a(2);
+            case 13:
+              this.loading.isActive = false;
+              _services_appService__WEBPACK_IMPORTED_MODULE_11__["default"].modalShow('#orderpayment');
+            case 14:
+              return _context1.a(2);
+          }
+        }, _callee1, this);
+      }));
+      function orderSubmit() {
+        return _orderSubmit.apply(this, arguments);
+      }
+      return orderSubmit;
+    }(),
+    /**
+     * [OFF-01 FIX 2026-06-06] Side-effect-free reachability probe for the
+     * pre-modal gate. GETs a read-only POS endpoint (counter-collect/pending
+     * — pure query, no order/fiscal write, permission:pos) with a short
+     * timeout. Returns TRUE if the server answered with ANY HTTP status
+     * (incl. 4xx — server is alive, business logic decides at the real POST),
+     * FALSE only on a transport-level failure (no response / timeout / 5xx)
+     * where opening the payment modal would lose the sale. Never throws.
+     */
+    preflightServerReachable: function () {
+      var _preflightServerReachable = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee10() {
+        var _t10;
+        return _regenerator().w(function (_context10) {
+          while (1) switch (_context10.p = _context10.n) {
+            case 0:
+              _context10.p = 0;
+              _context10.n = 1;
+              return axios__WEBPACK_IMPORTED_MODULE_0__["default"].get('admin/pos/counter-collect/pending', {
+                timeout: 4000
+              });
+            case 1:
+              return _context10.a(2, true);
+            case 2:
+              _context10.p = 2;
+              _t10 = _context10.v;
+              return _context10.a(2, !(0,_composables_usePosOfflineState__WEBPACK_IMPORTED_MODULE_43__.shouldEnqueueOnSubmitFailure)(_t10));
+          }
+        }, _callee10, null, [[0, 2]]);
+      }));
+      function preflightServerReachable() {
+        return _preflightServerReachable.apply(this, arguments);
+      }
+      return preflightServerReachable;
+    }(),
+    /**
+     * [OFF-01 + OFF-02 FIX 2026-06-06] Shared offline-enqueue path used by
+     * BOTH the navigator-offline gate AND the OFF-01 server-unreachable gate.
+     * Extracted verbatim from the original navigator.onLine===false block so
+     * the M1-02 CASH default + OFF-02 resetCart + queue-full handling stay
+     * single-sourced and identical across both entry points.
+     */
+    enqueueCurrentCheckout: function () {
+      var _enqueueCurrentCheckout = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee11() {
+        var queued, _t11;
+        return _regenerator().w(function (_context11) {
+          while (1) switch (_context11.p = _context11.n) {
+            case 0:
+              _context11.p = 0;
               // [M1-02] Offline CASH orders need a numeric pos_received_amount or
               // every replay 422s (PosOrderRequest requires it for CASH) and the
               // cash sale is silently lost. The payment modal can't open offline,
@@ -6659,10 +6758,10 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
               if ((this.checkoutProps.form.pos_received_amount === null || this.checkoutProps.form.pos_received_amount === undefined || this.checkoutProps.form.pos_received_amount === '') && Number(this.checkoutProps.form.pos_payment_method) === _enums_modules_posPaymentMethodEnum__WEBPACK_IMPORTED_MODULE_20__["default"].CASH) {
                 this.checkoutProps.form.pos_received_amount = Number(this.grandTotal) || Number(this.checkoutProps.form.total) || 0;
               }
-              _context1.n = 10;
+              _context11.n = 1;
               return this.enqueueOrder(_objectSpread({}, this.checkoutProps.form));
-            case 10:
-              queued = _context1.v;
+            case 1:
+              queued = _context11.v;
               this.loading.isActive = false;
               if (queued) {
                 _services_alertService__WEBPACK_IMPORTED_MODULE_15__["default"].info("Commande mise en file d'attente (".concat(this.queueDepth, "). Synchronisation auto au retour r\xE9seau."));
@@ -6677,66 +6776,77 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
               } else {
                 _services_alertService__WEBPACK_IMPORTED_MODULE_15__["default"].warning('File d\'attente offline pleine. Réessayez à la reconnexion.');
               }
-              _context1.n = 12;
+              _context11.n = 3;
               break;
-            case 11:
-              _context1.p = 11;
-              _t10 = _context1.v;
+            case 2:
+              _context11.p = 2;
+              _t11 = _context11.v;
               this.loading.isActive = false;
               _services_alertService__WEBPACK_IMPORTED_MODULE_15__["default"].error('Impossible de mettre la commande en file d\'attente offline.');
-            case 12:
-              return _context1.a(2);
-            case 13:
-              this.loading.isActive = false;
-              _services_appService__WEBPACK_IMPORTED_MODULE_11__["default"].modalShow('#orderpayment');
-            case 14:
-              return _context1.a(2);
+            case 3:
+              return _context11.a(2);
           }
-        }, _callee1, this, [[9, 11]]);
+        }, _callee11, this, [[0, 2]]);
       }));
-      function orderSubmit() {
-        return _orderSubmit.apply(this, arguments);
+      function enqueueCurrentCheckout() {
+        return _enqueueCurrentCheckout.apply(this, arguments);
       }
-      return orderSubmit;
+      return enqueueCurrentCheckout;
     }(),
     // [POS-OFFLINE-WIRE 2026-05-17] Manual flush trigger bound to the
     // banner "Synchroniser" button. Delegates to the composable which
     // is the single source of truth for replay logic + idempotency.
     tryManualFlush: function () {
-      var _tryManualFlush = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee10() {
-        var res, _t11;
-        return _regenerator().w(function (_context10) {
-          while (1) switch (_context10.p = _context10.n) {
+      var _tryManualFlush = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee12() {
+        var res, _t12;
+        return _regenerator().w(function (_context12) {
+          while (1) switch (_context12.p = _context12.n) {
             case 0:
-              _context10.p = 0;
-              _context10.n = 1;
+              _context12.p = 0;
+              _context12.n = 1;
               return this.tryFlush(axios__WEBPACK_IMPORTED_MODULE_0__["default"].post);
             case 1:
-              res = _context10.v;
-              if (res && !res.skipped) {
-                if (res.synced > 0) {
-                  _services_alertService__WEBPACK_IMPORTED_MODULE_15__["default"].success("".concat(res.synced, " commande(s) synchronis\xE9e(s)."));
-                }
-                if (res.failed > 0) {
-                  _services_alertService__WEBPACK_IMPORTED_MODULE_15__["default"].warning("".concat(res.failed, " commande(s) en \xE9chec, retent\xE9e(s) plus tard."));
-                }
-              }
-              _context10.n = 3;
+              res = _context12.v;
+              this.notifyAutoFlushResult(res);
+              _context12.n = 3;
               break;
             case 2:
-              _context10.p = 2;
-              _t11 = _context10.v;
+              _context12.p = 2;
+              _t12 = _context12.v;
               _services_alertService__WEBPACK_IMPORTED_MODULE_15__["default"].error('Erreur lors de la synchronisation manuelle.');
             case 3:
-              return _context10.a(2);
+              return _context12.a(2);
           }
-        }, _callee10, this, [[0, 2]]);
+        }, _callee12, this, [[0, 2]]);
       }));
       function tryManualFlush() {
         return _tryManualFlush.apply(this, arguments);
       }
       return tryManualFlush;
     }(),
+    // [OFF-03 FIX 2026-06-06] Single notifier for ALL flush paths (manual
+    // button, composable online-event auto-flush, 30s interval). The
+    // auto-flush paths used to swallow their result, so a FAILED background
+    // replay (e.g. server still rejecting on reconnect) was invisible — the
+    // cashier believed queued cash sales had synced. Surface the SAME
+    // alertService messages as the manual flush: warning on failed>0, success
+    // on synced>0. Silent when nothing happened (skipped / empty queue).
+    //
+    // opts.heartbeat=true (the 30s interval only): SUPPRESS the failure
+    // warning. A persistently-failing entry would otherwise nag every 30s
+    // indefinitely. Failure is surfaced on the high-value moments — the
+    // online-event edge (the cashier just reconnected and expects "did it
+    // replay?") and the manual button — not on the passive heartbeat.
+    notifyAutoFlushResult: function notifyAutoFlushResult(res, opts) {
+      if (!res || res.skipped) return;
+      var heartbeat = !!(opts && opts.heartbeat);
+      if (res.synced > 0) {
+        _services_alertService__WEBPACK_IMPORTED_MODULE_15__["default"].success("".concat(res.synced, " commande(s) synchronis\xE9e(s)."));
+      }
+      if (res.failed > 0 && !heartbeat) {
+        _services_alertService__WEBPACK_IMPORTED_MODULE_15__["default"].warning("".concat(res.failed, " commande(s) en \xE9chec, retent\xE9e(s) plus tard."));
+      }
+    },
     totalItems: function totalItems() {
       if (this.carts.length > 0) {
         var totalItem = 0;
@@ -7000,58 +7110,58 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
     },
     applyDeliveryChargeFromCoordinates: function applyDeliveryChargeFromCoordinates(latitude, longitude) {
       var _this31 = this;
-      return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee11() {
-        var lat, lng, branchRes, distance, _err$response2, _t12;
-        return _regenerator().w(function (_context11) {
-          while (1) switch (_context11.p = _context11.n) {
+      return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee13() {
+        var lat, lng, branchRes, distance, _err$response2, _t13;
+        return _regenerator().w(function (_context13) {
+          while (1) switch (_context13.p = _context13.n) {
             case 0:
               lat = parseFloat(latitude);
               lng = parseFloat(longitude);
               if (!(!Number.isFinite(lat) || !Number.isFinite(lng))) {
-                _context11.n = 1;
+                _context13.n = 1;
                 break;
               }
               _this31.checkoutProps.form.delivery_distance_km = null;
               _this31.checkoutProps.form.delivery_charge = 0;
               _this31.showDeliveryGeocodeError();
-              return _context11.a(2, false);
+              return _context13.a(2, false);
             case 1:
-              _context11.p = 1;
+              _context13.p = 1;
               _this31.clearDeliveryGeocodeError();
-              _context11.n = 2;
+              _context13.n = 2;
               return _this31.$store.dispatch("branch/showByLatLong", {
                 branch_id: _this31.checkoutProps.form.branch_id,
                 latitude: lat,
                 longitude: lng
               });
             case 2:
-              branchRes = _context11.v;
+              branchRes = _context13.v;
               distance = _services_appService__WEBPACK_IMPORTED_MODULE_11__["default"].distance(lat, lng, parseFloat(branchRes.data.data.latitude), parseFloat(branchRes.data.data.longitude));
               if (!(!Number.isFinite(distance) || distance < 0)) {
-                _context11.n = 3;
+                _context13.n = 3;
                 break;
               }
               _this31.checkoutProps.form.delivery_distance_km = null;
               _this31.checkoutProps.form.delivery_charge = 0;
               _this31.showDeliveryGeocodeError();
-              return _context11.a(2, false);
+              return _context13.a(2, false);
             case 3:
               _this31.checkoutProps.form.delivery_distance_km = distance;
               _this31.checkoutProps.form.delivery_charge = (0,_helpers_deliveryCharge__WEBPACK_IMPORTED_MODULE_34__.calculateDeliveryChargeFromDistance)(_this31.checkoutProps.form.delivery_distance_km);
-              return _context11.a(2, true);
+              return _context13.a(2, true);
             case 4:
-              _context11.p = 4;
-              _t12 = _context11.v;
+              _context13.p = 4;
+              _t13 = _context13.v;
               _this31.loading.isActive = false;
               _this31.selectedAddress = {};
               _this31.checkoutProps.form.address_id = null;
               _this31.checkoutProps.form.delivery_distance_km = null;
               _this31.checkoutProps.form.delivery_charge = 0;
               _this31.showDeliveryGeocodeError();
-              _services_alertService__WEBPACK_IMPORTED_MODULE_15__["default"].info(((_err$response2 = _t12.response) === null || _err$response2 === void 0 || (_err$response2 = _err$response2.data) === null || _err$response2 === void 0 ? void 0 : _err$response2.message) || _this31.deliveryGeocodeError);
-              return _context11.a(2, false);
+              _services_alertService__WEBPACK_IMPORTED_MODULE_15__["default"].info(((_err$response2 = _t13.response) === null || _err$response2 === void 0 || (_err$response2 = _err$response2.data) === null || _err$response2 === void 0 ? void 0 : _err$response2.message) || _this31.deliveryGeocodeError);
+              return _context13.a(2, false);
           }
-        }, _callee11, null, [[1, 4]]);
+        }, _callee13, null, [[1, 4]]);
       }))();
     },
     clearDeliveryGeocodeError: function clearDeliveryGeocodeError() {
@@ -7185,43 +7295,43 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
     },
     ensureDeliveryCustomerAndAddress: function ensureDeliveryCustomerAndAddress() {
       var _this36 = this;
-      return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee12() {
-        var deliveryAddress, customerId, customerRes, addrRes, _err$response3, msg, _t13;
-        return _regenerator().w(function (_context12) {
-          while (1) switch (_context12.p = _context12.n) {
+      return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee14() {
+        var deliveryAddress, customerId, customerRes, addrRes, _err$response3, msg, _t14;
+        return _regenerator().w(function (_context14) {
+          while (1) switch (_context14.p = _context14.n) {
             case 0:
               if (!_this36.checkoutProps.form.address_id) {
-                _context12.n = 1;
+                _context14.n = 1;
                 break;
               }
-              return _context12.a(2, true);
+              return _context14.a(2, true);
             case 1:
               // Inline form must have at minimum an address
               deliveryAddress = (_this36.deliveryInline.address || _this36.deliveryInline.addressText || '').trim();
               if (deliveryAddress) {
-                _context12.n = 2;
+                _context14.n = 2;
                 break;
               }
               _services_alertService__WEBPACK_IMPORTED_MODULE_15__["default"].error('Veuillez saisir une adresse de livraison.');
-              return _context12.a(2, false);
+              return _context14.a(2, false);
             case 2:
               if (!(!_this36.deliveryInline.latitude || !_this36.deliveryInline.longitude)) {
-                _context12.n = 3;
+                _context14.n = 3;
                 break;
               }
               _this36.showDeliveryGeocodeError();
               _services_alertService__WEBPACK_IMPORTED_MODULE_15__["default"].error(_this36.deliveryGeocodeError);
-              return _context12.a(2, false);
+              return _context14.a(2, false);
             case 3:
-              _context12.p = 3;
+              _context14.p = 3;
               _this36.loading.isActive = true;
               // 1. Create or reuse customer
               customerId = _this36.checkoutProps.form.customer_id;
               if (customerId) {
-                _context12.n = 5;
+                _context14.n = 5;
                 break;
               }
-              _context12.n = 4;
+              _context14.n = 4;
               return axios__WEBPACK_IMPORTED_MODULE_0__["default"].post('/admin/users', {
                 name: _this36.deliveryInline.name || 'Client livraison',
                 phone: _this36.deliveryInline.phone || null,
@@ -7232,11 +7342,11 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
                 country_code: _this36.customerProps.form.country_code || _this36.country_code || '+33'
               });
             case 4:
-              customerRes = _context12.v;
+              customerRes = _context14.v;
               customerId = customerRes.data.data.id;
               _this36.checkoutProps.form.customer_id = customerId;
             case 5:
-              _context12.n = 6;
+              _context14.n = 6;
               return axios__WEBPACK_IMPORTED_MODULE_0__["default"].post("/admin/users/address/".concat(customerId), {
                 address: deliveryAddress,
                 apartment: '',
@@ -7245,7 +7355,7 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
                 label: 'Livraison'
               });
             case 6:
-              addrRes = _context12.v;
+              addrRes = _context14.v;
               _this36.checkoutProps.form.address_id = addrRes.data.data.id;
               // Update delivery charge if lat/lng available
               _this36.selectedAddress = {
@@ -7254,27 +7364,27 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
                 latitude: _this36.deliveryInline.latitude,
                 longitude: _this36.deliveryInline.longitude
               };
-              _context12.n = 7;
+              _context14.n = 7;
               return _this36.applyDeliveryChargeFromCoordinates(_this36.deliveryInline.latitude, _this36.deliveryInline.longitude);
             case 7:
-              if (_context12.v) {
-                _context12.n = 8;
+              if (_context14.v) {
+                _context14.n = 8;
                 break;
               }
               _this36.loading.isActive = false;
-              return _context12.a(2, false);
+              return _context14.a(2, false);
             case 8:
               _this36.loading.isActive = false;
-              return _context12.a(2, true);
+              return _context14.a(2, true);
             case 9:
-              _context12.p = 9;
-              _t13 = _context12.v;
+              _context14.p = 9;
+              _t14 = _context14.v;
               _this36.loading.isActive = false;
-              msg = ((_err$response3 = _t13.response) === null || _err$response3 === void 0 || (_err$response3 = _err$response3.data) === null || _err$response3 === void 0 ? void 0 : _err$response3.message) || 'Erreur lors de la sauvegarde de l\'adresse.';
+              msg = ((_err$response3 = _t14.response) === null || _err$response3 === void 0 || (_err$response3 = _err$response3.data) === null || _err$response3 === void 0 ? void 0 : _err$response3.message) || 'Erreur lors de la sauvegarde de l\'adresse.';
               _services_alertService__WEBPACK_IMPORTED_MODULE_15__["default"].error(msg);
-              return _context12.a(2, false);
+              return _context14.a(2, false);
           }
-        }, _callee12, null, [[3, 9]]);
+        }, _callee14, null, [[3, 9]]);
       }))();
     } // ─────────────────────────────────────────────────────────────────────────
   },
@@ -15839,6 +15949,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   shouldEnqueueOnSubmitFailure: () => (/* binding */ shouldEnqueueOnSubmitFailure),
 /* harmony export */   usePosOfflineState: () => (/* binding */ usePosOfflineState)
 /* harmony export */ });
 /* harmony import */ var vue__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! vue */ "./node_modules/vue/dist/vue.esm-bundler.js");
@@ -15864,12 +15975,40 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
  */
 
 
+
+/**
+ * [OFF-01 FIX 2026-06-06] Decide whether a FAILED live order submit should be
+ * routed into the offline enqueue path. The live POST happens inside the frozen
+ * PaymentComponent; this pure classifier is the in-scope, unit-provable seam the
+ * PosComponent pre-modal gate uses to broaden "offline" from navigator.onLine
+ * only → "offline OR server-unreachable-at-submit".
+ *
+ * TRUE  → transport failure / timeout / 5xx: the server did NOT process the
+ *         order, so the sale is safe to queue + replay (idempotency-key stable;
+ *         server is SSOT on fiscal seq at replay per NF525 CLAUDE.md §8).
+ * FALSE → any 4xx (422 validation, 409 conflict, 401/403 authz, 429 throttle)
+ *         OR a 2xx: the server received + decided. Enqueuing a 4xx-rejected
+ *         order would duplicate / resubmit a business-rejected sale — never do
+ *         it. A 2xx is not a failure at all.
+ *
+ * Accepts either an axios error (`err.response.status`) or a raw response
+ * (`{ status }`). Absence of any status ⇒ transport-level failure ⇒ TRUE.
+ */
+function shouldEnqueueOnSubmitFailure(errOrResponse) {
+  var _errOrResponse$respon, _errOrResponse$respon2;
+  if (errOrResponse == null) return true;
+  var status = (_errOrResponse$respon = errOrResponse === null || errOrResponse === void 0 || (_errOrResponse$respon2 = errOrResponse.response) === null || _errOrResponse$respon2 === void 0 ? void 0 : _errOrResponse$respon2.status) !== null && _errOrResponse$respon !== void 0 ? _errOrResponse$respon : errOrResponse === null || errOrResponse === void 0 ? void 0 : errOrResponse.status;
+  if (typeof status !== 'number') return true; // no HTTP response → transport failure
+  if (status >= 500) return true; // server did not process
+  return false; // 2xx / 4xx → server decided
+}
 function usePosOfflineState() {
   var initialOnline = typeof navigator !== 'undefined' ? navigator.onLine !== false : true;
   var isOnline = (0,vue__WEBPACK_IMPORTED_MODULE_0__.ref)(initialOnline);
   var queueDepth = (0,vue__WEBPACK_IMPORTED_MODULE_0__.ref)((0,_helpers_posOfflineQueue__WEBPACK_IMPORTED_MODULE_1__.getQueueDepth)());
   var isFlushing = (0,vue__WEBPACK_IMPORTED_MODULE_0__.ref)(false);
   var _boundPostFn = null;
+  var _onResult = null; // [OFF-03 FIX] auto-flush result notifier (cashier feedback)
   var _onOnline = null;
   var _onOffline = null;
   function refresh() {
@@ -15987,8 +16126,17 @@ function usePosOfflineState() {
     _onOnline = function _onOnline() {
       isOnline.value = true;
       if (typeof _boundPostFn === 'function') {
+        // [OFF-03 FIX 2026-06-06] The online-event auto-flush used to
+        // swallow its result (.catch(() => {})), so a FAILED replay was
+        // invisible to the cashier. Surface the result to the bound
+        // notifier so PosComponent can raise the SAME alertService
+        // warning/success messages as the manual flush (tryManualFlush).
         Promise.resolve().then(function () {
           return tryFlush(_boundPostFn);
+        }).then(function (result) {
+          if (typeof _onResult === 'function' && result && !result.skipped) {
+            _onResult(result);
+          }
         })["catch"](function () {});
       }
     };
@@ -15998,8 +16146,14 @@ function usePosOfflineState() {
     window.addEventListener('online', _onOnline);
     window.addEventListener('offline', _onOffline);
   }
-  function bindAutoFlush(postFn) {
+
+  // [OFF-03 FIX] onResult (optional, 2nd arg) receives { synced, failed } from
+  // the composable's own online-event auto-flush so the cashier is told when a
+  // background replay failed. Backward compatible: bindAutoFlush(postFn) alone
+  // keeps working (onResult stays null → silent, as before).
+  function bindAutoFlush(postFn, onResult) {
     _boundPostFn = typeof postFn === 'function' ? postFn : null;
+    _onResult = typeof onResult === 'function' ? onResult : null;
   }
   function unbindAutoFlush() {
     if (typeof window === 'undefined') return;
@@ -16008,6 +16162,7 @@ function usePosOfflineState() {
     _onOnline = null;
     _onOffline = null;
     _boundPostFn = null;
+    _onResult = null;
   }
 
   // Only register dispose hook inside a Vue effect scope (component setup).

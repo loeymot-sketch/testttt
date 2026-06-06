@@ -1,6 +1,6 @@
 <template>
   <LoadingComponent :props="loading" />
-  <div class="col-12 xl:col-6">
+  <div class="col-12 xl:col-6" data-testid="customer-stats-widget">
     <div class="db-card">
       <div class="db-card-header">
         <h3 class="db-card-title">{{ $t('label.customer_stats') }}</h3>

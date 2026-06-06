@@ -1573,6 +1573,22 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
         return false;
       }
     },
+    // [KDS-03 FIX] An admin account (branch_id <= 0) viewing the KDS
+    // early-returns from subscribeEcho() (the branch Echo channel is
+    // branch-scoped), so it receives ZERO live push. But the WS transport is
+    // still 'connected' → wsConnected is true → the fallback banner stays
+    // hidden → the kitchen is SILENTLY blind to the missing real-time feed.
+    //
+    // kdsIsCentralAdmin is intentionally gated on branchCount > 1 (sentinel
+    // WT-B-R1-007) so on single-branch Le Cayenne the admin sees nothing. This
+    // computed is the TRUE degraded condition — admin-account-on-KDS, branch
+    // count irrelevant — and is OR-wired into both admin-polling banners so the
+    // degraded state is VISIBLE ("Mode admin centralisé …" / SYNC · ADMIN).
+    // We do NOT change the branch-scoping security early-return; we only make
+    // the already-degraded state explicit to the chef.
+    kdsAdminNoPush: function kdsAdminNoPush() {
+      return this.authBranchId() <= 0;
+    },
     /** 45–49: backend plafond 50 — avertir avant d’atteindre la limite d’affichage */kdsOrderApproachingCap: function kdsOrderApproachingCap() {
       var n = Array.isArray(this.orders) ? this.orders.length : 0;
       return n >= 45 && n < 50;
@@ -4237,7 +4253,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "offline-since": $data.v2OfflineSince,
     "list-at-cap": $options.kdsOrderListAtCap,
     "fallback-mode": !$data.wsConnected && !$options.kdsSuppressFallbackBanner,
-    "admin-polling-hint": $options.kdsIsCentralAdmin,
+    "admin-polling-hint": $options.kdsIsCentralAdmin || $options.kdsAdminNoPush,
     "bump-local-only-notice": !$data.kdsHideBumpInfo,
     "auto-transition-enabled": $data.v2AutoTransitionEnabled,
     "recall-active-ids": $options.recallActiveIds,
@@ -4256,7 +4272,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     onClick: _cache[2] || (_cache[2] = function () {
       return $options.dismissKdsErrorBanner && $options.dismissKdsErrorBanner.apply($options, arguments);
     })
-  }, "✕", 8 /* PROPS */, _hoisted_6)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.kdsIsCentralAdmin ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_7, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.kds_admin_polling_hint")), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.kdsOrderApproachingCap ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_8, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.kds_order_cap_warning", {
+  }, "✕", 8 /* PROPS */, _hoisted_6)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n    [KDS-03 FIX] OR kdsAdminNoPush so an admin account (branch_id<=0) on the\n    legacy KDS — which gets ZERO live push (subscribeEcho early-returns) — sees\n    the polling hint even on a single-branch install where kdsIsCentralAdmin is\n    suppressed by the branchCount>1 gate. Reuses label.kds_admin_polling_hint\n    (\"Mode admin centralisé …\"), no new i18n key, no security-logic change.\n  "), $options.kdsIsCentralAdmin || $options.kdsAdminNoPush ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_7, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.kds_admin_polling_hint")), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.kdsOrderApproachingCap ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_8, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.kds_order_cap_warning", {
     n: $options.orders.length
   })), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.kdsOrderListAtCap ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_9, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.kds_order_list_full_warning", {
     n: $options.orders.length
@@ -6299,14 +6315,20 @@ var KdsSyncService = /*#__PURE__*/function () {
         return;
       }
       var unsubscribe = this.wsService.on('state_change', function () {
-        var _ref2 = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
-          from = _ref2.from,
-          to = _ref2.to;
+        var _payload$to, _payload$from;
+        var payload = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+        // [KDS-01 FIX] The REAL WebSocketService emits { previous, current }
+        // (WebSocketService.js:233), NOT { from, to }. The old destructure
+        // left both undefined against the live service, so the cadence
+        // recompute always fell through to the disconnected branch. Accept
+        // the real field with a back-compat fallback to the legacy shape.
+        var to = (_payload$to = payload.to) !== null && _payload$to !== void 0 ? _payload$to : payload.current;
+        var from = (_payload$from = payload.from) !== null && _payload$from !== void 0 ? _payload$from : payload.previous;
         _this2._emit('state_change', {
           from: from,
           to: to
         });
-        _this2._recomputeCadence(_this2._reasonFromWsState(to || _this2.wsService.state));
+        _this2._recomputeCadence(_this2._reasonFromWsState(_this2._normalizeWsState(to !== null && to !== void 0 ? to : _this2._currentWsState())));
       });
       this._wsUnsubscribers.push(unsubscribe);
 
@@ -6345,6 +6367,56 @@ var KdsSyncService = /*#__PURE__*/function () {
       });
       this._wsUnsubscribers.push(unsubscribeStorm);
     }
+
+    // [KDS-01 FIX] Read the transport state via the REAL public accessor.
+    // The production WebSocketService exposes getState() (WebSocketService.js:122)
+    // and isConnected() (~:118) — it has NO public `.state` property. The old
+    // code read `this.wsService?.state` (always undefined on the live service),
+    // so the whole connected/degraded/disconnected cadence ladder was dead code
+    // and the poller never paused while WS was up. We prefer getState(); the
+    // `.state` fallback keeps the legacy uppercase test doubles working.
+  }, {
+    key: "_currentWsState",
+    value: function _currentWsState() {
+      var _this$wsService;
+      if (this.wsService && typeof this.wsService.getState === 'function') {
+        return this.wsService.getState();
+      }
+      return (_this$wsService = this.wsService) === null || _this$wsService === void 0 ? void 0 : _this$wsService.state;
+    }
+
+    // [KDS-01 FIX] Normalize BOTH vocabularies into the internal WS_* constants:
+    //   - real service (lowercase): 'connected' / 'connecting' / 'disconnected'
+    //     / 'unavailable' / 'failed' / 'session_invalid' (WebSocketService:38-46)
+    //   - legacy test doubles (uppercase): 'CONNECTED' / 'RECONNECTING' /
+    //     'DEGRADED' / 'DISCONNECTED' / 'SESSION_INVALID'
+    // The real service has no RECONNECTING/DEGRADED — it emits 'connecting' /
+    // 'unavailable' / 'failed', mapped to the degraded/disconnected tiers.
+    // SAFE DEFAULT: anything unknown → DISCONNECTED, i.e. keep polling. We never
+    // pause the safety-net on an unrecognized state.
+  }, {
+    key: "_normalizeWsState",
+    value: function _normalizeWsState(raw) {
+      if (raw === undefined || raw === null) {
+        return WS_DISCONNECTED;
+      }
+      var s = String(raw).toUpperCase();
+      switch (s) {
+        case 'CONNECTED':
+          return WS_CONNECTED;
+        case 'CONNECTING':
+        case 'RECONNECTING':
+        case 'DEGRADED':
+          return WS_RECONNECTING;
+        case 'SESSION_INVALID':
+          return WS_SESSION_INVALID;
+        case 'DISCONNECTED':
+        case 'UNAVAILABLE':
+        case 'FAILED':
+        default:
+          return WS_DISCONNECTED;
+      }
+    }
   }, {
     key: "_reasonFromWsState",
     value: function _reasonFromWsState(state) {
@@ -6362,8 +6434,11 @@ var KdsSyncService = /*#__PURE__*/function () {
   }, {
     key: "_baseCadence",
     value: function _baseCadence() {
-      var _this$wsService;
-      var wsState = (_this$wsService = this.wsService) === null || _this$wsService === void 0 ? void 0 : _this$wsService.state;
+      // [KDS-01 FIX] Resolve via the real accessor + normalize both
+      // vocabularies so the connected→Infinity / degraded→~5s /
+      // disconnected→~10s ladder is actually live against the production
+      // WebSocketService (was dead code reading a non-existent `.state`).
+      var wsState = this._normalizeWsState(this._currentWsState());
       var cfg = this._cadenceOptions;
       if (wsState === WS_CONNECTED) {
         return {
@@ -6469,6 +6544,17 @@ var KdsSyncService = /*#__PURE__*/function () {
                   to: this._currentIntervalMs,
                   reason: 'backoff_5xx'
                 });
+              } else {
+                // [KDS-02 FIX] Non-5xx HTTP errors (401 token mid-rotation, 403,
+                // 404, 429 rate-limit) reach _handleHttpError from inside the try
+                // block, so the catch-path _schedule() never runs. The finite
+                // _timer is a one-shot whose callback does NOT re-arm itself —
+                // continuation depends on forceSync() rescheduling. Without this
+                // reschedule a single transient 401/429 permanently HALTS the
+                // fallback poller and the kitchen silently loses its degradation
+                // safety-net. We re-arm at the CURRENT cadence (no back-off
+                // mutation — a 401 is not a server-overload signal like a 5xx).
+                this._schedule();
               }
               this._emit('error', {
                 status: response.status,
