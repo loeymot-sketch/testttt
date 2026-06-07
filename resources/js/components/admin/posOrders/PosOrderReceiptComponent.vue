@@ -74,11 +74,19 @@
                                     </div>
                                 </template>
 
-                                <!-- Taxe si applicable -->
-                                <div class="flex items-center justify-between mt-0.5" v-if="item.tax_rate > 0">
-                                    <p class="text-[10px] leading-4 text-gray-400">{{ item.tax_name }} ({{ item.tax_currency_rate }} {{ item.tax_type }})</p>
-                                    <p class="text-[10px] leading-4 text-gray-400">{{ item.tax_currency_amount }}</p>
-                                </div>
+                                <!-- [HEAL-WEBRECEIPT 2026-06-07] Per-LINE tax suppressed.
+                                     The per-line tax_currency_amount is GROSS (pre-discount,
+                                     stored by OrderService); on a discounted order the line
+                                     taxes summed ABOVE the H7-netted per-rate ventilation
+                                     (e.g. 0,64+0,27=0,91 vs summary 0,73), a screen-internal
+                                     contradiction. The physical ESC/POS ticket
+                                     (PosReceiptEscPosRenderer) prints NO per-line tax — only
+                                     the netted per-rate summary below. Mirror the paper here:
+                                     line shows description + qty + price only; the legally
+                                     required per-RATE ventilation (order.tax_lines, netted ==
+                                     signed Z) stays in the totals block. Line prices are
+                                     unchanged. -->
+                                <!-- (per-line tax intentionally not rendered) -->
                             </td>
                         </tr>
                     </tbody>

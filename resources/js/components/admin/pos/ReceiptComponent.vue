@@ -147,13 +147,17 @@
                                             <span v-if="addon.line_total > 0">+{{ formatReceiptAddonPrice(addon.line_total) }}</span>
                                         </p>
 
-                                        <div class="flex items-center justify-between" v-if="item.tax_rate > 0">
-                                            <p class="text-xs leading-5 font-normal text-heading">
-                                                {{ item.tax_name }} ({{ item.tax_currency_rate }} {{ item.tax_type }})</p>
-                                            <p class="text-xs leading-5 font-normal text-heading">
-                                                {{ item.tax_currency_amount }}
-                                            </p>
-                                        </div>
+                                        <!-- [HEAL-WEBRECEIPT 2026-06-07] Per-LINE tax suppressed.
+                                             item.tax_currency_amount is GROSS (pre-discount); on a
+                                             discounted order the line taxes summed ABOVE the
+                                             H7-netted per-rate ventilation (totals block) = a
+                                             screen-internal contradiction. The physical ESC/POS
+                                             ticket prints NO per-line tax, only the netted per-rate
+                                             summary. Mirror the paper: line = description + qty +
+                                             price; the NF525-required per-RATE ventilation
+                                             (order.tax_lines, netted == signed Z) stays below.
+                                             Line prices unchanged. -->
+                                        <!-- (per-line tax intentionally not rendered) -->
                                     </td>
                                 </tr>
                             </tbody>
