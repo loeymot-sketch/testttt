@@ -34,7 +34,7 @@ solo pass had missed — all **healed + independently re-verified green + commit
 ## 🔒 OWNER GATES — the ONLY true blockers to 100%-on-device
 | Gate | What only the owner can do |
 |------|----------------------------|
-| **G5** | Merge + validate `feat/pos-printer-saga-autoprint` — **the server-side ESC/POS auto-print is the actual hardware ticket path and is NOT in this branch.** This is the single biggest remaining item: without it, "print on device" code isn't here. |
+| **G5** | Merge `feat/pos-printer-saga-autoprint` (auto-print, NOT in this branch) — **VALIDATED-IN-SIM** ✅: real, additive (+1435/0del), 0 frozen, **18/18 tests**, ESC/POS bytes render the full NF525 block (SIRET/TVA/operator=cashier/fiscal-no/footer, ReceiptDataService SSOT). ⚠️ **ONE required pre-merge heal**: renderer `taxLines()` (PosReceiptEscPosRenderer ~L302-310) sums GROSS per-rate TVA, NO `orderDiscountRatio` netting = the **H7 defect reincarnated on PAPER** (discounted order printed 1,82€ vs Z ~1,36€; the 18 tests miss it — all discount=0). Fix = net by orderDiscountRatio / consume post-H7 `buildTaxLines` SSOT (byte-identical on non-discount). Verdict `MERGE-WITH-REQUIRED-HEAL`. Report: `G5-PRINT-SAGA-VALIDATION.md`. |
 | **G3** | Provide the final legal footer wording (VAT-registered mention). |
 | **G4** | Run `foodking:set-branch-legal` with real SIRET/TVA on each physical device (command is ready). |
 | **G7** | Confirm takeaway-vs-dine-in VAT rate policy + purge/rebind the 6 soft-deleted ghost items. |
