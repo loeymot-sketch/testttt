@@ -1,0 +1,9 @@
+{
+  "newId": 4178,
+  "chosen": {
+    "viande": "POULET MARINÉ",
+    "sauce": "ALGÉRIENNE"
+  },
+  "snapRaw": "{\"lines\": [{\"quantity\": 1, \"line_total\": 0, \"unit_price\": 0, \"attribute_id\": 1, \"variation_id\": 43, \"attribute_name\": \"Viande 1\", \"variation_name\": \"Poulet mariné\"}, {\"quantity\": 1, \"line_total\": 0, \"unit_price\": 0, \"attribute_id\": 5, \"variation_id\": 311, \"attribute_name\": \"Sauce (1ère Gratuite)\", \"variation_name\": \"Algérienne\"}], \"addons\": [], \"extras\": [], \"captured_at\": \"2026-06-07T18:15:59+02:00\", \"schema_version\": 1}",
+  "priceRow": "8.500000\t0.000000\t0.000000"
+}

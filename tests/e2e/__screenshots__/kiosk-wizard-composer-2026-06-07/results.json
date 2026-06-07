@@ -1,0 +1,58 @@
+[
+  {
+    "item": "Sandwich Cayenne",
+    "opened": true,
+    "wizardMounted": true
+  },
+  {
+    "item": "Sandwich Cayenne",
+    "reachedAdd": true,
+    "urlAfter": "http://127.0.0.1:8766/kiosk/categories?cat=1",
+    "rawLabel": null,
+    "crashed": 0,
+    "consoleErr": 0,
+    "pageErr": 0
+  },
+  {
+    "item": "Tacos",
+    "opened": true,
+    "wizardMounted": true
+  },
+  {
+    "item": "Tacos",
+    "reachedAdd": true,
+    "urlAfter": "http://127.0.0.1:8766/kiosk/categories?cat=5",
+    "rawLabel": null,
+    "crashed": 0,
+    "consoleErr": 0,
+    "pageErr": 0
+  },
+  {
+    "item": "Chicken Burger",
+    "opened": true,
+    "wizardMounted": true
+  },
+  {
+    "item": "Chicken Burger",
+    "reachedAdd": true,
+    "urlAfter": "http://127.0.0.1:8766/kiosk/categories?cat=4",
+    "rawLabel": null,
+    "crashed": 0,
+    "consoleErr": 0,
+    "pageErr": 0
+  },
+  {
+    "item": "Bowl Frites Poulet marine",
+    "opened": true,
+    "wizardMounted": true
+  },
+  {
+    "item": "Bowl Frites Poulet marine",
+    "reachedAdd": true,
+    "urlAfter": "http://127.0.0.1:8766/kiosk/categories?cat=6",
+    "rawLabel": null,
+    "crashed": 0,
+    "consoleErr": 0,
+    "pageErr": 0
+  }
+]

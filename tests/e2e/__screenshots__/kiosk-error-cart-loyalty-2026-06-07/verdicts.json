@@ -1,0 +1,60 @@
+[
+  {
+    "screen": "network",
+    "url": "http://127.0.0.1:8766/kiosk/error/network",
+    "rawLabel": null,
+    "crashed": 0,
+    "btnCount": 3,
+    "hasText": true,
+    "textSample": "📡 Connexion perdue Nous n'arrivons plus à joindre le service de commande. Patientez quelques instants ou appelez un mem"
+  },
+  {
+    "screen": "menu-unavailable",
+    "url": "http://127.0.0.1:8766/kiosk/error/menu-unavailable",
+    "rawLabel": null,
+    "crashed": 0,
+    "btnCount": 3,
+    "hasText": true,
+    "textSample": "🍽️ Menu momentanément indisponible Nous ne pouvons pas charger la carte pour l'instant. Merci de patienter ou de vous d"
+  },
+  {
+    "screen": "product-removed",
+    "url": "http://127.0.0.1:8766/kiosk/error/product-removed",
+    "rawLabel": null,
+    "crashed": 0,
+    "btnCount": 3,
+    "hasText": true,
+    "textSample": "🚫 Cet article n'est plus disponible Il a été retiré de la carte pendant votre commande. Vous pouvez retourner au menu p"
+  },
+  {
+    "screen": "payment-refused",
+    "url": "http://127.0.0.1:8766/kiosk/error/payment-refused",
+    "rawLabel": null,
+    "crashed": 0,
+    "btnCount": 4,
+    "hasText": true,
+    "textSample": "❌ Paiement refusé Votre transaction n'a pas pu aboutir. Vous pouvez réessayer, régler en caisse, ou annuler la commande."
+  },
+  {
+    "screen": "loyalty",
+    "url": "http://127.0.0.1:8766/kiosk/loyalty",
+    "onLoyalty": true,
+    "rawLabel": null,
+    "crashed": 0,
+    "textSample": "Programme fidélité Entrez votre code fidélité ou votre numéro de téléphone 1 2 3 4 5 6 7 8 9 0 Vérifier mon code Continuer sans fidélité Pas encore me"
+  },
+  {
+    "screen": "cart-ops",
+    "incFound": true,
+    "qtyBefore": "1",
+    "qtyAfterInc": "3",
+    "decFound": true,
+    "qtyAfterDec": "2",
+    "removeFound": true,
+    "emptyAfterRemove": true,
+    "loyaltyFound": true,
+    "promoFound": true,
+    "rawLabel": null,
+    "crashed": 0
+  }
+]
