@@ -117,6 +117,7 @@ Légende : 🅰️ = bloque/concerne Track A (single-VPS) · 🅱️ = seulement
 | C7 | Pas de package tenancy ; rôles Spatie globaux ; tokens sans claim branch | 🅱️ | P1 (B only) | re-archi V2 | (analyse) |
 | C8 | Crons `onOneServer()` → besoin leader unique (pas schedule:run par instance) | 🅱️ | P1 (B only) | 1 scheduler pod | `app/Console/Kernel.php` |
 | C9 | OSS wall poll-only (60s/2s), pas de cache CDN → charge API à l'échelle | 🅱️ | P2 (B only) | optim V2 | `OssSyncService.js:9-16` |
+| C10 | **Counter-collect fiscal alloc = pas de deadlock-retry / pas de `fiscal_alloc_error_at` self-heal** (lock-ordering inversion ; asymétrie vs kiosk-paid). Gap-free TENU sous fork-16, mais 422 cashier sans auto-recovery. | 🅱️ | P2 (B only) | OPEN — backlog cloud | `BACKLOG_C10_COUNTER_COLLECT_FISCAL_DEADLOCK_2026-06-08.md` ; ⁺`PaymentService.php:220-223` + `FiscalSequenceService.php:97-101` |
 
 **Track A — vrai blocker set (≈4) :** B1 (décision hybride matériel) · B2 (encaissement) · B3 (env() frozen) · B5/B6/B7 (respecter single-writer + EU region + plan rétention). Tout le reste (C*) est Track B.
 
