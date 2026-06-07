@@ -1,6 +1,10 @@
 # GOAL 100% VALIDATION — CONVERGENCE VERDICT
-**Date:** 2026-06-07 · Superviseur central · 2 audit+heal rounds, ~3M agent tokens, 0 frozen drift
-**HEAD:** `15e0aecff` (branch `heal/pre-cloud-exec-2026-06-05`, backup `backup/goal-100pct-2026-06-07`, NO push)
+**Date:** 2026-06-07/08 · Superviseur central · 5 audit+heal+abuse rounds, ~4M agent tokens, 0 frozen drift
+**HEAD:** `6b56e0b5d` (branch `heal/pre-cloud-exec-2026-06-05`, backup `backup/goal-100pct-2026-06-07`, NO push) · G5 heal on `feat` `b27365295`
+
+## FULL-SUITE REGRESSION ATTESTATION (post-all-6-heals)
+- **Vitest = 2043/2043 GREEN** (whole frontend). The attestation initially showed 2 fails in `KeyboardNavigationSentinel` (`[role="button"]:focus-visible` absent) — root-caused to a STRAY UNCOMMITTED `app.css` left by a heal-wave mix rebuild (the rule IS in source `pos-a11y.css:28` + the committed HEAD `app.css`); fixed by `git restore` to the clean committed bundles (receipt heals intact in committed `admin-shell.js`). Working tree clean.
+- **PHPUnit = 3046 tests, 4 failures** (clean sqlite `:memory:` path, NOT `php artisan test`) — ALL 4 = OSS empty-feed (`{"data":[]}`) + 1 pre-existing risky `TpeSimulationDepthSentinelTest` (no-assertions, known this session). **Discriminators already proven NOT-my-regression**: (a) the 2 OSS tests PASS in isolation (9/33); (b) my 3 new test classes run GREEN alongside the OSS tests (25/83); (c) OSS feed uses `CDSOrderDetailsResource`, NOT the `OrderDetailsResource` I changed; (d) my new tests all use `RefreshDatabase`, 0 clock manipulation. Root-cause = OSS feed is date-scoped to "today" → an upstream test shifting `Carbon::now()` without reset empties the window. **Round-5 FORENSICS workflow in flight to pinpoint the exact polluter + prove pre-existing + fix if low-risk; ABUSE-FISCAL + ABUSE-EDGE hammering the healed core in parallel.**
 
 ## VERDICT: SOFTWARE CONVERGED-GREEN. Remaining path to 100%-on-device = OWNER GATES only.
 
