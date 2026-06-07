@@ -592,6 +592,11 @@ export default {
                 [posPaymentMethodEnum.CARD]: this.$t("label.card"),
                 [posPaymentMethodEnum.MOBILE_BANKING]: this.$t("label.mobile_banking"),
                 [posPaymentMethodEnum.OTHER]: this.$t("label.other"),
+                // [HEAL-H7 / CP-2 2026-06-07] index 5 (TICKET_RESTAURANT) was
+                // missing → blank payment-type label on the admin order-show
+                // page for titre-restaurant sales. Mirrors ReceiptComponent.vue
+                // (the printed ticket already has index 5).
+                [posPaymentMethodEnum.TICKET_RESTAURANT]: this.$t("label.ticket_restaurant"),
             }
         },
         orderTypeEnumArray: function () {

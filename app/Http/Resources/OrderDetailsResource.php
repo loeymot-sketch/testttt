@@ -23,6 +23,18 @@ class OrderDetailsResource extends JsonResource
         // of truth — see ReceiptDataServiceWireInTest for the contract.
         $receipt = app(ReceiptDataService::class)->buildForOrderModel($this->resource);
 
+        // [HEAL-H7 / CP-1 2026-06-07] Discount-netted per-rate buckets are the
+        // SSOT for the printed ticket's TVA. Built ONCE here and reused for both
+        // the `tax_lines` projection and the header so they can never drift. The
+        // header total_tax = Σ tax_lines (= the signed Z's total_tva); the HT
+        // base = post-discount HT (total − netted TVA), not subtotal − gross TVA.
+        $taxLines = $this->buildTaxLines();
+        $nettedTotalTax = round(array_sum(array_map(
+            static fn ($l) => (float) ($l['tax'] ?? 0),
+            $taxLines
+        )), 2);
+        $nettedTotalForHt = round((float) ($this->total ?? 0), 2);
+
         return [
             'id' => $this->id,
             'order_serial_no' => $this->order_serial_no,
@@ -52,18 +64,24 @@ class OrderDetailsResource extends JsonResource
             // Montants numériques (SSOT) pour kiosk / TPE / intégrations — complément des *_currency_price.
             'subtotal' => round((float) ($this->subtotal ?? 0), 2),
             'discount' => round((float) ($this->discount ?? 0), 2),
-            'total_tax' => round((float) ($this->total_tax ?? 0), 2),
+            // [HEAL-H7 / CP-1] Netted to the post-discount base so the printed
+            // NF525 ticket matches the collected TVA and the signed Z. On
+            // non-discount orders ratio=1.0 → identical to the prior gross sum.
+            'total_tax' => $nettedTotalTax,
             'total' => round((float) ($this->total ?? 0), 2),
             // [WT-D-R1-F4 2026-05-20] Raw numeric `delivery_charge` to feed
             // the canonical `formatPrice()` admin renderer (mirrors the
             // sibling subtotal/discount/total_tax/total raw projections).
             'delivery_charge' => round((float) ($this->delivery_charge ?? 0), 2),
             'subtotal_currency_price' => AppLibrary::currencyAmountFormat($this->subtotal),
-            'subtotal_without_tax_currency_price' => AppLibrary::currencyAmountFormat($this->subtotal - $this->total_tax),
+            // [HEAL-H7 / CP-1] Post-discount HT = total − netted TVA, mirroring
+            // the Z's total_ht = total_ttc − total_tva. On non-discount orders
+            // total == subtotal, so this is byte-identical to the prior value.
+            'subtotal_without_tax_currency_price' => AppLibrary::currencyAmountFormat($nettedTotalForHt - $nettedTotalTax),
             'discount_currency_price' => AppLibrary::currencyAmountFormat($this->discount),
             'delivery_charge_currency_price' => AppLibrary::currencyAmountFormat($this->delivery_charge),
             'total_currency_price' => AppLibrary::currencyAmountFormat($this->total),
-            'total_tax_currency_price' => AppLibrary::currencyAmountFormat($this->total_tax),
+            'total_tax_currency_price' => AppLibrary::currencyAmountFormat($nettedTotalTax),
             'order_type' => $this->order_type,
             'created_at' => optional($this->created_at)->toIso8601String(),
             'order_datetime' => AppLibrary::datetime($this->order_datetime),
@@ -113,8 +131,9 @@ class OrderDetailsResource extends JsonResource
             'cash_back_currency_amount' => AppLibrary::currencyAmountFormat($this->pos_received_amount - $this->total),
             // [POS-9.1.13] Per-rate VAT breakdown for the printed ticket
             // (CGI art. 242 nonies A — every receipt must list HT base
-            // and tax per rate). POS-GA-F-20.
-            'tax_lines' => $this->buildTaxLines(),
+            // and tax per rate). POS-GA-F-20. [HEAL-H7] Discount-netted; same
+            // computed array that feeds the header total_tax above.
+            'tax_lines' => $taxLines,
             // [T21 → NF525 RECEIPT WIRE-IN 2026-05-18] Six NF525 fields
             // delegated to ReceiptDataService (SSOT). audit_chain_fingerprint
             // and payments_breakdown stay owned by this resource — they're
@@ -207,10 +226,25 @@ class OrderDetailsResource extends JsonResource
      * OrderService::posOrderStore stores items; tax_amount is also
      * persisted line by line). Returns an array of associative arrays
      * suitable for receipt rendering AND fiscal exports.
+     *
+     * [HEAL-H7 / CP-1 2026-06-07] NF525 discount-netting on the printed
+     * ticket. Per-line tax_amount is the PRE-discount line tax (OrderService
+     * applies the coupon/loyalty discount at order level only — see
+     * OrderService.php:504-562). The signed Z and the refund counter-entry
+     * both NET this by orderDiscountRatio = (subtotal − discount)/subtotal
+     * (ZReportService::orderDiscountRatio + taxBreakdownForOrders,
+     * RefundWithCounterEntryService). The printed ticket is itself an NF525
+     * fiscal document, so its per-rate TVA/HT MUST equal the collected/Z TVA,
+     * not the gross pre-discount figure. We mirror that exact ratio here.
+     * Rounding matches the Z: net per-rate, round per bucket, then sum
+     * (so the header total_tax derived from these buckets equals Σ buckets,
+     * the same SSOT the Z uses for total_tva). ratio = 1.0 on non-discount
+     * orders → existing receipts byte-identical.
      */
     private function buildTaxLines(): array
     {
         $items = $this->orderItems ?? collect();
+        $ratio = $this->orderDiscountRatio();
         $groups = [];
         foreach ($items as $oi) {
             // DECIMAL columns may surface as "10.000000" on MySQL — normalise so
@@ -230,8 +264,10 @@ class OrderDetailsResource extends JsonResource
             }
             $taxAmount = (float) ($oi->tax_amount ?? 0);
             $totalTtc = (float) ($oi->total_price ?? 0);
-            $groups[$key]['tax_amount_raw'] += $taxAmount;
-            $groups[$key]['base_ht_raw'] += max(0.0, $totalTtc - $taxAmount);
+            // Net both the tax and the HT base by the discount ratio so the
+            // bucket reflects the POST-discount TTC that was actually paid.
+            $groups[$key]['tax_amount_raw'] += $taxAmount * $ratio;
+            $groups[$key]['base_ht_raw'] += max(0.0, $totalTtc - $taxAmount) * $ratio;
         }
         $out = [];
         foreach ($groups as $g) {
@@ -247,5 +283,24 @@ class OrderDetailsResource extends JsonResource
         }
 
         return $out;
+    }
+
+    /**
+     * [HEAL-H7 / CP-1 2026-06-07] Discount-netting ratio for this order:
+     * (subtotal − discount) / subtotal, clamped to [0,1]. Returns 1.0 when
+     * there is no discount (or no positive subtotal) so non-discount orders
+     * are unchanged. Mirrors ZReportService::orderDiscountRatio exactly (the
+     * frozen fiscal SSOT) so the printed ticket nets identically to the
+     * signed Z; do NOT diverge from that formula.
+     */
+    private function orderDiscountRatio(): float
+    {
+        $subtotal = (float) ($this->resource->subtotal ?? 0);
+        $discount = (float) ($this->resource->discount ?? 0);
+        if ($discount <= 0.0 || $subtotal <= 0.0) {
+            return 1.0;
+        }
+
+        return max(0.0, min(1.0, ($subtotal - $discount) / $subtotal));
     }
 }
