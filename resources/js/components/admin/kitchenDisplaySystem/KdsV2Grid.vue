@@ -384,8 +384,21 @@ export default {
             if (diffSec < 60) {
                 return this.$t('label.kds_served_just_now');
             }
+            // [KDS-UI-02 FIX] Roll the relative label up past minutes so a
+            // multi-day-old served order no longer renders "il y a 5907 min".
+            // < 60 min  → "il y a {mins} min" (existing path, unchanged)
+            // < 24 h    → "il y a {hours} h"  (floor of whole hours)
+            // ≥ 24 h    → "il y a {days} j"    (floor of whole days)
             const mins = Math.floor(diffSec / 60);
-            return this.$t('label.kds_served_ago', { mins });
+            if (mins < 60) {
+                return this.$t('label.kds_served_ago', { mins });
+            }
+            const hours = Math.floor(mins / 60);
+            if (hours < 24) {
+                return this.$t('label.kds_served_ago_hours', { hours });
+            }
+            const days = Math.floor(hours / 24);
+            return this.$t('label.kds_served_ago_days', { days });
         },
     },
 };

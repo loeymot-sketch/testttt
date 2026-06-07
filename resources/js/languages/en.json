@@ -431,6 +431,13 @@
         "demo_wizard_advanced": "Advanced Wizard Demo"
     },
     "label": {
+        "kds_served_ago_hours": "{hours} h ago",
+        "kds_served_ago_days": "{days} d ago",
+        "kds_card_cta_start": "Start",
+        "kds_lane_empty_dinein": "No dine-in orders in progress.",
+        "kds_lane_empty_online": "No online orders in progress.",
+        "kds_lane_empty_takeaway": "No takeaway orders in progress.",
+        "kds_lane_empty_borne": "No kiosk orders in progress.",
         "encaisser": "Collect",
         "encaisser_queue_subtitle": "Orders awaiting collection",
         "encaisser_queue_empty": "No orders to collect",
@@ -1376,6 +1383,7 @@
         "downloading": "Downloading…"
     },
     "button": {
+        "kds_print_ticket": "Print ticket",
         "refresh": "Refresh",
         "add": "Add",
         "save": "Save",
@@ -1776,6 +1784,8 @@
             "cancel_no": "No, continue"
         },
         "pay_screen": {
+            "offline_queued_title": "Order saved offline",
+            "offline_queued_sub": "It will be sent to the counter once the connection is back. Please go to the counter — staff will complete your order.",
             "title": "Choose how to pay",
             "total_prefix": "Amount to pay:",
             "card_title": "Card",

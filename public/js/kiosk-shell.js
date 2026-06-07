@@ -132,7 +132,7 @@ __webpack_require__.r(__webpack_exports__);
 
 var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
 // Module
-___CSS_LOADER_EXPORT___.push([module.id, "\n.kiosk-payment[data-v-7f6954b0] {\n  width: 100vw;\n  height: 100vh;\n  background: var(--kiosk-page-bg, var(--kiosk-bg));\n  display: flex;\n  flex-direction: column;\n  overflow: hidden;\n  color: var(--kiosk-text);\n}\n\n/* [SUPERVISOR WAVE C Z1 2026-05-28] Plan B counter-route screen */\n.kiosk-pay-counter-route[data-v-7f6954b0] {\n  width: 100vw;\n  height: 100vh;\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: center;\n  gap: 24px;\n  padding: 40px;\n  background: var(--kiosk-page-bg, #FFFFFF);\n  color: var(--kiosk-text, #0F0F0F);\n  text-align: center;\n}\n.kiosk-pay-counter-icon[data-v-7f6954b0] {\n  margin-bottom: 8px;\n}\n.kiosk-pay-counter-title[data-v-7f6954b0] {\n  font-size: clamp(36px, 5vw, 56px);\n  font-weight: 900;\n  margin: 0;\n  color: var(--kiosk-text, #0F0F0F);\n  text-transform: uppercase;\n  letter-spacing: 0.02em;\n}\n.kiosk-pay-counter-sub[data-v-7f6954b0] {\n  font-size: clamp(22px, 2.8vw, 32px);\n  font-weight: 700;\n  color: var(--kiosk-primary, #F4501E);\n  margin: 0;\n  max-width: 720px;\n}\n.kiosk-pay-counter-total[data-v-7f6954b0] {\n  margin: 16px auto 0;\n  width: min(640px, calc(100vw - 64px));\n  min-height: 140px;\n  border-radius: 28px;\n  background: linear-gradient(135deg, var(--kiosk-primary, #F4501E), var(--kiosk-primary-dark, #D7263D));\n  color: #FFFFFF;\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: center;\n  gap: 8px;\n  box-shadow: var(--kiosk-shadow-cta, 0 12px 28px rgba(0,0,0,0.18));\n}\n.kiosk-pay-counter-total span[data-v-7f6954b0] {\n  font-size: 16px;\n  font-weight: 800;\n  letter-spacing: 0.12em;\n  text-transform: uppercase;\n  opacity: 0.9;\n}\n.kiosk-pay-counter-total strong[data-v-7f6954b0] {\n  font-size: clamp(48px, 8vw, 80px);\n  font-weight: 900;\n  line-height: 0.92;\n}\n.kiosk-pay-counter-spinner[data-v-7f6954b0] {\n  width: 64px;\n  height: 64px;\n  border: 5px solid #FFE8DD;\n  border-top-color: #F4501E;\n  border-radius: 50%;\n  animation: spin-7f6954b0 0.8s linear infinite;\n  margin-top: 8px;\n}\n.kiosk-pay-counter-processing[data-v-7f6954b0] {\n  font-size: 18px;\n  color: var(--kiosk-text-muted, #5A5A5A);\n  margin: 0;\n}\n\n/* Header — thème clair : texte foncé lisible */\n.kiosk-pay-header[data-v-7f6954b0] {\n  display: flex;\n  align-items: center;\n  gap: 20px;\n  padding: 26px 34px 22px;\n  background: var(--kiosk-surface);\n  border-bottom: 1px solid var(--kiosk-border);\n  box-shadow: var(--kiosk-shadow-sticky);\n  flex-shrink: 0;\n}\n.kiosk-pay-back[data-v-7f6954b0] {\n  width: 60px;\n  height: 60px;\n  border-radius: 18px;\n  border: 1.5px solid var(--kiosk-border);\n  background: var(--kiosk-bg);\n  color: var(--kiosk-text);\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  cursor: pointer;\n  flex-shrink: 0;\n  transition: all 0.15s ease;\n}\n.kiosk-pay-back[data-v-7f6954b0]:active { background: var(--kiosk-surface-alt); transform: scale(0.95);\n}\n.kiosk-pay-back[data-v-7f6954b0]:disabled { opacity: 0.4; cursor: not-allowed;\n}\n.kiosk-pay-header-info[data-v-7f6954b0] { flex: 1;\n}\n.kiosk-pay-title[data-v-7f6954b0] {\n  font-size: clamp(30px, 4vw, 44px);\n  font-weight: 900;\n  color: var(--kiosk-text);\n  margin: 0 0 4px;\n  text-transform: uppercase;\n}\n.kiosk-pay-total-label[data-v-7f6954b0] {\n  font-size: 16px;\n  color: var(--kiosk-text-muted);\n  margin: 0;\n}\n.kiosk-pay-total-label strong[data-v-7f6954b0] { color: var(--kiosk-text); font-size: 18px;\n}\n.kiosk-pay-amount-card[data-v-7f6954b0] {\n  margin: 28px auto 0;\n  width: min(720px, calc(100vw - 64px));\n  min-height: 168px;\n  border-radius: 34px;\n  background: linear-gradient(135deg, var(--kiosk-primary), var(--kiosk-primary-dark));\n  color: var(--kiosk-text-on-red);\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: center;\n  gap: 10px;\n  box-shadow: var(--kiosk-shadow-cta);\n  text-align: center;\n}\n.kiosk-pay-amount-card span[data-v-7f6954b0] {\n  font-size: 18px;\n  font-weight: 900;\n  letter-spacing: 0.12em;\n  text-transform: uppercase;\n  opacity: 0.86;\n}\n.kiosk-pay-amount-card strong[data-v-7f6954b0] {\n  font-size: clamp(56px, 9vw, 96px);\n  font-weight: 900;\n  line-height: 0.92;\n  letter-spacing: 0;\n}\n\n/* Grille méthodes — cartes centrées, pas bandeaux edge-to-edge */\n.kiosk-pay-methods-outer[data-v-7f6954b0] {\n  flex: 1;\n  overflow-y: auto;\n  padding: 28px 32px 20px;\n  scrollbar-width: none;\n  display: flex;\n  justify-content: center;\n  align-items: flex-start;\n}\n.kiosk-pay-methods-outer[data-v-7f6954b0]::-webkit-scrollbar { display: none;\n}\n.kiosk-pay-methods[data-v-7f6954b0] {\n  display: grid;\n  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));\n  gap: 22px;\n  width: 100%;\n  max-width: 1000px;\n  align-content: start;\n}\n.kiosk-pay-method[data-v-7f6954b0] {\n  display: flex;\n  align-items: center;\n  gap: 20px;\n  padding: 26px 28px;\n  min-height: 138px;\n  background: var(--kiosk-surface);\n  border-radius: 28px;\n  border: 2px solid var(--kiosk-border);\n  box-shadow: var(--kiosk-shadow-card);\n  cursor: pointer;\n  transition: all 0.2s ease;\n  position: relative;\n}\n.kiosk-pay-method[data-v-7f6954b0]:active { transform: scale(0.99);\n}\n.kiosk-pay-method.disabled[data-v-7f6954b0] {\n  cursor: not-allowed;\n  opacity: 0.5;\n  transform: none;\n}\n.kiosk-pay-method.selected[data-v-7f6954b0] {\n  border-color: var(--kiosk-primary);\n  background: var(--kiosk-surface);\n  box-shadow: 0 0 0 2px var(--kiosk-primary), var(--kiosk-shadow-lift);\n}\n.kiosk-pay-method-icon[data-v-7f6954b0] {\n  width: 86px;\n  height: 86px;\n  border-radius: 50%;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  flex-shrink: 0;\n}\n\n/* Icônes métier payment : gradient brand spécifique carte/cash/TR.\n   Couleurs conservées hors tokens car elles encodent la sémantique de moyen de\n   paiement (bleu CB / vert cash / orange TR), reconnues internationalement. */\n.kiosk-pay-method-icon.card[data-v-7f6954b0]   { background: linear-gradient(135deg, #1a3a6b, var(--kiosk-info, #2563EB));\n}\n.kiosk-pay-method-icon.cash[data-v-7f6954b0]   { background: linear-gradient(135deg, #0a4a20, var(--kiosk-success, #16a34a));\n}\n.kiosk-pay-method-icon.tr[data-v-7f6954b0]     { background: linear-gradient(135deg, #7a2000, #ea580c);\n}\n.kiosk-pay-method-info[data-v-7f6954b0] { flex: 1; min-width: 0;\n}\n.kiosk-pay-method-info h3[data-v-7f6954b0] {\n  font-size: 25px;\n  font-weight: 900;\n  color: var(--kiosk-text);\n  margin: 0 0 4px;\n}\n.kiosk-pay-method-info p[data-v-7f6954b0] {\n  font-size: 15px;\n  color: var(--kiosk-text-muted);\n  margin: 0;\n}\n.kiosk-pay-method-check[data-v-7f6954b0] {\n  width: 36px;\n  height: 36px;\n  border-radius: 50%;\n  background: var(--kiosk-primary);\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  animation: popIn-7f6954b0 0.2s cubic-bezier(0.34,1.56,0.64,1);\n}\n@keyframes popIn-7f6954b0 {\nfrom { transform: scale(0); opacity: 0;\n}\nto   { transform: scale(1); opacity: 1;\n}\n}\n\n/* Processing */\n.kiosk-pay-processing[data-v-7f6954b0] {\n  flex: 1;\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: center;\n  gap: 24px;\n  padding: 40px;\n  text-align: center;\n}\n.kiosk-pay-processing-ring[data-v-7f6954b0] {\n  width: 120px;\n  height: 120px;\n  border-radius: 50%;\n  border: 4px solid var(--kiosk-primary-soft);\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  animation: spin-7f6954b0 1.5s linear infinite;\n}\n@keyframes spin-7f6954b0 {\nto { transform: rotate(360deg);\n}\n}\n.kiosk-pay-processing-ring-inner[data-v-7f6954b0] {\n  width: 96px;\n  height: 96px;\n  border-radius: 50%;\n  background: var(--kiosk-primary-soft);\n  border: 4px solid var(--kiosk-primary);\n  border-block-start-color: transparent;\n  animation: spin-7f6954b0 0.8s linear infinite reverse;\n}\n.kiosk-pay-processing h2[data-v-7f6954b0] {\n  font-size: 28px;\n  font-weight: 800;\n  color: var(--kiosk-text);\n  margin: 0;\n}\n.kiosk-pay-processing p[data-v-7f6954b0] {\n  font-size: 16px;\n  color: var(--kiosk-text-muted);\n  margin: 0;\n}\n\n/* Erreur */\n.kiosk-pay-error[data-v-7f6954b0] {\n  background: var(--kiosk-primary-soft);\n  border: 1px solid var(--kiosk-primary);\n  color: var(--kiosk-error);\n  padding: 14px 20px;\n  border-radius: 12px;\n  font-size: 15px;\n  text-align: center;\n  margin-bottom: 8px;\n}\n.kiosk-pay-offline-alert[data-v-7f6954b0] {\n  margin: 0 20px 12px;\n  border: 1px solid rgba(215, 38, 61, 0.28);\n  border-radius: 12px;\n  background: rgba(215, 38, 61, 0.08);\n  color: #8f1022;\n  font-size: 14px;\n  font-weight: 700;\n  line-height: 1.35;\n  padding: 12px 14px;\n  text-align: center;\n}\n\n/* Confirmer — largeur max centrée (borne) */\n.kiosk-pay-confirm[data-v-7f6954b0] {\n  padding: 20px 32px 34px;\n  flex-shrink: 0;\n}\n.kiosk-pay-confirm-inner[data-v-7f6954b0] {\n  display: flex;\n  justify-content: center;\n  width: 100%;\n}\n.kiosk-btn-confirm[data-v-7f6954b0] {\n  width: 100%;\n  max-width: 680px;\n  min-height: 92px;\n  height: auto;\n  padding: 20px 32px;\n  /* [iter15-mega-fix C-012 round-7 2026-05-10] Pin the Confirmer CTA to the\n     Cayenne brand-red token directly with a solid fallback (#F4501E) instead\n     of relying on the resolved `--kiosk-primary` chain. With the default\n     theme now being light (C-011), `--kiosk-primary` = #F4501E ; we still\n     keep the var() so dark-mode operators get the correct brand red. */\n  background: var(--kiosk-primary, #F4501E);\n  color: var(--kiosk-text-on-red, #FFFFFF);\n  border: none;\n  border-radius: 30px;\n  font-size: 26px;\n  font-weight: 900;\n  cursor: pointer;\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 16px;\n  box-shadow: var(--kiosk-shadow-cta);\n  transition: all 0.15s ease;\n}\n.kiosk-btn-confirm[data-v-7f6954b0]:disabled {\n  /* [iter15-mega-fix C-012 round-7 2026-05-10] Raise opacity from 0.4 to\n     0.65 so disabled state stays readable (WCAG AA against white kiosk bg).\n     Add an explicit dark-grey overlay so the disabled button no longer reads\n     as \"pale pink\" against the soft Cayenne bg. */\n  opacity: 0.65;\n  background: #C9C9C9;\n  color: #4A4A4A;\n  cursor: not-allowed;\n  box-shadow: none;\n}\n.kiosk-btn-confirm[data-v-7f6954b0]:not(:disabled):active {\n  transform: scale(0.98);\n  box-shadow: var(--kiosk-shadow-card);\n}\n\n/* TPE terminal waiting overlay — V3.4 owner gate (2026-05-10) :\n   ramené en light mode pour cohérence avec rest of kiosk flow. Le focus\n   haptique sur CB reste assuré par l'animation pulse + spinner Cayenne. */\n.kiosk-tpe-overlay[data-v-7f6954b0] {\n  position: fixed; inset: 0; z-index: 100;\n  background: #FFFFFF;\n  display: flex; flex-direction: column;\n  align-items: center; justify-content: center;\n  gap: 1.5rem; text-align: center; padding: 2rem;\n  color: #0F0F0F;\n}\n.kiosk-tpe-card-anim[data-v-7f6954b0] {\n  position: relative;\n  width: 160px; height: 160px;\n  display: flex; align-items: center; justify-content: center;\n}\n.kiosk-tpe-ring[data-v-7f6954b0] {\n  position: absolute; inset: 0;\n  border: 3px solid var(--kiosk-primary);\n  border-radius: 50%;\n  opacity: 0.4;\n  animation: tpe-pulse-7f6954b0 1.8s ease-out infinite;\n}\n@keyframes tpe-pulse-7f6954b0 {\n0% { transform: scale(0.6); opacity: 0.9;\n}\n100% { transform: scale(1.4); opacity: 0;\n}\n}\n.kiosk-tpe-card-icon[data-v-7f6954b0] {\n  position: relative; z-index: 2;\n  background: #FFE8DD;\n  border: 2px solid #F4501E;\n  border-radius: 50%;\n  width: 100px; height: 100px;\n  display: flex; align-items: center; justify-content: center;\n  color: #F4501E;\n}\n.kiosk-tpe-title[data-v-7f6954b0] {\n  font-size: 1.8rem; font-weight: 800; color: #0F0F0F; margin: 0;\n}\n.kiosk-tpe-help[data-v-7f6954b0] {\n  margin: 0.5rem 0 0;\n  font-size: 0.95rem;\n  line-height: 1.35;\n  color: #5A5A5A;\n  max-width: 22rem;\n  text-align: center;\n}\n.kiosk-tpe-sub[data-v-7f6954b0] {\n  font-size: 1rem; color: #5A5A5A; margin: 0; max-width: 340px;\n}\n.kiosk-tpe-spinner[data-v-7f6954b0] {\n  width: 64px; height: 64px;\n  border: 5px solid #FFE8DD;\n  border-top-color: #F4501E;\n  border-radius: 50%;\n  animation: tpe-spin-7f6954b0 0.8s linear infinite;\n}\n@keyframes tpe-spin-7f6954b0 {\nto { transform: rotate(360deg);\n}\n}\n.kiosk-tpe-cancel[data-v-7f6954b0] {\n  margin-top: 8px;\n  padding: 14px 40px;\n  background: #FFFFFF;\n  border: 1.5px solid #E5E5E5;\n  border-radius: 14px;\n  color: #5A5A5A;\n  font-size: 16px;\n  font-weight: 600;\n  cursor: pointer;\n  transition: all 0.15s;\n}\n.kiosk-tpe-cancel[data-v-7f6954b0]:hover { background: #FFE8DD; color: #F4501E; border-color: #F4501E;\n}\n\n/* Focus visible WCAG 2.4.7 — méthodes paiement navigables au clavier */\n.kiosk-pay-method[data-v-7f6954b0]:focus-visible {\n  outline: 3px solid var(--kiosk-focus-ring, var(--kiosk-primary));\n  outline-offset: 3px;\n}\n\n", ""]);
+___CSS_LOADER_EXPORT___.push([module.id, "\n.kiosk-payment[data-v-7f6954b0] {\n  width: 100vw;\n  height: 100vh;\n  background: var(--kiosk-page-bg, var(--kiosk-bg));\n  display: flex;\n  flex-direction: column;\n  overflow: hidden;\n  color: var(--kiosk-text);\n}\n\n/* [SUPERVISOR WAVE C Z1 2026-05-28] Plan B counter-route screen */\n.kiosk-pay-counter-route[data-v-7f6954b0] {\n  width: 100vw;\n  height: 100vh;\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: center;\n  gap: 24px;\n  padding: 40px;\n  background: var(--kiosk-page-bg, #FFFFFF);\n  color: var(--kiosk-text, #0F0F0F);\n  text-align: center;\n}\n.kiosk-pay-counter-icon[data-v-7f6954b0] {\n  margin-bottom: 8px;\n}\n.kiosk-pay-counter-title[data-v-7f6954b0] {\n  font-size: clamp(36px, 5vw, 56px);\n  font-weight: 900;\n  margin: 0;\n  color: var(--kiosk-text, #0F0F0F);\n  text-transform: uppercase;\n  letter-spacing: 0.02em;\n}\n.kiosk-pay-counter-sub[data-v-7f6954b0] {\n  font-size: clamp(22px, 2.8vw, 32px);\n  font-weight: 700;\n  color: var(--kiosk-primary, #F4501E);\n  margin: 0;\n  max-width: 720px;\n}\n.kiosk-pay-counter-total[data-v-7f6954b0] {\n  margin: 16px auto 0;\n  width: min(640px, calc(100vw - 64px));\n  min-height: 140px;\n  border-radius: 28px;\n  background: linear-gradient(135deg, var(--kiosk-primary, #F4501E), var(--kiosk-primary-dark, #D7263D));\n  color: #FFFFFF;\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: center;\n  gap: 8px;\n  box-shadow: var(--kiosk-shadow-cta, 0 12px 28px rgba(0,0,0,0.18));\n}\n.kiosk-pay-counter-total span[data-v-7f6954b0] {\n  font-size: 16px;\n  font-weight: 800;\n  letter-spacing: 0.12em;\n  text-transform: uppercase;\n  opacity: 0.9;\n}\n.kiosk-pay-counter-total strong[data-v-7f6954b0] {\n  font-size: clamp(48px, 8vw, 80px);\n  font-weight: 900;\n  line-height: 0.92;\n}\n/* [KIOSK-OFFLINE-PLANB-01 FIX] Offline-queued state — mirrors the counter-route\n   layout so the offline cash screen reads as a deliberate confirmation, not a\n   broken cash-collect screen with a blank \"#—\". */\n.kiosk-pay-offline-queued[data-v-7f6954b0] {\n  width: 100vw;\n  height: 100vh;\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: center;\n  gap: 24px;\n  padding: 40px;\n  background: var(--kiosk-page-bg, #FFFFFF);\n  color: var(--kiosk-text, #0F0F0F);\n  text-align: center;\n}\n.kiosk-pay-offline-queued-icon[data-v-7f6954b0] {\n  margin-bottom: 8px;\n}\n.kiosk-pay-offline-queued-title[data-v-7f6954b0] {\n  font-size: clamp(36px, 5vw, 56px);\n  font-weight: 900;\n  margin: 0;\n  color: var(--kiosk-text, #0F0F0F);\n  text-transform: uppercase;\n  letter-spacing: 0.02em;\n}\n.kiosk-pay-offline-queued-sub[data-v-7f6954b0] {\n  font-size: clamp(20px, 2.6vw, 30px);\n  font-weight: 600;\n  color: var(--kiosk-primary, #F4501E);\n  margin: 0;\n  max-width: 760px;\n  line-height: 1.3;\n}\n.kiosk-pay-offline-queued-total[data-v-7f6954b0] {\n  margin: 16px auto 0;\n  width: min(640px, calc(100vw - 64px));\n  min-height: 140px;\n  border-radius: 28px;\n  background: linear-gradient(135deg, var(--kiosk-primary, #F4501E), var(--kiosk-primary-dark, #D7263D));\n  color: #FFFFFF;\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: center;\n  gap: 8px;\n  box-shadow: var(--kiosk-shadow-cta, 0 12px 28px rgba(0,0,0,0.18));\n}\n.kiosk-pay-offline-queued-total span[data-v-7f6954b0] {\n  font-size: 16px;\n  font-weight: 800;\n  letter-spacing: 0.12em;\n  text-transform: uppercase;\n  opacity: 0.9;\n}\n.kiosk-pay-offline-queued-total strong[data-v-7f6954b0] {\n  font-size: clamp(48px, 8vw, 80px);\n  font-weight: 900;\n  line-height: 0.92;\n}\n.kiosk-pay-counter-spinner[data-v-7f6954b0] {\n  width: 64px;\n  height: 64px;\n  border: 5px solid #FFE8DD;\n  border-top-color: #F4501E;\n  border-radius: 50%;\n  animation: spin-7f6954b0 0.8s linear infinite;\n  margin-top: 8px;\n}\n.kiosk-pay-counter-processing[data-v-7f6954b0] {\n  font-size: 18px;\n  color: var(--kiosk-text-muted, #5A5A5A);\n  margin: 0;\n}\n\n/* Header — thème clair : texte foncé lisible */\n.kiosk-pay-header[data-v-7f6954b0] {\n  display: flex;\n  align-items: center;\n  gap: 20px;\n  padding: 26px 34px 22px;\n  background: var(--kiosk-surface);\n  border-bottom: 1px solid var(--kiosk-border);\n  box-shadow: var(--kiosk-shadow-sticky);\n  flex-shrink: 0;\n}\n.kiosk-pay-back[data-v-7f6954b0] {\n  width: 60px;\n  height: 60px;\n  border-radius: 18px;\n  border: 1.5px solid var(--kiosk-border);\n  background: var(--kiosk-bg);\n  color: var(--kiosk-text);\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  cursor: pointer;\n  flex-shrink: 0;\n  transition: all 0.15s ease;\n}\n.kiosk-pay-back[data-v-7f6954b0]:active { background: var(--kiosk-surface-alt); transform: scale(0.95);\n}\n.kiosk-pay-back[data-v-7f6954b0]:disabled { opacity: 0.4; cursor: not-allowed;\n}\n.kiosk-pay-header-info[data-v-7f6954b0] { flex: 1;\n}\n.kiosk-pay-title[data-v-7f6954b0] {\n  font-size: clamp(30px, 4vw, 44px);\n  font-weight: 900;\n  color: var(--kiosk-text);\n  margin: 0 0 4px;\n  text-transform: uppercase;\n}\n.kiosk-pay-total-label[data-v-7f6954b0] {\n  font-size: 16px;\n  color: var(--kiosk-text-muted);\n  margin: 0;\n}\n.kiosk-pay-total-label strong[data-v-7f6954b0] { color: var(--kiosk-text); font-size: 18px;\n}\n.kiosk-pay-amount-card[data-v-7f6954b0] {\n  margin: 28px auto 0;\n  width: min(720px, calc(100vw - 64px));\n  min-height: 168px;\n  border-radius: 34px;\n  background: linear-gradient(135deg, var(--kiosk-primary), var(--kiosk-primary-dark));\n  color: var(--kiosk-text-on-red);\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: center;\n  gap: 10px;\n  box-shadow: var(--kiosk-shadow-cta);\n  text-align: center;\n}\n.kiosk-pay-amount-card span[data-v-7f6954b0] {\n  font-size: 18px;\n  font-weight: 900;\n  letter-spacing: 0.12em;\n  text-transform: uppercase;\n  opacity: 0.86;\n}\n.kiosk-pay-amount-card strong[data-v-7f6954b0] {\n  font-size: clamp(56px, 9vw, 96px);\n  font-weight: 900;\n  line-height: 0.92;\n  letter-spacing: 0;\n}\n\n/* Grille méthodes — cartes centrées, pas bandeaux edge-to-edge */\n.kiosk-pay-methods-outer[data-v-7f6954b0] {\n  flex: 1;\n  overflow-y: auto;\n  padding: 28px 32px 20px;\n  scrollbar-width: none;\n  display: flex;\n  justify-content: center;\n  align-items: flex-start;\n}\n.kiosk-pay-methods-outer[data-v-7f6954b0]::-webkit-scrollbar { display: none;\n}\n.kiosk-pay-methods[data-v-7f6954b0] {\n  display: grid;\n  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));\n  gap: 22px;\n  width: 100%;\n  max-width: 1000px;\n  align-content: start;\n}\n.kiosk-pay-method[data-v-7f6954b0] {\n  display: flex;\n  align-items: center;\n  gap: 20px;\n  padding: 26px 28px;\n  min-height: 138px;\n  background: var(--kiosk-surface);\n  border-radius: 28px;\n  border: 2px solid var(--kiosk-border);\n  box-shadow: var(--kiosk-shadow-card);\n  cursor: pointer;\n  transition: all 0.2s ease;\n  position: relative;\n}\n.kiosk-pay-method[data-v-7f6954b0]:active { transform: scale(0.99);\n}\n.kiosk-pay-method.disabled[data-v-7f6954b0] {\n  cursor: not-allowed;\n  opacity: 0.5;\n  transform: none;\n}\n.kiosk-pay-method.selected[data-v-7f6954b0] {\n  border-color: var(--kiosk-primary);\n  background: var(--kiosk-surface);\n  box-shadow: 0 0 0 2px var(--kiosk-primary), var(--kiosk-shadow-lift);\n}\n.kiosk-pay-method-icon[data-v-7f6954b0] {\n  width: 86px;\n  height: 86px;\n  border-radius: 50%;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  flex-shrink: 0;\n}\n\n/* Icônes métier payment : gradient brand spécifique carte/cash/TR.\n   Couleurs conservées hors tokens car elles encodent la sémantique de moyen de\n   paiement (bleu CB / vert cash / orange TR), reconnues internationalement. */\n.kiosk-pay-method-icon.card[data-v-7f6954b0]   { background: linear-gradient(135deg, #1a3a6b, var(--kiosk-info, #2563EB));\n}\n.kiosk-pay-method-icon.cash[data-v-7f6954b0]   { background: linear-gradient(135deg, #0a4a20, var(--kiosk-success, #16a34a));\n}\n.kiosk-pay-method-icon.tr[data-v-7f6954b0]     { background: linear-gradient(135deg, #7a2000, #ea580c);\n}\n.kiosk-pay-method-info[data-v-7f6954b0] { flex: 1; min-width: 0;\n}\n.kiosk-pay-method-info h3[data-v-7f6954b0] {\n  font-size: 25px;\n  font-weight: 900;\n  color: var(--kiosk-text);\n  margin: 0 0 4px;\n}\n.kiosk-pay-method-info p[data-v-7f6954b0] {\n  font-size: 15px;\n  color: var(--kiosk-text-muted);\n  margin: 0;\n}\n.kiosk-pay-method-check[data-v-7f6954b0] {\n  width: 36px;\n  height: 36px;\n  border-radius: 50%;\n  background: var(--kiosk-primary);\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  animation: popIn-7f6954b0 0.2s cubic-bezier(0.34,1.56,0.64,1);\n}\n@keyframes popIn-7f6954b0 {\nfrom { transform: scale(0); opacity: 0;\n}\nto   { transform: scale(1); opacity: 1;\n}\n}\n\n/* Processing */\n.kiosk-pay-processing[data-v-7f6954b0] {\n  flex: 1;\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: center;\n  gap: 24px;\n  padding: 40px;\n  text-align: center;\n}\n.kiosk-pay-processing-ring[data-v-7f6954b0] {\n  width: 120px;\n  height: 120px;\n  border-radius: 50%;\n  border: 4px solid var(--kiosk-primary-soft);\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  animation: spin-7f6954b0 1.5s linear infinite;\n}\n@keyframes spin-7f6954b0 {\nto { transform: rotate(360deg);\n}\n}\n.kiosk-pay-processing-ring-inner[data-v-7f6954b0] {\n  width: 96px;\n  height: 96px;\n  border-radius: 50%;\n  background: var(--kiosk-primary-soft);\n  border: 4px solid var(--kiosk-primary);\n  border-block-start-color: transparent;\n  animation: spin-7f6954b0 0.8s linear infinite reverse;\n}\n.kiosk-pay-processing h2[data-v-7f6954b0] {\n  font-size: 28px;\n  font-weight: 800;\n  color: var(--kiosk-text);\n  margin: 0;\n}\n.kiosk-pay-processing p[data-v-7f6954b0] {\n  font-size: 16px;\n  color: var(--kiosk-text-muted);\n  margin: 0;\n}\n\n/* Erreur */\n.kiosk-pay-error[data-v-7f6954b0] {\n  background: var(--kiosk-primary-soft);\n  border: 1px solid var(--kiosk-primary);\n  color: var(--kiosk-error);\n  padding: 14px 20px;\n  border-radius: 12px;\n  font-size: 15px;\n  text-align: center;\n  margin-bottom: 8px;\n}\n.kiosk-pay-offline-alert[data-v-7f6954b0] {\n  margin: 0 20px 12px;\n  border: 1px solid rgba(215, 38, 61, 0.28);\n  border-radius: 12px;\n  background: rgba(215, 38, 61, 0.08);\n  color: #8f1022;\n  font-size: 14px;\n  font-weight: 700;\n  line-height: 1.35;\n  padding: 12px 14px;\n  text-align: center;\n}\n\n/* Confirmer — largeur max centrée (borne) */\n.kiosk-pay-confirm[data-v-7f6954b0] {\n  padding: 20px 32px 34px;\n  flex-shrink: 0;\n}\n.kiosk-pay-confirm-inner[data-v-7f6954b0] {\n  display: flex;\n  justify-content: center;\n  width: 100%;\n}\n.kiosk-btn-confirm[data-v-7f6954b0] {\n  width: 100%;\n  max-width: 680px;\n  min-height: 92px;\n  height: auto;\n  padding: 20px 32px;\n  /* [iter15-mega-fix C-012 round-7 2026-05-10] Pin the Confirmer CTA to the\n     Cayenne brand-red token directly with a solid fallback (#F4501E) instead\n     of relying on the resolved `--kiosk-primary` chain. With the default\n     theme now being light (C-011), `--kiosk-primary` = #F4501E ; we still\n     keep the var() so dark-mode operators get the correct brand red. */\n  background: var(--kiosk-primary, #F4501E);\n  color: var(--kiosk-text-on-red, #FFFFFF);\n  border: none;\n  border-radius: 30px;\n  font-size: 26px;\n  font-weight: 900;\n  cursor: pointer;\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 16px;\n  box-shadow: var(--kiosk-shadow-cta);\n  transition: all 0.15s ease;\n}\n.kiosk-btn-confirm[data-v-7f6954b0]:disabled {\n  /* [iter15-mega-fix C-012 round-7 2026-05-10] Raise opacity from 0.4 to\n     0.65 so disabled state stays readable (WCAG AA against white kiosk bg).\n     Add an explicit dark-grey overlay so the disabled button no longer reads\n     as \"pale pink\" against the soft Cayenne bg. */\n  opacity: 0.65;\n  background: #C9C9C9;\n  color: #4A4A4A;\n  cursor: not-allowed;\n  box-shadow: none;\n}\n.kiosk-btn-confirm[data-v-7f6954b0]:not(:disabled):active {\n  transform: scale(0.98);\n  box-shadow: var(--kiosk-shadow-card);\n}\n\n/* TPE terminal waiting overlay — V3.4 owner gate (2026-05-10) :\n   ramené en light mode pour cohérence avec rest of kiosk flow. Le focus\n   haptique sur CB reste assuré par l'animation pulse + spinner Cayenne. */\n.kiosk-tpe-overlay[data-v-7f6954b0] {\n  position: fixed; inset: 0; z-index: 100;\n  background: #FFFFFF;\n  display: flex; flex-direction: column;\n  align-items: center; justify-content: center;\n  gap: 1.5rem; text-align: center; padding: 2rem;\n  color: #0F0F0F;\n}\n.kiosk-tpe-card-anim[data-v-7f6954b0] {\n  position: relative;\n  width: 160px; height: 160px;\n  display: flex; align-items: center; justify-content: center;\n}\n.kiosk-tpe-ring[data-v-7f6954b0] {\n  position: absolute; inset: 0;\n  border: 3px solid var(--kiosk-primary);\n  border-radius: 50%;\n  opacity: 0.4;\n  animation: tpe-pulse-7f6954b0 1.8s ease-out infinite;\n}\n@keyframes tpe-pulse-7f6954b0 {\n0% { transform: scale(0.6); opacity: 0.9;\n}\n100% { transform: scale(1.4); opacity: 0;\n}\n}\n.kiosk-tpe-card-icon[data-v-7f6954b0] {\n  position: relative; z-index: 2;\n  background: #FFE8DD;\n  border: 2px solid #F4501E;\n  border-radius: 50%;\n  width: 100px; height: 100px;\n  display: flex; align-items: center; justify-content: center;\n  color: #F4501E;\n}\n.kiosk-tpe-title[data-v-7f6954b0] {\n  font-size: 1.8rem; font-weight: 800; color: #0F0F0F; margin: 0;\n}\n.kiosk-tpe-help[data-v-7f6954b0] {\n  margin: 0.5rem 0 0;\n  font-size: 0.95rem;\n  line-height: 1.35;\n  color: #5A5A5A;\n  max-width: 22rem;\n  text-align: center;\n}\n.kiosk-tpe-sub[data-v-7f6954b0] {\n  font-size: 1rem; color: #5A5A5A; margin: 0; max-width: 340px;\n}\n.kiosk-tpe-spinner[data-v-7f6954b0] {\n  width: 64px; height: 64px;\n  border: 5px solid #FFE8DD;\n  border-top-color: #F4501E;\n  border-radius: 50%;\n  animation: tpe-spin-7f6954b0 0.8s linear infinite;\n}\n@keyframes tpe-spin-7f6954b0 {\nto { transform: rotate(360deg);\n}\n}\n.kiosk-tpe-cancel[data-v-7f6954b0] {\n  margin-top: 8px;\n  padding: 14px 40px;\n  background: #FFFFFF;\n  border: 1.5px solid #E5E5E5;\n  border-radius: 14px;\n  color: #5A5A5A;\n  font-size: 16px;\n  font-weight: 600;\n  cursor: pointer;\n  transition: all 0.15s;\n}\n.kiosk-tpe-cancel[data-v-7f6954b0]:hover { background: #FFE8DD; color: #F4501E; border-color: #F4501E;\n}\n\n/* Focus visible WCAG 2.4.7 — méthodes paiement navigables au clavier */\n.kiosk-pay-method[data-v-7f6954b0]:focus-visible {\n  outline: 3px solid var(--kiosk-focus-ring, var(--kiosk-primary));\n  outline-offset: 3px;\n}\n\n", ""]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 
@@ -1888,6 +1888,11 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
       tpeCanCancel: false,
       _lastOrder: null,
       _lastQuote: null,
+      // [KIOSK-OFFLINE-PLANB-01 FIX] True once a cash order was queued offline
+      // (no server id yet). Drives a dedicated "commande enregistrée hors-ligne"
+      // screen instead of the standard cash-collect screen that would render a
+      // blank order number "#—" (the id only arrives later on sync).
+      offlineQueued: false,
       networkOffline: typeof navigator !== 'undefined' ? !navigator.onLine : false,
       // Kiosk Phase 9.1.11 — compteur d'échecs TPE.
       // Conformément à l'UX concurrence (McDonald's, Quick, Burger King),
@@ -1902,6 +1907,11 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
   // l'écran d'erreur dédié. Exposé en constante d'instance pour faciliter
   // l'override en test (`wrapper.vm.$options.MAX_PAYMENT_FAILURES = ...`).
   MAX_PAYMENT_FAILURES: 2,
+  // [KIOSK-OFFLINE-PLANB-01 FIX] Auto-return delay (ms) for the offline-queued
+  // confirmation screen → back to kiosk.idle. Mirrors the bypassed
+  // KioskCashInstructionComponent 45s auto-redirect. Component-option so tests
+  // can shrink it (`wrapper.vm.$options.OFFLINE_QUEUED_RETURN_MS = ...`).
+  OFFLINE_QUEUED_RETURN_MS: 45000,
   computed: _objectSpread(_objectSpread({}, (0,vuex__WEBPACK_IMPORTED_MODULE_0__.mapGetters)('kioskCart', ['total', 'branchId', 'orderType'])), {}, {
     cartTotal: function cartTotal() {
       var _this$_lastQuote$tota, _this$_lastQuote;
@@ -1965,6 +1975,14 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
         clearInterval(this._reconcileInterval);
       } catch (_) {}
       this._reconcileInterval = null;
+    }
+    // [KIOSK-OFFLINE-PLANB-01 FIX] Cancel the offline-queued auto-return timer
+    // so it never fires a stray navigation after the screen is gone.
+    if (this._offlineQueuedTimer) {
+      try {
+        clearTimeout(this._offlineQueuedTimer);
+      } catch (_) {}
+      this._offlineQueuedTimer = null;
     }
   },
   methods: _objectSpread(_objectSpread({}, (0,vuex__WEBPACK_IMPORTED_MODULE_0__.mapActions)('kioskCart', ['submitOrder', 'reset'])), {}, {
@@ -2481,6 +2499,7 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
     processCashPayment: function processCashPayment(navTarget) {
       var _this7 = this;
       return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee6() {
+        var _this7$_lastOrder2;
         var _this7$_lastOrder;
         return _regenerator().w(function (_context6) {
           while (1) switch (_context6.n) {
@@ -2495,12 +2514,48 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
                 });
               } catch (_) {}
               _this7.submitting = false;
-              _this7.$router.push(navTarget);
+              // [KIOSK-OFFLINE-PLANB-01 FIX] When the cash order was queued offline the
+              // server hasn't assigned an id/queue number yet, so the standard
+              // cash-instruction screen would show "#—". Instead, surface a dedicated
+              // "commande enregistrée hors-ligne" state right here (it will be
+              // transmitted to the counter on reconnection). This covers Plan-B
+              // (forced cash) and any offline cash path — the real bug surface.
+              if (!String(((_this7$_lastOrder2 = _this7._lastOrder) === null || _this7$_lastOrder2 === void 0 ? void 0 : _this7$_lastOrder2.id) || '').startsWith('offline_')) {
+                _context6.n = 1;
+                break;
+              }
+              _this7.offlineQueued = true;
+              _this7.submitted = true;
+              // RECOVERY: the global kiosk idle timer is disabled on `kiosk.payment`
+              // (KioskAppComponent.startIdleTimer noTimerRoutes) and this screen has no
+              // CTA — without an auto-return it would strand the next customer. Mirror
+              // the 45s auto-redirect-to-idle of the cash-instruction screen we bypass.
+              _this7._scheduleOfflineQueuedReturn();
+              return _context6.a(2);
             case 1:
+              _this7.$router.push(navTarget);
+            case 2:
               return _context6.a(2);
           }
         }, _callee6);
       }))();
+    },
+    // [KIOSK-OFFLINE-PLANB-01 FIX] Auto-return to the kiosk idle screen after the
+    // offline-queued confirmation so the self-service terminal recovers for the
+    // next customer (cleared on unmount to avoid a stray navigation). The delay
+    // mirrors KioskCashInstructionComponent.autoRedirectSeconds (45s) and is
+    // exposed as a component option (this.$options.OFFLINE_QUEUED_RETURN_MS) for
+    // test override, same pattern as MAX_PAYMENT_FAILURES.
+    _scheduleOfflineQueuedReturn: function _scheduleOfflineQueuedReturn() {
+      var _this8 = this;
+      try {
+        clearTimeout(this._offlineQueuedTimer);
+      } catch (_) {}
+      this._offlineQueuedTimer = setTimeout(function () {
+        _this8.$router.push({
+          name: 'kiosk.idle'
+        })["catch"](function () {});
+      }, this.$options.OFFLINE_QUEUED_RETURN_MS);
     },
     _reportDrawerFailure: function _reportDrawerFailure(errorMsg) {
       // [PHASE-6.1] Conservé : reporte un event "cash_drawer_failure" dédié
@@ -2514,9 +2569,9 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
       } catch (_) {}
     },
     cancelCardPayment: function cancelCardPayment() {
-      var _this8 = this;
+      var _this9 = this;
       return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee7() {
-        var _this8$_lastOrder;
+        var _this9$_lastOrder;
         var userCancelPayload;
         return _regenerator().w(function (_context7) {
           while (1) switch (_context7.n) {
@@ -2528,32 +2583,32 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
               _context7.n = 1;
               return _services_kioskHardware__WEBPACK_IMPORTED_MODULE_3__["default"].cancelPayment()["catch"](function () {});
             case 1:
-              _this8.tpeWaiting = false;
-              _this8.tpeCanCancel = false;
-              _this8.submitted = false;
-              _this8.submitting = false;
-              _this8.error = _this8.$t('kiosk.pay_screen.payment_cancelled');
-              _this8.showToast(_this8.$t('kiosk.pay_screen.payment_cancelled_toast'), 'warning', 2500);
+              _this9.tpeWaiting = false;
+              _this9.tpeCanCancel = false;
+              _this9.submitted = false;
+              _this9.submitting = false;
+              _this9.error = _this9.$t('kiosk.pay_screen.payment_cancelled');
+              _this9.showToast(_this9.$t('kiosk.pay_screen.payment_cancelled_toast'), 'warning', 2500);
               // [PHASE-6.4] Analytics : abandon explicite utilisateur au TPE.
               try {
                 _helpers_kioskAnalytics__WEBPACK_IMPORTED_MODULE_5__["default"].track('order_cancelled', {
-                  method: _this8.method,
+                  method: _this9.method,
                   stage: 'tpe_cancel'
                 });
               } catch (_) {}
               // [AUDIT-P1] Void the server order created before TPE — prevents orphan PENDING orders.
-              if ((_this8$_lastOrder = _this8._lastOrder) !== null && _this8$_lastOrder !== void 0 && _this8$_lastOrder.id && !String(_this8._lastOrder.id).startsWith('offline_')) {
+              if ((_this9$_lastOrder = _this9._lastOrder) !== null && _this9$_lastOrder !== void 0 && _this9$_lastOrder.id && !String(_this9._lastOrder.id).startsWith('offline_')) {
                 // [AUDIT-F-004] Customer pressed Cancel on the TPE prompt → 'tpe_cancel_user'.
                 userCancelPayload = {
                   status: _enums_modules_orderStatusEnum__WEBPACK_IMPORTED_MODULE_9__["default"].CANCELED,
                   reason: 'tpe_cancel_user'
                 };
-                axios__WEBPACK_IMPORTED_MODULE_1__["default"].post("frontend/order/change-status/".concat(_this8._lastOrder.id), userCancelPayload, {
+                axios__WEBPACK_IMPORTED_MODULE_1__["default"].post("frontend/order/change-status/".concat(_this9._lastOrder.id), userCancelPayload, {
                   headers: (0,_helpers_idempotencyHeaders__WEBPACK_IMPORTED_MODULE_6__.buildIdempotencyHeaders)(userCancelPayload)
                 })["catch"](function (e) {
                   return console.warn('[KioskPayment] void on cancel failed:', e.message);
                 });
-                _this8._lastOrder = null;
+                _this9._lastOrder = null;
               }
             case 2:
               return _context7.a(2);
@@ -2562,7 +2617,7 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
       }))();
     },
     confirmBackendPayment: function confirmBackendPayment(orderId, payload) {
-      var _this9 = this;
+      var _this0 = this;
       return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee8() {
         var _payload$transaction_, _lastError;
         var lastError, idempotencyKey, requestConfig, _loop, _ret, attempt, _window$axios2;
@@ -2600,7 +2655,7 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
                       // bridge by surfacing a brief warning toast on recovered retry.
                       if (attempt > 1) {
                         try {
-                          _this9.showToast(_this9.$t('kiosk.pay_screen.payment_sync_retried'), 'warning', 2500);
+                          _this0.showToast(_this0.$t('kiosk.pay_screen.payment_sync_retried'), 'warning', 2500);
                         } catch (_) {/* showToast must never break the happy path */}
                       }
                       return _context8.a(2, {
@@ -2647,7 +2702,7 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
               // Sans ça, un network blip ou crash backend post-TPE laisse l'order
               // PENDING orphelin alors que le client a payé.
               try {
-                _this9._appendPendingReconcile({
+                _this0._appendPendingReconcile({
                   order_id: orderId,
                   transaction_id: payload.transaction_id,
                   amount_cents: payload.amount_cents,
@@ -2665,7 +2720,7 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
                   details: "tx=".concat(payload.transaction_id)
                 })["catch"](function () {});
               } catch (_) {}
-              throw new Error(_this9.$t('kiosk.pay_screen.payment_sync_failed'));
+              throw new Error(_this0.$t('kiosk.pay_screen.payment_sync_failed'));
             case 5:
               return _context9.a(2);
           }
@@ -2710,13 +2765,13 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
       }
     },
     _reconcilePendingPayments: function _reconcilePendingPayments() {
-      var _this0 = this;
+      var _this1 = this;
       return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee9() {
         var list, fresh, expired, _window$axios3, _response$data, entries, response, results, reconciledTxs, remaining, _t3;
         return _regenerator().w(function (_context0) {
           while (1) switch (_context0.p = _context0.n) {
             case 0:
-              list = _this0._readPendingReconcile();
+              list = _this1._readPendingReconcile();
               if (!(list.length === 0)) {
                 _context0.n = 1;
                 break;
@@ -2724,10 +2779,10 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
               return _context0.a(2);
             case 1:
               fresh = list.filter(function (e) {
-                return !_this0._isPendingReconcileExpired(e);
+                return !_this1._isPendingReconcileExpired(e);
               });
               expired = list.filter(function (e) {
-                return _this0._isPendingReconcileExpired(e);
+                return _this1._isPendingReconcileExpired(e);
               });
               if (expired.length > 0) {
                 // Alert ops — au-delà 30 min, transaction probablement perdue.
@@ -2743,7 +2798,7 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
                 _context0.n = 2;
                 break;
               }
-              _this0._writePendingReconcile([]);
+              _this1._writePendingReconcile([]);
               return _context0.a(2);
             case 2:
               _context0.p = 2;
@@ -2771,7 +2826,7 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
               remaining = fresh.filter(function (e) {
                 return !reconciledTxs.includes(e.transaction_id);
               });
-              _this0._writePendingReconcile(remaining);
+              _this1._writePendingReconcile(remaining);
               _context0.n = 5;
               break;
             case 4:
@@ -2780,7 +2835,7 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
               // Réseau / backend KO → on garde le localStorage pour le prochain tick.
               // Drop les expired malgré tout (alert déjà émis ci-dessus).
               if (expired.length > 0) {
-                _this0._writePendingReconcile(fresh);
+                _this1._writePendingReconcile(fresh);
               }
             case 5:
               return _context0.a(2);
@@ -5450,104 +5505,123 @@ var _hoisted_1 = {
 };
 var _hoisted_2 = {
   key: 0,
+  "class": "kiosk-pay-offline-queued",
+  role: "status",
+  "aria-live": "polite",
+  "data-testid": "kiosk-payment-offline-queued"
+};
+var _hoisted_3 = {
+  "class": "kiosk-pay-offline-queued-title",
+  "data-testid": "kiosk-payment-offline-queued-title"
+};
+var _hoisted_4 = {
+  "class": "kiosk-pay-offline-queued-sub",
+  "data-testid": "kiosk-payment-offline-queued-sub"
+};
+var _hoisted_5 = {
+  "class": "kiosk-pay-offline-queued-total",
+  "data-testid": "kiosk-payment-offline-queued-total"
+};
+var _hoisted_6 = {
+  key: 1,
   "class": "kiosk-pay-counter-route",
   role: "status",
   "aria-live": "polite",
   "data-testid": "kiosk-payment-counter-route"
 };
-var _hoisted_3 = {
+var _hoisted_7 = {
   "class": "kiosk-pay-counter-title",
   "data-testid": "kiosk-payment-counter-title"
 };
-var _hoisted_4 = {
+var _hoisted_8 = {
   "class": "kiosk-pay-counter-sub",
   "data-testid": "kiosk-payment-counter-sub"
 };
-var _hoisted_5 = {
+var _hoisted_9 = {
   "class": "kiosk-pay-counter-total",
   "data-testid": "kiosk-payment-counter-total"
 };
-var _hoisted_6 = {
+var _hoisted_10 = {
   key: 0,
   "class": "kiosk-pay-counter-spinner",
   "aria-hidden": "true"
 };
-var _hoisted_7 = {
+var _hoisted_11 = {
   key: 1,
   "class": "kiosk-pay-counter-processing"
 };
-var _hoisted_8 = {
+var _hoisted_12 = {
   key: 2,
   "class": "kiosk-pay-error",
   role: "alert",
   "data-testid": "kiosk-payment-counter-error"
 };
-var _hoisted_9 = {
-  key: 1,
+var _hoisted_13 = {
+  key: 2,
   "class": "kiosk-pay-header"
 };
-var _hoisted_10 = ["disabled", "aria-label"];
-var _hoisted_11 = {
+var _hoisted_14 = ["disabled", "aria-label"];
+var _hoisted_15 = {
   "class": "kiosk-pay-header-info"
 };
-var _hoisted_12 = {
+var _hoisted_16 = {
   "class": "kiosk-pay-title",
   "data-testid": "kiosk-payment-title"
 };
-var _hoisted_13 = {
+var _hoisted_17 = {
   "class": "kiosk-pay-total-label",
   "data-testid": "kiosk-payment-total"
 };
-var _hoisted_14 = {
-  key: 2,
+var _hoisted_18 = {
+  key: 3,
   "class": "kiosk-pay-offline-alert",
   role: "status",
   "aria-live": "polite",
   "data-testid": "kiosk-payment-offline-alert"
 };
-var _hoisted_15 = {
-  key: 3,
+var _hoisted_19 = {
+  key: 4,
   "class": "kiosk-pay-amount-card",
   role: "status",
   "aria-live": "polite",
   "data-testid": "kiosk-payment-amount-card"
 };
-var _hoisted_16 = ["aria-label"];
-var _hoisted_17 = {
+var _hoisted_20 = ["aria-label"];
+var _hoisted_21 = {
   "class": "kiosk-pay-methods"
 };
-var _hoisted_18 = ["tabindex", "aria-checked", "aria-disabled"];
-var _hoisted_19 = {
-  "class": "kiosk-pay-method-info"
-};
-var _hoisted_20 = {
-  key: 0,
-  "class": "kiosk-pay-method-check"
-};
-var _hoisted_21 = ["aria-checked"];
-var _hoisted_22 = {
-  "class": "kiosk-pay-method-info"
-};
+var _hoisted_22 = ["tabindex", "aria-checked", "aria-disabled"];
 var _hoisted_23 = {
-  key: 0,
-  "class": "kiosk-pay-method-check"
-};
-var _hoisted_24 = ["tabindex", "aria-checked", "aria-disabled"];
-var _hoisted_25 = {
   "class": "kiosk-pay-method-info"
 };
-var _hoisted_26 = {
+var _hoisted_24 = {
   key: 0,
   "class": "kiosk-pay-method-check"
+};
+var _hoisted_25 = ["aria-checked"];
+var _hoisted_26 = {
+  "class": "kiosk-pay-method-info"
 };
 var _hoisted_27 = {
-  key: 5,
+  key: 0,
+  "class": "kiosk-pay-method-check"
+};
+var _hoisted_28 = ["tabindex", "aria-checked", "aria-disabled"];
+var _hoisted_29 = {
+  "class": "kiosk-pay-method-info"
+};
+var _hoisted_30 = {
+  key: 0,
+  "class": "kiosk-pay-method-check"
+};
+var _hoisted_31 = {
+  key: 6,
   "class": "kiosk-pay-processing",
   role: "status",
   "aria-live": "polite",
   "data-testid": "kiosk-payment-processing"
 };
-var _hoisted_28 = {
+var _hoisted_32 = {
   key: 0,
   "class": "kiosk-tpe-overlay",
   role: "dialog",
@@ -5555,54 +5629,74 @@ var _hoisted_28 = {
   "aria-labelledby": "kiosk-tpe-title",
   "data-testid": "kiosk-payment-tpe-overlay"
 };
-var _hoisted_29 = {
+var _hoisted_33 = {
   "class": "kiosk-tpe-card-anim",
   "aria-hidden": "true"
 };
-var _hoisted_30 = {
+var _hoisted_34 = {
   "class": "kiosk-tpe-card-icon"
 };
-var _hoisted_31 = {
+var _hoisted_35 = {
   key: 0,
   width: "72",
   height: "72",
   viewBox: "0 0 72 72",
   fill: "none"
 };
-var _hoisted_32 = {
+var _hoisted_36 = {
   key: 1,
   style: {
     "font-size": "4rem"
   }
 };
-var _hoisted_33 = {
+var _hoisted_37 = {
   id: "kiosk-tpe-title",
   "class": "kiosk-tpe-title",
   "aria-live": "polite"
 };
-var _hoisted_34 = {
+var _hoisted_38 = {
   "class": "kiosk-tpe-sub"
 };
-var _hoisted_35 = {
+var _hoisted_39 = {
   "class": "kiosk-tpe-help",
   id: "kiosk-tpe-stuck-help"
 };
-var _hoisted_36 = {
-  key: 6,
+var _hoisted_40 = {
+  key: 7,
   "class": "kiosk-pay-confirm"
 };
-var _hoisted_37 = {
+var _hoisted_41 = {
   key: 0,
   "class": "kiosk-pay-error",
   role: "alert",
   "data-testid": "kiosk-payment-error"
 };
-var _hoisted_38 = {
+var _hoisted_42 = {
   "class": "kiosk-pay-confirm-inner"
 };
-var _hoisted_39 = ["disabled", "aria-label"];
+var _hoisted_43 = ["disabled", "aria-label"];
 function render(_ctx, _cache, $props, $setup, $data, $options) {
-  return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_1, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [SUPERVISOR WAVE C Z1 2026-05-28] Plan B: route ALL kiosk payments to counter.\n         When true, hide method selection + auto-submit cash. Owner mandate Le Cayenne. "), $options.paymentRouteAllToCounter ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_2, [_cache[13] || (_cache[13] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createStaticVNode)("<div class=\"kiosk-pay-counter-icon\" aria-hidden=\"true\" data-v-7f6954b0><svg width=\"120\" height=\"120\" viewBox=\"0 0 120 120\" fill=\"none\" data-v-7f6954b0><circle cx=\"60\" cy=\"60\" r=\"58\" stroke=\"#F4501E\" stroke-width=\"3\" data-v-7f6954b0></circle><rect x=\"32\" y=\"44\" width=\"56\" height=\"36\" rx=\"4\" fill=\"#FFE8DD\" stroke=\"#F4501E\" stroke-width=\"2\" data-v-7f6954b0></rect><rect x=\"40\" y=\"52\" width=\"40\" height=\"6\" fill=\"#F4501E\" opacity=\"0.3\" data-v-7f6954b0></rect><circle cx=\"60\" cy=\"70\" r=\"6\" fill=\"#F4501E\" data-v-7f6954b0></circle></svg></div>", 1)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h1", _hoisted_3, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.pay_screen.counter_route_title')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_4, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.pay_screen.counter_route_sub')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_5, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.pay_screen.total_prefix')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("strong", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice($options.cartTotal)), 1 /* TEXT */)]), $data.submitting ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_6)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $data.submitting ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_7, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.pay_screen.counter_route_processing')), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $data.error ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_8, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.error), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), !$data.submitting && !$data.submitted ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+  return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_1, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [KIOSK-OFFLINE-PLANB-01 FIX] Dedicated offline-queued state. Takes\n         precedence over the Plan-B counter-route screen (note `&& !offlineQueued`\n         below) so a customer who paid cash while the kiosk was offline sees a\n         clear \"commande enregistrée hors-ligne — patientez / présentez-vous au\n         comptoir\" message instead of a cash-collect screen showing a blank \"#—\"\n         (the order id only arrives later on sync). "), $data.offlineQueued ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_2, [_cache[13] || (_cache[13] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    "class": "kiosk-pay-offline-queued-icon",
+    "aria-hidden": "true"
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("svg", {
+    width: "120",
+    height: "120",
+    viewBox: "0 0 120 120",
+    fill: "none"
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("circle", {
+    cx: "60",
+    cy: "60",
+    r: "58",
+    stroke: "#F4501E",
+    "stroke-width": "3"
+  }), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("path", {
+    d: "M40 62l14 14 26-32",
+    stroke: "#F4501E",
+    "stroke-width": "6",
+    "stroke-linecap": "round",
+    "stroke-linejoin": "round"
+  })])], -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h1", _hoisted_3, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.pay_screen.offline_queued_title')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_4, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.pay_screen.offline_queued_sub')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_5, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.pay_screen.total_prefix')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("strong", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice($options.cartTotal)), 1 /* TEXT */)])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [SUPERVISOR WAVE C Z1 2026-05-28] Plan B: route ALL kiosk payments to counter.\n         When true, hide method selection + auto-submit cash. Owner mandate Le Cayenne. "), $options.paymentRouteAllToCounter && !$data.offlineQueued ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_6, [_cache[14] || (_cache[14] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createStaticVNode)("<div class=\"kiosk-pay-counter-icon\" aria-hidden=\"true\" data-v-7f6954b0><svg width=\"120\" height=\"120\" viewBox=\"0 0 120 120\" fill=\"none\" data-v-7f6954b0><circle cx=\"60\" cy=\"60\" r=\"58\" stroke=\"#F4501E\" stroke-width=\"3\" data-v-7f6954b0></circle><rect x=\"32\" y=\"44\" width=\"56\" height=\"36\" rx=\"4\" fill=\"#FFE8DD\" stroke=\"#F4501E\" stroke-width=\"2\" data-v-7f6954b0></rect><rect x=\"40\" y=\"52\" width=\"40\" height=\"6\" fill=\"#F4501E\" opacity=\"0.3\" data-v-7f6954b0></rect><circle cx=\"60\" cy=\"70\" r=\"6\" fill=\"#F4501E\" data-v-7f6954b0></circle></svg></div>", 1)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h1", _hoisted_7, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.pay_screen.counter_route_title')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_8, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.pay_screen.counter_route_sub')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_9, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.pay_screen.total_prefix')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("strong", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice($options.cartTotal)), 1 /* TEXT */)]), $data.submitting ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_10)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $data.submitting ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_11, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.pay_screen.counter_route_processing')), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $data.error ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_12, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.error), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), !$data.submitting && !$data.submitted ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
     key: 3,
     type: "button",
     "class": "kiosk-btn-confirm",
@@ -5610,7 +5704,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       return $options.confirmCounterRoute && $options.confirmCounterRoute.apply($options, arguments);
     }),
     "data-testid": "kiosk-payment-counter-confirm"
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.pay_screen.counter_route_confirm_btn')), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Header "), !$options.paymentRouteAllToCounter ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_9, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.pay_screen.counter_route_confirm_btn')), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Header "), !$options.paymentRouteAllToCounter ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_13, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     type: "button",
     "class": "kiosk-pay-back",
     onClick: _cache[1] || (_cache[1] = function ($event) {
@@ -5621,7 +5715,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     disabled: $data.submitting,
     "aria-label": _ctx.$t('kiosk.back'),
     "data-testid": "kiosk-payment-back"
-  }, _toConsumableArray(_cache[14] || (_cache[14] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("svg", {
+  }, _toConsumableArray(_cache[15] || (_cache[15] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("svg", {
     width: "24",
     height: "24",
     viewBox: "0 0 24 24",
@@ -5633,12 +5727,12 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "stroke-width": "2.5",
     "stroke-linecap": "round",
     "stroke-linejoin": "round"
-  })], -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_10), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_11, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h1", _hoisted_12, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.pay_screen.title')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_13, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.pay_screen.total_prefix')) + " ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("strong", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice($options.cartTotal)), 1 /* TEXT */)])])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $data.networkOffline && !$options.paymentRouteAllToCounter ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_14, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.pay_screen.offline_alert')), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), !$data.submitting && !$data.submitted && !$data.tpeWaiting && !$options.paymentRouteAllToCounter ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_15, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.pay_screen.total_prefix')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("strong", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice($options.cartTotal)), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Modes de paiement — grille borne (cartes, pas bandeaux pleine largeur) "), !$data.submitting && !$data.submitted && !$options.paymentRouteAllToCounter ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
-    key: 4,
+  })], -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_14), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_15, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h1", _hoisted_16, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.pay_screen.title')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_17, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.pay_screen.total_prefix')) + " ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("strong", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice($options.cartTotal)), 1 /* TEXT */)])])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $data.networkOffline && !$options.paymentRouteAllToCounter ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_18, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.pay_screen.offline_alert')), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), !$data.submitting && !$data.submitted && !$data.tpeWaiting && !$options.paymentRouteAllToCounter ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_19, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.pay_screen.total_prefix')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("strong", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice($options.cartTotal)), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Modes de paiement — grille borne (cartes, pas bandeaux pleine largeur) "), !$data.submitting && !$data.submitted && !$options.paymentRouteAllToCounter ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+    key: 5,
     "class": "kiosk-pay-methods-outer",
     role: "radiogroup",
     "aria-label": _ctx.$t('kiosk.pay_screen.title')
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_17, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" CB "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_21, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" CB "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
     "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["kiosk-pay-method", {
       selected: $data.method === 'card',
       disabled: $options.isElectronicMethodBlocked('card')
@@ -5656,7 +5750,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     }, ["prevent"]), ["enter"])), _cache[4] || (_cache[4] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withKeys)((0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
       return $options.selectMethod('card');
     }, ["prevent"]), ["space"]))]
-  }, [_cache[16] || (_cache[16] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createStaticVNode)("<div class=\"kiosk-pay-method-icon card\" data-v-7f6954b0><svg width=\"52\" height=\"52\" viewBox=\"0 0 52 52\" fill=\"none\" data-v-7f6954b0><rect x=\"4\" y=\"12\" width=\"44\" height=\"30\" rx=\"6\" fill=\"white\" fill-opacity=\"0.12\" stroke=\"white\" stroke-opacity=\"0.3\" stroke-width=\"1.5\" data-v-7f6954b0></rect><rect x=\"4\" y=\"20\" width=\"44\" height=\"8\" fill=\"white\" fill-opacity=\"0.2\" data-v-7f6954b0></rect><rect x=\"10\" y=\"32\" width=\"12\" height=\"4\" rx=\"2\" fill=\"white\" fill-opacity=\"0.5\" data-v-7f6954b0></rect><rect x=\"26\" y=\"32\" width=\"8\" height=\"4\" rx=\"2\" fill=\"white\" fill-opacity=\"0.5\" data-v-7f6954b0></rect></svg></div>", 1)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_19, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.pay_screen.card_title')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.pay_screen.card_sub')), 1 /* TEXT */)]), $data.method === 'card' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_20, _toConsumableArray(_cache[15] || (_cache[15] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("svg", {
+  }, [_cache[17] || (_cache[17] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createStaticVNode)("<div class=\"kiosk-pay-method-icon card\" data-v-7f6954b0><svg width=\"52\" height=\"52\" viewBox=\"0 0 52 52\" fill=\"none\" data-v-7f6954b0><rect x=\"4\" y=\"12\" width=\"44\" height=\"30\" rx=\"6\" fill=\"white\" fill-opacity=\"0.12\" stroke=\"white\" stroke-opacity=\"0.3\" stroke-width=\"1.5\" data-v-7f6954b0></rect><rect x=\"4\" y=\"20\" width=\"44\" height=\"8\" fill=\"white\" fill-opacity=\"0.2\" data-v-7f6954b0></rect><rect x=\"10\" y=\"32\" width=\"12\" height=\"4\" rx=\"2\" fill=\"white\" fill-opacity=\"0.5\" data-v-7f6954b0></rect><rect x=\"26\" y=\"32\" width=\"8\" height=\"4\" rx=\"2\" fill=\"white\" fill-opacity=\"0.5\" data-v-7f6954b0></rect></svg></div>", 1)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_23, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.pay_screen.card_title')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.pay_screen.card_sub')), 1 /* TEXT */)]), $data.method === 'card' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_24, _toConsumableArray(_cache[16] || (_cache[16] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("svg", {
     width: "24",
     height: "24",
     viewBox: "0 0 24 24",
@@ -5667,7 +5761,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "stroke-width": "2.5",
     "stroke-linecap": "round",
     "stroke-linejoin": "round"
-  })], -1 /* CACHED */)])))) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 42 /* CLASS, PROPS, NEED_HYDRATION */, _hoisted_18), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Espèces "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+  })], -1 /* CACHED */)])))) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 42 /* CLASS, PROPS, NEED_HYDRATION */, _hoisted_22), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Espèces "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
     "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["kiosk-pay-method", {
       selected: $data.method === 'cash'
     }]),
@@ -5683,7 +5777,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     }, ["prevent"]), ["enter"])), _cache[7] || (_cache[7] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withKeys)((0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
       return $options.selectMethod('cash');
     }, ["prevent"]), ["space"]))]
-  }, [_cache[18] || (_cache[18] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createStaticVNode)("<div class=\"kiosk-pay-method-icon cash\" data-v-7f6954b0><svg width=\"52\" height=\"52\" viewBox=\"0 0 52 52\" fill=\"none\" data-v-7f6954b0><rect x=\"4\" y=\"14\" width=\"44\" height=\"26\" rx=\"6\" fill=\"white\" fill-opacity=\"0.12\" stroke=\"white\" stroke-opacity=\"0.3\" stroke-width=\"1.5\" data-v-7f6954b0></rect><circle cx=\"26\" cy=\"27\" r=\"8\" stroke=\"white\" stroke-opacity=\"0.5\" stroke-width=\"1.5\" data-v-7f6954b0></circle><text x=\"26\" y=\"32\" text-anchor=\"middle\" font-size=\"12\" fill=\"white\" fill-opacity=\"0.8\" font-weight=\"bold\" data-v-7f6954b0>€</text></svg></div>", 1)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_22, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.pay_screen.cash_title')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.pay_screen.cash_sub')), 1 /* TEXT */)]), $data.method === 'cash' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_23, _toConsumableArray(_cache[17] || (_cache[17] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("svg", {
+  }, [_cache[19] || (_cache[19] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createStaticVNode)("<div class=\"kiosk-pay-method-icon cash\" data-v-7f6954b0><svg width=\"52\" height=\"52\" viewBox=\"0 0 52 52\" fill=\"none\" data-v-7f6954b0><rect x=\"4\" y=\"14\" width=\"44\" height=\"26\" rx=\"6\" fill=\"white\" fill-opacity=\"0.12\" stroke=\"white\" stroke-opacity=\"0.3\" stroke-width=\"1.5\" data-v-7f6954b0></rect><circle cx=\"26\" cy=\"27\" r=\"8\" stroke=\"white\" stroke-opacity=\"0.5\" stroke-width=\"1.5\" data-v-7f6954b0></circle><text x=\"26\" y=\"32\" text-anchor=\"middle\" font-size=\"12\" fill=\"white\" fill-opacity=\"0.8\" font-weight=\"bold\" data-v-7f6954b0>€</text></svg></div>", 1)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_26, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.pay_screen.cash_title')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.pay_screen.cash_sub')), 1 /* TEXT */)]), $data.method === 'cash' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_27, _toConsumableArray(_cache[18] || (_cache[18] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("svg", {
     width: "24",
     height: "24",
     viewBox: "0 0 24 24",
@@ -5694,7 +5788,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "stroke-width": "2.5",
     "stroke-linecap": "round",
     "stroke-linejoin": "round"
-  })], -1 /* CACHED */)])))) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 42 /* CLASS, PROPS, NEED_HYDRATION */, _hoisted_21), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Ticket Restaurant "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+  })], -1 /* CACHED */)])))) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 42 /* CLASS, PROPS, NEED_HYDRATION */, _hoisted_25), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Ticket Restaurant "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
     "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["kiosk-pay-method", {
       selected: $data.method === 'tr',
       disabled: $options.isElectronicMethodBlocked('tr')
@@ -5712,7 +5806,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     }, ["prevent"]), ["enter"])), _cache[10] || (_cache[10] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withKeys)((0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
       return $options.selectMethod('tr');
     }, ["prevent"]), ["space"]))]
-  }, [_cache[20] || (_cache[20] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createStaticVNode)("<div class=\"kiosk-pay-method-icon tr\" data-v-7f6954b0><svg width=\"52\" height=\"52\" viewBox=\"0 0 52 52\" fill=\"none\" data-v-7f6954b0><rect x=\"4\" y=\"12\" width=\"44\" height=\"28\" rx=\"6\" fill=\"white\" fill-opacity=\"0.12\" stroke=\"white\" stroke-opacity=\"0.3\" stroke-width=\"1.5\" data-v-7f6954b0></rect><path d=\"M14 22h24M14 28h16\" stroke=\"white\" stroke-opacity=\"0.6\" stroke-width=\"2\" stroke-linecap=\"round\" data-v-7f6954b0></path><path d=\"M36 28l4 4\" stroke=\"white\" stroke-opacity=\"0.6\" stroke-width=\"2\" stroke-linecap=\"round\" data-v-7f6954b0></path></svg></div>", 1)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_25, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.pay_screen.tr_title')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.pay_screen.tr_sub')), 1 /* TEXT */)]), $data.method === 'tr' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_26, _toConsumableArray(_cache[19] || (_cache[19] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("svg", {
+  }, [_cache[21] || (_cache[21] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createStaticVNode)("<div class=\"kiosk-pay-method-icon tr\" data-v-7f6954b0><svg width=\"52\" height=\"52\" viewBox=\"0 0 52 52\" fill=\"none\" data-v-7f6954b0><rect x=\"4\" y=\"12\" width=\"44\" height=\"28\" rx=\"6\" fill=\"white\" fill-opacity=\"0.12\" stroke=\"white\" stroke-opacity=\"0.3\" stroke-width=\"1.5\" data-v-7f6954b0></rect><path d=\"M14 22h24M14 28h16\" stroke=\"white\" stroke-opacity=\"0.6\" stroke-width=\"2\" stroke-linecap=\"round\" data-v-7f6954b0></path><path d=\"M36 28l4 4\" stroke=\"white\" stroke-opacity=\"0.6\" stroke-width=\"2\" stroke-linecap=\"round\" data-v-7f6954b0></path></svg></div>", 1)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_29, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.pay_screen.tr_title')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.pay_screen.tr_sub')), 1 /* TEXT */)]), $data.method === 'tr' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_30, _toConsumableArray(_cache[20] || (_cache[20] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("svg", {
     width: "24",
     height: "24",
     viewBox: "0 0 24 24",
@@ -5723,7 +5817,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "stroke-width": "2.5",
     "stroke-linecap": "round",
     "stroke-linejoin": "round"
-  })], -1 /* CACHED */)])))) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 42 /* CLASS, PROPS, NEED_HYDRATION */, _hoisted_24)])], 8 /* PROPS */, _hoisted_16)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Écran API en cours (commande en création) — masqué pendant TPE (Lot 2.H) "), $data.submitting && !$data.tpeWaiting && !$options.paymentRouteAllToCounter ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_27, [_cache[21] || (_cache[21] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+  })], -1 /* CACHED */)])))) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 42 /* CLASS, PROPS, NEED_HYDRATION */, _hoisted_28)])], 8 /* PROPS */, _hoisted_20)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Écran API en cours (commande en création) — masqué pendant TPE (Lot 2.H) "), $data.submitting && !$data.tpeWaiting && !$options.paymentRouteAllToCounter ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_31, [_cache[22] || (_cache[22] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
     "class": "kiosk-pay-processing-ring",
     "aria-hidden": "true"
   }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
@@ -5732,7 +5826,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     name: "fade-scale"
   }, {
     "default": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
-      return [$data.tpeWaiting ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_28, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_29, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(3, function (n) {
+      return [$data.tpeWaiting ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_32, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_33, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(3, function (n) {
         return (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
           "class": "kiosk-tpe-ring",
           key: n,
@@ -5740,7 +5834,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
             animationDelay: n * 0.5 + 's'
           })
         }, null, 4 /* STYLE */);
-      }), 64 /* STABLE_FRAGMENT */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_30, [$data.method === 'card' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("svg", _hoisted_31, _toConsumableArray(_cache[22] || (_cache[22] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("rect", {
+      }), 64 /* STABLE_FRAGMENT */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_34, [$data.method === 'card' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("svg", _hoisted_35, _toConsumableArray(_cache[23] || (_cache[23] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("rect", {
         x: "6",
         y: "16",
         width: "60",
@@ -5774,7 +5868,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
         rx: "2.5",
         fill: "white",
         "fill-opacity": "0.5"
-      }, null, -1 /* CACHED */)])))) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_32, "🎫"))])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h2", _hoisted_33, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.tpeMessage), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_34, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.pay_screen.tpe_follow')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_35, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.pay_screen.tpe_stuck_help')), 1 /* TEXT */), _cache[23] || (_cache[23] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+      }, null, -1 /* CACHED */)])))) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_36, "🎫"))])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h2", _hoisted_37, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.tpeMessage), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_38, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.pay_screen.tpe_follow')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_39, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.pay_screen.tpe_stuck_help')), 1 /* TEXT */), _cache[24] || (_cache[24] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
         "class": "kiosk-tpe-spinner",
         "aria-hidden": "true"
       }, null, -1 /* CACHED */)), $data.tpeCanCancel ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
@@ -5788,7 +5882,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.pay_screen.cancel_payment')), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)];
     }),
     _: 1 /* STABLE */
-  }), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Bouton confirmer "), !$data.submitting && !$data.submitted && !$data.tpeWaiting && !$options.paymentRouteAllToCounter ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_36, [$data.error ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_37, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.error), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_38, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+  }), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Bouton confirmer "), !$data.submitting && !$data.submitted && !$data.tpeWaiting && !$options.paymentRouteAllToCounter ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_40, [$data.error ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_41, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.error), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_42, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     type: "button",
     "class": "kiosk-btn-confirm",
     disabled: !$data.method || $options.isElectronicMethodBlocked($data.method),
@@ -5801,7 +5895,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "data-testid": "kiosk-payment-confirm"
   }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.pay_screen.confirm', {
     amount: _ctx.formatPrice($options.cartTotal)
-  })), 1 /* TEXT */), _cache[24] || (_cache[24] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("svg", {
+  })), 1 /* TEXT */), _cache[25] || (_cache[25] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("svg", {
     width: "28",
     height: "28",
     viewBox: "0 0 28 28",
@@ -5813,7 +5907,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "stroke-width": "2.5",
     "stroke-linecap": "round",
     "stroke-linejoin": "round"
-  })], -1 /* CACHED */))], 8 /* PROPS */, _hoisted_39)])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
+  })], -1 /* CACHED */))], 8 /* PROPS */, _hoisted_43)])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
 }
 
 /***/ },

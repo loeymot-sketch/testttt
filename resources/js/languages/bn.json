@@ -134,6 +134,13 @@
         "setup": "সেটআপ"
     },
     "label": {
+        "kds_served_ago_hours": "{hours} ঘণ্টা আগে",
+        "kds_served_ago_days": "{days} দিন আগে",
+        "kds_card_cta_start": "শুরু",
+        "kds_lane_empty_dinein": "চলমান কোনো ডাইন-ইন অর্ডার নেই।",
+        "kds_lane_empty_online": "চলমান কোনো অনলাইন অর্ডার নেই।",
+        "kds_lane_empty_takeaway": "চলমান কোনো টেকঅ্যাওয়ে অর্ডার নেই।",
+        "kds_lane_empty_borne": "চলমান কোনো কিয়স্ক অর্ডার নেই।",
         "previous": "আগের",
         "next": "পরবর্তী",
         "default": "ডিফল্ট",
@@ -806,6 +813,7 @@
         }
     },
     "button": {
+        "kds_print_ticket": "টিকিট প্রিন্ট করুন",
         "add": "যোগ করুন",
         "save": "সংরক্ষণ করুন",
         "edit": "সম্পাদনা করুন",
@@ -1224,6 +1232,8 @@
             "cancel_no": "Non, continuer"
         },
         "pay_screen": {
+            "offline_queued_title": "অর্ডার অফলাইনে সংরক্ষিত হয়েছে",
+            "offline_queued_sub": "সংযোগ ফিরে এলে এটি কাউন্টারে পাঠানো হবে। অনুগ্রহ করে কাউন্টারে যান — কর্মীরা আপনার অর্ডার সম্পন্ন করবেন।",
             "title": "Choisissez votre paiement",
             "total_prefix": "Total à régler :",
             "card_title": "Carte bancaire",

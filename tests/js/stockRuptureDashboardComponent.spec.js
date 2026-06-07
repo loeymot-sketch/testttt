@@ -66,7 +66,11 @@ describe('Stock management v2 component — Mission 1 unified catalogue browser'
             'admin.stock_mgmt.out_of_stock',
             'admin.stock_mgmt.loading_error',
             'admin.stock_mgmt.toggle_error',
-            'admin.stock_mgmt.branch_label',
+            // [STOCK-05 FIX 2026-06-07] admin.stock_mgmt.branch_label dropped: the
+            // dead branch <select> that consumed it was removed (branchOptions was
+            // never populated → control never rendered). The i18n key itself stays
+            // defined in the locale files (harmless unused key) but is no longer
+            // referenced by the component, so it can't be asserted via $t here.
             'admin.stock_mgmt.read_only',
         ];
         keys.forEach((key) => {

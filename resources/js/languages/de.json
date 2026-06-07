@@ -134,6 +134,13 @@
         "setup": "Einrichtung"
     },
     "label": {
+        "kds_served_ago_hours": "vor {hours} Std.",
+        "kds_served_ago_days": "vor {days} T.",
+        "kds_card_cta_start": "Starten",
+        "kds_lane_empty_dinein": "Keine Vor-Ort-Bestellungen in Bearbeitung.",
+        "kds_lane_empty_online": "Keine Online-Bestellungen in Bearbeitung.",
+        "kds_lane_empty_takeaway": "Keine Abholbestellungen in Bearbeitung.",
+        "kds_lane_empty_borne": "Keine Kiosk-Bestellungen in Bearbeitung.",
         "previous": "Vorherige",
         "next": "Nächste",
         "default": "Verzug",
@@ -806,6 +813,7 @@
         }
     },
     "button": {
+        "kds_print_ticket": "Ticket drucken",
         "add": "Hinzufügen",
         "save": "Speichern",
         "edit": "Bearbeiten",
@@ -1224,6 +1232,8 @@
             "cancel_no": "Non, continuer"
         },
         "pay_screen": {
+            "offline_queued_title": "Bestellung offline gespeichert",
+            "offline_queued_sub": "Sie wird an die Kasse übermittelt, sobald die Verbindung wieder besteht. Bitte gehen Sie zur Theke — das Personal schließt Ihre Bestellung ab.",
             "title": "Choisissez votre paiement",
             "total_prefix": "Total à régler :",
             "card_title": "Carte bancaire",

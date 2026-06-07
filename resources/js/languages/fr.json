@@ -426,6 +426,13 @@
         "setup": "Configuration"
     },
     "label": {
+        "kds_served_ago_hours": "il y a {hours} h",
+        "kds_served_ago_days": "il y a {days} j",
+        "kds_card_cta_start": "Démarrer",
+        "kds_lane_empty_dinein": "Aucune commande sur place en cours.",
+        "kds_lane_empty_online": "Aucune commande en ligne en cours.",
+        "kds_lane_empty_takeaway": "Aucune commande à emporter en cours.",
+        "kds_lane_empty_borne": "Aucune commande borne en cours.",
         "encaisser": "Encaisser",
         "encaisser_queue_subtitle": "Commandes en attente d’encaissement",
         "encaisser_queue_empty": "Aucune commande à encaisser",
@@ -1304,6 +1311,7 @@
         "downloading": "Téléchargement…"
     },
     "button": {
+        "kds_print_ticket": "Imprimer ticket",
         "refresh": "Actualiser",
         "add": "Ajouter",
         "save": "Enregistrer",
@@ -1720,6 +1728,8 @@
             "cancel_no": "Non, continuer"
         },
         "pay_screen": {
+            "offline_queued_title": "Commande enregistrée hors-ligne",
+            "offline_queued_sub": "Elle sera transmise à la caisse dès le retour de la connexion. Présentez-vous au comptoir, le personnel finalise votre commande.",
             "title": "Choisissez votre paiement",
             "total_prefix": "Total à régler :",
             "card_title": "Carte bancaire",

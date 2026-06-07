@@ -284,8 +284,9 @@
             <div class="p-3 pb-2" :class="filteredDineinOrders.length > 0 ? 'border-b border-[#D9DBE9] mb-2' : ''">
               <h3 class="text-lg font-semibold">{{ $t("label.dinein_orders") }}</h3>
             </div>
+            <!-- [KDS-UI-05 FIX] Legacy lane empty-state → i18n key (was hardcoded FR literal). -->
             <div v-if="filteredDineinOrders.length === 0" class="p-3 text-sm text-[#6E7191]">
-              Aucune commande sur place en cours.
+              {{ $t('label.kds_lane_empty_dinein') }}
             </div>
             <div v-else class="p-3 space-y-3">
               <template v-for="(dineinOrder, dIdx) in sortedFilteredDinein" :key="dineinOrder.id">
@@ -446,7 +447,7 @@
                     <button type="button" @click="printKitchenTicket(dineinOrder)"
                       class="rounded-lg w-full h-8 flex justify-center items-center gap-1.5 text-xs font-medium bg-[#F7F7FC] text-[#2E2F38] mb-2 hover:bg-[#EFF0F6]">
                       <i class="fa-solid fa-print text-xs"></i>
-                      Imprimer ticket
+                      {{ $t('button.kds_print_ticket') }}
                     </button>
                   </div>
                   <!-- [iter15-mega-fix B-002 2026-05-10] State-transition CTAs
@@ -483,8 +484,9 @@
             <div class="p-3 pb-2" :class="filteredOnlineOrders.length > 0 ? 'border-b border-[#D9DBE9] mb-2' : ''">
               <h3 class="text-lg font-semibold">{{ $t("label.online_orders") }}</h3>
             </div>
+            <!-- [KDS-UI-05 FIX] Legacy lane empty-state → i18n key (was hardcoded FR literal). -->
             <div v-if="filteredOnlineOrders.length === 0" class="p-3 text-sm text-[#6E7191]">
-              Aucune commande en ligne en cours.
+              {{ $t('label.kds_lane_empty_online') }}
             </div>
             <div v-if="filteredOnlineOrders.length > 0" class="p-3" v-for="onlineOrder in filteredOnlineOrders" :key="onlineOrder.id">
               <div class="w-full rounded-lg border transition-colors border-[#EFF0F6] relative" :class="kdsWaitClass(onlineOrder)"
@@ -630,7 +632,7 @@
                     <button type="button" @click="printKitchenTicket(onlineOrder)"
                       class="rounded-lg w-full h-8 flex justify-center items-center gap-1.5 text-xs font-medium bg-[#F7F7FC] text-[#2E2F38] mb-2 hover:bg-[#EFF0F6]">
                       <i class="fa-solid fa-print text-xs"></i>
-                      Imprimer ticket
+                      {{ $t('button.kds_print_ticket') }}
                     </button>
                   </div>
                   <!-- [iter15-mega-fix B-002 2026-05-10] CTAs hoisted out of accordion. -->
@@ -654,8 +656,9 @@
             <div class="p-3 pb-2" :class="filteredTakeawayOrders.length > 0 ? 'border-b border-[#D9DBE9] mb-2' : ''">
               <h3 class="text-lg font-semibold">{{ $t("label.takeaway") }}</h3>
             </div>
+            <!-- [KDS-UI-05 FIX] Legacy lane empty-state → i18n key (was hardcoded FR literal). -->
             <div v-if="filteredTakeawayOrders.length === 0" class="p-3 text-sm text-[#6E7191]">
-              Aucune commande à emporter en cours.
+              {{ $t('label.kds_lane_empty_takeaway') }}
             </div>
             <div v-if="filteredTakeawayOrders.length > 0" class="p-3" v-for="takeawayOrder in filteredTakeawayOrders"
               :key="takeawayOrder.id">
@@ -804,7 +807,7 @@
                     <button type="button" @click="printKitchenTicket(takeawayOrder)"
                       class="rounded-lg w-full h-8 flex justify-center items-center gap-1.5 text-xs font-medium bg-[#F7F7FC] text-[#2E2F38] mb-2 hover:bg-[#EFF0F6]">
                       <i class="fa-solid fa-print text-xs"></i>
-                      Imprimer ticket
+                      {{ $t('button.kds_print_ticket') }}
                     </button>
                   </div>
                   <!-- [iter15-mega-fix B-002 2026-05-10] CTAs hoisted out of accordion. -->
@@ -833,8 +836,9 @@
                 {{ filteredKioskOrders.length }}
               </span>
             </div>
+            <!-- [KDS-UI-05 FIX] Legacy lane empty-state → i18n key (was hardcoded FR literal). -->
             <div v-if="filteredKioskOrders.length === 0" class="p-3 text-sm text-[#6E7191]">
-              Aucune commande borne en cours.
+              {{ $t('label.kds_lane_empty_borne') }}
             </div>
             <div v-if="filteredKioskOrders.length > 0" class="p-3" v-for="kioskOrder in filteredKioskOrders" :key="kioskOrder.id">
               <div class="w-full rounded-lg border transition-colors border-[#EFF0F6] relative" :class="kdsWaitClass(kioskOrder)"
@@ -981,7 +985,7 @@
                     <button type="button" @click="printKitchenTicket(kioskOrder)"
                       class="rounded-lg w-full h-8 flex justify-center items-center gap-1.5 text-xs font-medium bg-[#F7F7FC] text-[#2E2F38] mb-2 hover:bg-[#EFF0F6]">
                       <i class="fa-solid fa-print text-xs"></i>
-                      Imprimer ticket
+                      {{ $t('button.kds_print_ticket') }}
                     </button>
                   </div>
                   <!-- [iter15-mega-fix B-002 2026-05-10] CTAs hoisted out of accordion. -->

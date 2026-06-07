@@ -160,17 +160,22 @@
       </svg>
       <span>{{ $t('label.kds_card_cash_pending') }}</span>
     </div>
+    <!-- [KDS-UI-04 FIX] State-aware CTA: a NOUVEAU (NEW) card's first tap only
+         advances to EN PRÉPARATION, so the label/aria must read "Démarrer", not
+         "Prêt". Once EN PRÉPARATION the tap bumps to PRÊT → label "Prêt". The
+         underlying onCtaTap transition ladder in KdsV2Grid is untouched; only the
+         label follows the action. data-testid stays "kds-card-cta-ready" (E2E hook). -->
     <button
       type="button"
       class="kds-card__cta"
       @click.prevent="onCta"
-      :aria-label="$t('label.kds_card_cta_ready')"
+      :aria-label="$t(ctaLabelKey)"
       data-testid="kds-card-cta-ready"
     >
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="M5 12l5 5L20 7" />
       </svg>
-      <span>{{ $t('label.kds_card_cta_ready') }}</span>
+      <span>{{ $t(ctaLabelKey) }}</span>
     </button>
   </div>
 </template>
@@ -384,6 +389,15 @@ export default {
         // kitchen prepares before encashment; the cashier collects later in /admin/encaissement.
         isCashPending() {
             return this.order?.payment_pending_counter === true;
+        },
+        // [KDS-UI-04 FIX] CTA label key follows the action the tap performs.
+        // NEW (CONFIRMÉE/PENDING) → first tap promotes to EN PRÉPARATION → "Démarrer".
+        // PREPARING (and any other live state) → tap bumps to PRÊT → "Prêt".
+        // Mirrors KdsV2Grid.onCtaTap: currentStatus===ACCEPT ? PREPARING : PREPARED.
+        ctaLabelKey() {
+            return this.kdsState === 'NEW'
+                ? 'label.kds_card_cta_start'
+                : 'label.kds_card_cta_ready';
         },
     },
     methods: {

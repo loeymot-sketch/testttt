@@ -721,6 +721,13 @@ var AGE_BORDER = {
     isCashPending: function isCashPending() {
       var _this$order6;
       return ((_this$order6 = this.order) === null || _this$order6 === void 0 ? void 0 : _this$order6.payment_pending_counter) === true;
+    },
+    // [KDS-UI-04 FIX] CTA label key follows the action the tap performs.
+    // NEW (CONFIRMÉE/PENDING) → first tap promotes to EN PRÉPARATION → "Démarrer".
+    // PREPARING (and any other live state) → tap bumps to PRÊT → "Prêt".
+    // Mirrors KdsV2Grid.onCtaTap: currentStatus===ACCEPT ? PREPARING : PREPARED.
+    ctaLabelKey: function ctaLabelKey() {
+      return this.kdsState === 'NEW' ? 'label.kds_card_cta_start' : 'label.kds_card_cta_ready';
     }
   },
   methods: {
@@ -1218,9 +1225,26 @@ var _SHORTCUTS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
       if (diffSec < 60) {
         return this.$t('label.kds_served_just_now');
       }
+      // [KDS-UI-02 FIX] Roll the relative label up past minutes so a
+      // multi-day-old served order no longer renders "il y a 5907 min".
+      // < 60 min  → "il y a {mins} min" (existing path, unchanged)
+      // < 24 h    → "il y a {hours} h"  (floor of whole hours)
+      // ≥ 24 h    → "il y a {days} j"    (floor of whole days)
       var mins = Math.floor(diffSec / 60);
-      return this.$t('label.kds_served_ago', {
-        mins: mins
+      if (mins < 60) {
+        return this.$t('label.kds_served_ago', {
+          mins: mins
+        });
+      }
+      var hours = Math.floor(mins / 60);
+      if (hours < 24) {
+        return this.$t('label.kds_served_ago_hours', {
+          hours: hours
+        });
+      }
+      var days = Math.floor(hours / 24);
+      return this.$t('label.kds_served_ago_days', {
+        days: days
       });
     }
   }
@@ -3182,13 +3206,13 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     r: "10"
   }), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("polyline", {
     points: "12 6 12 12 16 14"
-  })], -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_card_cash_pending')), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_21)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+  })], -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_card_cash_pending')), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_21)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [KDS-UI-04 FIX] State-aware CTA: a NOUVEAU (NEW) card's first tap only\n         advances to EN PRÉPARATION, so the label/aria must read \"Démarrer\", not\n         \"Prêt\". Once EN PRÉPARATION the tap bumps to PRÊT → label \"Prêt\". The\n         underlying onCtaTap transition ladder in KdsV2Grid is untouched; only the\n         label follows the action. data-testid stays \"kds-card-cta-ready\" (E2E hook). "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     type: "button",
     "class": "kds-card__cta",
     onClick: _cache[0] || (_cache[0] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function () {
       return $options.onCta && $options.onCta.apply($options, arguments);
     }, ["prevent"])),
-    "aria-label": _ctx.$t('label.kds_card_cta_ready'),
+    "aria-label": _ctx.$t($options.ctaLabelKey),
     "data-testid": "kds-card-cta-ready"
   }, [_cache[8] || (_cache[8] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("svg", {
     width: "22",
@@ -3202,7 +3226,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "aria-hidden": "true"
   }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("path", {
     d: "M5 12l5 5L20 7"
-  })], -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_card_cta_ready')), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_22)], 46 /* CLASS, STYLE, PROPS, NEED_HYDRATION */, _hoisted_1);
+  })], -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t($options.ctaLabelKey)), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_22)], 46 /* CLASS, STYLE, PROPS, NEED_HYDRATION */, _hoisted_1);
 }
 
 /***/ },
@@ -4449,7 +4473,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     })
   }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_63, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
     "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["p-3 pb-2", $options.filteredDineinOrders.length > 0 ? 'border-b border-[#D9DBE9] mb-2' : ''])
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_64, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.dinein_orders")), 1 /* TEXT */)], 2 /* CLASS */), $options.filteredDineinOrders.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_65, " Aucune commande sur place en cours. ")) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_66, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.sortedFilteredDinein, function (dineinOrder, dIdx) {
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_64, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.dinein_orders")), 1 /* TEXT */)], 2 /* CLASS */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [KDS-UI-05 FIX] Legacy lane empty-state → i18n key (was hardcoded FR literal). "), $options.filteredDineinOrders.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_65, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_lane_empty_dinein')), 1 /* TEXT */)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_66, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.sortedFilteredDinein, function (dineinOrder, dIdx) {
     return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
       key: dineinOrder.id
     }, [$options.kdsDineinTableHeaderVisible(dineinOrder, dIdx) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_67, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
@@ -4560,9 +4584,9 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
         return $options.printKitchenTicket(dineinOrder);
       },
       "class": "rounded-lg w-full h-8 flex justify-center items-center gap-1.5 text-xs font-medium bg-[#F7F7FC] text-[#2E2F38] mb-2 hover:bg-[#EFF0F6]"
-    }, _toConsumableArray(_cache[37] || (_cache[37] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+    }, [_cache[37] || (_cache[37] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
       "class": "fa-solid fa-print text-xs"
-    }, null, -1 /* CACHED */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" Imprimer ticket ", -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_105)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix B-002 2026-05-10] State-transition CTAs\n                       moved OUT of the accordion. Always rendered so the chef\n                       reaches them in 1 tap on a busy kitchen tablet. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix C-041 round-8 2026-05-10] Tailwind\n                       theme.colors.primary resolves to rgb(255 0 107) (=\n                       #FF006B, hot pink/magenta) and clashes with the owner's\n                       Cayenne brand palette. Replace with arbitrary hex\n                       `bg-[#F4501E]` (Cayenne orange-red, matches mobile app\n                       and `--kiosk-bold-primary` token) on the KDS surface\n                       only, scoped to this iter15-mega Wave C round-8 fix —\n                       global Tailwind override is out of scope for this\n                       round. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_106, [dineinOrder.status === $data.enums.orderStatusEnum.ACCEPT ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+    }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.kds_print_ticket')), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_105)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix B-002 2026-05-10] State-transition CTAs\n                       moved OUT of the accordion. Always rendered so the chef\n                       reaches them in 1 tap on a busy kitchen tablet. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix C-041 round-8 2026-05-10] Tailwind\n                       theme.colors.primary resolves to rgb(255 0 107) (=\n                       #FF006B, hot pink/magenta) and clashes with the owner's\n                       Cayenne brand palette. Replace with arbitrary hex\n                       `bg-[#F4501E]` (Cayenne orange-red, matches mobile app\n                       and `--kiosk-bold-primary` token) on the KDS surface\n                       only, scoped to this iter15-mega Wave C round-8 fix —\n                       global Tailwind override is out of scope for this\n                       round. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_106, [dineinOrder.status === $data.enums.orderStatusEnum.ACCEPT ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
       key: 0,
       type: "button",
       onClick: function onClick($event) {
@@ -4579,7 +4603,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.mark_done")), 9 /* TEXT, PROPS */, _hoisted_108)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])])], 10 /* CLASS, PROPS */, _hoisted_69)], 512 /* NEED_PATCH */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vShow, !$data.groupByTable || $options.isTableGroupOpen($options.dineinTableKey(dineinOrder))]])], 64 /* STABLE_FRAGMENT */);
   }), 128 /* KEYED_FRAGMENT */))]))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_109, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
     "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["p-3 pb-2", $options.filteredOnlineOrders.length > 0 ? 'border-b border-[#D9DBE9] mb-2' : ''])
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_110, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.online_orders")), 1 /* TEXT */)], 2 /* CLASS */), $options.filteredOnlineOrders.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_111, " Aucune commande en ligne en cours. ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.filteredOnlineOrders.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_110, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.online_orders")), 1 /* TEXT */)], 2 /* CLASS */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [KDS-UI-05 FIX] Legacy lane empty-state → i18n key (was hardcoded FR literal). "), $options.filteredOnlineOrders.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_111, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_lane_empty_online')), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.filteredOnlineOrders.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
     key: 1
   }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.filteredOnlineOrders, function (onlineOrder) {
     return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
@@ -4687,9 +4711,9 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
         return $options.printKitchenTicket(onlineOrder);
       },
       "class": "rounded-lg w-full h-8 flex justify-center items-center gap-1.5 text-xs font-medium bg-[#F7F7FC] text-[#2E2F38] mb-2 hover:bg-[#EFF0F6]"
-    }, _toConsumableArray(_cache[44] || (_cache[44] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+    }, [_cache[44] || (_cache[44] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
       "class": "fa-solid fa-print text-xs"
-    }, null, -1 /* CACHED */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" Imprimer ticket ", -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_147)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix B-002 2026-05-10] CTAs hoisted out of accordion. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_148, [onlineOrder.status === $data.enums.orderStatusEnum.ACCEPT ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+    }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.kds_print_ticket')), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_147)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix B-002 2026-05-10] CTAs hoisted out of accordion. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_148, [onlineOrder.status === $data.enums.orderStatusEnum.ACCEPT ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
       key: 0,
       type: "button",
       onClick: function onClick($event) {
@@ -4706,7 +4730,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.mark_done")), 9 /* TEXT, PROPS */, _hoisted_150)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])])], 10 /* CLASS, PROPS */, _hoisted_112)]);
   }), 128 /* KEYED_FRAGMENT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_151, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
     "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["p-3 pb-2", $options.filteredTakeawayOrders.length > 0 ? 'border-b border-[#D9DBE9] mb-2' : ''])
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_152, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.takeaway")), 1 /* TEXT */)], 2 /* CLASS */), $options.filteredTakeawayOrders.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_153, " Aucune commande à emporter en cours. ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.filteredTakeawayOrders.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_152, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.takeaway")), 1 /* TEXT */)], 2 /* CLASS */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [KDS-UI-05 FIX] Legacy lane empty-state → i18n key (was hardcoded FR literal). "), $options.filteredTakeawayOrders.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_153, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_lane_empty_takeaway')), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.filteredTakeawayOrders.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
     key: 1
   }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.filteredTakeawayOrders, function (takeawayOrder) {
     return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
@@ -4812,9 +4836,9 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
         return $options.printKitchenTicket(takeawayOrder);
       },
       "class": "rounded-lg w-full h-8 flex justify-center items-center gap-1.5 text-xs font-medium bg-[#F7F7FC] text-[#2E2F38] mb-2 hover:bg-[#EFF0F6]"
-    }, _toConsumableArray(_cache[52] || (_cache[52] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+    }, [_cache[52] || (_cache[52] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
       "class": "fa-solid fa-print text-xs"
-    }, null, -1 /* CACHED */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" Imprimer ticket ", -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_191)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix B-002 2026-05-10] CTAs hoisted out of accordion. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_192, [takeawayOrder.status === $data.enums.orderStatusEnum.ACCEPT ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+    }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.kds_print_ticket')), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_191)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix B-002 2026-05-10] CTAs hoisted out of accordion. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_192, [takeawayOrder.status === $data.enums.orderStatusEnum.ACCEPT ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
       key: 0,
       type: "button",
       onClick: function onClick($event) {
@@ -4833,7 +4857,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["p-3 pb-2 flex items-center gap-2", $options.filteredKioskOrders.length > 0 ? 'border-b border-[#D9DBE9] mb-2' : ''])
   }, [_cache[53] || (_cache[53] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", {
     "class": "text-lg font-semibold"
-  }, "🖥️ Borne", -1 /* CACHED */)), $options.filteredKioskOrders.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_196, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.filteredKioskOrders.length), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 2 /* CLASS */), $options.filteredKioskOrders.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_197, " Aucune commande borne en cours. ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.filteredKioskOrders.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+  }, "🖥️ Borne", -1 /* CACHED */)), $options.filteredKioskOrders.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_196, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.filteredKioskOrders.length), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 2 /* CLASS */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [KDS-UI-05 FIX] Legacy lane empty-state → i18n key (was hardcoded FR literal). "), $options.filteredKioskOrders.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_197, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_lane_empty_borne')), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.filteredKioskOrders.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
     key: 1
   }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.filteredKioskOrders, function (kioskOrder) {
     return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
@@ -4944,9 +4968,9 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
         return $options.printKitchenTicket(kioskOrder);
       },
       "class": "rounded-lg w-full h-8 flex justify-center items-center gap-1.5 text-xs font-medium bg-[#F7F7FC] text-[#2E2F38] mb-2 hover:bg-[#EFF0F6]"
-    }, _toConsumableArray(_cache[60] || (_cache[60] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+    }, [_cache[60] || (_cache[60] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
       "class": "fa-solid fa-print text-xs"
-    }, null, -1 /* CACHED */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" Imprimer ticket ", -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_233)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix B-002 2026-05-10] CTAs hoisted out of accordion. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_234, [kioskOrder.status === $data.enums.orderStatusEnum.ACCEPT ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+    }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.kds_print_ticket')), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_233)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix B-002 2026-05-10] CTAs hoisted out of accordion. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_234, [kioskOrder.status === $data.enums.orderStatusEnum.ACCEPT ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
       key: 0,
       type: "button",
       onClick: function onClick($event) {

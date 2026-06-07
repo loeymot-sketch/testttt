@@ -318,6 +318,13 @@
         "demo_wizard_advanced": "عرض المعالج المتقدم"
     },
     "label": {
+        "kds_served_ago_hours": "منذ {hours} س",
+        "kds_served_ago_days": "منذ {days} ي",
+        "kds_card_cta_start": "ابدأ",
+        "kds_lane_empty_dinein": "لا توجد طلبات في المكان قيد التنفيذ.",
+        "kds_lane_empty_online": "لا توجد طلبات عبر الإنترنت قيد التنفيذ.",
+        "kds_lane_empty_takeaway": "لا توجد طلبات للأخذ قيد التنفيذ.",
+        "kds_lane_empty_borne": "لا توجد طلبات من الكشك قيد التنفيذ.",
         "encaisser": "تحصيل",
         "encaisser_queue_subtitle": "طلبات بانتظار التحصيل",
         "encaisser_queue_empty": "لا توجد طلبات للتحصيل",
@@ -1182,6 +1189,7 @@
         "downloading": "جارٍ التنزيل…"
     },
     "button": {
+        "kds_print_ticket": "طباعة التذكرة",
         "refresh": "تحديث",
         "add": "إضافة",
         "save": "حفظ",
@@ -1578,6 +1586,8 @@
             "cancel_no": "لا، متابعة"
         },
         "pay_screen": {
+            "offline_queued_title": "تم حفظ الطلب دون اتصال",
+            "offline_queued_sub": "سيتم إرساله إلى الكاشير بمجرد عودة الاتصال. يُرجى التوجه إلى الكاونتر — سيكمل الموظفون طلبك.",
             "title": "اختر طريقة الدفع",
             "total_prefix": "المبلغ المستحق:",
             "card_title": "بطاقة بنكية",

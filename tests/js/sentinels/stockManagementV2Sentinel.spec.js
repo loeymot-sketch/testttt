@@ -53,9 +53,26 @@ describe('StockManagement V2 — Mission 1 unified catalogue browser', () => {
         expect(source).toMatch(/:aria-checked=/);
     });
 
-    it('exposes the search input + branch filter testids', () => {
+    it('exposes the search input testid', () => {
         expect(source).toMatch(/data-testid="stock-mgmt-search"/);
-        expect(source).toMatch(/data-testid="stock-mgmt-branch-select"/);
+    });
+
+    // [STOCK-05 FIX 2026-06-07] The branch <select> was dead: `branchOptions` is
+    // never populated (catalog-overview returns branch_id but no branches list),
+    // so `canFilterByBranch` (= authBranchId()===0 && branchOptions.length>1) was
+    // always false and the control never rendered — a misleading affordance.
+    // V1 is single-branch (Le Cayenne). The dead select + canFilterByBranch +
+    // branchOptions were removed; `branchId` is kept (it still scopes API params).
+    // This sentinel now locks the REMOVAL so the dead affordance can't creep back.
+    it('does NOT reintroduce the dead branch filter affordance (STOCK-05)', () => {
+        // The rendered control + its testids must be gone from the template.
+        expect(source).not.toMatch(/data-testid="stock-mgmt-branch-select"/);
+        expect(source).not.toMatch(/data-testid="stock-mgmt-branch-filter"/);
+        // And the dead computed / data key must not be re-declared. Match on the
+        // declaration syntax (not bare mention) so the explanatory STOCK-05
+        // comments referencing the old names don't trip the guard.
+        expect(source).not.toMatch(/canFilterByBranch\s*\(\s*\)\s*\{/);
+        expect(source).not.toMatch(/branchOptions\s*:\s*\[/);
     });
 
     it('uses the unified read endpoint admin/stock/catalog-overview', () => {

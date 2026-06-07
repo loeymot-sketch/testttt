@@ -23983,8 +23983,10 @@ function debounce(fn, ms) {
   data: function data() {
     return {
       loading: false,
+      // [STOCK-05 FIX] branchId retained — it still scopes the read/toggle
+      // API params (loadAll, toggle*). The dead branch-options array (never
+      // populated) was removed along with the misleading branch select.
       branchId: 0,
-      branchOptions: [],
       categories: [],
       extraGroups: [],
       variationGroups: [],
@@ -24003,9 +24005,8 @@ function debounce(fn, ms) {
     canEditAvailability: function canEditAvailability() {
       return _services_appService__WEBPACK_IMPORTED_MODULE_0__["default"].permissionChecker('items_edit');
     },
-    canFilterByBranch: function canFilterByBranch() {
-      return this.authBranchId() === 0 && this.branchOptions.length > 1;
-    },
+    // [STOCK-05 FIX] canFilterByBranch removed — its only consumer was the dead
+    // branch <select>, and branchOptions (its data dependency) was never populated.
     buckets: function buckets() {
       var buckets = [];
 
@@ -58763,100 +58764,78 @@ var _hoisted_4 = {
 };
 var _hoisted_5 = {
   key: 0,
-  "class": "flex items-center gap-2 text-xs text-slate-700",
-  "data-testid": "stock-mgmt-branch-filter"
-};
-var _hoisted_6 = ["value"];
-var _hoisted_7 = {
-  key: 0,
   "class": "rounded border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700",
   role: "alert",
   "aria-live": "polite",
   "data-testid": "stock-mgmt-error"
 };
-var _hoisted_8 = {
+var _hoisted_6 = {
   "class": "layout grid grid-cols-1 gap-4 md:grid-cols-[260px,1fr]"
 };
-var _hoisted_9 = ["aria-label"];
-var _hoisted_10 = {
+var _hoisted_7 = ["aria-label"];
+var _hoisted_8 = {
   "class": "space-y-1"
 };
-var _hoisted_11 = ["data-testid", "aria-current", "onClick"];
-var _hoisted_12 = {
+var _hoisted_9 = ["data-testid", "aria-current", "onClick"];
+var _hoisted_10 = {
   "class": "flex items-center gap-2"
 };
-var _hoisted_13 = {
+var _hoisted_11 = {
   "aria-hidden": "true"
 };
-var _hoisted_14 = {
+var _hoisted_12 = {
   key: 0,
   "class": "px-3 py-4 text-xs text-slate-500"
 };
-var _hoisted_15 = {
+var _hoisted_13 = {
   "class": "pane rounded border border-slate-200 bg-white p-3"
 };
-var _hoisted_16 = {
+var _hoisted_14 = {
   "class": "mb-3 flex items-center gap-2"
 };
-var _hoisted_17 = ["placeholder", "aria-label"];
-var _hoisted_18 = {
+var _hoisted_15 = ["placeholder", "aria-label"];
+var _hoisted_16 = {
   key: 0,
   "class": "rounded bg-amber-50 px-2 py-1 text-xs text-amber-700",
   "data-testid": "stock-mgmt-read-only"
 };
-var _hoisted_19 = {
+var _hoisted_17 = {
   key: 0,
   "class": "px-2 py-6 text-center text-sm text-slate-500",
   "aria-live": "polite"
 };
-var _hoisted_20 = {
+var _hoisted_18 = {
   key: 1,
   "class": "px-2 py-6 text-center text-sm text-slate-500",
   "data-testid": "stock-mgmt-empty"
 };
-var _hoisted_21 = {
+var _hoisted_19 = {
   key: 2,
   "class": "grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
 };
-var _hoisted_22 = ["data-testid"];
-var _hoisted_23 = {
+var _hoisted_20 = ["data-testid"];
+var _hoisted_21 = {
   "class": "flex items-center gap-3 min-w-0 flex-1"
 };
-var _hoisted_24 = ["src"];
-var _hoisted_25 = {
+var _hoisted_22 = ["src"];
+var _hoisted_23 = {
   key: 1,
   "class": "h-12 w-12 rounded bg-slate-100 flex items-center justify-center text-xl flex-shrink-0",
   "aria-hidden": "true"
 };
-var _hoisted_26 = ["title"];
-var _hoisted_27 = ["aria-checked", "disabled", "data-testid", "onClick"];
-var _hoisted_28 = ["data-testid", "aria-label"];
+var _hoisted_24 = ["title"];
+var _hoisted_25 = ["aria-checked", "disabled", "data-testid", "onClick"];
+var _hoisted_26 = ["data-testid", "aria-label"];
 function render(_ctx, _cache, $props, $setup, $data, $options) {
   return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n        StockRuptureDashboardComponent — V2 Unified Catalogue Browser\n        Mission 1 — Stock-Rupture UI Simplification (Owner spec 2026-05-21).\n\n        Plan: plans/PLAN_MISSION_1_STOCK_RUPTURE_SIMPLIFICATION_2026-05-21.md\n\n        ONE page. Left rail = all browsable buckets (item categories + extra\n        groups + variation attributes). Right pane = product cards with a\n        binary in-stock / out-of-stock toggle per product.\n\n        Backend SSOT:\n          - GET  /api/admin/stock/catalog-overview                  (read)\n          - POST /api/admin/menu/availability/toggle                (items)\n          - POST /api/admin/menu/availability/extra/toggle          (extras)\n          - POST /api/admin/menu/availability/variation/toggle      (variations)\n\n        Deduped axes:\n          - Extras grouped by `group_label`, deduped by name. Toggling\n            \"Algérienne\" cascades to all underlying extra_ids in one batch.\n          - Variations grouped by item_attribute_id, deduped by name. Toggling\n            \"Tomate\" cascades to all underlying variation_ids in one batch.\n\n        Real-time sync via Echo on `private-branch.{branchId}` for the 3\n        availability events; 60s polling fallback for admin (branch_id=0).\n    "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("section", {
     "class": "stock-mgmt-v2 space-y-4",
     "data-testid": "stock-management-v2",
     "aria-busy": $data.loading
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("header", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h2", _hoisted_3, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('admin.stock_mgmt.title')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_4, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('admin.stock_mgmt.subtitle')), 1 /* TEXT */)]), $options.canFilterByBranch ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("label", _hoisted_5, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('admin.stock_mgmt.branch_label')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("select", {
-    "onUpdate:modelValue": _cache[0] || (_cache[0] = function ($event) {
-      return $data.branchId = $event;
-    }),
-    "class": "rounded border border-slate-300 px-2 py-1 text-sm text-slate-800",
-    "data-testid": "stock-mgmt-branch-select",
-    onChange: _cache[1] || (_cache[1] = function () {
-      return $options.loadAll && $options.loadAll.apply($options, arguments);
-    })
-  }, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($data.branchOptions, function (branch) {
-    return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("option", {
-      key: branch.id,
-      value: branch.id
-    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(branch.name), 9 /* TEXT, PROPS */, _hoisted_6);
-  }), 128 /* KEYED_FRAGMENT */))], 544 /* NEED_HYDRATION, NEED_PATCH */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelSelect, $data.branchId, void 0, {
-    number: true
-  }]])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), $data.errorMessage ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_7, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.errorMessage), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_8, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Left rail: bucket list "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("nav", {
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("header", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h2", _hoisted_3, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('admin.stock_mgmt.title')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_4, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('admin.stock_mgmt.subtitle')), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [STOCK-05 FIX] Dead branch-filter removed. `branchOptions` was never\n                 populated (catalogOverview returns branch_id but no branches list),\n                 so this <select> + canFilterByBranch never rendered — a misleading\n                 affordance. V1 is single-branch (Le Cayenne, branch_id=1); the\n                 `branchId` data field is kept because it still scopes the API params. ")]), $data.errorMessage ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_5, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.errorMessage), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_6, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Left rail: bucket list "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("nav", {
     "class": "rail rounded border border-slate-200 bg-white p-2",
     "data-testid": "stock-mgmt-rail",
     "aria-label": _ctx.$t('admin.stock_mgmt.title')
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("ul", _hoisted_10, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.buckets, function (bucket) {
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("ul", _hoisted_8, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.buckets, function (bucket) {
     return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", {
       key: bucket.key
     }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
@@ -58867,11 +58846,11 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       onClick: function onClick($event) {
         return $data.activeBucketKey = bucket.key;
       }
-    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_12, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_13, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(bucket.icon), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(bucket.label), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_10, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_11, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(bucket.icon), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(bucket.label), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
       "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["rounded-full px-2 py-0.5 text-xs font-semibold", bucket.key === $data.activeBucketKey ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'])
-    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(bucket.count), 3 /* TEXT, CLASS */)], 10 /* CLASS, PROPS */, _hoisted_11)]);
-  }), 128 /* KEYED_FRAGMENT */))]), $options.buckets.length === 0 && !$data.loading ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_14, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('admin.stock_mgmt.empty')), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 8 /* PROPS */, _hoisted_9), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Right pane: product grid "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("main", _hoisted_15, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_16, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
-    "onUpdate:modelValue": _cache[2] || (_cache[2] = function ($event) {
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(bucket.count), 3 /* TEXT, CLASS */)], 10 /* CLASS, PROPS */, _hoisted_9)]);
+  }), 128 /* KEYED_FRAGMENT */))]), $options.buckets.length === 0 && !$data.loading ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_12, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('admin.stock_mgmt.empty')), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 8 /* PROPS */, _hoisted_7), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Right pane: product grid "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("main", _hoisted_13, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_14, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
+    "onUpdate:modelValue": _cache[0] || (_cache[0] = function ($event) {
       return $data.searchQuery = $event;
     }),
     type: "search",
@@ -58879,23 +58858,23 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     placeholder: _ctx.$t('admin.stock_mgmt.search'),
     "data-testid": "stock-mgmt-search",
     "aria-label": _ctx.$t('admin.stock_mgmt.search')
-  }, null, 8 /* PROPS */, _hoisted_17), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.searchQuery]]), !$options.canEditAvailability ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_18, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('admin.stock_mgmt.read_only')), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), $data.loading && $options.filteredProducts.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_19, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('admin.stock_mgmt.loading')), 1 /* TEXT */)) : $options.filteredProducts.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_20, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [Wave Final S6 2026-05-23] Differentiate the empty\n                         message: \"no result\" when the user typed a search\n                         query that excluded everything, vs \"no products in\n                         category\" when the bucket is genuinely empty.\n                         Same FR-only V1 polish. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.searchQuery && $data.searchQuery.trim() ? _ctx.$t('admin.stock_mgmt.empty_search') : _ctx.$t('admin.stock_mgmt.empty')), 1 /* TEXT */)])) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_21, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.filteredProducts, function (product) {
+  }, null, 8 /* PROPS */, _hoisted_15), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.searchQuery]]), !$options.canEditAvailability ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_16, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('admin.stock_mgmt.read_only')), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), $data.loading && $options.filteredProducts.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_17, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('admin.stock_mgmt.loading')), 1 /* TEXT */)) : $options.filteredProducts.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_18, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [Wave Final S6 2026-05-23] Differentiate the empty\n                         message: \"no result\" when the user typed a search\n                         query that excluded everything, vs \"no products in\n                         category\" when the bucket is genuinely empty.\n                         Same FR-only V1 polish. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.searchQuery && $data.searchQuery.trim() ? _ctx.$t('admin.stock_mgmt.empty_search') : _ctx.$t('admin.stock_mgmt.empty')), 1 /* TEXT */)])) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_19, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.filteredProducts, function (product) {
     return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("article", {
       key: product.key,
       "class": "product-card flex items-center justify-between gap-3 rounded border border-slate-200 bg-white p-3",
       "data-testid": "stock-mgmt-product-".concat(product.key)
-    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_23, [product.thumb ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("img", {
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_21, [product.thumb ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("img", {
       key: 0,
       src: product.thumb,
       alt: "",
       "class": "h-12 w-12 rounded object-cover bg-slate-100 flex-shrink-0",
-      onError: _cache[3] || (_cache[3] = function () {
+      onError: _cache[1] || (_cache[1] = function () {
         return $options.onThumbError && $options.onThumbError.apply($options, arguments);
       })
-    }, null, 40 /* PROPS, NEED_HYDRATION */, _hoisted_24)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_25, "📦")), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    }, null, 40 /* PROPS, NEED_HYDRATION */, _hoisted_22)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_23, "📦")), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
       "class": "name text-sm font-medium text-slate-800 min-w-0 flex-1",
       title: product.name
-    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(product.name), 9 /* TEXT, PROPS */, _hoisted_26)]), $options.canEditAvailability ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(product.name), 9 /* TEXT, PROPS */, _hoisted_24)]), $options.canEditAvailability ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
       key: 0,
       type: "button",
       role: "switch",
@@ -58906,13 +58885,13 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       onClick: function onClick($event) {
         return $options.toggleProduct(product);
       }
-    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(product.is_available ? _ctx.$t('admin.stock_mgmt.in_stock') : _ctx.$t('admin.stock_mgmt.out_of_stock')), 11 /* TEXT, CLASS, PROPS */, _hoisted_27)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", {
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(product.is_available ? _ctx.$t('admin.stock_mgmt.in_stock') : _ctx.$t('admin.stock_mgmt.out_of_stock')), 11 /* TEXT, CLASS, PROPS */, _hoisted_25)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", {
       key: 1,
       "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(['inline-flex items-center justify-center rounded px-3 py-1.5 text-xs font-semibold whitespace-nowrap', product.is_available ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800']),
       "data-testid": "stock-mgmt-toggle-".concat(product.key),
       role: "img",
       "aria-label": product.is_available ? _ctx.$t('admin.stock_mgmt.in_stock') : _ctx.$t('admin.stock_mgmt.out_of_stock')
-    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(product.is_available ? _ctx.$t('admin.stock_mgmt.in_stock') : _ctx.$t('admin.stock_mgmt.out_of_stock')), 11 /* TEXT, CLASS, PROPS */, _hoisted_28))], 8 /* PROPS */, _hoisted_22);
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(product.is_available ? _ctx.$t('admin.stock_mgmt.in_stock') : _ctx.$t('admin.stock_mgmt.out_of_stock')), 11 /* TEXT, CLASS, PROPS */, _hoisted_26))], 8 /* PROPS */, _hoisted_20);
   }), 128 /* KEYED_FRAGMENT */))]))])])], 8 /* PROPS */, _hoisted_1)], 2112 /* STABLE_FRAGMENT, DEV_ROOT_FRAGMENT */);
 }
 

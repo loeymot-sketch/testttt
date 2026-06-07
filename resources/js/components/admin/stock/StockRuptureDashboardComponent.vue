@@ -38,27 +38,11 @@
                     {{ $t('admin.stock_mgmt.subtitle') }}
                 </p>
             </div>
-            <label
-                v-if="canFilterByBranch"
-                class="flex items-center gap-2 text-xs text-slate-700"
-                data-testid="stock-mgmt-branch-filter"
-            >
-                <span>{{ $t('admin.stock_mgmt.branch_label') }}</span>
-                <select
-                    v-model.number="branchId"
-                    class="rounded border border-slate-300 px-2 py-1 text-sm text-slate-800"
-                    data-testid="stock-mgmt-branch-select"
-                    @change="loadAll"
-                >
-                    <option
-                        v-for="branch in branchOptions"
-                        :key="branch.id"
-                        :value="branch.id"
-                    >
-                        {{ branch.name }}
-                    </option>
-                </select>
-            </label>
+            <!-- [STOCK-05 FIX] Dead branch-filter removed. `branchOptions` was never
+                 populated (catalogOverview returns branch_id but no branches list),
+                 so this <select> + canFilterByBranch never rendered — a misleading
+                 affordance. V1 is single-branch (Le Cayenne, branch_id=1); the
+                 `branchId` data field is kept because it still scopes the API params. -->
         </header>
 
         <div
@@ -303,8 +287,10 @@ export default {
     data() {
         return {
             loading: false,
+            // [STOCK-05 FIX] branchId retained — it still scopes the read/toggle
+            // API params (loadAll, toggle*). The dead branch-options array (never
+            // populated) was removed along with the misleading branch select.
             branchId: 0,
-            branchOptions: [],
             categories: [],
             extraGroups: [],
             variationGroups: [],
@@ -323,9 +309,8 @@ export default {
         canEditAvailability() {
             return appService.permissionChecker('items_edit');
         },
-        canFilterByBranch() {
-            return this.authBranchId() === 0 && this.branchOptions.length > 1;
-        },
+        // [STOCK-05 FIX] canFilterByBranch removed — its only consumer was the dead
+        // branch <select>, and branchOptions (its data dependency) was never populated.
         buckets() {
             const buckets = [];
 

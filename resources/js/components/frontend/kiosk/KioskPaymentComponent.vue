@@ -1,9 +1,40 @@
 <template>
   <div class="kiosk-payment" data-testid="kiosk-payment-root">
+    <!-- [KIOSK-OFFLINE-PLANB-01 FIX] Dedicated offline-queued state. Takes
+         precedence over the Plan-B counter-route screen (note `&& !offlineQueued`
+         below) so a customer who paid cash while the kiosk was offline sees a
+         clear "commande enregistrée hors-ligne — patientez / présentez-vous au
+         comptoir" message instead of a cash-collect screen showing a blank "#—"
+         (the order id only arrives later on sync). -->
+    <div
+      v-if="offlineQueued"
+      class="kiosk-pay-offline-queued"
+      role="status"
+      aria-live="polite"
+      data-testid="kiosk-payment-offline-queued"
+    >
+      <div class="kiosk-pay-offline-queued-icon" aria-hidden="true">
+        <svg width="120" height="120" viewBox="0 0 120 120" fill="none">
+          <circle cx="60" cy="60" r="58" stroke="#F4501E" stroke-width="3"/>
+          <path d="M40 62l14 14 26-32" stroke="#F4501E" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <h1 class="kiosk-pay-offline-queued-title" data-testid="kiosk-payment-offline-queued-title">
+        {{ $t('kiosk.pay_screen.offline_queued_title') }}
+      </h1>
+      <p class="kiosk-pay-offline-queued-sub" data-testid="kiosk-payment-offline-queued-sub">
+        {{ $t('kiosk.pay_screen.offline_queued_sub') }}
+      </p>
+      <div class="kiosk-pay-offline-queued-total" data-testid="kiosk-payment-offline-queued-total">
+        <span>{{ $t('kiosk.pay_screen.total_prefix') }}</span>
+        <strong>{{ formatPrice(cartTotal) }}</strong>
+      </div>
+    </div>
+
     <!-- [SUPERVISOR WAVE C Z1 2026-05-28] Plan B: route ALL kiosk payments to counter.
          When true, hide method selection + auto-submit cash. Owner mandate Le Cayenne. -->
     <div
-      v-if="paymentRouteAllToCounter"
+      v-if="paymentRouteAllToCounter && !offlineQueued"
       class="kiosk-pay-counter-route"
       role="status"
       aria-live="polite"
@@ -307,6 +338,11 @@ export default {
       tpeCanCancel:  false,
       _lastOrder:    null,
       _lastQuote:    null,
+      // [KIOSK-OFFLINE-PLANB-01 FIX] True once a cash order was queued offline
+      // (no server id yet). Drives a dedicated "commande enregistrée hors-ligne"
+      // screen instead of the standard cash-collect screen that would render a
+      // blank order number "#—" (the id only arrives later on sync).
+      offlineQueued: false,
       networkOffline: typeof navigator !== 'undefined' ? !navigator.onLine : false,
       // Kiosk Phase 9.1.11 — compteur d'échecs TPE.
       // Conformément à l'UX concurrence (McDonald's, Quick, Burger King),
@@ -322,6 +358,11 @@ export default {
   // l'écran d'erreur dédié. Exposé en constante d'instance pour faciliter
   // l'override en test (`wrapper.vm.$options.MAX_PAYMENT_FAILURES = ...`).
   MAX_PAYMENT_FAILURES: 2,
+  // [KIOSK-OFFLINE-PLANB-01 FIX] Auto-return delay (ms) for the offline-queued
+  // confirmation screen → back to kiosk.idle. Mirrors the bypassed
+  // KioskCashInstructionComponent 45s auto-redirect. Component-option so tests
+  // can shrink it (`wrapper.vm.$options.OFFLINE_QUEUED_RETURN_MS = ...`).
+  OFFLINE_QUEUED_RETURN_MS: 45000,
   computed: {
     // [GAP-22-4] Also read orderType so it's passed to submitOrder
     ...mapGetters('kioskCart', ['total', 'branchId', 'orderType']),
@@ -371,6 +412,12 @@ export default {
     if (this._reconcileInterval) {
       try { clearInterval(this._reconcileInterval); } catch (_) {}
       this._reconcileInterval = null;
+    }
+    // [KIOSK-OFFLINE-PLANB-01 FIX] Cancel the offline-queued auto-return timer
+    // so it never fires a stray navigation after the screen is gone.
+    if (this._offlineQueuedTimer) {
+      try { clearTimeout(this._offlineQueuedTimer); } catch (_) {}
+      this._offlineQueuedTimer = null;
     }
   },
   methods: {
@@ -778,7 +825,35 @@ export default {
         });
       } catch (_) {}
       this.submitting = false;
+      // [KIOSK-OFFLINE-PLANB-01 FIX] When the cash order was queued offline the
+      // server hasn't assigned an id/queue number yet, so the standard
+      // cash-instruction screen would show "#—". Instead, surface a dedicated
+      // "commande enregistrée hors-ligne" state right here (it will be
+      // transmitted to the counter on reconnection). This covers Plan-B
+      // (forced cash) and any offline cash path — the real bug surface.
+      if (String(this._lastOrder?.id || '').startsWith('offline_')) {
+        this.offlineQueued = true;
+        this.submitted = true;
+        // RECOVERY: the global kiosk idle timer is disabled on `kiosk.payment`
+        // (KioskAppComponent.startIdleTimer noTimerRoutes) and this screen has no
+        // CTA — without an auto-return it would strand the next customer. Mirror
+        // the 45s auto-redirect-to-idle of the cash-instruction screen we bypass.
+        this._scheduleOfflineQueuedReturn();
+        return;
+      }
       this.$router.push(navTarget);
+    },
+    // [KIOSK-OFFLINE-PLANB-01 FIX] Auto-return to the kiosk idle screen after the
+    // offline-queued confirmation so the self-service terminal recovers for the
+    // next customer (cleared on unmount to avoid a stray navigation). The delay
+    // mirrors KioskCashInstructionComponent.autoRedirectSeconds (45s) and is
+    // exposed as a component option (this.$options.OFFLINE_QUEUED_RETURN_MS) for
+    // test override, same pattern as MAX_PAYMENT_FAILURES.
+    _scheduleOfflineQueuedReturn() {
+      try { clearTimeout(this._offlineQueuedTimer); } catch (_) {}
+      this._offlineQueuedTimer = setTimeout(() => {
+        this.$router.push({ name: 'kiosk.idle' }).catch(() => {});
+      }, this.$options.OFFLINE_QUEUED_RETURN_MS);
     },
     _reportDrawerFailure(errorMsg) {
       // [PHASE-6.1] Conservé : reporte un event "cash_drawer_failure" dédié
@@ -1036,6 +1111,67 @@ export default {
   opacity: 0.9;
 }
 .kiosk-pay-counter-total strong {
+  font-size: clamp(48px, 8vw, 80px);
+  font-weight: 900;
+  line-height: 0.92;
+}
+/* [KIOSK-OFFLINE-PLANB-01 FIX] Offline-queued state — mirrors the counter-route
+   layout so the offline cash screen reads as a deliberate confirmation, not a
+   broken cash-collect screen with a blank "#—". */
+.kiosk-pay-offline-queued {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  padding: 40px;
+  background: var(--kiosk-page-bg, #FFFFFF);
+  color: var(--kiosk-text, #0F0F0F);
+  text-align: center;
+}
+.kiosk-pay-offline-queued-icon {
+  margin-bottom: 8px;
+}
+.kiosk-pay-offline-queued-title {
+  font-size: clamp(36px, 5vw, 56px);
+  font-weight: 900;
+  margin: 0;
+  color: var(--kiosk-text, #0F0F0F);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+.kiosk-pay-offline-queued-sub {
+  font-size: clamp(20px, 2.6vw, 30px);
+  font-weight: 600;
+  color: var(--kiosk-primary, #F4501E);
+  margin: 0;
+  max-width: 760px;
+  line-height: 1.3;
+}
+.kiosk-pay-offline-queued-total {
+  margin: 16px auto 0;
+  width: min(640px, calc(100vw - 64px));
+  min-height: 140px;
+  border-radius: 28px;
+  background: linear-gradient(135deg, var(--kiosk-primary, #F4501E), var(--kiosk-primary-dark, #D7263D));
+  color: #FFFFFF;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: var(--kiosk-shadow-cta, 0 12px 28px rgba(0,0,0,0.18));
+}
+.kiosk-pay-offline-queued-total span {
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.9;
+}
+.kiosk-pay-offline-queued-total strong {
   font-size: clamp(48px, 8vw, 80px);
   font-weight: 900;
   line-height: 0.92;
