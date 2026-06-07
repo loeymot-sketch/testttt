@@ -691,7 +691,7 @@
                       N°{{ takeawayOrder.queue_number }}
                     </span>
                     <span v-if="isPaymentPendingCounter(takeawayOrder)" class="kds-counter-payment-badge">
-                      PAIEMENT COMPTOIR - NON REGLE
+                      {{ $t("kds_counter_payment_unpaid") }}
                     </span>
                   </div>
                   <span class="py-0.5 px-2 rounded-[4px] text-[10px] font-client leading-4 capitalize"
@@ -870,7 +870,7 @@
                       N°{{ kioskOrder.queue_number }}
                     </span>
                     <span v-if="isPaymentPendingCounter(kioskOrder)" class="kds-counter-payment-badge">
-                      PAIEMENT COMPTOIR - NON REGLE
+                      {{ $t("kds_counter_payment_unpaid") }}
                     </span>
                   </div>
                   <span class="py-0.5 px-2 rounded-[4px] text-[10px] font-client leading-4 capitalize"

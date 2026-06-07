@@ -321,6 +321,7 @@
         "kds_served_ago_hours": "منذ {hours} س",
         "kds_served_ago_days": "منذ {days} ي",
         "kds_card_cta_start": "ابدأ",
+        "kds_counter_payment_unpaid": "دفع الكاونتر — غير مدفوع",
         "kds_lane_empty_dinein": "لا توجد طلبات في المكان قيد التنفيذ.",
         "kds_lane_empty_online": "لا توجد طلبات عبر الإنترنت قيد التنفيذ.",
         "kds_lane_empty_takeaway": "لا توجد طلبات للأخذ قيد التنفيذ.",

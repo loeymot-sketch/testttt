@@ -137,6 +137,7 @@
         "kds_served_ago_hours": "vor {hours} Std.",
         "kds_served_ago_days": "vor {days} T.",
         "kds_card_cta_start": "Starten",
+        "kds_counter_payment_unpaid": "Kassenzahlung — offen",
         "kds_lane_empty_dinein": "Keine Vor-Ort-Bestellungen in Bearbeitung.",
         "kds_lane_empty_online": "Keine Online-Bestellungen in Bearbeitung.",
         "kds_lane_empty_takeaway": "Keine Abholbestellungen in Bearbeitung.",

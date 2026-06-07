@@ -434,6 +434,7 @@
         "kds_served_ago_hours": "{hours} h ago",
         "kds_served_ago_days": "{days} d ago",
         "kds_card_cta_start": "Start",
+        "kds_counter_payment_unpaid": "Counter payment — unpaid",
         "kds_lane_empty_dinein": "No dine-in orders in progress.",
         "kds_lane_empty_online": "No online orders in progress.",
         "kds_lane_empty_takeaway": "No takeaway orders in progress.",

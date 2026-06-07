@@ -137,6 +137,7 @@
         "kds_served_ago_hours": "{hours} ঘণ্টা আগে",
         "kds_served_ago_days": "{days} দিন আগে",
         "kds_card_cta_start": "শুরু",
+        "kds_counter_payment_unpaid": "কাউন্টার পেমেন্ট — বকেয়া",
         "kds_lane_empty_dinein": "চলমান কোনো ডাইন-ইন অর্ডার নেই।",
         "kds_lane_empty_online": "চলমান কোনো অনলাইন অর্ডার নেই।",
         "kds_lane_empty_takeaway": "চলমান কোনো টেকঅ্যাওয়ে অর্ডার নেই।",

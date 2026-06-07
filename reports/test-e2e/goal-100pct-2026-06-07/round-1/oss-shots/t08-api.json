@@ -1,0 +1,15 @@
+{
+  "ct": "application/json",
+  "body": {
+    "data": [
+      {
+        "id": 4201,
+        "order_serial_no": "OSS-A07-A9500",
+        "token": null,
+        "queue_number": "A9500",
+        "order_type": 10,
+        "status": 8
+      }
+    ]
+  }
+}

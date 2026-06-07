@@ -429,6 +429,7 @@
         "kds_served_ago_hours": "il y a {hours} h",
         "kds_served_ago_days": "il y a {days} j",
         "kds_card_cta_start": "Démarrer",
+        "kds_counter_payment_unpaid": "Paiement comptoir — non réglé",
         "kds_lane_empty_dinein": "Aucune commande sur place en cours.",
         "kds_lane_empty_online": "Aucune commande en ligne en cours.",
         "kds_lane_empty_takeaway": "Aucune commande à emporter en cours.",

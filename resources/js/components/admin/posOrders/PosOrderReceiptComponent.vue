@@ -2,6 +2,19 @@
     <div id="receiptModal" class="modal">
         <div class="modal-dialog max-w-[340px] rounded-none" id="print" :dir="direction">
             <div class="modal-body">
+                <!-- [HEAL-H1 2026-06-07] NF525 fiscal header — SIRET / TVA intra /
+                     N° caisse / Opérateur. Mirrors ReceiptComponent.vue:67-73 so the
+                     order-history reprint ("Imprimer La Facture") renders a
+                     fiscally-conformant ticket. Fields fed by OrderDetailsResource
+                     (pos_siret/pos_vat_intra/pos_register_id/operator_name). -->
+                <div v-if="order.pos_siret || order.pos_vat_intra || order.pos_register_id || order.operator_name"
+                    class="text-center text-[10px] leading-snug text-heading pb-2 border-b border-dashed border-gray-400">
+                    <p v-if="order.pos_siret">{{ $t('label.siret') }}: {{ order.pos_siret }}</p>
+                    <p v-if="order.pos_vat_intra">{{ $t('label.vat_intra') }}: {{ order.pos_vat_intra }}</p>
+                    <p v-if="order.pos_register_id">{{ $t('label.register_id') }}: {{ order.pos_register_id }}</p>
+                    <p v-if="order.operator_name">{{ $t('label.operator') }}: {{ order.operator_name }}</p>
+                </div>
+                <receipt-duplicata-marker :order="order" />
                 <receipt-remboursement-marker :order="order" />
                 <div class="text-center pb-3.5 border-b border-dashed border-gray-400">
                     <h3 class="text-2xl font-bold mb-1">{{ company.company_name }}</h3>
@@ -89,6 +102,22 @@
                                     {{ order.total_tax_currency_price }}
                                 </td>
                             </tr>
+                            <!-- [HEAL-H1 2026-06-07] Per-rate VAT ventilation (CGI art.
+                                 242 nonies A). Mirrors ReceiptComponent.vue:180-191 ;
+                                 fed by OrderDetailsResource.tax_lines (tax_name, tax_rate,
+                                 base_ht_currency, tax_currency). -->
+                            <template v-if="Array.isArray(order.tax_lines) && order.tax_lines.length > 0">
+                                <tr v-for="line in order.tax_lines" :key="(line.tax_name || '') + '@' + line.tax_rate">
+                                    <td class="text-[10px] text-left py-0.5 pl-2 text-heading">
+                                        {{ line.tax_name || $t('label.total_tax') }}
+                                        <span v-if="line.tax_rate"> ({{ line.tax_rate }}%)</span>
+                                        <span class="text-[10px]"> · {{ $t('label.base_ht') || 'HT' }} {{ line.base_ht_currency }}</span>
+                                    </td>
+                                    <td class="text-[10px] text-right py-0.5 text-heading">
+                                        {{ line.tax_currency }}
+                                    </td>
+                                </tr>
+                            </template>
                             <tr>
                                 <td class="text-xs text-left py-0.5 uppercase text-heading">{{ $t('label.discount') }}:
                                 </td>
@@ -135,6 +164,18 @@
                     <template v-if="order.queue_number">N°{{ order.queue_number }}</template>
                     <template v-else>{{ $t('label.token') }} #{{ order.token }}</template>
                 </h4>
+                <!-- [HEAL-H1 2026-06-07] NF525 footer — N° ticket NF525 (fiscal
+                     sequence), audit fingerprint, legal mentions. Mirrors
+                     ReceiptComponent.vue:253-259 ; lines built by buildNf525Footer()
+                     (posReceiptBuilder) from fiscal_sequence_no /
+                     audit_chain_fingerprint / pos_legal_footer. -->
+                <div v-if="nf525FooterLines.length"
+                    class="text-[10px] leading-snug text-heading text-center px-1 py-2 border-b border-dashed border-gray-400">
+                    <p v-for="line in nf525FooterLines" :key="line.key" class="mb-0.5">
+                        <span class="font-semibold">{{ $t('label.' + line.key) }}:</span>
+                        {{ line.value }}
+                    </p>
+                </div>
                 <div class="text-center pt-2 pb-4">
                     <p class="text-[11px] leading-[14px] capitalize text-heading">
                         {{ $t('message.thank_you') }}
@@ -158,12 +199,16 @@
 import displayModeEnum from "../../../enums/modules/displayModeEnum";
 import posPaymentMethodEnum from "../../../enums/modules/posPaymentMethodEnum";
 import OrderTypeEnum from "../../../enums/modules/orderTypeEnum";
-import { receiptBranchHeader } from "../../../helpers/posReceiptBuilder";
+// [HEAL-H1 2026-06-07] Reuse the SSOT NF525 footer builder + duplicata marker
+// already used by the POS ReceiptComponent so the order-history reprint ticket
+// renders the same fiscal fields (no divergent receipt logic).
+import { receiptBranchHeader, buildNf525Footer } from "../../../helpers/posReceiptBuilder";
 import ReceiptRemboursementMarker from "../pos/ReceiptRemboursementMarker.vue";
+import ReceiptDuplicataMarker from "../pos/ReceiptDuplicataMarker.vue";
 
 export default {
     name: "PosOrderReceiptComponent",
-    components: { ReceiptRemboursementMarker },
+    components: { ReceiptRemboursementMarker, ReceiptDuplicataMarker },
     props: {
         order: Object
     },
@@ -174,6 +219,11 @@ export default {
                 [posPaymentMethodEnum.CARD]: this.$t("label.card"),
                 [posPaymentMethodEnum.MOBILE_BANKING]: this.$t("label.mobile_banking"),
                 [posPaymentMethodEnum.OTHER]: this.$t("label.other"),
+                // [HEAL-H1 2026-06-07] codes 5 (Ticket Restaurant) & 6 (counter
+                // deferred) — previously unmapped → blank "Type de paiement" on
+                // the history receipt for those tenders. Labels already in fr.json.
+                [posPaymentMethodEnum.TICKET_RESTAURANT]: this.$t("label.ticket_restaurant"),
+                [posPaymentMethodEnum.COUNTER_DEFERRED]: this.$t("label.counter_deferred"),
             },
             orderTypeEnum: OrderTypeEnum,
             enums: {
@@ -200,6 +250,11 @@ export default {
         },
         direction: function () {
             return this.$store.getters['frontendLanguage/show'].display_mode === displayModeEnum.RTL ? 'rtl' : 'ltr';
+        },
+        // [HEAL-H1 2026-06-07] NF525 footer lines (fiscal ticket no, audit
+        // fingerprint, legal mentions) — same SSOT builder as ReceiptComponent.
+        nf525FooterLines: function () {
+            return buildNf525Footer(this.order);
         },
     },
     mounted() {

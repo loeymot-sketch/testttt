@@ -1,0 +1,20 @@
+{
+  "autoscrollOn": true,
+  "cols": {
+    "preparing": [
+      "N°A9306",
+      "N°A9307",
+      "N°A9308",
+      "N°A9309",
+      "N°A9310"
+    ],
+    "ready": [
+      "N°A9301",
+      "N°A9302",
+      "N°A9303",
+      "N°A9304",
+      "N°A9305"
+    ],
+    "placeholderCount": 0
+  }
+}

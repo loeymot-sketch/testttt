@@ -28,6 +28,12 @@ class OrderDetailsResource extends JsonResource
             'order_serial_no' => $this->order_serial_no,
             'queue_number' => $this->queue_number,
             'token' => $this->token,
+            // [HEAL-H1 2026-06-07] Expose receipt_print_count so the DUPLICATA
+            // marker (ReceiptDuplicataMarker.vue, keys on receipt_print_count>=2)
+            // is functional on the order-history reprint receipt
+            // (PosOrderReceiptComponent), matching the POS ReceiptComponent.
+            // NF525: a reprinted fiscal ticket MUST be visually marked DUPLICATA.
+            'receipt_print_count' => (int) ($this->receipt_print_count ?? 0),
             // [G5-F-001 / G2-HEAL-01 2026-05-23] Expose refund counter-entry
             // parent FK so ReceiptRemboursementMarker.vue (F2-HEAL-03 /
             // commit 8ebbd057a) can render the REMBOURSEMENT badge on
