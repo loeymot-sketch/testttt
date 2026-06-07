@@ -62,6 +62,17 @@ class OssPublicNoPiiTest extends TestCase
         // Mirror OssCustomerScreenFilterTest: keep the seeded order inside the
         // stale-prune window so it actually reaches the wall feed.
         config(['oss.stale_window_hours' => 8]);
+        // [FORENSICS 2026-06-08] Midnight-boundary stability. This test seeds an
+        // order at `now()->subMinutes(5)` and asserts it surfaces on the
+        // today-scoped OSS feed (whereBetween(Carbon::today(), endOfDay)). If the
+        // real wall-clock is within the first 5 minutes after local midnight, the
+        // seeded order's datetime lands on YESTERDAY and is excluded → empty feed
+        // → false RED (the 4 "OSS empty-feed" full-suite flakes, reproduced at
+        // 00:02). Freezing to local noon makes now-5min = 11:55 today, always
+        // inside the today-window and clear of the 8h stale floor. Base
+        // tearDown (Illuminate\Foundation\Testing\TestCase) resets Carbon, so no
+        // spillover to sibling tests.
+        \Illuminate\Support\Carbon::setTestNow(\Illuminate\Support\Carbon::today(config('app.timezone'))->addHours(12));
         $this->branch = Branch::factory()->create(['status' => Status::ACTIVE]);
     }
 

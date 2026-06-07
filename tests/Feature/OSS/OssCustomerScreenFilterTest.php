@@ -39,6 +39,18 @@ class OssCustomerScreenFilterTest extends TestCase
         $this->seedSpatieRoles();
         $this->seedMinimalSettings();
         config(['oss.stale_window_hours' => 8]);
+        // [FORENSICS 2026-06-08] Midnight-boundary stability. These tests seed
+        // orders at `now()->subMinutes(5..15)` and assert PREPARING/PREPARED ones
+        // surface on the today-scoped OSS feed (whereBetween(Carbon::today(),
+        // endOfDay)). If the real wall-clock is within the first ~15 minutes after
+        // local midnight, a seeded order's datetime lands on YESTERDAY and is
+        // excluded → empty feed → false RED (the "OSS empty-feed" full-suite
+        // flakes, reproduced at 00:02). Freezing to local noon makes the seeded
+        // datetimes always land inside today's window and clear of the 8h stale
+        // floor. Base tearDown (Illuminate\Foundation\Testing\TestCase) resets
+        // Carbon, so no spillover to sibling tests. Exclusion assertions (DELIVERY
+        // / POS / DINING / PENDING / ACCEPT must be ABSENT) are unaffected.
+        \Illuminate\Support\Carbon::setTestNow(\Illuminate\Support\Carbon::today(config('app.timezone'))->addHours(12));
         $this->branch = Branch::factory()->create(['status' => Status::ACTIVE]);
     }
 
