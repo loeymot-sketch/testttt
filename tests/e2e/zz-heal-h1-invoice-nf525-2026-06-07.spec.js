@@ -71,9 +71,14 @@ test('HEAL-H1: order-history invoice #4160 renders full NF525 block', async ({ p
     const p = document.querySelector('#print'); if (p) p.style.display = 'block';
   }).catch(() => {});
   await page.waitForTimeout(400);
+  // Best-effort capture, hard-bounded so it can NEVER hang the test (element
+  // screenshot can stall on a force-shown scrollable modal under contention).
   const el = page.locator('#print').first();
   if (await el.count()) {
-    await el.screenshot({ path: path.join(OUT, '4160-history-ticket-after.png') }).catch(() => {});
+    await Promise.race([
+      el.screenshot({ path: path.join(OUT, '4160-history-ticket-after.png'), timeout: 6000 }),
+      new Promise((r) => setTimeout(r, 7000)),
+    ]).catch(() => {});
   }
 
   // ---- ASSERTIONS (the heal contract) ----
