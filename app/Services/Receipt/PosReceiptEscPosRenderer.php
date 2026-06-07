@@ -285,6 +285,26 @@ final class PosReceiptEscPosRenderer
     /**
      * Per-rate VAT grouping — mirror of OrderDetailsResource::buildTaxLines().
      *
+     * [HEAL-PRINT-SAGA / G5 2026-06-07] NF525 discount netting on the printed
+     * ESC/POS ticket. OrderService stores the PRE-discount per-line tax_amount
+     * (the coupon/loyalty discount is applied at order level only —
+     * OrderService.php:504-562). The signed Z and the refund counter-entry both
+     * NET this by orderDiscountRatio = (subtotal − discount)/subtotal
+     * (ZReportService::orderDiscountRatio + taxBreakdownForOrders). The printed
+     * thermal ticket is ITSELF an NF525 fiscal document, so its per-rate TVA/HT
+     * MUST equal the collected/Z TVA, not the gross pre-discount figure. We net
+     * both the tax and the HT base by the same ratio here (proportional
+     * allocation across rate buckets), rounding per bucket at the end exactly as
+     * the Z does so Σ bucket == Z total_tva. This is the SAME heal as H7 on
+     * OrderDetailsResource, applied on the physical paper.
+     *
+     * Note (G5 audit): unlike OrderDetailsResource, this renderer prints NO
+     * per-line tax and NO separate header total_tax line — taxLines() is the
+     * SOLE gross-tax surface on the ticket, so netting it here is the complete
+     * fix (TOTAL A PAYER already prints order->total = the net paid amount;
+     * order->total_tax at line 125 is only read for a guard, never printed).
+     * On a non-discount order ratio = 1.0 → byte-identical to before.
+     *
      * @return list<array{rate:string,base_ht:float,tax:float}>
      */
     private function taxLines(BroadcastableOrder $order): array
@@ -297,6 +317,8 @@ final class PosReceiptEscPosRenderer
             return [];
         }
 
+        $ratio = $this->orderDiscountRatio($order);
+
         $groups = [];
         foreach ($items as $oi) {
             $rate = (string) (0 + (float) ($oi->tax_rate ?? 0));
@@ -305,8 +327,11 @@ final class PosReceiptEscPosRenderer
             if (! isset($groups[$rate])) {
                 $groups[$rate] = ['rate' => $rate, 'tax' => 0.0, 'base_ht' => 0.0];
             }
-            $groups[$rate]['tax'] += $taxAmount;
-            $groups[$rate]['base_ht'] += max(0.0, $totalTtc - $taxAmount);
+            // Net both the tax and the HT base by the discount ratio so the
+            // bucket reflects the POST-discount TTC that was actually paid and
+            // signed into the Z. Round per bucket at the end (NOT per item).
+            $groups[$rate]['tax'] += $taxAmount * $ratio;
+            $groups[$rate]['base_ht'] += max(0.0, $totalTtc - $taxAmount) * $ratio;
         }
 
         $out = [];
@@ -322,6 +347,25 @@ final class PosReceiptEscPosRenderer
         }
 
         return $out;
+    }
+
+    /**
+     * [HEAL-PRINT-SAGA / G5 2026-06-07] Discount-netting ratio for this order:
+     * (subtotal − discount) / subtotal, clamped to [0,1]. Returns 1.0 when there
+     * is no discount (or no positive subtotal) so non-discount tickets are
+     * byte-identical. Mirrors the frozen ZReportService::orderDiscountRatio
+     * EXACTLY (the fiscal SSOT) so the printed ticket nets identically to the
+     * signed Z — do NOT diverge from that formula.
+     */
+    private function orderDiscountRatio(BroadcastableOrder $order): float
+    {
+        $subtotal = (float) ($order->subtotal ?? 0);
+        $discount = (float) ($order->discount ?? 0);
+        if ($discount <= 0.0 || $subtotal <= 0.0) {
+            return 1.0;
+        }
+
+        return max(0.0, min(1.0, ($subtotal - $discount) / $subtotal));
     }
 
     /**
