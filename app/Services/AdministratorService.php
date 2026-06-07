@@ -82,10 +82,37 @@ class AdministratorService
     }
 
     /**
+     * [CENTRAL-01 / WAVE5-SEC-001 parity] Defense-in-depth: ensure the
+     * route-bound User is actually an Admin before any mutation. update()
+     * was the lone mutating method here WITHOUT a target-role guard — its
+     * siblings (changePassword/changeImage/show/destroy) all gate on
+     * hasRole(ADMIN). Without this, a Branch Manager with
+     * `administrators_edit` could PUT /api/admin/administrator/{non_admin_id}
+     * and mutate a Customer/Chef/etc. through the admin path (IDOR /
+     * cross-role type-confusion). Mirrors CustomerService::assertTargetRole.
+     *
+     * @throws \Symfony\Component\HttpKernel\Exception\HttpException 403
+     */
+    private function assertTargetRole(User $administrator): void
+    {
+        if (! $administrator->hasRole(EnumRole::ADMIN)) {
+            throw new \Symfony\Component\HttpKernel\Exception\HttpException(
+                403,
+                'Cannot mutate user outside expected role.'
+            );
+        }
+    }
+
+    /**
      * @throws Exception
      */
     public function update(AdministratorRequest $request, User $administrator)
     {
+        // [CENTRAL-01] See update() comment — same role-target guard the
+        // sibling services enforce. Placed BEFORE the try/catch so the 403
+        // HttpException is not swallowed/rethrown as 422 by the catch block.
+        $this->assertTargetRole($administrator);
+
         try {
             DB::transaction(function () use ($administrator, $request) {
                 $this->user               = $administrator;

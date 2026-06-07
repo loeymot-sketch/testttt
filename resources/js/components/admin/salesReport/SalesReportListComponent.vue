@@ -197,17 +197,8 @@
                             <td class="db-table-body-td">{{ salesReport.discount_amount_price }}</td>
                             <td class="db-table-body-td">{{ salesReport.delivery_charge_amount_price }}</td>
                             <td class="db-table-body-td">
-                                <span v-if="salesReport.transaction">
-                                    {{ salesReport.transaction }}
-                                </span>
-                                <span v-else-if="salesReport.source === enums.orderTypeEnum.POS">
-                                    {{ enums.posPaymentMethodEnumArray[salesReport.pos_payment_method] ?
-                                        enums.posPaymentMethodEnumArray[salesReport.pos_payment_method] :
-                                        enums.paymentTypeEnumArray[salesReport.payment_method] }}
-                                </span>
-                                <span v-else>
-                                    {{ enums.paymentTypeEnumArray[salesReport.payment_method] }}
-                                </span>
+                                <!-- [REP-SALES-PAYTYPE-02 FIX] / [REP-SALES-ENUM-05 FIX] -->
+                                <span>{{ paymentTypeLabel(salesReport) }}</span>
                             </td>
                             <td class="db-table-body-td">
                                 <span :class="statusClass(salesReport.payment_status)">
@@ -324,18 +315,28 @@ export default {
                 sourceEnum: sourceEnum,
                 paymentStatusEnumArray: {
                     [paymentStatusEnum.PAID]: this.$t("label.paid"),
-                    [paymentStatusEnum.UNPAID]: this.$t("label.unpaid")
+                    [paymentStatusEnum.UNPAID]: this.$t("label.unpaid"),
+                    // [REP-SALES-STATUS-01 FIX] Was blank for PENDING_COUNTER + REFUNDED.
+                    [paymentStatusEnum.PENDING_COUNTER]: this.$t("label.pending_counter"),
+                    [paymentStatusEnum.REFUNDED]: this.$t("label.refunded")
                 },
                 paymentTypeEnumArray: {
                     [paymentTypeEnum.CASH_ON_DELIVERY]: this.$t("label.cash_on_delivery"),
                     [paymentTypeEnum.E_WALLET]: this.$t("label.e_wallet"),
-                    [paymentTypeEnum.PAYPAL]: this.$t("label.paypal")
+                    [paymentTypeEnum.PAYPAL]: this.$t("label.paypal"),
+                    // [REP-SALES-PAYTYPE-02 FIX 2026-06-07] kiosk card/TR orders (Plan-B,
+                    // pos_payment_method not yet set) were blank — gateway CARD=4 / TR=5.
+                    [paymentTypeEnum.CARD]: this.$t("label.card"),
+                    [paymentTypeEnum.TICKET_RESTAURANT]: this.$t("label.ticket_restaurant")
                 },
                 posPaymentMethodEnumArray: {
                     [posPaymentMethodEnum.CASH]: this.$t("label.cash"),
                     [posPaymentMethodEnum.CARD]: this.$t("label.card"),
                     [posPaymentMethodEnum.MOBILE_BANKING]: this.$t("label.mobile_banking"),
                     [posPaymentMethodEnum.OTHER]: this.$t("label.other"),
+                    // [REP-SALES-PAYTYPE-02 FIX] Was blank for TR + counter-deferred kiosk orders.
+                    [posPaymentMethodEnum.TICKET_RESTAURANT]: this.$t("label.ticket_restaurant"),
+                    [posPaymentMethodEnum.COUNTER_DEFERRED]: this.$t("label.counter_deferred"),
                 },
                 orderStatusEnumArray: {
                     [orderStatusEnum.PENDING]: this.$t("label.pending"),
@@ -433,6 +434,51 @@ export default {
         }
     },
     methods: {
+        // [REP-EXP-01 FIX] Build an export payload from the active filters with
+        // pagination STRIPPED so the backend returns the FULL filtered dataset
+        // (Excel/PDF). The on-screen list keeps its own paginated props.search.
+        exportSearch: function () {
+            const params = { ...this.props.search };
+            params.paginate = 0;
+            delete params.per_page;
+            delete params.page;
+            return params;
+        },
+        // [REP-EXP-ERR-04 FIX] Export responses use responseType:'blob'; a failed
+        // export therefore arrives as a Blob whose `.message` is undefined. Decode
+        // the Blob body to text/JSON before surfacing the error.
+        showExportError: async function (err) {
+            let message = this.$t('message.no_data_available');
+            try {
+                const data = err?.response?.data;
+                if (data instanceof Blob) {
+                    const text = await data.text();
+                    try {
+                        message = JSON.parse(text).message || text || message;
+                    } catch (e) {
+                        message = text || message;
+                    }
+                } else if (data?.message) {
+                    message = data.message;
+                }
+            } catch (e) { /* fall back to default message */ }
+            alertService.error(message);
+        },
+        // [REP-SALES-PAYTYPE-02 FIX] / [REP-SALES-ENUM-05 FIX] Accurate payment-type
+        // label. A real gateway transaction wins; otherwise prefer the POS/counter
+        // method (kiosk pay-at-counter sets pos_payment_method=COUNTER_DEFERRED even
+        // though source≠POS — the old `source === orderTypeEnum.POS` guard compared
+        // the wrong enum AND mislabeled those rows as "Cash on delivery").
+        paymentTypeLabel: function (order) {
+            if (order.transaction) {
+                return order.transaction;
+            }
+            if (order.pos_payment_method && this.enums.posPaymentMethodEnumArray[order.pos_payment_method]) {
+                return this.enums.posPaymentMethodEnumArray[order.pos_payment_method];
+            }
+            // Online/gateway orders (web/app) fall back to the payment-type label.
+            return this.enums.paymentTypeEnumArray[order.payment_method];
+        },
         floatNumber(e) {
             return appService.floatNumber(e);
         },
@@ -482,6 +528,8 @@ export default {
                 this.loading.isActive = false;
             }).catch((err) => {
                 this.loading.isActive = false;
+                // [REP-EXP-ERR-04 FIX] surface the failure instead of swallowing it.
+                alertService.error(err?.response?.data?.message || this.$t('message.no_data_available'));
             });
 
             this.$store.dispatch('salesReport/salesReportOverview', this.props.search).then(res => {
@@ -493,7 +541,8 @@ export default {
 
         xls: function () {
             this.loading.isActive = true;
-            this.$store.dispatch('salesReport/export', this.props.search).then(res => {
+            // [REP-EXP-01 FIX] full filtered set (pagination stripped).
+            this.$store.dispatch('salesReport/export', this.exportSearch()).then(res => {
                 this.loading.isActive = false;
                 const blob = new Blob([res.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
                 const link = document.createElement('a');
@@ -503,12 +552,13 @@ export default {
                 URL.revokeObjectURL(link.href);
             }).catch((err) => {
                 this.loading.isActive = false;
-                alertService.error(err.response.data.message);
+                this.showExportError(err); // [REP-EXP-ERR-04 FIX]
             });
         },
         pdf: function () {
             this.loading.isActive = true;
-            this.$store.dispatch("salesReport/pdf", this.props.search).then((res) => {
+            // [REP-EXP-01 FIX] full filtered set (pagination stripped).
+            this.$store.dispatch("salesReport/pdf", this.exportSearch()).then((res) => {
                 this.loading.isActive = false;
                 const blob = new Blob([res.data]);
                 const link = document.createElement("a");
@@ -518,7 +568,7 @@ export default {
                 URL.revokeObjectURL(link.href);
             }).catch((err) => {
                 this.loading.isActive = false;
-                alertService.error(err.response.data.message);
+                this.showExportError(err); // [REP-EXP-ERR-04 FIX]
             });
         }
     }

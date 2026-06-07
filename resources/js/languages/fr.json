@@ -434,6 +434,7 @@
         "caisse": "Caisse",
         "fiscal_number": "N° fiscal",
         "pending_counter": "À encaisser",
+        "counter_deferred": "Comptoir différé",
         "refunded": "Remboursé",
         "advanced_promo_fields": "Paramètres avancés",
         "previous": "Précédent",
@@ -2120,6 +2121,7 @@
         "composer_drawer_title": "Configurer les étapes",
         "open_full_page": "Ouvrir en pleine page",
         "select_category_first": "Choisis une catégorie d'abord",
+        "delete_category_warning": "Cette catégorie contient {n} article(s) actif(s) qui seront retirés du menu. Réaffectez-les ou désactivez-les avant de supprimer.",
         "composer": {
             "diff": {
                 "title": "Différences à publier",

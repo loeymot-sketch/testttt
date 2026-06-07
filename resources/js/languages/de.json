@@ -1698,6 +1698,7 @@
         "composer_drawer_title": "Schritte konfigurieren",
         "open_full_page": "Vollbild öffnen",
         "select_category_first": "Wähle zuerst eine Kategorie",
+        "delete_category_warning": "Diese Kategorie enthält {n} aktive(s) Produkt(e), die aus dem Menü entfernt werden. Weisen Sie sie neu zu oder deaktivieren Sie sie vor dem Löschen.",
         "composer": {
             "diff": {
                 "title": "Ausstehende Änderungen",

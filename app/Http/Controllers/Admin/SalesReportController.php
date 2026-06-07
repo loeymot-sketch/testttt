@@ -64,6 +64,10 @@ class SalesReportController extends AdminController
             $company = $this->companyService->list();
             $theme_logo   = ThemeSetting::where(['key' => 'theme_logo'])->first()?->logo;
             $copyright   = Settings::group('site')->get('site_copyright');
+            // [REP-EXP-01 FIX 2026-06-06] Force the FULL filtered dataset into the
+            // PDF (and its Total row). The screen forwards paginate:1/per_page:10,
+            // which truncated the PDF to the current page; the Total summed 10 rows.
+            $request->merge(['paginate' => 0]);
             $orders = $this->orderService->list($request);
 
 

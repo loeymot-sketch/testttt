@@ -23,6 +23,11 @@ class TransactionExport implements FromCollection, WithHeadings
     public function collection() : \Illuminate\Support\Collection
     {
         $transactionArray  = [];
+        // [REP-EXP-01 FIX 2026-06-06] Force a FULL fetch. The screen forwards its
+        // paginated request (paginate:1, per_page:10, page:N), which made the export
+        // contain only the current page (10 rows). Strip pagination so
+        // TransactionService takes the get() branch over the full filtered dataset.
+        $this->request->merge(['paginate' => 0]);
         $transactionsArray = $this->transactionService->list($this->request);
 
         foreach ($transactionsArray as $transaction) {

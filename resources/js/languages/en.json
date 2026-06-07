@@ -439,6 +439,7 @@
         "caisse": "Counter",
         "fiscal_number": "Fiscal no.",
         "pending_counter": "To collect",
+        "counter_deferred": "Counter (deferred)",
         "refunded": "Refunded",
         "advanced_promo_fields": "Advanced settings",
         "cash_collected_today": "Cash collected today",
@@ -2170,6 +2171,7 @@
         "composer_drawer_title": "Configure steps",
         "open_full_page": "Open full page",
         "select_category_first": "Choose a category first",
+        "delete_category_warning": "This category contains {n} active item(s) that will be removed from the menu. Reassign or deactivate them before deleting.",
         "composer": {
             "diff": {
                 "title": "Pending changes",

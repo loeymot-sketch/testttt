@@ -122,7 +122,8 @@
                             <td class="db-table-body-td">{{ $t('label.total') }}</td>
                             <td></td>
                             <td></td>
-                            <td class="db-table-body-td"> {{ subTotal(itemsReports) }}</td>
+                            <!-- [REP-ITEMS-TOTAL-03 FIX] grand total over the FULL filtered set, not the current page. -->
+                            <td class="db-table-body-td"> {{ grandTotal }}</td>
                         </tr>
                     </tfoot>
                 </table>
@@ -247,6 +248,10 @@ export default {
                 order_column: 'id',
                 order_type: 'asc'
             },
+            // [REP-ITEMS-TOTAL-03 FIX] grand total of units sold over the FULL
+            // filtered set (computed from a non-clobbering full fetch), so the
+            // tfoot Total no longer sums only the current page.
+            grandTotal: 0,
             ENV: ENV
         }
     },
@@ -286,6 +291,50 @@ export default {
         },
     },
     methods: {
+        // [REP-EXP-01 FIX] Export payload = active filters with pagination stripped
+        // so the backend returns the FULL filtered dataset for Excel/PDF.
+        exportSearch: function () {
+            const params = { ...this.props.search };
+            params.paginate = 0;
+            delete params.per_page;
+            delete params.page;
+            return params;
+        },
+        // [REP-EXP-ERR-04 FIX] Decode a Blob error body before alerting (exports use
+        // responseType:'blob' → err.response.data.message is undefined on a Blob).
+        showExportError: async function (err) {
+            let message = this.$t('message.no_data_available');
+            try {
+                const data = err?.response?.data;
+                if (data instanceof Blob) {
+                    const text = await data.text();
+                    try {
+                        message = JSON.parse(text).message || text || message;
+                    } catch (e) {
+                        message = text || message;
+                    }
+                } else if (data?.message) {
+                    message = data.message;
+                }
+            } catch (e) { /* fall back to default message */ }
+            alertService.error(message);
+        },
+        // [REP-ITEMS-TOTAL-03 FIX] Fetch the FULL filtered set (paginate:0) without
+        // clobbering the paginated table getter (vuex:false → store does not commit)
+        // and compute the grand total of units sold over every row.
+        fetchGrandTotal: function () {
+            const params = { ...this.props.search };
+            params.paginate = 0;
+            params.vuex = false;
+            delete params.per_page;
+            delete params.page;
+            this.$store.dispatch('itemsReport/lists', params).then((res) => {
+                const rows = res?.data?.data || [];
+                this.grandTotal = this.subTotal(rows);
+            }).catch(() => {
+                this.grandTotal = 0;
+            });
+        },
         floatNumber(e) {
             return appService.floatNumber(e);
         },
@@ -336,12 +385,17 @@ export default {
                 this.loading.isActive = false;
             }).catch((err) => {
                 this.loading.isActive = false;
+                // [REP-EXP-ERR-04 FIX] surface the failure instead of swallowing it.
+                alertService.error(err?.response?.data?.message || this.$t('message.no_data_available'));
             });
+            // [REP-ITEMS-TOTAL-03 FIX] keep the tfoot grand total in sync with filters.
+            this.fetchGrandTotal();
         },
 
         xls: function () {
             this.loading.isActive = true;
-            this.$store.dispatch('itemsReport/export', this.props.search).then(res => {
+            // [REP-EXP-01 FIX] full filtered set (pagination stripped).
+            this.$store.dispatch('itemsReport/export', this.exportSearch()).then(res => {
                 this.loading.isActive = false;
                 const blob = new Blob([res.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
                 const link = document.createElement('a');
@@ -351,12 +405,13 @@ export default {
                 URL.revokeObjectURL(link.href);
             }).catch((err) => {
                 this.loading.isActive = false;
-                alertService.error(err.response.data.message);
+                this.showExportError(err); // [REP-EXP-ERR-04 FIX]
             });
         },
         pdf: function () {
             this.loading.isActive = true;
-            this.$store.dispatch("itemsReport/pdf", this.props.search).then((res) => {
+            // [REP-EXP-01 FIX] full filtered set (pagination stripped).
+            this.$store.dispatch("itemsReport/pdf", this.exportSearch()).then((res) => {
                 this.loading.isActive = false;
                 const blob = new Blob([res.data]);
                 const link = document.createElement("a");
@@ -366,7 +421,7 @@ export default {
                 URL.revokeObjectURL(link.href);
             }).catch((err) => {
                 this.loading.isActive = false;
-                alertService.error(err.response.data.message);
+                this.showExportError(err); // [REP-EXP-ERR-04 FIX]
             });
         }
     }

@@ -8870,14 +8870,38 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
         }
       });
     },
+    // [CAT-DEL-01 FIX] Count the ACTIVE items that a category delete would
+    // affect. Prefer the server-provided `product_count`, fall back to the
+    // client-side tally. Used to warn the operator BEFORE the destructive
+    // confirm and to explain the backend 409 guard if it fires.
+    categoryActiveItemCount: function categoryActiveItemCount(category) {
+      var id = Number(category === null || category === void 0 ? void 0 : category.id);
+      var serverCount = Number(category === null || category === void 0 ? void 0 : category.product_count);
+      if (Number.isFinite(serverCount) && serverCount > 0) {
+        return serverCount;
+      }
+      return Number(this.productsCountByCategory[id] || 0);
+    },
     destroyCategory: function destroyCategory(category) {
       var _this6 = this;
       if (!this.canDeleteCategory) {
         return;
       }
-      _services_appService__WEBPACK_IMPORTED_MODULE_1__["default"].destroyConfirmation().then(function () {
+      // [CAT-DEL-01 FIX] Deleting a populated category drops ALL its active
+      // items from the sellable kiosk/POS/web menu = revenue loss. Warn the
+      // operator that N items are affected BEFORE the destructive confirm.
+      // The backend ItemCategoryService::destroy() guard is the hard line
+      // of defence (rejects with a 409 message while active items remain);
+      // its message is surfaced in the .catch below.
+      var affected = this.categoryActiveItemCount(category);
+      if (affected > 0) {
+        _services_alertService__WEBPACK_IMPORTED_MODULE_5__["default"].warning(this.$t("studio.delete_category_warning", {
+          n: affected
+        }));
+      }
+      return _services_appService__WEBPACK_IMPORTED_MODULE_1__["default"].destroyConfirmation().then(function () {
         _this6.loading.isActive = true;
-        _this6.$store.dispatch("itemCategory/destroy", {
+        return _this6.$store.dispatch("itemCategory/destroy", {
           id: category.id,
           search: _this6.categoriesSearch
         }).then(function () {
@@ -8888,6 +8912,8 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
           _this6.refreshData();
         })["catch"](function (err) {
           var _err$response;
+          // Surfaces the backend CAT-DEL-01 guard message (409 ->
+          // controller normalises status, but keeps the FR message).
           var msg = (err === null || err === void 0 || (_err$response = err.response) === null || _err$response === void 0 || (_err$response = _err$response.data) === null || _err$response === void 0 ? void 0 : _err$response.message) || _this6.$t("error.something_wrong");
           _services_alertService__WEBPACK_IMPORTED_MODULE_5__["default"].error(msg);
         })["finally"](function () {
@@ -25495,6 +25521,16 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _enums_modules_statusEnum__WEBPACK_IMPORTED_MODULE_20__ = __webpack_require__(/*! ../../../enums/modules/statusEnum */ "./resources/js/enums/modules/statusEnum.js");
 /* harmony import */ var _enums_modules_displayModeEnum__WEBPACK_IMPORTED_MODULE_21__ = __webpack_require__(/*! ../../../enums/modules/displayModeEnum */ "./resources/js/enums/modules/displayModeEnum.js");
 /* harmony import */ var _config_env__WEBPACK_IMPORTED_MODULE_22__ = __webpack_require__(/*! ../../../config/env */ "./resources/js/config/env.js");
+function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+function _regenerator() { /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE */ var e, t, r = "function" == typeof Symbol ? Symbol : {}, n = r.iterator || "@@iterator", o = r.toStringTag || "@@toStringTag"; function i(r, n, o, i) { var c = n && n.prototype instanceof Generator ? n : Generator, u = Object.create(c.prototype); return _regeneratorDefine2(u, "_invoke", function (r, n, o) { var i, c, u, f = 0, p = o || [], y = !1, G = { p: 0, n: 0, v: e, a: d, f: d.bind(e, 4), d: function d(t, r) { return i = t, c = 0, u = e, G.n = r, a; } }; function d(r, n) { for (c = r, u = n, t = 0; !y && f && !o && t < p.length; t++) { var o, i = p[t], d = G.p, l = i[2]; r > 3 ? (o = l === n) && (u = i[(c = i[4]) ? 5 : (c = 3, 3)], i[4] = i[5] = e) : i[0] <= d && ((o = r < 2 && d < i[1]) ? (c = 0, G.v = n, G.n = i[1]) : d < l && (o = r < 3 || i[0] > n || n > l) && (i[4] = r, i[5] = n, G.n = l, c = 0)); } if (o || r > 1) return a; throw y = !0, n; } return function (o, p, l) { if (f > 1) throw TypeError("Generator is already running"); for (y && 1 === p && d(p, l), c = p, u = l; (t = c < 2 ? e : u) || !y;) { i || (c ? c < 3 ? (c > 1 && (G.n = -1), d(c, u)) : G.n = u : G.v = u); try { if (f = 2, i) { if (c || (o = "next"), t = i[o]) { if (!(t = t.call(i, u))) throw TypeError("iterator result is not an object"); if (!t.done) return t; u = t.value, c < 2 && (c = 0); } else 1 === c && (t = i["return"]) && t.call(i), c < 2 && (u = TypeError("The iterator does not provide a '" + o + "' method"), c = 1); i = e; } else if ((t = (y = G.n < 0) ? u : r.call(n, G)) !== a) break; } catch (t) { i = e, c = 1, u = t; } finally { f = 1; } } return { value: t, done: y }; }; }(r, o, i), !0), u; } var a = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} t = Object.getPrototypeOf; var c = [][n] ? t(t([][n]())) : (_regeneratorDefine2(t = {}, n, function () { return this; }), t), u = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(c); function f(e) { return Object.setPrototypeOf ? Object.setPrototypeOf(e, GeneratorFunctionPrototype) : (e.__proto__ = GeneratorFunctionPrototype, _regeneratorDefine2(e, o, "GeneratorFunction")), e.prototype = Object.create(u), e; } return GeneratorFunction.prototype = GeneratorFunctionPrototype, _regeneratorDefine2(u, "constructor", GeneratorFunctionPrototype), _regeneratorDefine2(GeneratorFunctionPrototype, "constructor", GeneratorFunction), GeneratorFunction.displayName = "GeneratorFunction", _regeneratorDefine2(GeneratorFunctionPrototype, o, "GeneratorFunction"), _regeneratorDefine2(u), _regeneratorDefine2(u, o, "Generator"), _regeneratorDefine2(u, n, function () { return this; }), _regeneratorDefine2(u, "toString", function () { return "[object Generator]"; }), (_regenerator = function _regenerator() { return { w: i, m: f }; })(); }
+function _regeneratorDefine2(e, r, n, t) { var i = Object.defineProperty; try { i({}, "", {}); } catch (e) { i = 0; } _regeneratorDefine2 = function _regeneratorDefine(e, r, n, t) { function o(r, n) { _regeneratorDefine2(e, r, function (e) { return this._invoke(r, n, e); }); } r ? i ? i(e, r, { value: n, enumerable: !t, configurable: !t, writable: !t }) : e[r] = n : (o("next", 0), o("throw", 1), o("return", 2)); }, _regeneratorDefine2(e, r, n, t); }
+function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
+function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
+function ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
+function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
+function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
+function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : i + ""; }
+function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
 
 
 
@@ -25616,6 +25652,63 @@ __webpack_require__.r(__webpack_exports__);
     }
   },
   methods: {
+    // [REP-EXP-01 FIX] Export payload = active filters with pagination stripped
+    // so the backend returns the FULL filtered dataset for Excel.
+    exportSearch: function exportSearch() {
+      var params = _objectSpread({}, this.props.search);
+      params.paginate = 0;
+      delete params.per_page;
+      delete params.page;
+      return params;
+    },
+    // [REP-EXP-ERR-04 FIX] Decode a Blob error body before alerting (export uses
+    // responseType:'blob' → err.response.data.message is undefined on a Blob).
+    showExportError: function () {
+      var _showExportError = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee(err) {
+        var message, _err$response, data, text, _t;
+        return _regenerator().w(function (_context) {
+          while (1) switch (_context.p = _context.n) {
+            case 0:
+              message = this.$t('message.no_data_available');
+              _context.p = 1;
+              data = err === null || err === void 0 || (_err$response = err.response) === null || _err$response === void 0 ? void 0 : _err$response.data;
+              if (!(data instanceof Blob)) {
+                _context.n = 3;
+                break;
+              }
+              _context.n = 2;
+              return data.text();
+            case 2:
+              text = _context.v;
+              try {
+                message = JSON.parse(text).message || text || message;
+              } catch (e) {
+                message = text || message;
+              }
+              _context.n = 4;
+              break;
+            case 3:
+              if (data !== null && data !== void 0 && data.message) {
+                message = data.message;
+              }
+            case 4:
+              _context.n = 6;
+              break;
+            case 5:
+              _context.p = 5;
+              _t = _context.v;
+            case 6:
+              _services_alertService__WEBPACK_IMPORTED_MODULE_1__["default"].error(message);
+            case 7:
+              return _context.a(2);
+          }
+        }, _callee, this, [[1, 5]]);
+      }));
+      function showExportError(_x) {
+        return _showExportError.apply(this, arguments);
+      }
+      return showExportError;
+    }(),
     statusClass: function statusClass(status) {
       return _services_appService__WEBPACK_IMPORTED_MODULE_5__["default"].statusClass(status);
     },
@@ -25662,13 +25755,17 @@ __webpack_require__.r(__webpack_exports__);
       this.$store.dispatch('transaction/lists', this.props.search).then(function (res) {
         _this2.loading.isActive = false;
       })["catch"](function (err) {
+        var _err$response2;
         _this2.loading.isActive = false;
+        // [REP-EXP-ERR-04 FIX] surface the failure instead of swallowing it.
+        _services_alertService__WEBPACK_IMPORTED_MODULE_1__["default"].error((err === null || err === void 0 || (_err$response2 = err.response) === null || _err$response2 === void 0 || (_err$response2 = _err$response2.data) === null || _err$response2 === void 0 ? void 0 : _err$response2.message) || _this2.$t('message.no_data_available'));
       });
     },
     xls: function xls() {
       var _this3 = this;
       this.loading.isActive = true;
-      this.$store.dispatch("transaction/export", this.props.search).then(function (res) {
+      // [REP-EXP-01 FIX] full filtered set (pagination stripped).
+      this.$store.dispatch("transaction/export", this.exportSearch()).then(function (res) {
         _this3.loading.isActive = false;
         var blob = new Blob([res.data], {
           type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -25680,7 +25777,7 @@ __webpack_require__.r(__webpack_exports__);
         URL.revokeObjectURL(link.href);
       })["catch"](function (err) {
         _this3.loading.isActive = false;
-        _services_alertService__WEBPACK_IMPORTED_MODULE_1__["default"].error(err.response.data.message);
+        _this3.showExportError(err); // [REP-EXP-ERR-04 FIX]
       });
     }
   }

@@ -1966,6 +1966,7 @@
         "composer_drawer_title": "تكوين الخطوات",
         "open_full_page": "فتح الصفحة الكاملة",
         "select_category_first": "اختر فئة أولاً",
+        "delete_category_warning": "تحتوي هذه الفئة على {n} منتج نشط سيتم إزالته من القائمة. أعد تعيينها أو عطّلها قبل الحذف.",
         "composer": {
             "diff": {
                 "title": "التغييرات قيد النشر",

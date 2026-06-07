@@ -164,22 +164,38 @@ class ItemCategoryService
      */
     public function destroy(ItemCategory $itemCategory)
     {
+        // [CAT-DEL-01 FIX] Revenue-loss guard. Deleting a populated category
+        // silently soft-deleted it, which drops EVERY active item of that
+        // category from the sellable kiosk/POS/web menu projection
+        // (MenuProjectionService::forChannel only joins items of ACTIVE
+        // categories). Refuse the delete with a 409 while active items remain
+        // so the catalogue stays sellable; the admin must reassign or retire
+        // the items first. The `items()` relation is already ACTIVE-filtered.
+        // This check is intentionally placed BEFORE the try/catch below: that
+        // catch re-wraps any exception into a 422, which would mask the 409.
+        $activeItemCount = (int) $itemCategory->items()->count();
+        if ($activeItemCount > 0) {
+            throw new Exception(
+                sprintf(
+                    'La catégorie contient %d article(s) actif(s). Réaffectez ou désactivez ces articles avant de supprimer la catégorie.',
+                    $activeItemCount
+                ),
+                409
+            );
+        }
+
         try {
             $categoryId = (int) $itemCategory->id;
             DB::transaction(function () use ($itemCategory, $categoryId): void {
-                $checkItem = $itemCategory->items->whereNull('deleted_at');
-                if (!blank($checkItem)) {
+                // No active items remain (guarded above): safe to soft-delete.
+                if (DB::getDriverName() === 'sqlite') {
+                    DB::statement('PRAGMA foreign_keys=0');
                     $itemCategory->delete();
+                    DB::statement('PRAGMA foreign_keys=1');
                 } else {
-                    if (DB::getDriverName() === 'sqlite') {
-                        DB::statement('PRAGMA foreign_keys=0');
-                        $itemCategory->delete();
-                        DB::statement('PRAGMA foreign_keys=1');
-                    } else {
-                        DB::statement('SET FOREIGN_KEY_CHECKS=0');
-                        $itemCategory->delete();
-                        DB::statement('SET FOREIGN_KEY_CHECKS=1');
-                    }
+                    DB::statement('SET FOREIGN_KEY_CHECKS=0');
+                    $itemCategory->delete();
+                    DB::statement('SET FOREIGN_KEY_CHECKS=1');
                 }
 
                 DB::afterCommit(function () use ($categoryId): void {
@@ -188,6 +204,11 @@ class ItemCategoryService
             });
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
+            // Preserve a genuine 409 (defense-in-depth if a future caller moves
+            // the guard inside the try); otherwise normalise to a 422.
+            if ((int) $exception->getCode() === 409) {
+                throw $exception;
+            }
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
         }
     }

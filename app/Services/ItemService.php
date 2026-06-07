@@ -335,11 +335,17 @@ class ItemService
                         }
                     }
 
-                    if ($variationIdsArray) {
-                        foreach ($oldVariations as $oldVariation) {
-                            if (!in_array($oldVariation, $variationIdsArray)) {
-                                $variationDeleteArray[] = $oldVariation;
-                            }
+                    // [CAT-VAR-02 FIX] Always diff the keep-set against the
+                    // pre-existing variations and delete the orphans, mirroring
+                    // the EXTRAS pattern below. Previously this was guarded by
+                    // `if ($variationIdsArray)`, so an empty `[]` payload or a
+                    // payload of only-new rows (no ids) left the OLD variations
+                    // dangling instead of clearing them. Deletion candidates
+                    // only ever come from $oldVariations (this item's own ids),
+                    // so the diff is inherently item-scoped.
+                    foreach ($oldVariations as $oldVariation) {
+                        if (!in_array($oldVariation, $variationIdsArray)) {
+                            $variationDeleteArray[] = $oldVariation;
                         }
                     }
 

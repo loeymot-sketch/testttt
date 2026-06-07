@@ -1038,6 +1038,12 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _components_buttons_export_PdfComponent__WEBPACK_IMPORTED_MODULE_25__ = __webpack_require__(/*! ../components/buttons/export/PdfComponent */ "./resources/js/components/admin/components/buttons/export/PdfComponent.vue");
 /* harmony import */ var _config_env__WEBPACK_IMPORTED_MODULE_26__ = __webpack_require__(/*! ../../../config/env */ "./resources/js/config/env.js");
 function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+function _regenerator() { /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE */ var e, t, r = "function" == typeof Symbol ? Symbol : {}, n = r.iterator || "@@iterator", o = r.toStringTag || "@@toStringTag"; function i(r, n, o, i) { var c = n && n.prototype instanceof Generator ? n : Generator, u = Object.create(c.prototype); return _regeneratorDefine2(u, "_invoke", function (r, n, o) { var i, c, u, f = 0, p = o || [], y = !1, G = { p: 0, n: 0, v: e, a: d, f: d.bind(e, 4), d: function d(t, r) { return i = t, c = 0, u = e, G.n = r, a; } }; function d(r, n) { for (c = r, u = n, t = 0; !y && f && !o && t < p.length; t++) { var o, i = p[t], d = G.p, l = i[2]; r > 3 ? (o = l === n) && (u = i[(c = i[4]) ? 5 : (c = 3, 3)], i[4] = i[5] = e) : i[0] <= d && ((o = r < 2 && d < i[1]) ? (c = 0, G.v = n, G.n = i[1]) : d < l && (o = r < 3 || i[0] > n || n > l) && (i[4] = r, i[5] = n, G.n = l, c = 0)); } if (o || r > 1) return a; throw y = !0, n; } return function (o, p, l) { if (f > 1) throw TypeError("Generator is already running"); for (y && 1 === p && d(p, l), c = p, u = l; (t = c < 2 ? e : u) || !y;) { i || (c ? c < 3 ? (c > 1 && (G.n = -1), d(c, u)) : G.n = u : G.v = u); try { if (f = 2, i) { if (c || (o = "next"), t = i[o]) { if (!(t = t.call(i, u))) throw TypeError("iterator result is not an object"); if (!t.done) return t; u = t.value, c < 2 && (c = 0); } else 1 === c && (t = i["return"]) && t.call(i), c < 2 && (u = TypeError("The iterator does not provide a '" + o + "' method"), c = 1); i = e; } else if ((t = (y = G.n < 0) ? u : r.call(n, G)) !== a) break; } catch (t) { i = e, c = 1, u = t; } finally { f = 1; } } return { value: t, done: y }; }; }(r, o, i), !0), u; } var a = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} t = Object.getPrototypeOf; var c = [][n] ? t(t([][n]())) : (_regeneratorDefine2(t = {}, n, function () { return this; }), t), u = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(c); function f(e) { return Object.setPrototypeOf ? Object.setPrototypeOf(e, GeneratorFunctionPrototype) : (e.__proto__ = GeneratorFunctionPrototype, _regeneratorDefine2(e, o, "GeneratorFunction")), e.prototype = Object.create(u), e; } return GeneratorFunction.prototype = GeneratorFunctionPrototype, _regeneratorDefine2(u, "constructor", GeneratorFunctionPrototype), _regeneratorDefine2(GeneratorFunctionPrototype, "constructor", GeneratorFunction), GeneratorFunction.displayName = "GeneratorFunction", _regeneratorDefine2(GeneratorFunctionPrototype, o, "GeneratorFunction"), _regeneratorDefine2(u), _regeneratorDefine2(u, o, "Generator"), _regeneratorDefine2(u, n, function () { return this; }), _regeneratorDefine2(u, "toString", function () { return "[object Generator]"; }), (_regenerator = function _regenerator() { return { w: i, m: f }; })(); }
+function _regeneratorDefine2(e, r, n, t) { var i = Object.defineProperty; try { i({}, "", {}); } catch (e) { i = 0; } _regeneratorDefine2 = function _regeneratorDefine(e, r, n, t) { function o(r, n) { _regeneratorDefine2(e, r, function (e) { return this._invoke(r, n, e); }); } r ? i ? i(e, r, { value: n, enumerable: !t, configurable: !t, writable: !t }) : e[r] = n : (o("next", 0), o("throw", 1), o("return", 2)); }, _regeneratorDefine2(e, r, n, t); }
+function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
+function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
+function ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
+function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
 function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
 function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : i + ""; }
 function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
@@ -1141,6 +1147,10 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
         order_column: 'id',
         order_type: 'asc'
       },
+      // [REP-ITEMS-TOTAL-03 FIX] grand total of units sold over the FULL
+      // filtered set (computed from a non-clobbering full fetch), so the
+      // tfoot Total no longer sums only the current page.
+      grandTotal: 0,
       ENV: _config_env__WEBPACK_IMPORTED_MODULE_26__["default"]
     };
   },
@@ -1181,6 +1191,81 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
     }
   },
   methods: {
+    // [REP-EXP-01 FIX] Export payload = active filters with pagination stripped
+    // so the backend returns the FULL filtered dataset for Excel/PDF.
+    exportSearch: function exportSearch() {
+      var params = _objectSpread({}, this.props.search);
+      params.paginate = 0;
+      delete params.per_page;
+      delete params.page;
+      return params;
+    },
+    // [REP-EXP-ERR-04 FIX] Decode a Blob error body before alerting (exports use
+    // responseType:'blob' → err.response.data.message is undefined on a Blob).
+    showExportError: function () {
+      var _showExportError = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee(err) {
+        var message, _err$response, data, text, _t;
+        return _regenerator().w(function (_context) {
+          while (1) switch (_context.p = _context.n) {
+            case 0:
+              message = this.$t('message.no_data_available');
+              _context.p = 1;
+              data = err === null || err === void 0 || (_err$response = err.response) === null || _err$response === void 0 ? void 0 : _err$response.data;
+              if (!(data instanceof Blob)) {
+                _context.n = 3;
+                break;
+              }
+              _context.n = 2;
+              return data.text();
+            case 2:
+              text = _context.v;
+              try {
+                message = JSON.parse(text).message || text || message;
+              } catch (e) {
+                message = text || message;
+              }
+              _context.n = 4;
+              break;
+            case 3:
+              if (data !== null && data !== void 0 && data.message) {
+                message = data.message;
+              }
+            case 4:
+              _context.n = 6;
+              break;
+            case 5:
+              _context.p = 5;
+              _t = _context.v;
+            case 6:
+              _services_alertService__WEBPACK_IMPORTED_MODULE_1__["default"].error(message);
+            case 7:
+              return _context.a(2);
+          }
+        }, _callee, this, [[1, 5]]);
+      }));
+      function showExportError(_x) {
+        return _showExportError.apply(this, arguments);
+      }
+      return showExportError;
+    }(),
+    // [REP-ITEMS-TOTAL-03 FIX] Fetch the FULL filtered set (paginate:0) without
+    // clobbering the paginated table getter (vuex:false → store does not commit)
+    // and compute the grand total of units sold over every row.
+    fetchGrandTotal: function fetchGrandTotal() {
+      var _this2 = this;
+      var params = _objectSpread({}, this.props.search);
+      params.paginate = 0;
+      params.vuex = false;
+      delete params.per_page;
+      delete params.page;
+      this.$store.dispatch('itemsReport/lists', params).then(function (res) {
+        var _res$data;
+        var rows = (res === null || res === void 0 || (_res$data = res.data) === null || _res$data === void 0 ? void 0 : _res$data.data) || [];
+        _this2.grandTotal = _this2.subTotal(rows);
+      })["catch"](function () {
+        _this2.grandTotal = 0;
+      });
+    },
     floatNumber: function floatNumber(e) {
       return _services_appService__WEBPACK_IMPORTED_MODULE_5__["default"].floatNumber(e);
     },
@@ -1224,48 +1309,55 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
       this.list();
     },
     list: function list() {
-      var _this2 = this;
+      var _this3 = this;
       var page = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 1;
       this.loading.isActive = true;
       this.props.search.page = page;
       this.$store.dispatch('itemsReport/lists', this.props.search).then(function (res) {
-        _this2.loading.isActive = false;
+        _this3.loading.isActive = false;
       })["catch"](function (err) {
-        _this2.loading.isActive = false;
+        var _err$response2;
+        _this3.loading.isActive = false;
+        // [REP-EXP-ERR-04 FIX] surface the failure instead of swallowing it.
+        _services_alertService__WEBPACK_IMPORTED_MODULE_1__["default"].error((err === null || err === void 0 || (_err$response2 = err.response) === null || _err$response2 === void 0 || (_err$response2 = _err$response2.data) === null || _err$response2 === void 0 ? void 0 : _err$response2.message) || _this3.$t('message.no_data_available'));
       });
+      // [REP-ITEMS-TOTAL-03 FIX] keep the tfoot grand total in sync with filters.
+      this.fetchGrandTotal();
     },
     xls: function xls() {
-      var _this3 = this;
+      var _this4 = this;
       this.loading.isActive = true;
-      this.$store.dispatch('itemsReport/export', this.props.search).then(function (res) {
-        _this3.loading.isActive = false;
+      // [REP-EXP-01 FIX] full filtered set (pagination stripped).
+      this.$store.dispatch('itemsReport/export', this.exportSearch()).then(function (res) {
+        _this4.loading.isActive = false;
         var blob = new Blob([res.data], {
           type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         });
         var link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
-        link.download = _this3.$t("menu.items_report");
+        link.download = _this4.$t("menu.items_report");
         link.click();
         URL.revokeObjectURL(link.href);
       })["catch"](function (err) {
-        _this3.loading.isActive = false;
-        _services_alertService__WEBPACK_IMPORTED_MODULE_1__["default"].error(err.response.data.message);
+        _this4.loading.isActive = false;
+        _this4.showExportError(err); // [REP-EXP-ERR-04 FIX]
       });
     },
     pdf: function pdf() {
-      var _this4 = this;
+      var _this5 = this;
       this.loading.isActive = true;
-      this.$store.dispatch("itemsReport/pdf", this.props.search).then(function (res) {
-        _this4.loading.isActive = false;
+      // [REP-EXP-01 FIX] full filtered set (pagination stripped).
+      this.$store.dispatch("itemsReport/pdf", this.exportSearch()).then(function (res) {
+        _this5.loading.isActive = false;
         var blob = new Blob([res.data]);
         var link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
-        link.download = _this4.$t("menu.items_report") + ".pdf";
+        link.download = _this5.$t("menu.items_report") + ".pdf";
         link.click();
         URL.revokeObjectURL(link.href);
       })["catch"](function (err) {
-        _this4.loading.isActive = false;
-        _services_alertService__WEBPACK_IMPORTED_MODULE_1__["default"].error(err.response.data.message);
+        _this5.loading.isActive = false;
+        _this5.showExportError(err); // [REP-EXP-ERR-04 FIX]
       });
     }
   }
@@ -1336,6 +1428,12 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _components_buttons_export_PdfComponent__WEBPACK_IMPORTED_MODULE_29__ = __webpack_require__(/*! ../components/buttons/export/PdfComponent */ "./resources/js/components/admin/components/buttons/export/PdfComponent.vue");
 /* harmony import */ var _config_env__WEBPACK_IMPORTED_MODULE_30__ = __webpack_require__(/*! ../../../config/env */ "./resources/js/config/env.js");
 function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+function _regenerator() { /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE */ var e, t, r = "function" == typeof Symbol ? Symbol : {}, n = r.iterator || "@@iterator", o = r.toStringTag || "@@toStringTag"; function i(r, n, o, i) { var c = n && n.prototype instanceof Generator ? n : Generator, u = Object.create(c.prototype); return _regeneratorDefine2(u, "_invoke", function (r, n, o) { var i, c, u, f = 0, p = o || [], y = !1, G = { p: 0, n: 0, v: e, a: d, f: d.bind(e, 4), d: function d(t, r) { return i = t, c = 0, u = e, G.n = r, a; } }; function d(r, n) { for (c = r, u = n, t = 0; !y && f && !o && t < p.length; t++) { var o, i = p[t], d = G.p, l = i[2]; r > 3 ? (o = l === n) && (u = i[(c = i[4]) ? 5 : (c = 3, 3)], i[4] = i[5] = e) : i[0] <= d && ((o = r < 2 && d < i[1]) ? (c = 0, G.v = n, G.n = i[1]) : d < l && (o = r < 3 || i[0] > n || n > l) && (i[4] = r, i[5] = n, G.n = l, c = 0)); } if (o || r > 1) return a; throw y = !0, n; } return function (o, p, l) { if (f > 1) throw TypeError("Generator is already running"); for (y && 1 === p && d(p, l), c = p, u = l; (t = c < 2 ? e : u) || !y;) { i || (c ? c < 3 ? (c > 1 && (G.n = -1), d(c, u)) : G.n = u : G.v = u); try { if (f = 2, i) { if (c || (o = "next"), t = i[o]) { if (!(t = t.call(i, u))) throw TypeError("iterator result is not an object"); if (!t.done) return t; u = t.value, c < 2 && (c = 0); } else 1 === c && (t = i["return"]) && t.call(i), c < 2 && (u = TypeError("The iterator does not provide a '" + o + "' method"), c = 1); i = e; } else if ((t = (y = G.n < 0) ? u : r.call(n, G)) !== a) break; } catch (t) { i = e, c = 1, u = t; } finally { f = 1; } } return { value: t, done: y }; }; }(r, o, i), !0), u; } var a = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} t = Object.getPrototypeOf; var c = [][n] ? t(t([][n]())) : (_regeneratorDefine2(t = {}, n, function () { return this; }), t), u = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(c); function f(e) { return Object.setPrototypeOf ? Object.setPrototypeOf(e, GeneratorFunctionPrototype) : (e.__proto__ = GeneratorFunctionPrototype, _regeneratorDefine2(e, o, "GeneratorFunction")), e.prototype = Object.create(u), e; } return GeneratorFunction.prototype = GeneratorFunctionPrototype, _regeneratorDefine2(u, "constructor", GeneratorFunctionPrototype), _regeneratorDefine2(GeneratorFunctionPrototype, "constructor", GeneratorFunction), GeneratorFunction.displayName = "GeneratorFunction", _regeneratorDefine2(GeneratorFunctionPrototype, o, "GeneratorFunction"), _regeneratorDefine2(u), _regeneratorDefine2(u, o, "Generator"), _regeneratorDefine2(u, n, function () { return this; }), _regeneratorDefine2(u, "toString", function () { return "[object Generator]"; }), (_regenerator = function _regenerator() { return { w: i, m: f }; })(); }
+function _regeneratorDefine2(e, r, n, t) { var i = Object.defineProperty; try { i({}, "", {}); } catch (e) { i = 0; } _regeneratorDefine2 = function _regeneratorDefine(e, r, n, t) { function o(r, n) { _regeneratorDefine2(e, r, function (e) { return this._invoke(r, n, e); }); } r ? i ? i(e, r, { value: n, enumerable: !t, configurable: !t, writable: !t }) : e[r] = n : (o("next", 0), o("throw", 1), o("return", 2)); }, _regeneratorDefine2(e, r, n, t); }
+function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
+function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
+function ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
+function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
 function _toConsumableArray(r) { return _arrayWithoutHoles(r) || _iterableToArray(r) || _unsupportedIterableToArray(r) || _nonIterableSpread(); }
 function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
 function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
@@ -1423,9 +1521,9 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
         orderStatusEnum: _enums_modules_orderStatusEnum__WEBPACK_IMPORTED_MODULE_7__["default"],
         orderTypeEnum: _enums_modules_orderTypeEnum__WEBPACK_IMPORTED_MODULE_28__["default"],
         sourceEnum: _enums_modules_sourceEnum__WEBPACK_IMPORTED_MODULE_25__["default"],
-        paymentStatusEnumArray: _defineProperty(_defineProperty({}, _enums_modules_paymentStatusEnum__WEBPACK_IMPORTED_MODULE_6__["default"].PAID, this.$t("label.paid")), _enums_modules_paymentStatusEnum__WEBPACK_IMPORTED_MODULE_6__["default"].UNPAID, this.$t("label.unpaid")),
-        paymentTypeEnumArray: _defineProperty(_defineProperty(_defineProperty({}, _enums_modules_paymentTypeEnum__WEBPACK_IMPORTED_MODULE_8__["default"].CASH_ON_DELIVERY, this.$t("label.cash_on_delivery")), _enums_modules_paymentTypeEnum__WEBPACK_IMPORTED_MODULE_8__["default"].E_WALLET, this.$t("label.e_wallet")), _enums_modules_paymentTypeEnum__WEBPACK_IMPORTED_MODULE_8__["default"].PAYPAL, this.$t("label.paypal")),
-        posPaymentMethodEnumArray: _defineProperty(_defineProperty(_defineProperty(_defineProperty({}, _enums_modules_posPaymentMethodEnum__WEBPACK_IMPORTED_MODULE_27__["default"].CASH, this.$t("label.cash")), _enums_modules_posPaymentMethodEnum__WEBPACK_IMPORTED_MODULE_27__["default"].CARD, this.$t("label.card")), _enums_modules_posPaymentMethodEnum__WEBPACK_IMPORTED_MODULE_27__["default"].MOBILE_BANKING, this.$t("label.mobile_banking")), _enums_modules_posPaymentMethodEnum__WEBPACK_IMPORTED_MODULE_27__["default"].OTHER, this.$t("label.other")),
+        paymentStatusEnumArray: _defineProperty(_defineProperty(_defineProperty(_defineProperty({}, _enums_modules_paymentStatusEnum__WEBPACK_IMPORTED_MODULE_6__["default"].PAID, this.$t("label.paid")), _enums_modules_paymentStatusEnum__WEBPACK_IMPORTED_MODULE_6__["default"].UNPAID, this.$t("label.unpaid")), _enums_modules_paymentStatusEnum__WEBPACK_IMPORTED_MODULE_6__["default"].PENDING_COUNTER, this.$t("label.pending_counter")), _enums_modules_paymentStatusEnum__WEBPACK_IMPORTED_MODULE_6__["default"].REFUNDED, this.$t("label.refunded")),
+        paymentTypeEnumArray: _defineProperty(_defineProperty(_defineProperty(_defineProperty(_defineProperty({}, _enums_modules_paymentTypeEnum__WEBPACK_IMPORTED_MODULE_8__["default"].CASH_ON_DELIVERY, this.$t("label.cash_on_delivery")), _enums_modules_paymentTypeEnum__WEBPACK_IMPORTED_MODULE_8__["default"].E_WALLET, this.$t("label.e_wallet")), _enums_modules_paymentTypeEnum__WEBPACK_IMPORTED_MODULE_8__["default"].PAYPAL, this.$t("label.paypal")), _enums_modules_paymentTypeEnum__WEBPACK_IMPORTED_MODULE_8__["default"].CARD, this.$t("label.card")), _enums_modules_paymentTypeEnum__WEBPACK_IMPORTED_MODULE_8__["default"].TICKET_RESTAURANT, this.$t("label.ticket_restaurant")),
+        posPaymentMethodEnumArray: _defineProperty(_defineProperty(_defineProperty(_defineProperty(_defineProperty(_defineProperty({}, _enums_modules_posPaymentMethodEnum__WEBPACK_IMPORTED_MODULE_27__["default"].CASH, this.$t("label.cash")), _enums_modules_posPaymentMethodEnum__WEBPACK_IMPORTED_MODULE_27__["default"].CARD, this.$t("label.card")), _enums_modules_posPaymentMethodEnum__WEBPACK_IMPORTED_MODULE_27__["default"].MOBILE_BANKING, this.$t("label.mobile_banking")), _enums_modules_posPaymentMethodEnum__WEBPACK_IMPORTED_MODULE_27__["default"].OTHER, this.$t("label.other")), _enums_modules_posPaymentMethodEnum__WEBPACK_IMPORTED_MODULE_27__["default"].TICKET_RESTAURANT, this.$t("label.ticket_restaurant")), _enums_modules_posPaymentMethodEnum__WEBPACK_IMPORTED_MODULE_27__["default"].COUNTER_DEFERRED, this.$t("label.counter_deferred")),
         orderStatusEnumArray: _defineProperty(_defineProperty(_defineProperty(_defineProperty(_defineProperty(_defineProperty(_defineProperty(_defineProperty({}, _enums_modules_orderStatusEnum__WEBPACK_IMPORTED_MODULE_7__["default"].PENDING, this.$t("label.pending")), _enums_modules_orderStatusEnum__WEBPACK_IMPORTED_MODULE_7__["default"].ACCEPT, this.$t("label.accept")), _enums_modules_orderStatusEnum__WEBPACK_IMPORTED_MODULE_7__["default"].PREPARING, this.$t("label.preparing")), _enums_modules_orderStatusEnum__WEBPACK_IMPORTED_MODULE_7__["default"].OUT_FOR_DELIVERY, this.$t("label.out_for_delivery")), _enums_modules_orderStatusEnum__WEBPACK_IMPORTED_MODULE_7__["default"].DELIVERED, this.$t("label.delivered")), _enums_modules_orderStatusEnum__WEBPACK_IMPORTED_MODULE_7__["default"].CANCELED, this.$t("label.canceled")), _enums_modules_orderStatusEnum__WEBPACK_IMPORTED_MODULE_7__["default"].REJECTED, this.$t("label.rejected")), _enums_modules_orderStatusEnum__WEBPACK_IMPORTED_MODULE_7__["default"].RETURNED, this.$t("label.returned")),
         sourceObject: [{
           name: this.$t("label.web"),
@@ -1516,6 +1614,80 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
     }
   },
   methods: {
+    // [REP-EXP-01 FIX] Build an export payload from the active filters with
+    // pagination STRIPPED so the backend returns the FULL filtered dataset
+    // (Excel/PDF). The on-screen list keeps its own paginated props.search.
+    exportSearch: function exportSearch() {
+      var params = _objectSpread({}, this.props.search);
+      params.paginate = 0;
+      delete params.per_page;
+      delete params.page;
+      return params;
+    },
+    // [REP-EXP-ERR-04 FIX] Export responses use responseType:'blob'; a failed
+    // export therefore arrives as a Blob whose `.message` is undefined. Decode
+    // the Blob body to text/JSON before surfacing the error.
+    showExportError: function () {
+      var _showExportError = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee(err) {
+        var message, _err$response, data, text, _t;
+        return _regenerator().w(function (_context) {
+          while (1) switch (_context.p = _context.n) {
+            case 0:
+              message = this.$t('message.no_data_available');
+              _context.p = 1;
+              data = err === null || err === void 0 || (_err$response = err.response) === null || _err$response === void 0 ? void 0 : _err$response.data;
+              if (!(data instanceof Blob)) {
+                _context.n = 3;
+                break;
+              }
+              _context.n = 2;
+              return data.text();
+            case 2:
+              text = _context.v;
+              try {
+                message = JSON.parse(text).message || text || message;
+              } catch (e) {
+                message = text || message;
+              }
+              _context.n = 4;
+              break;
+            case 3:
+              if (data !== null && data !== void 0 && data.message) {
+                message = data.message;
+              }
+            case 4:
+              _context.n = 6;
+              break;
+            case 5:
+              _context.p = 5;
+              _t = _context.v;
+            case 6:
+              _services_alertService__WEBPACK_IMPORTED_MODULE_1__["default"].error(message);
+            case 7:
+              return _context.a(2);
+          }
+        }, _callee, this, [[1, 5]]);
+      }));
+      function showExportError(_x) {
+        return _showExportError.apply(this, arguments);
+      }
+      return showExportError;
+    }(),
+    // [REP-SALES-PAYTYPE-02 FIX] / [REP-SALES-ENUM-05 FIX] Accurate payment-type
+    // label. A real gateway transaction wins; otherwise prefer the POS/counter
+    // method (kiosk pay-at-counter sets pos_payment_method=COUNTER_DEFERRED even
+    // though source≠POS — the old `source === orderTypeEnum.POS` guard compared
+    // the wrong enum AND mislabeled those rows as "Cash on delivery").
+    paymentTypeLabel: function paymentTypeLabel(order) {
+      if (order.transaction) {
+        return order.transaction;
+      }
+      if (order.pos_payment_method && this.enums.posPaymentMethodEnumArray[order.pos_payment_method]) {
+        return this.enums.posPaymentMethodEnumArray[order.pos_payment_method];
+      }
+      // Online/gateway orders (web/app) fall back to the payment-type label.
+      return this.enums.paymentTypeEnumArray[order.payment_method];
+    },
     floatNumber: function floatNumber(e) {
       return _services_appService__WEBPACK_IMPORTED_MODULE_5__["default"].floatNumber(e);
     },
@@ -1564,7 +1736,10 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
       this.$store.dispatch('salesReport/lists', this.props.search).then(function (res) {
         _this2.loading.isActive = false;
       })["catch"](function (err) {
+        var _err$response2;
         _this2.loading.isActive = false;
+        // [REP-EXP-ERR-04 FIX] surface the failure instead of swallowing it.
+        _services_alertService__WEBPACK_IMPORTED_MODULE_1__["default"].error((err === null || err === void 0 || (_err$response2 = err.response) === null || _err$response2 === void 0 || (_err$response2 = _err$response2.data) === null || _err$response2 === void 0 ? void 0 : _err$response2.message) || _this2.$t('message.no_data_available'));
       });
       this.$store.dispatch('salesReport/salesReportOverview', this.props.search).then(function (res) {
         _this2.loading.isActive = false;
@@ -1575,7 +1750,8 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
     xls: function xls() {
       var _this3 = this;
       this.loading.isActive = true;
-      this.$store.dispatch('salesReport/export', this.props.search).then(function (res) {
+      // [REP-EXP-01 FIX] full filtered set (pagination stripped).
+      this.$store.dispatch('salesReport/export', this.exportSearch()).then(function (res) {
         _this3.loading.isActive = false;
         var blob = new Blob([res.data], {
           type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
@@ -1587,13 +1763,14 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
         URL.revokeObjectURL(link.href);
       })["catch"](function (err) {
         _this3.loading.isActive = false;
-        _services_alertService__WEBPACK_IMPORTED_MODULE_1__["default"].error(err.response.data.message);
+        _this3.showExportError(err); // [REP-EXP-ERR-04 FIX]
       });
     },
     pdf: function pdf() {
       var _this4 = this;
       this.loading.isActive = true;
-      this.$store.dispatch("salesReport/pdf", this.props.search).then(function (res) {
+      // [REP-EXP-01 FIX] full filtered set (pagination stripped).
+      this.$store.dispatch("salesReport/pdf", this.exportSearch()).then(function (res) {
         _this4.loading.isActive = false;
         var blob = new Blob([res.data]);
         var link = document.createElement("a");
@@ -1603,7 +1780,7 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
         URL.revokeObjectURL(link.href);
       })["catch"](function (err) {
         _this4.loading.isActive = false;
-        _services_alertService__WEBPACK_IMPORTED_MODULE_1__["default"].error(err.response.data.message);
+        _this4.showExportError(err); // [REP-EXP-ERR-04 FIX]
       });
     }
   }
@@ -2993,7 +3170,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "class": "w-full h-full",
     src: $data.ENV.API_URL + '/images/default/not-found.png',
     alt: "Not Found"
-  }, null, 8 /* PROPS */, _hoisted_40)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_41, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('message.no_data_available')), 1 /* TEXT */)])])])])), $options.itemsReports.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("tfoot", _hoisted_42, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("tr", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_43, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.total')), 1 /* TEXT */), _cache[9] || (_cache[9] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", null, null, -1 /* CACHED */)), _cache[10] || (_cache[10] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", null, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_44, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.subTotal($options.itemsReports)), 1 /* TEXT */)])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 8 /* PROPS */, _hoisted_23)]), $options.itemsReports.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_45, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PaginationSMBox, {
+  }, null, 8 /* PROPS */, _hoisted_40)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_41, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('message.no_data_available')), 1 /* TEXT */)])])])])), $options.itemsReports.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("tfoot", _hoisted_42, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("tr", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_43, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.total')), 1 /* TEXT */), _cache[9] || (_cache[9] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", null, null, -1 /* CACHED */)), _cache[10] || (_cache[10] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", null, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [REP-ITEMS-TOTAL-03 FIX] grand total over the FULL filtered set, not the current page. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_44, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.grandTotal), 1 /* TEXT */)])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 8 /* PROPS */, _hoisted_23)]), $options.itemsReports.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_45, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PaginationSMBox, {
     pagination: $options.pagination,
     method: $options.list
   }, null, 8 /* PROPS */, ["pagination", "method"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_46, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PaginationTextComponent, {
@@ -3238,43 +3415,34 @@ var _hoisted_62 = {
   "class": "db-table-body-td"
 };
 var _hoisted_63 = {
-  key: 0
-};
-var _hoisted_64 = {
-  key: 1
-};
-var _hoisted_65 = {
-  key: 2
-};
-var _hoisted_66 = {
   "class": "db-table-body-td"
 };
-var _hoisted_67 = {
+var _hoisted_64 = {
   key: 1,
   "class": "db-table-body"
 };
-var _hoisted_68 = {
+var _hoisted_65 = {
   "class": "db-table-body-tr"
 };
-var _hoisted_69 = {
+var _hoisted_66 = {
   "class": "db-table-body-td text-center",
   colspan: "7"
 };
-var _hoisted_70 = {
+var _hoisted_67 = {
   "class": "p-4"
 };
-var _hoisted_71 = {
+var _hoisted_68 = {
   "class": "max-w-[300px] mx-auto mt-2"
 };
-var _hoisted_72 = ["src"];
-var _hoisted_73 = {
+var _hoisted_69 = ["src"];
+var _hoisted_70 = {
   "class": "d-block mt-3 text-lg"
 };
-var _hoisted_74 = {
+var _hoisted_71 = {
   key: 0,
   "class": "flex items-center justify-between border-t border-gray-200 bg-white px-4 py-6"
 };
-var _hoisted_75 = {
+var _hoisted_72 = {
   "class": "hidden sm:flex sm:flex-1 sm:items-center sm:justify-between"
 };
 function render(_ctx, _cache, $props, $setup, $data, $options) {
@@ -3482,17 +3650,17 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("tr", {
       "class": "db-table-body-tr",
       key: salesReport
-    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_57, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(salesReport.order_serial_no), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_58, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(salesReport.order_datetime), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_59, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(salesReport.total_amount_price), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_60, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(salesReport.discount_amount_price), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_61, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(salesReport.delivery_charge_amount_price), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_62, [salesReport.transaction ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_63, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(salesReport.transaction), 1 /* TEXT */)) : salesReport.source === $data.enums.orderTypeEnum.POS ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_64, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.enums.posPaymentMethodEnumArray[salesReport.pos_payment_method] ? $data.enums.posPaymentMethodEnumArray[salesReport.pos_payment_method] : $data.enums.paymentTypeEnumArray[salesReport.payment_method]), 1 /* TEXT */)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_65, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.enums.paymentTypeEnumArray[salesReport.payment_method]), 1 /* TEXT */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_66, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_57, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(salesReport.order_serial_no), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_58, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(salesReport.order_datetime), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_59, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(salesReport.total_amount_price), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_60, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(salesReport.discount_amount_price), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_61, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(salesReport.delivery_charge_amount_price), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_62, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [REP-SALES-PAYTYPE-02 FIX] / [REP-SALES-ENUM-05 FIX] "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.paymentTypeLabel(salesReport)), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_63, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
       "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)($options.statusClass(salesReport.payment_status))
     }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.enums.paymentStatusEnumArray[salesReport.payment_status]), 3 /* TEXT, CLASS */)])]);
-  }), 128 /* KEYED_FRAGMENT */))])) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("tbody", _hoisted_67, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("tr", _hoisted_68, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_69, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_70, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_71, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("img", {
+  }), 128 /* KEYED_FRAGMENT */))])) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("tbody", _hoisted_64, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("tr", _hoisted_65, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_66, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_67, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_68, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("img", {
     "class": "w-full h-full",
     src: $data.ENV.API_URL + '/images/default/not-found.png',
     alt: "Not Found"
-  }, null, 8 /* PROPS */, _hoisted_72)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_73, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('message.no_data_available')), 1 /* TEXT */)])])])]))], 8 /* PROPS */, _hoisted_46)]), $options.salesReports.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_74, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PaginationSMBox, {
+  }, null, 8 /* PROPS */, _hoisted_69)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_70, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('message.no_data_available')), 1 /* TEXT */)])])])]))], 8 /* PROPS */, _hoisted_46)]), $options.salesReports.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_71, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PaginationSMBox, {
     pagination: $options.pagination,
     method: $options.list
-  }, null, 8 /* PROPS */, ["pagination", "method"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_75, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PaginationTextComponent, {
+  }, null, 8 /* PROPS */, ["pagination", "method"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_72, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PaginationTextComponent, {
     props: {
       page: $options.paginationPage
     }

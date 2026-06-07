@@ -95,14 +95,14 @@
         <div class="report">
             <p style="margin: 0px 0px 8px 0px;font-size: 16px;font-weight: bold">{{ App\Libraries\AppLibrary::textShortener($company['company_name'] ?? 'Le Cayenne', 60) }}</p>
             <p>{{ App\Libraries\AppLibrary::textShortener($company['company_address'] ?? '', 60) }}</p>
-            <p  style="color: #ff006b;margin: 0px 0px 8px 0px;font-size: 16px;font-weight: bold;">{{ trans('all.label.items_report', [], 'en') }}</p>
+            <p  style="color: #ff006b;margin: 0px 0px 8px 0px;font-size: 16px;font-weight: bold;">{{ trans('all.label.items_report') }}</p>
             <table>
                 <thead>
                     <tr>
-                        <th>{{ trans('all.label.name', [], 'en') }}</th>
-                        <th>{{ trans('all.label.item_category_id', [], 'en') }}</th>
-                        <th>{{ trans('all.label.item_type', [], 'en') }}</th>
-                        <th>{{ trans('all.label.quantity', [], 'en') }}</th>
+                        <th>{{ trans('all.label.name') }}</th>
+                        <th>{{ trans('all.label.item_category_id') }}</th>
+                        <th>{{ trans('all.label.item_type') }}</th>
+                        <th>{{ trans('all.label.quantity') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -122,7 +122,7 @@
                         </tr>
                     @endforeach
                     <tr class="total">
-                        <td colspan="3">{{ trans('all.label.total', [], 'en') }}</td>
+                        <td colspan="3">{{ trans('all.label.total') }}</td>
                         <td>{{ $total_quantity }}</td>
                     </tr>
                 </tbody>

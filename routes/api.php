@@ -1417,7 +1417,10 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
         // Route added to config/idempotency.php required_routes simultaneously.
         Route::post('/redeem', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'redeem'])
             ->middleware('idempotency');
-        Route::get('/balance', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'balance']);
+        // [CENTRAL-03 2026-06-07] throttle:10,1 parity with /check — /balance shares
+        // check()'s derivation AND lazy-mints a loyalty_code on lookup, so an
+        // unthrottled GET is a phone-enumeration / mint-spam vector (WP-07 PII-by-phone).
+        Route::get('/balance', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'balance'])->middleware('throttle:10,1');
         Route::get('/history', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'history']);
 
         // [LCS-S-001 / 2026-05-19] Signed QR generation — authenticated customer

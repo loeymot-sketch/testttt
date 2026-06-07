@@ -266,6 +266,34 @@ export default {
         },
     },
     methods: {
+        // [REP-EXP-01 FIX] Export payload = active filters with pagination stripped
+        // so the backend returns the FULL filtered dataset for Excel.
+        exportSearch: function () {
+            const params = { ...this.props.search };
+            params.paginate = 0;
+            delete params.per_page;
+            delete params.page;
+            return params;
+        },
+        // [REP-EXP-ERR-04 FIX] Decode a Blob error body before alerting (export uses
+        // responseType:'blob' → err.response.data.message is undefined on a Blob).
+        showExportError: async function (err) {
+            let message = this.$t('message.no_data_available');
+            try {
+                const data = err?.response?.data;
+                if (data instanceof Blob) {
+                    const text = await data.text();
+                    try {
+                        message = JSON.parse(text).message || text || message;
+                    } catch (e) {
+                        message = text || message;
+                    }
+                } else if (data?.message) {
+                    message = data.message;
+                }
+            } catch (e) { /* fall back to default message */ }
+            alertService.error(message);
+        },
         statusClass: function (status) {
             return appService.statusClass(status);
         },
@@ -310,11 +338,14 @@ export default {
                 this.loading.isActive = false;
             }).catch((err) => {
                 this.loading.isActive = false;
+                // [REP-EXP-ERR-04 FIX] surface the failure instead of swallowing it.
+                alertService.error(err?.response?.data?.message || this.$t('message.no_data_available'));
             });
         },
         xls: function () {
             this.loading.isActive = true;
-            this.$store.dispatch("transaction/export", this.props.search).then((res) => {
+            // [REP-EXP-01 FIX] full filtered set (pagination stripped).
+            this.$store.dispatch("transaction/export", this.exportSearch()).then((res) => {
                 this.loading.isActive = false;
                 const blob = new Blob([res.data], {
                     type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -326,7 +357,7 @@ export default {
                 URL.revokeObjectURL(link.href);
             }).catch((err) => {
                 this.loading.isActive = false;
-                alertService.error(err.response.data.message);
+                this.showExportError(err); // [REP-EXP-ERR-04 FIX]
             });
         },
     }

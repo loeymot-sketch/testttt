@@ -503,13 +503,35 @@ export default {
                 query: { edit: String(category.id) },
             });
         },
+        // [CAT-DEL-01 FIX] Count the ACTIVE items that a category delete would
+        // affect. Prefer the server-provided `product_count`, fall back to the
+        // client-side tally. Used to warn the operator BEFORE the destructive
+        // confirm and to explain the backend 409 guard if it fires.
+        categoryActiveItemCount(category) {
+            const id = Number(category?.id);
+            const serverCount = Number(category?.product_count);
+            if (Number.isFinite(serverCount) && serverCount > 0) {
+                return serverCount;
+            }
+            return Number(this.productsCountByCategory[id] || 0);
+        },
         destroyCategory(category) {
             if (!this.canDeleteCategory) {
                 return;
             }
-            appService.destroyConfirmation().then(() => {
+            // [CAT-DEL-01 FIX] Deleting a populated category drops ALL its active
+            // items from the sellable kiosk/POS/web menu = revenue loss. Warn the
+            // operator that N items are affected BEFORE the destructive confirm.
+            // The backend ItemCategoryService::destroy() guard is the hard line
+            // of defence (rejects with a 409 message while active items remain);
+            // its message is surfaced in the .catch below.
+            const affected = this.categoryActiveItemCount(category);
+            if (affected > 0) {
+                alertService.warning(this.$t("studio.delete_category_warning", { n: affected }));
+            }
+            return appService.destroyConfirmation().then(() => {
                 this.loading.isActive = true;
-                this.$store.dispatch("itemCategory/destroy", { id: category.id, search: this.categoriesSearch })
+                return this.$store.dispatch("itemCategory/destroy", { id: category.id, search: this.categoriesSearch })
                     .then(() => {
                         if (this.selectedCategoryId === Number(category.id)) {
                             this.selectedCategoryId = null;
@@ -518,6 +540,8 @@ export default {
                         this.refreshData();
                     })
                     .catch((err) => {
+                        // Surfaces the backend CAT-DEL-01 guard message (409 ->
+                        // controller normalises status, but keeps the FR message).
                         const msg = err?.response?.data?.message || this.$t("error.something_wrong");
                         alertService.error(msg);
                     })

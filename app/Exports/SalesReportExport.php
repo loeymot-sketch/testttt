@@ -24,6 +24,12 @@ class SalesReportExport implements FromCollection, WithHeadings
     public function collection() : \Illuminate\Support\Collection
     {
         $salesReportArray  = [];
+        // [REP-EXP-01 FIX 2026-06-06] Force a FULL fetch. The screen forwards its
+        // paginated request (paginate:1, per_page:10, page:N), which made the export
+        // contain only the current page (10 rows). Strip pagination so OrderService
+        // takes the get() branch over the full filtered dataset. Mirrors the
+        // ItemsReportExport ITEMS-SEM-04 heal.
+        $this->request->merge(['paginate' => 0]);
         $salesReportsArray = $this->orderService->list($this->request);
 
         foreach ($salesReportsArray as $order) {
