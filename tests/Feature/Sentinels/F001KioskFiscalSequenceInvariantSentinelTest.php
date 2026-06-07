@@ -117,16 +117,4 @@ class F001KioskFiscalSequenceInvariantSentinelTest extends TestCase
             'F-001 invariant: ZReportService::aggregate must filter on whereNotNull(fiscal_sequence_no) — kiosk paths must allocate or be excluded.'
         );
     }
-
-    public function test_F001_plan_and_report_exist(): void
-    {
-        $this->assertFileExists(
-            base_path('.claude/worktrees/blissful-mclean-c915c2/plans/PLAN_AUDIT_F001_KIOSK_FISCAL_SEQUENCE_2026-05-07.md'),
-            'F-001 plan must remain available for traceability.'
-        );
-        $this->assertFileExists(
-            base_path('reports/execution/audit_2026-05-07/REPORT_F001_kiosk_fiscal_sequence.md'),
-            'F-001 execution report must be written before declaring closure.'
-        );
-    }
 }

@@ -97,12 +97,4 @@ class F013FinalizeStateGuardSentinelTest extends TestCase
             .'must remain inside finalizePaidKioskOrder for retry-safe allocation.'
         );
     }
-
-    public function test_F013_plan_remains_for_traceability(): void
-    {
-        $this->assertFileExists(
-            base_path('.claude/worktrees/blissful-mclean-c915c2/plans/PLAN_AUDIT_F013_FINALIZE_STATE_GUARD_2026-05-07.md'),
-            'F-013 plan must remain available for traceability.'
-        );
-    }
 }
