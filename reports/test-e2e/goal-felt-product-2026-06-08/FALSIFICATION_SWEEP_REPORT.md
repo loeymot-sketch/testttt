@@ -19,7 +19,19 @@ offline-replay, `OrderStatusChanged` envelope contract, `APP_DEBUG=false` query 
 | **P1 BLOCKER** | Unauthenticated `/loyalty/register` (+`/opt-in`) echoed a **third party's phone + loyalty_code** in the `EMAIL_EXISTS` 409 (`LoyaltyController.php:144`) — PII oracle on a public endpoint | Stripped PII from the 409; register stays public for walk-in signup (no `auth:sanctum` — would break signup) | `LoyaltyApiTest::test_register_email_conflict_does_not_leak_third_party_pii` (6/6) |
 | **P1** | POS `print-receipt` had **no permission gate** → any staff (Chef/Waiter) could write the NF525 audit-chain + flip DUPLICATA (`routes/api.php:911`) | Added `permission:pos` (mirrors `PosOrderRequest::authorize`'s `can('pos')`) | `ReceiptPrintControllerTest::test_non_pos_staff_chef_is_forbidden_and_writes_no_audit_row` (11/11) |
 | **P1** | Cash-drawer close POSTed `{}` to `/reconcile`, silently dropping the cashier's mandatory variance reason (and stranding an over-2€ close CLOSED-not-RECONCILED) (`CashDrawerService.js`) | Forwards `variance_reason` in the reconcile body | `cashDrawerCloseVarianceReason.spec.js` (3/3) |
-| **P1** | Kiosk promo **false-zero**: store read `data.discount` but backend returns `discount_amount` → "Code appliqué" shown, total never reduced (`kioskCart.js:585`) | Read `discount_amount` (defensive `?? discount` fallback) | `kioskCartPromoDiscountField.spec.js` (2/2) |
+| **P1 (display only — see caveat)** | Kiosk promo **false-zero**: store read `data.discount` but backend returns `discount_amount` → "Code appliqué" shown, total never reduced (`kioskCart.js:585`) | Read `discount_amount` (defensive `?? discount` fallback) — fixes link 1 (store) + link 2 (`total` getter subtracts `promoDiscount`, verified) | `kioskCartPromoDiscountField.spec.js` (2/2) |
+
+> ⚠️ **Promo heal is DISPLAY-ONLY and gated — not a full end-to-end fix.** The promo input is
+> rendered only when `window.foodkingConfig.discountsEnabled === true`, which **defaults FALSE**
+> (`KioskCartComponent.vue:441,446`) → **unreachable in canonical V1 prod**. Link 3 (the backend
+> *charging* the discounted total at order creation) is NOT verified: the order quote passes
+> `promo_code` into the canonical struct (`OrderQuoteService.php:416`) but kiosk `discount` there is
+> the *loyalty* discount, and the backlog P2 "promo never consumed at order creation" still stands.
+> **Risk if shipped naively with discounts ON:** the borne would *show* a reduced total it does not
+> *charge* (shown €8 / charged €8.50) — worse than the false-zero. The display fix is harmless while
+> `discountsEnabled=FALSE`; **before the owner enables discounts, pair it with the backend
+> order-creation consumption fix (the P2) and verify shown==charged end-to-end.** Claim level:
+> *display field-read corrected; e2e NOT verified; gated behind `discountsEnabled` (default FALSE).*
 
 **Bundle:** `pos-app.js` rebuilt (`npm run dev`, cash fix); `public/js/app.js` is **gitignored** (rebuilt on deploy) and carries the kiosk promo fix via source. Sentinels: FrozenZone 1/1, AuthzDrift 1/1, Vitest sentinels 486/486.
 
@@ -60,4 +72,4 @@ Source of truth: `falsification-sweep/RESULT.json`. Triaged below by class.
 - Real-hardware **TPE activation** — the one event that promotes the refused-payment screen to a daily-path P1.
 
 ## BOTTOM LINE
-The falsification sweep did its job — it broke an over-certified green and found a real PII blocker plus 3 real P1s, all now healed + regression-tested with 0 frozen-zone drift. The fiscal/payment core is verified robust. **V1 LOCAL is GO once the owner clears the deploy/config gates.** The 30-item fix-soon backlog is real hardening, none of it a halt-the-line blocker.
+The falsification sweep did its job — it broke an over-certified green and found a real PII blocker plus 3 real P1s. This is **"all sweep-found P1s healed + regression-tested," NOT "the system is now falsification-clean"** (one sweep ran; the heals are surgical and covered by sentinels + regression suites, so a confirming re-sweep is not worth the tokens). Of the four heals, three (PII blocker, receipt-print authz, cash variance-reason) are verified end-to-end; the fourth (kiosk promo) is **display-only and gated FALSE** — correct as prep, not a live e2e fix (see caveat above). The fiscal/payment core is verified robust, 0 frozen-zone drift. **V1 LOCAL is GO-WITH-OWNER-GATES once the owner clears the deploy/config gates.** The 30-item fix-soon backlog is real hardening, none of it a halt-the-line blocker.
