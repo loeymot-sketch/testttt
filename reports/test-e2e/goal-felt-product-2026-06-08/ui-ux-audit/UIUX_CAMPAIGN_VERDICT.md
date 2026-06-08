@@ -11,7 +11,7 @@
 ## ✅ HEALED (per system) — each verified + regression-tested
 | System | Commit | Fixes |
 |--------|--------|-------|
-| **KDS** | `177f85300` | **New-order chime was DEAD on the V2 production board** (`<audio>` trapped in legacy-only branch → kitchen never heard new orders) → hoisted to root, live-verified DOM 0→1. **ATTENTE timer** never rolled past 59 min (`15592:35`, clipped) → `1h05`/`10j`, ≤5 chars. Regression `kdsTimerRollup` 5/5 + chime live check. |
+| **KDS** | `177f85300` | **New-order chime element was guaranteed-ABSENT on the V2 production board** (`<audio>` trapped in legacy-only branch → `$refs.kdsNewOrderAudio` undefined → chime guaranteed-silent) → hoisted to root, **live-verified it now MOUNTS (DOM 0→1)**. *Audible playback* unlocks on the chef's first interaction (browser autoplay policy; `play()` rejection is swallowed) → **real-hardware verification item, not asserted here** — the mount fix strictly improves a guaranteed-silent state. **ATTENTE timer** never rolled past 59 min (`15592:35`, clipped) → `1h05`/`10j`, ≤5 chars (regression `kdsTimerRollup` 5/5). |
 | **OSS** | `8cc43e975` | **Customer wall strobed a full-board spinner over the orders on every Echo push/poll** → spinner now first-load-only, silent refreshes. Regression `ossListSpinnerFirstLoad`. 0 P1; prior FP-04/22/24 re-verified. |
 | **POS** | `8cc43e975` | Parked-orders timestamp showed **English "5 days ago"** on the FR caisse → `fr-FR`. + `Article/Articles` plural + `Espèce→Espèces`. 0 dead controls; frozen wizard `€3.00` en-US = owner-gated (documented). |
 | **KIOSK** | (docs) | **Very good shape — 0 P1/P2.** Zero raw labels, FR-correct, no customer-reachable dead buttons in V1 flow. 3 dead error-screen buttons = P3, ZERO V1 reachability (`goToKioskError` never called, Plan-B-hidden) → pre-staged, not applied. Prior FP-01/26/28 re-verified. |
@@ -30,4 +30,4 @@
 - Dev-rebuilt (project convention non-minified); tracked bundles committed; `app.js` gitignored (rebuilt on deploy, carries the kiosk/admin fixes via source).
 - **0 frozen-zone files touched. NO push, NO merge.**
 
-## ⇒ The felt product across all five systems now reads as a finished, FR, single-box product: no dead controls on any daily path, no half-English, no en-US dates, no raw timers, no strobing spinner, the kitchen hears new orders. Remaining items are owner deploy-config/gates, not code defects.
+## ⇒ The felt product across all five systems now reads as a finished, FR, single-box product: no dead controls on any daily path, no half-English, no en-US dates, no raw timers, no strobing spinner, and the new-order chime element now mounts on the V2 board (audible playback unlocks on the chef's first interaction — a real-hardware verification item). Remaining items are owner deploy-config/gates, not code defects.
