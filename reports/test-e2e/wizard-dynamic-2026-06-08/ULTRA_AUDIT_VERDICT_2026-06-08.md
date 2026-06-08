@@ -6,10 +6,26 @@
 
 ---
 
-## VERDICT: the category-wizard feature is now FUNCTIONAL, with 1 frozen gate + a hardening backlog before it's production-relied-upon.
+## VERDICT: the category-wizard CAN render correctly, but is NOT turnkey — the template ships a broken wizard out-of-box; correct output requires expert manual authoring today.
 
-The owner's "ça fonctionne pas" had a concrete root cause, now understood and largely fixed.
-No fiscal P0. No security leak. Render path proven correct end-to-end with a properly-authored wizard.
+No fiscal P0. No security leak. The render path is proven correct **for a manually-corrected
+profile** (B1). **But:** `ComposerTemplateService::stepsFor` hardcodes `source_ref => ''` (line 46),
+so applying the "tacos" template through the builder **always** produces the broken empty-`source_ref`
+wizard from §1. GAP-E populates the picker; it does **not** auto-fill `source_ref`. So today the owner
+must, per `item_attribute` step, manually pick the attribute in the source picker **and** delete
+template steps that don't match the catalogue (Le Cayenne tacos have no "taille"/size attribute). **That
+manual-authoring friction IS a large part of "ça fonctionne pas"** — see §5 for the turnkey lever.
+
+**What is proven vs not (honest boundary):**
+- ✅ Render of an inherited category wizard with `source_ref` SET → distinct correct choices (B1, live `:8767`).
+- ✅ Persistence chain UI→payload→DB→projection, code-verified end-to-end: builder `payloadForStep`
+  (`ProductComposerEditorComponent.vue:794` emits `source_ref`) → bulk PUT `admin/composer/profiles/{id}`
+  → `ComposerProfileService::update:133-137` → `ComposerStepService::create` → `normalize:47` persists
+  `source_ref`. Picker populated via GAP-E (admin screenshot). Contract test asserts the picker loads sources.
+- ⚠️ NOT exercised by a live click: the actual Vue interaction of selecting an attribute in the picker
+  and saving (verified by code-read + contract test, not a browser click-through).
+- ⚠️ B1 reflects a profile I hand-corrected via `ComposerStepService::update` (set viande/sauce
+  `source_ref`, deactivated the bogus taille step) — **NOT raw template output**.
 
 ---
 
@@ -107,9 +123,23 @@ suppléments, inert for current Tacos) produce **no dead page**. Item 27 (Big Ta
 - Workflow `wvu7c2aos` — 6 dimensions, 16 findings, 3 adversarially confirmed
 - `GATE-G-PRICINGSERVICE-INHERITANCE-LOCK-REQUEST.md` — frozen heal, ready to countersign
 
-## 5. Recommendation to owner
-The category-wizard feature **works** when authored correctly (GAP-E unblocked it). Before relying on
-it in production, co-ship: (a) **GATE-G** PricingService validation (frozen — needs your sign-off),
-(b) **publish-time `source_ref` guard** (P2 — prevents the empty-ref collapse), (c) the N+1 + i18n
-hardening. Items (b)/(c) are non-frozen and I can heal them on your go; (b) carries a UX decision
-(block vs warn) I'd like you to pick.
+## 5. Recommendation to owner — the turnkey lever
+
+The category-wizard renders correctly **when authored correctly** (GAP-E unblocked the picker), but it
+is **not turnkey**. To make "apply template → publish → works" true out-of-box, the highest-leverage
+fix is:
+
+- **★ TURNKEY FIX (non-frozen, the actual cure for "ça fonctionne pas"): make the template auto-fill
+  `source_ref`.** At category/item template apply-time (`ComposerTemplateService::buildPayload` /
+  `ComposerProfileService::createForCategory`), map each `item_attribute` step-key to the representative
+  item's matching attribute **by name** (`viande`→"Viande 1", `sauce`→"Sauce…") and **drop** template
+  steps with no matching attribute (no "taille" on Le Cayenne tacos). Then a freshly-applied template
+  produces a working wizard with zero manual narrowing. This — not just the publish-guard — is what
+  removes the manual-authoring friction. I can heal it on your go.
+
+Before relying on category wizards in production, co-ship:
+- (a) **GATE-G** PricingService validation (FROZEN — needs your sign-off; diff ready).
+- (b) the **turnkey template auto-fill** above (non-frozen) **and/or** a **publish-time `source_ref`
+  guard** (block/warn on unconfigured `item_attribute` steps). Guard = safety net; auto-fill = the real
+  fix. (b) carries a UX decision (auto-fill silently vs guard-and-prompt) — I'd like you to pick.
+- (c) N+1 + i18n + precedence-drift hardening (non-frozen, low-risk).
