@@ -26,6 +26,14 @@
       >
         {{ $t('kiosk.error.call_staff') }}
       </KsButton>
+      <p
+        v-if="staffCalled"
+        class="kiosk-error-network-ack"
+        role="status"
+        data-testid="kiosk-error-network-staff-ack"
+      >
+        {{ $t('kiosk.error.network.staff_ack') }}
+      </p>
     </template>
   </KioskErrorLayoutComponent>
 </template>
@@ -45,7 +53,7 @@ export default {
     components: { KioskErrorLayoutComponent },
     emits: ['retry', 'call-staff'],
     data() {
-        return { retrying: false };
+        return { retrying: false, staffCalled: false };
     },
     mounted() {
         this.logEvent('error_shown');
@@ -53,17 +61,22 @@ export default {
     methods: {
         async retry() {
             this.retrying = true;
-            try {
-                this.logEvent('error_retry');
-                this.$emit('retry');
-            } finally {
-                // Laisse 500ms de feedback visuel avant de relâcher.
-                setTimeout(() => { this.retrying = false; }, 500);
-            }
+            this.logEvent('error_retry');
+            this.$emit('retry');
+            // [FP-01] Self-contained reconnect. The frozen parent (KioskAppComponent) does
+            // NOT bind @retry, so the emit alone is inert and the borne stays stuck on the
+            // error screen. Reloading re-bootstraps the kiosk SPA and re-attempts the backend
+            // heartbeat — a real retry, mirroring the sibling error screens' self-contained
+            // $router fallback. The 600ms delay lets the button's loading state show first.
+            setTimeout(() => { window.location.reload(); }, 600);
         },
         callStaff() {
             this.logEvent('error_call_staff');
             this.$emit('call-staff');
+            // [FP-01] Visible acknowledgement. There is no staff-call backend in V1 (the
+            // event above is logged to observability); the frozen parent does not bind
+            // @call-staff, so without this the button gave the customer zero feedback.
+            this.staffCalled = true;
         },
         logEvent(type, meta = {}) {
             trackKioskErrorEvent(type, 'network', meta);

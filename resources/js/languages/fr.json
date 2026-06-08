@@ -1630,7 +1630,8 @@
             "network": {
                 "title": "Connexion perdue",
                 "subtitle": "Nous n'arrivons plus à joindre le service de commande.",
-                "hint": "Patientez quelques instants ou appelez un membre de l'équipe."
+                "hint": "Patientez quelques instants ou appelez un membre de l'équipe.",
+                "staff_ack": "Merci, veuillez patienter — un membre de l'équipe va vous assister."
             },
             "menu_unavailable": {
                 "title": "Menu momentanément indisponible",
@@ -1712,7 +1713,8 @@
             "title": "Commande enregistrée",
             "saved": "Votre commande a été sauvegardée sur cet appareil.",
             "will_send": "Elle sera transmise dès que la connexion sera rétablie.",
-            "activity": "Envoi automatique dès que la connexion est disponible…"
+            "activity": "Envoi automatique dès que la connexion est disponible…",
+            "auto_return": "Présentez-vous au comptoir — l'écran revient à l'accueil dans un instant."
         },
         "waiting_ui": {
             "number_label": "Numéro",

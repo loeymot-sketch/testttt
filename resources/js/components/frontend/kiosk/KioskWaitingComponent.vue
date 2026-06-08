@@ -17,6 +17,7 @@
         </p>
         <div class="kiosk-offline-spinner"></div>
         <p class="kiosk-waiting-hint" style="font-size:14px;margin-top:8px">{{ $t('kiosk.offline_queue.activity') }}</p>
+        <p class="kiosk-waiting-hint" style="font-size:13px;margin-top:6px;opacity:.7" data-testid="kiosk-offline-auto-return">{{ $t('kiosk.offline_queue.auto_return') }}</p>
       </div>
     </div>
 
@@ -187,6 +188,9 @@ const TIMEOUT_SECONDS    = 900; // 15 minutes
 // their queue number on KDS/OSS — leaving the waiting screen doesn't
 // cancel anything. 10s = owner instruction.
 const PREPARING_AUTO_REDIRECT_SECONDS = 10;
+// [FP-28] Offline-queued orders skip polling; auto-return to idle so the borne is
+// freed for the next customer instead of stranding forever on the syncing spinner.
+const OFFLINE_AUTO_REDIRECT_SECONDS = 20;
 // Use shared enum — keeps in sync with PHP OrderStatus and KDS component
 const STATUS_PREPARED  = orderStatusEnum.PREPARED;   // 8
 const STATUS_DELIVERED = orderStatusEnum.DELIVERED;  // 13
@@ -228,6 +232,8 @@ export default {
       // [Owner 2026-05-21] Countdown to auto-redirect home during preparing state.
       preparingAutoRedirectSeconds: PREPARING_AUTO_REDIRECT_SECONDS,
       preparingAutoRedirectTimer: null,
+      // [FP-28] one-shot timer returning the borne to idle after an offline-queued order.
+      offlineAutoRedirectTimer: null,
     };
   },
   computed: {
@@ -245,6 +251,10 @@ export default {
     // If this is an offline-queued order, skip polling and show "syncing" state
     if (String(this.orderId).startsWith('offline_')) {
       this.isOfflineOrder = true;
+      // [FP-28] Don't strand the borne on the syncing spinner. The order is queued locally
+      // (kioskOfflineQueue) and the customer is directed to the counter — auto-return to idle
+      // so the next customer can order. The full offline_→real-id handoff is owner-gated (G-01).
+      this.startOfflineAutoRedirect();
       return;
     }
     this.startPolling();
@@ -527,6 +537,17 @@ export default {
       clearInterval(this.elapsedTimer);
       // [Owner 2026-05-21] Also clear preparing-state auto-redirect.
       this.stopPreparingAutoRedirect();
+      // [FP-28] clear the offline auto-return timer.
+      clearTimeout(this.offlineAutoRedirectTimer);
+    },
+
+    // [FP-28] Offline-queued order: wait long enough for the customer to read the
+    // "saved / go to counter" message, then return to idle to free the borne.
+    startOfflineAutoRedirect() {
+      clearTimeout(this.offlineAutoRedirectTimer);
+      this.offlineAutoRedirectTimer = setTimeout(() => {
+        this.newOrder();
+      }, OFFLINE_AUTO_REDIRECT_SECONDS * 1000);
     },
 
     // [AUDIT-P47-BUG9] Dismiss timeout overlay and resume polling (customer may want to keep waiting)
