@@ -17362,43 +17362,48 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
     },
     save: function save() {
       var _this2 = this;
-      try {
-        var fd = new FormData();
-        fd.append('title', this.form.title);
-        fd.append('role_id', this.form.role_id == null ? 0 : this.form.role_id);
-        fd.append('user_id', this.form.user_id == null ? 0 : this.form.user_id);
-        fd.append('branch_id', this.authBranchId);
-        fd.append('description', this.form.description);
-        if (this.image) {
-          fd.append('image', this.image);
+      // [P1] This dispatches a LIVE push broadcast to the selected audience (blank
+      // role + user = everyone). The trigger button was mislabeled "Enregistrer", so a
+      // gérant could broadcast believing they saved a draft. Confirm before sending.
+      _services_appService__WEBPACK_IMPORTED_MODULE_5__["default"].confirmation("Cette notification sera envoyée immédiatement aux destinataires sélectionnés (à tous les utilisateurs si aucun rôle ni utilisateur n'est choisi). Continuer ?", "Envoyer la notification ?").then(function () {
+        try {
+          var fd = new FormData();
+          fd.append('title', _this2.form.title);
+          fd.append('role_id', _this2.form.role_id == null ? 0 : _this2.form.role_id);
+          fd.append('user_id', _this2.form.user_id == null ? 0 : _this2.form.user_id);
+          fd.append('branch_id', _this2.authBranchId);
+          fd.append('description', _this2.form.description);
+          if (_this2.image) {
+            fd.append('image', _this2.image);
+          }
+          var tempId = _this2.$store.getters['pushNotification/temp'].temp_id;
+          _this2.loading.isActive = true;
+          _this2.$store.dispatch('pushNotification/save', {
+            form: fd,
+            search: _this2.props.search
+          }).then(function (res) {
+            _services_appService__WEBPACK_IMPORTED_MODULE_5__["default"].sideDrawerHide();
+            _this2.loading.isActive = false;
+            _services_alertService__WEBPACK_IMPORTED_MODULE_4__["default"].successFlip(tempId === null ? 0 : 1, _this2.$t('label.push_notification'));
+            _this2.form = {
+              title: "",
+              description: "",
+              role_id: null,
+              user_id: null,
+              status: _enums_modules_statusEnum__WEBPACK_IMPORTED_MODULE_2__["default"].ACTIVE
+            };
+            _this2.image = "";
+            _this2.errors = {};
+            _this2.$refs.imageProperty.value = null;
+          })["catch"](function (err) {
+            _this2.loading.isActive = false;
+            _this2.errors = err.response.data.errors;
+          });
+        } catch (err) {
+          _this2.loading.isActive = false;
+          _services_alertService__WEBPACK_IMPORTED_MODULE_4__["default"].error(err);
         }
-        var tempId = this.$store.getters['pushNotification/temp'].temp_id;
-        this.loading.isActive = true;
-        this.$store.dispatch('pushNotification/save', {
-          form: fd,
-          search: this.props.search
-        }).then(function (res) {
-          _services_appService__WEBPACK_IMPORTED_MODULE_5__["default"].sideDrawerHide();
-          _this2.loading.isActive = false;
-          _services_alertService__WEBPACK_IMPORTED_MODULE_4__["default"].successFlip(tempId === null ? 0 : 1, _this2.$t('label.push_notification'));
-          _this2.form = {
-            title: "",
-            description: "",
-            role_id: null,
-            user_id: null,
-            status: _enums_modules_statusEnum__WEBPACK_IMPORTED_MODULE_2__["default"].ACTIVE
-          };
-          _this2.image = "";
-          _this2.errors = {};
-          _this2.$refs.imageProperty.value = null;
-        })["catch"](function (err) {
-          _this2.loading.isActive = false;
-          _this2.errors = err.response.data.errors;
-        });
-      } catch (err) {
-        this.loading.isActive = false;
-        _services_alertService__WEBPACK_IMPORTED_MODULE_4__["default"].error(err);
-      }
+      })["catch"](function () {/* cancelled — nothing sent */});
     }
   }
 });
@@ -24889,25 +24894,30 @@ __webpack_require__.r(__webpack_exports__);
     },
     save: function save() {
       var _this = this;
-      try {
-        this.loading.isActive = true;
-        this.$store.dispatch("subscriber/sendEmail", this.props).then(function (res) {
-          _services_appService__WEBPACK_IMPORTED_MODULE_5__["default"].sideDrawerHide();
+      // [P1] This sends a LIVE email to the entire subscriber base. The trigger button
+      // was mislabeled "Enregistrer", so a gérant could mass-mail believing they saved a
+      // draft. Confirm before sending.
+      _services_appService__WEBPACK_IMPORTED_MODULE_5__["default"].confirmation("Cet email sera envoyé immédiatement à tous les abonnés. Continuer ?", "Envoyer l'email à tous les abonnés ?").then(function () {
+        try {
+          _this.loading.isActive = true;
+          _this.$store.dispatch("subscriber/sendEmail", _this.props).then(function (res) {
+            _services_appService__WEBPACK_IMPORTED_MODULE_5__["default"].sideDrawerHide();
+            _this.loading.isActive = false;
+            _services_alertService__WEBPACK_IMPORTED_MODULE_4__["default"].successInfo(0, _this.$t("message.email_send"));
+            _this.props.form = {
+              subject: "",
+              message: ""
+            };
+            _this.errors = {};
+          })["catch"](function (err) {
+            _this.loading.isActive = false;
+            _this.errors = err.response.data.errors;
+          });
+        } catch (err) {
           _this.loading.isActive = false;
-          _services_alertService__WEBPACK_IMPORTED_MODULE_4__["default"].successInfo(0, _this.$t("message.email_send"));
-          _this.props.form = {
-            subject: "",
-            message: ""
-          };
-          _this.errors = {};
-        })["catch"](function (err) {
-          _this.loading.isActive = false;
-          _this.errors = err.response.data.errors;
-        });
-      } catch (err) {
-        this.loading.isActive = false;
-        _services_alertService__WEBPACK_IMPORTED_MODULE_4__["default"].error(err);
-      }
+          _services_alertService__WEBPACK_IMPORTED_MODULE_4__["default"].error(err);
+        }
+      })["catch"](function () {/* cancelled — nothing sent */});
     }
   }
 });
@@ -49383,10 +49393,6 @@ var _hoisted_21 = {
 var _hoisted_22 = {
   "class": "flex flex-wrap gap-3 mt-4"
 };
-var _hoisted_23 = {
-  type: "submit",
-  "class": "db-btn py-2 text-white bg-primary"
-};
 function render(_ctx, _cache, $props, $setup, $data, $options) {
   var _component_LoadingComponent = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("LoadingComponent");
   var _component_SmSidebarModalCreateComponent = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("SmSidebarModalCreateComponent");
@@ -49459,15 +49465,18 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     }),
     "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)([$data.errors.description ? 'invalid' : '', "db-field-control"]),
     id: "description"
-  }, null, 2 /* CLASS */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.form.description]]), $data.errors.description ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("small", _hoisted_20, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.errors.description[0]), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_21, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_22, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", _hoisted_23, [_cache[9] || (_cache[9] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
-    "class": "lab lab-save"
-  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.save")), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+  }, null, 2 /* CLASS */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.form.description]]), $data.errors.description ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("small", _hoisted_20, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.errors.description[0]), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_21, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_22, [_cache[10] || (_cache[10] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "submit",
+    "class": "db-btn py-2 text-white bg-primary"
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+    "class": "lab lab-send-2"
+  }), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, "Envoyer la notification")], -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     type: "button",
     "class": "modal-btn-outline modal-close",
     onClick: _cache[7] || (_cache[7] = function () {
       return $options.reset && $options.reset.apply($options, arguments);
     })
-  }, [_cache[10] || (_cache[10] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+  }, [_cache[9] || (_cache[9] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
     "class": "lab lab-close"
   }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("button.close")), 1 /* TEXT */)])])])])], 32 /* NEED_HYDRATION */)])])], 64 /* STABLE_FRAGMENT */);
 }
@@ -59648,10 +59657,6 @@ var _hoisted_12 = {
 var _hoisted_13 = {
   "class": "flex flex-wrap gap-3 mt-4"
 };
-var _hoisted_14 = {
-  type: "submit",
-  "class": "db-btn py-2 text-white bg-primary"
-};
 function render(_ctx, _cache, $props, $setup, $data, $options) {
   var _component_LoadingComponent = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("LoadingComponent");
   var _component_SmSidebarModalCreateComponent = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("SmSidebarModalCreateComponent");
@@ -59681,15 +59686,18 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     }),
     "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)([$data.errors.message ? 'invalid' : '', "db-field-control"]),
     id: "message"
-  }, null, 2 /* CLASS */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $props.props.form.message]]), $data.errors.message ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("small", _hoisted_11, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.errors.message[0]), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_12, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_13, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", _hoisted_14, [_cache[5] || (_cache[5] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
-    "class": "lab lab-save"
-  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.save")), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+  }, null, 2 /* CLASS */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $props.props.form.message]]), $data.errors.message ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("small", _hoisted_11, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.errors.message[0]), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_12, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_13, [_cache[6] || (_cache[6] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "submit",
+    "class": "db-btn py-2 text-white bg-primary"
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+    "class": "lab lab-send-2"
+  }), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, "Envoyer l'email")], -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     type: "button",
     "class": "modal-btn-outline modal-close",
     onClick: _cache[3] || (_cache[3] = function () {
       return $options.reset && $options.reset.apply($options, arguments);
     })
-  }, [_cache[6] || (_cache[6] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+  }, [_cache[5] || (_cache[5] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
     "class": "lab lab-close"
   }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("button.close")), 1 /* TEXT */)])])])])], 32 /* NEED_HYDRATION */)])])], 64 /* STABLE_FRAGMENT */);
 }
@@ -61094,7 +61102,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("tr", {
       "class": "db-table-body-tr",
       key: transaction
-    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_34, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(transaction.transaction_no), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_35, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(transaction.date), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_36, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(transaction.payment_method), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_37, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(transaction.order_serial_no), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_38, [transaction.sign == '+' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_39, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(transaction.sign) + " " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(transaction.amount), 1 /* TEXT */)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_40, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(transaction.sign) + " " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(transaction.amount), 1 /* TEXT */))])]);
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_34, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(transaction.transaction_no), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_35, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(transaction.date), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_36, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(transaction.payment_method_label), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_37, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(transaction.order_serial_no), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_38, [transaction.sign == '+' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_39, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(transaction.sign) + " " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(transaction.amount_display), 1 /* TEXT */)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_40, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(transaction.sign) + " " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(transaction.amount_display), 1 /* TEXT */))])]);
   }), 128 /* KEYED_FRAGMENT */))])) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("tbody", _hoisted_41, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("tr", _hoisted_42, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_43, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_44, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_45, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("img", {
     "class": "w-full h-full",
     src: $data.ENV.API_URL + '/images/default/not-found.png',
