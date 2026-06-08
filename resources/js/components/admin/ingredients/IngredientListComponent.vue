@@ -105,7 +105,9 @@
                                 </span>
                             </td>
                             <td class="px-4 py-3 text-sm text-slate-600">
-                                {{ $t('label.ingredient.usage_count', { count: ingredient.used_by_count || 0 }) }}
+                                {{ (ingredient.used_by_count || 0) > 0
+                                    ? $t('label.ingredient.usage_count', { count: ingredient.used_by_count })
+                                    : $t('label.ingredient.usage_none') }}
                             </td>
                             <td class="px-4 py-3">
                                 <button

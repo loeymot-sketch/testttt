@@ -63,6 +63,21 @@ export const orderHistory = {
                 });
             });
         },
+        // [W4.4 2026-06-08] Read-only XLSX export of the unified history,
+        // honoring the current page filters. Mirrors posOrder/export (blob).
+        export: function (context, payload) {
+            return new Promise((resolve, reject) => {
+                let url = 'admin/order-history/export';
+                if (payload) {
+                    url = url + appService.requestHandler(payload);
+                }
+                axios.get(url, { responseType: 'blob' }).then((res) => {
+                    resolve(res);
+                }).catch((err) => {
+                    reject(err);
+                });
+            });
+        },
         show: function (context, payload) {
             return new Promise((resolve, reject) => {
                 axios.get(`admin/order-history/show/${payload}`).then((res) => {
