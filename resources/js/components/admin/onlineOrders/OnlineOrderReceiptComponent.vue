@@ -14,6 +14,19 @@
                     <h5 class="text-sm font-normal">Tel: {{ branch.phone }}</h5>
                 </div>
 
+                <!-- [SEC-FALSIFY-2026-06-08 PRINTER-RECEIPT-4-01] NF525 legal-mention header
+                     (SIRET / TVA intra / établissement / opérateur). A printed "facture" must
+                     carry the business's legal fiscal mentions; the OrderDetailsResource already
+                     supplies them. Render-parity with ReceiptComponent.vue:67-73, guarded so it
+                     only shows when present. -->
+                <div v-if="order.pos_siret || order.pos_vat_intra || order.pos_register_id || order.operator_name"
+                    class="text-center text-[10px] leading-snug text-heading py-2 border-b border-dashed border-gray-400">
+                    <p v-if="order.pos_siret">{{ $t('label.siret') }}: {{ order.pos_siret }}</p>
+                    <p v-if="order.pos_vat_intra">{{ $t('label.vat_intra') }}: {{ order.pos_vat_intra }}</p>
+                    <p v-if="order.pos_register_id">{{ $t('label.register_id') }}: {{ order.pos_register_id }}</p>
+                    <p v-if="order.operator_name">{{ $t('label.operator') }}: {{ order.operator_name }}</p>
+                </div>
+
                 <table class="w-full my-1.5">
                     <tbody>
                         <tr>
@@ -173,6 +186,16 @@
                     </table>
                 </div>
 
+                <!-- [SEC-FALSIFY-2026-06-08 PRINTER-RECEIPT-4-01] NF525 footer (fiscal sequence +
+                     legal footer) via the SSOT helper — parity with ReceiptComponent.vue:257-263. -->
+                <div v-if="nf525FooterLines.length"
+                    class="text-[10px] leading-snug text-heading text-center px-1 py-2 border-b border-dashed border-gray-400">
+                    <p v-for="line in nf525FooterLines" :key="line.key" class="mb-0.5">
+                        <span class="font-semibold">{{ $t('label.' + line.key) }}:</span>
+                        {{ line.value }}
+                    </p>
+                </div>
+
                 <div class="text-center pt-2 pb-4">
                     <p class="text-[11px] leading-[14px] capitalize text-heading">{{ $t('message.thank_you') }}</p>
                 </div>
@@ -195,6 +218,8 @@ import paymentTypeEnum from "../../../enums/modules/paymentTypeEnum";
 import displayModeEnum from "../../../enums/modules/displayModeEnum";
 // [UR1-002 V1.0.2 Wave B1] phoneDisplay SSOT — mirrors App\Support\PhoneDisplay::safe
 import { safePhone } from "../../../helpers/phoneDisplay";
+// [PRINTER-RECEIPT-4-01] NF525 footer SSOT — same helper the POS receipts use.
+import { buildNf525Footer } from "../../../helpers/posReceiptBuilder";
 
 export default {
     name: "OnlineOrderReceiptComponent",
@@ -240,6 +265,10 @@ export default {
         },
         direction: function () {
             return this.$store.getters['frontendLanguage/show'].display_mode === displayModeEnum.RTL ? 'rtl' : 'ltr';
+        },
+        // [PRINTER-RECEIPT-4-01] NF525 footer lines (fiscal sequence + legal footer), SSOT.
+        nf525FooterLines: function () {
+            return buildNf525Footer(this.order);
         },
     },
     methods: {
