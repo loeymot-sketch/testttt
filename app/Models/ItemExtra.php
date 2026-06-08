@@ -83,24 +83,13 @@ class ItemExtra extends Model
 
     /**
      * [W1] Resolve a stored per-option image path to a cache-busted URL.
-     * Absolute URL returned as-is; public-relative path cache-busted; missing -> null.
+     * Delegates to the shared XSS-hardened guard ([W7] CatalogImagePath) — the
+     * resolved value flows unescaped into the frozen pos-wizard.js img sink, so
+     * hostile/malformed paths must collapse to null (fall back to config image).
      */
     private function resolveStoredImage(string $path): ?string
     {
-        $path = trim($path);
-        if ($path === '') {
-            return null;
-        }
-        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
-            return $path;
-        }
-        $relative = ltrim($path, '/');
-        if (file_exists(public_path($relative))) {
-            $hash = @filemtime(public_path($relative)) ?: 0;
-            return asset($relative) . "?v={$hash}";
-        }
-
-        return null;
+        return \App\Support\CatalogImagePath::safeResolve($path);
     }
 
     public function item()

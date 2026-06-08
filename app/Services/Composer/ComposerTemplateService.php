@@ -54,15 +54,27 @@ class ComposerTemplateService
 
     /**
      * Bind each blueprint step's empty source_ref to the item's real constructs.
-     * - item_attribute: matched by attribute name -> source_ref set. If NO
-     *   attribute fits (e.g. a "taille" step on a tacos with no size attribute),
-     *   the step is DEACTIVATED (is_active=false) — it stays in the skeleton (the
-     *   owner can bind+activate it later) but never renders the match-all
-     *   "all variations" bug (matchesAttributeRef('') -> true).
-     * - extra_group: matched by group_label; if unmatched, kept active but
-     *   projects 0 choices -> the kiosk wizard already skips it (no dead page).
+     *
+     * - item_attribute: matched by attribute name. When SEVERAL attributes fit a
+     *   single step's hints (e.g. a "Big" tacos carrying BOTH "Viande 1" and
+     *   "Viande 2"), the step is EXPANDED into one bound step per attribute — the
+     *   first keeps the template key/label/min_select, each extra becomes its own
+     *   step (key "<key>_2", "<key>_3"…, label = the attribute name, and OPTIONAL:
+     *   min_select=0). This fixes the audit P1 where only the first attribute
+     *   rendered and the 2nd meat page was silently dropped. If NO attribute fits,
+     *   the step is DEACTIVATED (is_active=false) — kept in the skeleton for later
+     *   binding but never rendering the match-all "all variations" bug
+     *   (matchesAttributeRef('') -> true).
+     * - extra_group: matched by group_label; if unmatched, the step is
+     *   DEACTIVATED (symmetric with item_attribute) — never left with an empty
+     *   source_ref, which the projection treats as match-all (EVERY extra of the
+     *   item, audit P1) rather than "0 choices".
      * - addon: untouched (addon_role drives resolution, not source_ref).
-     * All steps are preserved (count + positions unchanged).
+     *
+     * Each real attribute binds to at most one step (claimed-tracking), step_keys
+     * stay unique (DB unique(profile_id, step_key)), and positions are renumbered
+     * gap-free so expanded steps slot in right after their origin (the steps()
+     * relation orders by position).
      *
      * @param  array<int, array<string, mixed>>  $steps
      * @return array<int, array<string, mixed>>
@@ -80,47 +92,120 @@ class ComposerTemplateService
             ->unique()
             ->values();
 
-        return array_map(function (array $step) use ($attrNames, $groupLabels): array {
+        $claimedAttrs = [];   // lower-cased attribute names already bound to a step
+        $usedKeys = [];       // step_key uniqueness guard (DB unique(profile_id, step_key))
+        foreach ($steps as $s) {
+            if (isset($s['step_key'])) {
+                $usedKeys[(string) $s['step_key']] = true;
+            }
+        }
+
+        $out = [];
+        foreach ($steps as $step) {
             if ((string) ($step['source_ref'] ?? '') !== '') {
-                return $step; // already bound (custom step) -> leave untouched
+                $out[] = $step; // already bound (custom step) -> leave untouched
+                continue;
             }
 
+            $sourceType = (string) ($step['source_type'] ?? '');
             $hints = self::SOURCE_REF_HINTS[$step['step_key']] ?? [(string) ($step['step_key'] ?? '')];
 
-            if (($step['source_type'] ?? '') === 'item_attribute') {
-                $match = $this->firstMatch($attrNames, $hints);
-                if ($match === null) {
+            if ($sourceType === 'item_attribute') {
+                $matches = $this->allMatches($attrNames, $hints)
+                    ->reject(fn ($name) => isset($claimedAttrs[mb_strtolower((string) $name)]))
+                    ->values();
+
+                if ($matches->isEmpty()) {
                     $step['is_active'] = false; // deactivate unbindable attribute step
+                    $out[] = $step;
+                    continue;
+                }
+
+                $first = (string) $matches->first();
+                $claimedAttrs[mb_strtolower($first)] = true;
+                $step['source_ref'] = $first;
+                $out[] = $step;
+
+                // Each additional matching attribute -> its OWN expanded step.
+                foreach ($matches->slice(1) as $extraName) {
+                    $extraName = (string) $extraName;
+                    $claimedAttrs[mb_strtolower($extraName)] = true;
+                    $clone = $step;
+                    $clone['step_key'] = $this->uniqueStepKey((string) $step['step_key'], $usedKeys);
+                    $clone['label'] = $extraName;   // e.g. "Viande 2"
+                    $clone['source_ref'] = $extraName;
+                    $clone['min_select'] = 0;       // 2nd+ matching attribute is optional
+                    $out[] = $clone;
+                }
+            } elseif ($sourceType === 'extra_group') {
+                $match = $this->firstMatch($groupLabels, $hints);
+                if ($match === null) {
+                    $step['is_active'] = false; // never leave empty -> projection match-all
                 } else {
                     $step['source_ref'] = $match;
                 }
-            } elseif (($step['source_type'] ?? '') === 'extra_group') {
-                $match = $this->firstMatch($groupLabels, $hints);
-                if ($match !== null) {
-                    $step['source_ref'] = $match;
-                }
+                $out[] = $step;
+            } else {
+                $out[] = $step; // addon / other -> untouched
             }
+        }
 
-            return $step;
-        }, $steps);
+        // Renumber positions gap-free so expanded steps keep deterministic order.
+        $position = 1;
+        foreach ($out as &$ordered) {
+            $ordered['position'] = $position++;
+        }
+        unset($ordered);
+
+        return $out;
     }
 
     /**
-     * @param  \Illuminate\Support\Collection<int, string>  $candidates
+     * First candidate whose lower-cased value contains any hint, or null.
+     *
+     * @param  \Illuminate\Support\Collection<int, string>|iterable<int, string>  $candidates
      * @param  array<int, string>  $hints
      */
     private function firstMatch($candidates, array $hints): ?string
     {
-        foreach ($candidates as $candidate) {
+        $match = $this->allMatches($candidates, $hints)->first();
+
+        return $match !== null ? (string) $match : null;
+    }
+
+    /**
+     * All candidates (in order) whose lower-cased value contains any hint.
+     * Drives multi-attribute step expansion.
+     *
+     * @param  \Illuminate\Support\Collection<int, string>|iterable<int, string>  $candidates
+     * @param  array<int, string>  $hints
+     * @return \Illuminate\Support\Collection<int, string>
+     */
+    private function allMatches($candidates, array $hints): \Illuminate\Support\Collection
+    {
+        return collect($candidates)->filter(function ($candidate) use ($hints): bool {
             $lower = mb_strtolower((string) $candidate);
             foreach ($hints as $hint) {
                 if ($hint !== '' && str_contains($lower, mb_strtolower($hint))) {
-                    return (string) $candidate;
+                    return true;
                 }
             }
-        }
 
-        return null;
+            return false;
+        })->values();
+    }
+
+    private function uniqueStepKey(string $base, array &$used): string
+    {
+        $i = 2;
+        do {
+            $candidate = $base . '_' . $i;
+            $i++;
+        } while (isset($used[$candidate]));
+
+        $used[$candidate] = true;
+
+        return $candidate;
     }
 
     /**

@@ -39,8 +39,15 @@ class ItemExtraRequest extends FormRequest
             'visible_on.*'=> ['string', Rule::in(['kiosk', 'pos', 'web'])],
             'group_label' => ['nullable', 'string', 'max:50'],
             // [W1] Per-option catalog metadata (non-fiscal): description + stored image.
+            // [W7 security] image_path is rendered unescaped into a frozen pos-wizard.js
+            // img sink — reject the attribute-breakout / traversal charset at write-time
+            // (first layer; CatalogImagePath::safeResolve is the authoritative output guard).
             'description' => ['nullable', 'string', 'max:5000'],
-            'image_path'  => ['nullable', 'string', 'max:2048'],
+            'image_path'  => [
+                'nullable', 'string', 'max:2048',
+                'regex:/^[A-Za-z0-9._\/:?=&%~+-]+$/',  // no quotes, < > space backslash ( )
+                'not_regex:/\.\./',                     // no path traversal
+            ],
         ];
     }
 }
