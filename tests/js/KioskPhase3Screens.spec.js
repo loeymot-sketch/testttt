@@ -217,4 +217,34 @@ describe('KioskErrorPaymentRefusedComponent', () => {
         expect(wrapper.emitted('pay-at-counter')).toBeTruthy();
         expect(wrapper.emitted('cancel-order')).toBeTruthy();
     });
+
+    // [SEC-FALSIFY-2026-06-08 KIOSK-5] The frozen parent does NOT bind @retry /
+    // @pay-at-counter, so the emits alone are inert (borne stuck). These buttons
+    // MUST self-navigate (mirror of the FP-01 sibling fallback). The cancel button
+    // already self-navigates to idle.
+    it('pay-at-counter self-navigates to the cash-instruction screen (not inert)', async () => {
+        const push = vi.fn().mockResolvedValue();
+        const wrapper = mount(KioskErrorPaymentRefusedComponent, {
+            ...mountOpts,
+            global: { ...mountOpts.global, mocks: { $router: { push } } },
+        });
+        await wrapper.find('[data-testid="kiosk-error-payment-cta-counter"]').trigger('click');
+        expect(push).toHaveBeenCalledWith({ name: 'kiosk.cash-instruction' });
+    });
+
+    it('retry self-navigates back to the payment screen (not inert)', async () => {
+        vi.useFakeTimers();
+        try {
+            const push = vi.fn().mockResolvedValue();
+            const wrapper = mount(KioskErrorPaymentRefusedComponent, {
+                ...mountOpts,
+                global: { ...mountOpts.global, mocks: { $router: { push } } },
+            });
+            await wrapper.find('[data-testid="kiosk-error-payment-cta-retry"]').trigger('click');
+            vi.advanceTimersByTime(600);
+            expect(push).toHaveBeenCalledWith({ name: 'kiosk.payment' });
+        } finally {
+            vi.useRealTimers();
+        }
+    });
 });

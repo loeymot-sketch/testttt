@@ -419,6 +419,15 @@ export default {
       } catch (_) { /* never throw from chime */ }
     },
     _hydrateFromRows(rows) {
+      // [SEC-FALSIFY-2026-06-08 OSS-7] First-hydrate guard. On the very first load
+      // preparedItems is empty, so EVERY already-ready order would look like a fresh
+      // PREPARING->PREPARED transition and mass green-flash/pulse the whole board on
+      // each wall boot/refresh. Seed the "seen" set from the initial snapshot and
+      // animate only transitions observed AFTER it (mirrors the _didInitialLoad
+      // spinner gate, but self-contained so it never depends on list()'s flag timing).
+      const isFirstHydrate = !this._firstHydrateDone;
+      this._firstHydrateDone = true;
+
       const prevPreparedIds = new Set(this.preparedItems.map(i => i.id));
       this.preparingItems = rows.filter(i => i.status === orderStatusEnum.PREPARING);
       const newPrepared = rows.filter(i => i.status === orderStatusEnum.PREPARED);
@@ -427,7 +436,7 @@ export default {
       // [AUDIT-P1] Skip IDs already marked via Echo to prevent double chime/flash.
       const echoMarked = this._echoMarkedReady || new Set();
       newPrepared.forEach(item => {
-        if (!prevPreparedIds.has(item.id) && !echoMarked.has(item.id)) {
+        if (!isFirstHydrate && !prevPreparedIds.has(item.id) && !echoMarked.has(item.id)) {
           this._markNewReady(item.id);
         }
       });

@@ -78,11 +78,24 @@ export default {
             this.retrying = true;
             this.logEvent('error_payment_retry');
             this.$emit('retry');
-            setTimeout(() => { this.retrying = false; }, 500);
+            // [FP-01/KIOSK-5] Self-contained fallback. The frozen parent
+            // (KioskAppComponent) does NOT bind @retry, so the emit alone is inert
+            // and the borne stays stuck on the refusal screen. Navigate back to the
+            // payment screen so the customer can re-attempt (requireCart passes — the
+            // cart is intact after a decline). Mirrors the sibling error screens'
+            // self-contained $router fallback (cancelOrder already does this).
+            setTimeout(() => {
+                this.retrying = false;
+                this.$router?.push({ name: 'kiosk.payment' }).catch(() => {});
+            }, 500);
         },
         payCounter() {
             this.logEvent('error_payment_switch_cash');
             this.$emit('pay-at-counter');
+            // [FP-01/KIOSK-5] @pay-at-counter is not bound by the frozen parent →
+            // route to the cash/counter instruction screen ourselves so the button
+            // actually switches the customer to paying at the counter.
+            this.$router?.push({ name: 'kiosk.cash-instruction' }).catch(() => {});
         },
         cancelOrder() {
             this.logEvent('error_payment_cancel');

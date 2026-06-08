@@ -39,11 +39,17 @@ export const kitchenDisplaySystemOrder = {
                 axios.post(`admin/kds-order/change-status/${payload.id}`, payload, {
                     headers: buildIdempotencyHeaders(payload),
                 }).then((res) => {
-                    context.dispatch("lists", payload).then().catch();
+                    // [SEC-FALSIFY-2026-06-08 KDS-6-02] Refresh with a CLEAN board
+                    // payload, not the mutation payload — reusing `payload`
+                    // (id/status/expected_status) made the board GET status-filtered
+                    // (admin/kds-order?status=7), transiently collapsing the board to
+                    // only the new status until the debounced backstop landed.
+                    // `{ paginate: 0 }` matches the component's own clean load (search default).
+                    context.dispatch("lists", { paginate: 0 }).then().catch();
                     resolve(res);
                 }).catch((err) => {
                     if (err.response && err.response.status === 409) {
-                        context.dispatch("lists", payload).catch(() => {});
+                        context.dispatch("lists", { paginate: 0 }).catch(() => {});
                         context.dispatch("orderItems").catch(() => {});
                     }
                     reject(err);

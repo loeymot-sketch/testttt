@@ -228,9 +228,14 @@ export default {
         // Backend feed still returns PREPARED orders until OSS/POS flips them
         // to DELIVERED, so this list naturally compacts as orders are picked up.
         recentlyServed() {
+            // [SEC-FALSIFY-2026-06-08 KDS-6-01] Exclude recall-active ids — a recalled
+            // PREPARED order is RE-INJECTED as a live card by activeOrders() (line 219),
+            // so without this exclusion it would ALSO show as a "served" pill for the
+            // full 60s window (same order rendered twice). Symmetric with activeOrders().
+            const recallIds = new Set(Array.isArray(this.recallActiveIds) ? this.recallActiveIds : []);
             const prepared = this.visibleOrders.filter((o) => {
                 const s = parseInt(o?.status ?? o?.rawStatus, 10);
-                return s === ORDER_STATUS.PREPARED;
+                return s === ORDER_STATUS.PREPARED && !recallIds.has(o?.id);
             });
             prepared.sort((a, b) => {
                 const ta = Date.parse(a?.updated_at || '') || 0;

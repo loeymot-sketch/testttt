@@ -306,8 +306,18 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
               _this.retrying = true;
               _this.logEvent('error_payment_retry');
               _this.$emit('retry');
+              // [FP-01/KIOSK-5] Self-contained fallback. The frozen parent
+              // (KioskAppComponent) does NOT bind @retry, so the emit alone is inert
+              // and the borne stays stuck on the refusal screen. Navigate back to the
+              // payment screen so the customer can re-attempt (requireCart passes — the
+              // cart is intact after a decline). Mirrors the sibling error screens'
+              // self-contained $router fallback (cancelOrder already does this).
               setTimeout(function () {
+                var _this$$router;
                 _this.retrying = false;
+                (_this$$router = _this.$router) === null || _this$$router === void 0 || _this$$router.push({
+                  name: 'kiosk.payment'
+                })["catch"](function () {});
               }, 500);
             case 1:
               return _context.a(2);
@@ -316,14 +326,21 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
       }))();
     },
     payCounter: function payCounter() {
+      var _this$$router2;
       this.logEvent('error_payment_switch_cash');
       this.$emit('pay-at-counter');
+      // [FP-01/KIOSK-5] @pay-at-counter is not bound by the frozen parent →
+      // route to the cash/counter instruction screen ourselves so the button
+      // actually switches the customer to paying at the counter.
+      (_this$$router2 = this.$router) === null || _this$$router2 === void 0 || _this$$router2.push({
+        name: 'kiosk.cash-instruction'
+      })["catch"](function () {});
     },
     cancelOrder: function cancelOrder() {
-      var _this$$router;
+      var _this$$router3;
       this.logEvent('error_payment_cancel');
       this.$emit('cancel-order');
-      (_this$$router = this.$router) === null || _this$$router === void 0 || _this$$router.push({
+      (_this$$router3 = this.$router) === null || _this$$router3 === void 0 || _this$$router3.push({
         name: 'kiosk.idle'
       })["catch"](function () {});
     },

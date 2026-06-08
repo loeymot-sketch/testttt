@@ -1075,10 +1075,15 @@ var _SHORTCUTS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
     // Backend feed still returns PREPARED orders until OSS/POS flips them
     // to DELIVERED, so this list naturally compacts as orders are picked up.
     recentlyServed: function recentlyServed() {
+      // [SEC-FALSIFY-2026-06-08 KDS-6-01] Exclude recall-active ids — a recalled
+      // PREPARED order is RE-INJECTED as a live card by activeOrders() (line 219),
+      // so without this exclusion it would ALSO show as a "served" pill for the
+      // full 60s window (same order rendered twice). Symmetric with activeOrders().
+      var recallIds = new Set(Array.isArray(this.recallActiveIds) ? this.recallActiveIds : []);
       var prepared = this.visibleOrders.filter(function (o) {
         var _o$status2;
         var s = parseInt((_o$status2 = o === null || o === void 0 ? void 0 : o.status) !== null && _o$status2 !== void 0 ? _o$status2 : o === null || o === void 0 ? void 0 : o.rawStatus, 10);
-        return s === _helpers_kdsState_js__WEBPACK_IMPORTED_MODULE_4__.ORDER_STATUS.PREPARED;
+        return s === _helpers_kdsState_js__WEBPACK_IMPORTED_MODULE_4__.ORDER_STATUS.PREPARED && !recallIds.has(o === null || o === void 0 ? void 0 : o.id);
       });
       prepared.sort(function (a, b) {
         var ta = Date.parse((a === null || a === void 0 ? void 0 : a.updated_at) || '') || 0;
