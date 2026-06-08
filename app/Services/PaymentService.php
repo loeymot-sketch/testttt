@@ -172,8 +172,20 @@ class PaymentService
             // recordCashBackMovement is self-shielded (try/catch + Log::warning)
             // so its failure CANNOT abort the outer tx; the cash drawer
             // movement is intentionally best-effort.
+            //
+            // [SEC-FALSIFY-2026-06-08 POS-1-01] Record the OUT for ONLY the
+            // cash-settled portion of the refunded order. A method-blind
+            // full-total OUT phantom-debited the drawer for a CARD/TICKET_RESTAURANT/
+            // online sale that put NO cash in the till (confirmCounterPayment's IN
+            // hook fires only for CASH), understating expected cash at close →
+            // false overage variance. This mirrors the IN side and the post-Z
+            // sister path RefundWithCounterEntryService:267-305 (cash tranches only).
+            // CASH orders are unchanged (cashPortion == total).
             if ($order instanceof Order) {
-                $this->recordCashBackMovement($order, (float) $order->total);
+                $cashPortion = $this->cashSettledPortion($order, $priorPayment);
+                if ($cashPortion > 0) {
+                    $this->recordCashBackMovement($order, $cashPortion);
+                }
             }
 
             // [REFUND-EVENT-WIRE] Fire RefundCreated so listeners release stock /
@@ -663,6 +675,44 @@ class PaymentService
                 'error'    => $e->getMessage(),
             ]);
         }
+    }
+
+    /**
+     * [SEC-FALSIFY-2026-06-08 POS-1-01] The cash-settled portion of an order — the
+     * only amount that may legitimately leave the drawer on a refund/cashback.
+     *
+     * Mirrors the cash-IN side (confirmCounterPayment records cash IN only for
+     * CASH) and the post-Z sister path (RefundWithCounterEntryService refunds only
+     * the CASH OrderPayment tranches). Returning order->total method-blind would
+     * phantom-debit the till for a CARD/TICKET_RESTAURANT/online sale.
+     */
+    private function cashSettledPortion(Order $order, ?Transaction $priorPayment): float
+    {
+        // Split-tender (POS direct) — sum ONLY the CASH tranches.
+        $payments = $order->relationLoaded('payments')
+            ? $order->payments
+            : $order->payments()->get();
+        if ($payments->isNotEmpty()) {
+            return (float) $payments
+                ->filter(fn ($p) => (int) ($p->mode ?? 0) === PosPaymentMethod::CASH)
+                ->sum(fn ($p) => (float) ($p->amount ?? 0));
+        }
+
+        // Single-tender counter-collect — pos_payment_method carries the mode
+        // (confirmCounterPayment:326 sets it).
+        $mode = (int) ($order->pos_payment_method ?? 0);
+        if ($mode === PosPaymentMethod::CASH) {
+            return (float) $order->total;
+        }
+        if ($mode !== 0) {
+            // CARD / TICKET_RESTAURANT / MOBILE / COUNTER_DEFERRED — no cash entered the till.
+            return 0.0;
+        }
+
+        // Legacy / online order with no pos_payment_method — fall back to the prior
+        // payment transaction's method label ('cash' / 'counter_cash').
+        $label = strtolower((string) ($priorPayment?->payment_method ?? ''));
+        return str_contains($label, 'cash') ? (float) $order->total : 0.0;
     }
 
     public function cancelCounterPayment(Order $order, ?string $reason = null): Order
