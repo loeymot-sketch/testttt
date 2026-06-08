@@ -10942,16 +10942,21 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
     }
   },
   methods: {
-    t: function t(key, fallback) {
-      return typeof this.$t === 'function' ? this.$t(key) : fallback;
+    t: function t(key, fallback, params) {
+      if (typeof this.$t === 'function') {
+        return params ? this.$t(key, params) : this.$t(key);
+      }
+      return fallback;
     },
     clone: function clone(value) {
-      var _ref, _value$min_select, _ref2, _value$max_select;
+      var _ref, _value$min_select, _ref2, _value$max_select, _value$addon_role;
       var minSelect = (_ref = (_value$min_select = value === null || value === void 0 ? void 0 : value.min_select) !== null && _value$min_select !== void 0 ? _value$min_select : value === null || value === void 0 ? void 0 : value.min) !== null && _ref !== void 0 ? _ref : 0;
       var maxSelect = (_ref2 = (_value$max_select = value === null || value === void 0 ? void 0 : value.max_select) !== null && _value$max_select !== void 0 ? _value$max_select : value === null || value === void 0 ? void 0 : value.max) !== null && _ref2 !== void 0 ? _ref2 : Math.max(1, Number(minSelect));
       return _objectSpread(_objectSpread({}, value), {}, {
         min_select: Number(minSelect),
         max_select: Number(maxSelect),
+        allow_repeat: Boolean(value === null || value === void 0 ? void 0 : value.allow_repeat),
+        addon_role: (_value$addon_role = value === null || value === void 0 ? void 0 : value.addon_role) !== null && _value$addon_role !== void 0 ? _value$addon_role : null,
         visible_on: Array.isArray(value === null || value === void 0 ? void 0 : value.visible_on) ? _toConsumableArray(value.visible_on) : ['pos', 'kiosk']
       });
     },
@@ -41952,98 +41957,151 @@ var _hoisted_17 = {
   "data-testid": "composer-step-source-empty"
 };
 var _hoisted_18 = {
-  "class": "grid grid-cols-1 gap-4 lg:grid-cols-2"
+  key: 0,
+  "class": "block"
 };
 var _hoisted_19 = {
-  "class": "rounded-lg border border-[#d9dfdc] bg-[#fbfcfb] p-4"
+  "class": "mb-1 flex items-center gap-2 text-sm font-semibold text-[#405149]"
 };
 var _hoisted_20 = {
-  "class": "flex items-center justify-between gap-3 text-sm font-semibold text-[#405149]"
-};
-var _hoisted_21 = {
-  "class": "flex items-center gap-2"
-};
-var _hoisted_22 = {
   "class": "group relative inline-flex"
 };
-var _hoisted_23 = ["aria-label"];
-var _hoisted_24 = {
+var _hoisted_21 = ["aria-label"];
+var _hoisted_22 = {
   "class": "pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 w-64 -translate-x-1/2 rounded bg-neutral-900 p-2 text-xs font-normal text-white opacity-0 shadow-lg transition group-hover:opacity-100"
+};
+var _hoisted_23 = {
+  value: null
+};
+var _hoisted_24 = {
+  value: "drink"
 };
 var _hoisted_25 = {
-  "class": "rounded-lg border border-[#d9dfdc] bg-[#fbfcfb] p-4"
+  value: "side"
 };
 var _hoisted_26 = {
-  "class": "flex items-center justify-between gap-3 text-sm font-semibold text-[#405149]"
+  value: "dessert"
 };
 var _hoisted_27 = {
-  "class": "flex items-center gap-2"
+  value: "menu_component"
 };
 var _hoisted_28 = {
-  "class": "group relative inline-flex"
+  value: "upsell"
 };
-var _hoisted_29 = ["aria-label"];
+var _hoisted_29 = {
+  "class": "grid grid-cols-1 gap-4 lg:grid-cols-2"
+};
 var _hoisted_30 = {
-  "class": "pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 w-64 -translate-x-1/2 rounded bg-neutral-900 p-2 text-xs font-normal text-white opacity-0 shadow-lg transition group-hover:opacity-100"
+  "class": "rounded-lg border border-[#d9dfdc] bg-[#fbfcfb] p-4"
 };
 var _hoisted_31 = {
+  "class": "flex items-center justify-between gap-3 text-sm font-semibold text-[#405149]"
+};
+var _hoisted_32 = {
+  "class": "flex items-center gap-2"
+};
+var _hoisted_33 = {
+  "class": "group relative inline-flex"
+};
+var _hoisted_34 = ["aria-label"];
+var _hoisted_35 = {
+  "class": "pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 w-64 -translate-x-1/2 rounded bg-neutral-900 p-2 text-xs font-normal text-white opacity-0 shadow-lg transition group-hover:opacity-100"
+};
+var _hoisted_36 = {
+  "class": "rounded-lg border border-[#d9dfdc] bg-[#fbfcfb] p-4"
+};
+var _hoisted_37 = {
+  "class": "flex items-center justify-between gap-3 text-sm font-semibold text-[#405149]"
+};
+var _hoisted_38 = {
+  "class": "flex items-center gap-2"
+};
+var _hoisted_39 = {
+  "class": "group relative inline-flex"
+};
+var _hoisted_40 = ["aria-label"];
+var _hoisted_41 = {
+  "class": "pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 w-64 -translate-x-1/2 rounded bg-neutral-900 p-2 text-xs font-normal text-white opacity-0 shadow-lg transition group-hover:opacity-100"
+};
+var _hoisted_42 = {
   "class": "text-xs text-neutral-600",
   "data-testid": "composer-step-min-max-summary"
 };
-var _hoisted_32 = {
+var _hoisted_43 = {
   key: 0
 };
-var _hoisted_33 = {
+var _hoisted_44 = {
   key: 1
 };
-var _hoisted_34 = {
+var _hoisted_45 = {
   key: 2
 };
-var _hoisted_35 = {
-  "class": "rounded-lg border border-[#d9dfdc] bg-[#fbfcfb] p-4"
-};
-var _hoisted_36 = {
-  "class": "px-1 text-sm font-semibold text-[#405149]"
-};
-var _hoisted_37 = {
-  "class": "group relative ml-2 inline-flex"
-};
-var _hoisted_38 = ["aria-label"];
-var _hoisted_39 = {
-  "class": "pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 w-64 -translate-x-1/2 rounded bg-neutral-900 p-2 text-xs font-normal text-white opacity-0 shadow-lg transition group-hover:opacity-100"
-};
-var _hoisted_40 = {
-  "class": "mt-3 flex flex-wrap gap-3"
-};
-var _hoisted_41 = {
-  "class": "inline-flex items-center gap-2 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-[#405149]"
-};
-var _hoisted_42 = ["checked"];
-var _hoisted_43 = {
-  "class": "inline-flex items-center gap-2 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-[#405149]"
-};
-var _hoisted_44 = ["checked"];
-var _hoisted_45 = {
-  "class": "flex items-center justify-between rounded-lg border border-[#d9dfdc] bg-[#fbfcfb] p-4"
-};
 var _hoisted_46 = {
-  "class": "flex items-center gap-2 text-sm font-semibold text-[#405149]"
+  key: 3,
+  "class": "mt-1 block text-[#405149]",
+  "data-testid": "composer-step-repeat-summary"
 };
 var _hoisted_47 = {
+  "class": "flex items-center justify-between rounded-lg border border-[#d9dfdc] bg-[#fbfcfb] p-4"
+};
+var _hoisted_48 = {
+  "class": "flex items-center gap-2 text-sm font-semibold text-[#405149]"
+};
+var _hoisted_49 = {
   "class": "group relative inline-flex"
 };
-var _hoisted_48 = ["aria-label"];
-var _hoisted_49 = {
+var _hoisted_50 = ["aria-label"];
+var _hoisted_51 = {
   "class": "pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 w-64 -translate-x-1/2 rounded bg-neutral-900 p-2 text-xs font-normal text-white opacity-0 shadow-lg transition group-hover:opacity-100"
 };
-var _hoisted_50 = {
+var _hoisted_52 = {
+  "class": "block text-xs text-[#66756e]"
+};
+var _hoisted_53 = {
+  "class": "rounded-lg border border-[#d9dfdc] bg-[#fbfcfb] p-4"
+};
+var _hoisted_54 = {
+  "class": "px-1 text-sm font-semibold text-[#405149]"
+};
+var _hoisted_55 = {
+  "class": "group relative ml-2 inline-flex"
+};
+var _hoisted_56 = ["aria-label"];
+var _hoisted_57 = {
+  "class": "pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 w-64 -translate-x-1/2 rounded bg-neutral-900 p-2 text-xs font-normal text-white opacity-0 shadow-lg transition group-hover:opacity-100"
+};
+var _hoisted_58 = {
+  "class": "mt-3 flex flex-wrap gap-3"
+};
+var _hoisted_59 = {
+  "class": "inline-flex items-center gap-2 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-[#405149]"
+};
+var _hoisted_60 = ["checked"];
+var _hoisted_61 = {
+  "class": "inline-flex items-center gap-2 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-[#405149]"
+};
+var _hoisted_62 = ["checked"];
+var _hoisted_63 = {
+  "class": "flex items-center justify-between rounded-lg border border-[#d9dfdc] bg-[#fbfcfb] p-4"
+};
+var _hoisted_64 = {
+  "class": "flex items-center gap-2 text-sm font-semibold text-[#405149]"
+};
+var _hoisted_65 = {
+  "class": "group relative inline-flex"
+};
+var _hoisted_66 = ["aria-label"];
+var _hoisted_67 = {
+  "class": "pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 w-64 -translate-x-1/2 rounded bg-neutral-900 p-2 text-xs font-normal text-white opacity-0 shadow-lg transition group-hover:opacity-100"
+};
+var _hoisted_68 = {
   "class": "block text-xs text-[#66756e]"
 };
 function render(_ctx, _cache, $props, $setup, $data, $options) {
   return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("form", {
     "class": "space-y-5",
     "data-testid": "composer-step-form-panel",
-    onSubmit: _cache[14] || (_cache[14] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function () {}, ["prevent"]))
+    onSubmit: _cache[18] || (_cache[18] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function () {}, ["prevent"]))
   }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_1, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_2, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.t('label.composer.step_label', 'Nom de la page')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
     "onUpdate:modelValue": _cache[0] || (_cache[0] = function ($event) {
       return $data.draft.label = $event;
@@ -42057,7 +42115,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     type: "button",
     "class": "text-neutral-400 hover:text-neutral-700",
     "aria-label": $options.t('label.composer.source_type_help', 'Détermine la base : attributs, extras ou add-ons catalogue.')
-  }, _toConsumableArray(_cache[15] || (_cache[15] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("svg", {
+  }, _toConsumableArray(_cache[19] || (_cache[19] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("svg", {
     "class": "h-4 w-4",
     fill: "none",
     viewBox: "0 0 24 24",
@@ -42086,7 +42144,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     type: "button",
     "class": "text-neutral-400 hover:text-neutral-700",
     "aria-label": $options.t('label.composer.source_ref_help', 'Par défaut toutes les options de la source sont proposées.')
-  }, _toConsumableArray(_cache[16] || (_cache[16] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("svg", {
+  }, _toConsumableArray(_cache[20] || (_cache[20] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("svg", {
     "class": "h-4 w-4",
     fill: "none",
     viewBox: "0 0 24 24",
@@ -42111,97 +42169,34 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       key: "".concat($data.draft.source_type, "-").concat(source.id),
       value: String(source.id)
     }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(source.name), 9 /* TEXT, PROPS */, _hoisted_16);
-  }), 128 /* KEYED_FRAGMENT */))], 544 /* NEED_HYDRATION, NEED_PATCH */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelSelect, $data.draft.source_ref]]), !$options.optionsForType.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_17, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.t('message.composer.no_sources', 'Aucune source disponible pour ce type.')), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_18, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_19, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_20, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_21, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.t('label.composer.min_select', 'Minimum')) + " ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_22, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+  }), 128 /* KEYED_FRAGMENT */))], 544 /* NEED_HYDRATION, NEED_PATCH */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelSelect, $data.draft.source_ref]]), !$options.optionsForType.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_17, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.t('message.composer.no_sources', 'Aucune source disponible pour ce type.')), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])]), $data.draft.source_type === 'addon' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("label", _hoisted_18, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_19, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.t('label.composer.addon_role', "Rôle de l'add-on")) + " ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_20, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "text-neutral-400 hover:text-neutral-700",
+    "aria-label": $options.t('label.composer.addon_role_help', 'Catégorise cette page d’add-ons (boisson, accompagnement, dessert…).')
+  }, _toConsumableArray(_cache[21] || (_cache[21] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("svg", {
+    "class": "h-4 w-4",
+    fill: "none",
+    viewBox: "0 0 24 24",
+    stroke: "currentColor",
+    "aria-hidden": "true"
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("path", {
+    "stroke-linecap": "round",
+    "stroke-linejoin": "round",
+    "stroke-width": "2",
+    d: "M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+  })], -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_21), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_22, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.t('label.composer.addon_role_help', 'Catégorise cette page d’add-ons (boisson, accompagnement, dessert…).')), 1 /* TEXT */)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("select", {
+    "onUpdate:modelValue": _cache[6] || (_cache[6] = function ($event) {
+      return $data.draft.addon_role = $event;
+    }),
+    "class": "db-field-control",
+    "data-testid": "composer-step-addon-role",
+    onChange: _cache[7] || (_cache[7] = function () {
+      return $options.commit && $options.commit.apply($options, arguments);
+    })
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("option", _hoisted_23, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.t('label.composer.addon_role_none', 'Aucun rôle')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("option", _hoisted_24, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.t('label.composer.addon_role_drink', 'Boisson')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("option", _hoisted_25, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.t('label.composer.addon_role_side', 'Accompagnement')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("option", _hoisted_26, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.t('label.composer.addon_role_dessert', 'Dessert')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("option", _hoisted_27, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.t('label.composer.addon_role_menu_component', 'Composant menu')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("option", _hoisted_28, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.t('label.composer.addon_role_upsell', 'Vente additionnelle')), 1 /* TEXT */)], 544 /* NEED_HYDRATION, NEED_PATCH */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelSelect, $data.draft.addon_role]])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_29, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_30, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_31, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_32, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.t('label.composer.min_select', 'Minimum')) + " ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_33, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     type: "button",
     "class": "text-neutral-400 hover:text-neutral-700",
     "aria-label": $options.t('label.composer.min_select_help', 'Combien d’articles le client doit minimum choisir.')
-  }, _toConsumableArray(_cache[17] || (_cache[17] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("svg", {
-    "class": "h-4 w-4",
-    fill: "none",
-    viewBox: "0 0 24 24",
-    stroke: "currentColor",
-    "aria-hidden": "true"
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("path", {
-    "stroke-linecap": "round",
-    "stroke-linejoin": "round",
-    "stroke-width": "2",
-    d: "M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-  })], -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_23), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_24, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.t('label.composer.min_select_help', 'Combien d’articles le client doit minimum choisir.')), 1 /* TEXT */)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("strong", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.draft.min_select), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
-    "onUpdate:modelValue": _cache[6] || (_cache[6] = function ($event) {
-      return $data.draft.min_select = $event;
-    }),
-    type: "range",
-    min: "0",
-    max: "10",
-    "class": "mt-3 w-full",
-    "data-testid": "composer-step-min-range",
-    onInput: _cache[7] || (_cache[7] = function () {
-      return $options.onMinChange && $options.onMinChange.apply($options, arguments);
-    })
-  }, null, 544 /* NEED_HYDRATION, NEED_PATCH */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.draft.min_select, void 0, {
-    number: true
-  }]])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_25, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_26, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_27, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.t('label.composer.max_select', 'Maximum')) + " ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_28, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
-    type: "button",
-    "class": "text-neutral-400 hover:text-neutral-700",
-    "aria-label": $options.t('label.composer.max_select_help', 'Combien d’articles le client peut maximum choisir.')
-  }, _toConsumableArray(_cache[18] || (_cache[18] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("svg", {
-    "class": "h-4 w-4",
-    fill: "none",
-    viewBox: "0 0 24 24",
-    stroke: "currentColor",
-    "aria-hidden": "true"
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("path", {
-    "stroke-linecap": "round",
-    "stroke-linejoin": "round",
-    "stroke-width": "2",
-    d: "M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-  })], -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_29), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_30, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.t('label.composer.max_select_help', 'Combien d’articles le client peut maximum choisir.')), 1 /* TEXT */)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("strong", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.draft.max_select), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
-    "onUpdate:modelValue": _cache[8] || (_cache[8] = function ($event) {
-      return $data.draft.max_select = $event;
-    }),
-    type: "range",
-    min: "0",
-    max: "10",
-    "class": "mt-3 w-full",
-    "data-testid": "composer-step-max-range",
-    onInput: _cache[9] || (_cache[9] = function () {
-      return $options.onMaxChange && $options.onMaxChange.apply($options, arguments);
-    })
-  }, null, 544 /* NEED_HYDRATION, NEED_PATCH */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.draft.max_select, void 0, {
-    number: true
-  }]])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_31, [Number($data.draft.min_select) === 0 && Number($data.draft.max_select) === 1 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_32, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.t('label.composer.min_max_summary_optional_one', '= Optionnel, le client peut choisir 1 article maximum.')), 1 /* TEXT */)) : Number($data.draft.min_select) === Number($data.draft.max_select) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_33, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.t('label.composer.min_max_summary_required_n', '= Obligatoire, le client doit choisir exactement {n} articles.').replace('{n}', $data.draft.min_select)), 1 /* TEXT */)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_34, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.t('label.composer.min_max_summary_range', '= Le client peut choisir entre {min} et {max} articles.').replace('{min}', $data.draft.min_select).replace('{max}', $data.draft.max_select)), 1 /* TEXT */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("fieldset", _hoisted_35, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("legend", _hoisted_36, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.t('label.composer.visible_on', 'Visible sur')) + " ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_37, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
-    type: "button",
-    "class": "text-neutral-400 hover:text-neutral-700",
-    "aria-label": $options.t('label.composer.visible_on_help', 'Sur quels canaux cette étape apparaît.')
-  }, _toConsumableArray(_cache[19] || (_cache[19] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("svg", {
-    "class": "h-4 w-4",
-    fill: "none",
-    viewBox: "0 0 24 24",
-    stroke: "currentColor",
-    "aria-hidden": "true"
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("path", {
-    "stroke-linecap": "round",
-    "stroke-linejoin": "round",
-    "stroke-width": "2",
-    d: "M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-  })], -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_38), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_39, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.t('label.composer.visible_on_help', 'Sur quels canaux cette étape apparaît.')), 1 /* TEXT */)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_40, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_41, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
-    type: "checkbox",
-    checked: $options.isVisible('pos'),
-    "data-testid": "composer-step-visible-pos",
-    onChange: _cache[10] || (_cache[10] = function ($event) {
-      return $options.toggleSurface('pos');
-    })
-  }, null, 40 /* PROPS, NEED_HYDRATION */, _hoisted_42), _cache[20] || (_cache[20] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" POS ", -1 /* CACHED */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_43, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
-    type: "checkbox",
-    checked: $options.isVisible('kiosk'),
-    "data-testid": "composer-step-visible-kiosk",
-    onChange: _cache[11] || (_cache[11] = function ($event) {
-      return $options.toggleSurface('kiosk');
-    })
-  }, null, 40 /* PROPS, NEED_HYDRATION */, _hoisted_44), _cache[21] || (_cache[21] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" Kiosk ", -1 /* CACHED */))])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_45, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_46, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.t('label.composer.is_active', 'Active')) + " ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_47, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
-    type: "button",
-    "class": "text-neutral-400 hover:text-neutral-700",
-    "aria-label": $options.t('label.composer.is_active_help', 'Désactiver une étape la cache aux clients sans la supprimer.')
   }, _toConsumableArray(_cache[22] || (_cache[22] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("svg", {
     "class": "h-4 w-4",
     fill: "none",
@@ -42213,14 +42208,131 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "stroke-linejoin": "round",
     "stroke-width": "2",
     d: "M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-  })], -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_48), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_49, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.t('label.composer.is_active_help', 'Désactiver une étape la cache aux clients sans la supprimer.')), 1 /* TEXT */)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_50, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.draft.is_active ? $options.t('label.active', 'Actif') : $options.t('label.inactive', 'Inactif')), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
+  })], -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_34), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_35, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.t('label.composer.min_select_help', 'Combien d’articles le client doit minimum choisir.')), 1 /* TEXT */)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("strong", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.draft.min_select), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
+    "onUpdate:modelValue": _cache[8] || (_cache[8] = function ($event) {
+      return $data.draft.min_select = $event;
+    }),
+    type: "range",
+    min: "0",
+    max: "10",
+    "class": "mt-3 w-full",
+    "data-testid": "composer-step-min-range",
+    onInput: _cache[9] || (_cache[9] = function () {
+      return $options.onMinChange && $options.onMinChange.apply($options, arguments);
+    })
+  }, null, 544 /* NEED_HYDRATION, NEED_PATCH */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.draft.min_select, void 0, {
+    number: true
+  }]])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_36, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_37, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_38, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.t('label.composer.max_select', 'Maximum')) + " ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_39, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "text-neutral-400 hover:text-neutral-700",
+    "aria-label": $options.t('label.composer.max_select_help', 'Combien d’articles le client peut maximum choisir.')
+  }, _toConsumableArray(_cache[23] || (_cache[23] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("svg", {
+    "class": "h-4 w-4",
+    fill: "none",
+    viewBox: "0 0 24 24",
+    stroke: "currentColor",
+    "aria-hidden": "true"
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("path", {
+    "stroke-linecap": "round",
+    "stroke-linejoin": "round",
+    "stroke-width": "2",
+    d: "M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+  })], -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_40), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_41, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.t('label.composer.max_select_help', 'Combien d’articles le client peut maximum choisir.')), 1 /* TEXT */)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("strong", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.draft.max_select), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
+    "onUpdate:modelValue": _cache[10] || (_cache[10] = function ($event) {
+      return $data.draft.max_select = $event;
+    }),
+    type: "range",
+    min: "0",
+    max: "10",
+    "class": "mt-3 w-full",
+    "data-testid": "composer-step-max-range",
+    onInput: _cache[11] || (_cache[11] = function () {
+      return $options.onMaxChange && $options.onMaxChange.apply($options, arguments);
+    })
+  }, null, 544 /* NEED_HYDRATION, NEED_PATCH */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.draft.max_select, void 0, {
+    number: true
+  }]])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_42, [Number($data.draft.min_select) === 0 && Number($data.draft.max_select) === 1 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_43, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.t('label.composer.min_max_summary_optional_one', '= Optionnel, le client peut choisir 1 article maximum.')), 1 /* TEXT */)) : Number($data.draft.min_select) === Number($data.draft.max_select) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_44, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.t('label.composer.min_max_summary_required_n', '= Obligatoire, le client doit choisir exactement {n} articles.', {
+    n: Number($data.draft.min_select)
+  })), 1 /* TEXT */)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_45, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.t('label.composer.min_max_summary_range', '= Le client peut choisir entre {min} et {max} articles.', {
+    min: Number($data.draft.min_select),
+    max: Number($data.draft.max_select)
+  })), 1 /* TEXT */)), $data.draft.allow_repeat ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_46, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.t('label.composer.allow_repeat_summary', 'Le même choix peut être pris en plusieurs exemplaires.')), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_47, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_48, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.t('label.composer.allow_repeat', 'Quantité par choix')) + " ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_49, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "text-neutral-400 hover:text-neutral-700",
+    "aria-label": $options.t('label.composer.allow_repeat_help', 'Le client peut prendre plusieurs fois le même choix.')
+  }, _toConsumableArray(_cache[24] || (_cache[24] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("svg", {
+    "class": "h-4 w-4",
+    fill: "none",
+    viewBox: "0 0 24 24",
+    stroke: "currentColor",
+    "aria-hidden": "true"
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("path", {
+    "stroke-linecap": "round",
+    "stroke-linejoin": "round",
+    "stroke-width": "2",
+    d: "M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+  })], -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_50), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_51, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.t('label.composer.allow_repeat_help', 'Le client peut prendre plusieurs fois le même choix.')), 1 /* TEXT */)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_52, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.draft.allow_repeat ? $options.t('label.composer.allow_repeat_state_on', 'Activé — le même choix peut être répété') : $options.t('label.composer.allow_repeat_state_off', 'Désactivé — chaque choix une seule fois')), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
     "onUpdate:modelValue": _cache[12] || (_cache[12] = function ($event) {
+      return $data.draft.allow_repeat = $event;
+    }),
+    type: "checkbox",
+    "class": "h-5 w-5",
+    "data-testid": "composer-step-allow-repeat",
+    onChange: _cache[13] || (_cache[13] = function () {
+      return $options.commit && $options.commit.apply($options, arguments);
+    })
+  }, null, 544 /* NEED_HYDRATION, NEED_PATCH */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelCheckbox, $data.draft.allow_repeat]])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("fieldset", _hoisted_53, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("legend", _hoisted_54, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.t('label.composer.visible_on', 'Visible sur')) + " ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_55, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "text-neutral-400 hover:text-neutral-700",
+    "aria-label": $options.t('label.composer.visible_on_help', 'Sur quels canaux cette étape apparaît.')
+  }, _toConsumableArray(_cache[25] || (_cache[25] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("svg", {
+    "class": "h-4 w-4",
+    fill: "none",
+    viewBox: "0 0 24 24",
+    stroke: "currentColor",
+    "aria-hidden": "true"
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("path", {
+    "stroke-linecap": "round",
+    "stroke-linejoin": "round",
+    "stroke-width": "2",
+    d: "M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+  })], -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_56), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_57, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.t('label.composer.visible_on_help', 'Sur quels canaux cette étape apparaît.')), 1 /* TEXT */)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_58, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_59, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
+    type: "checkbox",
+    checked: $options.isVisible('pos'),
+    "data-testid": "composer-step-visible-pos",
+    onChange: _cache[14] || (_cache[14] = function ($event) {
+      return $options.toggleSurface('pos');
+    })
+  }, null, 40 /* PROPS, NEED_HYDRATION */, _hoisted_60), _cache[26] || (_cache[26] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" POS ", -1 /* CACHED */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_61, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
+    type: "checkbox",
+    checked: $options.isVisible('kiosk'),
+    "data-testid": "composer-step-visible-kiosk",
+    onChange: _cache[15] || (_cache[15] = function ($event) {
+      return $options.toggleSurface('kiosk');
+    })
+  }, null, 40 /* PROPS, NEED_HYDRATION */, _hoisted_62), _cache[27] || (_cache[27] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" Kiosk ", -1 /* CACHED */))])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_63, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_64, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.t('label.composer.is_active', 'Active')) + " ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_65, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "text-neutral-400 hover:text-neutral-700",
+    "aria-label": $options.t('label.composer.is_active_help', 'Désactiver une étape la cache aux clients sans la supprimer.')
+  }, _toConsumableArray(_cache[28] || (_cache[28] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("svg", {
+    "class": "h-4 w-4",
+    fill: "none",
+    viewBox: "0 0 24 24",
+    stroke: "currentColor",
+    "aria-hidden": "true"
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("path", {
+    "stroke-linecap": "round",
+    "stroke-linejoin": "round",
+    "stroke-width": "2",
+    d: "M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+  })], -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_66), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_67, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.t('label.composer.is_active_help', 'Désactiver une étape la cache aux clients sans la supprimer.')), 1 /* TEXT */)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_68, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.draft.is_active ? $options.t('label.active', 'Actif') : $options.t('label.inactive', 'Inactif')), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
+    "onUpdate:modelValue": _cache[16] || (_cache[16] = function ($event) {
       return $data.draft.is_active = $event;
     }),
     type: "checkbox",
     "class": "h-5 w-5",
     "data-testid": "composer-step-active-toggle",
-    onChange: _cache[13] || (_cache[13] = function () {
+    onChange: _cache[17] || (_cache[17] = function () {
       return $options.commit && $options.commit.apply($options, arguments);
     })
   }, null, 544 /* NEED_HYDRATION, NEED_PATCH */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelCheckbox, $data.draft.is_active]])])], 32 /* NEED_HYDRATION */);

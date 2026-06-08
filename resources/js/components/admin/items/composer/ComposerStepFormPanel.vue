@@ -78,6 +78,39 @@
             </label>
         </div>
 
+        <label v-if="draft.source_type === 'addon'" class="block">
+            <span class="mb-1 flex items-center gap-2 text-sm font-semibold text-[#405149]">
+                {{ t('label.composer.addon_role', "Rôle de l'add-on") }}
+                <span class="group relative inline-flex">
+                    <button
+                        type="button"
+                        class="text-neutral-400 hover:text-neutral-700"
+                        :aria-label="t('label.composer.addon_role_help', 'Catégorise cette page d’add-ons (boisson, accompagnement, dessert…).')"
+                    >
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </button>
+                    <span class="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 w-64 -translate-x-1/2 rounded bg-neutral-900 p-2 text-xs font-normal text-white opacity-0 shadow-lg transition group-hover:opacity-100">
+                        {{ t('label.composer.addon_role_help', 'Catégorise cette page d’add-ons (boisson, accompagnement, dessert…).') }}
+                    </span>
+                </span>
+            </span>
+            <select
+                v-model="draft.addon_role"
+                class="db-field-control"
+                data-testid="composer-step-addon-role"
+                @change="commit"
+            >
+                <option :value="null">{{ t('label.composer.addon_role_none', 'Aucun rôle') }}</option>
+                <option value="drink">{{ t('label.composer.addon_role_drink', 'Boisson') }}</option>
+                <option value="side">{{ t('label.composer.addon_role_side', 'Accompagnement') }}</option>
+                <option value="dessert">{{ t('label.composer.addon_role_dessert', 'Dessert') }}</option>
+                <option value="menu_component">{{ t('label.composer.addon_role_menu_component', 'Composant menu') }}</option>
+                <option value="upsell">{{ t('label.composer.addon_role_upsell', 'Vente additionnelle') }}</option>
+            </select>
+        </label>
+
         <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <label class="rounded-lg border border-[#d9dfdc] bg-[#fbfcfb] p-4">
                 <span class="flex items-center justify-between gap-3 text-sm font-semibold text-[#405149]">
@@ -148,12 +181,47 @@
                 {{ t('label.composer.min_max_summary_optional_one', '= Optionnel, le client peut choisir 1 article maximum.') }}
             </span>
             <span v-else-if="Number(draft.min_select) === Number(draft.max_select)">
-                {{ t('label.composer.min_max_summary_required_n', '= Obligatoire, le client doit choisir exactement {n} articles.').replace('{n}', draft.min_select) }}
+                {{ t('label.composer.min_max_summary_required_n', '= Obligatoire, le client doit choisir exactement {n} articles.', { n: Number(draft.min_select) }) }}
             </span>
             <span v-else>
-                {{ t('label.composer.min_max_summary_range', '= Le client peut choisir entre {min} et {max} articles.').replace('{min}', draft.min_select).replace('{max}', draft.max_select) }}
+                {{ t('label.composer.min_max_summary_range', '= Le client peut choisir entre {min} et {max} articles.', { min: Number(draft.min_select), max: Number(draft.max_select) }) }}
+            </span>
+            <span v-if="draft.allow_repeat" class="mt-1 block text-[#405149]" data-testid="composer-step-repeat-summary">
+                {{ t('label.composer.allow_repeat_summary', 'Le même choix peut être pris en plusieurs exemplaires.') }}
             </span>
         </div>
+
+        <label class="flex items-center justify-between rounded-lg border border-[#d9dfdc] bg-[#fbfcfb] p-4">
+            <span>
+                <span class="flex items-center gap-2 text-sm font-semibold text-[#405149]">
+                    {{ t('label.composer.allow_repeat', 'Quantité par choix') }}
+                    <span class="group relative inline-flex">
+                        <button
+                            type="button"
+                            class="text-neutral-400 hover:text-neutral-700"
+                            :aria-label="t('label.composer.allow_repeat_help', 'Le client peut prendre plusieurs fois le même choix.')"
+                        >
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </button>
+                        <span class="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 w-64 -translate-x-1/2 rounded bg-neutral-900 p-2 text-xs font-normal text-white opacity-0 shadow-lg transition group-hover:opacity-100">
+                            {{ t('label.composer.allow_repeat_help', 'Le client peut prendre plusieurs fois le même choix.') }}
+                        </span>
+                    </span>
+                </span>
+                <span class="block text-xs text-[#66756e]">
+                    {{ draft.allow_repeat ? t('label.composer.allow_repeat_state_on', 'Activé — le même choix peut être répété') : t('label.composer.allow_repeat_state_off', 'Désactivé — chaque choix une seule fois') }}
+                </span>
+            </span>
+            <input
+                v-model="draft.allow_repeat"
+                type="checkbox"
+                class="h-5 w-5"
+                data-testid="composer-step-allow-repeat"
+                @change="commit"
+            />
+        </label>
 
         <fieldset class="rounded-lg border border-[#d9dfdc] bg-[#fbfcfb] p-4">
             <legend class="px-1 text-sm font-semibold text-[#405149]">
@@ -271,8 +339,11 @@ export default {
         },
     },
     methods: {
-        t(key, fallback) {
-            return typeof this.$t === 'function' ? this.$t(key) : fallback;
+        t(key, fallback, params) {
+            if (typeof this.$t === 'function') {
+                return params ? this.$t(key, params) : this.$t(key);
+            }
+            return fallback;
         },
         clone(value) {
             const minSelect = value?.min_select ?? value?.min ?? 0;
@@ -282,6 +353,8 @@ export default {
                 ...value,
                 min_select: Number(minSelect),
                 max_select: Number(maxSelect),
+                allow_repeat: Boolean(value?.allow_repeat),
+                addon_role: value?.addon_role ?? null,
                 visible_on: Array.isArray(value?.visible_on) ? [...value.visible_on] : ['pos', 'kiosk'],
             };
         },
