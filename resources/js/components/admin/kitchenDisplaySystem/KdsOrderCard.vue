@@ -331,10 +331,23 @@ export default {
             };
         },
         elapsedFormatted() {
-            const s = this.elapsedSeconds;
-            const m = Math.floor(s / 60);
-            const r = s % 60;
-            return `${String(m).padStart(2, '0')}:${String(r).padStart(2, '0')}`;
+            // [KDS-UIUX-2026-06-08] Roll the active waiting timer up past 59:59 so an order
+            // that has waited > 1 h no longer renders an unreadable, column-clipping raw
+            // "mm:ss" like "15592:35". Output stays <= 5 chars to fit the age column:
+            //   < 60 min → MM:SS  (seconds kept — the kitchen watches fresh tickets tick)
+            //   < 24 h   → HhMM   (e.g. "1h05" .. "23h59", French hour notation)
+            //   >= 24 h  → Dj     (e.g. "10j" — pathological/stale only)
+            const s = Math.max(0, this.elapsedSeconds);
+            const totalMin = Math.floor(s / 60);
+            if (totalMin < 60) {
+                const r = s % 60;
+                return `${String(totalMin).padStart(2, '0')}:${String(r).padStart(2, '0')}`;
+            }
+            const h = Math.floor(totalMin / 60);
+            if (h < 24) {
+                return `${h}h${String(totalMin % 60).padStart(2, '0')}`;
+            }
+            return `${Math.floor(h / 24)}j`;
         },
         ariaLabel() {
             const m = Math.floor(this.elapsedSeconds / 60);

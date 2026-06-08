@@ -31,6 +31,13 @@
     (Dine-in / Online / Takeaway / Kiosk) stays — instant rollback by URL
     param removal.
   -->
+  <!-- [KDS-UIUX-2026-06-08] New-order chime hoisted to root so it mounts under BOTH the V2
+       board (production default) AND the legacy layout. It previously lived only inside the
+       legacy <template v-else> toolbar, so $refs.kdsNewOrderAudio was undefined whenever
+       useV2Layout was true and playKdsNewOrderSound() silently no-opped — the kitchen never
+       heard new orders on the production board. soundEnabled defaults true (data:1156), so the
+       chime now actually fires on the V2 board. -->
+  <audio ref="kdsNewOrderAudio" preload="auto" class="hidden" src="/sounds/kds-new-order.mp3" />
   <KdsV2Grid
     v-if="useV2Layout"
     :orders="orders"
@@ -231,7 +238,9 @@
                 class="w-28 accent-primary" />
             </label>
           </div>
-          <audio ref="kdsNewOrderAudio" preload="auto" class="hidden" src="/sounds/kds-new-order.mp3" />
+          <!-- [KDS-UIUX-2026-06-08] audio element hoisted to root (see top of template) so the
+               new-order chime works on the V2 board; this legacy-only copy removed to avoid a
+               duplicate ref. -->
         </div>
         <div class="db-card px-3 py-2.5 mb-4">
           <div class="swiper kitchen-swiper !flex flex-col gap-y-2 xl:flex-row items-start justify-between">
