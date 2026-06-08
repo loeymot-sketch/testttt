@@ -1480,6 +1480,7 @@
             "apply_template_server_error": "Erreur serveur. Réessaye dans un instant.",
             "apply_template_unknown_error": "Échec inattendu lors de l'application du template.",
             "category_inheritance_scope": "Tous les produits de cette catégorie hériteront automatiquement de ce wizard.",
+            "category_publish_warning": "Ce wizard de catégorie s'appliquera automatiquement aux produits de cette catégorie qui n'ont PAS leur propre wizard ({count} produit(s) au total). Les produits ayant déjà un wizard personnalisé conservent le leur (priorité au wizard produit). Publier ?",
             "template_picker_hint": "Selectionnez un point de depart, puis personnalisez les pages.",
             "step_deleted": "Page supprimee.",
             "delete_confirm": "Cette page sera retiree du wizard de ce produit.",

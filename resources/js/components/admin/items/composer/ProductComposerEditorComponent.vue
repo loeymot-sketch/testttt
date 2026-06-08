@@ -543,11 +543,15 @@ export default {
         }
     },
     methods: {
-        t(key, fallback) {
+        t(key, fallback, params) {
             if (typeof this.$t !== 'function') {
                 return fallback;
             }
-            const translated = this.$t(key);
+            // [GOAL_WIZARD_DYNAMIC W7] Forward named params to vue-i18n so
+            // interpolated keys (e.g. category_publish_warning {count}) resolve.
+            // Keep the safe missing-key fallback: when $t echoes the key back,
+            // the JS fallback (already string-interpolated) is used instead.
+            const translated = params ? this.$t(key, params) : this.$t(key);
             return translated === key ? fallback : translated;
         },
         currentRoute() {
@@ -952,8 +956,18 @@ export default {
             }
         },
         categoryPublishWarning() {
+            // [GOAL_WIZARD_DYNAMIC W7] Item-owned wizards WIN over category-owned
+            // (canonical precedence — see MenuProjectionComposerProfileTest
+            // "item-owned wins over category-owned"). Publishing a category wizard
+            // does NOT replace per-item customizations; it only fills items that
+            // have no own wizard. The old copy ("va remplacer les wizards
+            // personnalisés") was factually wrong and alarming.
             const count = this.item?.product_count || this.item?.products_count || this.item?.items_count || 'N';
-            return `Cette opération va remplacer les wizards personnalisés de ${count} produits dans cette catégorie. Continuer ?`;
+            return this.t(
+                'message.composer.category_publish_warning',
+                `Ce wizard de catégorie s'appliquera automatiquement aux produits de cette catégorie qui n'ont PAS leur propre wizard (${count} produit(s) au total). Les produits ayant déjà un wizard personnalisé conservent le leur (priorité au wizard produit). Publier ?`,
+                { count }
+            );
         },
     },
 };
