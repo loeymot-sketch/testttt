@@ -142,24 +142,38 @@ class ItemResource extends JsonResource
 
     private function composerProfilePayload(string $surface, ?int $branchId): ?array
     {
-        $query = ItemWizardProfile::query()
-            ->with(['steps' => fn ($query) => $query->where('is_active', true)->orderBy('position')])
+        $withSteps = fn ($query) => $query->where('is_active', true)->orderBy('position');
+        $applyBranchScope = function ($query) use ($branchId): void {
+            if ($branchId !== null) {
+                $query->where(function ($scope) use ($branchId): void {
+                    $scope->where('branch_id_scope', $branchId)
+                        ->orWhereNull('branch_id_scope');
+                })->orderByRaw('CASE WHEN branch_id_scope = ? THEN 0 ELSE 1 END', [$branchId]);
+            } else {
+                $query->whereNull('branch_id_scope');
+            }
+        };
+
+        // Item-owned published profile (precedence).
+        $itemQuery = ItemWizardProfile::query()
+            ->with(['steps' => $withSteps])
             ->where('item_id', $this->id)
             ->where('is_published', true);
+        $applyBranchScope($itemQuery);
+        $profile = $itemQuery->latest('version')->latest('id')->first();
 
-        if ($branchId !== null) {
-            $query->where(function ($scope) use ($branchId): void {
-                $scope->where('branch_id_scope', $branchId)
-                    ->orWhereNull('branch_id_scope');
-            })->orderByRaw('CASE WHEN branch_id_scope = ? THEN 0 ELSE 1 END', [$branchId]);
-        } else {
-            $query->whereNull('branch_id_scope');
+        // [GOAL_WIZARD_DYNAMIC category-inheritance] Fall back to the category's published
+        // profile when the item has none of its own — the builder's "Tous les produits de
+        // cette catégorie hériteront automatiquement de ce wizard."
+        if (! $profile && $this->item_category_id) {
+            $categoryQuery = ItemWizardProfile::query()
+                ->with(['steps' => $withSteps])
+                ->whereNull('item_id')
+                ->where('item_category_id', $this->item_category_id)
+                ->where('is_published', true);
+            $applyBranchScope($categoryQuery);
+            $profile = $categoryQuery->latest('version')->latest('id')->first();
         }
-
-        $profile = $query
-            ->latest('version')
-            ->latest('id')
-            ->first();
 
         if (! $profile) {
             return null;

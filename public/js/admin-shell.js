@@ -12009,42 +12009,35 @@ var SOURCE_TYPES = ['item_attribute', 'extra_group', 'addon'];
             case 0:
               _this18.publishing = true;
               _context10.p = 1;
-              if (!(_this18.isCategoryComposer && !_this18.confirmCategoryPublish())) {
+              if ((_this18$profile = _this18.profile) !== null && _this18$profile !== void 0 && _this18$profile.id) {
                 _context10.n = 2;
                 break;
               }
-              _this18.publishConfirmOpen = false;
-              return _context10.a(2);
-            case 2:
-              if ((_this18$profile = _this18.profile) !== null && _this18$profile !== void 0 && _this18$profile.id) {
-                _context10.n = 3;
-                break;
-              }
-              _context10.n = 3;
+              _context10.n = 2;
               return _this18.saveDraft();
-            case 3:
-              _context10.n = 4;
+            case 2:
+              _context10.n = 3;
               return axios__WEBPACK_IMPORTED_MODULE_0__["default"].post("admin/composer/profiles/".concat(_this18.profile.id, "/publish"));
-            case 4:
+            case 3:
               response = _context10.v;
               _this18.hydrateProfile(((_response$data7 = response.data) === null || _response$data7 === void 0 ? void 0 : _response$data7.data) || null);
               _this18.publishConfirmOpen = false;
               _services_alertService__WEBPACK_IMPORTED_MODULE_1__["default"].success(_this18.t('message.composer.published', 'Wizard publie.'));
-              _context10.n = 6;
+              _context10.n = 5;
               break;
-            case 5:
-              _context10.p = 5;
+            case 4:
+              _context10.p = 4;
               _t8 = _context10.v;
               _services_alertService__WEBPACK_IMPORTED_MODULE_1__["default"].error((_t8 === null || _t8 === void 0 || (_error$response7 = _t8.response) === null || _error$response7 === void 0 || (_error$response7 = _error$response7.data) === null || _error$response7 === void 0 ? void 0 : _error$response7.message) || _this18.t('message.composer.publish_failed', 'Publication impossible.'));
               throw _t8;
-            case 6:
-              _context10.p = 6;
+            case 5:
+              _context10.p = 5;
               _this18.publishing = false;
-              return _context10.f(6);
-            case 7:
+              return _context10.f(5);
+            case 6:
               return _context10.a(2);
           }
-        }, _callee10, null, [[1, 5, 6, 7]]);
+        }, _callee10, null, [[1, 4, 5, 6]]);
       }))();
     },
     unpublish: function unpublish() {
@@ -12120,12 +12113,6 @@ var SOURCE_TYPES = ['item_attribute', 'extra_group', 'addon'];
       var _this$item9, _this$item0, _this$item1;
       var count = ((_this$item9 = this.item) === null || _this$item9 === void 0 ? void 0 : _this$item9.product_count) || ((_this$item0 = this.item) === null || _this$item0 === void 0 ? void 0 : _this$item0.products_count) || ((_this$item1 = this.item) === null || _this$item1 === void 0 ? void 0 : _this$item1.items_count) || 'N';
       return "Cette op\xE9ration va remplacer les wizards personnalis\xE9s de ".concat(count, " produits dans cette cat\xE9gorie. Continuer ?");
-    },
-    confirmCategoryPublish: function confirmCategoryPublish() {
-      if (typeof window === 'undefined' || typeof window.confirm !== 'function') {
-        return true;
-      }
-      return window.confirm(this.categoryPublishWarning());
     }
   }
 });

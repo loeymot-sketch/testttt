@@ -896,10 +896,11 @@ export default {
         async publish() {
             this.publishing = true;
             try {
-                if (this.isCategoryComposer && !this.confirmCategoryPublish()) {
-                    this.publishConfirmOpen = false;
-                    return;
-                }
+                // [GOAL_WIZARD_DYNAMIC W7] The custom publish-confirm modal (with the
+                // category warning body) is the single source of confirmation. A second
+                // native window.confirm here was redundant AND silently blocked category
+                // publish whenever dialogs are auto-dismissed/suppressed (headless tests,
+                // kiosk-mode/locked-down browsers).
                 if (!this.profile?.id) {
                     await this.saveDraft();
                 }
@@ -953,12 +954,6 @@ export default {
         categoryPublishWarning() {
             const count = this.item?.product_count || this.item?.products_count || this.item?.items_count || 'N';
             return `Cette opération va remplacer les wizards personnalisés de ${count} produits dans cette catégorie. Continuer ?`;
-        },
-        confirmCategoryPublish() {
-            if (typeof window === 'undefined' || typeof window.confirm !== 'function') {
-                return true;
-            }
-            return window.confirm(this.categoryPublishWarning());
         },
     },
 };

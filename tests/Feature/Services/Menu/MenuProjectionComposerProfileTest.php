@@ -187,6 +187,92 @@ class MenuProjectionComposerProfileTest extends TestCase
         $this->assertSame('stock_rupture', $addonChoice['unavailable_reason']);
     }
 
+    // [GOAL_WIZARD_DYNAMIC W7 / category-inheritance] The category builder UI promises
+    // "Tous les produits de cette catégorie hériteront automatiquement de ce wizard."
+    // The render resolution must honour that: an item with no OWN published profile must
+    // inherit its category's published profile, projected against the item's own sources.
+    public function test_category_owned_profile_is_inherited_by_category_item_without_own_profile(): void
+    {
+        $ctx = $this->makeComposerFixture();
+        $catProfile = $this->publishCategoryProfile($ctx['category'], [
+            ['step_key' => 'cat_viandes', 'label' => 'Viandes', 'source_type' => 'item_attribute', 'source_ref' => (string) $ctx['attribute']->id, 'visible_on' => ['pos', 'kiosk']],
+        ]);
+
+        $kioskProfile = $this->projectedComposerProfile('kiosk', $ctx['item']->id);
+
+        $this->assertSame((int) $catProfile->id, $kioskProfile['id']);
+        $this->assertSame(['cat_viandes'], collect($kioskProfile['steps'])->pluck('step_key')->all());
+        // Choices resolve against the ITEM's own variations (inheritance, not copy).
+        $catViandes = collect($kioskProfile['steps'])->firstWhere('step_key', 'cat_viandes');
+        $this->assertNotEmpty($catViandes['choices']);
+        $this->assertContains($ctx['sharedVariation']->id, collect($catViandes['choices'])->pluck('id')->all());
+    }
+
+    public function test_kiosk_menu_service_inherits_category_owned_profile_for_item_without_own_profile(): void
+    {
+        // The borne actually fetches KioskMenuService (MenuController), which has its OWN
+        // composer resolution — prove inheritance on the path the owner will really use.
+        $ctx = $this->makeComposerFixture();
+        $catProfile = $this->publishCategoryProfile($ctx['category'], [
+            ['step_key' => 'cat_viandes', 'label' => 'Viandes', 'source_type' => 'item_attribute', 'source_ref' => (string) $ctx['attribute']->id, 'visible_on' => ['kiosk']],
+        ]);
+
+        $legacy = app(KioskMenuService::class)->build($this->branch);
+        $legacyItem = collect($legacy['items'])->firstWhere('id', $ctx['item']->id);
+
+        $this->assertIsArray($legacyItem['composer_profile'], 'category-owned profile must be inherited by the kiosk menu (borne path)');
+        $this->assertSame((int) $catProfile->id, $legacyItem['composer_profile']['id']);
+        $this->assertSame(['cat_viandes'], collect($legacyItem['composer_profile']['steps'])->pluck('step_key')->all());
+    }
+
+    public function test_item_owned_profile_wins_over_category_owned_profile(): void
+    {
+        $ctx = $this->makeComposerFixture();
+        $this->publishCategoryProfile($ctx['category'], [
+            ['step_key' => 'cat_step', 'label' => 'Cat', 'source_type' => 'extra_group', 'source_ref' => 'Sauces', 'visible_on' => ['kiosk']],
+        ]);
+        $itemProfile = $this->publishProfile($ctx['item'], [
+            ['step_key' => 'item_step', 'label' => 'Item', 'source_type' => 'item_attribute', 'source_ref' => (string) $ctx['attribute']->id, 'visible_on' => ['kiosk']],
+        ]);
+
+        $kioskProfile = $this->projectedComposerProfile('kiosk', $ctx['item']->id);
+
+        $this->assertSame((int) $itemProfile->id, $kioskProfile['id']);
+        $this->assertSame(['item_step'], collect($kioskProfile['steps'])->pluck('step_key')->all());
+    }
+
+    private function publishCategoryProfile(ItemCategory $category, array $steps, ?int $branchIdScope = null, string $template = 'tacos'): ItemWizardProfile
+    {
+        $profile = ItemWizardProfile::query()->create([
+            'item_id' => null,
+            'item_category_id' => $category->id,
+            'template' => $template,
+            'version' => 1,
+            'is_published' => true,
+            'published_at' => now(),
+            'branch_id_scope' => $branchIdScope,
+        ]);
+
+        foreach ($steps as $position => $step) {
+            $profile->steps()->create([
+                'step_key' => $step['step_key'],
+                'label' => $step['label'],
+                'source_type' => $step['source_type'],
+                'source_ref' => $step['source_ref'],
+                'min_select' => 0,
+                'max_select' => 2,
+                'allow_repeat' => false,
+                'visible_on' => $step['visible_on'],
+                'stockable_choices' => (bool) ($step['stockable_choices'] ?? false),
+                'position' => $position,
+                'is_active' => true,
+                'addon_role' => $step['addon_role'] ?? null,
+            ]);
+        }
+
+        return $profile->fresh('steps');
+    }
+
     private function makeComposerFixture(): array
     {
         $category = ItemCategory::factory()->create([

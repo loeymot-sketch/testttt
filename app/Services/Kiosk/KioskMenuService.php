@@ -430,19 +430,53 @@ final class KioskMenuService
             return collect();
         }
 
-        return ItemWizardProfile::query()
-            ->with(['steps' => fn ($query) => $query->where('is_active', true)->orderBy('position')])
+        $branchScope = function ($query) use ($branchId): void {
+            $query->whereNull('branch_id_scope')
+                ->when($branchId > 0, fn ($q) => $q->orWhere('branch_id_scope', $branchId));
+        };
+        $withSteps = fn ($query) => $query->where('is_active', true)->orderBy('position');
+        $pickBest = fn (Collection $profiles): ItemWizardProfile => $profiles
+            ->sort(fn (ItemWizardProfile $a, ItemWizardProfile $b): int => $this->compareComposerProfiles($a, $b))
+            ->first();
+
+        // Item-owned published profiles — take precedence over any category default.
+        $itemOwned = ItemWizardProfile::query()
+            ->with(['steps' => $withSteps])
             ->whereIn('item_id', $itemIds)
             ->where('is_published', true)
-            ->where(function ($query) use ($branchId): void {
-                $query->whereNull('branch_id_scope')
-                    ->when($branchId > 0, fn ($q) => $q->orWhere('branch_id_scope', $branchId));
-            })
+            ->where($branchScope)
             ->get()
             ->groupBy('item_id')
-            ->map(fn (Collection $profiles): ItemWizardProfile => $profiles
-                ->sort(fn (ItemWizardProfile $a, ItemWizardProfile $b): int => $this->compareComposerProfiles($a, $b))
-                ->first());
+            ->map($pickBest);
+
+        // [GOAL_WIZARD_DYNAMIC category-inheritance] Category items with no item-owned
+        // profile inherit their category's published profile (the builder's
+        // "Tous les produits de cette catégorie hériteront automatiquement de ce wizard").
+        // Projected against each item's own sources downstream. Batched (no N+1).
+        $categoryIds = $items->pluck('item_category_id')
+            ->filter()
+            ->map(fn ($id): int => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+        $categoryOwned = collect();
+        if (! empty($categoryIds)) {
+            $categoryOwned = ItemWizardProfile::query()
+                ->with(['steps' => $withSteps])
+                ->whereIn('item_category_id', $categoryIds)
+                ->where('is_published', true)
+                ->where($branchScope)
+                ->get()
+                ->groupBy('item_category_id')
+                ->map($pickBest);
+        }
+
+        return $items->mapWithKeys(function (Item $item) use ($itemOwned, $categoryOwned): array {
+            $resolved = $itemOwned->get($item->id)
+                ?? $categoryOwned->get((int) $item->item_category_id);
+
+            return $resolved ? [(int) $item->id => $resolved] : [];
+        });
     }
 
     private function compareComposerProfiles(ItemWizardProfile $a, ItemWizardProfile $b): int

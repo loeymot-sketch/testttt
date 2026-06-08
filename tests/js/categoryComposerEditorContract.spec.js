@@ -159,6 +159,22 @@ describe('ProductComposerEditorComponent category contract', () => {
         expect(axios.post).toHaveBeenCalledWith('admin/composer/categories/42/apply-template', { template: 'tacos' });
     });
 
+    it('publishes a category wizard via the custom confirm even when native window.confirm is suppressed', async () => {
+        // [GOAL_WIZARD_DYNAMIC W7] Category publish must not depend on a native window.confirm
+        // (auto-dismissed in headless + suppressed in kiosk/locked-down browsers => silent
+        // no-publish). The rich custom modal (composer-publish-confirm) is the confirmation.
+        const realConfirm = window.confirm;
+        window.confirm = vi.fn(() => false);
+        try {
+            const wrapper = await mountEditor({ entityType: 'category', entityId: 42 });
+            await wrapper.vm.publish();
+            await flushPromises();
+            expect(axios.post).toHaveBeenCalledWith('admin/composer/profiles/77/publish');
+        } finally {
+            window.confirm = realConfirm;
+        }
+    });
+
     it('keeps item composer endpoints unchanged', async () => {
         await mountEditor({ itemId: 7 });
 
