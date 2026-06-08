@@ -218,6 +218,22 @@ class ComposerProfileController extends AdminController
 
         abort_if($items->isEmpty(), 422, 'No products to attach the personal page to.');
 
+        // Collision guard: a label that matches an EXISTING catalog group_label (NOT already owned by
+        // a personal-page step on this profile) would merge into / overwrite that group via
+        // updateOrCreate. Re-editing one's OWN page (the step already exists) stays idempotent; a fresh
+        // label that clashes with a real catalog group (e.g. "Garnitures", "Sauces") is rejected.
+        $ownsLabelStep = $profile->steps()
+            ->where('source_type', 'extra_group')
+            ->where('source_ref', $label)
+            ->exists();
+        if (! $ownsLabelStep) {
+            $collides = ItemExtra::query()
+                ->whereIn('item_id', $items->pluck('id'))
+                ->where('group_label', $label)
+                ->exists();
+            abort_if($collides, 422, "Le libellé « {$label} » est déjà utilisé par un groupe d'options existant — choisissez un autre nom.");
+        }
+
         $visibleOn = $data['visible_on'] ?? ['pos', 'kiosk'];
         $stepService = app(ComposerStepService::class);
 

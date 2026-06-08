@@ -190,4 +190,37 @@ class ComposerPersonalPageTest extends TestCase
         $this->assertEquals(1.5, (float) ItemExtra::query()->where('item_id', $items->first()->id)
             ->where('name', 'Algérienne')->value('price'), 're-submit must update the option price');
     }
+
+    /**
+     * [heal advisor P2] A fresh personal-page label that matches an EXISTING catalog group_label
+     * (one NOT owned by a personal-page step on this profile) would merge into / overwrite that
+     * real group's prices via updateOrCreate. Reject it so the builder can't silently rewrite an
+     * existing catalog extra group. (Re-editing one's OWN page stays idempotent — covered above.)
+     */
+    public function test_rejects_label_colliding_with_existing_catalog_group(): void
+    {
+        [, $items, $profile] = $this->categoryProfile(2);
+
+        // A pre-existing catalog extra group "Sauces" on one category item — NOT created via a
+        // personal-page step, so the profile does not "own" the label.
+        ItemExtra::create([
+            'item_id' => $items->first()->id,
+            'name' => 'Algérienne',
+            'group_label' => 'Sauces',
+            'price' => 0.80,
+            'status' => Status::ACTIVE,
+            'visible_on' => ['pos', 'kiosk'],
+        ]);
+
+        $this->actingAs($this->admin, 'sanctum')->postJson(
+            "/api/admin/composer/profiles/{$profile->id}/personal-page",
+            ['label' => 'Sauces', 'options' => [['name' => 'Blanche', 'price' => '0']]]
+        )->assertStatus(422);
+
+        // The pre-existing group is untouched: original price kept, no rogue "Blanche" option added.
+        $this->assertEquals(0.80, (float) ItemExtra::query()->where('item_id', $items->first()->id)
+            ->where('name', 'Algérienne')->value('price'), 'existing catalog price must be preserved');
+        $this->assertSame(0, ItemExtra::query()->where('group_label', 'Sauces')->where('name', 'Blanche')->count(),
+            'collision must not inject the personal-page option into the existing group');
+    }
 }
