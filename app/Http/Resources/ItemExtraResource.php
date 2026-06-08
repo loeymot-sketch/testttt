@@ -27,6 +27,8 @@ class ItemExtraResource extends JsonResource
             'status'        => $this->status,
             'visible_on'    => $this->visible_on,   // null = all surfaces
             'group_label'   => $this->group_label,  // e.g. "Sauce", "Supplément", "Garniture"
+            'description'   => $this->description,   // [W1] per-option metadata (non-fiscal)
+            'image_path'    => $this->image_path,    // [W1] raw stored image; thumb resolves it
             'thumb'         => $this->thumb ?? null,
             'is_available'  => $this->is_available === null ? true : (bool) $this->is_available,
             'unavailable_reason' => $this->unavailable_reason,

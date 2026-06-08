@@ -12,7 +12,7 @@ class ItemExtra extends Model
     use HasFactory, SoftDeletes;
 
     protected $table = "item_extras";
-    protected $fillable = ['item_id', 'name', 'status', 'price', 'visible_on', 'group_label', 'is_available', 'unavailable_reason'];
+    protected $fillable = ['item_id', 'name', 'status', 'price', 'visible_on', 'group_label', 'is_available', 'unavailable_reason', 'description', 'image_path'];
     protected $casts = [
         'id'                 => 'integer',
         'item_id'            => 'integer',
@@ -23,6 +23,8 @@ class ItemExtra extends Model
         'group_label'        => 'string',
         'is_available'       => 'boolean',
         'unavailable_reason' => 'string',
+        'description'        => 'string',  // [W1] per-option description (catalog metadata, non-fiscal)
+        'image_path'         => 'string',  // [W1] per-option stored image (public-relative path or URL)
     ];
 
     /**
@@ -42,6 +44,15 @@ class ItemExtra extends Model
     {
         $basePath = Config::get('menu_images.base_path', 'images/menu');
         $defaultFile = Config::get('menu_images.default', 'item-default.svg');
+
+        // [W1 builder] A stored per-option image (set via the wizard builder) WINS
+        // over the legacy name->config map; config stays the fallback for legacy.
+        if (! empty($this->image_path)) {
+            $stored = $this->resolveStoredImage((string) $this->image_path);
+            if ($stored !== null) {
+                return $stored;
+            }
+        }
 
         $filename = null;
         if (str_starts_with($this->name, 'Sauce supplémentaire:')) {
@@ -67,6 +78,28 @@ class ItemExtra extends Model
             $hash = @filemtime(public_path("{$basePath}/{$defaultFile}")) ?: 0;
             return asset("{$basePath}/{$defaultFile}") . "?v={$hash}";
         }
+        return null;
+    }
+
+    /**
+     * [W1] Resolve a stored per-option image path to a cache-busted URL.
+     * Absolute URL returned as-is; public-relative path cache-busted; missing -> null.
+     */
+    private function resolveStoredImage(string $path): ?string
+    {
+        $path = trim($path);
+        if ($path === '') {
+            return null;
+        }
+        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
+            return $path;
+        }
+        $relative = ltrim($path, '/');
+        if (file_exists(public_path($relative))) {
+            $hash = @filemtime(public_path($relative)) ?: 0;
+            return asset($relative) . "?v={$hash}";
+        }
+
         return null;
     }
 

@@ -24,6 +24,8 @@ class ItemVariation extends Model
         'caution',
         'status',
         'visible_on',
+        'description',
+        'image_path',
     ];
     protected $casts = [
         'id'                => 'integer',
@@ -34,6 +36,8 @@ class ItemVariation extends Model
         'caution'           => 'string',
         'status'            => 'integer',
         'visible_on'        => 'array',  // null = all surfaces; ["kiosk","pos","web"] = restricted
+        'description'       => 'string', // [W1] per-option description (catalog metadata, non-fiscal)
+        'image_path'        => 'string', // [W1] per-option stored image (public-relative path or URL)
     ];
 
     /**
@@ -60,9 +64,20 @@ class ItemVariation extends Model
      */
     public function getThumbAttribute(): ?string
     {
-        $attrName = optional($this->itemAttribute)->name ?? '';
         $basePath = Config::get('menu_images.base_path', 'images/menu');
         $defaultFile = Config::get('menu_images.default', 'item-default.svg');
+
+        // [W1 builder] A stored per-option image (set via the wizard builder) WINS
+        // over the legacy name->config map. config/menu_images.php stays the
+        // fallback for the 45 legacy items that carry no stored image.
+        if (! empty($this->image_path)) {
+            $stored = $this->resolveStoredImage((string) $this->image_path);
+            if ($stored !== null) {
+                return $stored;
+            }
+        }
+
+        $attrName = optional($this->itemAttribute)->name ?? '';
 
         if (str_contains($attrName, 'Sauce') || str_contains($attrName, 'sauce')) {
             $filename = $this->resolveMenuImageFilename(
@@ -119,6 +134,29 @@ class ItemVariation extends Model
             if (Str::lower(Str::ascii((string) $key)) === $asciiName) {
                 return $file;
             }
+        }
+
+        return null;
+    }
+
+    /**
+     * [W1] Resolve a stored per-option image path to a cache-busted URL.
+     * Accepts an absolute URL (returned as-is) or a public-relative path.
+     * Returns null if the file is missing so the caller falls back to config.
+     */
+    private function resolveStoredImage(string $path): ?string
+    {
+        $path = trim($path);
+        if ($path === '') {
+            return null;
+        }
+        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
+            return $path;
+        }
+        $relative = ltrim($path, '/');
+        if (file_exists(public_path($relative))) {
+            $hash = @filemtime(public_path($relative)) ?: 0;
+            return asset($relative) . "?v={$hash}";
         }
 
         return null;

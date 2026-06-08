@@ -28,6 +28,8 @@ class ItemVariationResource extends JsonResource
             'caution'           => $this->caution,
             'status'            => $this->status,
             'visible_on'        => $this->visible_on,  // null = all surfaces
+            'description'       => $this->description, // [W1] per-option metadata (non-fiscal)
+            'image_path'        => $this->image_path,  // [W1] raw stored image; thumb resolves it
             'thumb'             => $this->thumb ?? null,
             'is_new'            => (bool) ($this->is_new ?? false),
             'item'              => optional($this->item)->name,

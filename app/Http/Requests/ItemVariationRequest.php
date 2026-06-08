@@ -43,6 +43,9 @@ class ItemVariationRequest extends FormRequest
             // Surface visibility: null = all surfaces; array of "kiosk", "pos", "web"
             'visible_on'        => ['nullable', 'array'],
             'visible_on.*'      => ['string', Rule::in(['kiosk', 'pos', 'web'])],
+            // [W1] Per-option catalog metadata (non-fiscal): description + stored image.
+            'description'       => ['nullable', 'string', 'max:5000'],
+            'image_path'        => ['nullable', 'string', 'max:2048'],
         ];
     }
 
