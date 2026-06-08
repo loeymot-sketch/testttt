@@ -782,7 +782,14 @@ class DashboardService
                 $kiosk['total'] += (float) $order->total;
                 continue;
             }
-            if ((int) $order->source === \App\Enums\Source::POS) {
+            // [SEC-FALSIFY-2026-06-08 ADMIN-9] Also key POS on order_type (which IS
+            // copied to the RETURNED refund mirror) — the `source` field is NOT copied
+            // by RefundWithCounterEntryService, so a POS refund mirror (source=NULL)
+            // would otherwise fall through to Web/App and debit the wrong channel
+            // (rendering a negative Web/App total). Mirrors resolvePaymentBucketKey,
+            // which already buckets POS by order_type.
+            if ((int) $order->source === \App\Enums\Source::POS
+                || (int) ($order->order_type ?? 0) === \App\Enums\OrderType::POS) {
                 $pos['count']++;
                 $pos['total'] += (float) $order->total;
                 continue;

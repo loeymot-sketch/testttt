@@ -215,4 +215,64 @@ class EodPdfRecapSentinelTest extends TestCase
         $this->assertGreaterThan(0, count($synthesis['by_payment']),
             'by_payment MUST contain at least the CASH bucket from the seeded POS order.');
     }
+
+    /**
+     * [SEC-FALSIFY-2026-06-08 ADMIN-9] A POS sale refunded via the counter-entry
+     * path must NET inside the POS Caisse channel — not debit Web/App. The refund
+     * mirror copies order_type but NOT `source`, so before the fix it fell through
+     * to the Web/App bucket, OVERstating POS Caisse and rendering a NEGATIVE Web/App
+     * line for a day of only POS sales+refunds.
+     */
+    public function test_by_channel_nets_pos_refund_mirror_into_pos_not_web(): void
+    {
+        $admin = User::factory()->create(['branch_id' => 0]);
+        $admin->assignRole('Admin');
+        $this->actingAs($admin, 'sanctum');
+
+        $today = Carbon::today(config('app.timezone'))->addHours(10);
+
+        $parent = Order::factory()->create([
+            'branch_id'          => $this->branch->id,
+            'order_type'         => OrderType::POS,
+            'source'             => Source::POS,
+            'source_surface'     => 'pos',
+            'payment_status'     => PaymentStatus::PAID,
+            'status'             => OrderStatus::DELIVERED,
+            'pos_payment_method' => PosPaymentMethod::CARD,
+            'total'              => 20.00,
+            'total_tax'          => 0,
+            'order_datetime'     => $today,
+        ]);
+
+        // The RETURNED counter-entry mirror as RefundWithCounterEntryService builds
+        // it: order_type copied, total negated, source_surface='pos', but `source`
+        // is NOT copied (stays null) — the exact bug condition.
+        Order::factory()->create([
+            'branch_id'       => $this->branch->id,
+            'order_type'      => OrderType::POS,
+            'source'          => null,
+            'source_surface'  => 'pos',
+            'parent_order_id' => $parent->id,
+            'status'          => OrderStatus::RETURNED,
+            'payment_status'  => PaymentStatus::REFUNDED,
+            'total'           => -20.00,
+            'total_tax'       => 0,
+            'order_datetime'  => $today,
+        ]);
+
+        $synthesis = app(\App\Services\DashboardService::class)->eodSynthesis(null);
+        $byChannel = collect($synthesis['by_channel']);
+
+        // No Web/App bucket may exist — the only traffic is POS (sale + its refund).
+        $web = $byChannel->firstWhere('label', 'Web/App');
+        $this->assertNull($web, 'a POS refund mirror must NOT create a Web/App channel row (it debited the wrong channel before ADMIN-9).');
+
+        // POS Caisse nets to ~0 (20 sale + (-20) refund) — agrees with total_ca.
+        $pos = $byChannel->firstWhere('label', 'POS Caisse');
+        $this->assertNotNull($pos, 'POS Caisse bucket must be present (count=2: sale + mirror).');
+        $this->assertEqualsWithDelta(0.0, (float) $pos['total'], 0.01,
+            'POS Caisse channel must net the refund to ~0, matching total_ca.');
+        $this->assertEqualsWithDelta(0.0, (float) $synthesis['total_ca'], 0.01,
+            'total_ca nets to 0 for a sale fully refunded same day.');
+    }
 }
