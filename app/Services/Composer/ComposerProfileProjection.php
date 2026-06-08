@@ -94,6 +94,13 @@ final class ComposerProfileProjection
                         'source_type' => 'variation',
                         'item_attribute_id' => $variation->item_attribute_id !== null ? (int) $variation->item_attribute_id : null,
                         'status' => (int) $variation->status,
+                        // [W2] per-option NON-FISCAL metadata only. PRICE is DELIBERATELY
+                        // excluded — the composer_profile must stay price-free (NF525
+                        // anti-duplication invariant, MenuProjectionComposerProfileTest
+                        // assertNoPriceKeys). The wizard joins price by choice id from the
+                        // item's variations/extras/addons payload (single SSOT).
+                        'image' => $variation->thumb,
+                        'description' => $variation->description,
                         'is_available' => $availability['is_available'],
                         'unavailable_reason' => $availability['unavailable_reason'],
                     ];
@@ -118,6 +125,9 @@ final class ComposerProfileProjection
                         'source_type' => 'extra',
                         'group_label' => $extra->group_label,
                         'status' => (int) $extra->status,
+                        // [W2] non-fiscal metadata only — price excluded (see variation note).
+                        'image' => $extra->thumb,
+                        'description' => $extra->description,
                         'is_available' => $availability['is_available'],
                         'unavailable_reason' => $availability['unavailable_reason'],
                     ];
@@ -158,6 +168,10 @@ final class ComposerProfileProjection
                         'source_type' => 'addon',
                         'addon_item_id' => (int) $addon->addon_item_id,
                         'role' => $addon->role,
+                        // [W2] addons carry photo/description from the linked parent Item.
+                        // Price excluded (NF525 anti-duplication) — joined by id downstream.
+                        'image' => $addon->addonItem?->thumb,
+                        'description' => $addon->addonItem?->description,
                         'is_available' => $availability['is_available'],
                         'unavailable_reason' => $availability['unavailable_reason'],
                     ];
