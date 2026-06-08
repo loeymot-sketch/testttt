@@ -17,7 +17,20 @@
         :aria-pressed="selectedCount(choice) > 0 ? 'true' : 'false'"
         @click="toggleChoice(choice)"
       >
-        <span class="kiosk-generic-choice-name">{{ choice.name || choice.label || choice.id }}</span>
+        <!-- [Wizard builder W6] Per-option photo (from the bound catalog construct,
+             projected in W2). Box pages + any builder-authored generic page now
+             show real images instead of plain text. -->
+        <img
+          v-if="choiceImage(choice)"
+          :src="choiceImage(choice)"
+          alt=""
+          class="kiosk-generic-choice-img"
+          loading="lazy"
+        />
+        <span class="kiosk-generic-choice-body">
+          <span class="kiosk-generic-choice-name">{{ choice.name || choice.label || choice.id }}</span>
+          <span v-if="choice.description" class="kiosk-generic-choice-desc">{{ choice.description }}</span>
+        </span>
         <span v-if="selectedCount(choice) > 0" class="kiosk-generic-choice-count">
           x{{ selectedCount(choice) }}
         </span>
@@ -36,6 +49,8 @@
 </template>
 
 <script>
+import { kioskResolveImageSrc } from '../../../../helpers/kioskMedia';
+
 export default {
   name: 'KioskStepGenericChoicesComponent',
   props: {
@@ -97,6 +112,9 @@ export default {
     fallbackText(key, fallback) {
       const translated = this.$t ? this.$t(key, { min: this.minSelect }) : key;
       return translated !== key ? translated : fallback;
+    },
+    choiceImage(choice) {
+      return kioskResolveImageSrc(choice);
     },
     choiceKey(choice) {
       return `${choice.source_type || this.composerStep.source_type || 'choice'}:${choice.id}`;
@@ -228,7 +246,31 @@ export default {
   filter: grayscale(0.7);
 }
 
+.kiosk-generic-choice-img {
+  width: 48px;
+  height: 48px;
+  flex: 0 0 auto;
+  border-radius: 8px;
+  object-fit: cover;
+  background: var(--kiosk-surface-2, #f7f2ea);
+}
+
+.kiosk-generic-choice-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 .kiosk-generic-choice-name {
+  overflow-wrap: anywhere;
+}
+
+.kiosk-generic-choice-desc {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--kiosk-text-muted, #7a7a7a);
   overflow-wrap: anywhere;
 }
 

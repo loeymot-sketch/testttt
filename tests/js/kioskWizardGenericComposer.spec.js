@@ -29,6 +29,28 @@ const step = {
 };
 
 describe('generic composer wizard step', () => {
+    it('[W6] renders the per-option photo + description when the projection provides them', () => {
+        const imagedStep = {
+            ...step,
+            composer_step: {
+                ...step.composer_step,
+                choices: [
+                    { id: 11, name: 'Riz', source_type: 'variation', status: 5, image: 'https://cdn.test/riz.png', description: 'Riz basmati' },
+                    { id: 12, name: 'Frites', source_type: 'variation', status: 5 },
+                ],
+            },
+        };
+        const wrapper = mount(KioskStepGenericChoicesComponent, {
+            props: { step: imagedStep, selections: { composerChoices: {} } },
+            global: { mocks: { $t: (key) => key } },
+        });
+
+        const imgs = wrapper.findAll('img.kiosk-generic-choice-img');
+        expect(imgs).toHaveLength(1); // only the choice carrying an image
+        expect(imgs[0].attributes('src')).toBe('https://cdn.test/riz.png');
+        expect(wrapper.find('.kiosk-generic-choice-desc').text()).toBe('Riz basmati');
+    });
+
     it('emits branch-safe composerChoices metadata for single-select generic steps', async () => {
         const wrapper = mount(KioskStepGenericChoicesComponent, {
             props: { step, selections: { composerChoices: {} } },
