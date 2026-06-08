@@ -127,4 +127,67 @@ class ComposerPersonalPageTest extends TestCase
             ['label' => 'X', 'options' => [['name' => 'Y', 'price' => '0']]]
         )->assertStatus(403);
     }
+
+    /**
+     * [W7 audit P1] A bare label that slugs to a kiosk STEP_KEY_REGISTRY key ("Sauce" -> 'sauce')
+     * would route the page to a FROZEN specialized component that ignores its options. The
+     * generated step_key must escape the registry so the page reaches the generic component.
+     */
+    public function test_step_key_never_collides_with_frozen_kiosk_registry(): void
+    {
+        [, , $profile] = $this->categoryProfile(1);
+
+        foreach (['Sauce', 'Menu', 'Suppléments', 'Garnitures', 'Boisson'] as $colliding) {
+            $resp = $this->actingAs($this->admin, 'sanctum')->postJson(
+                "/api/admin/composer/profiles/{$profile->id}/personal-page",
+                ['label' => $colliding, 'options' => [['name' => 'Opt', 'price' => '0']]]
+            )->assertStatus(201);
+
+            $key = $resp->json('data.step_key');
+            $this->assertNotContains(
+                $key,
+                \App\Http\Controllers\Admin\ComposerProfileController::RESERVED_KIOSK_STEP_KEYS,
+                "step_key '{$key}' for label '{$colliding}' must not be a reserved kiosk key"
+            );
+        }
+    }
+
+    /** [W7 audit P2] A mutating write must be write-tier guarded: a non-admin Branch Manager
+     *  (holds catalog.compose) must NOT mutate a global/null-scope catalog. */
+    public function test_branch_manager_cannot_mutate_global_profile(): void
+    {
+        [, , $profile] = $this->categoryProfile(1); // forCategory => branch_id_scope null (global)
+        Role::firstOrCreate(['name' => 'Branch Manager', 'guard_name' => 'sanctum']);
+        $bm = User::factory()->create(['branch_id' => 2]);
+        $bm->assignRole('Admin'); // ensure compose perm exists in test, then swap to BM-only
+        $bm->syncRoles(['Branch Manager']);
+
+        $this->actingAs($bm, 'sanctum')->postJson(
+            "/api/admin/composer/profiles/{$profile->id}/personal-page",
+            ['label' => 'Maison', 'options' => [['name' => 'Opt', 'price' => '0']]]
+        )->assertStatus(403);
+    }
+
+    /** [W7 audit P2/P3] Re-submitting the same page UPDATES option prices and does NOT duplicate the step. */
+    public function test_resubmit_updates_price_and_keeps_single_step(): void
+    {
+        [, $items, $profile] = $this->categoryProfile(1);
+        $url = "/api/admin/composer/profiles/{$profile->id}/personal-page";
+
+        $this->actingAs($this->admin, 'sanctum')->postJson($url, [
+            'label' => 'Sauces Maison',
+            'options' => [['name' => 'Algérienne', 'price' => '0.50']],
+        ])->assertStatus(201);
+
+        // Re-submit with a corrected price.
+        $this->actingAs($this->admin, 'sanctum')->postJson($url, [
+            'label' => 'Sauces Maison',
+            'options' => [['name' => 'Algérienne', 'price' => '1.50']],
+        ])->assertStatus(201);
+
+        $this->assertSame(1, ItemWizardStep::query()->where('profile_id', $profile->id)
+            ->where('source_ref', 'Sauces Maison')->count(), 're-submit must not duplicate the step');
+        $this->assertEquals(1.5, (float) ItemExtra::query()->where('item_id', $items->first()->id)
+            ->where('name', 'Algérienne')->value('price'), 're-submit must update the option price');
+    }
 }

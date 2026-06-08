@@ -55,3 +55,28 @@ itemExtraTotal += composerExtraTotal + composerAddonTotal; // OR a dedicated lin
 
 - **A (recommended)**: ship `extra_group` full-price box (done, non-frozen). Defer addon boxes.
 - **B**: countersign this LOCK to add `composerAddonTotal` for addon-linked box components.
+
+---
+
+# Related gate — POS generic-choices renderer (frozen pos-wizard.js, flag-gated)
+
+**Status**: PENDING — blocks the `FK_POS_WIZARD_COMPOSER_AWARE_ENABLED` flip. **Frozen file**:
+`public/js/pos-wizard.js` (CLAUDE.md §7). Surfaced by the W5/W6 adversarial audit (P2).
+
+**Finding (verified)**: `pos-wizard.js buildStepsFromComposerProfile` pushes projected choices as
+`step.options` and the render dispatch (~lines 1131-1152) has **no `generic_choices` case**, while
+`renderSauceStep`/`renderSupplementsStep`/`renderMenuStep` read `step.items` (undefined here). So a
+personal page or box step on POS would render **blank** (no generic branch) or **throw** (a
+registry-collided legacy type reading `step.items`). **Gated**: this whole path is behind
+`isComposerAwareEnabled()` (`pos-wizard.js:436-441`), **default-OFF** — the flag flip is already an
+owner gate. So it is **NOT reachable in V1 default config**; the personal-page/box features are
+**kiosk-correct today**.
+
+**Required before flipping `FK_POS_WIZARD_COMPOSER_AWARE_ENABLED`**: add a `generic_choices` render
+branch to the POS dispatch that reads `step.options` (and route composer steps to it rather than the
+legacy `step.items` renderers). ~10-20 lines in the frozen file → owner LOCK + triple-green + visual.
+
+**Mitigation already in place (non-frozen)**: the kiosk render is fully correct (this session's W6
+sentinel + BoxFullPriceBundleTest). The PHP `RESERVED_KIOSK_STEP_KEYS` guard also prevents the
+registry-collision crash class on the legacy POS renderers. Treat the POS generic renderer as a
+hard checklist item on the composer-aware flag flip.

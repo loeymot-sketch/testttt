@@ -203,7 +203,10 @@ class ComposerProfileController extends AdminController
      */
     public function createPersonalPage(ComposerPersonalPageRequest $request, ItemWizardProfile $profile): JsonResponse
     {
-        $this->authorizeBranchScope($request, $profile->branch_id_scope);
+        // Mutating endpoint (creates ItemExtras + a step) — use the WRITE-tier guard like every
+        // sibling write (store/storeForCategory/publish): a non-admin on a global/null-scope
+        // profile must 403, not pass through the read-tier helper.
+        $this->authorizeWritableBranchScope($request, $profile->branch_id_scope);
 
         $data = $request->validated();
         $label = trim((string) $data['label']);
@@ -221,7 +224,9 @@ class ComposerProfileController extends AdminController
         $step = DB::transaction(function () use ($items, $data, $label, $visibleOn, $profile, $stepService) {
             foreach ($items as $item) {
                 foreach ($data['options'] as $opt) {
-                    ItemExtra::query()->firstOrCreate(
+                    // updateOrCreate (not firstOrCreate): re-submitting the same page must UPDATE
+                    // the option price/media — firstOrCreate would silently keep the stale price.
+                    ItemExtra::query()->updateOrCreate(
                         [
                             'item_id' => $item->id,
                             'name' => $opt['name'],
@@ -238,8 +243,18 @@ class ComposerProfileController extends AdminController
                 }
             }
 
+            // Idempotent: reuse the step already bound to this group_label instead of suffixing a
+            // duplicate (a re-submit must not create label / label_2 twins projecting the same options).
+            $existing = $profile->steps()
+                ->where('source_type', 'extra_group')
+                ->where('source_ref', $label)
+                ->first();
+            if ($existing) {
+                return $existing;
+            }
+
             return $stepService->create($profile, [
-                'step_key' => $this->uniquePersonalStepKey($profile, $label),
+                'step_key' => $this->personalPageStepKey($profile, $label),
                 'label' => $label,
                 'source_type' => 'extra_group',
                 'source_ref' => $label,
@@ -264,10 +279,32 @@ class ComposerProfileController extends AdminController
         ], 201);
     }
 
-    /** Unique step_key for a new personal page (DB unique(profile_id, step_key)). */
-    private function uniquePersonalStepKey(ItemWizardProfile $profile, string $label): string
+    /**
+     * Reserved kiosk step_keys that route to a FROZEN specialized component
+     * (KioskWizardComponent STEP_KEY_REGISTRY + ADDON_ROLE_TO_TYPE keys). A builder-generated
+     * step_key MUST avoid these, otherwise the page is hijacked by e.g. KioskStepSauceComponent
+     * — which ignores step.choices and renders the personal page's options as nothing. Mirrored
+     * by ComposerPersonalPageStepKeySentinelTest so it can't drift from the JS registry.
+     */
+    public const RESERVED_KIOSK_STEP_KEYS = [
+        'pain', 'galette', 'bun', 'viande', 'meat', 'proteine', 'sauce', 'sauces',
+        'garnitures', 'garniture', 'crudites', 'supplements', 'supplement', 'extras',
+        'menu', 'formule', 'boisson', 'drink', 'frites', 'side', 'dessert',
+        'taille', 'size', 'menu_component',
+    ];
+
+    /**
+     * Registry-collision-safe, unique step_key for a personal page (DB unique(profile_id, step_key)).
+     * A bare label like "Sauce"/"Menu" slugs to a reserved key — prefix it so the page reaches the
+     * NON-frozen generic component instead of a frozen specialized one.
+     */
+    private function personalPageStepKey(ItemWizardProfile $profile, string $label): string
     {
         $base = Str::slug($label, '_') ?: 'page';
+        if (in_array($base, self::RESERVED_KIOSK_STEP_KEYS, true)) {
+            $base = 'page_' . $base; // escape the kiosk registry → generic render
+        }
+
         $existing = $profile->steps()->pluck('step_key')->all();
         $candidate = $base;
         $i = 2;
