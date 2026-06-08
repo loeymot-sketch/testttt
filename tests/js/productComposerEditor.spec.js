@@ -17,7 +17,40 @@ describe('product composer editor contract', () => {
         expect(source).toContain('admin/composer/categories/${this.resolvedEntityId}/profile');
         expect(source).toContain('admin/composer/profiles/${this.profile.id}/publish');
         expect(source).not.toContain('v-model="form.price"');
-        expect(source).not.toContain('price:');
+
+        // NF525 invariant — refined 2026-06-08 (GOAL_WIZARD_DYNAMIC_BUILDER W5 "page
+        // personnalisée"). The blanket not.toContain('price:') was a coarse proxy for
+        // "no price on the wizard step/profile". The personal-page builder LEGITIMATELY
+        // carries a PER-OPTION price (`price: 0` row default → ItemExtra.price catalog
+        // SSOT), which is the whole point of the feature and is NF525-correct. The real
+        // invariants that must hold:
+        //   - the wizard-step payload builders (payloadForStep / profilePayload) stay
+        //     price-free — a step never carries a price;
+        //   - the personal-page POST has no top-level/page-level price key.
+        const stepPayloadBuilder = source.slice(
+            source.indexOf('payloadForStep(step)'),
+            source.indexOf('async saveDraft()'),
+        );
+        expect(stepPayloadBuilder.length).toBeGreaterThan(0);
+        expect(stepPayloadBuilder).not.toContain('price');
+
+        const personalPagePayloadBuilder = source.slice(
+            source.indexOf('personalPagePayload()'),
+            source.indexOf('async submitPersonalPage()'),
+        );
+        expect(personalPagePayloadBuilder.length).toBeGreaterThan(0);
+        // No page-level/total price.
+        expect(personalPagePayloadBuilder).not.toContain('total');
+        // `price` appears ONLY inside the per-option .map() — never at the payload top level.
+        const optionsMap = personalPagePayloadBuilder.slice(
+            personalPagePayloadBuilder.indexOf('.options.map('),
+            personalPagePayloadBuilder.indexOf('return {'),
+        );
+        const payloadReturn = personalPagePayloadBuilder.slice(
+            personalPagePayloadBuilder.indexOf('return {'),
+        );
+        expect(optionsMap).toContain('price:'); // per-option price IS present (NF525 SSOT on the construct)
+        expect(payloadReturn).not.toContain('price'); // ...but the returned page payload has NO price key
     });
 
     it('defines a dedicated composer route guarded by catalog.compose', () => {

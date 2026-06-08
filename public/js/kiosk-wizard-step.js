@@ -63,7 +63,7 @@ __webpack_require__.r(__webpack_exports__);
 
 var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
 // Module
-___CSS_LOADER_EXPORT___.push([module.id, "\n.kiosk-step-generic[data-v-fc62cec6] {\n  padding: 8px 18px 28px;\n}\n.kiosk-step-title[data-v-fc62cec6] {\n  margin: 0 0 14px;\n  text-align: center;\n  font-size: 16px;\n  font-weight: 700;\n  color: var(--kiosk-text, #1a1a1a);\n}\n.kiosk-validation-hint[data-v-fc62cec6] {\n  margin: 0 auto 14px;\n  max-width: 520px;\n  border: 1px solid rgba(244, 80, 30, 0.18);\n  border-radius: 8px;\n  background: rgba(244, 80, 30, 0.06);\n  color: var(--kiosk-primary, #f4501e);\n  padding: 10px 14px;\n  font-size: 13px;\n  font-weight: 700;\n  text-align: center;\n}\n.kiosk-generic-grid[data-v-fc62cec6] {\n  display: grid;\n  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));\n  gap: 12px;\n}\n.kiosk-generic-choice[data-v-fc62cec6] {\n  min-height: 74px;\n  border: 1px solid var(--kiosk-border, #eee6d9);\n  border-radius: 8px;\n  background: var(--kiosk-surface, #fff);\n  color: var(--kiosk-text, #1a1a1a);\n  padding: 12px 14px;\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 10px;\n  text-align: left;\n  font: inherit;\n  font-weight: 700;\n  box-shadow: var(--kiosk-shadow-card, 0 4px 18px rgba(20, 20, 20, 0.06));\n}\n.kiosk-generic-choice.selected[data-v-fc62cec6] {\n  border-color: var(--kiosk-primary, #f4501e);\n  background: var(--kiosk-primary-light, rgba(244, 80, 30, 0.07));\n}\n.kiosk-generic-choice.unavailable[data-v-fc62cec6] {\n  opacity: 0.45;\n  filter: grayscale(0.7);\n}\n.kiosk-generic-choice-name[data-v-fc62cec6] {\n  overflow-wrap: anywhere;\n}\n.kiosk-generic-choice-count[data-v-fc62cec6] {\n  min-width: 34px;\n  border-radius: 999px;\n  background: var(--kiosk-primary, #f4501e);\n  color: #fff;\n  padding: 4px 8px;\n  text-align: center;\n  font-size: 12px;\n  line-height: 1;\n}\n\n/* [rush-100 WA-R1-03/04 heal 2026-05-13] \"+\" badge affordance on unselected\n   composer choice cards. Mirrors the .kiosk-product-card-add pattern used on\n   meat-step cards so customers can tell they are tappable. */\n.kiosk-generic-choice-add[data-v-fc62cec6] {\n  min-width: 34px;\n  height: 34px;\n  border-radius: 999px;\n  background: var(--kiosk-primary, #f4501e);\n  color: #fff;\n  padding: 0;\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  font-size: 22px;\n  line-height: 1;\n  font-weight: 700;\n}\n", ""]);
+___CSS_LOADER_EXPORT___.push([module.id, "\n.kiosk-step-generic[data-v-fc62cec6] {\n  padding: 8px 18px 28px;\n}\n.kiosk-step-title[data-v-fc62cec6] {\n  margin: 0 0 14px;\n  text-align: center;\n  font-size: 16px;\n  font-weight: 700;\n  color: var(--kiosk-text, #1a1a1a);\n}\n.kiosk-validation-hint[data-v-fc62cec6] {\n  margin: 0 auto 14px;\n  max-width: 520px;\n  border: 1px solid rgba(244, 80, 30, 0.18);\n  border-radius: 8px;\n  background: rgba(244, 80, 30, 0.06);\n  color: var(--kiosk-primary, #f4501e);\n  padding: 10px 14px;\n  font-size: 13px;\n  font-weight: 700;\n  text-align: center;\n}\n.kiosk-generic-grid[data-v-fc62cec6] {\n  display: grid;\n  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));\n  gap: 12px;\n}\n.kiosk-generic-choice[data-v-fc62cec6] {\n  min-height: 74px;\n  border: 1px solid var(--kiosk-border, #eee6d9);\n  border-radius: 8px;\n  background: var(--kiosk-surface, #fff);\n  color: var(--kiosk-text, #1a1a1a);\n  padding: 12px 14px;\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 10px;\n  text-align: left;\n  font: inherit;\n  font-weight: 700;\n  box-shadow: var(--kiosk-shadow-card, 0 4px 18px rgba(20, 20, 20, 0.06));\n}\n.kiosk-generic-choice.selected[data-v-fc62cec6] {\n  border-color: var(--kiosk-primary, #f4501e);\n  background: var(--kiosk-primary-light, rgba(244, 80, 30, 0.07));\n}\n.kiosk-generic-choice.unavailable[data-v-fc62cec6] {\n  opacity: 0.45;\n  filter: grayscale(0.7);\n}\n.kiosk-generic-choice-img[data-v-fc62cec6] {\n  width: 48px;\n  height: 48px;\n  flex: 0 0 auto;\n  border-radius: 8px;\n  -o-object-fit: cover;\n     object-fit: cover;\n  background: var(--kiosk-surface-2, #f7f2ea);\n}\n.kiosk-generic-choice-body[data-v-fc62cec6] {\n  display: flex;\n  flex-direction: column;\n  gap: 2px;\n  flex: 1 1 auto;\n  min-width: 0;\n}\n.kiosk-generic-choice-name[data-v-fc62cec6] {\n  overflow-wrap: anywhere;\n}\n.kiosk-generic-choice-desc[data-v-fc62cec6] {\n  font-size: 11px;\n  font-weight: 500;\n  color: var(--kiosk-text-muted, #7a7a7a);\n  overflow-wrap: anywhere;\n}\n.kiosk-generic-choice-count[data-v-fc62cec6] {\n  min-width: 34px;\n  border-radius: 999px;\n  background: var(--kiosk-primary, #f4501e);\n  color: #fff;\n  padding: 4px 8px;\n  text-align: center;\n  font-size: 12px;\n  line-height: 1;\n}\n\n/* [rush-100 WA-R1-03/04 heal 2026-05-13] \"+\" badge affordance on unselected\n   composer choice cards. Mirrors the .kiosk-product-card-add pattern used on\n   meat-step cards so customers can tell they are tappable. */\n.kiosk-generic-choice-add[data-v-fc62cec6] {\n  min-width: 34px;\n  height: 34px;\n  border-radius: 999px;\n  background: var(--kiosk-primary, #f4501e);\n  color: #fff;\n  padding: 0;\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  font-size: 22px;\n  line-height: 1;\n  font-weight: 700;\n}\n", ""]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 
@@ -480,12 +480,14 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
+/* harmony import */ var _helpers_kioskMedia__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../../../helpers/kioskMedia */ "./resources/js/helpers/kioskMedia.js");
 function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
 function ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
 function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
 function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
 function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : i + ""; }
 function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
+
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
   name: 'KioskStepGenericChoicesComponent',
   props: {
@@ -554,6 +556,9 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
         min: this.minSelect
       }) : key;
       return translated !== key ? translated : fallback;
+    },
+    choiceImage: function choiceImage(choice) {
+      return (0,_helpers_kioskMedia__WEBPACK_IMPORTED_MODULE_0__.kioskResolveImageSrc)(choice);
     },
     choiceKey: function choiceKey(choice) {
       return "".concat(choice.source_type || this.composerStep.source_type || 'choice', ":").concat(choice.id);
@@ -2133,15 +2138,23 @@ var _hoisted_3 = {
 };
 var _hoisted_4 = ["aria-label"];
 var _hoisted_5 = ["disabled", "aria-pressed", "onClick"];
-var _hoisted_6 = {
-  "class": "kiosk-generic-choice-name"
-};
+var _hoisted_6 = ["src"];
 var _hoisted_7 = {
-  key: 0,
-  "class": "kiosk-generic-choice-count"
+  "class": "kiosk-generic-choice-body"
 };
 var _hoisted_8 = {
+  "class": "kiosk-generic-choice-name"
+};
+var _hoisted_9 = {
+  key: 0,
+  "class": "kiosk-generic-choice-desc"
+};
+var _hoisted_10 = {
   key: 1,
+  "class": "kiosk-generic-choice-count"
+};
+var _hoisted_11 = {
+  key: 2,
   "class": "kiosk-generic-choice-add",
   "aria-hidden": "true"
 };
@@ -2163,7 +2176,13 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       onClick: function onClick($event) {
         return $options.toggleChoice(choice);
       }
-    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_6, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(choice.name || choice.label || choice.id), 1 /* TEXT */), $options.selectedCount(choice) > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_7, " x" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.selectedCount(choice)), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [rush-100 WA-R1-03/04 heal 2026-05-13] Visible \"+\" affordance so\n             customers can tell composer-step cards (Frites/Riz, Nature/Cheddar)\n             are tappable. Was a P1 affordance gap — cards previously rendered\n             as plain text rectangles. "), $options.selectedCount(choice) === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_8, "+")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 10 /* CLASS, PROPS */, _hoisted_5);
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [Wizard builder W6] Per-option photo (from the bound catalog construct,\n             projected in W2). Box pages + any builder-authored generic page now\n             show real images instead of plain text. "), $options.choiceImage(choice) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("img", {
+      key: 0,
+      src: $options.choiceImage(choice),
+      alt: "",
+      "class": "kiosk-generic-choice-img",
+      loading: "lazy"
+    }, null, 8 /* PROPS */, _hoisted_6)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_7, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_8, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(choice.name || choice.label || choice.id), 1 /* TEXT */), choice.description ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_9, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(choice.description), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), $options.selectedCount(choice) > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_10, " x" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.selectedCount(choice)), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [rush-100 WA-R1-03/04 heal 2026-05-13] Visible \"+\" affordance so\n             customers can tell composer-step cards (Frites/Riz, Nature/Cheddar)\n             are tappable. Was a P1 affordance gap — cards previously rendered\n             as plain text rectangles. "), $options.selectedCount(choice) === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_11, "+")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 10 /* CLASS, PROPS */, _hoisted_5);
   }), 128 /* KEYED_FRAGMENT */))], 8 /* PROPS */, _hoisted_4)]);
 }
 

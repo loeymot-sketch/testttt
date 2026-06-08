@@ -127,6 +127,15 @@
                         <i class="lab lab-add-circle" aria-hidden="true"></i>
                         {{ t('label.composer.add_page', 'Ajouter une page') }}
                     </button>
+                    <button
+                        type="button"
+                        class="db-btn-outline h-[42px] w-full justify-center !border-[#1ab759] !text-[#138445]"
+                        data-testid="admin-composer-add-personal-page"
+                        @click="openPersonalPage"
+                    >
+                        <i class="lab lab-magic-star" aria-hidden="true"></i>
+                        {{ t('label.composer.add_personal_page', 'Créer une page personnalisée') }}
+                    </button>
 
                     <ComposerStepListSidebar
                         v-model="steps"
@@ -334,6 +343,193 @@
                 </div>
             </div>
         </div>
+
+        <div
+            v-if="personalPageOpen"
+            class="fixed inset-0 z-40 flex items-center justify-center bg-black/40 px-4 py-6"
+            data-testid="composer-personal-page-modal"
+        >
+            <div class="flex max-h-[90vh] w-full max-w-2xl flex-col rounded-lg bg-white shadow-xl">
+                <div class="flex items-start justify-between gap-3 border-b border-[#e3e8e5] p-5">
+                    <div>
+                        <h3 class="text-lg font-semibold text-[#202824]">
+                            {{ t('label.composer.add_personal_page', 'Créer une page personnalisée') }}
+                        </h3>
+                        <p class="mt-1 text-sm text-[#66756e]">
+                            {{ t('message.composer.personal_page_hint', "Composez une page sur mesure : chaque option porte son propre prix (0 = offert). Le prix vit sur l'option, jamais sur la page.") }}
+                        </p>
+                    </div>
+                    <button type="button" class="db-btn-outline !px-3" data-testid="composer-personal-page-close" @click="closePersonalPage">
+                        <i class="lab lab-close" aria-hidden="true"></i>
+                    </button>
+                </div>
+
+                <div class="flex-1 overflow-y-auto p-5">
+                    <div
+                        v-if="personalPageError"
+                        class="mb-4 rounded-lg border border-[#e6b8b8] bg-[#fff1f1] p-3 text-sm font-medium text-[#9b2f2f]"
+                        role="alert"
+                        data-testid="composer-personal-page-error"
+                    >
+                        {{ personalPageError }}
+                    </div>
+
+                    <label class="mb-4 block">
+                        <span class="mb-1 block text-xs font-semibold text-[#5d6f66]">
+                            {{ t('label.composer.personal_page_label', 'Titre de la page') }}
+                        </span>
+                        <input
+                            v-model="personalPage.label"
+                            type="text"
+                            maxlength="50"
+                            class="db-field-control"
+                            data-testid="composer-personal-page-label"
+                            :placeholder="t('label.composer.personal_page_label_placeholder', 'Ex. Sauces maison')"
+                        />
+                    </label>
+
+                    <div class="mb-2 flex items-center justify-between gap-3">
+                        <span class="text-xs font-semibold uppercase tracking-[0.06em] text-[#587065]">
+                            {{ t('label.composer.personal_page_options', 'Options de la page') }}
+                        </span>
+                        <button
+                            type="button"
+                            class="db-btn-outline !h-[34px] !px-3 !text-xs !border-[#1ab759] !text-[#138445]"
+                            data-testid="composer-personal-page-add-option"
+                            @click="addPersonalOption"
+                        >
+                            <i class="lab lab-add-circle" aria-hidden="true"></i>
+                            {{ t('label.composer.personal_page_add_option', 'Ajouter une option') }}
+                        </button>
+                    </div>
+
+                    <div
+                        v-for="(option, index) in personalPage.options"
+                        :key="index"
+                        class="mb-3 rounded-lg border border-[#d9dfdc] bg-[#fbfcfb] p-3"
+                        :data-testid="`composer-personal-page-option-${index}`"
+                    >
+                        <div class="flex flex-col gap-3 sm:flex-row sm:items-start">
+                            <label class="min-w-0 flex-1">
+                                <span class="mb-1 block text-xs font-semibold text-[#5d6f66]">
+                                    {{ t('label.composer.personal_page_option_name', "Nom de l'option") }}
+                                </span>
+                                <input
+                                    v-model="option.name"
+                                    type="text"
+                                    maxlength="191"
+                                    class="db-field-control"
+                                    :data-testid="`composer-personal-page-option-${index}-name`"
+                                />
+                            </label>
+                            <label class="w-full sm:w-[130px]">
+                                <span class="mb-1 block text-xs font-semibold text-[#5d6f66]">
+                                    {{ t('label.composer.personal_page_option_price', 'Prix (€)') }}
+                                </span>
+                                <input
+                                    v-model.number="option.price"
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    class="db-field-control"
+                                    :data-testid="`composer-personal-page-option-${index}-price`"
+                                />
+                            </label>
+                            <button
+                                type="button"
+                                class="db-btn-outline !h-[42px] !px-3 self-end !border-[#e0a3a3] !text-[#9b2f2f]"
+                                :data-testid="`composer-personal-page-option-${index}-remove`"
+                                :disabled="personalPage.options.length <= 1"
+                                @click="removePersonalOption(index)"
+                            >
+                                <i class="lab lab-trash" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                        <label class="mt-2 block">
+                            <span class="mb-1 block text-xs font-semibold text-[#5d6f66]">
+                                {{ t('label.composer.personal_page_option_description', 'Description (optionnel)') }}
+                            </span>
+                            <input
+                                v-model="option.description"
+                                type="text"
+                                maxlength="5000"
+                                class="db-field-control"
+                                :data-testid="`composer-personal-page-option-${index}-description`"
+                            />
+                        </label>
+                    </div>
+
+                    <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <label>
+                            <span class="mb-1 block text-xs font-semibold text-[#5d6f66]">
+                                {{ t('label.composer.min_select', 'Sélection minimale') }}
+                            </span>
+                            <input
+                                v-model.number="personalPage.min_select"
+                                type="number"
+                                min="0"
+                                class="db-field-control"
+                                data-testid="composer-personal-page-min-select"
+                            />
+                        </label>
+                        <label>
+                            <span class="mb-1 block text-xs font-semibold text-[#5d6f66]">
+                                {{ t('label.composer.max_select', 'Sélection maximale') }}
+                            </span>
+                            <input
+                                v-model.number="personalPage.max_select"
+                                type="number"
+                                min="0"
+                                class="db-field-control"
+                                data-testid="composer-personal-page-max-select"
+                            />
+                        </label>
+                    </div>
+
+                    <fieldset class="mt-4">
+                        <legend class="mb-1 block text-xs font-semibold text-[#5d6f66]">
+                            {{ t('label.composer.visible_on', 'Visible sur') }}
+                        </legend>
+                        <div class="flex flex-wrap gap-4">
+                            <label class="flex items-center gap-2 text-sm text-[#405149]">
+                                <input
+                                    v-model="personalPage.visible_on"
+                                    type="checkbox"
+                                    value="pos"
+                                    data-testid="composer-personal-page-visible-pos"
+                                />
+                                {{ t('label.composer.visible_pos', 'Caisse (POS)') }}
+                            </label>
+                            <label class="flex items-center gap-2 text-sm text-[#405149]">
+                                <input
+                                    v-model="personalPage.visible_on"
+                                    type="checkbox"
+                                    value="kiosk"
+                                    data-testid="composer-personal-page-visible-kiosk"
+                                />
+                                {{ t('label.composer.visible_kiosk', 'Borne (Kiosk)') }}
+                            </label>
+                        </div>
+                    </fieldset>
+                </div>
+
+                <div class="flex justify-end gap-2 border-t border-[#e3e8e5] p-5">
+                    <button type="button" class="db-btn-outline" data-testid="composer-personal-page-cancel" @click="closePersonalPage">
+                        {{ t('label.cancel', 'Annuler') }}
+                    </button>
+                    <button
+                        type="button"
+                        class="db-btn bg-[#1ab759] text-white"
+                        data-testid="composer-personal-page-submit"
+                        :disabled="personalPageSaving"
+                        @click="submitPersonalPage"
+                    >
+                        <i class="lab lab-tick-circle-2" aria-hidden="true"></i>
+                        {{ personalPageSaving ? t('label.composer.saving', 'Enregistrement...') : t('label.composer.create_page', 'Créer la page') }}
+                    </button>
+                </div>
+            </div>
+        </div>
     </section>
 </template>
 
@@ -403,6 +599,18 @@ export default {
             previewRefreshKey: 0,
             previewTimer: null,
             loadError: '',
+            personalPageOpen: false,
+            personalPageSaving: false,
+            personalPageError: '',
+            // Kept in sync with blankPersonalPage(); inlined here because Options-API
+            // data() runs before methods are bound on the instance.
+            personalPage: {
+                label: '',
+                options: [{ name: '', price: 0, description: '' }],
+                min_select: 0,
+                max_select: null,
+                visible_on: ['pos', 'kiosk'],
+            },
         };
     },
     computed: {
@@ -718,6 +926,94 @@ export default {
             this.steps = [...this.steps, next];
             this.selectedStepKey = next._uid;
             this.schedulePreviewRefresh();
+        },
+        blankPersonalPage() {
+            // [GOAL_WIZARD_DYNAMIC_BUILDER W5] A "personal page" persists every option to a
+            // catalog construct (ItemExtra). The PRICE lives per-option on the construct —
+            // NEVER a single price on the page/step (NF525 SSOT). The form therefore carries
+            // no top-level price field; each option row owns its own price (0 = free).
+            return {
+                label: '',
+                options: [{ name: '', price: 0, description: '' }],
+                min_select: 0,
+                max_select: null,
+                visible_on: ['pos', 'kiosk'],
+            };
+        },
+        openPersonalPage() {
+            this.personalPage = this.blankPersonalPage();
+            this.personalPageError = '';
+            this.personalPageOpen = true;
+        },
+        closePersonalPage() {
+            this.personalPageOpen = false;
+        },
+        addPersonalOption() {
+            this.personalPage.options.push({ name: '', price: 0, description: '' });
+        },
+        removePersonalOption(index) {
+            if (this.personalPage.options.length <= 1) return;
+            this.personalPage.options.splice(index, 1);
+        },
+        personalPagePayload() {
+            const options = this.personalPage.options.map((option) => ({
+                name: String(option.name || '').trim(),
+                price: Number(option.price || 0),
+                description: option.description ? String(option.description).trim() : '',
+            }));
+            const maxSelect = Number.isFinite(Number(this.personalPage.max_select))
+                && this.personalPage.max_select !== null
+                && this.personalPage.max_select !== ''
+                ? Number(this.personalPage.max_select)
+                : options.length;
+            return {
+                label: String(this.personalPage.label || '').trim(),
+                options,
+                min_select: Number(this.personalPage.min_select || 0),
+                max_select: maxSelect,
+                visible_on: Array.isArray(this.personalPage.visible_on) && this.personalPage.visible_on.length
+                    ? [...this.personalPage.visible_on]
+                    : ['pos', 'kiosk'],
+            };
+        },
+        async submitPersonalPage() {
+            this.personalPageError = '';
+            const payload = this.personalPagePayload();
+            if (!payload.label) {
+                this.personalPageError = this.t('message.composer.personal_page_label_required', 'Indiquez un titre de page.');
+                return;
+            }
+            if (!payload.options.length || payload.options.some((option) => !option.name)) {
+                this.personalPageError = this.t('message.composer.personal_page_option_name_required', "Chaque option doit avoir un nom.");
+                return;
+            }
+            this.personalPageSaving = true;
+            try {
+                // The endpoint is route-model-bound to an EXISTING profile. A fresh
+                // category/item (the live V1 path) has no profile yet — persist a draft
+                // first so profile.id resolves (mirrors publish()).
+                if (!this.profile?.id) {
+                    await this.saveDraft();
+                }
+                if (!this.profile?.id) {
+                    this.personalPageError = this.t('message.composer.personal_page_no_profile', "Sauvegardez d'abord le wizard.");
+                    return;
+                }
+                await axios.post(`admin/composer/profiles/${this.profile.id}/personal-page`, payload);
+                this.personalPageOpen = false;
+                alertService.success(this.t('message.composer.personal_page_created', 'Page personnalisée créée.'));
+                await this.loadProfile();
+            } catch (error) {
+                if (error?.response?.status === 422) {
+                    this.personalPageError = error?.response?.data?.message
+                        || this.t('message.composer.personal_page_validation_error', 'Données invalides envoyées au serveur.');
+                    return;
+                }
+                this.personalPageError = error?.response?.data?.message
+                    || this.t('message.composer.personal_page_failed', 'Création de la page impossible.');
+            } finally {
+                this.personalPageSaving = false;
+            }
         },
         updateSelectedStep(value) {
             if (!value?._uid) return;
