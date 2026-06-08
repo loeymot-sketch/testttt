@@ -45154,7 +45154,10 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
       if (!iso) return '';
       var d = new Date(iso);
       if (Number.isNaN(d.getTime())) return String(iso);
-      return d.toLocaleString();
+      // [DASH-UIUX-2026-06-08 P2] Force fr-FR — a bare toLocaleString() rendered the
+      // "Dernier Z" datetime in the browser locale (e.g. en-US "6/8/2026, 12:58:19 AM")
+      // on the FR admin dashboard. fr-FR gives 24h "08/06/2026 00:58:19".
+      return d.toLocaleString('fr-FR');
     }
   },
   mounted: function mounted() {
@@ -45862,6 +45865,21 @@ __webpack_require__.r(__webpack_exports__);
         // 'all good' — flag the error so the neutral state renders.
         _this.hasError = true;
       });
+    },
+    // [DASH-UIUX-2026-06-08 P3] Roll the SLA wait up past raw minutes so a stale ticket
+    // no longer reads "En attente depuis 15583 minutes" (unreadable). < 60 → "X min",
+    // < 24 h → "Xh Ymin", >= 24 h → "Xj Yh".
+    formatWait: function formatWait(minutes) {
+      var m = Math.max(0, Math.round(Number(minutes) || 0));
+      if (m < 60) return "".concat(m, " min");
+      var h = Math.floor(m / 60);
+      if (h < 24) {
+        var rem = m % 60;
+        return rem ? "".concat(h, " h ").concat(rem, " min") : "".concat(h, " h");
+      }
+      var d = Math.floor(h / 24);
+      var remH = h % 24;
+      return remH ? "".concat(d, " j ").concat(remH, " h") : "".concat(d, " j");
     }
   }
 });
@@ -59055,12 +59073,20 @@ var _hoisted_1 = {
 };
 function render(_ctx, _cache, $props, $setup, $data, $options) {
   var _component_TailwindPagination = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("TailwindPagination");
-  return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_1, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_TailwindPagination, {
+  return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_1, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [DASH-UIUX-2026-06-08 P2] FR labels — the library's default prev/next nav renders\n             English \"Previous\"/\"Next\" on every admin list page. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_TailwindPagination, {
     data: $props.pagination,
     onPaginationChangePage: $options.page,
     "active-classes": $data.activeClass,
     limit: 1
-  }, null, 8 /* PROPS */, ["data", "onPaginationChangePage", "active-classes"])]);
+  }, {
+    "prev-nav": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
+      return [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.previous')), 1 /* TEXT */)];
+    }),
+    "next-nav": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
+      return [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.next')), 1 /* TEXT */)];
+    }),
+    _: 1 /* STABLE */
+  }, 8 /* PROPS */, ["data", "onPaginationChangePage", "active-classes"])]);
 }
 
 /***/ },
@@ -59083,12 +59109,20 @@ var _hoisted_1 = {
 };
 function render(_ctx, _cache, $props, $setup, $data, $options) {
   var _component_TailwindPagination = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("TailwindPagination");
-  return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_1, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_TailwindPagination, {
+  return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_1, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [DASH-UIUX-2026-06-08 P2] FR labels for the mobile prev/next nav (was English). "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_TailwindPagination, {
     data: $props.pagination,
     onPaginationChangePage: $options.page,
     "active-classes": $data.activeClass,
     limit: -1
-  }, null, 8 /* PROPS */, ["data", "onPaginationChangePage", "active-classes"])]);
+  }, {
+    "prev-nav": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
+      return [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.previous')), 1 /* TEXT */)];
+    }),
+    "next-nav": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
+      return [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.next')), 1 /* TEXT */)];
+    }),
+    _: 1 /* STABLE */
+  }, 8 /* PROPS */, ["data", "onPaginationChangePage", "active-classes"])]);
 }
 
 /***/ },
@@ -60398,7 +60432,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       "class": "flex items-center justify-between p-4 bg-red-50 border border-red-100 rounded-lg"
     }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h5", _hoisted_11, "Ticket #" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(alert.queue_number) + " (" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(alert.order_serial_no) + ")", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_12, [_cache[4] || (_cache[4] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
       "class": "lab lab-time w-4 h-4 mr-1"
-    }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" En attente depuis " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(alert.time_preparing) + " minutes ", 1 /* TEXT */)])])]);
+    }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" En attente depuis " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatWait(alert.time_preparing)), 1 /* TEXT */)])])]);
   }), 128 /* KEYED_FRAGMENT */))]))])]);
 }
 
@@ -81508,15 +81542,19 @@ __webpack_require__.r(__webpack_exports__);
     var message = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : "";
     var position = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : "top-right";
     var toast = (0,vue_toastification__WEBPACK_IMPORTED_MODULE_0__.useToast)();
+    // [DASH-UIUX-2026-06-08 P2] V1 LOCAL is FR-only (ADR-007). This previously appended a
+    // hardcoded ENGLISH suffix (" Updated Successfully.") to an already-translated FR label
+    // (callers pass this.$t(...)), so every CRUD toast across the 102 admin components read
+    // half-English — e.g. "Entreprise Updated Successfully." — which made the admin feel
+    // broken. Append a clean French confirmation instead. The noun-based "réussie" forms
+    // are feminine-agreeing and read correctly regardless of the label's gender.
+    var suffix;
     if (status != null) {
-      if (status) {
-        message = message + " Updated Successfully.";
-      } else {
-        message = message + " Created Successfully.";
-      }
+      suffix = status ? "mise à jour réussie." : "création réussie.";
     } else {
-      message = message + " Deleted Successfully.";
+      suffix = "suppression réussie.";
     }
+    message = (message ? message + " : " : "") + suffix;
     toast.success(message, {
       position: position
     });

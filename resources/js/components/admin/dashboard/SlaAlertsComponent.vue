@@ -35,7 +35,7 @@
                         <h5 class="font-semibold text-red-700">Ticket #{{ alert.queue_number }} ({{ alert.order_serial_no }})</h5>
                         <p class="text-sm text-red-600 font-medium mt-1">
                             <i class="lab lab-time w-4 h-4 mr-1"></i>
-                            En attente depuis {{ alert.time_preparing }} minutes
+                            En attente depuis {{ formatWait(alert.time_preparing) }}
                         </p>
                     </div>
                 </div>
@@ -77,6 +77,21 @@ export default {
                 // 'all good' — flag the error so the neutral state renders.
                 this.hasError = true;
             });
+        },
+        // [DASH-UIUX-2026-06-08 P3] Roll the SLA wait up past raw minutes so a stale ticket
+        // no longer reads "En attente depuis 15583 minutes" (unreadable). < 60 → "X min",
+        // < 24 h → "Xh Ymin", >= 24 h → "Xj Yh".
+        formatWait(minutes) {
+            const m = Math.max(0, Math.round(Number(minutes) || 0));
+            if (m < 60) return `${m} min`;
+            const h = Math.floor(m / 60);
+            if (h < 24) {
+                const rem = m % 60;
+                return rem ? `${h} h ${rem} min` : `${h} h`;
+            }
+            const d = Math.floor(h / 24);
+            const remH = h % 24;
+            return remH ? `${d} j ${remH} h` : `${d} j`;
         }
     }
 }

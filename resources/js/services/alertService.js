@@ -47,15 +47,19 @@ export default {
 
     successFlip: function (status = null, message = "", position = "top-right") {
         const toast = useToast();
+        // [DASH-UIUX-2026-06-08 P2] V1 LOCAL is FR-only (ADR-007). This previously appended a
+        // hardcoded ENGLISH suffix (" Updated Successfully.") to an already-translated FR label
+        // (callers pass this.$t(...)), so every CRUD toast across the 102 admin components read
+        // half-English — e.g. "Entreprise Updated Successfully." — which made the admin feel
+        // broken. Append a clean French confirmation instead. The noun-based "réussie" forms
+        // are feminine-agreeing and read correctly regardless of the label's gender.
+        let suffix;
         if (status != null) {
-            if (status) {
-                message = message + " Updated Successfully.";
-            } else {
-                message = message + " Created Successfully.";
-            }
+            suffix = status ? "mise à jour réussie." : "création réussie.";
         } else {
-            message = message + " Deleted Successfully.";
+            suffix = "suppression réussie.";
         }
+        message = (message ? message + " : " : "") + suffix;
 
         toast.success(message, {
             position: position,

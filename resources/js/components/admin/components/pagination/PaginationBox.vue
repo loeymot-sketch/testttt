@@ -1,6 +1,11 @@
 <template>
     <div dir="ltr">
-        <TailwindPagination :data="pagination" @pagination-change-page="page" :active-classes="activeClass" :limit="1" />
+        <!-- [DASH-UIUX-2026-06-08 P2] FR labels — the library's default prev/next nav renders
+             English "Previous"/"Next" on every admin list page. -->
+        <TailwindPagination :data="pagination" @pagination-change-page="page" :active-classes="activeClass" :limit="1">
+            <template #prev-nav>{{ $t('label.previous') }}</template>
+            <template #next-nav>{{ $t('label.next') }}</template>
+        </TailwindPagination>
     </div>
 </template>
 

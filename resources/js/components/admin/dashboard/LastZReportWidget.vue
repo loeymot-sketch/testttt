@@ -55,7 +55,10 @@ export default {
             if (! iso) return '';
             const d = new Date(iso);
             if (Number.isNaN(d.getTime())) return String(iso);
-            return d.toLocaleString();
+            // [DASH-UIUX-2026-06-08 P2] Force fr-FR — a bare toLocaleString() rendered the
+            // "Dernier Z" datetime in the browser locale (e.g. en-US "6/8/2026, 12:58:19 AM")
+            // on the FR admin dashboard. fr-FR gives 24h "08/06/2026 00:58:19".
+            return d.toLocaleString('fr-FR');
         },
     },
     mounted() {

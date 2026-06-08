@@ -1,7 +1,11 @@
 <template>
     <div class="flex flex-1 justify-between sm:hidden">
+        <!-- [DASH-UIUX-2026-06-08 P2] FR labels for the mobile prev/next nav (was English). -->
         <TailwindPagination :data="pagination" @pagination-change-page="page" :active-classes="activeClass"
-            :limit="-1" />
+            :limit="-1">
+            <template #prev-nav>{{ $t('label.previous') }}</template>
+            <template #next-nav>{{ $t('label.next') }}</template>
+        </TailwindPagination>
     </div>
 </template>
 <script>

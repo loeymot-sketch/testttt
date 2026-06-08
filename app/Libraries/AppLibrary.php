@@ -29,7 +29,7 @@ class AppLibrary
     public static function time($time, $pattern = null): string
     {
         if (!$pattern) {
-            $pattern = env('TIME_FORMAT', 'h:i A');
+            $pattern = env('TIME_FORMAT', 'H:i');
         }
         return Carbon::parse($time)->format($pattern);
     }
@@ -37,7 +37,7 @@ class AppLibrary
     public static function datetime($dateTime, $pattern = null): string
     {
         if (!$pattern) {
-            $pattern = env('TIME_FORMAT', 'h:i A') . ', ' . env('DATE_FORMAT', 'd-m-Y');
+            $pattern = env('TIME_FORMAT', 'H:i') . ', ' . env('DATE_FORMAT', 'd-m-Y');
         }
         return Carbon::parse($dateTime)->format($pattern);
     }
@@ -53,7 +53,7 @@ class AppLibrary
     public static function deliveryTime($dateTime, $pattern = null): string
     {
         if (!$pattern) {
-            $pattern = env('TIME_FORMAT', 'h:i A');
+            $pattern = env('TIME_FORMAT', 'H:i');
         }
         $explode = explode('-', $dateTime);
         if (count($explode) == 2) {
@@ -429,7 +429,7 @@ class AppLibrary
                     return "Now";
                 } else {
                     if (!$pattern) {
-                        $pattern = env('TIME_FORMAT', 'h:i A');
+                        $pattern = env('TIME_FORMAT', 'H:i');
                     }
                     $explode = explode('-', $dateTime);
                     if (count($explode) == 2) {
