@@ -501,6 +501,107 @@ class ComposerStepConstraintTest extends TestCase
         );
     }
 
+    /**
+     * [GOAL_WIZARD_DYNAMIC W7 — GATE-G discriminator 2026-06-08]
+     *
+     * ASYMMETRY PROOF (the confirmed P1): the render paths
+     * (MenuProjectionService / KioskMenuService / ItemResource /
+     * NormalItemResource) now resolve a category-owned published profile for
+     * an item that has no own profile (committed 0ad1906ff) — so the wizard
+     * RENDERS for inherited-category items. But PricingService's
+     * `assertComposerStepConstraints` (FROZEN ZONE, CLAUDE.md §7) still
+     * resolves `whereIn('item_id', ...)` ONLY (PricingService.php:564-576) —
+     * so its server-side composer validation (step membership + min/max +
+     * allow_repeat) is SILENTLY SKIPPED for the very same inherited items.
+     *
+     * Severity = P1 (validation-completeness), NOT a fiscal P0: price is
+     * computed from catalog (PricingService.php:134-226) and the menu-formula
+     * ratio is keyed on the DB `addons.role` column + payload role
+     * (CompositionSnapshotBuilder::resolveEffectiveAddonRole) — NEITHER reads
+     * ItemWizardProfile — so the bypass cannot mis-price. What it loses is the
+     * "did the customer satisfy the required step?" guard.
+     *
+     * This test ENCODES THE CURRENT (incorrect) behavior so it is runnable
+     * proof today and a regression anchor. WHEN THE GATE-G HEAL LANDS (mirror
+     * the category fallback inside assertComposerStepConstraints), FLIP the
+     * inherited-case assertion below from "accepted" to expectException
+     * ('minimum 1 sélection' / 'Boisson').
+     */
+    public function test_GAP_category_inherited_composer_constraints_are_not_enforced_pending_gate_g(): void
+    {
+        // ---- Item A: relies on an INHERITED category profile (no own profile)
+        $inheritedItem = $this->makeItem();
+        $inheritedAddonItem = $this->makeItem(['price' => 2.50]);
+        $inheritedAddon = ItemAddon::query()->create([
+            'item_id' => $inheritedItem->id,
+            'addon_item_id' => $inheritedAddonItem->id,
+            'addon_item_variation' => null,
+            'role' => 'drink',
+        ]);
+        // Required addon step published at the CATEGORY level (item_id = null).
+        $this->publishCategoryProfile($this->category, [
+            [
+                'step_key' => 'boisson',
+                'label' => 'Boisson',
+                'source_type' => 'addon',
+                'source_ref' => 'drink',
+                'min_select' => 1,
+                'max_select' => 1,
+                'allow_repeat' => false,
+                'addon_role' => 'drink',
+            ],
+        ]);
+
+        // INVALID composition: required "Boisson" step left empty.
+        // CURRENT (buggy) behavior = accepted because the category profile is
+        // never resolved for this item. Post-GATE-G this must throw.
+        $inheritedResult = $this->pricing->calculateOrder(
+            PricingRequest::forKiosk(1, $this->branch->id, [$this->line($inheritedItem->id, [])], 0, 0, 0.0),
+            $this->couponService
+        );
+        $this->assertSame(
+            1,
+            count($inheritedResult->orderItemInsertRows),
+            'GAP CONFIRMED: an invalid composition on a category-inherited item is accepted server-side '
+            .'(assertComposerStepConstraints bypassed). FLIP to expectException once GATE-G heal lands.'
+        );
+
+        // ---- Item B: identical step published on the ITEM itself -> enforced.
+        $ownedItem = $this->makeItem();
+        $ownedAddonItem = $this->makeItem(['price' => 2.50]);
+        ItemAddon::query()->create([
+            'item_id' => $ownedItem->id,
+            'addon_item_id' => $ownedAddonItem->id,
+            'addon_item_variation' => null,
+            'role' => 'drink',
+        ]);
+        $this->publishProfile($ownedItem, [
+            [
+                'step_key' => 'boisson',
+                'label' => 'Boisson',
+                'source_type' => 'addon',
+                'source_ref' => 'drink',
+                'min_select' => 1,
+                'max_select' => 1,
+                'allow_repeat' => false,
+                'addon_role' => 'drink',
+            ],
+        ]);
+
+        // Same invalid composition on an item-OWNED profile IS rejected — this
+        // is the asymmetry that proves the bug is the missing inheritance in
+        // PricingService, not a missing guard in general.
+        try {
+            $this->pricing->calculateOrder(
+                PricingRequest::forKiosk(1, $this->branch->id, [$this->line($ownedItem->id, [])], 0, 0, 0.0),
+                $this->couponService
+            );
+            $this->fail('Item-owned composer profile must reject an order missing the required Boisson step.');
+        } catch (\InvalidArgumentException $exception) {
+            $this->assertStringContainsString('Boisson', $exception->getMessage());
+        }
+    }
+
     private function makeItem(array $overrides = []): Item
     {
         return Item::factory()->create(array_merge([
@@ -543,6 +644,38 @@ class ComposerStepConstraintTest extends TestCase
     {
         $profile = ItemWizardProfile::query()->create([
             'item_id' => $item->id,
+            'template' => 'custom',
+            'version' => 1,
+            'is_published' => true,
+            'published_at' => now(),
+            'branch_id_scope' => $branchIdScope,
+        ]);
+
+        foreach ($steps as $position => $step) {
+            $profile->steps()->create([
+                'step_key' => $step['step_key'],
+                'label' => $step['label'],
+                'source_type' => $step['source_type'],
+                'source_ref' => $step['source_ref'],
+                'min_select' => $step['min_select'],
+                'max_select' => $step['max_select'],
+                'allow_repeat' => $step['allow_repeat'],
+                'visible_on' => ['pos', 'kiosk'],
+                'stockable_choices' => (bool) ($step['stockable_choices'] ?? false),
+                'position' => $position,
+                'is_active' => true,
+                'addon_role' => $step['addon_role'] ?? null,
+            ]);
+        }
+
+        return $profile;
+    }
+
+    private function publishCategoryProfile(ItemCategory $category, array $steps, ?int $branchIdScope = null): ItemWizardProfile
+    {
+        $profile = ItemWizardProfile::query()->create([
+            'item_id' => null,
+            'item_category_id' => $category->id,
             'template' => 'custom',
             'version' => 1,
             'is_published' => true,
