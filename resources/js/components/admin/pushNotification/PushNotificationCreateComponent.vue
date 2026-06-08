@@ -54,8 +54,8 @@
                     <div class="col-12">
                         <div class="flex flex-wrap gap-3 mt-4">
                             <button type="submit" class="db-btn py-2 text-white bg-primary">
-                                <i class="lab lab-save"></i>
-                                <span>{{ $t("label.save") }}</span>
+                                <i class="lab lab-send-2"></i>
+                                <span>Envoyer la notification</span>
                             </button>
                             <button type="button" class="modal-btn-outline modal-close" @click="reset">
                                 <i class="lab lab-close"></i>
@@ -167,6 +167,13 @@ export default {
             });
         },
         save: function () {
+            // [P1] This dispatches a LIVE push broadcast to the selected audience (blank
+            // role + user = everyone). The trigger button was mislabeled "Enregistrer", so a
+            // gérant could broadcast believing they saved a draft. Confirm before sending.
+            appService.confirmation(
+                "Cette notification sera envoyée immédiatement aux destinataires sélectionnés (à tous les utilisateurs si aucun rôle ni utilisateur n'est choisi). Continuer ?",
+                "Envoyer la notification ?"
+            ).then(() => {
             try {
                 const fd = new FormData();
                 fd.append('title', this.form.title);
@@ -207,6 +214,7 @@ export default {
                 this.loading.isActive = false;
                 alertService.error(err)
             }
+            }).catch(() => { /* cancelled — nothing sent */ });
         }
     },
 }
