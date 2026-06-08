@@ -1,0 +1,2 @@
+add-variation button found+clicked= true
+variation modal: description-field= 1 image-field= 1

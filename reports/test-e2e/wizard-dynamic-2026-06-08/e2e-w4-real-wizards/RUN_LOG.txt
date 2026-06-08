@@ -1,0 +1,3 @@
+item25 card= 1
+step1 hasMeat(Poulet)= true  hasViandeHdr= true
+imgs on wizard= 24
