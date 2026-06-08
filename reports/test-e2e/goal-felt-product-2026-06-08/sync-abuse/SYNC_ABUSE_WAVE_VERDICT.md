@@ -10,6 +10,29 @@
 | **P1 — V1 BLOCKER (security/GDPR)** | `POST /loyalty/check` (`LoyaltyController::check`) returned a victim's **name + points + loyalty_code** by code/phone enumeration to ANY `kiosk:order` token — incl. a **guest token** mintable by anyone with the public client API key. **Proven LIVE**: `{"name":"Victim Secret",...,"loyalty_code":"VICT1234"}`. Sibling of the healed `register()` 409 leak; the falsification sweep had under-rated it P2. | Added the `redeem()` IDOR discriminator — allow only a REAL kiosk machine (`KioskMachine` row), staff, or the account owner; everyone else gets the same **404** as a miss (no existence oracle). | `LoyaltyApiTest::test_check_guest_cannot_enumerate_another_users_pii` + `check()` now acts as authorized staff (7/7) |
 | **P1 (sync, functional)** | **SYNC-01** `eventContract.js:401` — `unsubscribe()` called `Echo.leave(channelName)`, tearing down the **SHARED** `branch.{id}` channel for ALL co-subscribers. A child `KioskWaitingComponent` unmount (after an order) killed the kiosk shell's live availability/86-push stream for the rest of the session (shell subscribes once on boot, never re-subscribes). | Detach ONLY this subscriber's handlers — `stopListening` with the specific `rawHandler` (so a co-subscriber on the same event isn't clobbered) and never `Echo.leave` the shared channel. | `eventContractUnsubscribeSync01` (2/2) |
 
+## ✅ POST-CHECK() FULL SWEEP of `LoyaltyController` (advisor-mandated — a 2nd PII-leak in the same file demanded enumerating ALL methods for a 3rd sibling)
+Enumerated every method returning name/points/loyalty_code/phone/allergens and confirmed each has the `isKiosk || isStaff || owner` discriminator OR is structurally safe:
+
+| Method | PII returned | Status |
+|--------|--------------|--------|
+| `check()` :60 | name+points+loyalty_code | **healed** (`e78810e63`) |
+| `register()` :138 | 409 path | **healed** earlier (`d27ebb56d`, no existing_phone/code) |
+| `scan()` :637 | **first_name + points + declared_allergens** | **HEALED (3rd sibling, `85533d323`)** — see below |
+| `addPoints()` :218 | points only | safe — staff-gated at top (`hasAnyRole`→403) |
+| `balance()` :403 | delegates to `check()` | safe — inherits check()'s guard |
+| `history()` :515 | own ledger | safe — self-scoped to `$request->user()->id`, no enumeration param |
+| `optIn()` :423 | delegates to `register()` | safe — inherits register()'s healed 409 |
+| `config()` :472 | program config | safe — no PII |
+| `generateQr()` :842 | own loyalty_code | safe — self-scoped to `$request->user()` |
+
+### ✅ 3rd sibling HEALED — `scan()` IDOR (commit `85533d323`)
+`POST /loyalty/scan` (physical-kiosk QR/NFC) resolves a customer by `loyalty_code` OR phone via the legacy-plaintext path and returned **first_name + points + declared_allergens (GDPR health data)** to ANY `kiosk:order` token (incl. a guest token). Same discriminator added at the top of the method (fires BEFORE any DB lookup → no existence oracle).
+- **Severity = conditional**: the plaintext path is gated by `LOYALTY_QR_ACCEPT_LEGACY_PLAINTEXT` (config default **false**) and the signed path is unforgeable, so the leak is **latent** (only live if the flag is flipped on) — lower than `check()` which was always-live. Healed flag-independently (defense-in-depth) regardless.
+- **Borne unaffected (verified at source)**: `KioskMachineLoginController:98` mints the kiosk token on `KioskMachine.user_id` → `isKiosk=true` → real borne passes; `GuestSignupController:146` mints no `KioskMachine` row → guest blocked.
+- **Tests** (`LoyaltyApiTest` 9/9): `test_scan_guest_cannot_enumerate_pii` (guest WITH a kiosk:order token — blocked by the discriminator, not the ability gate) + `test_scan_real_kiosk_resolves_customer` (real KioskMachine token → 200, first name + points only).
+
+⇒ Sweep complete: the loyalty PII-enumeration class is fully closed across all 3 sibling methods; no 4th sibling exists.
+
 ## ✅ LIVE PROPAGATION REALITY-TEST (`zz-sync-abuse-live`, passing)
 Real borne orders (API, rapid sequence on one kiosk session) each: persist in a KDS-visible status with a unique queue number, AND emit **both `OrderCreated` + `OrderStatusChanged` into the `domain_events` outbox**, addressed to `private-branch.1` with the right `broadcast_as`, payloads carrying `order_id` + `queue_number`. The producer side of the real-time fan-out (KDS/OSS/POS-tracker) is wired and fires for every order.
 - **Honest scope note:** the *browser-receipt* leg (soketi delivers to a subscribed client) is env-dependent — it needs the `high`-queue worker to drain the outbox + soketi reachable. On this disposable clone the outbox is **not being drained** (`dispatched_at` stays NULL, `attempts=0`, redis `high` empty, no recent failed jobs) — an **OPS state on the clone, not a product defect**: the pipeline is correct and degrades to the abort-guarded polling fallback; prior sessions validated a real client receiving `OrderStatusChanged` on a provisioned deploy. → **deploy gate: ensure the `high`-queue worker + scheduler (`foodking:outbox:rescue`) run in production** (aligns with the known "supervisor/workers" deploy TODO).
