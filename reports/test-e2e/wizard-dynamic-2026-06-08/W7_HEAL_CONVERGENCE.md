@@ -72,6 +72,17 @@ After fixed `--force`: `Tacos publishedProfiles=[38] resolverServes=#38` (single
 **owner gate (§3bis — published profiles are a real, reversible catalog change)** and was **not**
 executed here. This report does not claim the operating catalog is changed.
 
+## Post-convergence checks (binding-locked verification)
+
+- **`description` is NOT an XSS sibling.** `grep description public/js/pos-wizard.js` → referenced only
+  as parser input (`extractViandeCountFromText(data.description)`, line 265) + two comments; never
+  written into an `innerHTML`/HTML sink. Kiosk Vue escapes `{{ description }}`. No guard needed.
+- **Poor-sibling 0-choice step is skipped, not a dead page.** A regular Tacos (#26, single
+  `Viande 1`) inherits the rich category profile #38 and gets `viande_2` **active with choices=0**.
+  The kiosk `shouldShowComposerStep` (`KioskWizardComponent.vue:802-803`: `choices.length === 0 →
+  return false`) filters it out — no empty "Viande 2" page. POS composer render is flag-OFF in V1.
+  Worst-case P2 does not materialize; the inherited binding is clean across rich and poor siblings.
+
 ## Environment note
 A macOS TCC denial over the whole `~/Downloads` tree (open() denied, stat allowed) intermittently
 blocked reads/`git`/`artisan`/`phpunit` mid-session; restored via owner Full Disk Access, resumed
