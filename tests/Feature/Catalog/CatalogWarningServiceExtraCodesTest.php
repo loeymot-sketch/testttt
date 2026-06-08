@@ -2,9 +2,14 @@
 
 namespace Tests\Feature\Catalog;
 
+use App\Enums\Status;
 use App\Models\Branch;
 use App\Models\Item;
+use App\Models\ItemAttribute;
 use App\Models\ItemBranchAvailability;
+use App\Models\ItemCategory;
+use App\Models\ItemVariation;
+use App\Models\ItemWizardProfile;
 use App\Services\Catalog\CatalogWarningService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -126,5 +131,63 @@ class CatalogWarningServiceExtraCodesTest extends TestCase
         $codes = array_column($warnings, 'code');
 
         $this->assertNotContains(CatalogWarningService::CODE_HIGH_DAILY_CONSUMED, $codes);
+    }
+
+    /**
+     * [GOAL_WIZARD_DYNAMIC W7] A complex item with NO own profile still emits
+     * the missing-composer blocker — UNLESS it inherits a published category
+     * wizard. This pair guards the false-blocker fix.
+     */
+    private function makeComplexItem(ItemCategory $category): Item
+    {
+        $item = Item::factory()->create([
+            'channels'         => ['pos'],
+            'item_type'        => 1,
+            'item_category_id' => $category->id,
+        ]);
+        $attribute = ItemAttribute::factory()->create(['name' => 'Viande', 'status' => Status::ACTIVE]);
+        ItemVariation::query()->create([
+            'item_id'           => $item->id,
+            'item_attribute_id' => $attribute->id,
+            'name'              => 'Poulet',
+            'price'             => 0,
+            'status'            => Status::ACTIVE,
+            'visible_on'        => ['pos', 'kiosk'],
+        ]);
+
+        return $item->fresh();
+    }
+
+    public function test_complex_item_without_any_wizard_still_emits_missing_blocker(): void
+    {
+        $category = ItemCategory::factory()->create(['status' => Status::ACTIVE]);
+        $item = $this->makeComplexItem($category);
+
+        $warnings = $this->service()->forItem($item, null);
+        $codes = array_column($warnings, 'code');
+
+        $this->assertContains(CatalogWarningService::CODE_COMPOSER_MISSING_FOR_COMPLEX, $codes);
+    }
+
+    public function test_complex_item_inheriting_published_category_wizard_does_not_emit_missing_blocker(): void
+    {
+        $category = ItemCategory::factory()->create(['status' => Status::ACTIVE]);
+        $item = $this->makeComplexItem($category);
+
+        // Published CATEGORY wizard (item_id = null) covering the item's category.
+        ItemWizardProfile::query()->create([
+            'item_id'          => null,
+            'item_category_id' => $category->id,
+            'template'         => 'custom',
+            'version'          => 1,
+            'is_published'     => true,
+            'published_at'     => now(),
+            'branch_id_scope'  => null,
+        ]);
+
+        $warnings = $this->service()->forItem($item, null);
+        $codes = array_column($warnings, 'code');
+
+        $this->assertNotContains(CatalogWarningService::CODE_COMPOSER_MISSING_FOR_COMPLEX, $codes);
     }
 }

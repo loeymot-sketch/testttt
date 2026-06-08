@@ -89,7 +89,21 @@ class CatalogWarningService
         $isComplexKind = $item->variations()->exists()
             || $item->extras()->exists();
 
-        if ($profile === null && $isComplexKind) {
+        // [GOAL_WIZARD_DYNAMIC W7] An item with no OWN profile may still inherit
+        // a PUBLISHED CATEGORY profile (canonical item-owned-wins; the category
+        // wizard fills the gap — same precedence the render resolvers now apply,
+        // commit 0ad1906ff). Without this, a complex item covered by a category
+        // wizard raised a FALSE "composer missing" blocker badge in the admin
+        // catalogue. Suppress the blocker when a category wizard covers it.
+        $inheritsPublishedCategoryProfile = $profile === null
+            && $item->item_category_id !== null
+            && ItemWizardProfile::query()
+                ->whereNull('item_id')
+                ->where('item_category_id', $item->item_category_id)
+                ->where('is_published', true)
+                ->exists();
+
+        if ($profile === null && $isComplexKind && !$inheritsPublishedCategoryProfile) {
             $warnings[] = [
                 'code'     => self::CODE_COMPOSER_MISSING_FOR_COMPLEX,
                 'severity' => self::SEVERITY_BLOCKER,
