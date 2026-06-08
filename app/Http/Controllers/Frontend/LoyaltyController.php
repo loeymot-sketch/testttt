@@ -645,6 +645,25 @@ class LoyaltyController extends Controller
                 ], 403);
             }
 
+            // [SEC-FALSIFY-2026-06-08 P1] IDOR / PII-enumeration guard — same discriminator as
+            // check()/redeem(). Via the legacy-plaintext path scan() resolves a victim by
+            // loyalty_code OR phone and returns first_name + points + declared_allergens (GDPR
+            // health data). `kiosk:order` is satisfied by a GUEST token (GuestSignupController
+            // mints them for any holder of the public client API key), so without this gate a
+            // guest could enumerate ANY customer's PII. Allow only a REAL kiosk machine (has a
+            // KioskMachine row) or staff. Fires BEFORE any DB lookup → no existence oracle (403
+            // is identical whether the scanned code exists or not).
+            $isKiosk = \App\Models\KioskMachine::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
+                ->where('user_id', $user->id)
+                ->exists();
+            $isStaff = $user->hasAnyRole(['Admin', 'Branch Manager', 'POS Operator', 'Stuff']);
+            if (!$isKiosk && !$isStaff) {
+                return response()->json([
+                    'status'  => false,
+                    'message' => 'Accès kiosk requis.',
+                ], 403);
+            }
+
             $validator = Validator::make($request->all(), [
                 'method'   => ['required', 'string', 'in:qr,nfc'],
                 'raw_data' => ['required', 'string', 'min:1', 'max:512'],

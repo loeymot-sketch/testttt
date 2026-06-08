@@ -127,9 +127,11 @@ class LoyaltyApiTest extends TestCase
             'loyalty_points' => 250,
             'status' => 5,
         ]);
-        // A plain guest: authenticated (Sanctum) but no KioskMachine row, no staff role.
+        // The real attack token: a guest holding a kiosk:order token (mintable by anyone with the
+        // public client API key) but NO KioskMachine row and no staff role. tokenCan('kiosk:order')
+        // is TRUE — so only the isKiosk/staff discriminator (not the ability gate) blocks it.
         $guest = \App\Models\User::factory()->create(['branch_id' => 0]);
-        $this->actingAs($guest, 'sanctum');
+        \Laravel\Sanctum\Sanctum::actingAs($guest, ['kiosk:order']);
 
         foreach (['VICT1234', '0612345678'] as $needle) {
             $response = $this->postJson('/api/frontend/loyalty/check', ['code' => $needle]);
@@ -139,6 +141,83 @@ class LoyaltyApiTest extends TestCase
             $this->assertStringNotContainsString('VICT1234', $body, 'must not leak the loyalty_code');
             $this->assertStringNotContainsString('250', $body, 'must not leak the points');
         }
+    }
+
+    /**
+     * [SEC-FALSIFY-2026-06-08 P1] /loyalty/scan is the physical-kiosk QR/NFC endpoint. Via the
+     * legacy-plaintext path it resolves a customer by loyalty_code OR phone and returns their first
+     * name + points + declared allergens (GDPR health data). `kiosk:order` is satisfied by a GUEST
+     * token (no KioskMachine row), so without the isKiosk/staff discriminator a guest could
+     * enumerate that PII. The guard fires BEFORE any resolution → a guest gets 403 (no data, no
+     * existence oracle) even when legacy plaintext is enabled. Sibling of the check() leak.
+     */
+    public function test_scan_guest_cannot_enumerate_pii()
+    {
+        config(['loyalty.qr.accept_legacy_plaintext' => true]); // worst case: plaintext ON
+        \App\Models\User::forceCreate([
+            'name' => 'Zelda Hidden',
+            'username' => 'zelda_hidden',
+            'email' => 'zelda@example.com',
+            'phone' => '0688887777',
+            'password' => bcrypt('password'),
+            'loyalty_code' => 'SCANVIC1',
+            'loyalty_points' => 300,
+            'status' => 5,
+        ]);
+        // Guest: holds a kiosk:order token (tokenCan true) but NO KioskMachine row → only the
+        // isKiosk/staff discriminator blocks it (the ability gate alone would let it through).
+        $guest = \App\Models\User::factory()->create(['branch_id' => 0]);
+        \Laravel\Sanctum\Sanctum::actingAs($guest, ['kiosk:order']);
+
+        foreach (['FK:SCANVIC1', '0688887777'] as $raw) {
+            $response = $this->postJson('/api/frontend/loyalty/scan', [
+                'method' => 'qr', 'raw_data' => $raw,
+            ]);
+            $response->assertStatus(403);
+            $body = $response->getContent();
+            $this->assertStringNotContainsString('Zelda', $body, 'must not leak the victim first name');
+            $this->assertStringNotContainsString('300', $body, 'must not leak the points');
+        }
+    }
+
+    /**
+     * [SEC-FALSIFY-2026-06-08] The scan() discriminator must NOT break the legit physical borne:
+     * a real KioskMachine token (the KioskMachineLoginController mints it on KioskMachine.user_id)
+     * resolves the customer and gets the minimised profile (first name + points).
+     */
+    public function test_scan_real_kiosk_resolves_customer()
+    {
+        config(['loyalty.qr.accept_legacy_plaintext' => true]);
+        \App\Models\User::forceCreate([
+            'name' => 'Marie Scan',
+            'username' => 'marie_scan',
+            'email' => 'marie@example.com',
+            'phone' => '0699990000',
+            'password' => bcrypt('password'),
+            'loyalty_code' => 'SCANOK1',
+            'loyalty_points' => 80,
+            'status' => 5,
+        ]);
+        $branch = \App\Models\Branch::factory()->create();
+        $kioskUser = \App\Models\User::factory()->create(['branch_id' => $branch->id]);
+        \App\Models\KioskMachine::forceCreate([
+            'user_id' => $kioskUser->id,
+            'branch_id' => $branch->id,
+            'machine_id' => 'K-TEST-1',
+            'username' => 'kiosk_test',
+            'password' => bcrypt('kioskpass'),
+            'is_login' => 1,
+            'status' => 1,
+        ]);
+        \Laravel\Sanctum\Sanctum::actingAs($kioskUser, ['kiosk:order']);
+
+        $response = $this->postJson('/api/frontend/loyalty/scan', [
+            'method' => 'qr', 'raw_data' => 'FK:SCANOK1',
+        ]);
+        $response->assertStatus(200);
+        $response->assertJsonPath('data.ok', true);
+        $response->assertJsonPath('data.display_name', 'Marie');           // first name only
+        $response->assertJsonPath('data.loyalty_balance_points', 80);
     }
 
     public function test_loyalty_add_points()
