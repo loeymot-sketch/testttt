@@ -1,0 +1,988 @@
+{
+ "matrix": [
+  {
+   "surface": "kiosk idle",
+   "daily_path": true,
+   "cells": [
+    {
+     "dimension": "visual-layout",
+     "status": "covered",
+     "note": "render sweeps + kiosk design campaigns drove idle repeatedly"
+    },
+    {
+     "dimension": "i18n",
+     "status": "covered",
+     "note": "raw-label regex sweeps clean on kiosk/idle (max-wave-b)"
+    },
+    {
+     "dimension": "a11y",
+     "status": "covered",
+     "note": "axe ran on kiosk/idle load state (wave-e/max-wave-b); KioskIdleScreen tabindex+keydown verified (phase-l)"
+    },
+    {
+     "dimension": "empty-state",
+     "status": "covered",
+     "note": "idle IS the empty/attract state, validated live"
+    },
+    {
+     "dimension": "error-state",
+     "status": "covered",
+     "note": "kiosk 'machine non configurée' degradation screen validated FR, no raw label (validation-2026-06-07)"
+    },
+    {
+     "dimension": "loading-state",
+     "status": "partial",
+     "note": "splash captured; cold-load spinner cadence not stress-probed"
+    },
+    {
+     "dimension": "data-correctness",
+     "status": "covered",
+     "note": "no totals on idle"
+    },
+    {
+     "dimension": "perf-optimization",
+     "status": "partial",
+     "note": "FCP measured on load only; bundle weight/re-render never analyzed"
+    },
+    {
+     "dimension": "sync-perceived",
+     "status": "covered",
+     "note": "sync corpus strength"
+    },
+    {
+     "dimension": "security-client",
+     "status": "covered",
+     "note": "public-borne kiosk:order scope + auto-login IP spoof healed H2"
+    }
+   ]
+  },
+  {
+   "surface": "kiosk wizard (composer)",
+   "daily_path": true,
+   "cells": [
+    {
+     "dimension": "visual-layout",
+     "status": "covered",
+     "note": "FROZEN KioskWizardComponent; composer wizard tacos/bowl finally exercised round-3 (goal-100pct)"
+    },
+    {
+     "dimension": "i18n",
+     "status": "covered",
+     "note": "kiosk.confirmation i18n migration + raw-label sweeps"
+    },
+    {
+     "dimension": "a11y",
+     "status": "partial",
+     "note": "keyboard trap+focus-restore code-verified (phase-l); kioskStepSauceA11y vitest; axe on OPEN wizard step state not run (frozen)"
+    },
+    {
+     "dimension": "empty-state",
+     "status": "partial",
+     "note": "OOS sauce guard tested; empty-option / all-sauce-rupture step state shallow"
+    },
+    {
+     "dimension": "error-state",
+     "status": "covered",
+     "note": "4 kiosk error screens PASS round-3"
+    },
+    {
+     "dimension": "loading-state",
+     "status": "partial",
+     "note": "step transitions; mid-wizard network-stall spinner not probed"
+    },
+    {
+     "dimension": "data-correctness",
+     "status": "partial",
+     "note": "pricing-preview tested but per-step running total + 999-qty + long-name overflow on frozen wizard not exhausted"
+    },
+    {
+     "dimension": "perf-optimization",
+     "status": "never",
+     "note": "re-render cost of step changes / image lazy-load never measured"
+    },
+    {
+     "dimension": "sync-perceived",
+     "status": "covered",
+     "note": "stock-toggle live cross-surface to wizard PASS"
+    },
+    {
+     "dimension": "security-client",
+     "status": "covered",
+     "note": "item_id+option_ids only; backend pricing SSOT"
+    }
+   ]
+  },
+  {
+   "surface": "kiosk cart / confirmation",
+   "daily_path": true,
+   "cells": [
+    {
+     "dimension": "visual-layout",
+     "status": "covered",
+     "note": "cart bottom-sheet + grouped recap design campaigns"
+    },
+    {
+     "dimension": "i18n",
+     "status": "covered",
+     "note": "confirmation keys migrated + sweeps"
+    },
+    {
+     "dimension": "a11y",
+     "status": "partial",
+     "note": "cart stepper/trash aria archived (mobile); kiosk cart axe-on-populated not driven"
+    },
+    {
+     "dimension": "empty-state",
+     "status": "partial",
+     "note": "empty-cart copy exists; not adversarially forced+verified on borne"
+    },
+    {
+     "dimension": "error-state",
+     "status": "covered",
+     "note": "counter-route confirm + 4 error screens"
+    },
+    {
+     "dimension": "loading-state",
+     "status": "partial",
+     "note": "confirm submit spinner not stress-probed offline"
+    },
+    {
+     "dimension": "data-correctness",
+     "status": "partial",
+     "note": "cart line totals + upsell add-back math; 999-qty cart sum not driven"
+    },
+    {
+     "dimension": "perf-optimization",
+     "status": "never",
+     "note": "large-cart re-render never measured"
+    },
+    {
+     "dimension": "sync-perceived",
+     "status": "covered",
+     "note": "offline queue v2 + counter-route"
+    },
+    {
+     "dimension": "security-client",
+     "status": "covered",
+     "note": "kiosk token scope"
+    }
+   ]
+  },
+  {
+   "surface": "POS order / cart",
+   "daily_path": true,
+   "cells": [
+    {
+     "dimension": "visual-layout",
+     "status": "covered",
+     "note": "FROZEN vanilla wizard + PosComponent driven across many waves"
+    },
+    {
+     "dimension": "i18n",
+     "status": "covered",
+     "note": "raw-label sweeps; €1.50 en-US note is a known frozen cosmetic (POS-ERG-07)"
+    },
+    {
+     "dimension": "a11y",
+     "status": "partial",
+     "note": "PaymentComponent focus-order/visible code-verified (phase-l) + posSkeletonGrid vitest; axe on POPULATED cart/wizard-popup not run (frozen vanilla JS)"
+    },
+    {
+     "dimension": "empty-state",
+     "status": "partial",
+     "note": "empty-cart POS state not adversarially forced"
+    },
+    {
+     "dimension": "error-state",
+     "status": "covered",
+     "note": "pay-guard, 422/409 guards driven"
+    },
+    {
+     "dimension": "loading-state",
+     "status": "covered",
+     "note": "posSkeletonGrid skeleton verified"
+    },
+    {
+     "dimension": "data-correctness",
+     "status": "partial",
+     "note": "single-line cart 1,50€ verified; multi-line + 999-qty + long-name overflow + running-cart-total rounding not exhausted on rendered page"
+    },
+    {
+     "dimension": "perf-optimization",
+     "status": "never",
+     "note": "pos-wizard.js ~296KB bundle weight + catalog re-render never measured"
+    },
+    {
+     "dimension": "sync-perceived",
+     "status": "covered",
+     "note": "rush-pos / rush-sync campaigns"
+    },
+    {
+     "dimension": "security-client",
+     "status": "covered",
+     "note": "staff-only routing 06 spec"
+    }
+   ]
+  },
+  {
+   "surface": "POS payment modal",
+   "daily_path": true,
+   "cells": [
+    {
+     "dimension": "visual-layout",
+     "status": "covered",
+     "note": "wave-p-pos + payment captures"
+    },
+    {
+     "dimension": "i18n",
+     "status": "covered",
+     "note": "sweeps"
+    },
+    {
+     "dimension": "a11y",
+     "status": "partial",
+     "note": "FROZEN PaymentComponent + PosV5TrancheRow focus-order/ring/Escape code-verified (phase-l L5.3); NO axe on open-modal/multi-split state; 5 power-user keyboard frictions deferred V1.0.2"
+    },
+    {
+     "dimension": "empty-state",
+     "status": "covered",
+     "note": "n/a; method tabs always present"
+    },
+    {
+     "dimension": "error-state",
+     "status": "covered",
+     "note": "insufficient-amount / pay-guard driven"
+    },
+    {
+     "dimension": "loading-state",
+     "status": "partial",
+     "note": "terminal-wait simulated state spinner not probed"
+    },
+    {
+     "dimension": "data-correctness",
+     "status": "partial",
+     "note": "split-tranche equal-split + change rendering verified numerically in fiscal tests but on-screen tranche-row sum vs total not visually re-checked under odd splits"
+    },
+    {
+     "dimension": "perf-optimization",
+     "status": "never",
+     "note": "never measured"
+    },
+    {
+     "dimension": "sync-perceived",
+     "status": "covered",
+     "note": "encaissement Echo live"
+    },
+    {
+     "dimension": "security-client",
+     "status": "covered",
+     "note": "backend recomputes total, forged SSOT ignored (round-5)"
+    }
+   ]
+  },
+  {
+   "surface": "encaissement modal (PosCounterCollectModal, borne→caisse unify)",
+   "daily_path": true,
+   "cells": [
+    {
+     "dimension": "visual-layout",
+     "status": "covered",
+     "note": "unified collect modal captured :8200 (cloud-prep) + validation-2026-06-07"
+    },
+    {
+     "dimension": "i18n",
+     "status": "partial",
+     "note": "surface renders clean but mode-label edge (TR/Mobile) only spot-checked"
+    },
+    {
+     "dimension": "a11y",
+     "status": "partial",
+     "note": "focus-order CASH/CARD/MOBILE/TICKET + numpad code-verified (phase-l); cc-input focus ring verified; NO axe-on-open + no contrast check on mode chips"
+    },
+    {
+     "dimension": "empty-state",
+     "status": "partial",
+     "note": "pending-list empty (no orders to collect) state not adversarially driven"
+    },
+    {
+     "dimension": "error-state",
+     "status": "never",
+     "note": "AUDIT_WAVE recommends a 409 'open drawer first' modal on no-session CASH — currently soft-skip; the error-modal UX does NOT exist yet (open, non-frozen, high value)"
+    },
+    {
+     "dimension": "loading-state",
+     "status": "partial",
+     "note": "confirm-collect spinner not probed offline"
+    },
+    {
+     "dimension": "data-correctness",
+     "status": "partial",
+     "note": "change/rendu computation + per-method persistence proven in fiscal tests; on-SCREEN rendu + 200-pending-card counts not data-checked"
+    },
+    {
+     "dimension": "perf-optimization",
+     "status": "never",
+     "note": "200 pending cards render cost never measured (real :8766 shows 200 pending)"
+    },
+    {
+     "dimension": "sync-perceived",
+     "status": "covered",
+     "note": "borne→caisse pipeline + Echo proven"
+    },
+    {
+     "dimension": "security-client",
+     "status": "covered",
+     "note": "cross-branch collect 404 (round-5)"
+    }
+   ]
+  },
+  {
+   "surface": "KDS board",
+   "daily_path": true,
+   "cells": [
+    {
+     "dimension": "visual-layout",
+     "status": "covered",
+     "note": "KDS redesign + many cycles; contrast 6.37-14.68:1 measured"
+    },
+    {
+     "dimension": "i18n",
+     "status": "covered",
+     "note": "kds_counter_payment_unpaid raw label found+healed (last gap closed)"
+    },
+    {
+     "dimension": "a11y",
+     "status": "covered",
+     "note": "AxeCoreCriticalGateSentinel + kdsA11yRichStructure + cv1-kds-a11y-rich axe driven; bump CTA 52px"
+    },
+    {
+     "dimension": "empty-state",
+     "status": "covered",
+     "note": "'Aucune commande en cours' validated (post-3-actions)"
+    },
+    {
+     "dimension": "error-state",
+     "status": "covered",
+     "note": "recall 404, error banner state in abuse-e2e plan"
+    },
+    {
+     "dimension": "loading-state",
+     "status": "partial",
+     "note": "board initial-load skeleton not explicitly verified"
+    },
+    {
+     "dimension": "data-correctness",
+     "status": "partial",
+     "note": "FIFO order + customization helper verified; per-column COUNT badges + elapsed-timer correctness not data-asserted on rendered board"
+    },
+    {
+     "dimension": "perf-optimization",
+     "status": "never",
+     "note": "50-card board re-render on poll + bundle never measured (rush campaigns measured latency not render cost)"
+    },
+    {
+     "dimension": "sync-perceived",
+     "status": "covered",
+     "note": "KDS sync corpus strength; cadence 250-60000ms envelope"
+    },
+    {
+     "dimension": "security-client",
+     "status": "covered",
+     "note": "branch isolation on kds-order endpoints"
+    }
+   ]
+  },
+  {
+   "surface": "KDS history drawer",
+   "daily_path": true,
+   "cells": [
+    {
+     "dimension": "visual-layout",
+     "status": "covered",
+     "note": "drawer panel + LOCAL badge captured"
+    },
+    {
+     "dimension": "i18n",
+     "status": "covered",
+     "note": "FR labels Prêt/En livraison/Livré verified"
+    },
+    {
+     "dimension": "a11y",
+     "status": "partial",
+     "note": "Escape handler verified; role=dialog/aria-modal WITHOUT focus-trap = documented P2 drift (open)"
+    },
+    {
+     "dimension": "empty-state",
+     "status": "covered",
+     "note": "'Aucune commande historique aujourd'hui' verified"
+    },
+    {
+     "dimension": "error-state",
+     "status": "covered",
+     "note": "4 mutually-exclusive states (loading/error/empty/list) verified"
+    },
+    {
+     "dimension": "loading-state",
+     "status": "covered",
+     "note": "loading state is one of the 4 verified states"
+    },
+    {
+     "dimension": "data-correctness",
+     "status": "covered",
+     "note": "empty <time> bumped-at P1 found+healed (updated_at exposed, N-HEAL-02)"
+    },
+    {
+     "dimension": "perf-optimization",
+     "status": "covered",
+     "note": "50-cap + branch-scope; no N+1 (read-only contract)"
+    },
+    {
+     "dimension": "sync-perceived",
+     "status": "covered",
+     "note": "read-only today-bounds, midnight rollover documented"
+    },
+    {
+     "dimension": "security-client",
+     "status": "covered",
+     "note": "branch isolation + 6 endpoint tests"
+    }
+   ]
+  },
+  {
+   "surface": "OSS client screen",
+   "daily_path": true,
+   "cells": [
+    {
+     "dimension": "visual-layout",
+     "status": "covered",
+     "note": "customer board En préparation|Prêt; contrast 7.11:1 AAA"
+    },
+    {
+     "dimension": "i18n",
+     "status": "covered",
+     "note": "sweeps clean"
+    },
+    {
+     "dimension": "a11y",
+     "status": "partial",
+     "note": "axe ran on OSS load (max-wave-b); contrast AAA; populated-queue axe + wakelock-state a11y shallow"
+    },
+    {
+     "dimension": "empty-state",
+     "status": "partial",
+     "note": "empty board (0 orders) not adversarially forced+verified"
+    },
+    {
+     "dimension": "error-state",
+     "status": "partial",
+     "note": "feed-down / 4 OSS empty-feed test flakes were harness, not UI error-state of the screen"
+    },
+    {
+     "dimension": "loading-state",
+     "status": "never",
+     "note": "initial poll loading state of customer board never probed"
+    },
+    {
+     "dimension": "data-correctness",
+     "status": "partial",
+     "note": "FIFO monotonic + A0001/A0002 alias verified; column COUNT + ticket-number-wrap on overflow not data-checked"
+    },
+    {
+     "dimension": "perf-optimization",
+     "status": "never",
+     "note": "poll-driven full-board re-render + display-lock never measured"
+    },
+    {
+     "dimension": "sync-perceived",
+     "status": "covered",
+     "note": "alias 200, FIFO, wakelock wired"
+    },
+    {
+     "dimension": "security-client",
+     "status": "covered",
+     "note": "public read-only board, no PII (order numbers only)"
+    }
+   ]
+  },
+  {
+   "surface": "Z-close / X-report screen",
+   "daily_path": true,
+   "cells": [
+    {
+     "dimension": "visual-layout",
+     "status": "partial",
+     "note": "Z PDF flagged 'YELLOW design' once (RED-visual); the on-screen close UI + PDF layout never given a dedicated visual pass"
+    },
+    {
+     "dimension": "i18n",
+     "status": "partial",
+     "note": "legal header wording is owner-gate G3; FR labels of close screen not raw-label-swept"
+    },
+    {
+     "dimension": "a11y",
+     "status": "never",
+     "note": "Z-close button + report screen never axe'd or keyboard-audited"
+    },
+    {
+     "dimension": "empty-state",
+     "status": "never",
+     "note": "empty-day / no-sales Z-close screen state never driven"
+    },
+    {
+     "dimension": "error-state",
+     "status": "partial",
+     "note": "already-closed / double-close guarded in fiscal layer; on-screen error UX not verified"
+    },
+    {
+     "dimension": "loading-state",
+     "status": "never",
+     "note": "close-in-progress spinner never probed"
+    },
+    {
+     "dimension": "data-correctness",
+     "status": "covered",
+     "note": "Z totals reconcile per-rate + method + cash-trail; HMAC chain; X intraday reconciles (fiscally exhausted)"
+    },
+    {
+     "dimension": "perf-optimization",
+     "status": "never",
+     "note": "n/a / never measured"
+    },
+    {
+     "dimension": "sync-perceived",
+     "status": "covered",
+     "note": "new Z opens gap-free after close"
+    },
+    {
+     "dimension": "security-client",
+     "status": "partial",
+     "note": "close is permission-gated server-side; button-visibility-without-permission on screen not checked"
+    }
+   ]
+  },
+  {
+   "surface": "dashboard day numbers",
+   "daily_path": true,
+   "cells": [
+    {
+     "dimension": "visual-layout",
+     "status": "covered",
+     "note": "'Suivi en direct' KPI cards captured; 90-route inventory campaign"
+    },
+    {
+     "dimension": "i18n",
+     "status": "covered",
+     "note": "axe+i18n sweep ran on dashboard (max-wave-b), 0 raw labels"
+    },
+    {
+     "dimension": "a11y",
+     "status": "covered",
+     "note": "axe ran on dashboard load (wave-e + max-wave-b)"
+    },
+    {
+     "dimension": "empty-state",
+     "status": "partial",
+     "note": "0-order day KPI (CA 0,00 / Ticket Moyen —) state not adversarially forced"
+    },
+    {
+     "dimension": "error-state",
+     "status": "partial",
+     "note": "dashboard 'plein ne fonctionne pas' root-caused+healed (routing), but per-widget API-failure error UX not driven"
+    },
+    {
+     "dimension": "loading-state",
+     "status": "never",
+     "note": "KPI card loading/skeleton state never probed"
+    },
+    {
+     "dimension": "data-correctness",
+     "status": "partial",
+     "note": "single-order Ticket Moyen 1,50€ eyeballed; MULTI-order AOV/rounding math + CA-vs-Z reconciliation of the RENDERED KPI never asserted (highest-value data-correctness gap)"
+    },
+    {
+     "dimension": "perf-optimization",
+     "status": "never",
+     "note": "dashboard aggregate queries (N+1 feeding KPIs) + widget re-render never measured"
+    },
+    {
+     "dimension": "sync-perceived",
+     "status": "covered",
+     "note": "live daily KPI traces test order in real-time"
+    },
+    {
+     "dimension": "security-client",
+     "status": "partial",
+     "note": "permission:settings gates routes; per-card data-visibility by role not checked"
+    }
+   ]
+  },
+  {
+   "surface": "order history (/admin/historique)",
+   "daily_path": true,
+   "cells": [
+    {
+     "dimension": "visual-layout",
+     "status": "covered",
+     "note": "full fiscal trace row layout captured (serial, origine, N° fiscal, statut)"
+    },
+    {
+     "dimension": "i18n",
+     "status": "partial",
+     "note": "row labels rendered clean in sweep; pagination control labels not swept"
+    },
+    {
+     "dimension": "a11y",
+     "status": "never",
+     "note": "/admin/historique never axe'd or keyboard-audited (distinct from KDS drawer)"
+    },
+    {
+     "dimension": "empty-state",
+     "status": "never",
+     "note": "no-results / filtered-empty history state never driven"
+    },
+    {
+     "dimension": "loading-state",
+     "status": "never",
+     "note": "page-load / page-change loading state of 344-page table never probed"
+    },
+    {
+     "dimension": "error-state",
+     "status": "never",
+     "note": "fetch-failure error UX never driven"
+    },
+    {
+     "dimension": "data-correctness",
+     "status": "partial",
+     "note": "per-row N° fiscal + origine verified for 1 order; the '3431 entries / 344 pages' COUNT correctness + pagination boundary rows never asserted"
+    },
+    {
+     "dimension": "perf-optimization",
+     "status": "never",
+     "note": "3431-row paginated query + render cost never measured (concrete N+1/pagination perf gap)"
+    },
+    {
+     "dimension": "sync-perceived",
+     "status": "covered",
+     "note": "new orders trace into history consistently"
+    },
+    {
+     "dimension": "security-client",
+     "status": "partial",
+     "note": "branch-scope on Order; PII (customer phone/name) presence in history DOM not audited"
+    }
+   ]
+  },
+  {
+   "surface": "stock rupture (/admin/stock/rupture)",
+   "daily_path": true,
+   "cells": [
+    {
+     "dimension": "visual-layout",
+     "status": "covered",
+     "note": "full category tree + toggle captured (z3-stock-dashboard, validation-2026-06-07)"
+    },
+    {
+     "dimension": "i18n",
+     "status": "covered",
+     "note": "sweeps clean"
+    },
+    {
+     "dimension": "a11y",
+     "status": "covered",
+     "note": "axe ran on stock/rupture (max-wave-b + z3)"
+    },
+    {
+     "dimension": "empty-state",
+     "status": "partial",
+     "note": "all-in-stock (nothing in rupture) empty state + dead-filter cleanup noted but not forced"
+    },
+    {
+     "dimension": "error-state",
+     "status": "partial",
+     "note": "toggle-failure error UX not driven"
+    },
+    {
+     "dimension": "loading-state",
+     "status": "never",
+     "note": "category-tree load skeleton never probed"
+    },
+    {
+     "dimension": "data-correctness",
+     "status": "partial",
+     "note": "toggle live-sync verified; stock-count/threshold badges per item not data-asserted on page"
+    },
+    {
+     "dimension": "perf-optimization",
+     "status": "never",
+     "note": "full category tree render + availability N+1 never measured"
+    },
+    {
+     "dimension": "sync-perceived",
+     "status": "covered",
+     "note": "real-time toggle synced caisse/borne/wizard (E3 PASS)"
+    },
+    {
+     "dimension": "security-client",
+     "status": "partial",
+     "note": "toggle is a mutating action; visibility-without-permission not checked"
+    }
+   ]
+  },
+  {
+   "surface": "sales / items reports",
+   "daily_path": false,
+   "cells": [
+    {
+     "dimension": "visual-layout",
+     "status": "partial",
+     "note": "reports listed in inventory; no dedicated visual pass on the report SCREENS"
+    },
+    {
+     "dimension": "i18n",
+     "status": "partial",
+     "note": "not raw-label-swept as a focused surface"
+    },
+    {
+     "dimension": "a11y",
+     "status": "never",
+     "note": "sales/items report screens never axe'd or keyboard-audited"
+    },
+    {
+     "dimension": "empty-state",
+     "status": "never",
+     "note": "empty-period report state never driven"
+    },
+    {
+     "dimension": "loading-state",
+     "status": "never",
+     "note": "report-generation loading state never probed"
+    },
+    {
+     "dimension": "error-state",
+     "status": "partial",
+     "note": "salesReport store rejects-not-swallows verified at API layer; on-screen error UX never driven"
+    },
+    {
+     "dimension": "data-correctness",
+     "status": "partial",
+     "note": "fiscal numbers reconcile at API/Z layer; the RENDERED report totals/grouping/period-sum correctness on the screen never asserted"
+    },
+    {
+     "dimension": "perf-optimization",
+     "status": "never",
+     "note": "report aggregate queries never profiled for N+1"
+    },
+    {
+     "dimension": "sync-perceived",
+     "status": "covered",
+     "note": "reports are end-of-day, not real-time"
+    },
+    {
+     "dimension": "security-client",
+     "status": "partial",
+     "note": "permission-gated routes; export/PII exposure not audited"
+    }
+   ]
+  },
+  {
+   "surface": "catalogue items / studio",
+   "daily_path": false,
+   "cells": [
+    {
+     "dimension": "visual-layout",
+     "status": "covered",
+     "note": "45 items/11 cats canonical + real images; CatalogStudio captured many waves"
+    },
+    {
+     "dimension": "i18n",
+     "status": "covered",
+     "note": "studioFrontendI18nParity + StudioKeyParity sentinels"
+    },
+    {
+     "dimension": "a11y",
+     "status": "covered",
+     "note": "dedicated catalog-studio-a11y-axe.spec + axe on admin/items (wave-e)"
+    },
+    {
+     "dimension": "empty-state",
+     "status": "partial",
+     "note": "no-products / filtered-empty studio state not focused"
+    },
+    {
+     "dimension": "error-state",
+     "status": "covered",
+     "note": "409 version-conflict + atomic photo upload tested"
+    },
+    {
+     "dimension": "loading-state",
+     "status": "partial",
+     "note": "studio load not explicitly skeleton-checked"
+    },
+    {
+     "dimension": "data-correctness",
+     "status": "partial",
+     "note": "item count 45 verified; per-item price/availability badge correctness on grid not data-asserted"
+    },
+    {
+     "dimension": "perf-optimization",
+     "status": "never",
+     "note": "45-item grid + image load never profiled (low daily priority)"
+    },
+    {
+     "dimension": "sync-perceived",
+     "status": "covered",
+     "note": "availability changes sync"
+    },
+    {
+     "dimension": "security-client",
+     "status": "covered",
+     "note": "Spatie catalog.compose permission mapped"
+    }
+   ]
+  },
+  {
+   "surface": "login",
+   "daily_path": false,
+   "cells": [
+    {
+     "dimension": "visual-layout",
+     "status": "covered",
+     "note": "login captured many waves"
+    },
+    {
+     "dimension": "i18n",
+     "status": "covered",
+     "note": "axe+i18n sweep on /login"
+    },
+    {
+     "dimension": "a11y",
+     "status": "covered",
+     "note": "axe ran on /login (wave-e + max-wave-b); Playwright email-field quirk noted"
+    },
+    {
+     "dimension": "empty-state",
+     "status": "covered",
+     "note": "n/a"
+    },
+    {
+     "dimension": "error-state",
+     "status": "partial",
+     "note": "bad-credential error message not focused-verified"
+    },
+    {
+     "dimension": "loading-state",
+     "status": "partial",
+     "note": "submit spinner not probed"
+    },
+    {
+     "dimension": "data-correctness",
+     "status": "covered",
+     "note": "n/a"
+    },
+    {
+     "dimension": "perf-optimization",
+     "status": "covered",
+     "note": "light page; FCP measured"
+    },
+    {
+     "dimension": "sync-perceived",
+     "status": "covered",
+     "note": "n/a"
+    },
+    {
+     "dimension": "security-client",
+     "status": "covered",
+     "note": "auth refresh 01 spec; rate-limit not UI-probed"
+    }
+   ]
+  },
+  {
+   "surface": "customer storefront (web standalone — decoupled, NO V1 wireup)",
+   "daily_path": false,
+   "cells": [
+    {
+     "dimension": "visual-layout",
+     "status": "covered",
+     "note": "frontends-abuse-2026-05-30 + ultra-review-web-app drove home/menu; parity 41/41 images"
+    },
+    {
+     "dimension": "i18n",
+     "status": "covered",
+     "note": "abuse campaign raw-label sweep + M-001 price label healed"
+    },
+    {
+     "dimension": "a11y",
+     "status": "partial",
+     "note": "axe found button-name CRIT (healed) + progressbar (healed) but nested-interactive x87 + contrast x56 OPEN (supervisor downgraded GO→over-certified)"
+    },
+    {
+     "dimension": "empty-state",
+     "status": "partial",
+     "note": "empty-cart/checkout states shallow on standalone"
+    },
+    {
+     "dimension": "error-state",
+     "status": "partial",
+     "note": "checkout error states not driven (no backend wireup)"
+    },
+    {
+     "dimension": "loading-state",
+     "status": "never",
+     "note": "standalone has no real async; tracker loading never driven"
+    },
+    {
+     "dimension": "data-correctness",
+     "status": "partial",
+     "note": "loyalty 1pt/€ web vs 10pt/€ mobile divergence flagged (gate-D1); cart totals are mock"
+    },
+    {
+     "dimension": "perf-optimization",
+     "status": "never",
+     "note": "standalone bundle never profiled"
+    },
+    {
+     "dimension": "sync-perceived",
+     "status": "covered",
+     "note": "n/a — decoupled, no real sync"
+    },
+    {
+     "dimension": "security-client",
+     "status": "partial",
+     "note": "no backend; mock data, low risk for the BOX"
+    }
+   ]
+  }
+ ],
+ "already_closed": [
+  "H1 — Order-history invoice ('Imprimer La Facture') printed no NF525 block (SIRET/TVA/N°fiscal/operator) — healed via shared buildNf525Footer SSOT, re-audit CLOSED (goal-100pct R1)",
+  "H2 — Kiosk auto-login IP allowlist spoofable via X-Forwarded-For (creds harvest) — TrustProxies loopback-only, KioskAutoLoginIpSpoofTest 3/3, CLOSED",
+  "H5 — No set-branch-legal command + legal NULL + self-contradictory '293B' footer — idempotent foodking:set-branch-legal + VAT-registered footer default, 9 tests, CLOSED",
+  "H7 — Discounted-order ticket overstated per-rate TVA (0,91 vs collected 0,73) — buildTaxLines nets via ZReportService ratio, == signed Z, CLOSED (NOTE: G5 print-saga renderer reincarnates this on PAPER, owner-gated, NOT closed)",
+  "CP-2 — Admin show-page blank Ticket-Restaurant label — enum +1, e2e 1/1, CLOSED",
+  "T2-LIV raw labels (14/5 keys on delivery-boy session show) — lang fr/en + json, healed (owner-trial-max + post)",
+  "KDS raw i18n label kds_counter_payment_unpaid — added 5 locales, parity 28/28, served-bundle+DOM verified (validation-2026-06-07)",
+  "M-KDS-4 F-01 — KDS Historique bumped-at <time> rendered EMPTY (KDSOrderDetailsResource missing updated_at) — exposed updated_at, N-HEAL-02 ef619bfb8",
+  "kiosk.wizard.confirmation.* → kiosk.confirmation.* i18n migration — completed",
+  "Web standalone a11y button-name CRITICAL + progressbar — healed (System-A audit); NOTE nested-interactive x87 + contrast x56 remain OPEN",
+  "F1 / manual-discount→wrong-Z headline — DISPROVEN by self-audit, ZReportDiscountNettingTest 5/5 (pos-box-massive)",
+  "POS ergonomics ERG-01..05 + cash-trail OUT-skip/no-sale audit CASH-01/CASH-03 — shipped (W1 CAISSE commit)"
+ ],
+ "never_or_partial_cells": [
+  "encaissement modal × error-state = NEVER — no-session CASH currently soft-skips; the recommended 409 'open drawer first' modal UX does not exist (NON-FROZEN, daily-path, highest actionable value)",
+  "dashboard × data-correctness = PARTIAL — only a single-order Ticket Moyen 1,50€ eyeballed; MULTI-order AOV/rounding + CA-vs-Z reconciliation of the RENDERED KPI never asserted",
+  "order history (/admin/historique) × {a11y, empty-state, loading-state, error-state} = NEVER — distinct from KDS drawer; 344-page table never axe'd/keyboard'd, no empty/loading/fetch-error UX driven",
+  "order history × data-correctness = PARTIAL — '3431 entries / 344 pages' COUNT + pagination boundary rows never asserted",
+  "order history × perf-optimization = NEVER — 3431-row paginated query + render cost never measured (concrete pagination/N+1 gap)",
+  "Z-close / X-report screen × {a11y, empty-state, loading-state} = NEVER — fiscally exhausted but the SCREEN/PDF visual+a11y+empty-day+close-in-progress UX never driven",
+  "OSS client screen × loading-state = NEVER, × {empty-state, error-state} = PARTIAL — empty board + feed-down on-screen UX never adversarially forced",
+  "KDS board × {loading-state, data-correctness, perf-optimization} = PARTIAL/PARTIAL/NEVER — per-column COUNT badges + elapsed-timer correctness not asserted; 50-card poll re-render never measured",
+  "POS payment modal × a11y (axe on open multi-split state) = PARTIAL — keyboard/focus code-verified but no axe on the open modal; 5 power-user keyboard frictions deferred V1.0.2 (frozen)",
+  "POS order/cart × data-correctness = PARTIAL — multi-line + 999-qty + long-name overflow + running-cart-total rounding not exhausted on the rendered page (frozen vanilla wizard)",
+  "perf-optimization = NEVER across almost every operator surface (POS, KDS board, OSS, dashboard, history, stock, encaissement) — corpus only measured FCP/LCP-on-load (known P2); bundle weight (pos-wizard.js ~296KB) / N+1-feeding-a-page / heavy re-render NEVER analyzed",
+  "stock rupture × {loading-state=NEVER, data-correctness=PARTIAL, perf=NEVER} — category-tree skeleton, stock-count/threshold badge correctness, availability N+1 never driven",
+  "sales/items reports × {a11y, empty-state, loading-state} = NEVER, data-correctness = PARTIAL — report SCREEN totals/grouping/period-sum never asserted on-page; never axe'd",
+  "a11y axe on POPULATED/MODAL state = PARTIAL/NEVER across surfaces — axe only ran on idle/load state; contrast brand-orange 3.49:1 + aria-required-children profile-menu are KNOWN-DEFERRED (V1.0.X), do NOT re-raise as new",
+  "security-client × PII-in-DOM = PARTIAL — order history (customer phone/name) + dashboard per-role card visibility + on-screen button-without-permission never audited per surface"
+ ],
+ "notes": "CORPUS SHAPE (40+ campaigns): extremely strong on FISCAL/NF525, SYNC-PERCEIVED, VISUAL-LAYOUT, and i18n-RAW-LABEL (render sweeps + raw-label regex sweeps + sync latency envelopes are thorough and repeated). Give full credit there — re-running them wastes the plan.\n\nTHE ACTUAL BLIND SPOTS the plan must attack, ranked by (daily_path × actionable/non-frozen):\n1. data-correctness OF THE RENDERED NUMBERS per page ('bien calculé sur chaque page'): the corpus proved fiscal numbers at the DB/Z/API layer to death, but almost never asserted that the TOTAL/AOV/COUNT/BADGE actually painted on the screen equals it. Dashboard Ticket Moyen (multi-order AOV/rounding), history '3431/344-pages' count, KDS column counts + elapsed timers, OSS column counts, stock threshold badges, report period-sums = the richest empty cells, all NON-FROZEN.\n2. error-state UX on operator surfaces: the encaissement modal no-session-CASH error modal literally does not exist yet (AUDIT_WAVE recommends a 409 'open drawer first' — NON-FROZEN, daily-path, single highest-value buildable fix). Plus per-widget API-failure UX on dashboard/history/reports/stock.\n3. perf-optimization: a near-total NEVER column. Only FCP/LCP-on-load was measured (POS/KDS/OSS 3.4s, deferred P2). Bundle weight, N+1-feeding-a-page (history 3431 rows, dashboard KPI aggregates, stock availability tree), and heavy re-render (KDS/OSS poll redraw) were NEVER analyzed. This is code-readable statically (read-only friendly).\n4. loading/empty-state on operator surfaces other than KDS: OSS load, dashboard KPI skeleton, history pagination load, Z-close in-progress, stock tree, reports — mostly NEVER.\n5. a11y on POPULATED/MODAL/INTERACTIVE state: axe ran only on idle/initial load of ~8 surfaces; keyboard/focus-order was code-verified on the key modals (PaymentComponent, PosCounterCollectModal, KdsHistoryDrawer, KioskWizard — phase-l L5.3). Gap = axe on the OPEN encaissement modal / multi-split payment / populated KDS board / OSS queue, plus the KNOWN-DEFERRED contrast 3.49:1 (brand orange) and aria-required-children profile-menu (3 surfaces) — these last two are deferred-known V1.0.X, list them but do NOT re-raise as new findings.\n\nACTIONABILITY WEIGHTING: frozen surfaces (public/js/pos-wizard.js, public/css/pos-wizard.css, KioskWizard/App/Upsell, PaymentComponent, PosV5TrancheRow) → gaps there are LOW-value to the plan (owner gate to fix; e.g. €1.50 en-US POS-ERG-07, 999-qty wizard overflow). NON-FROZEN attack surface where a fix lands without an owner gate: PosCounterCollectModal (encaissement — owner's #1 unify focus), dashboard KPI components, KDS board/cards, OSS board, /admin/historique, /admin/stock/rupture, sales/items report screens, catalogue studio. The plan should concentrate findings here.\n\nKNOWN-OPEN-DEFERRED (do NOT count as closed, do NOT re-raise as NEW): contrast brand-orange #F4501E 3.49:1 (4 surfaces, owner brand decision V1.0.X), aria-required-children profile-menu (3 surfaces), FCP 3.4s POS/KDS/OSS (P2 V1.0.X), web-standalone nested-interactive x87 + contrast x56, KDS history role=dialog without focus-trap (P2), POS 5 power-user keyboard frictions (V1.0.2), €1.50 en-US POS-ERG-07 (frozen cosmetic). The customer storefront row is the DECOUPLED standalone (/Downloads/web, no V1 wireup) — included for completeness, daily_path=false, lowest priority for the box.\""
+}

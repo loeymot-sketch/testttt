@@ -1,0 +1,507 @@
+{
+ "skill": "",
+ "summary": "SYNTHESIS of 83 raw felt-product findings (10 auditors) into a deduplicated, anchored master plan-input. Every finding below was spot-verified against real file:line in this worktree (dead error-buttons, dropped promoDiscount, KDS N+1, unrounded kiosk subtotal, missing aria-modal, OSS translateY(-50%), getMessage() leak, APP_ENV=local credential bypass, absent fr.json keys, etc.). Editorial moves applied: (a) the real constraint is the 45-finding CEILING, not the 25 floor — I consolidated the low-priority admin-CRUD and web-storefront tail into theme clusters while keeping every daily-path P1/P2 atomic, landing at 38; (b) `frozen` is classified by WHERE THE FIX LANDS, not where the bug renders — so fr.json-only fixes that render inside frozen components (step_fallback, label.note) are frozen=false and stay OUT of owner-gates; (c) master_findings are ordered daily_path-first then severity, so the two genuine but web-only (daily_path=false) P1s sort BELOW daily-path P3s; (d) merged confirmed duplicate pairs (language-selector x2, PosCounterCollectModal aria-modal x2, customer-web-tracking x2, kiosk-waiting-offline x2) but kept master.blade vs admin-pos-v4 cache-bust SEPARATE because their frozen status differs (master ships now, admin-pos-v4 needs a gate). DROPPED: all fiscal/NF525/cloud-concurrency items and matrix already_closed cells per scope. RESIDUAL COVERAGE GAPS that could not be anchored read-only and are NOT in the finding list (note for a future pass): Z-close/X-report screen a11y + empty-day + loading states (never axe'd), OSS empty-board + initial-poll loading state, dashboard KPI 0-order empty + per-widget loading skeleton. The 5 lanes (kiosk / POS-caisse / KDS / OSS / admin-dashboard+reports) are all represented; the dominant felt-product themes are (1) dead/inert error-recovery CTAs on the borne, (2) raw i18n keys surfacing on daily error/warning paths, (3) on-screen totals that don't reconcile (kiosk line-sum vs footer, same-label-different-scope dashboard, sales-report format split), (4) silent staleness — no offline/WS-loss cue on the local box, and (5) a real perf tail (296K wizard shipped everywhere, dashboard fan-out, KDS poll N+1).",
+ "master_findings": [
+  {
+   "id": "FP-01",
+   "surface": "/kiosk/error/network (KioskErrorNetworkComponent)",
+   "dimension": "error-state",
+   "severity": "P1",
+   "title": "Network-error screen 'Réessayer' + 'Appeler le personnel' are dead (emit-only, no listener, no router/reload fallback) — borne fully stuck on connectivity loss",
+   "anchor": "resources/js/components/frontend/kiosk/KioskErrorNetworkComponent.vue:54-67 (retry/callStaff only this.$emit) + KioskAppComponent.vue:121-127 (<component> binds only add-to-cart/go-to-cart/start-order/reset-kiosk — no @retry/@call-staff)",
+   "frozen": false,
+   "daily_path": true,
+   "recommendation": "Make retry() do a real reconnect (window.location.reload() or re-dispatch branch load) and callStaff() surface a visible instruction/toast, mirroring the $router.push fallback the 3 sibling error screens already have (ProductRemoved:59/64, MenuUnavailable:61, PaymentRefused:90). Verified: only this screen lacks any fallback."
+  },
+  {
+   "id": "FP-02",
+   "surface": "/kiosk/confirmation receipt (KioskConfirmationComponent)",
+   "dimension": "data-correctness",
+   "severity": "P1",
+   "title": "Receipt discount line counts ONLY loyaltyDiscount, silently drops promoDiscount → printed subtotal − discount ≠ printed total",
+   "anchor": "resources/js/components/frontend/kiosk/KioskConfirmationComponent.vue:230 (receiptDiscount = _snapshotDiscount ?? loyaltyDiscount) + :276 (snapshot uses state.loyaltyDiscount only) vs kioskCart.js:241/359 (promoDiscount exists, folded into total at :252)",
+   "frozen": false,
+   "daily_path": true,
+   "recommendation": "Snapshot/render the FULL discount (loyaltyDiscount + promoDiscount), or break promo vs loyalty into separate receipt lines, so the printed subtotal − discount = total identity holds whenever a promo is applied. Promo codes are live by default in V1 (POS_MANUAL_DISCOUNT_ENABLED true)."
+  },
+  {
+   "id": "FP-03",
+   "surface": "POS Caisse — parked-order recall (ParkedOrdersComponent)",
+   "dimension": "i18n",
+   "severity": "P1",
+   "title": "Park-recall 'partial restore' warning renders raw key 'pos.park_restore_partial' — suppresses the money-relevant 'verify cart before encashing' alert",
+   "anchor": "resources/js/components/admin/pos/ParkedOrdersComponent.vue:207-209; key CONFIRMED absent from fr.json (only park_restore_success/error/requires_empty_cart at :184-186)",
+   "frozen": false,
+   "daily_path": true,
+   "recommendation": "Add pos.park_restore_partial to fr.json using the existing French sentence in the || fallback. Note the $t()||fallback is dead in vue-i18n v9 (returns truthy key on miss) so the French never shows today — the cashier sees the literal token before encashing a possibly wrong-total cart."
+  },
+  {
+   "id": "FP-04",
+   "surface": "/admin/order-status-screen (public OSS customer wall)",
+   "dimension": "data-correctness",
+   "severity": "P1",
+   "title": "OSS auto-scroll is a fixed translateY(-50%) over an UNCAPPED feed → tail of the queue never enters viewport; a near-end customer never sees their N° go PRÊT",
+   "anchor": "resources/js/components/admin/orderStatusScreen/PreparingAndReadyComponent.vue:486-494 (oss-scroll-loop 90%→translateY(-50%)) + OrderStatusScreenOrderService.php:63 (PREPARING+PREPARED) :146 (return $query->get(), no limit/take)",
+   "frozen": false,
+   "daily_path": true,
+   "recommendation": "Compute translateY in JS as -(scrollHeight − clientHeight) so the marquee travels the real overflow, OR cap rendered rows to what fits + a '+N en attente' counter. At 3-4x container height, -50% only reveals the middle band for the whole 30s loop."
+  },
+  {
+   "id": "FP-05",
+   "surface": "POS Orders Tracker (caisse kanban) + POS Caisse",
+   "dimension": "sync-perceived",
+   "severity": "P1",
+   "title": "On the box (APP_ENV=local) the cashier gets ZERO connection cue on WS loss — kanban silently coasts on 8s polling while KDS does warn",
+   "anchor": "resources/js/components/admin/pos/PosOrdersTrackerComponent.vue:10 (suppress-transient suppress-session-invalid) + :97 (v-if='!realtimeConnected && !isDevEnv') + ConnectionStatusBanner.vue:89 (isDevEnv→visible()=false); POLL_NO_WS_MS=8000 at :426",
+   "frozen": false,
+   "daily_path": true,
+   "recommendation": "Apply the KDS fail-safe-to-visible pattern: drop the !isDevEnv gate on pos-tracker-rt-warn (or make it opt-OUT via an explicit env flag) so on the local box the cashier sees 'Mode hors-ligne — actualisation lente' when realtimeConnected is false, exactly as the kitchen does."
+  },
+  {
+   "id": "FP-06",
+   "surface": "Borne — cart bottom-sheet footer (subtotal + total)",
+   "dimension": "data-correctness",
+   "severity": "P2",
+   "title": "Kiosk cart total recomputed from UNROUNDED prices — visible line totals can fail to add up to the displayed grand total",
+   "anchor": "resources/js/store/modules/kioskCart.js:225-231 (subtotal sums (base+varExtra+extras)*qty raw, no per-line round) vs per-line item.total rounded via toFixed(2) at ADD_ITEM/normalize; contrast posCart.js sums rounded line totals",
+   "frozen": false,
+   "daily_path": true,
+   "recommendation": "Compute the kiosk subtotal getter as the sum of the already-rounded per-line item.total (mirror posCart), or round each term inside the reduce, so the footer total equals the visible sum of line totals. Server (PricingService) is SSOT for the charged amount; this is the on-screen reconciliation gap."
+  },
+  {
+   "id": "FP-07",
+   "surface": "Admin Dashboard — Overview vs Sales Summary vs Order Statistics",
+   "dimension": "data-correctness",
+   "severity": "P2",
+   "title": "Same FR label = different date scope on one screen: total_sales is LIFETIME in Overview but MONTH in Sales Summary; total_orders is LIFETIME vs TODAY",
+   "anchor": "resources/js/components/admin/dashboard/OverviewComponent.vue:12-13,23-24 (label.total_sales/total_orders) + DashboardService.php:347-371 (totalSales/totalOrders apply NO order_datetime filter) vs SalesSummaryComponent (month) + OrderStatisticsComponent (today)",
+   "frozen": false,
+   "daily_path": true,
+   "recommendation": "Scope the Overview cards to a stated period or relabel them explicitly (e.g. 'Total cumulé' / 'depuis l'ouverture') so the identical label never denotes lifetime, month and today on one page."
+  },
+  {
+   "id": "FP-08",
+   "surface": "Admin — Sales Report (list table vs overview cards)",
+   "dimension": "data-correctness",
+   "severity": "P2",
+   "title": "Same money shown two ways on one page: summary cards '19,00 €' (currencyAmountFormat) vs table rows '19.00' (flatAmountFormat — US point, no € symbol)",
+   "anchor": "resources/js/components/admin/salesReport/SalesReportListComponent.vue:196-198 (rows bind *_amount_price) ← SimpleOrderResource.php:50-52 flatAmountFormat ; cards ← OrderService.php:2806-2808 currencyAmountFormat",
+   "frozen": false,
+   "daily_path": true,
+   "recommendation": "Render the report table money cells through the formatPrice() admin mixin (or project currencyAmountFormat in SimpleOrderResource for the report context) so rows and cards both show canonical FR '19,00 €'. Same fix applies to ItemList flat_price column."
+  },
+  {
+   "id": "FP-09",
+   "surface": "Admin Dashboard — RealtimeReportComponent ('Suivi en direct')",
+   "dimension": "error-state",
+   "severity": "P2",
+   "title": "Live revenue widget shows a false '0.00' no-revenue day on any poll failure (no .catch, US-format fallback) — same false-zero class DASH-04 was fixed for",
+   "anchor": "resources/js/components/admin/dashboard/RealtimeReportComponent.vue:fetchData (no .catch) + template report.daily_sales||'0.00' / report.average_ticket||'0.00'; backend sends currencyAmountFormat '19,00 €'",
+   "frozen": false,
+   "daily_path": true,
+   "recommendation": "Add a .catch that sets a hasError flag and render 'Données indisponibles' (mirror SlaAlertsComponent DASH-04), and make the genuine-zero fallback use the same currencyAmountFormat output ('0,00 €' not '0.00')."
+  },
+  {
+   "id": "FP-10",
+   "surface": "Borne — confirmation screen (points fidélité gagnés)",
+   "dimension": "data-correctness",
+   "severity": "P2",
+   "title": "Kiosk shows loyalty points 'gagnés' at confirmation, but points are only awarded OnDelivery — a cancelled/refunded order displays points the client never keeps",
+   "anchor": "resources/js/components/frontend/kiosk/KioskConfirmationComponent.vue:208-213 (pointsEarned client-side floor(total*rate)) vs AwardLoyaltyPointsOnDelivery.php:98-102 (awarded only on delivery; clawed back on refund)",
+   "frozen": false,
+   "daily_path": true,
+   "recommendation": "Phrase it conditionally ('vous gagnerez N points à la remise de la commande') or only surface points after the award event. Formula (floor(total*rate)) is correct — only the timing claim is wrong."
+  },
+  {
+   "id": "FP-11",
+   "surface": "KDS legacy 4-column layout (?v2=0 rollback path)",
+   "dimension": "i18n",
+   "severity": "P2",
+   "title": "Raw i18n key 'kds_counter_payment_unpaid' rendered on the unpaid-counter badge — bare $t() missing the label. namespace",
+   "anchor": "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue:694 + :873 ($t('kds_counter_payment_unpaid')); key exists ONLY at label.kds_counter_payment_unpaid (fr.json:432), no root-level key",
+   "frozen": false,
+   "daily_path": true,
+   "recommendation": "Change both occurrences to $t('label.kds_counter_payment_unpaid'). One-line, no new key. Bites only on the documented instant-rollback layout, which is the kitchen's fallback if V2 breaks."
+  },
+  {
+   "id": "FP-12",
+   "surface": "KDS — status-conflict error banner (concurrent bump)",
+   "dimension": "i18n",
+   "severity": "P2",
+   "title": "KDS status-conflict banner renders raw key 'label.kds_status_conflict' (wrong namespace — correct is message.kds_status_conflict)",
+   "anchor": "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue:1673 (label.kds_status_conflict — ABSENT, only message.kds_status_conflict at fr.json:1476); same component :2307 correctly uses message.",
+   "frozen": false,
+   "daily_path": true,
+   "recommendation": "Change line 1673 to $t('message.kds_status_conflict'). One-line component fix, no fr.json change; the chef currently sees the literal token in the red conflict banner during a real two-station edit."
+  },
+  {
+   "id": "FP-13",
+   "surface": "/kds V2 grid (default KDS) — KdsOrderCard",
+   "dimension": "visual-layout",
+   "severity": "P2",
+   "title": "KdsOrderCard hard-codes height:462px, fighting the responsive 2-row grid → row 2 clips on sub-~1000px-tall kitchen screens, chef misses aging FIFO tickets",
+   "anchor": "resources/js/components/admin/kitchenDisplaySystem/KdsOrderCard.vue:320-324 (cardStyle height:'462px') vs KdsV2Grid.vue:421-429 (grid-template-rows: repeat(2, minmax(0,1fr)) + min-height:0)",
+   "frozen": false,
+   "daily_path": true,
+   "recommendation": "Drop the inline fixed height; let the card fill its grid cell (height:100%; min-height:0; body already overflow-y:auto). Two 462px rows + gaps + banner ≈ 956px, which clips on a 768/720p tablet or portrait screen."
+  },
+  {
+   "id": "FP-14",
+   "surface": "PosCounterCollectModal (unified counter-collect — every POS+borne-cash+livreur encaissement)",
+   "dimension": "a11y",
+   "severity": "P2",
+   "title": "Highest-frequency cashier modal has role=dialog but is MISSING aria-modal=true (only POS dialog without it) + no focus-trap",
+   "anchor": "resources/js/components/admin/pos/PosCounterCollectModal.vue:42 (role=dialog, no aria-modal); siblings PosRefundModal/PosLoyaltyRedeemModal both declare aria-modal; grep confirms cc-modal absent from the aria-modal list",
+   "frozen": false,
+   "daily_path": true,
+   "recommendation": "Add aria-modal='true' to the cc-modal div (line 42) to match siblings. One attribute, scope-minimal. (Focus-trap is the separate cross-cutting FP-37.)"
+  },
+  {
+   "id": "FP-15",
+   "surface": "Cash drawer session dialog → Mouvements view",
+   "dimension": "i18n",
+   "severity": "P2",
+   "title": "Drawer-movements table shows raw machine enum (order_payment / drawer_open / cashback) + English '↑ IN' / '↓ OUT'",
+   "anchor": "resources/js/components/admin/cash/PosCashDrawerSessionDialog.vue:292 ({{movement.type}}) + :294 (direction in?'↑ IN':'↓ OUT'); fr.json has only order_payment (:1155) — cashback/drawer_open/drawer_close/adjustment CONFIRMED absent",
+   "frozen": false,
+   "daily_path": true,
+   "recommendation": "Translate type via $t('label.cash_mvt_'+type) (add the 4 missing keys) and translate the direction. The cashier reads this table to reconcile before close."
+  },
+  {
+   "id": "FP-16",
+   "surface": "admin SPA first-load (dashboard, KDS, OSS, reports — master.blade)",
+   "dimension": "perf-optimization",
+   "severity": "P2",
+   "title": "Admin SPA ships 296K FROZEN pos-wizard.js UNCONDITIONALLY on every surface, not just POS",
+   "anchor": "resources/views/master.blade.php:272 (<script pos-wizard.js> with no @if/@can guard) + :47 (pos-wizard.css) — served as SPA shell for every admin route; public/js/pos-wizard.js = 296KB",
+   "frozen": false,
+   "daily_path": true,
+   "recommendation": "Wrap the pos-wizard.js/.css script/link tags behind a route/permission guard (emit only on POS-bearing routes) or a POS-only partial. The blade LOADER line is non-frozen; do NOT touch pos-wizard.js contents."
+  },
+  {
+   "id": "FP-17",
+   "surface": "POS + admin SPA (master.blade cache-busting)",
+   "dimension": "perf-optimization",
+   "severity": "P2",
+   "title": "pos-wizard.css/.js cache-busted with per-request {{ time() }} → browser can never cache the 296K JS across full loads",
+   "anchor": "resources/views/master.blade.php:47 (?v=2-{{time()}}) + :272 (?v=9-{{time()}})",
+   "frozen": false,
+   "daily_path": true,
+   "recommendation": "Replace {{ time() }} with a static ?v=N constant (or content-hash). master.blade is non-frozen; the identical defect in admin-pos-v4.blade.php is frozen and split out as FP-33 under an owner gate."
+  },
+  {
+   "id": "FP-18",
+   "surface": "admin dashboard (/admin/dashboard)",
+   "dimension": "perf-optimization",
+   "severity": "P2",
+   "title": "Dashboard fans out ~18 independent XHR on mount (15 self-fetching widgets) with no batched aggregate endpoint",
+   "anchor": "DashboardController.php:38-60 (15 distinct GET endpoints) + each dashboard child self-fetches in mounted/created (OverviewComponent.vue:87/97, OrderStatistics x2, LastZReportWidget x2, +11 widgets)",
+   "frozen": false,
+   "daily_path": true,
+   "recommendation": "Add a single batched dashboard/summary aggregate for the cheap scalar widgets (totals/statistics/summary), keeping only genuinely-heavy/independent widgets (realtimeReport, auditTrail) on their own polls. Cuts ~10 round-trips to 1."
+  },
+  {
+   "id": "FP-19",
+   "surface": "admin dashboard — customerStates widget",
+   "dimension": "perf-optimization",
+   "severity": "P2",
+   "title": "customerStates runs 18 hour-bucket queries each ending in ->get()->count() over a default full-MONTH range (materializes a month of rows 18x)",
+   "anchor": "app/Services/DashboardService.php:314 (->get()->count()) inside an 18-entry hour loop; default range startOfMonth..endOfMonth",
+   "frozen": false,
+   "daily_path": true,
+   "recommendation": "Replace ->get()->count() with SQL-side ->count(); better, collapse the 18 per-hour queries into one GROUP BY HOUR(order_datetime). Pure read-aggregation."
+  },
+  {
+   "id": "FP-20",
+   "surface": "KDS poll endpoint (5s WS-down fallback)",
+   "dimension": "perf-optimization",
+   "severity": "P2",
+   "title": "KDS poll N+1: KDSOrderDetailsResource loadMissing('orderItem') per order because list() omits orderItems.orderItem from eager-load",
+   "anchor": "app/Services/KitchenDisplaySystemOrderService.php:73 (Order::with(['orderItems','address','user']) — no nested orderItems.orderItem) + KDSOrderDetailsResource.php:50 ($this->orderItems->loadMissing('orderItem'))",
+   "frozen": false,
+   "daily_path": true,
+   "recommendation": "Add 'orderItems.orderItem' to the with() at line 73. With ~50 active orders + WS down (5s poll) that's up to 50 extra queries every 5s on the hot KDS path. One-word fix."
+  },
+  {
+   "id": "FP-21",
+   "surface": "POS Orders Tracker (caisse) — LIVRÉS column",
+   "dimension": "perf-optimization",
+   "severity": "P2",
+   "title": "LIVRÉS column renders the entire day's delivered orders uncapped, re-fetching + re-diffing the whole board every 8s",
+   "anchor": "resources/js/components/admin/pos/PosOrdersTrackerComponent.vue:550 (buckets.delivered.push all DELIVERED, no slice) + 716 (POLL_NO_WS_MS 8s full re-fetch) ; OrderService::list get('*') no LIMIT",
+   "frozen": false,
+   "daily_path": true,
+   "recommendation": "Cap the delivered column (e.g. last 20) or virtualize it. By dinner service the column grows to hundreds and the whole transition-group re-animates each 8s cycle → perceptible caisse sluggishness."
+  },
+  {
+   "id": "FP-22",
+   "surface": "OSS public order-status endpoint (/api/frontend/oss-order)",
+   "dimension": "security-client",
+   "severity": "P2",
+   "title": "Unauthenticated OSS public endpoint echoes raw $exception->getMessage() in its 422 body (SQL/table-name disclosure to any LAN device)",
+   "anchor": "app/Http/Controllers/Admin/OrderStatusScreenController.php:103 (publicIndex) + :139 (publicMostPopularItems) — both catch return message=>getMessage(); mounted public, no auth:sanctum",
+   "frozen": false,
+   "daily_path": true,
+   "recommendation": "On the two PUBLIC methods return a generic constant message and log the real exception server-side. Never serialize getMessage() on an unauthenticated endpoint; leave the authed admin methods unchanged."
+  },
+  {
+   "id": "FP-23",
+   "surface": "Kiosk borne bootstrap (master.blade kioskAutoLogin)",
+   "dimension": "security-client",
+   "severity": "P2",
+   "title": "Kiosk machine username+password embedded plaintext in page DOM when APP_ENV=local (IP-allowlist bypass + default 'kiosk123')",
+   "anchor": "config/kiosk.php:139 (auto_login_local_bypass => env('APP_ENV')==='local') + :183 (password fallback 'kiosk123') + master.blade.php:121-127 (spa_payload renders username/password)",
+   "frozen": false,
+   "daily_path": true,
+   "recommendation": "Do NOT tie the credential bypass to APP_ENV. Require KIOSK_AUTO_LOGIN_TRUSTED_IPS (explicit borne LAN IPs) for the payload to render in ALL envs, or KIOSK_REQUIRE_MACHINE_LOGIN=true. Owner must confirm the box .env is not APP_ENV=local and rotate the default password. Severity hinges on deployed APP_ENV."
+  },
+  {
+   "id": "FP-24",
+   "surface": "OSS wall + Kiosk shell (transient connection banner)",
+   "dimension": "sync-perceived",
+   "severity": "P2",
+   "title": "Transient WS-loss banner suppressed on EVERY non-KDS surface (suppress-transient everywhere) → sustained backend/poll failure shows silently stale columns",
+   "anchor": "OrderStatusScreenComponent.vue:9 + KioskAppComponent.vue:11 + PosComponent.vue:72 (all suppress-transient) + ConnectionStatusBanner.vue:88-90; OssSyncService backoff to 30s on 5xx",
+   "frozen": false,
+   "daily_path": true,
+   "recommendation": "At minimum surface a subtle 'connexion lente' indicator on the OSS customer wall and kiosk when OssSyncService is in BACKOFF (≥2 consecutive 5xx). The BACKOFF state + ws_state events already exist; they are just not wired to a visible element."
+  },
+  {
+   "id": "FP-25",
+   "surface": "/admin/pos-orders (POS orders history list + filter)",
+   "dimension": "data-correctness",
+   "severity": "P2",
+   "title": "Status column renders BLANK for CANCELED/REJECTED/OUT_FOR_DELIVERY/PENDING (enum map incomplete) and the filter dropdown offers only 3 statuses",
+   "anchor": "resources/js/components/admin/posOrders/PosOrderListComponent.vue:244-250 (map omits 4 of 9 enum values) + :34-40 (filter lists only ACCEPT/PREPARING/DELIVERED)",
+   "frozen": false,
+   "daily_path": false,
+   "recommendation": "Add label entries for CANCELED/REJECTED/OUT_FOR_DELIVERY/PENDING (keys exist) so every row shows a status badge, and align the filter options so a manager can filter end-of-day cancelled sales. Merged finding (column + filter, same root cause)."
+  },
+  {
+   "id": "FP-26",
+   "surface": "/kiosk/cart — cart line items (KioskCartComponent)",
+   "dimension": "visual-layout",
+   "severity": "P2",
+   "title": "Cart item name + selections summary truncate to a single line (nowrap+ellipsis) — long product/customization names get cut, weaker than the 2-line clamp the grid uses",
+   "anchor": "resources/js/components/frontend/kiosk/KioskCartComponent.vue:957-966 (.kiosk-cart-item-name nowrap+ellipsis) + :776-784 (.kiosk-cart-item-selections nowrap) vs KioskCategoriesComponent.vue:1226-1228 (-webkit-line-clamp:2)",
+   "frozen": false,
+   "daily_path": true,
+   "recommendation": "Switch both to -webkit-line-clamp:2 (matching the product grid) so long names/customization summaries wrap to two lines instead of a hard one-line cut. Worst at ~360px where image+qty controls leave little room."
+  },
+  {
+   "id": "FP-27",
+   "surface": "/kiosk/idle — language selector (KioskIdleScreenComponent)",
+   "dimension": "i18n",
+   "severity": "P2",
+   "title": "Idle language buttons (EN, العربية) are visible but DEAD — changeLanguage() is a verified no-op under ADR-007 FR-lock (placebo control)",
+   "anchor": "resources/js/components/frontend/kiosk/KioskIdleScreenComponent.vue:14-34 (renders a button per enabledLanguage, default ['fr','en']) + :263-271 (changeLanguage empty body, comment confirms intentional no-op)",
+   "frozen": false,
+   "daily_path": true,
+   "recommendation": "Hide the selector entirely while FR-lock is in force (force enabledLanguages to ['fr'] so v-if length>1 keeps it hidden), OR implement real per-session locale switching with full EN/AR coverage. Don't render a control that lies about its function. Merged finding (reported twice)."
+  },
+  {
+   "id": "FP-28",
+   "surface": "/kiosk/waiting — offline-queued cash order (KioskWaitingComponent)",
+   "dimension": "sync-perceived",
+   "severity": "P2",
+   "title": "Offline cash order strands the borne on a forever 'syncing' spinner — no poll, no auto-redirect, no success/abandon outcome reflected",
+   "anchor": "resources/js/components/frontend/kiosk/KioskWaitingComponent.vue:244-249 (mounted early-returns for offline_ ids before startPolling/startPreparingAutoRedirect) + KioskAppComponent.vue:340-347 (syncCb only updates counts, never re-routes); kioskOfflineQueue replays fine but no UI handoff",
+   "frozen": false,
+   "daily_path": true,
+   "recommendation": "TWO-TIER fix. Minimal (non-frozen, ship now): in the isOfflineOrder branch start a preparing-auto-redirect countdown so the borne returns to idle for the next customer. Full handoff (swap synthetic offline_ id → real order id/queue number on replay success, explicit 'voyez la caisse' on MAX_ATTEMPTS abandon) touches frozen KioskAppComponent → owner gate G-04."
+  },
+  {
+   "id": "FP-29",
+   "surface": "Kiosk wizard cart-recap group header (KioskWizardComponent)",
+   "dimension": "i18n",
+   "severity": "P2",
+   "title": "Wizard cart-recap can render raw key 'kiosk.wizard.generic.step_fallback' for a composer step with no label",
+   "anchor": "resources/js/components/frontend/kiosk/KioskWizardComponent.vue:1275 + 1584 + 1605 + 2089 (entry.step_label || $t('kiosk.wizard.generic.step_fallback')); key CONFIRMED absent from fr.json",
+   "frozen": false,
+   "daily_path": true,
+   "recommendation": "Add kiosk.wizard.generic.step_fallback (e.g. 'Choisissez vos options') to fr.json. The consuming component is frozen BUT the fix is fr.json-only → no frozen edit, no LOCK needed (frozen=false per where-the-fix-lands rule). vue-i18n v9 returns the raw key on miss, so the || fallback is unreachable today."
+  },
+  {
+   "id": "FP-30",
+   "surface": "Kiosk wizard cart-recap manual note (KioskWizardComponent)",
+   "dimension": "i18n",
+   "severity": "P3",
+   "title": "Manual-note recap renders raw key 'label.note' (typo — fr.json has plural 'label.notes' only)",
+   "anchor": "resources/js/components/frontend/kiosk/KioskWizardComponent.vue:2099 (${$t('label.note')}: ...); fr.json has notes (:918) but label.note CONFIRMED absent",
+   "frozen": false,
+   "daily_path": true,
+   "recommendation": "Add label.note ('Note') to fr.json OR point the call at the existing label.notes. fr.json-only fix → frozen component untouched (frozen=false)."
+  },
+  {
+   "id": "FP-31",
+   "surface": "PosCounterCollectModal — muted sub-labels",
+   "dimension": "a11y",
+   "severity": "P3",
+   "title": "Modal references a NON-EXISTENT design token --pos-v5-muted (typo for --pos-v5-ink-muted) so muted sub-labels fall back to hardcoded #555/#777 → marginal AA contrast fail on the 10.5px method sub-label",
+   "anchor": "resources/js/components/admin/pos/PosCounterCollectModal.vue:630/645/672/738/750/803 (var(--pos-v5-muted, #555|#777)); real token --pos-v5-ink-muted at foundations/pos-v5-tokens.css:63/189; --pos-v5-muted CONFIRMED undefined",
+   "frozen": false,
+   "daily_path": true,
+   "recommendation": "Replace --pos-v5-muted with the real --pos-v5-ink-muted token (#5A5A5A passes ~7:1) or bump cc-mode-sub to ≥12px. Fixes contrast and re-aligns the modal with the V5 design system."
+  },
+  {
+   "id": "FP-32",
+   "surface": "PosCounterCollectModal — CASH success toast",
+   "dimension": "i18n",
+   "severity": "P3",
+   "title": "Cash encash toast says 'Tiroir ouvert (simulation)' on every counter cash collection — felt-product noise (simulation is an accepted V1 state, NOT a defect)",
+   "anchor": "resources/js/components/admin/pos/PosCounterCollectModal.vue:528-531 → fr.json:559 cash_drawer_opened_simulation",
+   "frozen": false,
+   "daily_path": true,
+   "recommendation": "OWNER DECISION: consider neutral copy ('Encaissé en espèces — Commande N°{order}') and keep the simulation nuance for an admin/diagnostic surface, OR keep the explicit '(simulation)' label until real hardware lands. Wording preference → owner gate G-05."
+  },
+  {
+   "id": "FP-33",
+   "surface": "POS (admin-pos-v4 blade — FROZEN)",
+   "dimension": "perf-optimization",
+   "severity": "P3",
+   "title": "Same per-request {{ time() }} cache-bust lands in the FROZEN admin-pos-v4.blade.php → POS re-downloads 296K wizard every full load",
+   "anchor": "resources/views/admin-pos-v4.blade.php:35 (pos-wizard.css?v=2-{{time()}}) + :136 (pos-wizard.js?v=9-{{time()}})",
+   "frozen": true,
+   "daily_path": true,
+   "recommendation": "Bundle with the FP-17 master.blade fix under a single owner gate: swap {{ time() }} for a static ?v=N in both blades. Kept SEPARATE from FP-17 because this lands in a §7 frozen file (owner gate G-02); FP-17 ships now."
+  },
+  {
+   "id": "FP-34",
+   "surface": "POS Caisse — loyalty redeem modal (aperçu de la remise)",
+   "dimension": "data-correctness",
+   "severity": "P3",
+   "title": "Loyalty redeem 'preview discount' is a client estimate from a prop rate; a stale prop rate briefly shows a wrong euro figure (overwritten by server on apply)",
+   "anchor": "resources/js/components/admin/pos/PosLoyaltyRedeemModal.vue:206-213 (previewDiscountEur from rate prop, default 100) + :311-313 (server data.discount_eur replaces on apply)",
+   "frozen": false,
+   "daily_path": true,
+   "recommendation": "Source the preview rate from the same server-provided loyalty setup the backend uses (single rate SSOT) so the preview can never disagree with the applied discount. Transient-only divergence; final number is correct."
+  },
+  {
+   "id": "FP-35",
+   "surface": "All push-driven boards (KDS, OSS, POS tracker, kiosk waiting)",
+   "dimension": "perf-optimization",
+   "severity": "P3",
+   "title": "Every Echo event triggers a full list re-fetch (fetchOrders/list/_doPoll) → request fan-out + full-list re-render flicker during order bursts",
+   "anchor": "PosOrdersTrackerComponent.vue:692/702/705 (all events → fetchOrders) + PreparingAndReadyComponent.vue:294/299 (→ this.list()) + KioskWaitingComponent.vue:288 (→ _doPoll())",
+   "frozen": false,
+   "daily_path": true,
+   "recommendation": "Debounce/coalesce the re-fetch (trailing 250-500ms) so a burst collapses to one fetch, and/or apply the already-broadcast canonical payload delta directly (the version-gating pattern exists in KdsSyncService.js:175-187). Correctness-safe today (re-fetch reads true state) — this is smoothness/load only."
+  },
+  {
+   "id": "FP-36",
+   "surface": "Admin list components (SalesReport, PosOrders, OnlineOrders, ItemList + 16 more)",
+   "dimension": "perf-optimization",
+   "severity": "P3",
+   "title": "Systemic Vue :key='<object>' anti-pattern in 20+ list components forces full DOM remount on every refresh/poll/filter",
+   "anchor": "SalesReportListComponent.vue:193 (:key='salesReport') + posOrders/PosOrderListComponent.vue:99 + onlineOrders/OnlineOrderListComponent.vue:105 + items/ItemListComponent.vue:202 + 16 others (object keys never match across renders)",
+   "frozen": false,
+   "daily_path": true,
+   "recommendation": "Change :key='row' to :key='row.id' across these components (mechanical, low-risk). Biggest payoff on the frequently-refreshed daily lists. Consolidated cluster (one finding for the 20+ sites)."
+  },
+  {
+   "id": "FP-37",
+   "surface": "POS daily-path modals (encaissement, refund, loyalty, cart drawer) — focus management",
+   "dimension": "a11y",
+   "severity": "P3",
+   "title": "No daily-path modal traps focus: Tab leaks to the page behind the dialog; the shared trapFocus helper is sentinel-tested DEAD CODE imported by ZERO production components",
+   "anchor": "resources/js/helpers/posA11y.js:7 (exports trapFocus, covered by tests/js/posA11y.spec.js) — grep confirms NO production import; IngredientUsageDrawer.vue:156 defines its own, never imports the helper",
+   "frozen": false,
+   "daily_path": true,
+   "recommendation": "Wire the existing posA11y.trapFocus (or @vueuse useFocusTrap) into mounted()/beforeUnmount() of the daily-path modals — the helper already exists and is tested, it just needs to be imported and called. Focus rings DO exist (pos-a11y.css); focus is visible, just not contained."
+  },
+  {
+   "id": "FP-38",
+   "surface": "Storefront money + customer order-tracking (web ordering path — non-store)",
+   "dimension": "i18n",
+   "severity": "P3",
+   "title": "WEB-ONLY cluster (daily_path=false): currencyFormat renders '9.50€' not '9,50 €' across cart/checkout/navbar; customer order-status never updates live (no Echo/poll); + qty has no upper bound, long names overflow, status labels mix infinitive/participle, 'Veg' untranslated, geocode error hardcoded FR, silent fetch failures show false empty-state",
+   "anchor": "appService.js:71-77 (currencyFormat = toFixed + currency, no Intl/locale); OrderStatusComponent.vue (no mounted/Echo/poll — grep empty); FrontendCartComponent.vue:73-75 (qty no max); fr.json label.veg='Veg'/label.accept='Accepter' infinitive",
+   "frozen": false,
+   "daily_path": false,
+   "recommendation": "OUT of the V1 in-store daily path (borne+counter), hence sorted last. When/if web ordering goes live: route currencyFormat through Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR'}) (one helper fixes cart/checkout/navbar), subscribe order-tracking to the OrderStatusChanged channel or a 15-20s poll, clamp qty 1..99, line-clamp names, fix the FR labels, and distinguish load-failed from no-orders. Consolidated 9 web-storefront findings into one cluster since none are on the in-store path."
+  }
+ ],
+ "waves": [
+  {
+   "wave": "W1",
+   "title": "One-line i18n + token fixes on the daily error/warning paths (raw-key kill)",
+   "scope": "FP-03 park_restore_partial, FP-11 kds_counter_payment_unpaid, FP-12 kds_status_conflict namespace, FP-15 cash-movement type keys, FP-29 step_fallback, FP-30 label.note, FP-31 --pos-v5-muted token, FP-27 dead language selector (hide). All fr.json-additions or single-token component edits, zero frozen-code, zero logic change.",
+   "parallelism": "HIGH — 8 independent files, fully parallelizable across agents; fr.json edits must be serialized into one merge to avoid JSON conflicts.",
+   "checkpoint": "grep for each raw token (kds_counter_payment_unpaid, kds_status_conflict, park_restore_partial, step_fallback, label.note) shows the namespaced key resolves; Vitest i18n raw-label sweep green; visual capture of KDS legacy badge + parked-recall warning + cash-movements table shows real FR text."
+  },
+  {
+   "wave": "W2",
+   "title": "Dead/inert error-recovery CTAs + kiosk-waiting auto-redirect (borne never stuck)",
+   "scope": "FP-01 network-error dead buttons (reload/router fallback), FP-28 minimal offline-waiting auto-redirect countdown (non-frozen branch only). Behavior-restoring fixes on the kiosk error/recovery surface; the FP-28 full sync-handoff is deferred to owner gate G-04.",
+   "parallelism": "MEDIUM — 2 components, parallel; both need a kiosk-flow visual pass.",
+   "checkpoint": "Forced offline mid-flow: network-error screen 'Réessayer' actually reloads/reconnects and 'Appeler le personnel' surfaces an instruction; an offline cash order auto-returns to idle within the PREPARING_AUTO_REDIRECT window (no infinite spinner). Captured + read."
+  },
+  {
+   "wave": "W3",
+   "title": "On-screen totals reconcile (data-correctness per rendered page)",
+   "scope": "FP-02 receipt full-discount, FP-06 kiosk subtotal from rounded lines, FP-07 dashboard same-label-different-scope, FP-08 sales-report format split, FP-09 realtime false-zero error-state, FP-10 loyalty-points conditional wording. The 'well-calculated on each page' lane.",
+   "parallelism": "MEDIUM — kiosk (FP-02/06/10) and admin (FP-07/08/09) are two disjoint sub-lanes that run in parallel; within each, sequential to avoid store/service churn.",
+   "checkpoint": "Kiosk: a promo+loyalty multi-line cart shows footer total = sum of visible line totals AND printed subtotal−discount=total. Admin: Overview vs SalesSummary labels are scope-qualified; sales-report rows and cards both render '19,00 €'; a simulated poll failure shows 'Données indisponibles' not '0.00'. Data-asserted, not just eyeballed."
+  },
+  {
+   "wave": "W4",
+   "title": "Sync-perceived: make WS-loss / staleness visible on the local box",
+   "scope": "FP-05 POS tracker WS-loss banner (drop !isDevEnv), FP-24 OSS+kiosk backoff staleness cue, FP-04 OSS auto-scroll travels real overflow (or cap+counter). The 'what the user sees during degradation' lane.",
+   "parallelism": "MEDIUM — FP-05 and FP-24 share ConnectionStatusBanner wiring (do together); FP-04 is independent OSS marquee logic (parallel).",
+   "checkpoint": "Simulated WS drop on the box: POS tracker shows 'Mode hors-ligne — actualisation lente'; OSS/kiosk show a 'connexion lente' cue in BACKOFF. With 20-40 active orders, every queued N° eventually scrolls into view and reaches PRÊT visibly (or the +N counter is shown). Captured."
+  },
+  {
+   "wave": "W5",
+   "title": "Perf tail: bundle weight, dashboard fan-out, poll N+1, render churn",
+   "scope": "FP-16 guard pos-wizard.js to POS routes, FP-17 master.blade static cache-bust, FP-18 dashboard batched summary, FP-19 customerStates SQL count + GROUP BY, FP-20 KDS eager-load orderItems.orderItem, FP-21 LIVRÉS column cap, FP-35 debounce board re-fetch, FP-36 :key=row.id sweep.",
+   "parallelism": "HIGH — backend (FP-18/19/20), blade (FP-16/17), frontend-render (FP-21/35/36) are 3 disjoint lanes; the :key sweep is mechanical across 20 files and can fan out.",
+   "checkpoint": "Non-POS admin first-load no longer requests pos-wizard.js; pos-wizard URL is stable across reloads (cacheable); KDS poll issues 1 query not ~50 for 50 orders (query-count assert); dashboard mount drops from ~18 to ≤8 round-trips; LIVRÉS column DOM bounded. Measured, not asserted."
+  },
+  {
+   "wave": "W6",
+   "title": "Security-client + a11y-on-populated-state hardening",
+   "scope": "FP-22 OSS public endpoint generic error (stop getMessage leak), FP-23 kiosk auto-login de-couple from APP_ENV (owner-confirmed config), FP-14 PosCounterCollectModal aria-modal, FP-37 wire trapFocus into daily-path modals.",
+   "parallelism": "MEDIUM — FP-22 (backend) + FP-14/FP-37 (frontend modals) parallel; FP-23 needs owner confirmation on deployed APP_ENV before the config change lands (gate-coupled).",
+   "checkpoint": "curl to /api/frontend/oss-order error path returns a generic constant, real exception only in logs; PosCounterCollectModal has aria-modal=true and Tab stays inside; with KIOSK_AUTO_LOGIN_TRUSTED_IPS unset the credential payload is NOT in the DOM regardless of APP_ENV (owner-confirmed)."
+  },
+  {
+   "wave": "W7",
+   "title": "Low-priority admin-CRUD polish (off the daily path)",
+   "scope": "FP-25 pos-orders status map + filter, FP-34 loyalty preview rate SSOT, FP-26 kiosk cart line-clamp, FP-32 simulation-toast wording (pending owner G-05), FP-33 admin-pos-v4 cache-bust (pending owner G-02), FP-38 web-storefront cluster (deferred — out of V1 in-store scope).",
+   "parallelism": "LOW — mostly independent small fixes; gate-blocked items (FP-32/FP-33) and out-of-scope (FP-38) wait on owner. Run last so daily-path waves land first.",
+   "checkpoint": "Cancelled order shows a real status badge + is filterable; kiosk cart long names wrap to 2 lines at 360px; gated items either countersigned (then applied) or explicitly deferred in BRAIN. FP-38 confirmed out-of-scope for the V1 LOCAL envelope."
+  }
+ ],
+ "owner_gates": [
+  {
+   "gate": "G-01",
+   "who": "Owner countersign (frozen-zone LOCK, CLAUDE.md §7)",
+   "what": "FP-28 FULL offline-waiting sync-handoff — swapping the synthetic offline_ order id for the real order id/queue number on replay success and showing an explicit 'commande non envoyée — voyez la caisse' state on MAX_ATTEMPTS abandon. This touches FROZEN KioskWaitingComponent.vue + KioskAppComponent.vue (the minimal auto-redirect countdown in W2 is NON-frozen and ships without this gate).",
+   "where": "resources/js/components/frontend/kiosk/KioskWaitingComponent.vue:244-249 + KioskAppComponent.vue:340-347"
+  },
+  {
+   "gate": "G-02",
+   "who": "Owner countersign (frozen-zone LOCK, CLAUDE.md §7)",
+   "what": "FP-33 — replace per-request {{ time() }} cache-bust with a static ?v=N in admin-pos-v4.blade.php (a §7 frozen file). Trivial 2-char change, zero behavior change to the wizard itself; bundle with the non-frozen master.blade FP-17 fix under one LOCK so both ship together.",
+   "where": "resources/views/admin-pos-v4.blade.php:35 + :136"
+  },
+  {
+   "gate": "G-03",
+   "who": "Owner config confirmation + decision",
+   "what": "FP-23 — confirm the deployed Le Cayenne box .env is NOT APP_ENV=local and rotate the default machine password 'kiosk123'; approve de-coupling the kiosk credential bypass from APP_ENV to an explicit KIOSK_AUTO_LOGIN_TRUSTED_IPS allowlist (or KIOSK_REQUIRE_MACHINE_LOGIN=true). Code change is non-frozen but the security posture + IP list are owner inputs.",
+   "where": "config/kiosk.php:139 (auto_login_local_bypass) + :183 (kiosk123 default) + the box .env"
+  },
+  {
+   "gate": "G-04",
+   "who": "Owner wording decision",
+   "what": "FP-32 — choose the cash-encash success copy: keep the explicit 'Tiroir ouvert (simulation)' until real hardware lands, OR switch to neutral 'Encaissé en espèces — Commande N°{order}' now and move the simulation nuance to an admin/diagnostic surface. Simulation is an accepted V1 state, not a defect — this is a felt-product wording call only.",
+   "where": "resources/js/components/admin/pos/PosCounterCollectModal.vue:528-531 + fr.json:559"
+  },
+  {
+   "gate": "G-05",
+   "who": "Owner scope decision",
+   "what": "FP-38 web-storefront cluster (FR currency format, customer order live-tracking, qty cap, long-name overflow, status-label grammar, 'Veg' translation, geocode-error i18n, silent-fetch error-state). Confirm whether the web ordering path is in V1 scope at all. Per the V1 LOCAL Le Cayenne envelope (borne + counter only) these are daily_path=false and recommended DEFERRED; owner confirms defer vs activate.",
+   "where": "resources/js/services/appService.js:71-77 + resources/js/components/frontend/ (account/components/menu/cart/checkout)"
+  }
+ ]
+}
