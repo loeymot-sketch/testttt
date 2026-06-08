@@ -39,7 +39,7 @@
       data-testid="pos-counter-collect-modal"
       @click.self="onCancel"
     >
-      <div class="cc-modal" role="dialog" :aria-label="$t('label.encaisser_mode_title')">
+      <div ref="ccModalRoot" class="cc-modal" role="dialog" aria-modal="true" :aria-label="$t('label.encaisser_mode_title')">
         <!-- Header: hero total + queue number (mirror PaymentComponent design language) -->
         <div class="cc-modal-header">
           <div class="cc-modal-title-row">
@@ -209,6 +209,7 @@ import PosV5Numpad from './v5/PosV5Numpad.vue';
 import posPaymentMethodEnum from '../../../enums/modules/posPaymentMethodEnum';
 import appService from '../../../services/appService';
 import alertService from '../../../services/alertService';
+import { trapFocus } from '../../../helpers/posA11y';
 
 /**
  * PosCounterCollectModal — Wave X X1 sibling counter-collect SSOT-flavored modal.
@@ -349,6 +350,19 @@ export default {
         }
       },
     },
+    // [FP-37] Trap focus inside the modal while open (Tab no longer leaks to the page behind
+    // the dialog). Uses the existing tested posA11y.trapFocus helper, which was dead code
+    // imported by zero production components. `visible` is computed from `order`.
+    visible(isVisible) {
+      if (isVisible) {
+        this.$nextTick(() => {
+          this._releaseFocusTrap = trapFocus(this.$refs.ccModalRoot);
+        });
+      } else if (this._releaseFocusTrap) {
+        this._releaseFocusTrap();
+        this._releaseFocusTrap = null;
+      }
+    },
   },
   // [GOAL-M-POS-2 2026-05-24] Escape-to-close keyboard contract.
   // Mirrors KdsHistoryDrawer.vue:189-204 pattern: document-level
@@ -362,6 +376,8 @@ export default {
   },
   beforeUnmount() {
     document.removeEventListener('keydown', this._onEsc);
+    // [FP-37] release the focus trap if the modal is torn down while open.
+    if (this._releaseFocusTrap) { this._releaseFocusTrap(); this._releaseFocusTrap = null; }
   },
   methods: {
     setMode(modeId) {

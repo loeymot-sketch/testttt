@@ -100,7 +100,10 @@ class OrderStatusScreenController extends AdminController
         } catch (HttpException $http) {
             throw $http;
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            // [FP-22] UNAUTHENTICATED public endpoint — never serialize getMessage() (it leaked
+            // SQL/table names to any LAN device). Log server-side, return a generic message.
+            report($exception);
+            return response(['status' => false, 'message' => 'Service momentanément indisponible.'], 422);
         }
     }
 
@@ -135,7 +138,10 @@ class OrderStatusScreenController extends AdminController
         } catch (HttpException $http) {
             throw $http;
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            // [FP-22] UNAUTHENTICATED public endpoint — never serialize getMessage() (it leaked
+            // SQL/table names to any LAN device). Log server-side, return a generic message.
+            report($exception);
+            return response(['status' => false, 'message' => 'Service momentanément indisponible.'], 422);
         }
     }
 }
