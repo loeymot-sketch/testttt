@@ -25,7 +25,13 @@
                      quotidienne du gérant : « combien d'argent non encaissé attend ? » -->
                 <div v-if="orders.length" class="enc-total-banner">
                     <span class="enc-total-label">{{ $t('label.encaisser_total_pending') }}</span>
-                    <span class="enc-total-amount">{{ formatPrice(totalPending) }}</span>
+                    <span class="enc-total-right">
+                        <span class="enc-total-amount">{{ formatPrice(totalPending) }}</span>
+                        <!-- [G-DEC-1 heal] Honest caveat shown ONLY when the server cap
+                             (200) is hit — the sum is then a partial total, not the full
+                             amount owed. Hidden in the normal (<200) case. -->
+                        <span v-if="pendingCapped" class="enc-total-capnote">{{ $t('label.encaisser_total_capped') }}</span>
+                    </span>
                 </div>
 
                 <div class="enc-body">
@@ -107,6 +113,10 @@ export default {
             encaisseOrder: null,
             pollTimer: null,
             enums: { orderTypeEnum },
+            // [G-DEC-1 heal 2026-06-08] Server caps the pending fetch at
+            // limit(200) (routes/api.php admin/pos/counter-collect/pending).
+            // Mirror it so the total banner can flag a PARTIAL sum when capped.
+            PENDING_CAP: 200,
         };
     },
     computed: {
@@ -116,6 +126,14 @@ export default {
         // champ dû exposé par OrderDetailsResource).
         totalPending() {
             return this.orders.reduce((sum, o) => sum + Number(this.orderAmount(o) || 0), 0);
+        },
+        // [G-DEC-1 heal 2026-06-08] The pending list is server-capped at 200;
+        // at the cap the client-side sum is a PARTIAL total, so the banner appends
+        // a caveat (avoids a false "Total" claim that silently under-reports money
+        // owed on a busy day). In real single-restaurant V1 the queue clears well
+        // under 200, so this caveat normally never shows and the label is a true Total.
+        pendingCapped() {
+            return this.orders.length >= this.PENDING_CAP;
         },
     },
     mounted() {
@@ -333,6 +351,9 @@ export default {
     color: var(--pos-v5-ink);
     font-variant-numeric: tabular-nums;
 }
+/* [G-DEC-1 heal] right-aligned amount + optional partial-total caveat */
+.enc-total-right { display: flex; flex-direction: column; align-items: flex-end; gap: 0.1rem; }
+.enc-total-capnote { font-size: 0.7rem; font-weight: 600; color: #b45309; opacity: 0.9; }
 .enc-ticket-top { display: flex; align-items: center; justify-content: space-between; }
 .enc-top-right { display: inline-flex; align-items: center; gap: 0.5rem; }
 /* [W2.2] Badge d'attente (aging) */

@@ -440,6 +440,7 @@
         "encaisser_queue_subtitle": "Commandes en attente d’encaissement",
         "encaisser_queue_empty": "Aucune commande à encaisser",
         "encaisser_total_pending": "Total en attente d’encaissement",
+        "encaisser_total_capped": "200 plus récents — total partiel",
         "encaisser_wait_title": "Temps d’attente",
         "client_borne": "Client borne",
         "expected": "Attendu",
