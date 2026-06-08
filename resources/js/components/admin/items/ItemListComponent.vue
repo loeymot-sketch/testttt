@@ -199,7 +199,7 @@
                         </tr>
                     </thead>
                     <tbody class="db-table-body" v-if="items.length > 0">
-                        <tr class="db-table-body-tr" v-for="item in items" :key="item" :data-testid="`admin-item-row-${item.id}`">
+                        <tr class="db-table-body-tr" v-for="item in items" :key="item.id" :data-testid="`admin-item-row-${item.id}`">
                             <td class="db-table-body-td">
                                 <div class="w-[54px] h-[42px] rounded-md overflow-hidden border border-slate-200 bg-slate-50">
                                     <img

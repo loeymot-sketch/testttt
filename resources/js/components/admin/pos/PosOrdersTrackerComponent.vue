@@ -559,6 +559,11 @@ export default {
             buckets.prepared.sort((a, b) => this._tsOf(a) - this._tsOf(b));
             buckets.onTheWay.sort((a, b) => this._tsOf(a) - this._tsOf(b));
             buckets.delivered.sort((a, b) => this._tsOf(b) - this._tsOf(a));
+            // [FP-21] Cap the LIVRÉS lane to the 25 most-recent. By dinner service the day's
+            // delivered orders grow into the hundreds; rendering them all (and re-animating the
+            // transition-group) every 8s poll made the caisse sluggish. The lane is
+            // informational (recently completed) — older entries aren't actionable.
+            if (buckets.delivered.length > 25) buckets.delivered = buckets.delivered.slice(0, 25);
             return buckets;
         },
         columns() {

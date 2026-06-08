@@ -102,7 +102,7 @@
                         </tr>
                     </thead>
                     <tbody class="db-table-body" v-if="orders.length > 0">
-                        <tr class="db-table-body-tr" v-for="order in orders" :key="order">
+                        <tr class="db-table-body-tr" v-for="order in orders" :key="order.id">
                             <td class="db-table-body-td">
                                 {{ order.order_serial_no }}
 

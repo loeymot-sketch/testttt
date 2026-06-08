@@ -70,7 +70,7 @@ class KitchenDisplaySystemOrderService
             // DELIVERY orders (chef + livreur). Order::user() is BranchScope-
             // exempt + withTrashed; Order::address() is hasOne with no scope.
             // No isolation risk — relations join via order_id only.
-            $query = Order::with(['orderItems', 'address', 'user'])
+            $query = Order::with(['orderItems', 'orderItems.orderItem', 'address', 'user'])
                 ->whereIn('status', KitchenReleaseRule::visibleStatuses())
                 ->where(function ($query) {
                     $query->where('payment_status', PaymentStatus::PAID)
@@ -226,7 +226,7 @@ class KitchenDisplaySystemOrderService
             $todayStart = Carbon::today($appTz);
             $tomorrowStart = Carbon::tomorrow($appTz);
 
-            $query = Order::with(['orderItems', 'address', 'user'])
+            $query = Order::with(['orderItems', 'orderItems.orderItem', 'address', 'user'])
                 ->whereIn('status', [
                     OrderStatus::PREPARED,
                     OrderStatus::OUT_FOR_DELIVERY,

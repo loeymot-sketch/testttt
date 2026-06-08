@@ -44,7 +44,7 @@
     <!-- CUSTOM STYLE -->
     <link rel="stylesheet" href="{{ asset('themes/default/css/custom.css') }}">
     <link rel="stylesheet" href="{{ mix('css/app.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/pos-wizard.css') }}?v=2-{{ time() }}">
+    <link rel="stylesheet" href="{{ asset('css/pos-wizard.css') }}?v=2">
     <!-- PAGE TITLE -->
     <title>{{ trim((string) Settings::group('company')->get('company_name')) ?: (config('app.name') ?: 'Le Cayenne') }}</title>
 
@@ -269,7 +269,7 @@
             fritesCheddarPrice: {{ (float) (\Smartisan\Settings\Facades\Settings::group('order_setup')->get('order_setup_frites_cheddar_price') ?? 1.00) }}
         };
     </script>
-    <script src="{{ asset('js/pos-wizard.js') }}?v=9-{{ time() }}"></script>
+    <script src="{{ asset('js/pos-wizard.js') }}?v=9"></script>
 
     <!-- Masquer Dine-In dans le POS : uniquement Emporter et Livraison -->
     <style>

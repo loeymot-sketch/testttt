@@ -306,12 +306,14 @@ class DashboardService
             // analytics in Paris-local clock; whereTime on a TIMESTAMP column
             // would surface time-of-day in MySQL session UTC. This is a known
             // V1.0.2 backlog item (KDS-ADV3C-12) — see CONVERGENCE_FINAL.md.
+            // [FP-19] SQL-side COUNT instead of ->get()->count() — was materializing a full
+            // month of rows on every one of the 18 hour buckets just to count them.
             $total_customer = (clone $order)
                 ->where('order_datetime', '>=', $startParis)
                 ->where('order_datetime', '<', $endParisExclusive)
                 ->whereTime('order_datetime', '>=', Carbon::parse($first_time))
                 ->whereTime('order_datetime', '<=', Carbon::parse($last_time))
-                ->get()->count();
+                ->count();
             $totalCustomerArray[] = $total_customer;
         }
 

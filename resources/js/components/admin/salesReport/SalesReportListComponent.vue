@@ -190,7 +190,7 @@
                         </tr>
                     </thead>
                     <tbody class="db-table-body" v-if="salesReports.length > 0">
-                        <tr class="db-table-body-tr" v-for="salesReport in salesReports" :key="salesReport">
+                        <tr class="db-table-body-tr" v-for="salesReport in salesReports" :key="salesReport.id">
                             <td class="db-table-body-td">{{ salesReport.order_serial_no }}</td>
                             <td class="db-table-body-td">{{ salesReport.order_datetime }}</td>
                             <td class="db-table-body-td">{{ salesReport.total_currency_price }}</td>
