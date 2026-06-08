@@ -776,6 +776,8 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
             Route::get('/categories/{category}/profile', [ComposerProfileController::class, 'showForCategory']);
             Route::post('/categories/{category}/profile', [ComposerProfileController::class, 'storeForCategory']);
             Route::post('/categories/{category}/apply-template', [ComposerProfileController::class, 'applyTemplateToCategory']);
+            // [GOAL_WIZARD_DYNAMIC W1 / GAP-E] Source picker for the category builder (derives from a representative item).
+            Route::get('/categories/{category}/available-sources', [ComposerProfileController::class, 'availableSourcesForCategory']);
             Route::middleware('wizard.per_item_profile_guard')->group(function () {
                 Route::match(['put', 'patch'], '/profiles/{profile}', [ComposerProfileController::class, 'update']);
                 Route::get('/profiles/{profile}/diff', [ComposerProfileController::class, 'diff']);

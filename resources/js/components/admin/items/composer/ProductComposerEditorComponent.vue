@@ -630,22 +630,25 @@ export default {
             }
         },
         async loadAvailableSources() {
-            if (this.isCategoryComposer) {
-                this.availableSources = {
-                    item_attribute: [],
-                    extra_group: [],
-                    addon: [],
-                };
-                return;
-            }
+            // [GOAL_WIZARD_DYNAMIC W1 / GAP-E] The category builder now populates its
+            // source picker too (derived from a representative item server-side). An
+            // empty category answers 422 — degrade to an empty picker, never crash the
+            // editor (the owner can still compose once the category has a product).
+            const endpoint = this.isCategoryComposer
+                ? `admin/composer/categories/${this.resolvedEntityId}/available-sources`
+                : `admin/composer/items/${this.resolvedEntityId}/available-sources`;
 
-            const response = await axios.get(`admin/composer/items/${this.resolvedEntityId}/available-sources`);
-            const data = response.data?.data || response.data || {};
-            this.availableSources = {
-                item_attribute: Array.isArray(data.item_attribute) ? data.item_attribute : [],
-                extra_group: Array.isArray(data.extra_group) ? data.extra_group : [],
-                addon: Array.isArray(data.addon) ? data.addon : [],
-            };
+            try {
+                const response = await axios.get(endpoint);
+                const data = response.data?.data || response.data || {};
+                this.availableSources = {
+                    item_attribute: Array.isArray(data.item_attribute) ? data.item_attribute : [],
+                    extra_group: Array.isArray(data.extra_group) ? data.extra_group : [],
+                    addon: Array.isArray(data.addon) ? data.addon : [],
+                };
+            } catch (error) {
+                this.availableSources = { item_attribute: [], extra_group: [], addon: [] };
+            }
         },
         hydrateProfile(profile) {
             this.profile = profile;

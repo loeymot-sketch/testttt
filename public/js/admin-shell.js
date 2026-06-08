@@ -11612,24 +11612,18 @@ var SOURCE_TYPES = ['item_attribute', 'extra_group', 'addon'];
     loadAvailableSources: function loadAvailableSources() {
       var _this0 = this;
       return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee7() {
-        var _response$data4;
-        var response, data;
+        var endpoint, _response$data4, response, data, _t4;
         return _regenerator().w(function (_context7) {
-          while (1) switch (_context7.n) {
+          while (1) switch (_context7.p = _context7.n) {
             case 0:
-              if (!_this0.isCategoryComposer) {
-                _context7.n = 1;
-                break;
-              }
-              _this0.availableSources = {
-                item_attribute: [],
-                extra_group: [],
-                addon: []
-              };
-              return _context7.a(2);
-            case 1:
+              // [GOAL_WIZARD_DYNAMIC W1 / GAP-E] The category builder now populates its
+              // source picker too (derived from a representative item server-side). An
+              // empty category answers 422 — degrade to an empty picker, never crash the
+              // editor (the owner can still compose once the category has a product).
+              endpoint = _this0.isCategoryComposer ? "admin/composer/categories/".concat(_this0.resolvedEntityId, "/available-sources") : "admin/composer/items/".concat(_this0.resolvedEntityId, "/available-sources");
+              _context7.p = 1;
               _context7.n = 2;
-              return axios__WEBPACK_IMPORTED_MODULE_0__["default"].get("admin/composer/items/".concat(_this0.resolvedEntityId, "/available-sources"));
+              return axios__WEBPACK_IMPORTED_MODULE_0__["default"].get(endpoint);
             case 2:
               response = _context7.v;
               data = ((_response$data4 = response.data) === null || _response$data4 === void 0 ? void 0 : _response$data4.data) || response.data || {};
@@ -11638,10 +11632,20 @@ var SOURCE_TYPES = ['item_attribute', 'extra_group', 'addon'];
                 extra_group: Array.isArray(data.extra_group) ? data.extra_group : [],
                 addon: Array.isArray(data.addon) ? data.addon : []
               };
+              _context7.n = 4;
+              break;
             case 3:
+              _context7.p = 3;
+              _t4 = _context7.v;
+              _this0.availableSources = {
+                item_attribute: [],
+                extra_group: [],
+                addon: []
+              };
+            case 4:
               return _context7.a(2);
           }
-        }, _callee7);
+        }, _callee7, null, [[1, 3]]);
       }))();
     },
     hydrateProfile: function hydrateProfile(profile) {
@@ -11863,7 +11867,7 @@ var SOURCE_TYPES = ['item_attribute', 'extra_group', 'addon'];
     saveDraft: function saveDraft() {
       var _this16 = this;
       return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee0() {
-        var _this16$profile, _response$data5, payload, response, _error$response3, _error$response4, _error$response$data$, _error$response$data, _t4, _t5;
+        var _this16$profile, _response$data5, payload, response, _error$response3, _error$response4, _error$response$data$, _error$response$data, _t5, _t6;
         return _regenerator().w(function (_context0) {
           while (1) switch (_context0.p = _context0.n) {
             case 0:
@@ -11879,33 +11883,33 @@ var SOURCE_TYPES = ['item_attribute', 'extra_group', 'addon'];
               _context0.n = 2;
               return axios__WEBPACK_IMPORTED_MODULE_0__["default"].put("admin/composer/profiles/".concat(_this16.profile.id), payload);
             case 2:
-              _t4 = _context0.v;
+              _t5 = _context0.v;
               _context0.n = 5;
               break;
             case 3:
               _context0.n = 4;
               return axios__WEBPACK_IMPORTED_MODULE_0__["default"].post(_this16.createProfileEndpoint, payload);
             case 4:
-              _t4 = _context0.v;
+              _t5 = _context0.v;
             case 5:
-              response = _t4;
+              response = _t5;
               _this16.hydrateProfile(((_response$data5 = response.data) === null || _response$data5 === void 0 ? void 0 : _response$data5.data) || null);
               _services_alertService__WEBPACK_IMPORTED_MODULE_1__["default"].success(_this16.t('message.composer.draft_saved', 'Brouillon sauvegarde.'));
               _context0.n = 8;
               break;
             case 6:
               _context0.p = 6;
-              _t5 = _context0.v;
-              if (!((_t5 === null || _t5 === void 0 || (_error$response3 = _t5.response) === null || _error$response3 === void 0 ? void 0 : _error$response3.status) === 409)) {
+              _t6 = _context0.v;
+              if (!((_t6 === null || _t6 === void 0 || (_error$response3 = _t6.response) === null || _error$response3 === void 0 ? void 0 : _error$response3.status) === 409)) {
                 _context0.n = 7;
                 break;
               }
               _this16.conflictDetected = true;
-              _this16.expectedVersion = (_error$response$data$ = (_error$response$data = _t5.response.data) === null || _error$response$data === void 0 ? void 0 : _error$response$data.expected) !== null && _error$response$data$ !== void 0 ? _error$response$data$ : null;
+              _this16.expectedVersion = (_error$response$data$ = (_error$response$data = _t6.response.data) === null || _error$response$data === void 0 ? void 0 : _error$response$data.expected) !== null && _error$response$data$ !== void 0 ? _error$response$data$ : null;
               return _context0.a(2);
             case 7:
-              _services_alertService__WEBPACK_IMPORTED_MODULE_1__["default"].error((_t5 === null || _t5 === void 0 || (_error$response4 = _t5.response) === null || _error$response4 === void 0 || (_error$response4 = _error$response4.data) === null || _error$response4 === void 0 ? void 0 : _error$response4.message) || _this16.t('message.composer.save_failed', 'Sauvegarde impossible.'));
-              throw _t5;
+              _services_alertService__WEBPACK_IMPORTED_MODULE_1__["default"].error((_t6 === null || _t6 === void 0 || (_error$response4 = _t6.response) === null || _error$response4 === void 0 || (_error$response4 = _error$response4.data) === null || _error$response4 === void 0 ? void 0 : _error$response4.message) || _this16.t('message.composer.save_failed', 'Sauvegarde impossible.'));
+              throw _t6;
             case 8:
               _context0.p = 8;
               _this16.savingDraft = false;
@@ -11924,7 +11928,7 @@ var SOURCE_TYPES = ['item_attribute', 'extra_group', 'addon'];
     applyTemplate: function applyTemplate(template) {
       var _this17 = this;
       return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee1() {
-        var _response$data6, payload, response, profileData, _error$response5, _error$response6, status, serverMessage, _t6;
+        var _response$data6, payload, response, profileData, _error$response5, _error$response6, status, serverMessage, _t7;
         return _regenerator().w(function (_context1) {
           while (1) switch (_context1.p = _context1.n) {
             case 0:
@@ -11969,9 +11973,9 @@ var SOURCE_TYPES = ['item_attribute', 'extra_group', 'addon'];
               break;
             case 6:
               _context1.p = 6;
-              _t6 = _context1.v;
-              status = _t6 === null || _t6 === void 0 || (_error$response5 = _t6.response) === null || _error$response5 === void 0 ? void 0 : _error$response5.status;
-              serverMessage = _t6 === null || _t6 === void 0 || (_error$response6 = _t6.response) === null || _error$response6 === void 0 || (_error$response6 = _error$response6.data) === null || _error$response6 === void 0 ? void 0 : _error$response6.message;
+              _t7 = _context1.v;
+              status = _t7 === null || _t7 === void 0 || (_error$response5 = _t7.response) === null || _error$response5 === void 0 ? void 0 : _error$response5.status;
+              serverMessage = _t7 === null || _t7 === void 0 || (_error$response6 = _t7.response) === null || _error$response6 === void 0 || (_error$response6 = _error$response6.data) === null || _error$response6 === void 0 ? void 0 : _error$response6.message;
               _this17.templateModalOpen = false;
               if (status === 422) {
                 _this17.applyTemplateError = serverMessage || _this17.t('message.composer.apply_template_validation_error', 'Données invalides envoyées au serveur.');
@@ -11984,7 +11988,7 @@ var SOURCE_TYPES = ['item_attribute', 'extra_group', 'addon'];
               }
               console.error('[applyTemplate] failed', {
                 status: status,
-                error: _t6
+                error: _t7
               });
             case 7:
               _context1.p = 7;
@@ -11999,7 +12003,7 @@ var SOURCE_TYPES = ['item_attribute', 'extra_group', 'addon'];
     publish: function publish() {
       var _this18 = this;
       return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee10() {
-        var _this18$profile, _response$data7, response, _error$response7, _t7;
+        var _this18$profile, _response$data7, response, _error$response7, _t8;
         return _regenerator().w(function (_context10) {
           while (1) switch (_context10.p = _context10.n) {
             case 0:
@@ -12030,9 +12034,9 @@ var SOURCE_TYPES = ['item_attribute', 'extra_group', 'addon'];
               break;
             case 5:
               _context10.p = 5;
-              _t7 = _context10.v;
-              _services_alertService__WEBPACK_IMPORTED_MODULE_1__["default"].error((_t7 === null || _t7 === void 0 || (_error$response7 = _t7.response) === null || _error$response7 === void 0 || (_error$response7 = _error$response7.data) === null || _error$response7 === void 0 ? void 0 : _error$response7.message) || _this18.t('message.composer.publish_failed', 'Publication impossible.'));
-              throw _t7;
+              _t8 = _context10.v;
+              _services_alertService__WEBPACK_IMPORTED_MODULE_1__["default"].error((_t8 === null || _t8 === void 0 || (_error$response7 = _t8.response) === null || _error$response7 === void 0 || (_error$response7 = _error$response7.data) === null || _error$response7 === void 0 ? void 0 : _error$response7.message) || _this18.t('message.composer.publish_failed', 'Publication impossible.'));
+              throw _t8;
             case 6:
               _context10.p = 6;
               _this18.publishing = false;

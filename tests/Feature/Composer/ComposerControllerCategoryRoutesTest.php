@@ -48,6 +48,31 @@ class ComposerControllerCategoryRoutesTest extends TestCase
             ->assertStatus(422);
     }
 
+    // [GOAL_WIZARD_DYNAMIC W1 / GAP-E] The category composer builder must be able to
+    // populate its source picker. Before this the frontend hard-coded empty source
+    // arrays for category context (loadAvailableSources), so the owner could not pick
+    // which attribute/extra/addon a page binds to when composing a CATEGORY wizard.
+    public function test_available_sources_for_empty_category_returns_422(): void
+    {
+        $category = ItemCategory::factory()->create();
+
+        $this->actingAs($this->admin, 'sanctum')
+            ->getJson("/api/admin/composer/categories/{$category->id}/available-sources")
+            ->assertStatus(422);
+    }
+
+    public function test_available_sources_for_category_derives_from_representative_item(): void
+    {
+        $category = ItemCategory::factory()->create();
+        Item::factory()->create(['item_category_id' => $category->id]);
+
+        $this->actingAs($this->admin, 'sanctum')
+            ->getJson("/api/admin/composer/categories/{$category->id}/available-sources")
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonStructure(['data' => ['category_id', 'item_attribute', 'extra_group', 'addon']]);
+    }
+
     public function test_apply_template_to_category_with_item_creates_profile_owned_by_category(): void
     {
         $category = ItemCategory::factory()->create();

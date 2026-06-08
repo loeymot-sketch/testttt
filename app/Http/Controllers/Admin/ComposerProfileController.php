@@ -158,6 +158,35 @@ class ComposerProfileController extends AdminController
      */
     public function availableSources(Item $item): JsonResponse
     {
+        return response()->json([
+            'success' => true,
+            'data' => ['item_id' => (int) $item->id] + $this->buildAvailableSources($item),
+        ]);
+    }
+
+    /**
+     * [GOAL_WIZARD_DYNAMIC W1 / GAP-E] Category sibling of availableSources(): powers
+     * the source picker when composing a CATEGORY wizard. Sources are derived from a
+     * representative item of the category (same pattern as applyTemplateToCategory),
+     * because options (variations/extras/addons) live on items, not categories.
+     */
+    public function availableSourcesForCategory(ItemCategory $category): JsonResponse
+    {
+        $firstItem = $category->items()->first();
+        abort_if(! $firstItem, 422, 'Category has no items yet - add at least one product before composing its wizard.');
+
+        return response()->json([
+            'success' => true,
+            'data' => ['category_id' => (int) $category->id] + $this->buildAvailableSources($firstItem),
+        ]);
+    }
+
+    /**
+     * Builds the labeled source candidates (item_attribute / extra_group / addon) for
+     * a single item — shared by the item and category source-picker endpoints.
+     */
+    private function buildAvailableSources(Item $item): array
+    {
         $item->loadMissing(['variations.itemAttribute', 'extras', 'addons.addonItem']);
 
         $attributes = $item->variations
@@ -187,14 +216,10 @@ class ComposerProfileController extends AdminController
                 'addon_role' => $addon->role,
             ])->values();
 
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'item_id' => (int) $item->id,
-                'item_attribute' => $attributes,
-                'extra_group' => $extras,
-                'addon' => $addons,
-            ],
-        ]);
+        return [
+            'item_attribute' => $attributes,
+            'extra_group' => $extras,
+            'addon' => $addons,
+        ];
     }
 }

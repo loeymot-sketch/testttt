@@ -79,6 +79,9 @@ function primeAxios() {
         if (url === 'admin/composer/items/7/available-sources') {
             return Promise.resolve({ data: { data: sources } });
         }
+        if (url === 'admin/composer/categories/42/available-sources') {
+            return Promise.resolve({ data: { data: { category_id: 42, ...sources } } });
+        }
         return Promise.reject(new Error(`unexpected GET ${url}`));
     });
     axios.post.mockResolvedValue({ data: { data: categoryProfile } });
@@ -131,6 +134,13 @@ describe('ProductComposerEditorComponent category contract', () => {
         await mountEditor({ entityType: 'category', entityId: 42 });
 
         expect(axios.get).toHaveBeenCalledWith('admin/composer/categories/42/profile', undefined);
+    });
+
+    it('loads the category available-sources endpoint for the source picker (GAP-E)', async () => {
+        await mountEditor({ entityType: 'category', entityId: 42 });
+
+        expect(axios.get).toHaveBeenCalledWith('admin/composer/categories/42/available-sources');
+        expect(axios.get).not.toHaveBeenCalledWith('admin/composer/items/42/available-sources');
     });
 
     it('renders the category wizard header', async () => {
