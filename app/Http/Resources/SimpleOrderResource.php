@@ -50,6 +50,10 @@ class SimpleOrderResource extends JsonResource
             "total_amount_price"           => AppLibrary::flatAmountFormat($this->total),
             "discount_amount_price"        => AppLibrary::flatAmountFormat($this->discount),
             "delivery_charge_amount_price" => AppLibrary::flatAmountFormat($this->delivery_charge),
+            // [FP-08] FR-formatted variants so the sales-report TABLE rows render canonical
+            // '19,00 €' like the summary cards (the flat *_amount_price are US '19.00', no €).
+            "discount_currency_price"         => AppLibrary::currencyAmountFormat($this->discount),
+            "delivery_charge_currency_price"  => AppLibrary::currencyAmountFormat($this->delivery_charge),
             'payment_method'               => $this->payment_method,
             'payment_status'               => $this->payment_status,
             'transaction'                  => $this->transaction ? strtoupper($this->transaction?->payment_method) : null,

@@ -193,9 +193,9 @@
                         <tr class="db-table-body-tr" v-for="salesReport in salesReports" :key="salesReport">
                             <td class="db-table-body-td">{{ salesReport.order_serial_no }}</td>
                             <td class="db-table-body-td">{{ salesReport.order_datetime }}</td>
-                            <td class="db-table-body-td">{{ salesReport.total_amount_price }}</td>
-                            <td class="db-table-body-td">{{ salesReport.discount_amount_price }}</td>
-                            <td class="db-table-body-td">{{ salesReport.delivery_charge_amount_price }}</td>
+                            <td class="db-table-body-td">{{ salesReport.total_currency_price }}</td>
+                            <td class="db-table-body-td">{{ salesReport.discount_currency_price }}</td>
+                            <td class="db-table-body-td">{{ salesReport.delivery_charge_currency_price }}</td>
                             <td class="db-table-body-td">
                                 <!-- [REP-SALES-PAYTYPE-02 FIX] / [REP-SALES-ENUM-05 FIX] -->
                                 <span>{{ paymentTypeLabel(salesReport) }}</span>

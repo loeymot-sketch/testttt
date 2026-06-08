@@ -5,19 +5,19 @@
             <div class="col-12 sm:col-4">
                 <div class="p-6 rounded-2xl flex flex-col justify-center items-center shadow-lg bg-gradient-to-br from-green-400 to-green-600 text-white transform transition-transform hover:scale-105">
                     <h3 class="font-medium text-lg mb-2 opacity-90">Chiffre d'Affaires du Jour</h3>
-                    <h4 class="font-bold text-4xl">{{ report.daily_sales || '0.00' }}</h4>
+                    <h4 class="font-bold text-4xl">{{ hasError ? '—' : (report.daily_sales || '0,00 €') }}</h4>
                 </div>
             </div>
             <div class="col-12 sm:col-4">
                 <div class="p-6 rounded-2xl flex flex-col justify-center items-center shadow-lg bg-gradient-to-br from-blue-400 to-blue-600 text-white transform transition-transform hover:scale-105">
                     <h3 class="font-medium text-lg mb-2 opacity-90">Commandes du Jour</h3>
-                    <h4 class="font-bold text-4xl">{{ report.daily_orders || '0' }}</h4>
+                    <h4 class="font-bold text-4xl">{{ hasError ? '—' : (report.daily_orders ?? '0') }}</h4>
                 </div>
             </div>
             <div class="col-12 sm:col-4">
                 <div class="p-6 rounded-2xl flex flex-col justify-center items-center shadow-lg bg-gradient-to-br from-purple-400 to-purple-600 text-white transform transition-transform hover:scale-105">
                     <h3 class="font-medium text-lg mb-2 opacity-90">Ticket Moyen</h3>
-                    <h4 class="font-bold text-4xl">{{ report.average_ticket || '0.00' }}</h4>
+                    <h4 class="font-bold text-4xl">{{ hasError ? '—' : (report.average_ticket || '0,00 €') }}</h4>
                 </div>
             </div>
         </div>
@@ -30,7 +30,9 @@ export default {
     data() {
         return {
             report: {},
-            timer: null
+            timer: null,
+            // [FP-09] true when a poll fails — render '—' instead of a false '0,00 €' no-revenue day.
+            hasError: false
         }
     },
     mounted() {
@@ -45,6 +47,11 @@ export default {
         fetchData() {
             this.$store.dispatch('dashboard/realtimeReport').then(res => {
                 this.report = res.data.data;
+                this.hasError = false;
+            }).catch(() => {
+                // [FP-09] A poll failure must NOT paint a false 0,00 € zero-revenue day
+                // (the DASH-04 class). Flag the error → template shows '—' instead.
+                this.hasError = true;
             });
         }
     }

@@ -228,7 +228,10 @@ export default {
       return this._snapshotItems ?? this.$store.state.kioskCart?.items ?? [];
     },
     receiptDiscount() {
-      return this._snapshotDiscount ?? this.$store.state.kioskCart?.loyaltyDiscount ?? 0;
+      // [FP-02] Receipt discount = loyalty + promo, so the printed (subtotal − discount)
+      // reconciles to the total whenever a promo code is applied (total subtracts both).
+      const cart = this.$store.state.kioskCart;
+      return this._snapshotDiscount ?? ((cart?.loyaltyDiscount || 0) + (cart?.promoDiscount || 0));
     },
     receiptSubtotal() {
       const items = this.receiptItems;
@@ -273,9 +276,11 @@ export default {
     this._snapshotItems   = cartIsEmpty && snapshot
       ? JSON.parse(JSON.stringify(snapshot.items || []))
       : JSON.parse(JSON.stringify(items));
+    // [FP-02] Capture the FULL discount (loyalty + promo) so the snapshot/reload receipt
+    // also reconciles (subtotal − discount === total).
     this._snapshotDiscount = cartIsEmpty && snapshot
       ? (snapshot.discount || 0)
-      : (state?.loyaltyDiscount || 0);
+      : ((state?.loyaltyDiscount || 0) + (state?.promoDiscount || 0));
     // [KIOSK-17] Use item.total (always present after ADD_ITEM fix) for accuracy
     this._snapshotSubtotal = cartIsEmpty && snapshot
       ? (snapshot.subtotal ?? (snapshot.items || []).reduce((s, it) => s + (parseFloat(it.total) || 0), 0))

@@ -9,7 +9,7 @@
                         <i class="lab lab-total-sale lab-font-size-24 lab-color-pink"></i>
                     </div>
                     <div>
-                        <h3 class="font-medium text-white">{{ $t('label.total_sales') }}</h3>
+                        <h3 class="font-medium text-white">{{ $t('label.total_sales_lifetime') }}</h3>
                         <h4 class="font-semibold text-[22px] leading-[34px] text-white">{{ total_sales }}</h4>
                     </div>
                 </div>
@@ -20,7 +20,7 @@
                         <i class="lab lab-total-orders lab-font-size-24 lab-color-portage"></i>
                     </div>
                     <div>
-                        <h3 class="font-medium text-white">{{ $t('label.total_orders') }}</h3>
+                        <h3 class="font-medium text-white">{{ $t('label.total_orders_lifetime') }}</h3>
                         <h4 class="font-semibold text-[22px] leading-[34px] text-white">{{ total_orders }}</h4>
                     </div>
                 </div>

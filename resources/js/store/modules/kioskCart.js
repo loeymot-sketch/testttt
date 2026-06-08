@@ -222,12 +222,18 @@ export const kioskCart = {
         orderType: (state) => state.orderType,
         hasExplicitOrderType: (state) => normalizeKioskOrderType(state.orderType) !== null,
         orderQuote: (state) => state.orderQuote,
+        // [FP-06] Sum the already-rounded per-line total (item.total, set via toFixed(2) in
+        // ADD_ITEM/normalize) so the footer subtotal equals the visible sum of the line totals
+        // (mirrors posCart). Fall back to a rounded computed line for safety. Server
+        // (PricingService) stays SSOT for the charged amount; this is on-screen reconciliation.
         subtotal: (state) =>
             state.items.reduce((sum, i) => {
+                const rounded = parseFloat(i.total);
+                if (!Number.isNaN(rounded)) return sum + rounded;
                 const base = parseFloat(i.convert_price) || 0;
                 const varExtra = parseFloat(i.item_variation_total) || 0;
                 const extras   = parseFloat(i.item_extra_total) || 0;
-                return sum + (base + varExtra + extras) * i.quantity;
+                return sum + parseFloat(((base + varExtra + extras) * i.quantity).toFixed(2));
             }, 0),
         orderRef: (state) => state.orderRef,
         queueNumber: (state) => state.queueNumber,
