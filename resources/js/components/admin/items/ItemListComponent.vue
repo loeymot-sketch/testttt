@@ -213,7 +213,7 @@
                                 {{ textShortener(item.name, 40) }}
                             </td>
                             <td class="db-table-body-td">{{ item.category_name }}</td>
-                            <td class="db-table-body-td">{{ item.flat_price }}</td>
+                            <td class="db-table-body-td">{{ item.currency_price }}</td>
                             <td class="db-table-body-td">
                                 <!-- [MISSION FIX D4 2026-05-21] Status pill must reflect per-branch
                                      availability, not just items.status. Cross-surface parity with

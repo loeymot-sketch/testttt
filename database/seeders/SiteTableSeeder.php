@@ -24,7 +24,7 @@ class SiteTableSeeder extends Seeder
         $envService = new EnvEditor();
         Settings::group('site')->set([
             'site_date_format' => 'd-m-Y',
-            'site_time_format' => 'h:i A',
+            'site_time_format' => 'H:i',
             'site_default_timezone' => 'Europe/Paris',
             'site_default_branch' => 1,
             'site_default_currency' => 1,
@@ -59,7 +59,7 @@ class SiteTableSeeder extends Seeder
             'CURRENCY_POSITION' => '10', // Right usually
             'CURRENCY_DECIMAL_POINT' => '2',
             'DATE_FORMAT' => 'd-m-Y',
-            'TIME_FORMAT' => 'h:i A'
+            'TIME_FORMAT' => 'H:i'
         ]);
         Artisan::call('optimize:clear');
     }

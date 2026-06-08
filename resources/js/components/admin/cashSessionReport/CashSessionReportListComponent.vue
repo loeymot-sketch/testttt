@@ -246,7 +246,16 @@ export default {
         },
         formatMoney(v) {
             const n = Number(v || 0);
-            return n.toFixed(2);
+            try {
+                return new Intl.NumberFormat('fr-FR', {
+                    style: 'currency',
+                    currency: 'EUR',
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                }).format(n);
+            } catch (_e) {
+                return n.toFixed(2).replace('.', ',') + ' €';
+            }
         },
         varianceClass(v) {
             if (v === null || v === undefined) return '';

@@ -350,8 +350,19 @@ export default {
             }
         },
         formatPrice(value) {
-            if (value === null || value === undefined) return '';
-            return value;
+            if (value === null || value === undefined || value === '') return '';
+            const num = Number.parseFloat(value);
+            if (!Number.isFinite(num)) return value;
+            try {
+                return new Intl.NumberFormat('fr-FR', {
+                    style: 'currency',
+                    currency: 'EUR',
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                }).format(num);
+            } catch (_e) {
+                return num.toFixed(2).replace('.', ',') + ' €';
+            }
         },
         stepsForChannel(channelKey) {
             if (!Array.isArray(this.steps)) return [];
