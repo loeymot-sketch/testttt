@@ -777,9 +777,11 @@ export default {
   font-size: 11px;
   color: var(--kiosk-text-mute);
   margin: 2px 0 4px;
-  white-space: nowrap;
+  /* [FP-26] 2-line clamp so long customization summaries wrap instead of a hard cut. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
   max-width: 100%;
 }
 
@@ -960,9 +962,12 @@ export default {
   color: #0F0F0F;
   margin: 0 0 4px;
   letter-spacing: -0.2px;
-  white-space: nowrap;
+  /* [FP-26] Wrap long product names to 2 lines (matches the product-grid clamp) instead of a
+     hard one-line ellipsis cut — worst at ~360px where image + qty controls leave little room. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .kiosk-cart-item-note {

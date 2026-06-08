@@ -33,9 +33,14 @@
                             </label>
                             <vue-select class="db-field-control f-b-custom-select" id="searchStatus"
                                 v-model="props.search.status" :options="[
+                                    { id: enums.orderStatusEnum.PENDING, name: $t('label.pending') },
                                     { id: enums.orderStatusEnum.ACCEPT, name: $t('label.accept') },
                                     { id: enums.orderStatusEnum.PREPARING, name: $t('label.preparing') },
+                                    { id: enums.orderStatusEnum.PREPARED, name: $t('label.prepared') },
+                                    { id: enums.orderStatusEnum.OUT_FOR_DELIVERY, name: $t('label.out_for_delivery') },
                                     { id: enums.orderStatusEnum.DELIVERED, name: $t('label.delivered') },
+                                    { id: enums.orderStatusEnum.CANCELED, name: $t('label.canceled') },
+                                    { id: enums.orderStatusEnum.REJECTED, name: $t('label.rejected') },
                                 ]" label-by="name" value-by="id" :closeOnSelect="true" :searchable="true"
                                 :clearOnClose="true" placeholder="--" search-placeholder="--" />
                         </div>
@@ -242,10 +247,16 @@ export default {
                 orderStatusEnum: orderStatusEnum,
                 orderTypeEnum: orderTypeEnum,
                 orderStatusEnumArray: {
+                    // [FP-25] Full enum so CANCELED/REJECTED/OUT_FOR_DELIVERY/PENDING rows
+                    // render a real status badge instead of a blank cell.
+                    [orderStatusEnum.PENDING]: this.$t("label.pending"),
                     [orderStatusEnum.ACCEPT]: this.$t("label.accept"),
                     [orderStatusEnum.PREPARING]: this.$t("label.preparing"),
                     [orderStatusEnum.PREPARED]: this.$t("label.prepared"),
+                    [orderStatusEnum.OUT_FOR_DELIVERY]: this.$t("label.out_for_delivery"),
                     [orderStatusEnum.DELIVERED]: this.$t("label.delivered"),
+                    [orderStatusEnum.CANCELED]: this.$t("label.canceled"),
+                    [orderStatusEnum.REJECTED]: this.$t("label.rejected"),
                     [orderStatusEnum.RETURNED]: this.$t("label.returned")
                 },
                 orderTypeEnumArray: {
