@@ -173,6 +173,7 @@ Raw label visible · layout cassé · console error · **toute touche frozen san
 | Gate | Description | WHO | WHAT | WHERE | Statut |
 |---|---|---|---|---|---|
 | G-0 | Confirmer **« type==catégorie »** + flip per-item policy + modèle save (draft vs granular) | Owner | décisions §0.3/§4.3 | Wave 0 / BRAIN §2 | PENDING |
+| **G-0b** ⚠️ | **FORK SÉMANTIQUE BOX (gate la difficulté de Wave 6)** : « box » = (A) **bundle composants à prix plein** (`addonItem.price`, non-`menu_*` → pas de ratio `PricingService:795-797`) = **buildable maintenant, 0 frozen** ; OU (B) **formule à remise** (full=1.0/frites=0.6/boisson=0.4) = le mécanisme legacy **frozen** (`menuRoleAdjustedAddonPrice:794-799` + `config/kiosk.menu_pricing` + `KioskStepMenuComponent`) → **nécessite gate frozen G-3**. **L'owner heurtera ça jour 1** (« mon menu ne remise pas la boisson »). | Owner | choisir A ou B (ou A maintenant + B en gate différé) | Wave 0 (avant Wave 6) | PENDING |
 | G-1 (=GATE-G) | `PricingService` enforce composer catégorie-hérité (frozen §7) | Owner | contresign LOCK | `GATE-G-PRICINGSERVICE-INHERITANCE-LOCK-REQUEST.md` | PENDING |
 | G-2 | **Préserver** le menu-ratio legacy (`KioskStepMenuComponent` + `menuRoleAdjustedAddonPrice` + `config/kiosk.menu_pricing`) intact ; box générique vit à côté | Owner | confirm no-touch | Wave 6 | PENDING |
 | G-3 | Si escape-hatch insuffisant → edit routing dans **frozen `KioskWizardComponent`** (`ADDON_ROLE_TO_TYPE`/`resolveExplicitStepType`) | Owner | LOCK | Wave 6 (à éviter via step_key non-registry) | CONTINGENT |
