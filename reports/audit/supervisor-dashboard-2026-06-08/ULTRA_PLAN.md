@@ -49,7 +49,7 @@ These were my own bugs introduced by the campaign, in non-frozen code; "no retur
 | Gate | Item | WHO | WHAT (unblocks) | WHERE | Sev |
 |---|---|---|---|---|---|
 | **G-DATA-1** | Live deployed-box `site_time_format` still 12h until a settings-save | Physical owner | Open Admin → Réglages → save once with 24h (`H:i`), OR a one-off `Setting` update on the live box | deployed box (not this clone); code/seeder does NOT retro-migrate | P3 |
-| **G-DEC-1** | Encaissement "Total en attente d'encaissement" sums only the 200-capped fetched list | Owner (Claude can execute) | Decide: (a) accept (vision: single-restaurant never hits 200 uncollected — RECOMMENDED), (b) relabel "Total (200 plus récents)", or (c) add a server `sum` endpoint | `EncaissementComponent.vue` totalPending + route `api.php:836` | P2 |
+| **G-DEC-1** | Encaissement "Total en attente d'encaissement" sums only the 200-capped fetched list | Owner (Claude can execute) | Decide: (a) **relabel "Total (200 plus récents)" — RECOMMENDED** (one-line, removes the false "Total" claim; the literal "Total" on a capped subtotal silently under-reports money-owed on a busy day — 5 767 € shown vs 43 291 € on the clone), (b) add a server `sum` endpoint for the true total, or (c) accept (vision: single-restaurant rarely exceeds 200 uncollected) | `EncaissementComponent.vue` totalPending + route `api.php:836` | P2 |
 | **G2** | Brand-color sweep `#696cff`/`#ff006b` → `#F4501E` (appService ×6 SweetAlert confirm, eod PDF ×3) | Owner | Confirm intentional (Cayenne palette) or revert | `appService.js`, `eod_synthesis.blade.php` | RISK |
 
 **Gate-waiting protocol:** none of these block the branch from being correct. G-DATA-1 is a deployed-box data action only.
@@ -65,13 +65,14 @@ These were my own bugs introduced by the campaign, in non-frozen code; "no retur
 | D9 | Historique export dropdown UI gate `pos-orders` narrower than backend `pos-orders\|pos` | Optional: widen UI gate to match backend (read-only data, single-operator V1-moot) |
 | F-T3 | W1 receipt `.toLowerCase()` is a harmless no-op (footer keys already lowercase) | Optional revert (no benefit either way; not a defect) |
 | B2 | Encaissement aging badge shows raw hours ("269h") on artificially-old clone rows | No action — real-world pending are minutes/hours; faithful port |
+| DATA-30 | `order_type=30` (1338 clone orders) has no enum mapping → renders "—" via the new fallback | Pre-existing dirty data, out of scope here. The W3 fallback is strictly better (was nothing), but the "—" now silently masks 1338 unknown-type orders → data-quality backlog: trace/clean the legacy `order_type=30/4` values (`OrderType.php`) |
 
 ---
 
 ## §5 — RECOMMENDATION TO OWNER
 
 1. **Branch is now correct and audit-clean** (2 self-regressions healed + proven, 0 P0/P1, frozen=0, NF525 chain untouched). It is safe to **push / open PR / merge into `pre-cloud-exec`** at your discretion — that remains your gate (no auto-push).
-2. **G-DEC-1 + G2** are quick decisions; my recommendation is **accept G-DEC-1** (cap is vision-benign) and **keep G2** (palette-aligned). Say the word and I'll relabel or revert if you prefer.
+2. **G-DEC-1 + G2** are quick decisions; my recommendation is **relabel G-DEC-1** to "Total (200 plus récents)" (the literal "Total" silently under-reports money-owed on a busy day — a one-line fix removes the false claim) and **keep G2** (palette-aligned). Say the word and I'll apply the relabel or revert the colors.
 3. **G-DATA-1** is a 30-second settings-save on the live box — only you can do it there.
 
 ## §6 — Evidence index
