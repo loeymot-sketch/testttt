@@ -42,9 +42,14 @@ These were my own bugs introduced by the campaign, in non-frozen code; "no retur
 - **Fix:** `git mv` → `tests/js/roleDisplay.spec.js` (import depth unchanged, logic unchanged); header comment updated.
 - **Proof:** `npx vitest run tests/js/roleDisplay.spec.js` → **6 tests pass** (was "no test files found").
 
+### H3 — G-DEC-1 totalPending honest caveat (executed on `lance le plan`, the plan's Claude-executable recommendation)
+- **Change:** `EncaissementComponent.vue` — added `pendingCapped` computed (`orders.length >= 200`, mirroring the server `limit(200)`) and a small caveat **"200 plus récents — total partiel"** shown under the amount ONLY when the list is at the cap. Below 200 (the real single-restaurant case) the banner stays a true "Total". +`encaisser_total_capped` key in fr.json **and** en.json (parity), +CSS.
+- **Proof:** Vitest **2077 pass / 0 fail**; rebuilt `admin-shell.js` (caveat compiled ×3). **LIVE** `:8769` /admin/encaissement → "Total en attente d'encaissement 5 767,00 €" + caveat "200 plus récents — total partiel" (clone exceeds 200) — `round-1/captures/v-gdec1-capnote.jpeg`. Commits `a657f79f8` (source) + `d05a1f0d5` (bundle). 0 frozen lines.
+
 ---
 
 ## §3 — OWNER GATES (decision required — NOT actioned)
+> **G-DEC-1 is now DONE** (executed on `lance le plan` per the recommendation below). G-DATA-1 + G2 remain.
 
 | Gate | Item | WHO | WHAT (unblocks) | WHERE | Sev |
 |---|---|---|---|---|---|
@@ -60,7 +65,8 @@ These were my own bugs introduced by the campaign, in non-frozen code; "no retur
 
 | Ref | Item | Recommendation |
 |---|---|---|
-| Fbe3 | `'N° fiscal'` XLSX heading is a hardcoded FR stopgap (no `all.label.fiscal_number`) | Add the lang key in a future polish pass (cosmetic) |
+| Fbe3 | `'N° fiscal'` XLSX heading is a hardcoded FR stopgap (no `all.label.fiscal_number`) | **DONE** (on `continue the goal`): added `all.label.fiscal_number` to lang/{fr,en}/all.php, `OrderHistoryExport` now uses `trans('all.label.fiscal_number')`. php -l clean, key resolves (fr "N° fiscal" / en "Fiscal No"). Backend-only, no rebuild |
+| D9 | Historique export dropdown UI gate `pos-orders` narrower than backend `pos-orders\|pos` | **SKIPPED (deliberate):** moot — clone DB shows no role holds `pos` without `pos-orders` (POS Operator + Branch Manager hold both), so widening changes nothing for any real user; not worth a bundle rebuild on a near-full disk |
 | D7 | `rail_ruptures`/`usage_none` added to fr.json but not en.json → intlify warnings in en-default test harness | V2 (i18n parity); V1 is single-locale FR (ADR-007), both resolve live |
 | D9 | Historique export dropdown UI gate `pos-orders` narrower than backend `pos-orders\|pos` | Optional: widen UI gate to match backend (read-only data, single-operator V1-moot) |
 | F-T3 | W1 receipt `.toLowerCase()` is a harmless no-op (footer keys already lowercase) | Optional revert (no benefit either way; not a defect) |
@@ -80,6 +86,15 @@ These were my own bugs introduced by the campaign, in non-frozen code; "no retur
 - `round-1/wave-{A..F}-findings.json` — the 6 adversaries' structured findings.
 - `round-1/orchestrator-repro.json` — my execution-repro of the W4 backend (authz 302, BranchScope, fiscal).
 - `round-1/captures/v-{dashboard,encaissement,historique,posorder-token-healed}.jpeg` — live proof.
+
+## §7 — Operating-DB integrity note (tripwire moved during execution — investigated)
+During G-DEC-1 the operating `foodking` tripwire moved **2674→2675 rows**, head `daf60671`→`4a0a9255`.
+Investigated read-only and **cleared**: the new row (id 2675) is a single `user.login` by admin (user_id=1,
+ip 127.0.0.1, 2026-06-08 23:40 Paris) — **independent live activity, not my write**. All of my `:8769`
+logins landed in the CLONE `foodking_dash_e2e` (rows 2677–2681); every browser navigation I issued targeted
+`127.0.0.1:8769`. Chain integrity intact: row 2675 `prev_hash` == row 2674 `current_hash` (`daf606710a6afb93`)
+= **LINKED-OK** clean append (the 1-id span gap is pre-existing/historical, not a deletion). New canonical
+anchor for future sessions: **operating `foodking` head = `4a0a9255` (id 2675)**.
 
 ## §F — Final rule
 Production-perfect, not "almost there." This branch reaches that bar for the dashboard scope: every
