@@ -908,7 +908,12 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
                 return response(['status' => false, 'message' => $exception->getMessage()], 422);
             }
         })->middleware(['throttle:pos-order-update', 'idempotency'])->name('collect-kiosk-cash');
-        Route::post('/orders/{order}/print-receipt', [PosReceiptPrintController::class, 'increment'])->middleware('idempotency')->name('orders.print-receipt');
+        // [SEC-FALSIFY-2026-06-08 P1] Gate on `permission:pos` — every print writes a
+        // hash-chained NF525 audit_logs row and flips the DUPLICATA marker, so it must be
+        // restricted to POS-permission holders (cashier / branch manager / admin), not any
+        // authenticated staff (Chef/Waiter). Mirrors the `can('pos')` gate the sibling POS
+        // order actions enforce via PosOrderRequest::authorize().
+        Route::post('/orders/{order}/print-receipt', [PosReceiptPrintController::class, 'increment'])->middleware(['permission:pos', 'idempotency'])->name('orders.print-receipt');
         Route::prefix('parked-orders')->name('parked-orders.')->group(function () {
             Route::get('/', [ParkedOrderController::class, 'index'])->name('index');
             Route::post('/', [ParkedOrderController::class, 'store'])->name('store');

@@ -80768,13 +80768,20 @@ function openSession(_x) {
  *   1. POST /{id}/close  → freezes closing_amount
  *   2. POST /{id}/reconcile → computes expected_closing_amount + variance
  *
- * Variance reason (when |variance| > 0) is captured by the UI but currently
- * not persisted by the backend close() validator — Sprint 1B follow-up to
- * whitelist it. We surface it on the returned payload for the local UX flow.
+ * Variance reason (when |variance| > threshold) IS persisted by the backend:
+ * POST /reconcile accepts `{ variance_reason: string max 255 }`
+ * (CashDrawerSessionController::reconcile validates it and forwards to
+ * CashDrawerService::reconcileSession, which stores it on the session as NF525
+ * evidence and REQUIRES it — 422 — when |variance| exceeds the 2€ threshold).
+ *
+ * [SEC-FALSIFY-2026-06-08 P1] Previously this method POSTed `{}` to /reconcile
+ * and kept the reason only locally, so the cashier's mandatory variance reason
+ * was silently discarded (and an over-threshold close 422'd, stranding the
+ * session CLOSED-but-not-RECONCILED). We now send it.
  *
  * @param {number} sessionId
  * @param {number} closingAmount  Float >= 0 — montant physiquement compté.
- * @param {string|null} varianceReason  UI-only for now.
+ * @param {string|null} varianceReason  Persisted server-side when provided.
  * @returns {Promise<Object>} { ...session, expected, variance, variance_reason_local }
  */
 function _openSession() {
@@ -80826,6 +80833,8 @@ function _closeSession() {
       closeBody,
       closeConfig,
       reconcileConfig,
+      trimmedReason,
+      reconcileBody,
       reconcileRes,
       payload,
       _args3 = arguments;
@@ -80848,9 +80857,14 @@ function _closeSession() {
             headers: {
               'X-Idempotency-Key': freshIdempotencyKey('cash-reconcile')
             }
-          };
+          }; // [SEC-FALSIFY-2026-06-08 P1] Forward the variance reason so it is persisted as
+          // NF525 evidence and the over-2€ close is accepted (backend requires it).
+          trimmedReason = typeof varianceReason === 'string' ? varianceReason.trim() : '';
+          reconcileBody = trimmedReason.length > 0 ? {
+            variance_reason: trimmedReason
+          } : {};
           _context3.n = 2;
-          return client().post("admin/pos/cash-drawer/sessions/".concat(sessionId, "/reconcile"), {}, reconcileConfig);
+          return client().post("admin/pos/cash-drawer/sessions/".concat(sessionId, "/reconcile"), reconcileBody, reconcileConfig);
         case 2:
           reconcileRes = _context3.v;
           payload = unwrap(reconcileRes) || {};
@@ -92451,7 +92465,7 @@ var kioskCart = {
     //    consommation réelle intervient uniquement à /frontend/order.
     validatePromo: function validatePromo(_ref24, rawCode) {
       return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee4() {
-        var commit, getters, code, _res$data3, _res$data4, _res$data5, _res$data6, cartTotal, res, data, valid, _data$value, _err$response, message, _t2;
+        var commit, getters, code, _res$data3, _res$data4, _res$data5, _res$data6, cartTotal, res, data, valid, _ref25, _data$discount_amount, _data$value, _err$response, message, _t2;
         return _regenerator().w(function (_context4) {
           while (1) switch (_context4.p = _context4.n) {
             case 0:
@@ -92485,11 +92499,17 @@ var kioskCart = {
               }
               commit('SET_PROMO', {
                 code: code,
-                discount: parseFloat(data.discount || 0) || 0,
+                // [SEC-FALSIFY-2026-06-08 P1] Backend (KioskPromoService::validate)
+                // returns the amount as `discount_amount`, NOT `discount`. Reading the
+                // wrong key made every valid promo a false-zero: the UI showed "Code
+                // appliqué" while the total was never reduced and the customer paid full
+                // price. Read discount_amount (keep `discount` as a defensive fallback).
+                discount: parseFloat((_ref25 = (_data$discount_amount = data.discount_amount) !== null && _data$discount_amount !== void 0 ? _data$discount_amount : data.discount) !== null && _ref25 !== void 0 ? _ref25 : 0) || 0,
                 meta: {
                   type: data.type || null,
                   value: (_data$value = data.value) !== null && _data$value !== void 0 ? _data$value : null,
-                  kind: data.kind || null,
+                  // Backend exposes the origin as `source` (kiosk_promo | coupon).
+                  kind: data.kind || data.source || null,
                   message: res.data.message || null
                 }
               });
@@ -92522,25 +92542,25 @@ var kioskCart = {
         }, _callee4, null, [[2, 5, 6, 7]]);
       }))();
     },
-    clearPromo: function clearPromo(_ref25) {
-      var commit = _ref25.commit;
+    clearPromo: function clearPromo(_ref26) {
+      var commit = _ref26.commit;
       commit('CLEAR_PROMO');
     },
     // [GAP-22-1] Store the order type chosen by the customer (sur place / à emporter)
-    setOrderType: function setOrderType(_ref26, orderType) {
-      var commit = _ref26.commit;
+    setOrderType: function setOrderType(_ref27, orderType) {
+      var commit = _ref27.commit;
       commit('SET_ORDER_TYPE', orderType);
     },
-    quoteOrder: function quoteOrder(_ref27) {
+    quoteOrder: function quoteOrder(_ref28) {
       var _arguments = arguments;
       return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee5() {
         var _res;
-        var commit, state, _ref28, orderType, paymentMethod, error, explicitOrderType, payload, res, _err$response2, status, _window$app, _i18n$global, i18n, t, msg, quote, _error, _t3;
+        var commit, state, _ref29, orderType, paymentMethod, error, explicitOrderType, payload, res, _err$response2, status, _window$app, _i18n$global, i18n, t, msg, quote, _error, _t3;
         return _regenerator().w(function (_context5) {
           while (1) switch (_context5.p = _context5.n) {
             case 0:
-              commit = _ref27.commit, state = _ref27.state;
-              _ref28 = _arguments.length > 1 && _arguments[1] !== undefined ? _arguments[1] : {}, orderType = _ref28.orderType, paymentMethod = _ref28.paymentMethod;
+              commit = _ref28.commit, state = _ref28.state;
+              _ref29 = _arguments.length > 1 && _arguments[1] !== undefined ? _arguments[1] : {}, orderType = _ref29.orderType, paymentMethod = _ref29.paymentMethod;
               if (state.kioskToken) {
                 _context5.n = 1;
                 break;
@@ -92607,11 +92627,11 @@ var kioskCart = {
     /**
      * Drop lines for items marked unavailable in kioskMenu (real-time rupture / 86).
      */
-    pruneUnavailableLines: function pruneUnavailableLines(_ref29) {
+    pruneUnavailableLines: function pruneUnavailableLines(_ref30) {
       var _rootState$kioskMenu;
-      var state = _ref29.state,
-        commit = _ref29.commit,
-        rootState = _ref29.rootState;
+      var state = _ref30.state,
+        commit = _ref30.commit,
+        rootState = _ref30.rootState;
       var menuItems = ((_rootState$kioskMenu = rootState.kioskMenu) === null || _rootState$kioskMenu === void 0 ? void 0 : _rootState$kioskMenu.items) || [];
       var byId = new Map(menuItems.map(function (i) {
         return [parseInt(i.id, 10), i];
@@ -92629,35 +92649,35 @@ var kioskCart = {
         commit('SET_CART_LINES', filtered);
       }
     },
-    pruneOfflineQueueOnAvailabilityChanged: function pruneOfflineQueueOnAvailabilityChanged(_ref30) {
+    pruneOfflineQueueOnAvailabilityChanged: function pruneOfflineQueueOnAvailabilityChanged(_ref31) {
       var _arguments2 = arguments;
       return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee6() {
-        var _ref32;
-        var state, _ref31, itemId, branchId;
+        var _ref33;
+        var state, _ref32, itemId, branchId;
         return _regenerator().w(function (_context6) {
           while (1) switch (_context6.n) {
             case 0:
-              state = _ref30.state;
-              _ref31 = _arguments2.length > 1 && _arguments2[1] !== undefined ? _arguments2[1] : {}, itemId = _ref31.itemId, branchId = _ref31.branchId;
+              state = _ref31.state;
+              _ref32 = _arguments2.length > 1 && _arguments2[1] !== undefined ? _arguments2[1] : {}, itemId = _ref32.itemId, branchId = _ref32.branchId;
               return _context6.a(2, (0,_helpers_kioskOfflineQueue__WEBPACK_IMPORTED_MODULE_1__.markStaleItems)({
                 itemId: itemId,
-                branchId: (_ref32 = branchId !== null && branchId !== void 0 ? branchId : state.branchId) !== null && _ref32 !== void 0 ? _ref32 : null
+                branchId: (_ref33 = branchId !== null && branchId !== void 0 ? branchId : state.branchId) !== null && _ref33 !== void 0 ? _ref33 : null
               }));
           }
         }, _callee6);
       }))();
     },
-    reset: function reset(_ref33) {
-      var commit = _ref33.commit;
+    reset: function reset(_ref34) {
+      var commit = _ref34.commit;
       commit('RESET');
     },
-    submitOrder: function submitOrder(_ref34) {
-      var commit = _ref34.commit,
-        state = _ref34.state;
-      var _ref35 = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {},
-        orderType = _ref35.orderType,
-        paymentMethod = _ref35.paymentMethod,
-        quote = _ref35.quote;
+    submitOrder: function submitOrder(_ref35) {
+      var commit = _ref35.commit,
+        state = _ref35.state;
+      var _ref36 = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {},
+        orderType = _ref36.orderType,
+        paymentMethod = _ref36.paymentMethod,
+        quote = _ref36.quote;
       return new Promise(function (resolve, reject) {
         var explicitOrderType = assertExplicitKioskOrderType(orderType !== null && orderType !== void 0 ? orderType : state.orderType);
         (0,_helpers_kioskMenuCache__WEBPACK_IMPORTED_MODULE_2__.loadSnapshot)().then(function (snap) {
@@ -92797,8 +92817,8 @@ var kioskCart = {
         axios__WEBPACK_IMPORTED_MODULE_0__["default"].get("frontend/order/show/".concat(orderId)).then(resolve)["catch"](reject);
       });
     },
-    fetchUpsellItems: function fetchUpsellItems(_ref36) {
-      var state = _ref36.state;
+    fetchUpsellItems: function fetchUpsellItems(_ref37) {
+      var state = _ref37.state;
       return new Promise(function (resolve) {
         // [SPLASH MERCHANDISING] Use smart kiosk-upsell endpoint
         // Sends item IDs in cart so backend can suggest complementary items

@@ -104,13 +104,20 @@ export async function openSession(openingAmount, branchId = null) {
  *   1. POST /{id}/close  → freezes closing_amount
  *   2. POST /{id}/reconcile → computes expected_closing_amount + variance
  *
- * Variance reason (when |variance| > 0) is captured by the UI but currently
- * not persisted by the backend close() validator — Sprint 1B follow-up to
- * whitelist it. We surface it on the returned payload for the local UX flow.
+ * Variance reason (when |variance| > threshold) IS persisted by the backend:
+ * POST /reconcile accepts `{ variance_reason: string max 255 }`
+ * (CashDrawerSessionController::reconcile validates it and forwards to
+ * CashDrawerService::reconcileSession, which stores it on the session as NF525
+ * evidence and REQUIRES it — 422 — when |variance| exceeds the 2€ threshold).
+ *
+ * [SEC-FALSIFY-2026-06-08 P1] Previously this method POSTed `{}` to /reconcile
+ * and kept the reason only locally, so the cashier's mandatory variance reason
+ * was silently discarded (and an over-threshold close 422'd, stranding the
+ * session CLOSED-but-not-RECONCILED). We now send it.
  *
  * @param {number} sessionId
  * @param {number} closingAmount  Float >= 0 — montant physiquement compté.
- * @param {string|null} varianceReason  UI-only for now.
+ * @param {string|null} varianceReason  Persisted server-side when provided.
  * @returns {Promise<Object>} { ...session, expected, variance, variance_reason_local }
  */
 export async function closeSession(sessionId, closingAmount, varianceReason = null) {
@@ -127,9 +134,13 @@ export async function closeSession(sessionId, closingAmount, varianceReason = nu
     const reconcileConfig = {
         headers: { 'X-Idempotency-Key': freshIdempotencyKey('cash-reconcile') },
     };
+    // [SEC-FALSIFY-2026-06-08 P1] Forward the variance reason so it is persisted as
+    // NF525 evidence and the over-2€ close is accepted (backend requires it).
+    const trimmedReason = typeof varianceReason === 'string' ? varianceReason.trim() : '';
+    const reconcileBody = trimmedReason.length > 0 ? { variance_reason: trimmedReason } : {};
     const reconcileRes = await client().post(
         `admin/pos/cash-drawer/sessions/${sessionId}/reconcile`,
-        {},
+        reconcileBody,
         reconcileConfig
     );
 

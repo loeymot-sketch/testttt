@@ -577,11 +577,17 @@ export const kioskCart = {
                 if (valid) {
                     commit('SET_PROMO', {
                         code,
-                        discount: parseFloat(data.discount || 0) || 0,
+                        // [SEC-FALSIFY-2026-06-08 P1] Backend (KioskPromoService::validate)
+                        // returns the amount as `discount_amount`, NOT `discount`. Reading the
+                        // wrong key made every valid promo a false-zero: the UI showed "Code
+                        // appliqué" while the total was never reduced and the customer paid full
+                        // price. Read discount_amount (keep `discount` as a defensive fallback).
+                        discount: parseFloat(data.discount_amount ?? data.discount ?? 0) || 0,
                         meta: {
                             type: data.type || null,
                             value: data.value ?? null,
-                            kind: data.kind || null,
+                            // Backend exposes the origin as `source` (kiosk_promo | coupon).
+                            kind: data.kind || data.source || null,
                             message: res.data.message || null,
                         },
                     });

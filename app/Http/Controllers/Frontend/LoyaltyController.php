@@ -136,15 +136,21 @@ class LoyaltyController extends Controller
             if ($email && filter_var($email, FILTER_VALIDATE_EMAIL)) {
                 $existingByEmail = User::where('email', $email)->first();
                 if ($existingByEmail && (!$user || $existingByEmail->id !== $user->id)) {
-                    // Email belongs to a different account — suggest using existing loyalty account
+                    // Email belongs to a different account — tell the customer to use their
+                    // existing loyalty account, but DO NOT echo that account's PII.
+                    // [SEC-FALSIFY-2026-06-08 P1] This endpoint is public/unauthenticated
+                    // (walk-in kiosk signup, routes/api.php:1405 — throttle only, no
+                    // auth:sanctum). Returning the existing account's phone + loyalty_code
+                    // here let any caller probe an arbitrary email and harvest a third
+                    // party's phone number and redemption code (GDPR disclosure). The
+                    // generic message is sufficient for the customer to recover their own
+                    // account at the counter. Frontend consumes none of these fields.
                     return response()->json([
                         'status' => false,
                         'code' => 'EMAIL_EXISTS',
                         'message' => 'Cet email est déjà associé à un compte fidélité.',
                         'data' => [
-                            'existing_loyalty_code' => $existingByEmail->loyalty_code,
-                            'existing_phone' => $existingByEmail->phone,
-                            'suggestion' => 'Utilisez ce compte existant ou entrez un autre email.'
+                            'suggestion' => 'Utilisez votre compte existant ou entrez un autre email.'
                         ]
                     ], 409);
                 }

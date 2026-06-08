@@ -44,6 +44,44 @@ class LoyaltyApiTest extends TestCase
         $this->assertNotNull($response->json('data.loyalty_code'));
     }
 
+    /**
+     * [SEC-FALSIFY-2026-06-08 P1] The public /loyalty/register endpoint must NOT echo a
+     * third party's phone or loyalty_code when the submitted email already belongs to
+     * another account. Returning them turned this unauthenticated endpoint into a PII
+     * oracle (probe an email -> harvest its phone + redemption code). The 409 must still
+     * tell the customer the email is taken (code EMAIL_EXISTS) but disclose no PII.
+     */
+    public function test_register_email_conflict_does_not_leak_third_party_pii()
+    {
+        $victim = \App\Models\User::forceCreate([
+            'name' => 'Victim Loyalty',
+            'username' => 'victim_loyalty',
+            'email' => 'victim@example.com',
+            'phone' => '+33699998888',
+            'password' => bcrypt('password'),
+            'loyalty_code' => 'SECRET01',
+            'loyalty_points' => 120,
+            'status' => 1,
+        ]);
+
+        // Attacker registers a brand-new phone but submits the victim's email.
+        $response = $this->postJson('/api/frontend/loyalty/register', [
+            'name' => 'Attacker',
+            'phone' => '+33700001111',
+            'email' => 'victim@example.com',
+        ]);
+
+        $response->assertStatus(409);
+        $response->assertJson(['status' => false, 'code' => 'EMAIL_EXISTS']);
+
+        // The victim's PII must be absent anywhere in the response body.
+        $body = $response->getContent();
+        $this->assertStringNotContainsString($victim->phone, $body, 'register 409 must not leak the existing account phone');
+        $this->assertStringNotContainsString($victim->loyalty_code, $body, 'register 409 must not leak the existing account loyalty_code');
+        $this->assertNull($response->json('data.existing_phone'));
+        $this->assertNull($response->json('data.existing_loyalty_code'));
+    }
+
     public function test_loyalty_check()
     {
         $user = \App\Models\User::forceCreate([

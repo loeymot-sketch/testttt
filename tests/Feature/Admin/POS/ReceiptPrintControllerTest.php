@@ -103,6 +103,36 @@ class ReceiptPrintControllerTest extends TestCase
     }
 
     /**
+     * [SEC-FALSIFY-2026-06-08 P1] The print endpoint writes a hash-chained NF525
+     * audit row and flips the DUPLICATA marker, so it must require `permission:pos`.
+     * A Chef (kitchen role, no `pos` permission) must be forbidden — before the gate
+     * any authenticated staff could write to the fiscal audit chain. No audit row may
+     * be emitted on the rejected call, and the print counter must not move.
+     */
+    public function test_non_pos_staff_chef_is_forbidden_and_writes_no_audit_row(): void
+    {
+        $chef = User::factory()->create(['branch_id' => $this->branch->id]);
+        $chef->assignRole('Chef');
+        $this->assertFalse($chef->can('pos'), 'Guard precondition: Chef must not hold the pos permission.');
+
+        $order = $this->makeOrder(0);
+
+        $this->actingAs($chef, 'sanctum')
+            ->postJson("/api/admin/pos/orders/{$order->id}/print-receipt")
+            ->assertStatus(403);
+
+        $this->assertDatabaseHas('orders', [
+            'id' => $order->id,
+            'receipt_print_count' => 0,
+        ]);
+        $this->assertSame(
+            0,
+            AuditLog::query()->where('resource_id', $order->id)->count(),
+            'A forbidden print must not write any NF525 audit row.'
+        );
+    }
+
+    /**
      * [W9.B / G3] First print emits a `pos.receipt.print` audit row,
      * scoped to the operator's branch chain (NF525 evidence).
      */
