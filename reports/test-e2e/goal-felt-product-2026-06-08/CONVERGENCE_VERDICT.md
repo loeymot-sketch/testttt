@@ -2,7 +2,16 @@
 **Date:** 2026-06-08 · Branch `heal/pre-cloud-exec-2026-06-05` (NO push) · Supervisor: Claude (strict mode)
 **Plan:** `plans/GOAL_FELT_PRODUCT_PERFECTION_2026-06-08.md` · **Evidence:** this dir + `visual-army/` (70+ screenshots)
 
-## VERDICT: FELT-PRODUCT CONVERGED-GREEN for V1. Two consecutive cycles at 0 P0/P1 (round-1 found+healed P2/P3; round-2 borne-scoped gap-closure found 0 new). Remaining items = owner gates/config + documented deferrals.
+## VERDICT: FELT-PRODUCT CONVERGED-GREEN for the KIOSK/BORNE. Two consecutive cycles at 0 P0/P1 (round-1 found+healed P2/P3; round-2 borne-scoped gap-closure found 0 new).
+
+> ⚠️ **SUPERSEDED for the non-kiosk systems — read `FALSIFICATION_SWEEP_REPORT.md`.** This verdict
+> over-certified "CONVERGED-GREEN for V1": its deep treatment was the kiosk/borne. A subsequent
+> 24-finder adversarial **falsification sweep** (POS/KDS/OSS/Admin/Sync) BROKE that green — it found
+> **1 V1-blocker (loyalty PII leak) + 3 P1** (POS receipt-print authz, cash variance-reason dropped,
+> kiosk promo false-zero), now all **healed + regression-tested** (commit `d27ebb56d`, 0 frozen-zone),
+> plus a 30-item fix-soon backlog. The correct whole-project verdict is **GO-WITH-OWNER-GATES** per the
+> falsification report — NOT the blanket "V1-production-green" implied below for the daily-path pages
+> beyond the borne. The kiosk/borne findings and heals in this document remain valid.
 
 The owner asked for "the other angle" — not fiscal/NF525 (exhausted) but the **felt product**: the rendered number right on every page, UI surviving abuse, optimization, sync-as-perceived, client-facing security. Executed the 7-wave plan + an adversarial visual-abuse army (9 specialized agents on live :8766) + a heal round on what the army caught.
 
