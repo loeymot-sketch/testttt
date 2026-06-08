@@ -17,7 +17,7 @@ __webpack_require__.r(__webpack_exports__);
 
 var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
 // Module
-___CSS_LOADER_EXPORT___.push([module.id, "\n.kiosk-cart[data-v-f1497108] {\n  width: 100vw;\n  height: 100vh;\n  background: var(--kiosk-page-bg, var(--kiosk-bg));\n  display: flex;\n  flex-direction: column;\n  overflow: hidden;\n}\n.kiosk-order-type-bar[data-v-f1497108] {\n  display: flex;\n  gap: 16px;\n  padding: 20px 30px 0;\n  flex-shrink: 0;\n}\n.kiosk-order-type-btn[data-v-f1497108] {\n  flex: 1;\n  min-height: 82px;\n  height: auto;\n  border-radius: 24px;\n  border: 2px solid var(--kiosk-border);\n  background: var(--kiosk-surface);\n  color: var(--kiosk-text-muted);\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: center;\n  gap: 4px;\n  cursor: pointer;\n  transition: all 0.2s ease;\n}\n.kiosk-order-type-btn.active[data-v-f1497108] {\n  border-color: var(--kiosk-primary);\n  background: var(--kiosk-primary);\n  color: var(--kiosk-text-on-red);\n  box-shadow: var(--kiosk-shadow-cta);\n}\n.kiosk-order-type-btn[data-v-f1497108]:active { transform: scale(0.97);\n}\n.kiosk-btn-primary[disabled][data-v-f1497108] {\n  opacity: 0.62;\n  cursor: wait;\n}\n.kiosk-cart-quote-error[data-v-f1497108] {\n  width: 100%;\n  margin: 8px 0 0;\n  color: var(--kiosk-error, #b91c1c);\n  font-size: 13px;\n  font-weight: 700;\n  text-align: center;\n}\n.kiosk-order-type-icon[data-v-f1497108] { font-size: 22px; line-height: 1;\n}\n.kiosk-order-type-label[data-v-f1497108] {\n  font-size: 17px;\n  font-weight: 900;\n}\n.kiosk-cart-item-selections[data-v-f1497108] {\n  font-size: 11px;\n  color: var(--kiosk-text-mute);\n  margin: 2px 0 4px;\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  max-width: 100%;\n}\n.kiosk-cart-header[data-v-f1497108] {\n  display: flex;\n  align-items: center;\n  gap: 16px;\n  padding: 24px 32px 20px;\n  background: var(--kiosk-surface);\n  border-bottom: 1px solid var(--kiosk-border);\n  box-shadow: var(--kiosk-shadow-sticky);\n  flex-shrink: 0;\n}\n.kiosk-cart-back[data-v-f1497108] {\n  width: 60px;\n  height: 60px;\n  border-radius: 18px;\n  border: 1.5px solid var(--kiosk-border);\n  background: var(--kiosk-surface);\n  color: var(--kiosk-text);\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  cursor: pointer;\n  flex-shrink: 0;\n  transition: all 0.15s ease;\n}\n.kiosk-cart-back[data-v-f1497108]:active { transform: scale(0.95); background: var(--kiosk-surface-alt);\n}\n.kiosk-cart-header-info[data-v-f1497108] { flex: 1;\n}\n.kiosk-cart-title[data-v-f1497108] {\n  font-size: clamp(30px, 4vw, 44px);\n  font-weight: 900;\n  color: var(--kiosk-text);\n  margin: 0 0 2px;\n  text-transform: uppercase;\n}\n.kiosk-cart-item-count[data-v-f1497108] {\n  font-size: 16px;\n  color: var(--kiosk-text-mute);\n  margin: 0;\n}\n.kiosk-cart-clear[data-v-f1497108] {\n  min-height: 52px;\n  padding: 8px 20px;\n  border-radius: 999px;\n  border: 2px solid var(--kiosk-border);\n  background: var(--kiosk-surface);\n  color: var(--kiosk-primary);\n  font-size: 14px;\n  font-weight: 600;\n  cursor: pointer;\n  transition: all 0.15s ease;\n}\n.kiosk-cart-clear[data-v-f1497108]:active { background: var(--kiosk-surface-alt);\n}\n.kiosk-cart-empty[data-v-f1497108] {\n  flex: 1;\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: center;\n  gap: 16px;\n  padding: 40px;\n  text-align: center;\n}\n.kiosk-cart-empty-icon[data-v-f1497108] { font-size: 72px; line-height: 1;\n}\n.kiosk-cart-empty h2[data-v-f1497108] {\n  font-size: 24px;\n  font-weight: 800;\n  color: var(--kiosk-text);\n  margin: 0;\n}\n.kiosk-cart-empty p[data-v-f1497108] {\n  font-size: 15px;\n  color: var(--kiosk-text-mute);\n  margin: 0;\n}\n.kiosk-cart-body[data-v-f1497108] {\n  flex: 1;\n  overflow-y: auto;\n  display: flex;\n  flex-direction: column;\n  scrollbar-width: none;\n}\n.kiosk-cart-body[data-v-f1497108]::-webkit-scrollbar { display: none;\n}\n.kiosk-cart-items[data-v-f1497108] {\n  flex: 1;\n  padding: 22px 30px;\n  display: flex;\n  flex-direction: column;\n  gap: 16px;\n}\n\n/* FoodKing brand V2 (2026-05-10) — modernisation cart recap (owner :\n   \"année 2000, c'est weird, trop basique\"). Card plus aérée, image carrée\n   arrondie style modern app, accents Cayenne, hierarchy typo plus marquée. */\n.kiosk-cart-item[data-v-f1497108] {\n  background: #FFFFFF;\n  border-radius: 20px;\n  border: 1.5px solid #E5E5E5;\n  padding: 16px 18px;\n  display: flex;\n  align-items: center;\n  gap: 18px;\n  box-shadow: 0 4px 14px rgba(15, 15, 15, 0.04);\n  transition: border-color 160ms ease, box-shadow 160ms ease;\n}\n.kiosk-cart-item[data-v-f1497108]:hover {\n  border-color: #F4501E;\n  box-shadow: 0 6px 18px rgba(244, 80, 30, 0.12);\n}\n.kiosk-cart-item-img[data-v-f1497108] {\n  width: 104px;\n  height: 104px;\n  border-radius: 18px;\n  overflow: hidden;\n  flex-shrink: 0;\n  background: #FAFAFA;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  position: relative;\n  border: 1px solid #EFEFEF;\n}\n.kiosk-cart-item-img img[data-v-f1497108] {\n  width: 100%;\n  height: 100%;\n  -o-object-fit: cover;\n     object-fit: cover;\n}\n.kiosk-cart-item-emoji[data-v-f1497108] { font-size: 56px; line-height: 1;\n}\n.kiosk-cart-item-info[data-v-f1497108] { flex: 1; min-width: 0;\n}\n.kiosk-cart-item-name-row[data-v-f1497108] {\n  display: flex;\n  align-items: center;\n  gap: 0.4rem;\n}\n.kiosk-cart-edit-btn[data-v-f1497108] {\n  flex-shrink: 0;\n  background: var(--kiosk-surface-alt);\n  border: 1px solid var(--kiosk-border);\n  border-radius: 50%;\n  color: var(--kiosk-text-mute);\n  width: 34px; height: 34px;\n  display: flex; align-items: center; justify-content: center;\n  cursor: pointer;\n  transition: background 0.15s, color 0.15s;\n  padding: 0;\n}\n.kiosk-cart-edit-btn[data-v-f1497108]:hover {\n  background: var(--kiosk-primary-soft);\n  color: var(--kiosk-primary);\n  border-color: rgba(244, 80, 30, 0.24);\n}\n.kiosk-cart-item-name[data-v-f1497108] {\n  font-size: 22px;\n  font-weight: 900;\n  color: #0F0F0F;\n  margin: 0 0 4px;\n  letter-spacing: -0.2px;\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n.kiosk-cart-item-note[data-v-f1497108] {\n  font-size: 11px;\n  color: var(--kiosk-text-mute);\n  margin: 0 0 2px;\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n.kiosk-cart-item-unit[data-v-f1497108] {\n  font-size: 14px;\n  color: var(--kiosk-text-mute);\n}\n.kiosk-cart-item-controls[data-v-f1497108] {\n  display: flex;\n  flex-direction: column;\n  align-items: end;\n  gap: 8px;\n  flex-shrink: 0;\n  position: relative;\n}\n\n/* FoodKing brand V2 (2026-05-10) — bouton trash explicite à côté du qty stepper */\n.kiosk-cart-item-trash[data-v-f1497108] {\n  position: absolute;\n  top: -8px;\n  right: -8px;\n  width: 36px;\n  height: 36px;\n  border: 1px solid var(--kiosk-border, #E5E5E5);\n  border-radius: 50%;\n  background: var(--kiosk-surface, #FFFFFF);\n  color: var(--kiosk-text-muted, #5A5A5A);\n  cursor: pointer;\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  transition: background 120ms ease, color 120ms ease, transform 120ms ease;\n  -webkit-tap-highlight-color: transparent;\n  box-shadow: 0 2px 6px rgba(15, 15, 15, 0.06);\n}\n.kiosk-cart-item-trash[data-v-f1497108]:hover {\n  background: var(--kiosk-bold-primary-soft, #FFE8DD);\n  color: var(--kiosk-bold-primary, #F4501E);\n}\n.kiosk-cart-item-trash[data-v-f1497108]:active {\n  transform: scale(0.92);\n}\n.kiosk-cart-item-trash[data-v-f1497108]:focus-visible {\n  outline: 3px solid var(--kiosk-focus-ring, #2563EB);\n  outline-offset: 2px;\n}\n.kiosk-qty-ctrl[data-v-f1497108] {\n  display: flex;\n  align-items: center;\n  gap: 0;\n  background: var(--kiosk-surface-alt);\n  border-radius: 999px;\n  border: 1.5px solid var(--kiosk-border);\n  overflow: hidden;\n}\n[dir=\"rtl\"] .kiosk-qty-ctrl[data-v-f1497108] {\n  direction: ltr;\n}\n.kiosk-qty-btn[data-v-f1497108] {\n  width: 50px;\n  height: 50px;\n  border: none;\n  background: transparent;\n  color: var(--kiosk-text);\n  cursor: pointer;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  transition: background 0.15s ease;\n}\n.kiosk-qty-btn[data-v-f1497108]:active { background: rgba(0,0,0,0.05);\n}\n.kiosk-qty-btn.minus[data-v-f1497108] { color: var(--kiosk-text-muted);\n}\n.kiosk-qty-btn.minus[data-v-f1497108]:active { color: var(--kiosk-primary);\n}\n.kiosk-qty-num[data-v-f1497108] {\n  min-width: 38px;\n  text-align: center;\n  font-size: 20px;\n  font-weight: 900;\n  color: var(--kiosk-text);\n}\n.kiosk-cart-item-total[data-v-f1497108] {\n  font-size: 24px;\n  font-weight: 900;\n  color: #F4501E;\n  letter-spacing: -0.4px;\n}\n.kiosk-cart-summary[data-v-f1497108] {\n  margin: 0 30px;\n  background: var(--kiosk-surface);\n  border-radius: 26px;\n  border: 1.5px solid var(--kiosk-border);\n  padding: 20px 24px;\n  display: flex;\n  flex-direction: column;\n  gap: 10px;\n}\n.kiosk-cart-summary-row[data-v-f1497108] {\n  display: flex;\n  justify-content: space-between;\n  align-items: center;\n  font-size: 16px;\n  color: var(--kiosk-text-muted);\n}\n.kiosk-cart-summary-row.total[data-v-f1497108] {\n  font-size: 24px;\n  font-weight: 900;\n  color: var(--kiosk-text);\n  padding-top: 10px;\n  border-top: 1px solid var(--kiosk-border);\n  margin-top: 4px;\n}\n.kiosk-cart-summary-row.loyalty[data-v-f1497108] { color: var(--kiosk-text-muted);\n}\n.green[data-v-f1497108] { color: var(--kiosk-success); font-weight: 700;\n}\n.kiosk-cart-grand-total[data-v-f1497108] {\n  font-size: 32px;\n  font-weight: 900;\n  color: var(--kiosk-primary);\n}\n.kiosk-cart-actions[data-v-f1497108] {\n  padding: 18px 30px 32px;\n  display: flex;\n  flex-direction: column;\n  gap: 10px;\n}\n\n/* Kiosk Phase 9.1.6 — Section code promo panier. */\n.kiosk-cart-promo[data-v-f1497108] {\n  padding: 14px 30px 0;\n}\n.kiosk-cart-promo-label[data-v-f1497108] {\n  display: block;\n  font-size: 13px;\n  font-weight: 600;\n  color: var(--kiosk-text-muted, #5A5A5A);\n  margin-bottom: 6px;\n}\n.kiosk-cart-promo-row[data-v-f1497108] {\n  display: flex;\n  gap: 8px;\n}\n.kiosk-cart-promo-input[data-v-f1497108] {\n  flex: 1;\n  height: 48px;\n  padding: 0 14px;\n  border-radius: 10px;\n  border: 1.5px solid var(--kiosk-border);\n  background: var(--kiosk-surface);\n  color: var(--kiosk-text);\n  font-size: 15px;\n  letter-spacing: 0.03em;\n  text-transform: uppercase;\n  min-height: 44px;\n}\n.kiosk-cart-promo-input[data-v-f1497108]:focus {\n  border-color: var(--kiosk-primary, #F4501E);\n  outline: none;\n}\n.kiosk-cart-promo-input[aria-invalid=\"true\"][data-v-f1497108] {\n  border-color: var(--kiosk-error, #C21E2F);\n}\n.kiosk-cart-promo-apply[data-v-f1497108] {\n  height: 48px;\n  padding: 0 18px;\n  border-radius: 10px;\n  border: none;\n  background: var(--kiosk-primary, #F4501E);\n  color: #fff;\n  font-weight: 700;\n  font-size: 14px;\n  cursor: pointer;\n  min-height: 44px;\n}\n.kiosk-cart-promo-apply[data-v-f1497108]:disabled {\n  opacity: 0.5;\n  cursor: not-allowed;\n}\n.kiosk-cart-promo-error[data-v-f1497108] {\n  color: var(--kiosk-error, #C21E2F);\n  font-size: 13px;\n  margin: 6px 0 0;\n  font-weight: 500;\n}\n.kiosk-cart-promo-applied[data-v-f1497108] {\n  display: flex;\n  align-items: center;\n  gap: 10px;\n  padding: 10px 14px;\n  background: rgba(27, 138, 58, 0.12);\n  border: 1.5px solid var(--kiosk-success, #1B8A3A);\n  border-radius: 10px;\n  color: var(--kiosk-success, #1B8A3A);\n  font-weight: 600;\n}\n.kiosk-cart-promo-applied-icon[data-v-f1497108] {\n  font-size: 18px;\n}\n.kiosk-cart-promo-applied-text[data-v-f1497108] {\n  flex: 1;\n}\n.kiosk-cart-promo-remove[data-v-f1497108] {\n  background: transparent;\n  border: none;\n  color: var(--kiosk-error, #C21E2F);\n  font-weight: 600;\n  cursor: pointer;\n  text-decoration: underline;\n  font-size: 13px;\n}\n.kiosk-cart-summary-row.promo .green[data-v-f1497108] {\n  color: var(--kiosk-success, #1B8A3A);\n}\n.kiosk-btn-loyalty[data-v-f1497108] {\n  width: 100%;\n  min-height: 60px;\n  height: auto;\n  background: rgba(255,215,0,0.08);\n  border: 1.5px solid rgba(255,215,0,0.3);\n  border-radius: 18px;\n  color: var(--kiosk-warning);\n  font-size: 16px;\n  font-weight: 600;\n  cursor: pointer;\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  padding: 0 16px;\n  transition: background 0.2s;\n  margin: 0 30px 4px;\n  width: calc(100% - 60px);\n}\n.kiosk-btn-loyalty[data-v-f1497108]:active { background: rgba(255,215,0,0.15);\n}\n.kiosk-btn-loyalty-star[data-v-f1497108] { font-size: 18px;\n}\n.kiosk-btn-loyalty-arrow[data-v-f1497108] { font-size: 20px; opacity: 0.7;\n}\n.kiosk-btn-primary[data-v-f1497108] {\n  width: 100%;\n  min-height: 76px;\n  height: auto;\n  background: var(--kiosk-primary);\n  color: var(--kiosk-text-on-red);\n  border: none;\n  border-radius: 24px;\n  font-size: 22px;\n  font-weight: 900;\n  cursor: pointer;\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  padding: 0 24px;\n  box-shadow: var(--kiosk-shadow-cta);\n  transition: all 0.15s ease;\n}\n.kiosk-btn-primary[data-v-f1497108]:active { transform: scale(0.98);\n}\n.kiosk-btn-price[data-v-f1497108] {\n  font-size: 18px;\n  font-weight: 800;\n  background: rgba(255,255,255,0.2);\n  padding: 4px 14px;\n  border-radius: 10px;\n}\n.kiosk-btn-secondary[data-v-f1497108] {\n  width: 100%;\n  min-height: 60px;\n  height: auto;\n  background: var(--kiosk-surface);\n  color: var(--kiosk-text-muted);\n  border: 1.5px solid var(--kiosk-border);\n  border-radius: 18px;\n  font-size: 17px;\n  font-weight: 800;\n  cursor: pointer;\n  transition: all 0.15s ease;\n}\n.kiosk-btn-secondary[data-v-f1497108]:active { background: var(--kiosk-surface-alt);\n}\n.kiosk-clear-overlay[data-v-f1497108] {\n  position: fixed; inset: 0;\n  background: var(--kiosk-overlay-modal);\n  display: flex; align-items: center; justify-content: center;\n  z-index: 999;\n}\n.kiosk-clear-modal[data-v-f1497108] {\n  background: var(--kiosk-surface);\n  border: 1.5px solid var(--kiosk-border);\n  border-radius: 20px;\n  padding: 2rem;\n  width: 340px;\n  text-align: center;\n  box-shadow: var(--kiosk-shadow-modal);\n}\n.kiosk-clear-title[data-v-f1497108] {\n  font-size: 1.3rem;\n  font-weight: 700;\n  margin: 0 0 0.4rem;\n  color: var(--kiosk-text);\n}\n.kiosk-clear-sub[data-v-f1497108] {\n  color: var(--kiosk-text-mute);\n  font-size: 0.95rem;\n  margin: 0 0 1.5rem;\n}\n.kiosk-clear-actions[data-v-f1497108] {\n  display: flex;\n  gap: 0.75rem;\n}\n.kiosk-clear-yes[data-v-f1497108] {\n  flex: 1;\n  background: var(--kiosk-primary);\n  color: var(--kiosk-text-on-red);\n  border: none;\n  border-radius: 12px;\n  padding: 0.85rem 1rem;\n  font-size: 1rem;\n  font-weight: 700;\n  cursor: pointer;\n}\n.kiosk-clear-no[data-v-f1497108] {\n  flex: 1;\n  background: var(--kiosk-surface-alt);\n  color: var(--kiosk-text-muted);\n  border: 1px solid var(--kiosk-border);\n  border-radius: 12px;\n  padding: 0.85rem 1rem;\n  font-size: 1rem;\n  cursor: pointer;\n}\n", ""]);
+___CSS_LOADER_EXPORT___.push([module.id, "\n.kiosk-cart[data-v-f1497108] {\n  width: 100vw;\n  height: 100vh;\n  background: var(--kiosk-page-bg, var(--kiosk-bg));\n  display: flex;\n  flex-direction: column;\n  overflow: hidden;\n}\n.kiosk-order-type-bar[data-v-f1497108] {\n  display: flex;\n  gap: 16px;\n  padding: 20px 30px 0;\n  flex-shrink: 0;\n}\n.kiosk-order-type-btn[data-v-f1497108] {\n  flex: 1;\n  min-height: 82px;\n  height: auto;\n  border-radius: 24px;\n  border: 2px solid var(--kiosk-border);\n  background: var(--kiosk-surface);\n  color: var(--kiosk-text-muted);\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: center;\n  gap: 4px;\n  cursor: pointer;\n  transition: all 0.2s ease;\n}\n.kiosk-order-type-btn.active[data-v-f1497108] {\n  border-color: var(--kiosk-primary);\n  background: var(--kiosk-primary);\n  color: var(--kiosk-text-on-red);\n  box-shadow: var(--kiosk-shadow-cta);\n}\n.kiosk-order-type-btn[data-v-f1497108]:active { transform: scale(0.97);\n}\n.kiosk-btn-primary[disabled][data-v-f1497108] {\n  opacity: 0.62;\n  cursor: wait;\n}\n.kiosk-cart-quote-error[data-v-f1497108] {\n  width: 100%;\n  margin: 8px 0 0;\n  color: var(--kiosk-error, #b91c1c);\n  font-size: 13px;\n  font-weight: 700;\n  text-align: center;\n}\n.kiosk-order-type-icon[data-v-f1497108] { font-size: 22px; line-height: 1;\n}\n.kiosk-order-type-label[data-v-f1497108] {\n  font-size: 17px;\n  font-weight: 900;\n}\n.kiosk-cart-item-selections[data-v-f1497108] {\n  font-size: 11px;\n  color: var(--kiosk-text-mute);\n  margin: 2px 0 4px;\n  /* [FP-26] 2-line clamp so long customization summaries wrap instead of a hard cut. */\n  display: -webkit-box;\n  -webkit-line-clamp: 2;\n  -webkit-box-orient: vertical;\n  overflow: hidden;\n  max-width: 100%;\n}\n.kiosk-cart-header[data-v-f1497108] {\n  display: flex;\n  align-items: center;\n  gap: 16px;\n  padding: 24px 32px 20px;\n  background: var(--kiosk-surface);\n  border-bottom: 1px solid var(--kiosk-border);\n  box-shadow: var(--kiosk-shadow-sticky);\n  flex-shrink: 0;\n}\n.kiosk-cart-back[data-v-f1497108] {\n  width: 60px;\n  height: 60px;\n  border-radius: 18px;\n  border: 1.5px solid var(--kiosk-border);\n  background: var(--kiosk-surface);\n  color: var(--kiosk-text);\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  cursor: pointer;\n  flex-shrink: 0;\n  transition: all 0.15s ease;\n}\n.kiosk-cart-back[data-v-f1497108]:active { transform: scale(0.95); background: var(--kiosk-surface-alt);\n}\n.kiosk-cart-header-info[data-v-f1497108] { flex: 1;\n}\n.kiosk-cart-title[data-v-f1497108] {\n  font-size: clamp(30px, 4vw, 44px);\n  font-weight: 900;\n  color: var(--kiosk-text);\n  margin: 0 0 2px;\n  text-transform: uppercase;\n}\n.kiosk-cart-item-count[data-v-f1497108] {\n  font-size: 16px;\n  color: var(--kiosk-text-mute);\n  margin: 0;\n}\n.kiosk-cart-clear[data-v-f1497108] {\n  min-height: 52px;\n  padding: 8px 20px;\n  border-radius: 999px;\n  border: 2px solid var(--kiosk-border);\n  background: var(--kiosk-surface);\n  color: var(--kiosk-primary);\n  font-size: 14px;\n  font-weight: 600;\n  cursor: pointer;\n  transition: all 0.15s ease;\n}\n.kiosk-cart-clear[data-v-f1497108]:active { background: var(--kiosk-surface-alt);\n}\n.kiosk-cart-empty[data-v-f1497108] {\n  flex: 1;\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: center;\n  gap: 16px;\n  padding: 40px;\n  text-align: center;\n}\n.kiosk-cart-empty-icon[data-v-f1497108] { font-size: 72px; line-height: 1;\n}\n.kiosk-cart-empty h2[data-v-f1497108] {\n  font-size: 24px;\n  font-weight: 800;\n  color: var(--kiosk-text);\n  margin: 0;\n}\n.kiosk-cart-empty p[data-v-f1497108] {\n  font-size: 15px;\n  color: var(--kiosk-text-mute);\n  margin: 0;\n}\n.kiosk-cart-body[data-v-f1497108] {\n  flex: 1;\n  overflow-y: auto;\n  display: flex;\n  flex-direction: column;\n  scrollbar-width: none;\n}\n.kiosk-cart-body[data-v-f1497108]::-webkit-scrollbar { display: none;\n}\n.kiosk-cart-items[data-v-f1497108] {\n  flex: 1;\n  padding: 22px 30px;\n  display: flex;\n  flex-direction: column;\n  gap: 16px;\n}\n\n/* FoodKing brand V2 (2026-05-10) — modernisation cart recap (owner :\n   \"année 2000, c'est weird, trop basique\"). Card plus aérée, image carrée\n   arrondie style modern app, accents Cayenne, hierarchy typo plus marquée. */\n.kiosk-cart-item[data-v-f1497108] {\n  background: #FFFFFF;\n  border-radius: 20px;\n  border: 1.5px solid #E5E5E5;\n  padding: 16px 18px;\n  display: flex;\n  align-items: center;\n  gap: 18px;\n  box-shadow: 0 4px 14px rgba(15, 15, 15, 0.04);\n  transition: border-color 160ms ease, box-shadow 160ms ease;\n}\n.kiosk-cart-item[data-v-f1497108]:hover {\n  border-color: #F4501E;\n  box-shadow: 0 6px 18px rgba(244, 80, 30, 0.12);\n}\n.kiosk-cart-item-img[data-v-f1497108] {\n  width: 104px;\n  height: 104px;\n  border-radius: 18px;\n  overflow: hidden;\n  flex-shrink: 0;\n  background: #FAFAFA;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  position: relative;\n  border: 1px solid #EFEFEF;\n}\n.kiosk-cart-item-img img[data-v-f1497108] {\n  width: 100%;\n  height: 100%;\n  -o-object-fit: cover;\n     object-fit: cover;\n}\n.kiosk-cart-item-emoji[data-v-f1497108] { font-size: 56px; line-height: 1;\n}\n.kiosk-cart-item-info[data-v-f1497108] { flex: 1; min-width: 0;\n}\n.kiosk-cart-item-name-row[data-v-f1497108] {\n  display: flex;\n  align-items: center;\n  gap: 0.4rem;\n}\n.kiosk-cart-edit-btn[data-v-f1497108] {\n  flex-shrink: 0;\n  background: var(--kiosk-surface-alt);\n  border: 1px solid var(--kiosk-border);\n  border-radius: 50%;\n  color: var(--kiosk-text-mute);\n  width: 34px; height: 34px;\n  display: flex; align-items: center; justify-content: center;\n  cursor: pointer;\n  transition: background 0.15s, color 0.15s;\n  padding: 0;\n}\n.kiosk-cart-edit-btn[data-v-f1497108]:hover {\n  background: var(--kiosk-primary-soft);\n  color: var(--kiosk-primary);\n  border-color: rgba(244, 80, 30, 0.24);\n}\n.kiosk-cart-item-name[data-v-f1497108] {\n  font-size: 22px;\n  font-weight: 900;\n  color: #0F0F0F;\n  margin: 0 0 4px;\n  letter-spacing: -0.2px;\n  /* [FP-26] Wrap long product names to 2 lines (matches the product-grid clamp) instead of a\n     hard one-line ellipsis cut — worst at ~360px where image + qty controls leave little room. */\n  display: -webkit-box;\n  -webkit-line-clamp: 2;\n  -webkit-box-orient: vertical;\n  overflow: hidden;\n}\n.kiosk-cart-item-note[data-v-f1497108] {\n  font-size: 11px;\n  color: var(--kiosk-text-mute);\n  margin: 0 0 2px;\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n.kiosk-cart-item-unit[data-v-f1497108] {\n  font-size: 14px;\n  color: var(--kiosk-text-mute);\n}\n.kiosk-cart-item-controls[data-v-f1497108] {\n  display: flex;\n  flex-direction: column;\n  align-items: end;\n  gap: 8px;\n  flex-shrink: 0;\n  position: relative;\n}\n\n/* FoodKing brand V2 (2026-05-10) — bouton trash explicite à côté du qty stepper */\n.kiosk-cart-item-trash[data-v-f1497108] {\n  position: absolute;\n  top: -8px;\n  right: -8px;\n  width: 36px;\n  height: 36px;\n  border: 1px solid var(--kiosk-border, #E5E5E5);\n  border-radius: 50%;\n  background: var(--kiosk-surface, #FFFFFF);\n  color: var(--kiosk-text-muted, #5A5A5A);\n  cursor: pointer;\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  transition: background 120ms ease, color 120ms ease, transform 120ms ease;\n  -webkit-tap-highlight-color: transparent;\n  box-shadow: 0 2px 6px rgba(15, 15, 15, 0.06);\n}\n.kiosk-cart-item-trash[data-v-f1497108]:hover {\n  background: var(--kiosk-bold-primary-soft, #FFE8DD);\n  color: var(--kiosk-bold-primary, #F4501E);\n}\n.kiosk-cart-item-trash[data-v-f1497108]:active {\n  transform: scale(0.92);\n}\n.kiosk-cart-item-trash[data-v-f1497108]:focus-visible {\n  outline: 3px solid var(--kiosk-focus-ring, #2563EB);\n  outline-offset: 2px;\n}\n.kiosk-qty-ctrl[data-v-f1497108] {\n  display: flex;\n  align-items: center;\n  gap: 0;\n  background: var(--kiosk-surface-alt);\n  border-radius: 999px;\n  border: 1.5px solid var(--kiosk-border);\n  overflow: hidden;\n}\n[dir=\"rtl\"] .kiosk-qty-ctrl[data-v-f1497108] {\n  direction: ltr;\n}\n.kiosk-qty-btn[data-v-f1497108] {\n  width: 50px;\n  height: 50px;\n  border: none;\n  background: transparent;\n  color: var(--kiosk-text);\n  cursor: pointer;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  transition: background 0.15s ease;\n}\n.kiosk-qty-btn[data-v-f1497108]:active { background: rgba(0,0,0,0.05);\n}\n.kiosk-qty-btn.minus[data-v-f1497108] { color: var(--kiosk-text-muted);\n}\n.kiosk-qty-btn.minus[data-v-f1497108]:active { color: var(--kiosk-primary);\n}\n.kiosk-qty-num[data-v-f1497108] {\n  min-width: 38px;\n  text-align: center;\n  font-size: 20px;\n  font-weight: 900;\n  color: var(--kiosk-text);\n}\n.kiosk-cart-item-total[data-v-f1497108] {\n  font-size: 24px;\n  font-weight: 900;\n  color: #F4501E;\n  letter-spacing: -0.4px;\n}\n.kiosk-cart-summary[data-v-f1497108] {\n  margin: 0 30px;\n  background: var(--kiosk-surface);\n  border-radius: 26px;\n  border: 1.5px solid var(--kiosk-border);\n  padding: 20px 24px;\n  display: flex;\n  flex-direction: column;\n  gap: 10px;\n}\n.kiosk-cart-summary-row[data-v-f1497108] {\n  display: flex;\n  justify-content: space-between;\n  align-items: center;\n  font-size: 16px;\n  color: var(--kiosk-text-muted);\n}\n.kiosk-cart-summary-row.total[data-v-f1497108] {\n  font-size: 24px;\n  font-weight: 900;\n  color: var(--kiosk-text);\n  padding-top: 10px;\n  border-top: 1px solid var(--kiosk-border);\n  margin-top: 4px;\n}\n.kiosk-cart-summary-row.loyalty[data-v-f1497108] { color: var(--kiosk-text-muted);\n}\n.green[data-v-f1497108] { color: var(--kiosk-success); font-weight: 700;\n}\n.kiosk-cart-grand-total[data-v-f1497108] {\n  font-size: 32px;\n  font-weight: 900;\n  color: var(--kiosk-primary);\n}\n.kiosk-cart-actions[data-v-f1497108] {\n  padding: 18px 30px 32px;\n  display: flex;\n  flex-direction: column;\n  gap: 10px;\n}\n\n/* Kiosk Phase 9.1.6 — Section code promo panier. */\n.kiosk-cart-promo[data-v-f1497108] {\n  padding: 14px 30px 0;\n}\n.kiosk-cart-promo-label[data-v-f1497108] {\n  display: block;\n  font-size: 13px;\n  font-weight: 600;\n  color: var(--kiosk-text-muted, #5A5A5A);\n  margin-bottom: 6px;\n}\n.kiosk-cart-promo-row[data-v-f1497108] {\n  display: flex;\n  gap: 8px;\n}\n.kiosk-cart-promo-input[data-v-f1497108] {\n  flex: 1;\n  height: 48px;\n  padding: 0 14px;\n  border-radius: 10px;\n  border: 1.5px solid var(--kiosk-border);\n  background: var(--kiosk-surface);\n  color: var(--kiosk-text);\n  font-size: 15px;\n  letter-spacing: 0.03em;\n  text-transform: uppercase;\n  min-height: 44px;\n}\n.kiosk-cart-promo-input[data-v-f1497108]:focus {\n  border-color: var(--kiosk-primary, #F4501E);\n  outline: none;\n}\n.kiosk-cart-promo-input[aria-invalid=\"true\"][data-v-f1497108] {\n  border-color: var(--kiosk-error, #C21E2F);\n}\n.kiosk-cart-promo-apply[data-v-f1497108] {\n  height: 48px;\n  padding: 0 18px;\n  border-radius: 10px;\n  border: none;\n  background: var(--kiosk-primary, #F4501E);\n  color: #fff;\n  font-weight: 700;\n  font-size: 14px;\n  cursor: pointer;\n  min-height: 44px;\n}\n.kiosk-cart-promo-apply[data-v-f1497108]:disabled {\n  opacity: 0.5;\n  cursor: not-allowed;\n}\n.kiosk-cart-promo-error[data-v-f1497108] {\n  color: var(--kiosk-error, #C21E2F);\n  font-size: 13px;\n  margin: 6px 0 0;\n  font-weight: 500;\n}\n.kiosk-cart-promo-applied[data-v-f1497108] {\n  display: flex;\n  align-items: center;\n  gap: 10px;\n  padding: 10px 14px;\n  background: rgba(27, 138, 58, 0.12);\n  border: 1.5px solid var(--kiosk-success, #1B8A3A);\n  border-radius: 10px;\n  color: var(--kiosk-success, #1B8A3A);\n  font-weight: 600;\n}\n.kiosk-cart-promo-applied-icon[data-v-f1497108] {\n  font-size: 18px;\n}\n.kiosk-cart-promo-applied-text[data-v-f1497108] {\n  flex: 1;\n}\n.kiosk-cart-promo-remove[data-v-f1497108] {\n  background: transparent;\n  border: none;\n  color: var(--kiosk-error, #C21E2F);\n  font-weight: 600;\n  cursor: pointer;\n  text-decoration: underline;\n  font-size: 13px;\n}\n.kiosk-cart-summary-row.promo .green[data-v-f1497108] {\n  color: var(--kiosk-success, #1B8A3A);\n}\n.kiosk-btn-loyalty[data-v-f1497108] {\n  width: 100%;\n  min-height: 60px;\n  height: auto;\n  background: rgba(255,215,0,0.08);\n  border: 1.5px solid rgba(255,215,0,0.3);\n  border-radius: 18px;\n  color: var(--kiosk-warning);\n  font-size: 16px;\n  font-weight: 600;\n  cursor: pointer;\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  padding: 0 16px;\n  transition: background 0.2s;\n  margin: 0 30px 4px;\n  width: calc(100% - 60px);\n}\n.kiosk-btn-loyalty[data-v-f1497108]:active { background: rgba(255,215,0,0.15);\n}\n.kiosk-btn-loyalty-star[data-v-f1497108] { font-size: 18px;\n}\n.kiosk-btn-loyalty-arrow[data-v-f1497108] { font-size: 20px; opacity: 0.7;\n}\n.kiosk-btn-primary[data-v-f1497108] {\n  width: 100%;\n  min-height: 76px;\n  height: auto;\n  background: var(--kiosk-primary);\n  color: var(--kiosk-text-on-red);\n  border: none;\n  border-radius: 24px;\n  font-size: 22px;\n  font-weight: 900;\n  cursor: pointer;\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  padding: 0 24px;\n  box-shadow: var(--kiosk-shadow-cta);\n  transition: all 0.15s ease;\n}\n.kiosk-btn-primary[data-v-f1497108]:active { transform: scale(0.98);\n}\n.kiosk-btn-price[data-v-f1497108] {\n  font-size: 18px;\n  font-weight: 800;\n  background: rgba(255,255,255,0.2);\n  padding: 4px 14px;\n  border-radius: 10px;\n}\n.kiosk-btn-secondary[data-v-f1497108] {\n  width: 100%;\n  min-height: 60px;\n  height: auto;\n  background: var(--kiosk-surface);\n  color: var(--kiosk-text-muted);\n  border: 1.5px solid var(--kiosk-border);\n  border-radius: 18px;\n  font-size: 17px;\n  font-weight: 800;\n  cursor: pointer;\n  transition: all 0.15s ease;\n}\n.kiosk-btn-secondary[data-v-f1497108]:active { background: var(--kiosk-surface-alt);\n}\n.kiosk-clear-overlay[data-v-f1497108] {\n  position: fixed; inset: 0;\n  background: var(--kiosk-overlay-modal);\n  display: flex; align-items: center; justify-content: center;\n  z-index: 999;\n}\n.kiosk-clear-modal[data-v-f1497108] {\n  background: var(--kiosk-surface);\n  border: 1.5px solid var(--kiosk-border);\n  border-radius: 20px;\n  padding: 2rem;\n  width: 340px;\n  text-align: center;\n  box-shadow: var(--kiosk-shadow-modal);\n}\n.kiosk-clear-title[data-v-f1497108] {\n  font-size: 1.3rem;\n  font-weight: 700;\n  margin: 0 0 0.4rem;\n  color: var(--kiosk-text);\n}\n.kiosk-clear-sub[data-v-f1497108] {\n  color: var(--kiosk-text-mute);\n  font-size: 0.95rem;\n  margin: 0 0 1.5rem;\n}\n.kiosk-clear-actions[data-v-f1497108] {\n  display: flex;\n  gap: 0.75rem;\n}\n.kiosk-clear-yes[data-v-f1497108] {\n  flex: 1;\n  background: var(--kiosk-primary);\n  color: var(--kiosk-text-on-red);\n  border: none;\n  border-radius: 12px;\n  padding: 0.85rem 1rem;\n  font-size: 1rem;\n  font-weight: 700;\n  cursor: pointer;\n}\n.kiosk-clear-no[data-v-f1497108] {\n  flex: 1;\n  background: var(--kiosk-surface-alt);\n  color: var(--kiosk-text-muted);\n  border: 1px solid var(--kiosk-border);\n  border-radius: 12px;\n  padding: 0.85rem 1rem;\n  font-size: 1rem;\n  cursor: pointer;\n}\n", ""]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 
@@ -916,8 +916,11 @@ function confirmationAutoReturnSeconds() {
       return (_ref = (_this$_snapshotItems = this._snapshotItems) !== null && _this$_snapshotItems !== void 0 ? _this$_snapshotItems : (_this$$store$state$ki2 = this.$store.state.kioskCart) === null || _this$$store$state$ki2 === void 0 ? void 0 : _this$$store$state$ki2.items) !== null && _ref !== void 0 ? _ref : [];
     },
     receiptDiscount: function receiptDiscount() {
-      var _ref2, _this$_snapshotDiscou, _this$$store$state$ki3;
-      return (_ref2 = (_this$_snapshotDiscou = this._snapshotDiscount) !== null && _this$_snapshotDiscou !== void 0 ? _this$_snapshotDiscou : (_this$$store$state$ki3 = this.$store.state.kioskCart) === null || _this$$store$state$ki3 === void 0 ? void 0 : _this$$store$state$ki3.loyaltyDiscount) !== null && _ref2 !== void 0 ? _ref2 : 0;
+      var _this$_snapshotDiscou;
+      // [FP-02] Receipt discount = loyalty + promo, so the printed (subtotal − discount)
+      // reconciles to the total whenever a promo code is applied (total subtracts both).
+      var cart = this.$store.state.kioskCart;
+      return (_this$_snapshotDiscou = this._snapshotDiscount) !== null && _this$_snapshotDiscou !== void 0 ? _this$_snapshotDiscou : ((cart === null || cart === void 0 ? void 0 : cart.loyaltyDiscount) || 0) + ((cart === null || cart === void 0 ? void 0 : cart.promoDiscount) || 0);
     },
     receiptSubtotal: function receiptSubtotal() {
       var _this$_snapshotSubtot;
@@ -928,14 +931,14 @@ function confirmationAutoReturnSeconds() {
       }, 0);
     },
     receiptPaymentMethod: function receiptPaymentMethod() {
-      var _this$$store$state$ki4;
+      var _this$$store$state$ki3;
       if (this._snapshotPayment !== null) return this._snapshotPayment;
       var map = {
         card: this.$t('kiosk.card'),
         cash: this.$t('kiosk.cash'),
         tr: this.$t('kiosk.pay_screen.tr_title')
       };
-      var method = (_this$$store$state$ki4 = this.$store.state.kioskCart) === null || _this$$store$state$ki4 === void 0 ? void 0 : _this$$store$state$ki4.paymentMethod;
+      var method = (_this$$store$state$ki3 = this.$store.state.kioskCart) === null || _this$$store$state$ki3 === void 0 ? void 0 : _this$$store$state$ki3.paymentMethod;
       return map[method] || method || '';
     },
     restaurantName: function restaurantName() {
@@ -970,7 +973,9 @@ function confirmationAutoReturnSeconds() {
     var cartIsEmpty = !Array.isArray(items) || items.length === 0;
     var snapshot = cartIsEmpty ? (0,_helpers_kioskReceiptPersistence__WEBPACK_IMPORTED_MODULE_4__.readKioskReceiptSnapshot)() : null;
     this._snapshotItems = cartIsEmpty && snapshot ? JSON.parse(JSON.stringify(snapshot.items || [])) : JSON.parse(JSON.stringify(items));
-    this._snapshotDiscount = cartIsEmpty && snapshot ? snapshot.discount || 0 : (state === null || state === void 0 ? void 0 : state.loyaltyDiscount) || 0;
+    // [FP-02] Capture the FULL discount (loyalty + promo) so the snapshot/reload receipt
+    // also reconciles (subtotal − discount === total).
+    this._snapshotDiscount = cartIsEmpty && snapshot ? snapshot.discount || 0 : ((state === null || state === void 0 ? void 0 : state.loyaltyDiscount) || 0) + ((state === null || state === void 0 ? void 0 : state.promoDiscount) || 0);
     // [KIOSK-17] Use item.total (always present after ADD_ITEM fix) for accuracy
     this._snapshotSubtotal = cartIsEmpty && snapshot ? (_snapshot$subtotal = snapshot.subtotal) !== null && _snapshot$subtotal !== void 0 ? _snapshot$subtotal : (snapshot.items || []).reduce(function (s, it) {
       return s + (parseFloat(it.total) || 0);
@@ -3144,6 +3149,9 @@ var TIMEOUT_SECONDS = 900; // 15 minutes
 // their queue number on KDS/OSS — leaving the waiting screen doesn't
 // cancel anything. 10s = owner instruction.
 var PREPARING_AUTO_REDIRECT_SECONDS = 10;
+// [FP-28] Offline-queued orders skip polling; auto-return to idle so the borne is
+// freed for the next customer instead of stranding forever on the syncing spinner.
+var OFFLINE_AUTO_REDIRECT_SECONDS = 20;
 // Use shared enum — keeps in sync with PHP OrderStatus and KDS component
 var STATUS_PREPARED = _enums_modules_orderStatusEnum__WEBPACK_IMPORTED_MODULE_2__["default"].PREPARED; // 8
 var STATUS_DELIVERED = _enums_modules_orderStatusEnum__WEBPACK_IMPORTED_MODULE_2__["default"].DELIVERED; // 13
@@ -3190,7 +3198,9 @@ var PAYMENT_PENDING_COUNTER = _enums_modules_paymentStatusEnum__WEBPACK_IMPORTED
       _readyFlashActive: false,
       // [Owner 2026-05-21] Countdown to auto-redirect home during preparing state.
       preparingAutoRedirectSeconds: PREPARING_AUTO_REDIRECT_SECONDS,
-      preparingAutoRedirectTimer: null
+      preparingAutoRedirectTimer: null,
+      // [FP-28] one-shot timer returning the borne to idle after an offline-queued order.
+      offlineAutoRedirectTimer: null
     };
   },
   computed: {
@@ -3208,6 +3218,10 @@ var PAYMENT_PENDING_COUNTER = _enums_modules_paymentStatusEnum__WEBPACK_IMPORTED
     // If this is an offline-queued order, skip polling and show "syncing" state
     if (String(this.orderId).startsWith('offline_')) {
       this.isOfflineOrder = true;
+      // [FP-28] Don't strand the borne on the syncing spinner. The order is queued locally
+      // (kioskOfflineQueue) and the customer is directed to the counter — auto-return to idle
+      // so the next customer can order. The full offline_→real-id handoff is owner-gated (G-01).
+      this.startOfflineAutoRedirect();
       return;
     }
     this.startPolling();
@@ -3588,6 +3602,17 @@ var PAYMENT_PENDING_COUNTER = _enums_modules_paymentStatusEnum__WEBPACK_IMPORTED
       clearInterval(this.elapsedTimer);
       // [Owner 2026-05-21] Also clear preparing-state auto-redirect.
       this.stopPreparingAutoRedirect();
+      // [FP-28] clear the offline auto-return timer.
+      clearTimeout(this.offlineAutoRedirectTimer);
+    },
+    // [FP-28] Offline-queued order: wait long enough for the customer to read the
+    // "saved / go to counter" message, then return to idle to free the borne.
+    startOfflineAutoRedirect: function startOfflineAutoRedirect() {
+      var _this1 = this;
+      clearTimeout(this.offlineAutoRedirectTimer);
+      this.offlineAutoRedirectTimer = setTimeout(function () {
+        _this1.newOrder();
+      }, OFFLINE_AUTO_REDIRECT_SECONDS * 1000);
     },
     // [AUDIT-P47-BUG9] Dismiss timeout overlay and resume polling (customer may want to keep waiting)
     // [AUDIT-P48-BUG2] Reset elapsedSeconds so the 15-minute timeout doesn't re-fire immediately.
@@ -6135,104 +6160,113 @@ var _hoisted_5 = {
   }
 };
 var _hoisted_6 = {
-  "class": "kiosk-waiting-content"
+  "class": "kiosk-waiting-hint",
+  style: {
+    "font-size": "13px",
+    "margin-top": "6px",
+    "opacity": ".7"
+  },
+  "data-testid": "kiosk-offline-auto-return"
 };
 var _hoisted_7 = {
+  "class": "kiosk-waiting-content"
+};
+var _hoisted_8 = {
   key: 0,
   "class": "kiosk-rush-banner",
   role: "status",
   "aria-live": "polite",
   "data-testid": "kiosk-rush-banner"
 };
-var _hoisted_8 = {
+var _hoisted_9 = {
   "class": "kiosk-rush-banner-text"
 };
-var _hoisted_9 = {
+var _hoisted_10 = {
   "class": "kiosk-rush-banner-subtitle"
 };
-var _hoisted_10 = {
+var _hoisted_11 = {
   key: "preparing",
   "class": "kiosk-waiting-preparing"
 };
-var _hoisted_11 = {
+var _hoisted_12 = {
   "class": "kiosk-waiting-anim"
 };
-var _hoisted_12 = {
+var _hoisted_13 = {
   "class": "kiosk-waiting-title"
 };
-var _hoisted_13 = {
+var _hoisted_14 = {
   "class": "kiosk-waiting-number-wrap"
 };
-var _hoisted_14 = {
+var _hoisted_15 = {
   "class": "kiosk-waiting-number-label"
 };
-var _hoisted_15 = {
+var _hoisted_16 = {
   "class": "kiosk-waiting-number"
 };
-var _hoisted_16 = {
+var _hoisted_17 = {
   "class": "kiosk-waiting-hint"
 };
-var _hoisted_17 = {
+var _hoisted_18 = {
   key: "ready",
   "class": "kiosk-waiting-ready"
 };
-var _hoisted_18 = {
+var _hoisted_19 = {
   "class": "kiosk-ready-title"
 };
-var _hoisted_19 = {
+var _hoisted_20 = {
   "class": "kiosk-waiting-number-wrap"
 };
-var _hoisted_20 = {
+var _hoisted_21 = {
   "class": "kiosk-waiting-number-label"
 };
-var _hoisted_21 = {
+var _hoisted_22 = {
   "class": "kiosk-waiting-number"
 };
-var _hoisted_22 = {
+var _hoisted_23 = {
   "class": "kiosk-ready-hint"
 };
-var _hoisted_23 = {
+var _hoisted_24 = {
   key: 2,
   "class": "kiosk-waiting-footer"
 };
-var _hoisted_24 = {
+var _hoisted_25 = {
   "class": "kiosk-waiting-footer"
 };
-var _hoisted_25 = {
-  "class": "kiosk-waiting-auto-reset"
-};
 var _hoisted_26 = {
-  "class": "kiosk-waiting-preparing-hint"
+  "class": "kiosk-waiting-auto-reset"
 };
 var _hoisted_27 = {
-  key: 0,
-  "class": "kiosk-waiting-auto-reset"
+  "class": "kiosk-waiting-preparing-hint"
 };
 var _hoisted_28 = {
   key: 0,
-  "class": "kiosk-network-banner"
+  "class": "kiosk-waiting-auto-reset"
 };
 var _hoisted_29 = {
-  "class": "kiosk-timeout-modal"
+  key: 0,
+  "class": "kiosk-network-banner"
 };
 var _hoisted_30 = {
-  "class": "kiosk-cancel-modal"
+  "class": "kiosk-timeout-modal"
 };
 var _hoisted_31 = {
-  key: 0
+  "class": "kiosk-cancel-modal"
 };
 var _hoisted_32 = {
+  key: 0
+};
+var _hoisted_33 = {
   key: 1,
   "class": "kiosk-cancel-error-msg"
 };
-var _hoisted_33 = {
+var _hoisted_34 = {
   "class": "kiosk-cancel-actions"
 };
-var _hoisted_34 = ["disabled"];
-var _hoisted_35 = {
+var _hoisted_35 = ["disabled"];
+var _hoisted_36 = {
   key: 0
 };
-var _hoisted_36 = {
+var _hoisted_37 = {
   key: 1,
   "class": "kiosk-spinner-sm"
 };
@@ -6249,17 +6283,17 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "class": "kiosk-offline-icon"
   }, "📡", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h1", _hoisted_3, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.offline_queue.title')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_4, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.offline_queue.saved')), 1 /* TEXT */), _cache[9] || (_cache[9] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("br", null, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.offline_queue.will_send')), 1 /* TEXT */)]), _cache[11] || (_cache[11] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
     "class": "kiosk-offline-spinner"
-  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_5, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.offline_queue.activity')), 1 /* TEXT */)])])) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_5, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.offline_queue.activity')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_6, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.offline_queue.auto_return')), 1 /* TEXT */)])])) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
     key: 1
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Contenu principal "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_6, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [GAP-FIX-03] Rush banner — is_rush signal consumer (source: KioskMenuService::computeIsRush) "), $options.isRush && !$data.isReady ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_7, [_cache[12] || (_cache[12] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Contenu principal "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_7, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [GAP-FIX-03] Rush banner — is_rush signal consumer (source: KioskMenuService::computeIsRush) "), $options.isRush && !$data.isReady ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_8, [_cache[12] || (_cache[12] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "class": "kiosk-rush-banner-icon",
     "aria-hidden": "true"
-  }, "🔥", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_8, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("strong", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.rush.active_title')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_9, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.rush.subtitle')), 1 /* TEXT */)])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" En préparation "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(vue__WEBPACK_IMPORTED_MODULE_0__.Transition, {
+  }, "🔥", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_9, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("strong", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.rush.active_title')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_10, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.rush.subtitle')), 1 /* TEXT */)])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" En préparation "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(vue__WEBPACK_IMPORTED_MODULE_0__.Transition, {
     name: "fade-scale",
     mode: "out-in"
   }, {
     "default": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
-      return [!$data.isReady ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_10, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Animation cuisine "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_11, [_cache[13] || (_cache[13] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+      return [!$data.isReady ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_11, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Animation cuisine "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_12, [_cache[13] || (_cache[13] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
         "class": "kiosk-chef-hat"
       }, "👨‍🍳", -1 /* CACHED */)), ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(3, function (n) {
         return (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
@@ -6269,20 +6303,20 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
             animationDelay: n * 0.4 + 's'
           })
         }, null, 4 /* STYLE */);
-      }), 64 /* STABLE_FRAGMENT */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h1", _hoisted_12, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.waiting_title')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Numéro commande — gros, visible de loin "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_13, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_14, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.waiting_ui.number_label')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_15, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.queueNumber), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_16, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.waiting_ui.preparing_hint')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Barre de progression indéterminée "), _cache[14] || (_cache[14] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+      }), 64 /* STABLE_FRAGMENT */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h1", _hoisted_13, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.waiting_title')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Numéro commande — gros, visible de loin "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_14, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_15, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.waiting_ui.number_label')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_16, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.queueNumber), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_17, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.waiting_ui.preparing_hint')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Barre de progression indéterminée "), _cache[14] || (_cache[14] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
         "class": "kiosk-waiting-progress"
       }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
         "class": "kiosk-waiting-progress-bar"
-      })], -1 /* CACHED */))])) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_17, [_cache[15] || (_cache[15] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+      })], -1 /* CACHED */))])) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_18, [_cache[15] || (_cache[15] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
         "class": "kiosk-ready-icon"
       }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
         "class": "kiosk-ready-ring"
       }), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
         "class": "kiosk-ready-check"
-      }, "✓")], -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h1", _hoisted_18, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.order_ready_title')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_19, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_20, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.waiting_ui.number_label')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_21, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.queueNumber), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_22, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.waiting_ui.ready_hint')), 1 /* TEXT */)]))];
+      }, "✓")], -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h1", _hoisted_19, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.order_ready_title')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_20, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_21, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.waiting_ui.number_label')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_22, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.queueNumber), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_23, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.waiting_ui.ready_hint')), 1 /* TEXT */)]))];
     }),
     _: 1 /* STABLE */
-  })])], 2112 /* STABLE_FRAGMENT, DEV_ROOT_FRAGMENT */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Footer (offline) "), $data.isOfflineOrder ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_23, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+  })])], 2112 /* STABLE_FRAGMENT, DEV_ROOT_FRAGMENT */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Footer (offline) "), $data.isOfflineOrder ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_24, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     type: "button",
     "class": "kiosk-waiting-new-order",
     onClick: _cache[0] || (_cache[0] = function () {
@@ -6290,7 +6324,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     })
   }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.new_order')), 1 /* TEXT */)])) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
     key: 3
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Footer "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_24, [$data.isReady ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Footer "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_25, [$data.isReady ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
     key: 0
   }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     type: "button",
@@ -6298,17 +6332,17 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     onClick: _cache[1] || (_cache[1] = function () {
       return $options.newOrder && $options.newOrder.apply($options, arguments);
     })
-  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.new_order')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_25, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.auto_redirect', {
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.new_order')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_26, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.auto_redirect', {
     n: $data.autoResetSeconds
   })), 1 /* TEXT */)], 64 /* STABLE_FRAGMENT */)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
     key: 1
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_26, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.waiting_subtitle')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [Owner 2026-05-21] Home button always visible during preparation +\n             auto-redirect 10s — owner instructed \"normalement ça redirige\n             après 10 secondes... bouton de retourner à l'accueil au bout de\n             10 secondes automatique\". Customer keeps their queue number on\n             KDS/OSS regardless of which screen they're on. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_27, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.waiting_subtitle')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [Owner 2026-05-21] Home button always visible during preparation +\n             auto-redirect 10s — owner instructed \"normalement ça redirige\n             après 10 secondes... bouton de retourner à l'accueil au bout de\n             10 secondes automatique\". Customer keeps their queue number on\n             KDS/OSS regardless of which screen they're on. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     type: "button",
     "class": "kiosk-waiting-new-order",
     onClick: _cache[2] || (_cache[2] = function () {
       return $options.newOrder && $options.newOrder.apply($options, arguments);
     })
-  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.new_order')), 1 /* TEXT */), $data.preparingAutoRedirectSeconds > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_27, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.auto_redirect', {
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.new_order')), 1 /* TEXT */), $data.preparingAutoRedirectSeconds > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_28, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.auto_redirect', {
     n: $data.preparingAutoRedirectSeconds
   })), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Allow cancellation during preparation (before kitchen starts) "), $data.showCancelButton ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
     key: 1,
@@ -6321,7 +6355,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     name: "slide-down-banner"
   }, {
     "default": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
-      return [$data.networkLost ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_28, [_cache[16] || (_cache[16] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+      return [$data.networkLost ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_29, [_cache[16] || (_cache[16] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
         "class": "kiosk-network-banner-icon"
       }, "📡", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.waiting_screen.network_lost')), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)];
     }),
@@ -6336,7 +6370,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
         onClick: _cache[5] || (_cache[5] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function () {
           return $options.dismissTimeoutAndResume && $options.dismissTimeoutAndResume.apply($options, arguments);
         }, ["self"]))
-      }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_29, [_cache[17] || (_cache[17] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+      }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_30, [_cache[17] || (_cache[17] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
         "class": "kiosk-timeout-icon"
       }, "⏱️", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h2", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.waiting_screen.timeout_title')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.waiting_screen.timeout_body_1')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.waiting_screen.timeout_body_2')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
         type: "button",
@@ -6357,9 +6391,9 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
         onClick: _cache[8] || (_cache[8] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
           return $data.showCancelConfirm = false;
         }, ["self"]))
-      }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_30, [_cache[18] || (_cache[18] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+      }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_31, [_cache[18] || (_cache[18] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
         "class": "kiosk-cancel-icon"
-      }, "⚠️", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h2", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.waiting_screen.cancel_modal_title')), 1 /* TEXT */), !$data.cancelError ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_31, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.waiting_screen.cancel_modal_body')), 1 /* TEXT */)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_32, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.cancelError), 1 /* TEXT */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_33, [!$data.cancelError ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+      }, "⚠️", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h2", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.waiting_screen.cancel_modal_title')), 1 /* TEXT */), !$data.cancelError ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_32, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.waiting_screen.cancel_modal_body')), 1 /* TEXT */)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_33, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.cancelError), 1 /* TEXT */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_34, [!$data.cancelError ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
         key: 0,
         type: "button",
         "class": "kiosk-cancel-yes",
@@ -6367,7 +6401,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
         onClick: _cache[6] || (_cache[6] = function () {
           return $options.cancelOrder && $options.cancelOrder.apply($options, arguments);
         })
-      }, [!$data.cancelLoading ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_35, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.waiting_screen.cancel_yes')), 1 /* TEXT */)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_36))], 8 /* PROPS */, _hoisted_34)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+      }, [!$data.cancelLoading ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_36, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.waiting_screen.cancel_yes')), 1 /* TEXT */)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_37))], 8 /* PROPS */, _hoisted_35)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
         type: "button",
         "class": "kiosk-cancel-no",
         onClick: _cache[7] || (_cache[7] = function () {

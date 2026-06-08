@@ -190,7 +190,8 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
   emits: ['retry', 'call-staff'],
   data: function data() {
     return {
-      retrying: false
+      retrying: false,
+      staffCalled: false
     };
   },
   mounted: function mounted() {
@@ -204,15 +205,16 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
           while (1) switch (_context.n) {
             case 0:
               _this.retrying = true;
-              try {
-                _this.logEvent('error_retry');
-                _this.$emit('retry');
-              } finally {
-                // Laisse 500ms de feedback visuel avant de relâcher.
-                setTimeout(function () {
-                  _this.retrying = false;
-                }, 500);
-              }
+              _this.logEvent('error_retry');
+              _this.$emit('retry');
+              // [FP-01] Self-contained reconnect. The frozen parent (KioskAppComponent) does
+              // NOT bind @retry, so the emit alone is inert and the borne stays stuck on the
+              // error screen. Reloading re-bootstraps the kiosk SPA and re-attempts the backend
+              // heartbeat — a real retry, mirroring the sibling error screens' self-contained
+              // $router fallback. The 600ms delay lets the button's loading state show first.
+              setTimeout(function () {
+                window.location.reload();
+              }, 600);
             case 1:
               return _context.a(2);
           }
@@ -222,6 +224,10 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
     callStaff: function callStaff() {
       this.logEvent('error_call_staff');
       this.$emit('call-staff');
+      // [FP-01] Visible acknowledgement. There is no staff-call backend in V1 (the
+      // event above is logged to observability); the frozen parent does not bind
+      // @call-staff, so without this the button gave the customer zero feedback.
+      this.staffCalled = true;
     },
     logEvent: function logEvent(type) {
       var meta = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
@@ -522,6 +528,12 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ });
 /* harmony import */ var vue__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! vue */ "./node_modules/vue/dist/vue.esm-bundler.js");
 
+var _hoisted_1 = {
+  key: 0,
+  "class": "kiosk-error-network-ack",
+  role: "status",
+  "data-testid": "kiosk-error-network-staff-ack"
+};
 function render(_ctx, _cache, $props, $setup, $data, $options) {
   var _component_KsButton = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("KsButton");
   var _component_KioskErrorLayoutComponent = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("KioskErrorLayoutComponent");
@@ -556,7 +568,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
           return [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.error.call_staff')), 1 /* TEXT */)];
         }),
         _: 1 /* STABLE */
-      }, 8 /* PROPS */, ["onClick"])];
+      }, 8 /* PROPS */, ["onClick"]), $data.staffCalled ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_1, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('kiosk.error.network.staff_ack')), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)];
     }),
     _: 1 /* STABLE */
   }, 8 /* PROPS */, ["title", "subtitle", "hint"]);

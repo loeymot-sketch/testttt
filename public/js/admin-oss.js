@@ -17,7 +17,7 @@ __webpack_require__.r(__webpack_exports__);
 
 var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
 // Module
-___CSS_LOADER_EXPORT___.push([module.id, "\n/* [iter15-mega-fix B-003/D-002 2026-05-10] .ws-reconnect-banner CSS removed:\n   the only consumer of this class was the duplicate banner deleted from the\n   template above. Connection status is owned by ConnectionStatusBanner.vue. */\n/* Slide-in for preparing column */\n.oss-slide-enter-active[data-v-3aa5d0ca] { transition: all 0.4s ease;\n}\n.oss-slide-leave-active[data-v-3aa5d0ca] { transition: all 0.3s ease;\n}\n.oss-slide-enter-from[data-v-3aa5d0ca]   { opacity: 0; transform: translateX(-20px);\n}\n.oss-slide-leave-to[data-v-3aa5d0ca]     { opacity: 0; transform: translateX(20px);\n}\n\n/* Pop-in for ready column */\n.oss-pop-enter-active[data-v-3aa5d0ca] { transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);\n}\n.oss-pop-leave-active[data-v-3aa5d0ca] { transition: all 0.3s ease;\n}\n.oss-pop-enter-from[data-v-3aa5d0ca]   { opacity: 0; transform: scale(0.6);\n}\n.oss-pop-leave-to[data-v-3aa5d0ca]     { opacity: 0; transform: scale(0.8);\n}\n\n/* Highlight for newly-ready orders — initial bounce burst */\n.oss-new-ready[data-v-3aa5d0ca] {\n  animation: oss-bounce-3aa5d0ca 0.6s ease 2;\n}\n@keyframes oss-bounce-3aa5d0ca {\n0%, 100% { transform: scale(1);\n}\n50%       { transform: scale(1.12);\n}\n}\n\n/* [Wave S-3 TV-optim P-OWNER 2026-05-20] Long-tail pulse to attract customer\n   attention at ≥3m for the full 10s window while the order ID is in\n   newReadyIds. Subtle scale + green halo via text-shadow — does NOT shift\n   layout (transform-only) so neighbouring items don't reflow. Pulse runs\n   alongside the initial .oss-new-ready bounce (different keyframe names,\n   no conflict) and continues as `infinite` until the class is removed by\n   the JS timeout in _markNewReady. */\n.oss-pulse-ready[data-v-3aa5d0ca] {\n  animation: oss-pulse-3aa5d0ca 1.6s ease-in-out infinite;\n}\n@keyframes oss-pulse-3aa5d0ca {\n0%, 100% {\n    transform: scale(1);\n    text-shadow: 0 0 0 rgba(14, 124, 58, 0);\n}\n50% {\n    transform: scale(1.04);\n    text-shadow: 0 0 24px rgba(14, 124, 58, 0.55);\n}\n}\n\n/* Flash the entire ready column green when a new order is ready */\n.oss-ready-flash[data-v-3aa5d0ca] {\n  animation: oss-flash-3aa5d0ca 0.8s ease 2;\n}\n@keyframes oss-flash-3aa5d0ca {\n0%, 100% { background-color: transparent;\n}\n50%       { background-color: rgba(26, 183, 89, 0.15);\n}\n}\n\n/* [Wave S-3 TV-optim P-OWNER 2026-05-20] Vertical auto-scroll loop for busy\n   columns (>8 orders). Pure-CSS keyframe — no JS RAF — so it never fights\n   <transition-group> on enter/leave. Loops every 30s with a 2s pause at the\n   start so freshly-arrived orders sit visible before scroll begins. We\n   translateY a copy-free list and rely on overflow-hidden on the parent;\n   when the column drops below the threshold the class is removed and the\n   list snaps back to translateY(0) cleanly. Limit applies to either column\n   independently. */\n.oss-order-list[data-v-3aa5d0ca] {\n  will-change: transform;\n}\n.oss-autoscroll[data-v-3aa5d0ca] {\n  animation: oss-scroll-loop-3aa5d0ca 30s linear infinite;\n}\n@keyframes oss-scroll-loop-3aa5d0ca {\n0%   { transform: translateY(0);\n}\n10%  { transform: translateY(0);\n}\n90%  { transform: translateY(-50%);\n}\n100% { transform: translateY(0);\n}\n}\n\n/* Respect operator preferences — disable motion for sensitive contexts. */\n@media (prefers-reduced-motion: reduce) {\n.oss-pulse-ready[data-v-3aa5d0ca],\n  .oss-autoscroll[data-v-3aa5d0ca],\n  .oss-new-ready[data-v-3aa5d0ca],\n  .oss-ready-flash[data-v-3aa5d0ca] {\n    animation: none !important;\n}\n}\n", ""]);
+___CSS_LOADER_EXPORT___.push([module.id, "\n/* [iter15-mega-fix B-003/D-002 2026-05-10] .ws-reconnect-banner CSS removed:\n   the only consumer of this class was the duplicate banner deleted from the\n   template above. Connection status is owned by ConnectionStatusBanner.vue. */\n/* Slide-in for preparing column */\n.oss-slide-enter-active[data-v-3aa5d0ca] { transition: all 0.4s ease;\n}\n.oss-slide-leave-active[data-v-3aa5d0ca] { transition: all 0.3s ease;\n}\n.oss-slide-enter-from[data-v-3aa5d0ca]   { opacity: 0; transform: translateX(-20px);\n}\n.oss-slide-leave-to[data-v-3aa5d0ca]     { opacity: 0; transform: translateX(20px);\n}\n\n/* Pop-in for ready column */\n.oss-pop-enter-active[data-v-3aa5d0ca] { transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);\n}\n.oss-pop-leave-active[data-v-3aa5d0ca] { transition: all 0.3s ease;\n}\n.oss-pop-enter-from[data-v-3aa5d0ca]   { opacity: 0; transform: scale(0.6);\n}\n.oss-pop-leave-to[data-v-3aa5d0ca]     { opacity: 0; transform: scale(0.8);\n}\n\n/* Highlight for newly-ready orders — initial bounce burst */\n.oss-new-ready[data-v-3aa5d0ca] {\n  animation: oss-bounce-3aa5d0ca 0.6s ease 2;\n}\n@keyframes oss-bounce-3aa5d0ca {\n0%, 100% { transform: scale(1);\n}\n50%       { transform: scale(1.12);\n}\n}\n\n/* [Wave S-3 TV-optim P-OWNER 2026-05-20] Long-tail pulse to attract customer\n   attention at ≥3m for the full 10s window while the order ID is in\n   newReadyIds. Subtle scale + green halo via text-shadow — does NOT shift\n   layout (transform-only) so neighbouring items don't reflow. Pulse runs\n   alongside the initial .oss-new-ready bounce (different keyframe names,\n   no conflict) and continues as `infinite` until the class is removed by\n   the JS timeout in _markNewReady. */\n.oss-pulse-ready[data-v-3aa5d0ca] {\n  animation: oss-pulse-3aa5d0ca 1.6s ease-in-out infinite;\n}\n@keyframes oss-pulse-3aa5d0ca {\n0%, 100% {\n    transform: scale(1);\n    text-shadow: 0 0 0 rgba(14, 124, 58, 0);\n}\n50% {\n    transform: scale(1.04);\n    text-shadow: 0 0 24px rgba(14, 124, 58, 0.55);\n}\n}\n\n/* Flash the entire ready column green when a new order is ready */\n.oss-ready-flash[data-v-3aa5d0ca] {\n  animation: oss-flash-3aa5d0ca 0.8s ease 2;\n}\n@keyframes oss-flash-3aa5d0ca {\n0%, 100% { background-color: transparent;\n}\n50%       { background-color: rgba(26, 183, 89, 0.15);\n}\n}\n\n/* [Wave S-3 TV-optim P-OWNER 2026-05-20] Vertical auto-scroll loop for busy\n   columns (>8 orders). Pure-CSS keyframe — no JS RAF — so it never fights\n   <transition-group> on enter/leave. Loops every 30s with a 2s pause at the\n   start so freshly-arrived orders sit visible before scroll begins. We\n   translateY a copy-free list and rely on overflow-hidden on the parent;\n   when the column drops below the threshold the class is removed and the\n   list snaps back to translateY(0) cleanly. Limit applies to either column\n   independently. */\n.oss-order-list[data-v-3aa5d0ca] {\n  will-change: transform;\n}\n.oss-autoscroll[data-v-3aa5d0ca] {\n  animation: oss-scroll-loop-3aa5d0ca 30s linear infinite;\n}\n@keyframes oss-scroll-loop-3aa5d0ca {\n0%   { transform: translateY(0);\n}\n10%  { transform: translateY(0);\n}\n90%  { transform: translateY(var(--oss-scroll-shift, -50%));\n}\n100% { transform: translateY(0);\n}\n}\n\n/* Respect operator preferences — disable motion for sensitive contexts. */\n@media (prefers-reduced-motion: reduce) {\n.oss-pulse-ready[data-v-3aa5d0ca],\n  .oss-autoscroll[data-v-3aa5d0ca],\n  .oss-new-ready[data-v-3aa5d0ca],\n  .oss-ready-flash[data-v-3aa5d0ca] {\n    animation: none !important;\n}\n}\n", ""]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 
@@ -134,6 +134,8 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
         orderStatusEnum: _enums_modules_orderStatusEnum__WEBPACK_IMPORTED_MODULE_1__["default"]
       },
       wsConnected: !!((_window$_wsService = window._wsService) !== null && _window$_wsService !== void 0 && _window$_wsService.isConnected()),
+      // [FP-24] true while the OSS poll is in 5xx backoff (OssSyncService 'error' event).
+      pollDegraded: false,
       _eventSub: null,
       ossSyncUnsubscribers: [],
       // IDs des commandes nouvellement passées à PREPARED (pour animation)
@@ -152,11 +154,24 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
       _onVisibilityChange: null
     };
   },
-  computed: {},
+  computed: {
+    // [FP-24] The public customer wall removed its duplicate WS banner and leans on the
+    // parent global ConnectionStatusBanner — but that is hidden on the box (isDevEnv). So the
+    // wall gave ZERO degradation cue: a near-end customer can't tell the board is stale. This
+    // surfaces a SUBTLE pill (not the removed banner) when WS is down OR the poll is in backoff.
+    connectionDegraded: function connectionDegraded() {
+      return !this.wsConnected || this.pollDegraded;
+    }
+  },
   mounted: function mounted() {
     var _this = this;
     this.list();
     window.addEventListener('realtime-order-update', this.list);
+    // [FP-04] Recompute marquee travel on viewport resize (TV rotation / window change).
+    this._ossResizeHandler = function () {
+      return _this.updateOssScrollShift();
+    };
+    window.addEventListener('resize', this._ossResizeHandler);
     this.subscribeEcho();
     this._bindWsService();
     this.startOssSync();
@@ -208,6 +223,8 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
   },
   beforeUnmount: function beforeUnmount() {
     window.removeEventListener('realtime-order-update', this.list);
+    // [FP-04] drop the resize handler.
+    if (this._ossResizeHandler) window.removeEventListener('resize', this._ossResizeHandler);
     this.unsubscribeEcho();
     this._unbindWsService();
     this.stopOssSync();
@@ -335,10 +352,16 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
         var _ref$rows = _ref.rows,
           rows = _ref$rows === void 0 ? [] : _ref$rows;
         _this4._hydrateFromRows(rows);
+        _this4.pollDegraded = false; // [FP-24] a good poll clears the staleness pill.
       }));
       this.ossSyncUnsubscribers.push(_services_OssSyncService__WEBPACK_IMPORTED_MODULE_4__["default"].on('ws_state', function (_ref2) {
         var state = _ref2.state;
         _this4.wsConnected = String(state || '').toLowerCase() === 'connected';
+      }));
+      // [FP-24] OssSyncService emits 'error' on a 5xx backoff (TRAP-4: WS may still report
+      // 'connected' while the poll lags) — flag it so the customer wall shows "connexion lente".
+      this.ossSyncUnsubscribers.push(_services_OssSyncService__WEBPACK_IMPORTED_MODULE_4__["default"].on('error', function () {
+        _this4.pollDegraded = true;
       }));
       // [TRAP-4 2026-06-04] Public/unauth customer status wall: branchId<=0 so
       // subscribeEcho() early-returns (line ~263) and we never join the private
@@ -510,17 +533,41 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
       // Clear the echo-marked set after list() processes it (one-shot guard)
       this._echoMarkedReady = new Set();
       this.preparedItems = newPrepared;
+      // [FP-04] Recompute the marquee travel distance now the lists changed, so the
+      // autoscroll reveals the WHOLE queue (a fixed -50% hides the tail when a column
+      // is taller than ~2x the viewport — a near-end customer never saw their N° go prêt).
+      this.$nextTick(function () {
+        return _this7.updateOssScrollShift();
+      });
+    },
+    // [FP-04] Drive the OSS auto-scroll to travel the REAL overflow. The keyframe peaks at
+    // translateY(var(--oss-scroll-shift)); set it per column to -(scrollHeight − viewport)
+    // so the marquee scrolls the full list. Falls back to the static -50% when unset.
+    updateOssScrollShift: function updateOssScrollShift() {
+      var _this8 = this;
+      ['preparingWrap', 'preparedWrap'].forEach(function (wrapRef) {
+        var wrap = _this8.$refs[wrapRef];
+        if (!wrap) return;
+        var ul = wrap.querySelector('.oss-order-list');
+        if (!ul) return;
+        if (!ul.classList.contains('oss-autoscroll')) {
+          ul.style.removeProperty('--oss-scroll-shift');
+          return;
+        }
+        var overflow = ul.scrollHeight - wrap.clientHeight;
+        ul.style.setProperty('--oss-scroll-shift', overflow > 0 ? "-".concat(overflow, "px") : '0px');
+      });
     },
     list: function list() {
-      var _this8 = this;
+      var _this9 = this;
       this.loading.isActive = true;
       this.$store.dispatch("orderStatusScreenOrder/lists").then(function (res) {
-        _this8._hydrateFromRows(res.data.data || []);
-        _this8.loading.isActive = false;
+        _this9._hydrateFromRows(res.data.data || []);
+        _this9.loading.isActive = false;
       })["catch"](function (err) {
         var _err$response;
-        _this8.loading.isActive = false;
-        _services_alertService__WEBPACK_IMPORTED_MODULE_2__["default"].error((err === null || err === void 0 || (_err$response = err.response) === null || _err$response === void 0 || (_err$response = _err$response.data) === null || _err$response === void 0 ? void 0 : _err$response.message) || _this8.$t('message.something_wrong'));
+        _this9.loading.isActive = false;
+        _services_alertService__WEBPACK_IMPORTED_MODULE_2__["default"].error((err === null || err === void 0 || (_err$response = err.response) === null || _err$response === void 0 || (_err$response = _err$response.data) === null || _err$response === void 0 ? void 0 : _err$response.message) || _this9.$t('message.something_wrong'));
       });
     }
   }
@@ -567,25 +614,47 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ });
 /* harmony import */ var vue__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! vue */ "./node_modules/vue/dist/vue.esm-bundler.js");
 
-var _hoisted_1 = ["aria-label"];
-var _hoisted_2 = {
+var _hoisted_1 = {
+  key: 0,
+  "class": "oss-conn-slow",
+  role: "status",
+  "aria-live": "polite",
+  "data-testid": "oss-conn-slow",
+  style: {
+    "position": "fixed",
+    "top": "8px",
+    "right": "12px",
+    "z-index": "60",
+    "background": "rgba(180,83,9,.94)",
+    "color": "#fff",
+    "font-size": "14px",
+    "font-weight": "600",
+    "padding": "4px 14px",
+    "border-radius": "9999px",
+    "box-shadow": "0 1px 4px rgba(0,0,0,.25)"
+  }
+};
+var _hoisted_2 = ["aria-label"];
+var _hoisted_3 = {
   "class": "oss-column-header text-[40px] font-bold text-white p-4 pb-3 bg-[#B0004D] mb-2 rounded-t-[10px] text-center tracking-wide"
 };
-var _hoisted_3 = {
+var _hoisted_4 = {
+  ref: "preparingWrap",
   "class": "content-wrapper p-3 overflow-hidden thin-scrolling h-full"
 };
-var _hoisted_4 = {
+var _hoisted_5 = {
   key: 0,
   "class": "text-center text-[#A0A3BD] text-[28px] mt-12"
 };
-var _hoisted_5 = ["aria-label"];
-var _hoisted_6 = {
+var _hoisted_6 = ["aria-label"];
+var _hoisted_7 = {
   "class": "oss-column-header text-[40px] font-bold text-[#1F1F39] p-4 pb-3 bg-[#1AB759] mb-2 rounded-t-[10px] text-center tracking-wide"
 };
-var _hoisted_7 = {
+var _hoisted_8 = {
+  ref: "preparedWrap",
   "class": "content-wrapper p-3 overflow-hidden thin-scrolling h-full"
 };
-var _hoisted_8 = {
+var _hoisted_9 = {
   key: 0,
   "class": "text-center text-[#A0A3BD] text-[28px] mt-12"
 };
@@ -593,11 +662,11 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
   var _component_LoadingContentComponent = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("LoadingContentComponent");
   return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_LoadingContentComponent, {
     props: $data.loading
-  }, null, 8 /* PROPS */, ["props"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n    [iter15-mega-fix B-003/D-002 2026-05-10] Local ws-reconnect-banner removed —\n    duplicate of the global ConnectionStatusBanner mounted by the parent\n    OrderStatusScreenComponent. Showing two banners simultaneously\n    (\"Reconnexion en cours…\" + \"Mode secours actif\") was UX clutter flagged\n    in iter15 mega-audit Wave B/D. The global banner debounces 5s and is\n    hidden in dev via foodkingConfig.appEnv.\n  "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Colonne EN PRÉPARATION "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n    [Wave S-3 TV-optim P-OWNER 2026-05-20] Customer wall must be readable from ≥3m.\n    - Header bumped text-lg (~18px) → text-[40px] (40px) to surface column intent at distance.\n    - Order tokens bumped text-[40px] → text-[56px] for triple-distance comfort margin (>= 40px mandate).\n    - Brand colors #B0004D (preparing) / #1AB759 (ready) preserved per CLAUDE.md flat/organized doctrine\n      + previous Wave Q-3 attestation (red-600/green-600 hint in spec = intent = already met).\n    - Auto-scroll: items.length > 8 toggles `.oss-autoscroll` (pure-CSS keyframe loop, no JS RAF\n      to avoid fighting transition-group on enter/leave).\n  "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+  }, null, 8 /* PROPS */, ["props"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [FP-24] Subtle staleness cue (NOT the removed duplicate banner): the box hides the\n       global ConnectionStatusBanner via isDevEnv, leaving the customer wall with no signal\n       that the board is delayed. Shown only when WS is down OR the poll is in 5xx backoff. "), $options.connectionDegraded ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_1, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.oss_connection_slow')), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n    [iter15-mega-fix B-003/D-002 2026-05-10] Local ws-reconnect-banner removed —\n    duplicate of the global ConnectionStatusBanner mounted by the parent\n    OrderStatusScreenComponent. Showing two banners simultaneously\n    (\"Reconnexion en cours…\" + \"Mode secours actif\") was UX clutter flagged\n    in iter15 mega-audit Wave B/D. The global banner debounces 5s and is\n    hidden in dev via foodkingConfig.appEnv.\n  "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Colonne EN PRÉPARATION "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n    [Wave S-3 TV-optim P-OWNER 2026-05-20] Customer wall must be readable from ≥3m.\n    - Header bumped text-lg (~18px) → text-[40px] (40px) to surface column intent at distance.\n    - Order tokens bumped text-[40px] → text-[56px] for triple-distance comfort margin (>= 40px mandate).\n    - Brand colors #B0004D (preparing) / #1AB759 (ready) preserved per CLAUDE.md flat/organized doctrine\n      + previous Wave Q-3 attestation (red-600/green-600 hint in spec = intent = already met).\n    - Auto-scroll: items.length > 8 toggles `.oss-autoscroll` (pure-CSS keyframe loop, no JS RAF\n      to avoid fighting transition-group on enter/leave).\n  "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
     "class": "col-span-1 customer-screen db-card rounded-[10px] h-screen md:h-[calc(100dvh-117px)] overflow-hidden",
     role: "region",
     "aria-label": _ctx.$t('label.preparing')
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_2, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.preparing")), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_3, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(vue__WEBPACK_IMPORTED_MODULE_0__.TransitionGroup, {
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_3, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.preparing")), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_4, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(vue__WEBPACK_IMPORTED_MODULE_0__.TransitionGroup, {
     name: "oss-slide",
     tag: "ul",
     "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(['oss-order-list', $data.preparingItems.length > 8 ? 'oss-autoscroll' : '', '[&_li]:mb-8 [&_li]:text-[56px] [&_li]:font-extrabold [&_li]:leading-[1.1] w-full text-center text-[#1F1F39] mb-20'])
@@ -611,11 +680,11 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       }), 128 /* KEYED_FRAGMENT */))];
     }),
     _: 1 /* STABLE */
-  }, 8 /* PROPS */, ["class"]), $data.preparingItems.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_4, "—")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])], 8 /* PROPS */, _hoisted_1), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Colonne PRÊT "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+  }, 8 /* PROPS */, ["class"]), $data.preparingItems.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_5, "—")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 512 /* NEED_PATCH */)], 8 /* PROPS */, _hoisted_2), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Colonne PRÊT "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
     "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["col-span-1 customer-screen db-card rounded-[10px] h-screen md:h-[calc(100dvh-117px)] overflow-hidden", $data.newReadyFlash ? 'oss-ready-flash' : '']),
     role: "region",
     "aria-label": _ctx.$t('label.ready')
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_6, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.ready")), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_7, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(vue__WEBPACK_IMPORTED_MODULE_0__.TransitionGroup, {
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_7, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.ready")), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_8, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(vue__WEBPACK_IMPORTED_MODULE_0__.TransitionGroup, {
     name: "oss-pop",
     tag: "ul",
     role: "status",
@@ -632,7 +701,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       }), 128 /* KEYED_FRAGMENT */))];
     }),
     _: 1 /* STABLE */
-  }, 8 /* PROPS */, ["aria-label", "class"]), $data.preparedItems.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_8, "—")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])], 10 /* CLASS, PROPS */, _hoisted_5)], 64 /* STABLE_FRAGMENT */);
+  }, 8 /* PROPS */, ["aria-label", "class"]), $data.preparedItems.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_9, "—")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 512 /* NEED_PATCH */)], 10 /* CLASS, PROPS */, _hoisted_6)], 64 /* STABLE_FRAGMENT */);
 }
 
 /***/ },
