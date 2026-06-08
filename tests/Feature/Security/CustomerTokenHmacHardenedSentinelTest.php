@@ -83,6 +83,19 @@ class CustomerTokenHmacHardenedSentinelTest extends TestCase
             'branch_id' => $branch->id,
         ]);
 
+        // [SEC-FALSIFY-2026-06-08] /loyalty/scan now requires a REAL kiosk-machine-backed token
+        // (KioskMachine row) or staff — a bare kiosk:order token no longer passes (closed a PII
+        // IDOR). Bind one so this token-HMAC sentinel exercises the real borne path unchanged.
+        \App\Models\KioskMachine::create([
+            'user_id'    => $kioskUser->id,
+            'branch_id'  => $branch->id,
+            'machine_id' => 'K-' . uniqid(),
+            'username'   => $kioskUser->username,
+            'password'   => bcrypt('kioskpass'),
+            'is_login'   => 1,
+            'status'     => 1,
+        ]);
+
         $customer = User::factory()->create([
             'username'      => 'cust_token_sentinel_' . uniqid(),
             'branch_id'     => $branch->id,

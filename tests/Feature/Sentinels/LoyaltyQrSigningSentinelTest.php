@@ -49,6 +49,20 @@ class LoyaltyQrSigningSentinelTest extends TestCase
             'branch_id' => $branch->id,
         ]);
 
+        // [SEC-FALSIFY-2026-06-08] /loyalty/scan now requires the caller to be a REAL kiosk machine
+        // (a KioskMachine row) or staff — a bare kiosk:order token is no longer enough (closed a
+        // PII-enumeration IDOR). The real borne IS kiosk-machine-backed, so bind one here; this is a
+        // fixture alignment, not a relaxation of the HMAC/TTL/nonce/legacy assertions below.
+        \App\Models\KioskMachine::create([
+            'user_id'    => $kioskUser->id,
+            'branch_id'  => $branch->id,
+            'machine_id' => 'K-' . uniqid(),
+            'username'   => $kioskUser->username,
+            'password'   => bcrypt('kioskpass'),
+            'is_login'   => 1,
+            'status'     => 1,
+        ]);
+
         // Status = Status::ACTIVE so EnsureUserStatusActive (Z6-06) passes
         // when the customer authenticates to /loyalty/qr generation. The
         // /loyalty/scan controller accepts BOTH legacy 1 and Status::ACTIVE
@@ -242,6 +256,13 @@ class LoyaltyQrSigningSentinelTest extends TestCase
         $token = $mint->json('data.token');
         $this->assertIsString($token);
         $this->assertStringStartsWith('lqr.', $token, 'token must use lqr. prefix');
+
+        // The sanctum guard memoises the resolved user across requests within ONE test method, so
+        // the mint-as-customer leg above would leave $customer cached and the scan below would see
+        // the WRONG caller (no KioskMachine row) and 403 on the new IDOR guard. In production each
+        // request is a fresh process — forget guards to model that, then the kiosk Bearer resolves
+        // $kioskUser correctly. (Test-only artifact, not a behaviour change.)
+        $this->app['auth']->forgetGuards();
 
         // 2. Kiosk presents the freshly-minted token to /loyalty/scan.
         $scan = $this->withHeaders(['Authorization' => "Bearer {$kioskToken}"])
