@@ -4,7 +4,11 @@
         <a v-if="isPosV4Shell" class="w-32 flex-shrink-0" href="/admin/pos-v4" @click="closeFullScreen">
             <img class="w-full" :src="setting.theme_logo" alt="logo">
         </a>
-        <router-link v-else class="w-32 flex-shrink-0" :to="{ name: 'frontend.home' }" @click="closeFullScreen">
+        <!-- [FP-ARMY-P3] Admin chrome: the brand logo linked to frontend.home, but the router guard
+             bounces staff straight back to the admin landing (index.js:272 isStaffOnly) → the click
+             was a dead no-op. Point it at the admin dashboard (the staff "home") so the universal
+             click-logo-to-go-home affordance actually works. -->
+        <router-link v-else class="w-32 flex-shrink-0" :to="{ name: 'admin.dashboard' }" @click="closeFullScreen">
             <img class="w-full" :src="setting.theme_logo" alt="logo">
         </router-link>
         <div class="flex items-center justify-end w-full gap-4">

@@ -3,6 +3,7 @@
 namespace App\Exports;
 
 use App\Enums\OrderType;
+use App\Enums\PosPaymentMethod;
 use App\Libraries\AppLibrary;
 use App\Services\OrderService;
 use App\Http\Requests\PaginateRequest;
@@ -39,7 +40,7 @@ class SalesReportExport implements FromCollection, WithHeadings
                 AppLibrary::flatAmountFormat($order->total),
                 AppLibrary::flatAmountFormat($order->discount),
                 AppLibrary::flatAmountFormat($order->delivery_charge),
-                $order->transaction ? strtoupper($order->transaction->payment_method) 
+                $order->transaction ? $this->transactionLabel($order->transaction)
                 : $this->getPaymentMethod($order),
                 trans('payment_status.' . $order->payment_status)
             ];
@@ -58,6 +59,26 @@ class SalesReportExport implements FromCollection, WithHeadings
             trans('all.label.payment_type'),
             trans('all.label.payment_status')
         ];
+    }
+
+    public function transactionLabel($transaction)
+    {
+        // [FP-ARMY-P2A] Map the unified counter-encaissement codes (counter_cash/counter_card/
+        // counter_ticket_restaurant/counter_mobile_banking/counter_other) to FR via the existing
+        // pos_payment_method lang so the export matches the on-screen report (was strtoupper()
+        // leaking COUNTER_CARD verbatim). Real gateway provider names still pass through uppercased.
+        $method = strtolower((string) ($transaction->payment_method ?? ''));
+        $counterMap = [
+            'counter_cash'              => PosPaymentMethod::CASH,
+            'counter_card'             => PosPaymentMethod::CARD,
+            'counter_ticket_restaurant' => PosPaymentMethod::TICKET_RESTAURANT,
+            'counter_mobile_banking'   => PosPaymentMethod::MOBILE_BANKING,
+            'counter_other'            => PosPaymentMethod::OTHER,
+        ];
+        if (isset($counterMap[$method])) {
+            return trans('pos_payment_method.' . $counterMap[$method]);
+        }
+        return strtoupper((string) ($transaction->payment_method ?? ''));
     }
 
     public function getPaymentMethod($order){

@@ -1680,7 +1680,18 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
     // the wrong enum AND mislabeled those rows as "Cash on delivery").
     paymentTypeLabel: function paymentTypeLabel(order) {
       if (order.transaction) {
-        return order.transaction;
+        // [FP-ARMY-P2A] The unified counter-encaissement writes order.transaction as a raw
+        // code (counter_cash/counter_card/counter_ticket_restaurant/counter_mobile_banking/
+        // counter_other) which leaked verbatim into the financial report. Map ALL 5 to FR
+        // (existing label keys, case-robust); real gateway provider names pass through.
+        var txMap = {
+          COUNTER_CASH: this.$t('label.cash'),
+          COUNTER_CARD: this.$t('label.card'),
+          COUNTER_TICKET_RESTAURANT: this.$t('label.ticket_restaurant'),
+          COUNTER_MOBILE_BANKING: this.$t('label.mobile_banking'),
+          COUNTER_OTHER: this.$t('label.other')
+        };
+        return txMap[String(order.transaction).toUpperCase()] || order.transaction;
       }
       if (order.pos_payment_method && this.enums.posPaymentMethodEnumArray[order.pos_payment_method]) {
         return this.enums.posPaymentMethodEnumArray[order.pos_payment_method];

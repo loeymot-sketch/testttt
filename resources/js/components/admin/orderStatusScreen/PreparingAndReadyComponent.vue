@@ -9,7 +9,7 @@
     role="status"
     aria-live="polite"
     data-testid="oss-conn-slow"
-    style="position:fixed;top:8px;right:12px;z-index:60;background:rgba(180,83,9,.94);color:#fff;font-size:14px;font-weight:600;padding:4px 14px;border-radius:9999px;box-shadow:0 1px 4px rgba(0,0,0,.25)"
+    style="position:fixed;top:64px;right:12px;z-index:40;background:rgba(180,83,9,.94);color:#fff;font-size:14px;font-weight:600;padding:4px 14px;border-radius:9999px;box-shadow:0 1px 4px rgba(0,0,0,.25)"
   >
     {{ $t('label.oss_connection_slow') }}
   </div>
@@ -50,7 +50,7 @@
           {{ item.queue_number ? 'N°' + item.queue_number : item.token }}
         </li>
       </transition-group>
-      <p v-if="preparingItems.length === 0" class="text-center text-[#A0A3BD] text-[28px] mt-12">—</p>
+      <p v-if="preparingItems.length === 0" class="text-center text-[#A0A3BD] text-[28px] mt-12">{{ $t('label.oss_no_orders') }}</p>
     </div>
   </div>
 
@@ -75,7 +75,7 @@
           {{ item.queue_number ? 'N°' + item.queue_number : item.token }}
         </li>
       </transition-group>
-      <p v-if="preparedItems.length === 0" class="text-center text-[#A0A3BD] text-[28px] mt-12">—</p>
+      <p v-if="preparedItems.length === 0" class="text-center text-[#A0A3BD] text-[28px] mt-12">{{ $t('label.oss_no_orders') }}</p>
     </div>
   </div>
 </template>
