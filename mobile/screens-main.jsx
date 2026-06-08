@@ -188,7 +188,7 @@ function ScreenHome({ go, name = 'Ikyes' }) {
                   <div style={{ position: 'absolute', bottom: 8, left: 8 }}><Tag t="TOP"/></div>
                 </div>
                 <div style={{ marginTop: 6, fontSize: 12, fontWeight: 700 }}>{it.name}</div>
-                <div style={{ fontSize: 12, color: 'var(--orange)', fontWeight: 700, fontFamily: 'var(--font-mono)' }}>{it.price.toFixed(2).replace('.', ',')} €</div>
+                <div style={{ fontSize: 12, color: 'var(--orange-text)', fontWeight: 700, fontFamily: 'var(--font-mono)' }}>{it.price.toFixed(2).replace('.', ',')} €</div>
               </div>
             ))}
           </div>
@@ -287,7 +287,7 @@ function ScreenMenu({ go, cart, addToCart }) {
         <div style={{ position: 'absolute', left: 16, right: 16, bottom: 96, zIndex: 8 }}>
           <button onClick={() => go('cart')} className="lc-btn" style={{ background: 'var(--orange)', color: '#fff', width: '100%', height: 56, justifyContent: 'space-between', padding: '0 20px' }}>
             <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span style={{ background: '#fff', color: 'var(--orange)', width: 24, height: 24, borderRadius: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700 }}>{cart.length}</span>
+              <span style={{ background: '#fff', color: 'var(--orange-text)', width: 24, height: 24, borderRadius: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700 }}>{cart.length}</span>
               Voir le panier
             </span>
             <span>{cart.reduce((s,i) => s+i.price*i.qty, 0).toFixed(2).replace('.', ',')} €</span>
@@ -453,7 +453,7 @@ function ScreenItem({ go, itemId, addToCart }) {
                         {s.is_spicy && <span>🌶️</span>}
                         {s.name}
                       </span>
-                      {on && !free && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--orange)', fontWeight: 700 }}>+0,50€</span>}
+                      {on && !free && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--orange-text)', fontWeight: 700 }}>+0,50€</span>}
                     </div>
                   );
                 })}
@@ -498,7 +498,7 @@ function ScreenItem({ go, itemId, addToCart }) {
                     <div key={s.id} className="lc-toggle-row" onClick={() => toggleSupplement(s.id)}>
                       <div style={{ flex: 1 }}>
                         <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)' }}>{s.name}</div>
-                        <div style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--orange)', fontWeight: 700, marginTop: 2 }}>+ {s.price.toFixed(2).replace('.', ',')} €</div>
+                        <div style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--orange-text)', fontWeight: 700, marginTop: 2 }}>+ {s.price.toFixed(2).replace('.', ',')} €</div>
                       </div>
                       <div className={`lc-checkbox ${on ? 'lc-checkbox--on' : ''}`}>
                         {on && <I.Check size={12} stroke="#fff" sw={3}/>}
@@ -524,7 +524,7 @@ function ScreenItem({ go, itemId, addToCart }) {
                     <div key={f.id || 'none'} onClick={() => setFormuleId(f.id)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', borderRadius: 12, border: on ? '2px solid var(--orange)' : '1.5px solid var(--gray-1)', background: on ? 'var(--orange-soft)' : 'var(--cream)', cursor: 'pointer' }}>
                       <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>{f.name}</span>
                       <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        {f.price > 0 && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--orange)', fontWeight: 700 }}>+ {f.price.toFixed(2).replace('.', ',')} €</span>}
+                        {f.price > 0 && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--orange-text)', fontWeight: 700 }}>+ {f.price.toFixed(2).replace('.', ',')} €</span>}
                         <span style={{ width: 18, height: 18, borderRadius: 999, border: on ? '5px solid var(--orange)' : '2px solid var(--gray-2)', background: '#fff' }}/>
                       </span>
                     </div>
@@ -888,7 +888,7 @@ function ScreenOrders({ go }) {
             )}
             {groups.map((g, gi) => (
               <div key={(g.date || '') + '-' + gi} style={{ marginBottom: 16 }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--orange)', letterSpacing: '0.22em', marginBottom: 8, paddingLeft: 4 }}>● {dateLabel(g.date)}</div>
+                <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--orange-text)', letterSpacing: '0.22em', marginBottom: 8, paddingLeft: 4 }}>● {dateLabel(g.date)}</div>
                 <div style={{ display: 'grid', gap: 8 }}>
                   {g.items.map(o => {
                     const summary = o.items_summary || (Array.isArray(o.items) ? o.items.map(i => i.name).join(' · ') : '');
