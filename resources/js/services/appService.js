@@ -77,12 +77,12 @@ export default {
     },
     logoutConfirmation: function () {
         return new VueSimpleAlert.confirm(
-            "You will able to log in again using the kiosk machine!",
-            "Are you sure?",
+            "Vous pourrez vous reconnecter via la borne.",
+            "Êtes-vous sûr ?",
             "warning",
             {
-                confirmButtonText: "Yes, Log Out!",
-                cancelButtonText: "No, Cancel!",
+                confirmButtonText: "Oui, déconnexion",
+                cancelButtonText: "Annuler",
                 confirmButtonColor: "#696cff",
                 cancelButtonColor: "#8592a3",
             }
@@ -90,12 +90,12 @@ export default {
     },
     destroyConfirmation: function () {
         return new VueSimpleAlert.confirm(
-            "You will not be able to recover the deleted record!",
-            "Are you sure?",
+            "Vous ne pourrez pas récupérer l'enregistrement supprimé !",
+            "Êtes-vous sûr ?",
             "warning",
             {
-                confirmButtonText: "Yes, Delete it!",
-                cancelButtonText: "No, Cancel!",
+                confirmButtonText: "Oui, supprimer",
+                cancelButtonText: "Annuler",
                 confirmButtonColor: "#696cff",
                 cancelButtonColor: "#8592a3",
             }
@@ -103,12 +103,12 @@ export default {
     },
     acceptOrder: function () {
         return new VueSimpleAlert.confirm(
-            "You will not be able to cancel the order!",
-            "Are you sure?",
+            "Vous ne pourrez pas annuler la commande !",
+            "Êtes-vous sûr ?",
             "warning",
             {
-                confirmButtonText: "Yes, Accept it!",
-                cancelButtonText: "No, Cancel!",
+                confirmButtonText: "Oui, accepter",
+                cancelButtonText: "Annuler",
                 confirmButtonColor: "#696cff",
                 cancelButtonColor: "#8592a3",
             }
@@ -132,14 +132,29 @@ export default {
             }
         );
     },
-    cancelOrder: function () {
+    // [P1] Generic confirmation gate for irreversible / mass actions (e.g. live mass-send
+    // of push notifications or subscriber emails). Resolves on confirm, rejects on cancel.
+    confirmation: function (message, title = "Confirmer l'envoi", confirmButtonText = "Oui, envoyer") {
         return new VueSimpleAlert.confirm(
-            "You will not be able to accept the order!",
-            "Are you sure?",
+            message,
+            title,
             "warning",
             {
-                confirmButtonText: "Yes, Cancel it!",
-                cancelButtonText: "No, Cancel",
+                confirmButtonText: confirmButtonText,
+                cancelButtonText: "Annuler",
+                confirmButtonColor: "#696cff",
+                cancelButtonColor: "#8592a3",
+            }
+        );
+    },
+    cancelOrder: function () {
+        return new VueSimpleAlert.confirm(
+            "Vous ne pourrez pas accepter la commande !",
+            "Êtes-vous sûr ?",
+            "warning",
+            {
+                confirmButtonText: "Oui, annuler",
+                cancelButtonText: "Non",
                 confirmButtonColor: "#696cff",
                 cancelButtonColor: "#8592a3",
             }
