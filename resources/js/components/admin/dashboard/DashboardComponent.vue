@@ -45,9 +45,13 @@
         </div>
     </nav>
 
-    <ErrorBoundary><OverviewComponent/></ErrorBoundary>
-
+    <!-- [W3.1 COCKPIT 2026-06-08] "Today first" — the gérant's first-screen
+         priority is today's live KPIs (RealtimeReport / Suivi en direct), not
+         the lifetime cumulé tiles. Render the today widget ABOVE the lifetime
+         overview. Both kept inside their ErrorBoundary wrappers. -->
     <ErrorBoundary><RealtimeReportComponent/></ErrorBoundary>
+
+    <ErrorBoundary><OverviewComponent/></ErrorBoundary>
     <div class="row">
         <ErrorBoundary><SlaAlertsComponent/></ErrorBoundary>
         <ErrorBoundary><ChannelStatsComponent/></ErrorBoundary>
