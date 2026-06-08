@@ -189,6 +189,26 @@ class PaymentReconcileController extends Controller
                 return $base + ['status' => 'already_paid'];
             }
 
+            // [SEC-FALSIFY-2026-06-08 KIOSK-3] Cross-order transaction dedup — parity
+            // with paymentConfirm (OrderController:184-191). Without it, ONE real
+            // card/TR settlement (transaction_id) could be replayed onto a SECOND
+            // order and fiscally seal it, so two orders carry the same tx in the Z
+            // while only one settlement exists (NF525 settlement-vs-Z discrepancy).
+            // Held under the per-tx Cache::lock above, so concurrent reconciles of
+            // the same tx serialise and the second sees the first's committed id.
+            $duplicateTransaction = FrontendOrder::withoutGlobalScope(BranchScope::class)
+                ->where('transaction_id', $transactionId)
+                ->where('id', '!=', $order->id)
+                ->exists();
+            if ($duplicateTransaction) {
+                Log::warning('[AUDIT-F-008] reconcile duplicate transaction rejected', [
+                    'order_id'       => $orderId,
+                    'transaction_id' => $transactionId,
+                ]);
+                $this->upsertAudit($branchId, $orderId, $transactionId, $amountCents, $cardType, $paymentMethod, PendingPaymentConfirmation::STATUS_FAILED, 'duplicate_transaction');
+                return $base + ['status' => 'duplicate_transaction'];
+            }
+
             // Promote to PAID under transaction + lockForUpdate.
             DB::transaction(function () use ($order, $transactionId, $cardType, $paymentMethod) {
                 $locked = FrontendOrder::withoutGlobalScope(BranchScope::class)

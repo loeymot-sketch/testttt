@@ -206,6 +206,49 @@ class ReconciliationFlowsE2ETest extends TestCase
     }
 
     /* ------------------------------------------------------------------ */
+    /* [SEC-FALSIFY-2026-06-08 KIOSK-3] Cross-order transaction dedup        */
+    /* One real settlement (transaction_id) must NOT fiscally seal TWO orders */
+    /* (parity with paymentConfirm OrderController:184-191).                  */
+    /* ------------------------------------------------------------------ */
+    public function test_KIOSK3_reconcile_rejects_one_transaction_sealing_two_orders(): void
+    {
+        $kioskUser = $this->actAsKiosk();
+        $orderA = $this->makeKioskCardOrder($kioskUser, 40.00);
+        $orderB = $this->makeKioskCardOrder($kioskUser, 40.00);
+        $sharedTx = 'TX-DUP-' . uniqid();
+
+        $response = $this->postJson('/api/frontend/payment/reconcile-pending', [
+            'entries' => [
+                ['order_id' => $orderA->id, 'transaction_id' => $sharedTx, 'amount_cents' => 4000, 'card_type' => 'VISA', 'payment_method' => PaymentGateway::CARD],
+                ['order_id' => $orderB->id, 'transaction_id' => $sharedTx, 'amount_cents' => 4000, 'card_type' => 'VISA', 'payment_method' => PaymentGateway::CARD],
+            ],
+        ]);
+
+        $response->assertStatus(200);
+        $results = $response->json('data');
+        $this->assertSame('reconciled', $results[0]['status'],
+            'KIOSK-3: the first order seals with the real settlement.');
+        $this->assertSame('duplicate_transaction', $results[1]['status'],
+            'KIOSK-3: the second order MUST be rejected — one settlement cannot seal two orders.');
+
+        // Order A sealed; Order B stays UNPAID and is NOT fiscally sealed.
+        $this->assertSame(PaymentStatus::PAID, (int) $orderA->fresh()->payment_status);
+        $freshB = $orderB->fresh();
+        $this->assertSame(PaymentStatus::UNPAID, (int) $freshB->payment_status,
+            'KIOSK-3: a duplicate tx must NOT promote the second order to PAID.');
+        $this->assertNull($freshB->fiscal_sequence_no,
+            'KIOSK-3: a duplicate tx must NOT allocate a fiscal sequence to the second order.');
+
+        // Exactly ONE order carries the shared transaction (no Z double-count).
+        $this->assertSame(
+            1,
+            FrontendOrder::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
+                ->where('transaction_id', $sharedTx)->count(),
+            'KIOSK-3: the shared transaction_id must be attached to exactly one order.'
+        );
+    }
+
+    /* ------------------------------------------------------------------ */
     /* Scénario 3 — Cash acknowledge (F-009) via confirmCounterPayment     */
     /* (Le plan référence /cash-acknowledge mais l'impl réelle est interne)*/
     /* ------------------------------------------------------------------ */
