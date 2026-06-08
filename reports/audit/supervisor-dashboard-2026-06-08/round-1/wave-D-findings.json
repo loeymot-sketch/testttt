@@ -1,0 +1,101 @@
+[
+  {
+    "id": "WD-01",
+    "file": "resources/js/components/admin/stock/StockRuptureDashboardComponent.vue",
+    "line": "237,388-403,457-464",
+    "title": "Synthetic '⚠ Ruptures (N)' bucket: N count, key-collision, filtering",
+    "verdict": "HOLDS",
+    "severity": "none",
+    "proof": "RUPTURES_BUCKET_KEY='__ruptures__' (line 237). Real bucket keys are item-${id}/cat-${id}/extra-${group_label}/var-${attribute_id} (lines 325/333/345/353/365/373) — none can equal '__ruptures__': no key collision. Live curl GET /api/admin/stock/catalog-overview on :8769 (foodking_dash_e2e, branch_id=1, real 45-item Le Cayenne catalog) → 200 JSON: 45 item rows across 11 categories with 45 UNIQUE ids (ZERO intra-axis duplication), 26 extra rows + 35 var rows with ZERO duplicate composite keys. Union N=1 (one out-of-stock), union-internal :keys had ZERO duplicates → N is not double-counted and no Vue duplicate-:key. Item payload keys = ['id','name','slug','thumb','is_available','reason'] — NO low-stock/threshold field exists in the model, so is_available=false IS the only rupture signal: N counts only true ruptures, not low-stock. activeBucket getter (line 407-408) find(b=>b.key===activeBucketKey); click sets activeBucketKey=bucket.key (template line 76) → selecting the synthetic bucket resolves and renders its items: filtering works. pickDefaultBucketKey (line 457-464) skips the synthetic bucket so landing view never flips with stock; buckets watcher (line 423-428) preserves selection and falls back gracefully when N drops to 0.",
+    "reproduction": "curl -s -H 'x-api-key:<key>' -H 'Authorization: Bearer <token>' http://127.0.0.1:8769/api/admin/stock/catalog-overview → analyzed: 45 unique item ids, N=1, 0 dup keys. Vitest tests/js/stockRuptureDashboardComponent.spec.js + stockRuptureDashboardMount.spec.js = 9 specs PASS.",
+    "remediation": "None required. (Robustness backlog only: if items ever become multi-category in a future catalog, dedup the union by .key — not a V1 concern; live data has no dups.)"
+  },
+  {
+    "id": "WD-02",
+    "file": "resources/js/components/admin/ingredients/IngredientUsageDrawer.vue",
+    "line": "105-116",
+    "title": "Drawer typeLabel computed covers all ingredient type values (no raw enum leak)",
+    "verdict": "HOLDS",
+    "severity": "none",
+    "proof": "typeLabel (line 107-115) splits globalId on ':' and maps attribute/extra/addon → tab_attribute/tab_extra/tab_addon i18n keys. Backend app/Services/Ingredients/IngredientService.php emits global_id ONLY via TYPE_ATTRIBUTE(line69)/TYPE_EXTRA(line91)/TYPE_ADDON(line111) — exactly the three covered types. List component IngredientListComponent.vue has the identical TYPE_LABELS map (line 141-144) and normalizedType whitelist ['attribute','extra','addon'] (line 193). fr.json values: tab_attribute='Viandes & Attributs', tab_extra='Suppléments', tab_addon='Add-ons' (lines 1326-1328) — all resolve. Even if an unknown type appeared, map[type] is falsy → typeLabel='' and the <p v-if=\"typeLabel\"> hides (graceful, no raw 'attribute:8' leak — was the prior bug, now fixed: globalId replaced by typeLabel at line 27).",
+    "reproduction": "grep app/Services/Ingredients/IngredientService.php (3 prefixes) + IngredientListComponent.vue:193 whitelist + fr.json:1326-1328. Vitest tests/js/ingredientUsageDrawer.spec.js PASS.",
+    "remediation": "None required."
+  },
+  {
+    "id": "WD-03",
+    "file": "resources/js/components/admin/ingredients/IngredientListComponent.vue",
+    "line": "108-110",
+    "title": "'produit(s)' pluralization / 'Non utilisé' usage label",
+    "verdict": "HOLDS",
+    "severity": "none",
+    "proof": "List (line 108-110) and drawer (line 57-59) branch: used_by_count>0 → usage_count else usage_none. fr.json usage_count='Utilisé dans {count} produit(s)' (line 1339), usage_none='Non utilisé' (line 1340). The '(s)' parenthetical is the standard FR singular/plural-agnostic form — correct for V1 single-locale FR. Both keys resolve (grep count=1 each).",
+    "reproduction": "grep fr.json:1339-1340. Vitest tests/js/ingredientListComponent.spec.js (3 specs) PASS.",
+    "remediation": "None required."
+  },
+  {
+    "id": "WD-04",
+    "file": "resources/js/components/admin/orderHistory/HistoriqueListComponent.vue",
+    "line": "20-32,165-172,309-339",
+    "title": "Active-filter chips + filter-aware empty state",
+    "verdict": "HOLDS",
+    "severity": "none",
+    "proof": "hasActiveFilter (line 309-313) OR of order_serial_no/origin/status/payment_status/from_date/to_date drives both the chip bar (template line 20-32) and the empty state (line 165-169 shows 'Aucune commande pour ce filtre' + Effacer when hasActiveFilter, else message.no_data_available). activeFilters (line 315-339) builds chips from existing label.* keys + the component's own originOptions / enums.orderStatusEnumArray (defined line 249-258) / paymentLabel (defined line 381-389) — all referenced symbols exist. Potential AND/OR mismatch (date chip renders only if from_date && to_date, bar shows on OR) is UNREACHABLE: datepicker is range-mode (template line 79) and handleDate (line 413-418) sets from_date+to_date together or both null — never independently. clear() (line 459-471) resets all + props.form.date=null, matching empty state.",
+    "reproduction": "Read HistoriqueListComponent.vue lines verified; symbol-existence grep all present (paymentLabel/applyOriginFilter/originOptions/enums.orderStatusEnumArray). handleDate range-mode confirmed.",
+    "remediation": "None required. (Note: chip for 'origin' reflects the PENDING props.origin selection before Search applies it to source_surface — honest pending-state display, consistent with the search-on-submit pattern; export xls() calls applyOriginFilter() first at line 410.)"
+  },
+  {
+    "id": "WD-05",
+    "file": "resources/js/store/modules/orderHistory.js",
+    "line": "65-79",
+    "title": "Export store action: endpoint path, responseType blob, filter passthrough",
+    "verdict": "HOLDS",
+    "severity": "none",
+    "proof": "export action (line 65-79): url='admin/order-history/export' + appService.requestHandler(payload) query string; axios.get(url,{responseType:'blob'}). axios baseURL=/api → final /api/admin/order-history/export. Authoritative artisan route:list: 'api/admin/order-history/export' (admin.orderHistory.export), registered routes/api.php:978 inside the admin prefix group (line 295). LIVE PROOF on :8769: GET /api/admin/order-history/export?paginate=0 with admin Bearer token → HTTP 200, content-type application/vnd.openxmlformats...spreadsheetml.sheet, size 114191 bytes, file=Microsoft Excel 2007+ (PK zip header), NOT SPA-HTML. Date-filtered (?from_date=2026-01-01&to_date=2026-01-01) → 200, size 6300 bytes (smaller = filter honored). Without auth → 401 JSON (route resolves, not catchall). Mirrors posOrder/export (orderHistory.js shape = posOrder.js:299-305). The component xls() (HistoriqueListComponent.vue:497-516) dispatches orderHistory/export with {...search, paginate:0}, builds Blob, triggers download.",
+    "reproduction": "php artisan route:list | grep order-history; curl GET /api/admin/order-history/export (200 XLSX 114KB) + date-filtered (200 6.3KB) + no-auth (401 JSON). All on :8769 foodking_dash_e2e (read-only GET, no DB write).",
+    "remediation": "None required."
+  },
+  {
+    "id": "WD-06",
+    "file": "resources/js/components/admin/orderHistory/HistoriqueListComponent.vue",
+    "line": "427-453",
+    "title": "sessionStorage date-range persistence key collision + datepicker shape",
+    "verdict": "HOLDS",
+    "severity": "none",
+    "proof": "Key 'historique:dateRange' (line 431) is UNIQUE across resources/js (grep: only this component + unrelated 'kiosk_maintenance_mode' in app.js and eventContract's own keys) — no collision. restoreDateRange (line 441-453) sets props.search.from_date/to_date (strings) and props.form.date=[from,to] (two Date objects) — matches the range-mode datepicker v-model shape (template line 79). All sessionStorage access try/catch-guarded (degrades silently if unavailable). clear() removes the key (line 470).",
+    "reproduction": "grep -rn 'historique:dateRange|sessionStorage' resources/js → unique. Datepicker range mode confirmed.",
+    "remediation": "None required."
+  },
+  {
+    "id": "WD-07",
+    "file": "resources/js/languages/en.json",
+    "line": "n/a (keys absent)",
+    "title": "i18n parity gap: rail_ruptures + usage_none missing from en.json",
+    "verdict": "SUSPECTED (V1-irrelevant parity gap; reproduced in test harness only)",
+    "severity": "low",
+    "proof": "W4 added rail_ruptures + usage_none to fr.json only (commit message is honest: '+ fr.json'). grep en.json: rail_ruptures=0, usage_none=0 (usage_count + tab_* DO exist in en.json). Vitest stockRuptureDashboardMount.spec.js emits [intlify] 'Not found admin.stock_mgmt.rail_ruptures key in en locale' warnings (9x) — specs still PASS (28/28). PRODUCTION RUNS fr (ADR-007 immutable single-locale; login response returned French 'Connexion réussie.') where both keys resolve. The warning manifests only in (a) the en-default test harness and (b) a hypothetical en user — neither is V1 Le Cayenne. NOT a V1 defect; en.json parity is a V2/SaaS backlog item.",
+    "reproduction": "grep -c '\"rail_ruptures\"|\"usage_none\"' resources/js/languages/en.json → 0. npx vitest run tests/js/stockRuptureDashboardMount.spec.js → intlify en-miss warnings (non-failing).",
+    "remediation": "Backlog: add rail_ruptures + usage_none to en.json for locale parity (V2). No V1 action needed — single-locale FR resolves both."
+  },
+  {
+    "id": "WD-08",
+    "file": "resources/js/components/admin/orderHistory/HistoriqueListComponent.vue",
+    "line": "511-515",
+    "title": "Export error-path: alertService.error(err.response.data.message) on a blob response is undefined",
+    "verdict": "SUSPECTED (pre-existing codebase norm, not a W4 regression)",
+    "severity": "low",
+    "proof": "xls() catch reads err.response.data.message, but the request is responseType:'blob' → on a server error axios delivers err.response.data as a Blob, so .message is undefined and the alert shows nothing/empty. HOWEVER this is the established codebase pattern: the proven-working reference PosOrderListComponent.vue:404 does alertService.error(err.response.data.message) with the SAME blob problem and LESS guarding (no err.response existence check). W4's xls() is strictly MORE defensive (guards err && err.response && err.response.data && err.response.data.message before alerting). So W4 matches the norm and degrades to a no-op alert (not a crash). Happy path proven 200 XLSX (see WD-05); V1 is single-operator. Low.",
+    "reproduction": "Compare HistoriqueListComponent.vue:511-515 vs PosOrderListComponent.vue:404 (identical .message-on-blob pattern; W4 is more guarded).",
+    "remediation": "Backlog (whole-codebase): decode blob error bodies (await err.response.data.text() then JSON.parse) before reading .message. Not W4-specific; defer with the POS export."
+  },
+  {
+    "id": "WD-09",
+    "file": "resources/js/components/admin/orderHistory/HistoriqueListComponent.vue",
+    "line": "10",
+    "title": "Export dropdown UI gate (pos-orders) narrower than backend gate (pos-orders|pos)",
+    "verdict": "SUSPECTED (V1-moot; not a security hole)",
+    "severity": "info",
+    "proof": "Export dropdown gated v-if=\"permissionChecker('pos-orders')\" (template line 10). Backend export gate (Adversary F's controller) per commit message = 'can pos-orders|pos'. A user with 'pos' but NOT 'pos-orders' would see the button hidden yet could export via direct URL — but the backend WOULD allow it (no privilege escalation; same read-only history the index already exposes). Admin (branch_id=0, role_id=1) passes both — verified login. V1 Le Cayenne is single-operator so the gate divergence is moot.",
+    "reproduction": "grep permissionChecker('pos-orders') HistoriqueListComponent.vue:10. Admin login branch_id=0 role_id=1 passes.",
+    "remediation": "Optional consistency: align UI gate to permissionChecker('pos-orders') || permissionChecker('pos'). No V1 action — single operator."
+  }
+]

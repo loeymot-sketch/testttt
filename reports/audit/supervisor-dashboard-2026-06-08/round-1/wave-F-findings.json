@@ -1,0 +1,90 @@
+[
+  {
+    "id": "F-T1a-BRANCH-ISOLATION",
+    "file": "app/Exports/OrderHistoryExport.php:46 + app/Services/OrderService.php:135",
+    "line": "OrderHistoryExport::collection -> OrderService::list",
+    "title": "W4 export branch isolation — query runs THROUGH BranchScope, no withoutGlobalScope, client branch_id is additive-only",
+    "verdict": "HOLDS",
+    "severity": "none",
+    "proof": "OrderHistoryExport::collection() (line 46) calls $this->orderService->list($request). OrderService::list (OrderService.php:135) starts from Order::with([...])->where(...) — a plain Eloquent query on the Order model. Order::booted (app/Models/Order.php:129) calls static::addGlobalScope(new BranchScope()); so BranchScope is applied automatically. grep 'withoutGlobalScope' app/Services/OrderService.php => only hits at 2559/2572 (an unrelated User lookup), NOT in list(). branch_id IS present in $orderFilter (OrderService.php:73), so a client may pass ?branch_id=X, but BranchScope::apply (app/Models/Scopes/BranchScope.php:38) ANDs a staff WHERE branch_id = userBranch on top: a branch operator passing branch_id=2 yields WHERE branch_id=userBranch AND branch_id=2 => empty set, NOT a cross-branch read. Admin (branch_id=0) gets no scope filter (BranchScope.php:33-35) and may filter to any branch — that is the intended admin-sees-all behavior. The export reuses the SAME scoped path as the proven index() endpoint.",
+    "reproduction": "git show b95dac18a:app/Exports/OrderHistoryExport.php; sed -n '125,235p' app/Services/OrderService.php; grep -n 'addGlobalScope' app/Models/Order.php (=> line 129); sed -n '17,45p' app/Models/Scopes/BranchScope.php",
+    "remediation": "None. No scope bypass mechanism present. Latent cloud note: branch_id being a client-passable filter is harmless under BranchScope, but a V2 SaaS hardening pass could whitelist branch_id to admin-only at the request layer for defense-in-depth."
+  },
+  {
+    "id": "F-T1b-AUTHZ-UNAUTH",
+    "file": "routes/api.php:976 + app/Http/Controllers/Admin/OrderHistoryController.php:80",
+    "line": "route admin.orderHistory.export + export() abort_unless gate",
+    "title": "W4 export authz — route is inside auth:sanctum group AND has the same inline pos-orders|pos gate as index/show; Chef role is meaningfully blocked",
+    "verdict": "HOLDS",
+    "severity": "none",
+    "proof": "ROUTE LAYER: the export route (routes/api.php:976) sits inside the admin prefix group declared at routes/api.php:295 with middleware ['installed','apiKey','auth:sanctum','block_kiosk_token_admin','localization','throttle:admin-mutation'] (brace-tracking confirms the group spans lines 295-1253, enclosing 976). EMPIRICAL: curl -s http://127.0.0.1:8769/api/admin/order-history/export returns HTTP 302 -> /api/login with Content-Type text/html (auth:sanctum redirect), NOT a 200 SPA-catchall masquerade and NOT a 200 XLSX — so the route is genuinely wired behind auth. CONTROLLER LAYER: export() (OrderHistoryController.php:80-83) runs abort_unless(auth()->user()?->can('pos-orders') || auth()->user()?->can('pos'), 403), byte-identical to the already-proven index()/show() gates (lines 49-53 / 102-106). EFFECTIVENESS: database/seeders/RolePermissionTableSeeder.php — Branch Manager (line 16-17) and POS Operator (line 86-87) hold pos+pos-orders; CHEF (lines 115-119) holds ONLY ['dashboard','kitchen-display-system','order-status-screen'] => an authenticated Chef is BLOCKED by the gate. The gate is meaningful, not just defense-in-depth.",
+    "reproduction": "curl -s -w '%{http_code} %{content_type}' http://127.0.0.1:8769/api/admin/order-history/export (=> 302 text/html, redirect to /api/login); sed -n '295p;972,980p' routes/api.php; sed -n '80,93p' app/Http/Controllers/Admin/OrderHistoryController.php; awk '/EnumRole::CHEF/,/chefPermissionNames\\)/' database/seeders/RolePermissionTableSeeder.php",
+    "remediation": "None. SUSPECTED (not reproduced by me): the AUTHENTICATED positive path (admin login -> GET export -> 200 + real XLSX). The W4 commit message asserts '200 + real XLSX, date-filtered' but as the adversary I did not mint an admin session, so I do not relay that as confirmed. Orchestrator to reproduce: Playwright login admin@lecayenne.fr on :8769 (read flow, allowed) then GET /api/admin/order-history/export and assert 200 + xlsx content-type + Historique.xlsx + correct columns; ALSO mint a Chef token and assert 403."
+  },
+  {
+    "id": "F-T1c-FISCAL-LEAK",
+    "file": "app/Exports/OrderHistoryExport.php:48-50 + app/Http/Resources/SimpleOrderResource.php:70",
+    "line": "fiscal_sequence_no column + headings",
+    "title": "W4 export fiscal exposure — fiscal_sequence_no in admin XLSX is NF525-intended traceability, already exposed by the index resource to the same gate; pure read, zero writes to audit_logs/z_reports; XLSX headers resolve (no raw-label leak)",
+    "verdict": "HOLDS",
+    "severity": "none",
+    "proof": "OrderHistoryExport exposes order_serial_no, fiscal_sequence_no (null-coalesced to '' for unsealed orders), order_type (trans), customer name, total (flatAmountFormat), order_datetime, status. fiscal_sequence_no is ALREADY emitted by SimpleOrderResource.php:70 ('fiscal_sequence_no' => $this->fiscal_sequence_no) — the exact resource the historique index() returns to the SAME pos-orders|pos audience — so the XLSX exposes nothing new vs the JSON list. Under NF525 the fiscal sequence number is traceability data (also printed on receipts via buildNf525Footer); an accountant export is its intended use, not a leak. NO WRITES: grep -nE 'save\\(|insert|update\\(|create\\(|delete\\(|DB::' app/Exports/OrderHistoryExport.php => empty; OrderService::list is a pure SELECT. No audit_logs / z_reports mutation on this path. HEADER KEYS: all 6 trans('all.label.*') keys (order_serial_no, order_type, customer, amount, date, status) exist in lang/fr/all.php (lines 41,48,49,34,42,35) — headers resolve to real FR, no raw 'all.label.x' leak. The 7th header 'N° fiscal' is a documented inline-FR stopgap (acceptable, single-locale V1).",
+    "reproduction": "git show b95dac18a:app/Exports/OrderHistoryExport.php; grep -n 'fiscal_sequence_no' app/Http/Resources/SimpleOrderResource.php (=> 70); grep -nE 'save\\(|insert|DB::' app/Exports/OrderHistoryExport.php (=> empty); grep -n \"order_serial_no\\|'customer'\\|'amount'\\|'date'\\|order_type\\|'status'\" lang/fr/all.php",
+    "remediation": "None required for V1. Optional polish: add an all.label.fiscal_number lang key to replace the hardcoded 'N° fiscal' header for multi-locale future."
+  },
+  {
+    "id": "F-T2-FROZEN-ZONE",
+    "file": "public/js/pos-wizard.js, public/css/pos-wizard.css, resources/views/admin-pos-v4.blade.php, PaymentComponent.vue, PosV5TrancheRow.vue, Kiosk{Wizard,App,Upsell}Component.vue, app/Services/Fiscal/",
+    "line": "git diff 0c0183ee4..HEAD -- <frozen set>",
+    "title": "Frozen-zone integrity — ZERO lines across all 5 waves + build commit; build 625482726 did NOT recompile hand-written pos-wizard.js",
+    "verdict": "HOLDS",
+    "severity": "none",
+    "proof": "git diff --stat 0c0183ee4..HEAD over the full §7 frozen set (pos-wizard.js, pos-wizard.css, admin-pos-v4.blade.php, PaymentComponent.vue, PosV5TrancheRow.vue, KioskWizardComponent.vue, KioskAppComponent.vue, KioskUpsellComponent.vue, app/Services/Fiscal/) returns EMPTY (zero changed lines). Build commit 625482726 --stat lists only Mix-compiled bundles (admin-shell.js, pos-app.js, kiosk-*.js, vendor.js, etc.) and pos-app.js/manifest; pos-wizard.js (hand-written non-Mix) does NOT appear in that commit's file list, confirming it was not recompiled.",
+    "reproduction": "git diff --stat 0c0183ee4..HEAD -- public/js/pos-wizard.js public/css/pos-wizard.css resources/views/admin-pos-v4.blade.php resources/js/components/admin/pos/PaymentComponent.vue resources/js/components/admin/pos/v5/PosV5TrancheRow.vue resources/js/components/frontend/kiosk/KioskWizardComponent.vue resources/js/components/frontend/kiosk/KioskAppComponent.vue resources/js/components/frontend/kiosk/KioskUpsellComponent.vue app/Services/Fiscal/ (=> empty); git show 625482726 --stat | grep pos-wizard (=> empty)",
+    "remediation": "None."
+  },
+  {
+    "id": "F-T3-RECEIPT-LOWERCASE",
+    "file": "resources/js/components/admin/pos/ReceiptComponent.vue:260 + resources/js/components/admin/posOrders/PosOrderReceiptComponent.vue:183 + resources/js/helpers/posReceiptBuilder.js:116-122",
+    "line": "$t('label.' + String(line.key).toLowerCase())",
+    "title": "W1 receipt label lowercasing — defensive NO-OP (keys already lowercase literals), cannot break existing labels or leak raw labels; receipt comps NOT frozen",
+    "verdict": "GOLD-PLATING",
+    "severity": "none",
+    "proof": "nf525FooterLines = buildNf525Footer(order) (posReceiptBuilder.js:113). The builder pushes ONLY three literal keys, all already lowercase: 'fiscal_ticket_no' (116), 'audit_fingerprint' (119), 'legal_mentions' (122). Therefore String(line.key).toLowerCase() is a no-op on real data — there are no uppercase keys to break. All three label.* keys exist in fr.json (label.fiscal_ticket_no / audit_fingerprint / legal_mentions => YES), so no missing-key raw-label leak is possible. Both receipt components consume the SAME builder. FROZEN STATUS: CLAUDE.md §7 frozen-frontend list = pos-wizard.js/css, admin-pos-v4.blade, PaymentComponent.vue, PosV5TrancheRow.vue, Kiosk{Wizard,App,Upsell} only — ReceiptComponent.vue and PosOrderReceiptComponent.vue are NOT frozen.",
+    "reproduction": "grep -n 'key:' resources/js/helpers/posReceiptBuilder.js (=> 116/119/122, all lowercase); python3 check label.{fiscal_ticket_no,audit_fingerprint,legal_mentions} in fr.json => all YES; grep ReceiptComponent CLAUDE.md frozen list => not present",
+    "remediation": "Harmless. The .toLowerCase() is dead-safe insurance; could be dropped but no action needed."
+  },
+  {
+    "id": "F-T4-FRJSON-INTEGRITY",
+    "file": "resources/js/languages/fr.json",
+    "line": "diff 0c0183ee4..HEAD",
+    "title": "fr.json integrity — valid JSON, ZERO duplicate keys, the 6 value-modified keys are not consumed by any frozen/POS/kiosk surface via $t",
+    "verdict": "HOLDS",
+    "severity": "none",
+    "proof": "(a) python3 json.load with object_pairs_hook duplicate-detector => VALID JSON, DUPLICATE KEYS: NONE. (b) Only 6 keys had VALUES changed (no renames/removals): menu.push_notifications ('Notification pushs'->'Notifications push'), label.tax_rate ('Taxe Taux'->'Taux de TVA'), label.total_orders_lifetime / label.total_sales_lifetime ('(cumulé)'->'(depuis le début)'), label.ingredient.usage_count, label.ingredient.owner_item. Consumer grep (excl. lang files): menu.push_notifications -> PushNotification* admin comps (non-frozen); label.tax_rate -> only Tax settings admin comps via $t (FrontendOrderReceiptComponent uses the DATA field item.tax_rate, not $t; pos-wizard.js has 0 refs to label.tax_rate / 'Taxe Taux' / 'Taux de TVA'); label.total_*_lifetime -> dashboard OverviewComponent only; label.ingredient.* -> dashboard ingredient comps only. NO frozen/POS/kiosk surface consumes any modified key via $t. All other touched keys are NET-NEW additions (rail_ruptures, day_*, sla_*, view_z_reports, encaisser_*, client_borne, expected/counted/variance_reason, etc.).",
+    "reproduction": "python3 dup-key detector on fr.json; git diff 0c0183ee4..HEAD -- resources/js/languages/fr.json | grep '^-'; per-key consumer grep across resources/js excluding languages/*.json; grep -c 'label.tax_rate' public/js/pos-wizard.js (=> 0)",
+    "remediation": "None."
+  },
+  {
+    "id": "F-T5-CURRENCY-PAYLOAD",
+    "file": "app/Http/Resources/SimpleItemResource.php:37, ItemResource.php:76, CreditBalanceUserResource.php:29",
+    "line": "currency_price / currency_balance emission",
+    "title": "W1 currency_price/currency_balance binding — fields are UNCONDITIONALLY emitted by the resources backing the consuming payloads; no blank-price risk",
+    "verdict": "HOLDS",
+    "severity": "none",
+    "proof": "ALL FIVE W1-touched components traced to their backing payload: (1) ItemListComponent -> item/lists store action -> GET admin/item (store/modules/item.js:84) -> ItemController@index -> SimpleItemResource::collection (ItemController.php:102) -> 'currency_price' emitted UNCONDITIONALLY at SimpleItemResource.php:37. (2) CatalogStudioComponent ({{ item.currency_price }}) -> SAME item/lists -> admin/item -> SimpleItemResource:37 (confirmed via store/modules/item.js:35,84). (3) ItemShowComponent -> ItemController@show -> ItemResource.php:76 (unconditional). (4) ItemPreviewComponent -> same item resources. (5) CreditBalanceReportComponent ({{ user.currency_balance }}) -> CreditBalanceUserResource.php:29 emits 'currency_balance' => AppLibrary::currencyAmountFormat($this->balance) unconditionally. SEPARATE: CashSessionReportListComponent did NOT switch to a currency_* API field — its W1 diff adds a client-side Intl.NumberFormat({style:'currency',currency:'EUR'}) formatter (no resource dependency, zero missing-field risk). All resource emissions are plain array keys, NOT whenLoaded/conditional appends, so no list-context yields a missing field / blank price.",
+    "reproduction": "grep -n currency_price app/Http/Resources/SimpleItemResource.php app/Http/Resources/ItemResource.php; grep -n currency_balance app/Http/Resources/CreditBalanceUserResource.php; grep -n 'SimpleItemResource\\|ItemResource' app/Http/Controllers/Admin/ItemController.php; grep -n \"item/lists\\|admin/item\" resources/js/store/modules/item.js (=> url 'admin/item' at :84); git show 4313f4547 -- '*CashSessionReportListComponent.vue' | grep currency (=> Intl.NumberFormat, not an API field); git show 4313f4547 -- '*CatalogStudioComponent.vue' | grep currency (=> item.currency_price)",
+    "remediation": "None."
+  },
+  {
+    "id": "F-T6-BUNDLE-FRESHNESS",
+    "file": "public/mix-manifest.json + served :8769 bundles",
+    "line": "served hashes vs repo HEAD",
+    "title": "Bundle freshness — served :8769 bundles match repo HEAD mix-manifest and contain the new W1/W4 strings; all UI findings are against current code",
+    "verdict": "HOLDS",
+    "severity": "none",
+    "proof": "Served /mix-manifest.json on :8769 returns admin-shell.js?id=396bddc073eb4c8f301a4d8e468bfd11, pos-app.js?id=8726b4fc94ae984e8268443dfa9e03f8, app.js?id=c0907d79c5dbca5d8e39ce4ed3ed7b3c — ALL identical to repo HEAD mix-manifest. String checks on served bundles: admin-shell.js contains 'Ruptures' (W4, 2 hits); pos-app.js and app.js each contain 'Client borne' (1) and 'depuis le début' (2) (W1-2 fr.json strings inlined). Bundles are FRESH; no stale-code risk to the UI findings.",
+    "reproduction": "curl -s http://127.0.0.1:8769/mix-manifest.json | python3 hash-compare; for b in admin-shell pos-app app; do curl -s http://127.0.0.1:8769/js/$b.js | grep -c 'Client borne\\|depuis le début\\|Ruptures'; done",
+    "remediation": "None."
+  }
+]

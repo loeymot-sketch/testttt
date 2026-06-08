@@ -1,0 +1,79 @@
+[
+  {
+    "id": "W5-D1",
+    "file": "tests/Unit/RoleDisplayHelperTest.js",
+    "line": 1,
+    "title": "New roleDisplay unit test is collected by NEITHER runner — dead test, false coverage confidence",
+    "verdict": "DEFECT",
+    "severity": "P2",
+    "proof": "vitest.config.mjs:17 sets `include: ['tests/js/**/*.spec.js']`. The new test lives at tests/Unit/ (wrong dir) with suffix `.js` (not `.spec.js`) → Vitest reports `No test files found` for both `npx vitest run tests/Unit/RoleDisplayHelperTest.js` and `npx vitest run roleDisplay`. tests/Unit/ is the PHPUnit dir (phpunit.xml:9 `<directory suffix=\"Test.php\">./tests/Unit`), which matches only `*Test.php`, never a `.js` file. So `npm test` (vitest run) AND `php artisan test` both skip it. The helper LOGIC is correct — under an explicit override config (`include: ['tests/Unit/RoleDisplayHelperTest.js']`) all 6 tests pass (mapped keys, raw-name fallback, null/undefined/empty -> '', no-translator fallback, label.* namespace). The test is dead, not wrong.",
+    "reproduction": "From worktree: `npx vitest run tests/Unit/RoleDisplayHelperTest.js` -> 'No test files found, exiting with code 1'. Override `--config` with include=['tests/Unit/RoleDisplayHelperTest.js'] -> '6 passed'. Same orphan class as MEMORY WP-06 (17 sentinels never collected in CI).",
+    "remediation": "Move/rename to tests/js/roleDisplay.spec.js (matching the vitest include glob) so CI actually exercises it. Logic unchanged."
+  },
+  {
+    "id": "W5-R1",
+    "file": "resources/js/services/appService.js",
+    "line": "86,99,112,130,145,158",
+    "title": "6x #696cff -> #F4501E on SweetAlert confirmButtonColor — brand alignment, deliberate-vs-accidental owner question",
+    "verdict": "RISK",
+    "severity": "P3",
+    "proof": "git show 2decb8633 -- resources/js/services/appService.js: all 6 changed lines are `confirmButtonColor` on confirm dialogs (logout / delete / accept / encash / generic / cancel). cancelButtonColor '#8592a3' (gray) untouched -> confirm vs cancel stay visually distinct; no semantic success/error/chart color touched. Compiled correctly: `grep -oE 'confirmButtonColor: \"#[0-9A-Fa-f]+\"' public/js/app.js | sort | uniq -c` => 6x #F4501E, 0x #696cff (same in pos-app.js). #696cff still in app.js/admin-shell.js is from UNRELATED theme code, not these dialogs (false alarm checked & cleared).",
+    "reproduction": "Visual: any admin confirm dialog now shows an orange (#F4501E) confirm button instead of purple. Aligns with CLAUDE.md 3bis Cayenne palette (primary #F4501E).",
+    "remediation": "Owner gate G2 (author self-flagged in commit msg): confirm #F4501E is intended; revert to #696cff only if the purple was a deliberate design choice. No code defect."
+  },
+  {
+    "id": "W5-R2",
+    "file": "resources/views/pdf/eod_synthesis.blade.php",
+    "line": "13,17,24",
+    "title": "3x #ff006b -> #F4501E on EOD PDF accents — brand alignment, owner question",
+    "verdict": "RISK",
+    "severity": "P3",
+    "proof": "git show 2decb8633: the 3 changed lines are `.header { border-bottom: 2px solid #F4501E }`, `.title { color: #F4501E }`, `.kpi-value.accent { color: #F4501E }` — all decorative accents on the End-of-Day synthesis PDF. No KPI value/data color, no semantic encode. Money/totals stay #1F1F39. NF525-neutral (cosmetic only).",
+    "reproduction": "EOD PDF header rule + title + accent KPI now Cayenne orange instead of pink.",
+    "remediation": "Owner gate G2: confirm pink was off-brand; otherwise revert. No defect."
+  },
+  {
+    "id": "W5-V1",
+    "file": "resources/js/helpers/roleDisplay.js",
+    "line": 22,
+    "title": "roleDisplay helper logic — VERIFIED correct (seeder byte-match, fr.json keys exist, null-safe)",
+    "verdict": "PASS",
+    "severity": "INFO",
+    "proof": "ROLE_LABEL_KEYS keys (Admin, Branch Manager, Chef, POS Operator, Customer, Delivery Boy, Waiter) byte-match database/seeders/RoleTableSeeder.php role names. All 7 label.* targets exist nested under fr.json `label` object (python json load: label.admin='Admin', label.branch_manager='Responsable de branche', label.pos_operator='Opérateur caisse', etc.). roleDisplay(null/undefined/'') -> '' ; unknown role ('Stuff', matches the 8th seeded role) -> raw name ; no translator -> raw name. No empty/'undefined'/'null' render path.",
+    "reproduction": "Override-config vitest run: 6/6 pass. Compiled into public/js/app.js (ROLE_LABEL_KEYS present).",
+    "remediation": "None for the helper. (Test collection defect tracked separately as W5-D1.)"
+  },
+  {
+    "id": "W5-V2",
+    "file": "resources/js/components/admin/employees/EmployeeListComponent.vue",
+    "line": "113,302",
+    "title": "safePhone + roleLabel on employee/admin/chef lists — VERIFIED correct (in methods:, no nullnull)",
+    "verdict": "PASS",
+    "severity": "INFO",
+    "proof": "safePhone imported from existing SSOT helpers/phoneDisplay.js (pre-existing commit 272dfdffa, NOT new — exists on disk, build-safe). Template pattern `safePhone(x) ? (country_code || '') + safePhone(x) : ''`: when phone null/sentinel, safePhone returns '' (falsy) -> whole expr '' ; country_code || '' guards null -> no 'nullnull'. Placement confirmed inside methods: in ALL 4 components (EmployeeList methods:302 safePhone:303 roleLabel:304 ; EmployeeShow methods:305/306/307 ; AdministratorList methods:285/286 ; ChefList methods:281/282) — after computed:, so no runtime ReferenceError. roleLabel(name)=roleDisplay(name,this.$t) wiring correct.",
+    "reproduction": "Static: each file grep shows insertions land after `methods:`. Build compiled (safePhone present in admin-kds.js et al.).",
+    "remediation": "None."
+  },
+  {
+    "id": "W5-V3",
+    "file": "resources/js/components/admin/settings/TimeSlot/TimeSlotListComponent.vue",
+    "line": "121",
+    "title": "TimeSlot dayLabel id->key mapping — VERIFIED correct incl. Sunday id:0",
+    "verdict": "PASS",
+    "severity": "INFO",
+    "proof": "dayEnum.js: Monday id:1 .. Saturday id:6, Sunday id:0 (enum untouched, confirmed). dayLabel keys {1:day_monday,2:tuesday,3:wednesday,4:thursday,5:friday,6:saturday,0:sunday} match enum ids exactly — no off-by-one, Sunday(0) handled. Falls back to dayEnum.name for unknown id. All 7 label.day_* keys exist in fr.json under `label` (Lundi..Dimanche). Compiled into admin-shell.js (dayLabel present x2).",
+    "reproduction": "Static cross-check enum<->mapping<->fr.json. No DOM render of EN name or missing-key.",
+    "remediation": "None."
+  },
+  {
+    "id": "W5-V4",
+    "file": "resources/js/components/admin/dashboard/DashboardComponent.vue",
+    "line": "46,138,245",
+    "title": "Encaissement pendingCount badge — VERIFIED correct (path resolves, method placement, empty-safe)",
+    "verdict": "PASS",
+    "severity": "INFO",
+    "proof": "Endpoint `admin/pos/counter-collect/pending` (baseURL /api) is byte-identical to 3 already-shipped callers (PosComponent.vue:3165/3995, EncaissementComponent.vue:141) that work in prod -> route resolves under api/admin/pos prefix (routes/api.php:802, OrderDetailsResource::collection -> {data:[...]} so res.data.data.length is correct). fetchPendingCount at line 245 is inside methods: (216), called from mounted() (138) — correct. .catch() swallows 403/network -> pendingCount stays 0, badge hidden (v-if pendingCount>0). Badge sits in the <router-link v-else> non-external branch (line 39-48), gated link.to==='/admin/encaissement' which is the real quick-link pushed at line 198 (external=false). Empty list -> length 0 -> no badge, no error.",
+    "reproduction": "Static route cross-reference (no auth needed). Endpoint returns up to limit(200).",
+    "remediation": "None. INFORMATIONAL: count caps at 200 (route limit(200)); true pending >200 would display '200'. Irrelevant for V1 single-box single-restaurant backlog."
+  }
+]

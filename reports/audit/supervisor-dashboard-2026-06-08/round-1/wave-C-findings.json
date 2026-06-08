@@ -1,0 +1,79 @@
+[
+  {
+    "id": "WC-05b-TOKEN-DELIVERY-GATE",
+    "file": "resources/js/components/admin/posOrders/PosOrderShowComponent.vue",
+    "line": 63,
+    "title": "Order-token 'Reference interne' <li> wrongly gated to DELIVERY-only — hides the token on the exact KIOSK/online/takeaway orders that carry it",
+    "verdict": "DEFECT",
+    "severity": "P2",
+    "proof": "W3.6 added `v-if=\"displayedToken && order.order_type === enums.orderTypeEnum.DELIVERY\"` (PosOrderShowComponent.vue:63). The token's own authoritative in-file comment (WT-D-R1-07, line 620) states: 'Token is an internal kiosk/online reference, NOT the order number.' Backend assigns orders.token generically from the request payload across non-delivery flows (OrderService.php:779 POS-create `'token' => $request->token`; OrderService.php:2497-2510 tokenCreate sets token on ANY order). It is NOT a delivery-specific field — delivery_time IS (correctly hidden), token is not. Read-only SELECT on the served e2e clone (foodking_dash_e2e, the DB behind :8769) proves the inversion: order_type=10 TAKEAWAY 2098 rows / 2030 with token; order_type=25 KIOSK 2/2 with token; order_type=5 DELIVERY 1 row / 0 tokens. So the v-if now SHOWS the token only for the one order class that never has one, and HIDES it for the ~2032 orders that do.",
+    "reproduction": "1) Read PosOrderShowComponent.vue:63 (new v-if) and :620-636 (displayedToken reads this.order.token). 2) `mysql foodking_dash_e2e -e \"SELECT order_type, COUNT(*), SUM(token IS NOT NULL AND token<>'') FROM orders GROUP BY order_type\"` => TAKEAWAY(10)=2030 tokens, KIOSK(25)=2 tokens, DELIVERY(5)=0 tokens. 3) Open any takeaway/kiosk POS order detail at :8769 -> the 'Reference interne' line is now suppressed despite a present token.",
+    "remediation": "Gate the token <li> on `displayedToken` alone (its pre-existing condition), NOT on order_type===DELIVERY. The displayedToken computed already de-noises fixture tokens. If the intent was only to hide it from the delivery card context, the gate is exactly backwards for this internal-reference field. (Display-only; no NF525/frozen impact.)"
+  },
+  {
+    "id": "WC-01-DASH-REORDER",
+    "file": "resources/js/components/admin/dashboard/DashboardComponent.vue",
+    "line": 50,
+    "title": "Cockpit reorder: Realtime (Suivi en direct) moved above Overview",
+    "verdict": "HOLD-CONFIRMED-CORRECT",
+    "severity": "INFO",
+    "proof": "Two sibling top-level <ErrorBoundary> blocks were swapped (RealtimeReportComponent now :50, OverviewComponent now :52), both OUTSIDE and ABOVE the `<div class=\"row\">` grid (:53). No grid column / wrapper touched, no duplicated section, both retain their ErrorBoundary. Markup balanced. Served bundle public/js/app.js (hash c0907d79..., matches mix-manifest and the live :8769 served hash) contains the reordered output.",
+    "reproduction": "git show 8596eb472 -- DashboardComponent.vue : pure 2-line swap of full-width siblings; sed -n '48,72p' confirms structure intact.",
+    "remediation": "None — correct."
+  },
+  {
+    "id": "WC-02-SLA-BUCKETING",
+    "file": "resources/js/components/admin/dashboard/SlaAlertsComponent.vue",
+    "line": 84,
+    "title": "SLA <24h actionable vs >=24h old bucketing — time math correct",
+    "verdict": "HOLD-CONFIRMED-CORRECT",
+    "severity": "INFO",
+    "proof": "actionableAlerts filters `Number(a.time_preparing) < 1440`; oldAlerts `>= 1440`. Backend source proven to be MINUTES: app/Services/DashboardService.php:501 `'time_preparing' => (int) $startedAt->diffInMinutes($now)` — so 1440 == 24h exactly. The 15-min floor is backend-enforced (DashboardService.php:508 `->filter(fn($a)=>$a['_started_at']->lt($timeLimit))`), so the single <1440 cut is sufficient. NaN-safe: `Number(x)||0` coerces missing/NaN to 0 (lands in actionable as 0-min). Boundary: an alert at exactly 1440 min lands in oldAlerts (>= ), a defensible '24h is old' choice. The badge/ping/empty-state all keyed on actionableAlerts; old line is `v-if=!hasError && oldAlerts.length>0`, never inflates the badge. Compiled into served app.js (actionableAlerts x5, sla-alerts-old x1).",
+    "reproduction": "grep -n time_preparing app/Services/DashboardService.php => :501 diffInMinutes; formatWait(minutes) at SlaAlertsComponent.vue:120 treats it as minutes (m/60 -> hours).",
+    "remediation": "None. Minor cosmetic redundancy (backend already sorts oldest-first; FE re-sorts DESC) — harmless."
+  },
+  {
+    "id": "WC-03-LASTZ-STATUS-LINK",
+    "file": "resources/js/components/admin/dashboard/LastZReportWidget.vue",
+    "line": 56,
+    "title": "localizedStatus whitelist + 'Voir les clotures Z' link — route exists, no enum leak, whitelist complete",
+    "verdict": "HOLD-CONFIRMED-CORRECT",
+    "severity": "INFO",
+    "proof": "(a) Link target name 'admin.transactions.list' EXISTS: resources/js/router/modules/transactionRoutes.js:10. (b) localizedStatus whitelist {open,closed,reconciled} fully covers all real ZReport.status values: the column is `string('status',16)->default('open') // open|closed` (migration 2026_04_22_000003_create_z_reports_table.php:57) and the model defines ONLY STATUS_OPEN='open'/STATUS_CLOSED='closed' (ZReport.php:15-16). 'reconciled' is a CashDrawerSession/DeliveryBoyCashSession status, NOT a ZReport status (grep: app/Models/CashDrawerSession.php:29) — so the 'reconciled' map entry is DEAD but HARMLESS over-coverage, never matched. (c) Pre-existing fetchReports already does `String(r.status)==='closed'` (LastZReportWidget.vue:125) confirming status is the lowercase string. (d) Unknown status falls back to `String(row.status)` — defensive, no raw i18n-key leak. Label keys view_z_reports / cash_status_open/closed/reconciled all present in fr.json.",
+    "reproduction": "grep admin.transactions.list resources/js/router/modules/transactionRoutes.js => :10; grep 'open|closed' .../create_z_reports_table.php => :57.",
+    "remediation": "Optional: drop the dead 'reconciled' key for clarity. Not a defect."
+  },
+  {
+    "id": "WC-04-REALTIME-LOADED-GUARD",
+    "file": "resources/js/components/admin/dashboard/RealtimeReportComponent.vue",
+    "line": 64,
+    "title": "First-paint '...' loading guard — no permanent spinner, no data suppression",
+    "verdict": "HOLD-CONFIRMED-CORRECT",
+    "severity": "INFO",
+    "proof": "`loaded:false` -> cards render '…'. fetchData().finally() sets `loaded=true` (RealtimeReportComponent.vue:64). .finally() runs on BOTH resolve and reject, so a failed first poll still lifts the placeholder (then hasError->'—'). Success path still assigns `this.report = res.data.data` (line ~52) — real data not suppressed. Ternary order `!loaded ? '…' : (hasError ? '—' : value)` is correct. No permanent-spinner path exists.",
+    "reproduction": "sed -n '50,72p' RealtimeReportComponent.vue: .then assigns report; .finally sets loaded=true unconditionally.",
+    "remediation": "None — correct."
+  },
+  {
+    "id": "WC-05a-TITLE-PAYMENT-FALLBACK",
+    "file": "resources/js/components/admin/posOrders/PosOrderShowComponent.vue",
+    "line": 314,
+    "title": "Conditional title (Informations client) + delivery_time v-if + enum fallback maps — enum integers CORRECT vs backend",
+    "verdict": "HOLD-CONFIRMED-CORRECT",
+    "severity": "INFO",
+    "proof": "All enum keys are NAMED references (not magic integers) and resolve correctly against backend PHP source: orderTypeEnum.js {DELIVERY:5,TAKEAWAY:10,POS:15,DINING_TABLE:20,KIOSK:25} === app/Enums/OrderType.php (POS=15,KIOSK=25 verified). posPaymentMethodEnum.js COUNTER_DEFERRED:6 === app/Enums/PosPaymentMethod.php:19 (=6). Title now `order_type===DELIVERY ? delivery_information : customer_information` (:314) — both labels exist in fr.json. delivery_time <li> correctly gated to DELIVERY (:45 in diff) — delivery_time IS delivery-specific. `|| '—'` fallbacks added on payment/type lookups prevent blank labels for unmapped codes. Compiled values present in served app.js (POS: 15 / KIOSK: 25).",
+    "reproduction": "cat resources/js/enums/modules/orderTypeEnum.js + cat app/Enums/OrderType.php => exact match; grep COUNTER_DEFERRED app/Enums/PosPaymentMethod.php => :19 const=6.",
+    "remediation": "None for 5a/5c. (5b is the separate DEFECT WC-05b above.) NB: DB has order_type=30 (1338 rows) with no enum mapping in OrderType.php/orderTypeEnum.js — those will render '—' (acceptable; legacy/unknown), out of W3 scope."
+  },
+  {
+    "id": "WC-06-RETURNED-FILTER",
+    "file": "resources/js/components/admin/posOrders/PosOrderListComponent.vue",
+    "line": 44,
+    "title": "Added RETURNED status filter option — enum value matches backend, no duplicate",
+    "verdict": "HOLD-CONFIRMED-CORRECT",
+    "severity": "INFO",
+    "proof": "Added `{ id: enums.orderStatusEnum.RETURNED, name: $t('label.returned') }` (:44). orderStatusEnum.js RETURNED:22 === app/Enums/OrderStatus.php RETURNED=22. No prior RETURNED entry in the filter array (lines 36-44 reviewed) — not a duplicate. label.returned ('Retournée') present in fr.json. Compiled into served app.js.",
+    "reproduction": "grep RETURNED resources/js/enums/modules/orderStatusEnum.js (=22) and app/Enums/OrderStatus.php (=22); grep RETURNED PosOrderListComponent.vue => single entry :44.",
+    "remediation": "None — correct."
+  }
+]
