@@ -1,5 +1,18 @@
 <template>
   <LoadingContentComponent :props="loading" />
+  <!-- [FP-24] Subtle staleness cue (NOT the removed duplicate banner): the box hides the
+       global ConnectionStatusBanner via isDevEnv, leaving the customer wall with no signal
+       that the board is delayed. Shown only when WS is down OR the poll is in 5xx backoff. -->
+  <div
+    v-if="connectionDegraded"
+    class="oss-conn-slow"
+    role="status"
+    aria-live="polite"
+    data-testid="oss-conn-slow"
+    style="position:fixed;top:8px;right:12px;z-index:60;background:rgba(180,83,9,.94);color:#fff;font-size:14px;font-weight:600;padding:4px 14px;border-radius:9999px;box-shadow:0 1px 4px rgba(0,0,0,.25)"
+  >
+    {{ $t('label.oss_connection_slow') }}
+  </div>
   <!--
     [iter15-mega-fix B-003/D-002 2026-05-10] Local ws-reconnect-banner removed —
     duplicate of the global ConnectionStatusBanner mounted by the parent
@@ -27,7 +40,7 @@
     <h3 class="oss-column-header text-[40px] font-bold text-white p-4 pb-3 bg-[#B0004D] mb-2 rounded-t-[10px] text-center tracking-wide">
       {{ $t("label.preparing") }}
     </h3>
-    <div class="content-wrapper p-3 overflow-hidden thin-scrolling h-full">
+    <div ref="preparingWrap" class="content-wrapper p-3 overflow-hidden thin-scrolling h-full">
       <transition-group name="oss-slide" tag="ul"
         :class="['oss-order-list', preparingItems.length > 8 ? 'oss-autoscroll' : '',
                  '[&_li]:mb-8 [&_li]:text-[56px] [&_li]:font-extrabold [&_li]:leading-[1.1] w-full text-center text-[#1F1F39] mb-20']">
@@ -49,7 +62,7 @@
     <h3 class="oss-column-header text-[40px] font-bold text-[#1F1F39] p-4 pb-3 bg-[#1AB759] mb-2 rounded-t-[10px] text-center tracking-wide">
       {{ $t("label.ready") }}
     </h3>
-    <div class="content-wrapper p-3 overflow-hidden thin-scrolling h-full">
+    <div ref="preparedWrap" class="content-wrapper p-3 overflow-hidden thin-scrolling h-full">
       <transition-group name="oss-pop" tag="ul"
         role="status"
         aria-live="polite"
@@ -91,6 +104,8 @@ export default {
       preparingItems: [],
       enums: { orderStatusEnum },
       wsConnected: !!(window._wsService?.isConnected()),
+      // [FP-24] true while the OSS poll is in 5xx backoff (OssSyncService 'error' event).
+      pollDegraded: false,
       _eventSub: null,
       ossSyncUnsubscribers: [],
       // IDs des commandes nouvellement passées à PREPARED (pour animation)
@@ -109,10 +124,21 @@ export default {
       _onVisibilityChange: null,
     };
   },
-  computed: {},
+  computed: {
+    // [FP-24] The public customer wall removed its duplicate WS banner and leans on the
+    // parent global ConnectionStatusBanner — but that is hidden on the box (isDevEnv). So the
+    // wall gave ZERO degradation cue: a near-end customer can't tell the board is stale. This
+    // surfaces a SUBTLE pill (not the removed banner) when WS is down OR the poll is in backoff.
+    connectionDegraded() {
+      return !this.wsConnected || this.pollDegraded;
+    },
+  },
   mounted() {
     this.list();
     window.addEventListener('realtime-order-update', this.list);
+    // [FP-04] Recompute marquee travel on viewport resize (TV rotation / window change).
+    this._ossResizeHandler = () => this.updateOssScrollShift();
+    window.addEventListener('resize', this._ossResizeHandler);
     this.subscribeEcho();
     this._bindWsService();
     this.startOssSync();
@@ -154,6 +180,8 @@ export default {
   },
   beforeUnmount() {
     window.removeEventListener('realtime-order-update', this.list);
+    // [FP-04] drop the resize handler.
+    if (this._ossResizeHandler) window.removeEventListener('resize', this._ossResizeHandler);
     this.unsubscribeEcho();
     this._unbindWsService();
     this.stopOssSync();
@@ -238,11 +266,19 @@ export default {
       this.ossSyncUnsubscribers.push(
         ossSyncService.on('sync', ({ rows = [] }) => {
           this._hydrateFromRows(rows);
+          this.pollDegraded = false; // [FP-24] a good poll clears the staleness pill.
         })
       );
       this.ossSyncUnsubscribers.push(
         ossSyncService.on('ws_state', ({ state }) => {
           this.wsConnected = String(state || '').toLowerCase() === 'connected';
+        })
+      );
+      // [FP-24] OssSyncService emits 'error' on a 5xx backoff (TRAP-4: WS may still report
+      // 'connected' while the poll lags) — flag it so the customer wall shows "connexion lente".
+      this.ossSyncUnsubscribers.push(
+        ossSyncService.on('error', () => {
+          this.pollDegraded = true;
         })
       );
       // [TRAP-4 2026-06-04] Public/unauth customer status wall: branchId<=0 so
@@ -399,6 +435,27 @@ export default {
       this._echoMarkedReady = new Set();
 
       this.preparedItems = newPrepared;
+      // [FP-04] Recompute the marquee travel distance now the lists changed, so the
+      // autoscroll reveals the WHOLE queue (a fixed -50% hides the tail when a column
+      // is taller than ~2x the viewport — a near-end customer never saw their N° go prêt).
+      this.$nextTick(() => this.updateOssScrollShift());
+    },
+    // [FP-04] Drive the OSS auto-scroll to travel the REAL overflow. The keyframe peaks at
+    // translateY(var(--oss-scroll-shift)); set it per column to -(scrollHeight − viewport)
+    // so the marquee scrolls the full list. Falls back to the static -50% when unset.
+    updateOssScrollShift() {
+      ['preparingWrap', 'preparedWrap'].forEach((wrapRef) => {
+        const wrap = this.$refs[wrapRef];
+        if (!wrap) return;
+        const ul = wrap.querySelector('.oss-order-list');
+        if (!ul) return;
+        if (!ul.classList.contains('oss-autoscroll')) {
+          ul.style.removeProperty('--oss-scroll-shift');
+          return;
+        }
+        const overflow = ul.scrollHeight - wrap.clientHeight;
+        ul.style.setProperty('--oss-scroll-shift', overflow > 0 ? `-${overflow}px` : '0px');
+      });
     },
     list() {
       this.loading.isActive = true;
@@ -489,7 +546,7 @@ export default {
 @keyframes oss-scroll-loop {
   0%   { transform: translateY(0); }
   10%  { transform: translateY(0); }
-  90%  { transform: translateY(-50%); }
+  90%  { transform: translateY(var(--oss-scroll-shift, -50%)); }
   100% { transform: translateY(0); }
 }
 

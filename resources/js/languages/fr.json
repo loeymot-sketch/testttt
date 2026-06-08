@@ -930,6 +930,7 @@
         "cash_mvt_adjustment": "Ajustement",
         "cash_in": "Entrée",
         "cash_out": "Sortie",
+        "oss_connection_slow": "Connexion lente — affichage en différé",
         "audit_event_user_login": "Connexion utilisateur",
         "audit_event_user_logout": "Déconnexion utilisateur",
         "audit_event_cash_movement_recorded": "Mouvement de caisse enregistré",

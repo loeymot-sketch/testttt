@@ -94,7 +94,11 @@
           (genuinely useful when WS is down for staff). Same env gate pattern
           as ConnectionStatusBanner.vue isDevEnv computed.
         -->
-        <div v-if="!realtimeConnected && !isDevEnv" class="pos-tracker-rt-warn" role="status">
+        <!-- [FP-05] Dropped the !isDevEnv gate: the Le Cayenne box runs APP_ENV=local, so
+             isDevEnv was true there and the cashier was BLIND to WS loss while the kanban
+             silently coasted on 8s polling. Show the banner whenever realtime is down so the
+             cashier knows the board is degraded. (Dev: WS up → realtimeConnected true → hidden.) -->
+        <div v-if="!realtimeConnected" class="pos-tracker-rt-warn" role="status">
             {{ $t('pos.tracker.realtime_lost') }}
         </div>
 
