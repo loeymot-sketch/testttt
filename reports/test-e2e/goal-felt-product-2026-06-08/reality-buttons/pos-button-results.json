@@ -1,0 +1,26 @@
+[
+  {
+    "label": "category:Burgers",
+    "effect": "dom-changed"
+  },
+  {
+    "label": "item-click→wizard",
+    "effect": "click-error:locator.click: Timeout 8000ms exceeded.\nCall log:\n\u001b[2m  - wa"
+  },
+  {
+    "label": "Suivi commandes",
+    "effect": "click-error:locator.click: Timeout 8000ms exceeded.\nCall log:\n\u001b[2m  - wa"
+  },
+  {
+    "label": "Écran client",
+    "effect": "dom-changed"
+  },
+  {
+    "label": "Ouvrir tiroir",
+    "effect": "dom-changed"
+  },
+  {
+    "label": "À encaisser (panel)",
+    "effect": "click-error:locator.click: Timeout 8000ms exceeded.\nCall log:\n\u001b[2m  - wa"
+  }
+]
