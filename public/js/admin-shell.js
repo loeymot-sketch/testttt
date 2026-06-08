@@ -257,7 +257,7 @@ __webpack_require__.r(__webpack_exports__);
 
 var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
 // Module
-___CSS_LOADER_EXPORT___.push([module.id, "\n.enc-card[data-v-22c45b59] {\n    border-radius: var(--pos-v5-radius-lg);\n    box-shadow: var(--pos-v5-shadow-md);\n    border: 1px solid var(--pos-v5-border);\n    background: var(--pos-v5-bg-panel);\n    overflow: hidden;\n}\n.enc-header[data-v-22c45b59] {\n    display: flex;\n    align-items: center;\n    justify-content: space-between;\n    background: linear-gradient(180deg, var(--pos-v5-brand-red-faint), var(--pos-v5-bg-panel) 80%);\n    border-bottom: 1px solid var(--pos-v5-border);\n    padding: var(--pos-v5-space-4) var(--pos-v5-space-5);\n}\n.db-card-title[data-v-22c45b59] {\n    font-family: var(--pos-v5-font-sans);\n    font-size: var(--pos-v5-text-h5);\n    font-weight: var(--pos-v5-weight-extrabold);\n    color: var(--pos-v5-ink);\n}\n.enc-subtitle[data-v-22c45b59] { color: var(--pos-v5-ink-soft); font-size: 0.85rem; margin-top: 0.15rem;\n}\n.enc-header-actions[data-v-22c45b59] { display: flex; align-items: center; gap: 0.75rem;\n}\n.enc-count-chip[data-v-22c45b59] {\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    min-width: 2.2rem;\n    height: 2.2rem;\n    border-radius: 9999px;\n    background: var(--pos-v5-brand-red);\n    color: #fff;\n    font-weight: 800;\n    font-variant-numeric: tabular-nums;\n}\n.enc-body[data-v-22c45b59] { padding: var(--pos-v5-space-5);\n}\n.enc-empty[data-v-22c45b59] { text-align: center; padding: 3rem 1rem; color: var(--pos-v5-ink-soft);\n}\n.enc-empty-icon[data-v-22c45b59] { font-size: 2.5rem;\n}\n.enc-empty-title[data-v-22c45b59] { margin-top: 0.75rem; font-size: 1.05rem; font-weight: 600;\n}\n.enc-grid[data-v-22c45b59] {\n    display: grid;\n    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));\n    gap: 1rem;\n}\n.enc-ticket[data-v-22c45b59] {\n    border: 1px solid var(--pos-v5-border);\n    border-radius: var(--pos-v5-radius-md);\n    background: #fff;\n    padding: 0.9rem 1rem;\n    display: flex;\n    flex-direction: column;\n    gap: 0.5rem;\n    box-shadow: var(--pos-v5-shadow-sm);\n}\n/* [W2.3] Bandeau total en attente */\n.enc-total-banner[data-v-22c45b59] {\n    display: flex;\n    align-items: center;\n    justify-content: space-between;\n    gap: 1rem;\n    margin: var(--pos-v5-space-4) var(--pos-v5-space-5) 0;\n    padding: 0.7rem 1rem;\n    border-radius: var(--pos-v5-radius-md);\n    background: var(--pos-v5-brand-red-faint);\n    border: 1px solid var(--pos-v5-border);\n}\n.enc-total-label[data-v-22c45b59] { font-weight: 600; color: var(--pos-v5-ink-soft);\n}\n.enc-total-amount[data-v-22c45b59] {\n    font-weight: 800;\n    font-size: 1.25rem;\n    color: var(--pos-v5-ink);\n    font-variant-numeric: tabular-nums;\n}\n.enc-ticket-top[data-v-22c45b59] { display: flex; align-items: center; justify-content: space-between;\n}\n.enc-top-right[data-v-22c45b59] { display: inline-flex; align-items: center; gap: 0.5rem;\n}\n/* [W2.2] Badge d'attente (aging) */\n.enc-wait[data-v-22c45b59] {\n    font-size: 0.72rem;\n    font-weight: 700;\n    color: var(--pos-v5-ink-soft);\n    font-variant-numeric: tabular-nums;\n    white-space: nowrap;\n}\n.enc-wait-stale[data-v-22c45b59] { color: #b45309;\n}\n.enc-wait-critical[data-v-22c45b59] { color: #b91c1c;\n}\n.enc-origin-badge[data-v-22c45b59] {\n    display: inline-flex;\n    align-items: center;\n    border-radius: 9999px;\n    padding: 0.12rem 0.55rem;\n    font-size: 0.74rem;\n    font-weight: 700;\n    border: 1px solid transparent;\n}\n.origin-borne[data-v-22c45b59] { background: #fff7ed; color: #9a3412; border-color: #fed7aa;\n}\n.origin-caisse[data-v-22c45b59] { background: #eff6ff; color: #1e40af; border-color: #bfdbfe;\n}\n.origin-online[data-v-22c45b59] { background: #f5f3ff; color: #5b21b6; border-color: #ddd6fe;\n}\n.enc-queue[data-v-22c45b59] {\n    font-weight: 800;\n    color: #9a3412;\n    font-variant-numeric: tabular-nums;\n}\n.enc-ticket-customer[data-v-22c45b59] { font-weight: 600; color: var(--pos-v5-ink);\n}\n.enc-ticket-items[data-v-22c45b59] { list-style: none; padding: 0; margin: 0; font-size: 0.82rem; color: var(--pos-v5-ink-soft);\n}\n.enc-ticket-items li[data-v-22c45b59] { line-height: 1.4;\n}\n.enc-more[data-v-22c45b59] { font-style: italic;\n}\n.enc-ticket-bottom[data-v-22c45b59] {\n    display: flex;\n    align-items: center;\n    justify-content: space-between;\n    margin-top: 0.4rem;\n    padding-top: 0.6rem;\n    border-top: 1px dashed var(--pos-v5-border);\n}\n.enc-amount[data-v-22c45b59] { font-weight: 800; font-size: 1.1rem; color: var(--pos-v5-ink); font-variant-numeric: tabular-nums;\n}\n.enc-collect-btn[data-v-22c45b59] {\n    background: var(--pos-v5-brand-red);\n    color: #fff;\n    border: none;\n    border-radius: var(--pos-v5-radius-md);\n    padding: 0.5rem 1.1rem;\n    font-weight: 800;\n    cursor: pointer;\n    transition: background var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);\n}\n.enc-collect-btn[data-v-22c45b59]:hover { background: var(--pos-v5-brand-red-dark);\n}\n[data-v-22c45b59] .db-btn.bg-primary {\n    background: var(--pos-v5-brand-red) !important;\n    border-radius: var(--pos-v5-radius-md);\n    font-weight: var(--pos-v5-weight-bold);\n}\n[data-v-22c45b59] .db-btn.bg-primary:hover { background: var(--pos-v5-brand-red-dark) !important;\n}\n", ""]);
+___CSS_LOADER_EXPORT___.push([module.id, "\n.enc-card[data-v-22c45b59] {\n    border-radius: var(--pos-v5-radius-lg);\n    box-shadow: var(--pos-v5-shadow-md);\n    border: 1px solid var(--pos-v5-border);\n    background: var(--pos-v5-bg-panel);\n    overflow: hidden;\n}\n.enc-header[data-v-22c45b59] {\n    display: flex;\n    align-items: center;\n    justify-content: space-between;\n    background: linear-gradient(180deg, var(--pos-v5-brand-red-faint), var(--pos-v5-bg-panel) 80%);\n    border-bottom: 1px solid var(--pos-v5-border);\n    padding: var(--pos-v5-space-4) var(--pos-v5-space-5);\n}\n.db-card-title[data-v-22c45b59] {\n    font-family: var(--pos-v5-font-sans);\n    font-size: var(--pos-v5-text-h5);\n    font-weight: var(--pos-v5-weight-extrabold);\n    color: var(--pos-v5-ink);\n}\n.enc-subtitle[data-v-22c45b59] { color: var(--pos-v5-ink-soft); font-size: 0.85rem; margin-top: 0.15rem;\n}\n.enc-header-actions[data-v-22c45b59] { display: flex; align-items: center; gap: 0.75rem;\n}\n.enc-count-chip[data-v-22c45b59] {\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    min-width: 2.2rem;\n    height: 2.2rem;\n    border-radius: 9999px;\n    background: var(--pos-v5-brand-red);\n    color: #fff;\n    font-weight: 800;\n    font-variant-numeric: tabular-nums;\n}\n.enc-body[data-v-22c45b59] { padding: var(--pos-v5-space-5);\n}\n.enc-empty[data-v-22c45b59] { text-align: center; padding: 3rem 1rem; color: var(--pos-v5-ink-soft);\n}\n.enc-empty-icon[data-v-22c45b59] { font-size: 2.5rem;\n}\n.enc-empty-title[data-v-22c45b59] { margin-top: 0.75rem; font-size: 1.05rem; font-weight: 600;\n}\n.enc-grid[data-v-22c45b59] {\n    display: grid;\n    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));\n    gap: 1rem;\n}\n.enc-ticket[data-v-22c45b59] {\n    border: 1px solid var(--pos-v5-border);\n    border-radius: var(--pos-v5-radius-md);\n    background: #fff;\n    padding: 0.9rem 1rem;\n    display: flex;\n    flex-direction: column;\n    gap: 0.5rem;\n    box-shadow: var(--pos-v5-shadow-sm);\n}\n/* [W2.3] Bandeau total en attente */\n.enc-total-banner[data-v-22c45b59] {\n    display: flex;\n    align-items: center;\n    justify-content: space-between;\n    gap: 1rem;\n    margin: var(--pos-v5-space-4) var(--pos-v5-space-5) 0;\n    padding: 0.7rem 1rem;\n    border-radius: var(--pos-v5-radius-md);\n    background: var(--pos-v5-brand-red-faint);\n    border: 1px solid var(--pos-v5-border);\n}\n.enc-total-label[data-v-22c45b59] { font-weight: 600; color: var(--pos-v5-ink-soft);\n}\n.enc-total-amount[data-v-22c45b59] {\n    font-weight: 800;\n    font-size: 1.25rem;\n    color: var(--pos-v5-ink);\n    font-variant-numeric: tabular-nums;\n}\n/* [G-DEC-1 heal] right-aligned amount + optional partial-total caveat */\n.enc-total-right[data-v-22c45b59] { display: flex; flex-direction: column; align-items: flex-end; gap: 0.1rem;\n}\n.enc-total-capnote[data-v-22c45b59] { font-size: 0.7rem; font-weight: 600; color: #b45309; opacity: 0.9;\n}\n.enc-ticket-top[data-v-22c45b59] { display: flex; align-items: center; justify-content: space-between;\n}\n.enc-top-right[data-v-22c45b59] { display: inline-flex; align-items: center; gap: 0.5rem;\n}\n/* [W2.2] Badge d'attente (aging) */\n.enc-wait[data-v-22c45b59] {\n    font-size: 0.72rem;\n    font-weight: 700;\n    color: var(--pos-v5-ink-soft);\n    font-variant-numeric: tabular-nums;\n    white-space: nowrap;\n}\n.enc-wait-stale[data-v-22c45b59] { color: #b45309;\n}\n.enc-wait-critical[data-v-22c45b59] { color: #b91c1c;\n}\n.enc-origin-badge[data-v-22c45b59] {\n    display: inline-flex;\n    align-items: center;\n    border-radius: 9999px;\n    padding: 0.12rem 0.55rem;\n    font-size: 0.74rem;\n    font-weight: 700;\n    border: 1px solid transparent;\n}\n.origin-borne[data-v-22c45b59] { background: #fff7ed; color: #9a3412; border-color: #fed7aa;\n}\n.origin-caisse[data-v-22c45b59] { background: #eff6ff; color: #1e40af; border-color: #bfdbfe;\n}\n.origin-online[data-v-22c45b59] { background: #f5f3ff; color: #5b21b6; border-color: #ddd6fe;\n}\n.enc-queue[data-v-22c45b59] {\n    font-weight: 800;\n    color: #9a3412;\n    font-variant-numeric: tabular-nums;\n}\n.enc-ticket-customer[data-v-22c45b59] { font-weight: 600; color: var(--pos-v5-ink);\n}\n.enc-ticket-items[data-v-22c45b59] { list-style: none; padding: 0; margin: 0; font-size: 0.82rem; color: var(--pos-v5-ink-soft);\n}\n.enc-ticket-items li[data-v-22c45b59] { line-height: 1.4;\n}\n.enc-more[data-v-22c45b59] { font-style: italic;\n}\n.enc-ticket-bottom[data-v-22c45b59] {\n    display: flex;\n    align-items: center;\n    justify-content: space-between;\n    margin-top: 0.4rem;\n    padding-top: 0.6rem;\n    border-top: 1px dashed var(--pos-v5-border);\n}\n.enc-amount[data-v-22c45b59] { font-weight: 800; font-size: 1.1rem; color: var(--pos-v5-ink); font-variant-numeric: tabular-nums;\n}\n.enc-collect-btn[data-v-22c45b59] {\n    background: var(--pos-v5-brand-red);\n    color: #fff;\n    border: none;\n    border-radius: var(--pos-v5-radius-md);\n    padding: 0.5rem 1.1rem;\n    font-weight: 800;\n    cursor: pointer;\n    transition: background var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);\n}\n.enc-collect-btn[data-v-22c45b59]:hover { background: var(--pos-v5-brand-red-dark);\n}\n[data-v-22c45b59] .db-btn.bg-primary {\n    background: var(--pos-v5-brand-red) !important;\n    border-radius: var(--pos-v5-radius-md);\n    font-weight: var(--pos-v5-weight-bold);\n}\n[data-v-22c45b59] .db-btn.bg-primary:hover { background: var(--pos-v5-brand-red-dark) !important;\n}\n", ""]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 
@@ -8375,7 +8375,11 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
       pollTimer: null,
       enums: {
         orderTypeEnum: _enums_modules_orderTypeEnum__WEBPACK_IMPORTED_MODULE_5__["default"]
-      }
+      },
+      // [G-DEC-1 heal 2026-06-08] Server caps the pending fetch at
+      // limit(200) (routes/api.php admin/pos/counter-collect/pending).
+      // Mirror it so the total banner can flag a PARTIAL sum when capped.
+      PENDING_CAP: 200
     };
   },
   computed: {
@@ -8388,6 +8392,14 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
       return this.orders.reduce(function (sum, o) {
         return sum + Number(_this.orderAmount(o) || 0);
       }, 0);
+    },
+    // [G-DEC-1 heal 2026-06-08] The pending list is server-capped at 200;
+    // at the cap the client-side sum is a PARTIAL total, so the banner appends
+    // a caveat (avoids a false "Total" claim that silently under-reports money
+    // owed on a busy day). In real single-restaurant V1 the queue clears well
+    // under 200, so this caveat normally never shows and the label is a true Total.
+    pendingCapped: function pendingCapped() {
+      return this.orders.length >= this.PENDING_CAP;
     }
   },
   mounted: function mounted() {
@@ -39139,51 +39151,58 @@ var _hoisted_11 = {
   "class": "enc-total-label"
 };
 var _hoisted_12 = {
-  "class": "enc-total-amount"
+  "class": "enc-total-right"
 };
 var _hoisted_13 = {
-  "class": "enc-body"
+  "class": "enc-total-amount"
 };
 var _hoisted_14 = {
   key: 0,
-  "class": "enc-empty"
+  "class": "enc-total-capnote"
 };
 var _hoisted_15 = {
-  "class": "enc-empty-title"
+  "class": "enc-body"
 };
 var _hoisted_16 = {
+  key: 0,
+  "class": "enc-empty"
+};
+var _hoisted_17 = {
+  "class": "enc-empty-title"
+};
+var _hoisted_18 = {
   key: 1,
   "class": "enc-grid"
 };
-var _hoisted_17 = {
+var _hoisted_19 = {
   "class": "enc-ticket-top"
 };
-var _hoisted_18 = {
+var _hoisted_20 = {
   "class": "enc-top-right"
 };
-var _hoisted_19 = ["title"];
-var _hoisted_20 = {
+var _hoisted_21 = ["title"];
+var _hoisted_22 = {
   key: 0,
   "class": "enc-queue"
 };
-var _hoisted_21 = {
+var _hoisted_23 = {
   "class": "enc-ticket-customer"
 };
-var _hoisted_22 = {
+var _hoisted_24 = {
   key: 0,
   "class": "enc-ticket-items"
 };
-var _hoisted_23 = {
+var _hoisted_25 = {
   key: 0,
   "class": "enc-more"
 };
-var _hoisted_24 = {
+var _hoisted_26 = {
   "class": "enc-ticket-bottom"
 };
-var _hoisted_25 = {
+var _hoisted_27 = {
   "class": "enc-amount"
 };
-var _hoisted_26 = ["onClick"];
+var _hoisted_28 = ["onClick"];
 function render(_ctx, _cache, $props, $setup, $data, $options) {
   var _component_LoadingComponent = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("LoadingComponent");
   var _component_BreadcrumbComponent = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("BreadcrumbComponent");
@@ -39197,27 +39216,27 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     }, ["prevent"]))
   }, [_cache[2] || (_cache[2] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
     "class": "lab lab-refresh-line lab-font-size-16"
-  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.refresh')), 1 /* TEXT */)])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [W2.3] Total en attente d'encaissement — somme client-side de la\n                     liste déjà fetchée (aucun nouvel appel API). Répond à la question\n                     quotidienne du gérant : « combien d'argent non encaissé attend ? » "), $data.orders.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_10, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_11, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.encaisser_total_pending')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_12, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice($options.totalPending)), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_13, [$data.orders.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_14, [_cache[3] || (_cache[3] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.refresh')), 1 /* TEXT */)])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [W2.3] Total en attente d'encaissement — somme client-side de la\n                     liste déjà fetchée (aucun nouvel appel API). Répond à la question\n                     quotidienne du gérant : « combien d'argent non encaissé attend ? » "), $data.orders.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_10, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_11, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.encaisser_total_pending')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_12, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_13, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice($options.totalPending)), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [G-DEC-1 heal] Honest caveat shown ONLY when the server cap\n                             (200) is hit — the sum is then a partial total, not the full\n                             amount owed. Hidden in the normal (<200) case. "), $options.pendingCapped ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_14, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.encaisser_total_capped')), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_15, [$data.orders.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_16, [_cache[3] || (_cache[3] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
     "class": "enc-empty-icon"
-  }, "✅", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_15, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.encaisser_queue_empty')), 1 /* TEXT */)])) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_16, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($data.orders, function (order) {
+  }, "✅", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_17, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.encaisser_queue_empty')), 1 /* TEXT */)])) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_18, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($data.orders, function (order) {
     return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
       key: order.id,
       "class": "enc-ticket"
-    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_17, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_19, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
       "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["enc-origin-badge", $options.originBadge(order).cls])
-    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.originBadge(order).label), 3 /* TEXT, CLASS */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_18, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [W2.2] Badge d'attente (aging) — calculé depuis created_at,\n                                         devient ambre puis rouge passé ~15 min pour que le gérant\n                                         serve d'abord la commande qui attend le plus. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.originBadge(order).label), 3 /* TEXT, CLASS */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_20, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [W2.2] Badge d'attente (aging) — calculé depuis created_at,\n                                         devient ambre puis rouge passé ~15 min pour que le gérant\n                                         serve d'abord la commande qui attend le plus. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
       "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["enc-wait", $options.waitClass(order.created_at)]),
       title: _ctx.$t('label.encaisser_wait_title')
-    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.elapsedShort(order.created_at)), 11 /* TEXT, CLASS, PROPS */, _hoisted_19), order.queue_number ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_20, "N°" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(order.queue_number), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_21, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.customerName(order)), 1 /* TEXT */), order.order_items && order.order_items.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("ul", _hoisted_22, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(order.order_items.slice(0, 4), function (it, idx) {
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.elapsedShort(order.created_at)), 11 /* TEXT, CLASS, PROPS */, _hoisted_21), order.queue_number ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_22, "N°" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(order.queue_number), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_23, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.customerName(order)), 1 /* TEXT */), order.order_items && order.order_items.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("ul", _hoisted_24, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(order.order_items.slice(0, 4), function (it, idx) {
       return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", {
         key: idx
       }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(it.quantity) + "× " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.itemName(it)), 1 /* TEXT */);
-    }), 128 /* KEYED_FRAGMENT */)), order.order_items.length > 4 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", _hoisted_23, " +" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(order.order_items.length - 4) + "… ", 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_24, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_25, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice($options.orderAmount(order))), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    }), 128 /* KEYED_FRAGMENT */)), order.order_items.length > 4 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", _hoisted_25, " +" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(order.order_items.length - 4) + "… ", 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_26, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_27, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice($options.orderAmount(order))), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
       "class": "enc-collect-btn",
       onClick: (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
         return $options.openEncaissement(order);
       }, ["prevent"])
-    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.encaisser')), 9 /* TEXT, PROPS */, _hoisted_26)])]);
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.encaisser')), 9 /* TEXT, PROPS */, _hoisted_28)])]);
   }), 128 /* KEYED_FRAGMENT */))]))])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Shared counter-collect modal (cash / card / mobile / ticket).\n             It POSTs admin/pos/counter-collect/{id}/confirm itself; on @confirmed\n             we refresh the queue so the now-paid order leaves the list. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PosCounterCollectModal, {
     order: $data.encaisseOrder,
     onConfirmed: $options.onEncaisseConfirmed,
