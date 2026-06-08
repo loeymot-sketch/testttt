@@ -78,6 +78,10 @@ function AllergenBadge({ allergens, size = 'sm' }) {
 
 // HOME
 function ScreenHome({ go, name = 'Ikyes' }) {
+  // [A11y heal button-name 2026-06-08] Featured-rail hearts were icon-only buttons with no
+  // accessible name AND no handler (clicks bubbled to open the item — a fake "favourite").
+  // Now a real local toggle with aria-label + aria-pressed + stopPropagation + toast.
+  const [favs, setFavs] = React.useState({});
   return (
     <div data-screen-label="07 Home" style={{ position: 'absolute', inset: 0, background: '#fff', overflow: 'hidden' }}>
       <div className="lc-screen" style={{ paddingBottom: 96, paddingTop: 'calc(var(--ios-safe-top) + 8px)' }}>
@@ -154,13 +158,17 @@ function ScreenHome({ go, name = 'Ikyes' }) {
               <div key={it.id} onClick={() => go('item', it.id)} style={{ flex: '0 0 160px', cursor: 'pointer' }}>
                 <div style={{ position: 'relative', height: 160, borderRadius: 16, overflow: 'hidden', background: 'var(--cream)' }}>
                   <Slot id={it.slot} h="100%" radius={0} placeholder={it.name} src={it.image} alt={it.name}/>
-                  <button style={{ position: 'absolute', top: 8, right: 8, width: 32, height: 32, borderRadius: 999, background: '#fff', border: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <I.Heart size={16}/>
+                  <button
+                    onClick={e => { e.stopPropagation(); const next = !favs[it.id]; setFavs(f => ({ ...f, [it.id]: next })); go('toast', { msg: next ? `${it.name} ajouté aux favoris` : `${it.name} retiré des favoris`, kind: 'success' }); }}
+                    aria-label={favs[it.id] ? `Retirer ${it.name} des favoris` : `Ajouter ${it.name} aux favoris`}
+                    aria-pressed={!!favs[it.id]}
+                    style={{ position: 'absolute', top: 8, right: 8, width: 32, height: 32, borderRadius: 999, background: favs[it.id] ? 'var(--orange)' : '#fff', border: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 2 }}>
+                    <I.Heart size={16} stroke={favs[it.id] ? '#fff' : undefined}/>
                   </button>
                   {it.tags[0] && <div style={{ position: 'absolute', top: 8, left: 8 }}><Tag t={it.tags[0]}/></div>}
                 </div>
                 <div style={{ marginTop: 8, fontSize: 13, fontWeight: 700 }}>{it.name}</div>
-                <div style={{ fontSize: 13, color: 'var(--orange)', fontWeight: 700, fontFamily: 'var(--font-mono)' }}>{it.price.toFixed(2).replace('.', ',')} €</div>
+                <div style={{ fontSize: 13, color: 'var(--orange-text)', fontWeight: 700, fontFamily: 'var(--font-mono)' }}>{it.price.toFixed(2).replace('.', ',')} €</div>
               </div>
             ))}
           </div>
@@ -241,7 +249,11 @@ function ScreenMenu({ go, cart, addToCart }) {
               </div>
               <div style={{ padding: '0 20px', display: 'grid', gap: 10 }}>
                 {items.map(it => (
-                  <div key={it.id} role="button" tabIndex={0} aria-label={`Voir ${it.name} — ${it.price.toFixed(2).replace('.', ',')} €`} className="lc-tap" onClick={() => go('item', it.id)} onKeyDown={window.lcTapKey(() => go('item', it.id))} style={{ display: 'flex', gap: 14, padding: 12, background: 'var(--cream)', borderRadius: 16, cursor: 'pointer', alignItems: 'center' }}>
+                  <div key={it.id} className="lc-card-row" style={{ position: 'relative', display: 'flex', gap: 14, padding: 12, background: 'var(--cream)', borderRadius: 16, alignItems: 'center' }}>
+                    {/* [A11y heal nested-interactive 2026-06-08] Whole-card tap = ONE stretched overlay
+                        button (keyboard-focusable, native Enter/Space). The +/→ action button is a sibling
+                        painted above (zIndex 2) — no button nested in an interactive element → axe nested-interactive 0. */}
+                    <button type="button" onClick={() => go('item', it.id)} aria-label={`Voir ${it.name} — ${it.price.toFixed(2).replace('.', ',')} €`} style={{ position: 'absolute', inset: 0, border: 0, background: 'transparent', cursor: 'pointer', zIndex: 1, padding: 0, margin: 0 }}/>
                     <div style={{ width: 84, height: 84, borderRadius: 12, overflow: 'hidden', flexShrink: 0, background: '#0A0A0A' }}>
                       <Slot id={it.slot} h="100%" radius={0} placeholder={it.name} src={it.image} alt={it.name}/>
                     </div>
@@ -255,12 +267,12 @@ function ScreenMenu({ go, cart, addToCart }) {
                       {/* [test-e2e fix B-004 round-2 2026-05-11] CSS line-clamp 2 + tooltip — no more hard viewport clip */}
                       <div title={it.desc} style={{ fontSize: 11, color: 'var(--gray-4)', marginTop: 2, lineHeight: 1.35, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{it.desc}</div>
                       <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 700, color: 'var(--orange)' }}>{it.price.toFixed(2).replace('.', ',')} €</span>
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 700, color: 'var(--orange-text)' }}>{it.price.toFixed(2).replace('.', ',')} €</span>
                         {/* [Owner re-cadrage 2026-05-11 D3] Quick-add "+" : si item personnalisable (viandes / sauce / suppléments / menu_addon / frites_style),
                             ouvrir le wizard au lieu d'ajouter direct au panier avec composition vide. Pour desserts/boissons/items direct, garder add direct. */}
                         {(it.viandes > 0 || it.has_sauce || it.has_supplements !== false || it.has_menu_addon || it.has_frites_style)
-                          ? <button onClick={e => { e.stopPropagation(); go('item', it.id); }} aria-label={`Personnaliser ${it.name}`} style={{ width: 32, height: 32, borderRadius: 999, background: 'var(--orange)', color: '#fff', border: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><I.Arrow size={14} stroke="#fff" sw={2.4}/></button>
-                          : <button onClick={e => { e.stopPropagation(); addToCart(it); }} aria-label={`Ajouter ${it.name} au panier`} style={{ width: 32, height: 32, borderRadius: 999, background: 'var(--ink)', color: 'var(--yellow)', border: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><I.Plus size={16}/></button>}
+                          ? <button onClick={e => { e.stopPropagation(); go('item', it.id); }} aria-label={`Personnaliser ${it.name}`} style={{ position: 'relative', zIndex: 2, width: 32, height: 32, borderRadius: 999, background: 'var(--orange)', color: '#fff', border: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><I.Arrow size={14} stroke="#fff" sw={2.4}/></button>
+                          : <button onClick={e => { e.stopPropagation(); addToCart(it); }} aria-label={`Ajouter ${it.name} au panier`} style={{ position: 'relative', zIndex: 2, width: 32, height: 32, borderRadius: 999, background: 'var(--ink)', color: 'var(--yellow)', border: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><I.Plus size={16}/></button>}
                       </div>
                     </div>
                   </div>
