@@ -83,3 +83,11 @@ reproduction + evidence mandatory for every DEFECT/RISK.
 ## Notes
 - 401 console batch on first dashboard nav = stale pre-login token→auto-logout, NOT a defect: in-page authed fetch 200 (total_sales "31 773,90 €", pending 200).
 - Worktree-shadow trap bit Adversary B's grep (it noted `.env`→operating `foodking` confusion). Always inspect `.claude/worktrees/wave3-deployed-heal/...`.
+
+## CONVERGENCE (final)
+- **0 P0 · 0 P1 · 0 open P2** (2 P2 self-regressions HEALED + proven). Remainder = 3 owner-gate + 5 backlog/optional/no-op.
+- **Heals committed:** `f622f65be` (test rename) + `c3192c154` (token-gate fix + rebuilt admin-shell.js). Audit/plan docs: `70f897550`.
+- **Vitest** 301 files / **2077 pass / 0 fail / 3 skip** (+6 from now-collected roleDisplay spec).
+- **Frozen-zone** diff `0c0183ee4..HEAD` (campaign + heals) = **0 lines**.
+- **Operating DB `foodking` untouched** — tripwire `2673 rows / daf60671` bit-identical before & after.
+- Branch **UNPUSHED / UNMERGED** — push/merge is an owner gate.
