@@ -5,8 +5,12 @@
  * raw-name / empty fallbacks. Uses an identity translator `t = (k) => k`
  * so the assertions check the i18n KEY without needing a vue-i18n instance.
  *
- * Run (noted, not executed in this wave):
- *   npx vitest run tests/Unit/RoleDisplayHelperTest.js
+ * Run:
+ *   npx vitest run tests/js/roleDisplay.spec.js
+ *
+ * [Supervisor heal 2026-06-08] Moved from tests/Unit/RoleDisplayHelperTest.js
+ * (orphan: matched neither Vitest tests/js/**\/*.spec.js nor PHPUnit *Test.php)
+ * into the Vitest-collected path so it actually runs. Logic unchanged.
  */
 import { describe, it, expect } from "vitest";
 import { roleDisplay, ROLE_LABEL_KEYS } from "../../resources/js/helpers/roleDisplay";

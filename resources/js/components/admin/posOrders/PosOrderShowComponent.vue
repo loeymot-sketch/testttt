@@ -60,7 +60,7 @@
                              customer first word (defensive guard against
                              noisy fixture-injected tokens that bleed into
                              the customer name field). -->
-                        <li class="text-xs" v-if="displayedToken && order.order_type === enums.orderTypeEnum.DELIVERY">
+                        <li class="text-xs" v-if="displayedToken">
                             {{ $t('label.order_token') }}:
                             <span class="text-heading text-[10px] opacity-75 font-mono">
                                 {{ displayedToken }}
