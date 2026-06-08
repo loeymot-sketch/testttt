@@ -11,7 +11,7 @@
                     </h3>
                     <label
                         class="p-0.5 px-2 rounded text-[10px] leading-4 font-medium font-rubik uppercase mb-[22px] text-[#E89806] bg-[#FFF5DE]">
-                        {{ employee.role }}
+                        {{ roleLabel(employee.role) }}
                     </label>
                     <form @submit.prevent="saveImage">
                         <div class="flex gap-3 md:gap-4">
@@ -86,7 +86,7 @@
                                     {{ $t("label.phone") }}
                                 </span>
                                 <span class="db-list-item-text w-full sm:w-1/2">
-                                    {{ employee.phone ? employee.country_code + '' + employee.phone : '' }}
+                                    {{ safePhone(employee.phone) ? (employee.country_code || '') + safePhone(employee.phone) : '' }}
                                 </span>
                             </div>
                         </div>
@@ -229,6 +229,8 @@ import PaginationTextComponent from "../components/pagination/PaginationTextComp
 import PaginationBox from "../components/pagination/PaginationBox";
 import PaginationSMBox from "../components/pagination/PaginationSMBox";
 import ENV from '../../../config/env';
+import { safePhone } from "../../../helpers/phoneDisplay";
+import { roleDisplay } from "../../../helpers/roleDisplay";
 
 export default {
     name: "EmployeeShowComponent",
@@ -301,6 +303,10 @@ export default {
         this.orderLists();
     },
     methods: {
+        safePhone,
+        roleLabel(name) {
+            return roleDisplay(name, this.$t);
+        },
         textShortener: function (text, number = 30) {
             return appService.textShortener(text, number);
         },

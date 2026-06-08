@@ -102,7 +102,7 @@
                                 {{ chef.email }}
                             </td>
                             <td class="db-table-body-td">
-                                {{ chef.phone ? chef.country_code + '' + chef.phone : '' }}
+                                {{ safePhone(chef.phone) ? (chef.country_code || '') + safePhone(chef.phone) : '' }}
                             </td>
                             <td class="db-table-body-td">
                                 <span :class="statusClass(chef.status)">
@@ -169,6 +169,7 @@ import PrintComponent from "../components/buttons/export/PrintComponent";
 import ExcelComponent from "../components/buttons/export/ExcelComponent";
 import ChefCreateComponent from "./ChefCreateComponent.vue";
 import ENV from "../../../config/env";
+import { safePhone } from "../../../helpers/phoneDisplay";
 
 export default {
     name: "ChefListComponent",
@@ -278,6 +279,7 @@ export default {
         }
     },
     methods: {
+        safePhone,
         permissionChecker(e) {
             return appService.permissionChecker(e);
         },

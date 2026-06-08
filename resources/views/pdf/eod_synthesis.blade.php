@@ -10,18 +10,18 @@
     <style>
         @page { margin: 18mm 14mm 16mm 14mm; }
         body { font-family: DejaVu Sans, Helvetica, Arial, sans-serif; color: #1F1F39; font-size: 11px; margin: 0; padding: 0; }
-        .header { border-bottom: 2px solid #ff006b; padding-bottom: 8px; margin-bottom: 14px; }
+        .header { border-bottom: 2px solid #F4501E; padding-bottom: 8px; margin-bottom: 14px; }
         .company-name { font-size: 18px; font-weight: 700; color: #1F1F39; margin: 0; }
         .company-meta { font-size: 10px; color: #6E7191; margin: 2px 0 0 0; }
         .title-block { margin-top: 8px; }
-        .title { font-size: 16px; font-weight: 700; color: #ff006b; margin: 0; }
+        .title { font-size: 16px; font-weight: 700; color: #F4501E; margin: 0; }
         .subtitle { font-size: 11px; color: #6E7191; margin: 2px 0 0 0; }
 
         .kpi-grid { width: 100%; border-collapse: separate; border-spacing: 6px; margin-bottom: 16px; }
         .kpi-cell { width: 33.33%; background: #F8FBFB; border: 1px solid #EFF0F6; border-radius: 6px; padding: 10px 12px; vertical-align: top; }
         .kpi-label { font-size: 10px; color: #6E7191; text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 4px 0; }
         .kpi-value { font-size: 16px; font-weight: 700; color: #1F1F39; margin: 0; }
-        .kpi-value.accent { color: #ff006b; }
+        .kpi-value.accent { color: #F4501E; }
 
         .section { margin-bottom: 14px; page-break-inside: avoid; }
         .section-title { font-size: 12px; font-weight: 700; color: #1F1F39; margin: 0 0 6px 0; padding-bottom: 3px; border-bottom: 1px solid #EFF0F6; }

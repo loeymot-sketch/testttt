@@ -83,7 +83,7 @@ export default {
             {
                 confirmButtonText: "Oui, déconnexion",
                 cancelButtonText: "Annuler",
-                confirmButtonColor: "#696cff",
+                confirmButtonColor: "#F4501E",
                 cancelButtonColor: "#8592a3",
             }
         );
@@ -96,7 +96,7 @@ export default {
             {
                 confirmButtonText: "Oui, supprimer",
                 cancelButtonText: "Annuler",
-                confirmButtonColor: "#696cff",
+                confirmButtonColor: "#F4501E",
                 cancelButtonColor: "#8592a3",
             }
         );
@@ -109,7 +109,7 @@ export default {
             {
                 confirmButtonText: "Oui, accepter",
                 cancelButtonText: "Annuler",
-                confirmButtonColor: "#696cff",
+                confirmButtonColor: "#F4501E",
                 cancelButtonColor: "#8592a3",
             }
         );
@@ -127,7 +127,7 @@ export default {
             {
                 confirmButtonText: "Oui, encaisser",
                 cancelButtonText: "Annuler",
-                confirmButtonColor: "#696cff",
+                confirmButtonColor: "#F4501E",
                 cancelButtonColor: "#8592a3",
             }
         );
@@ -142,7 +142,7 @@ export default {
             {
                 confirmButtonText: confirmButtonText,
                 cancelButtonText: "Annuler",
-                confirmButtonColor: "#696cff",
+                confirmButtonColor: "#F4501E",
                 cancelButtonColor: "#8592a3",
             }
         );
@@ -155,7 +155,7 @@ export default {
             {
                 confirmButtonText: "Oui, annuler",
                 cancelButtonText: "Non",
-                confirmButtonColor: "#696cff",
+                confirmButtonColor: "#F4501E",
                 cancelButtonColor: "#8592a3",
             }
         );

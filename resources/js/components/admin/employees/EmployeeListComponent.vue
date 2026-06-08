@@ -110,9 +110,9 @@
                         <tr class="db-table-body-tr" v-for="employee in employees" :key="employee">
                             <td class="db-table-body-td">{{ textShortener(employee.name, 20) }}</td>
                             <td class="db-table-body-td">{{ employee.email }}</td>
-                            <td class="db-table-body-td">{{ employee.phone ? employee.country_code + '' + employee.phone
-                                : '' }}</td>
-                            <td class="db-table-body-td">{{ employee.role }}</td>
+                            <td class="db-table-body-td">{{ safePhone(employee.phone) ? (employee.country_code || '') +
+                                safePhone(employee.phone) : '' }}</td>
+                            <td class="db-table-body-td">{{ roleLabel(employee.role) }}</td>
                             <td class="db-table-body-td">
                                 <span :class="statusClass(employee.status)">
                                     {{ enums.statusEnumArray[employee.status] }}
@@ -177,6 +177,8 @@ import print from "vue3-print-nb";
 import PrintComponent from "../components/buttons/export/PrintComponent";
 import ExcelComponent from "../components/buttons/export/ExcelComponent";
 import ENV from "../../../config/env";
+import { safePhone } from "../../../helpers/phoneDisplay";
+import { roleDisplay } from "../../../helpers/roleDisplay";
 
 export default {
     name: "EmployeeListComponent",
@@ -298,6 +300,10 @@ export default {
     },
 
     methods: {
+        safePhone,
+        roleLabel(name) {
+            return roleDisplay(name, this.$t);
+        },
         permissionChecker(e) {
             return appService.permissionChecker(e);
         },

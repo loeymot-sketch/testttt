@@ -105,7 +105,7 @@
                                 {{ administrator.email }}
                             </td>
                             <td class="db-table-body-td">
-                                {{ administrator.phone ? administrator.country_code + '' + administrator.phone : '' }}
+                                {{ safePhone(administrator.phone) ? (administrator.country_code || '') + safePhone(administrator.phone) : '' }}
                             </td>
                             <td class="db-table-body-td ">
                                 <span :class="statusClass(administrator.status)">
@@ -173,6 +173,7 @@ import print from 'vue3-print-nb';
 import PrintComponent from "../components/buttons/export/PrintComponent";
 import ExcelComponent from "../components/buttons/export/ExcelComponent";
 import ENV from '../../../config/env';
+import { safePhone } from "../../../helpers/phoneDisplay";
 
 export default {
     name: "AdministratorListComponent",
@@ -282,6 +283,7 @@ export default {
         }
     },
     methods: {
+        safePhone,
         permissionChecker(e) {
             return appService.permissionChecker(e);
         },

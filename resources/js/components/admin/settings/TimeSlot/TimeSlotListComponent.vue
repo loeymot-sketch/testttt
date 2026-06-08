@@ -12,7 +12,7 @@
           :key="dayEnum">
           <!-- Slot weekenday name -->
           <p class="capitalize pt-5 sm:pt-0 w-24 flex-shrink-0 text-sm text-[#374151]">
-            {{ dayEnum.name }}
+            {{ dayLabel(dayEnum) }}
           </p>
 
           <!-- Slot content group -->
@@ -118,6 +118,22 @@ export default {
     },
   },
   methods: {
+    // [Wave 5 — i18n] Localize the weekday name (enum exposes EN). Map by the
+    // stable numeric enum id (1=Mon..6=Sat, 0=Sun) to the FR label.* key so the
+    // enum's value mapping stays intact and only the DISPLAYED name is FR.
+    dayLabel: function (dayEnum) {
+      const keys = {
+        1: "label.day_monday",
+        2: "label.day_tuesday",
+        3: "label.day_wednesday",
+        4: "label.day_thursday",
+        5: "label.day_friday",
+        6: "label.day_saturday",
+        0: "label.day_sunday",
+      };
+      const key = keys[dayEnum.id];
+      return key ? this.$t(key) : dayEnum.name;
+    },
     taxTypeClass: function (type) {
       return appService.taxTypeClass(type);
     },
