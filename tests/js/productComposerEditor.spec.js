@@ -139,7 +139,8 @@ describe('product composer editor contract', () => {
             'admin-variation-edit-${child.id}',
             'admin-variation-delete-${child.id}',
         ].forEach((testId) => expect(variationList).toContain(testId));
-        ['admin-variation-form-name', 'admin-variation-form-price'].forEach((testId) => expect(variationCreate).toContain(testId));
+        // [Wizard builder W3] construct forms author per-option description + image (catalog metadata; price stays SSOT).
+        ['admin-variation-form-name', 'admin-variation-form-price', 'admin-variation-form-description', 'admin-variation-form-image'].forEach((testId) => expect(variationCreate).toContain(testId));
 
         [
             'admin-extra-add',
@@ -147,7 +148,7 @@ describe('product composer editor contract', () => {
             'admin-extra-edit-${extra.id}',
             'admin-extra-delete-${extra.id}',
         ].forEach((testId) => expect(extraList).toContain(testId));
-        ['admin-extra-form-name', 'admin-extra-form-price'].forEach((testId) => expect(extraCreate).toContain(testId));
+        ['admin-extra-form-name', 'admin-extra-form-price', 'admin-extra-form-description', 'admin-extra-form-image'].forEach((testId) => expect(extraCreate).toContain(testId));
 
         [
             'admin-addon-add',

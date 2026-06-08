@@ -64,6 +64,30 @@
                             <small class="text-slate-400 text-xs">Utilisé pour grouper visuellement sur la borne</small>
                         </div>
 
+                        <!-- [Wizard builder W3] Per-option description -->
+                        <div class="form-col-12">
+                            <label for="e-description" class="db-field-title">Description de l'option</label>
+                            <textarea v-model="props.form.description"
+                                v-bind:class="errors.description ? 'invalid' : ''" id="e-description"
+                                class="db-field-control" data-testid="admin-extra-form-description"
+                                placeholder="Texte affiché sous l'option dans le wizard (optionnel)"></textarea>
+                            <small class="db-field-alert" v-if="errors.description">{{ errors.description[0] }}</small>
+                        </div>
+
+                        <!-- [Wizard builder W3] Per-option image (URL ou chemin public) -->
+                        <div class="form-col-12 sm:form-col-6">
+                            <label for="e-image" class="db-field-title">Photo de l'option</label>
+                            <input v-model="props.form.image_path"
+                                v-bind:class="errors.image_path ? 'invalid' : ''" type="text" id="e-image"
+                                class="db-field-control" data-testid="admin-extra-form-image"
+                                placeholder="URL ou chemin ex. images/menu/cheddar.png" />
+                            <small class="text-slate-400 text-xs mt-1 block">Vide = image auto par nom (catalogue Le Cayenne).</small>
+                            <small class="db-field-alert" v-if="errors.image_path">{{ errors.image_path[0] }}</small>
+                            <img v-if="props.form.image_path" :src="props.form.image_path" alt=""
+                                class="mt-2 h-16 w-16 object-cover rounded border border-slate-200"
+                                data-testid="admin-extra-form-image-preview" />
+                        </div>
+
                         <!-- Visibilité par surface -->
                         <div class="form-col-12">
                             <label class="db-field-title">Visible sur</label>
@@ -160,6 +184,8 @@ export default {
                 status:      statusEnum.ACTIVE,
                 visible_on:  null,
                 group_label: "",
+                description: "",
+                image_path:  "",
             };
         },
         // Returns true if the given surface is in visible_on (or if visible_on is null = all)
@@ -201,6 +227,8 @@ export default {
                             status:      statusEnum.ACTIVE,
                             visible_on:  null,
                             group_label: "",
+                            description: "",
+                            image_path:  "",
                         };
                         this.errors = {};
                     }).catch((err) => {

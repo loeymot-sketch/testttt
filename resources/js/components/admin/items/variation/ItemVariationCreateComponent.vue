@@ -72,6 +72,30 @@
                             <small class="db-field-alert" v-if="errors.caution">{{ errors.caution[0] }}</small>
                         </div>
 
+                        <!-- [Wizard builder W3] Per-option description (affichée dans le wizard) -->
+                        <div class="form-col-12">
+                            <label for="v-description" class="db-field-title">Description de l'option</label>
+                            <textarea v-model="props.form.description"
+                                v-bind:class="errors.description ? 'invalid' : ''" id="v-description"
+                                class="db-field-control" data-testid="admin-variation-form-description"
+                                placeholder="Texte affiché sous l'option dans le wizard (optionnel)"></textarea>
+                            <small class="db-field-alert" v-if="errors.description">{{ errors.description[0] }}</small>
+                        </div>
+
+                        <!-- [Wizard builder W3] Per-option image (URL ou chemin public) -->
+                        <div class="form-col-12 sm:form-col-6">
+                            <label for="v-image" class="db-field-title">Photo de l'option</label>
+                            <input v-model="props.form.image_path"
+                                v-bind:class="errors.image_path ? 'invalid' : ''" type="text" id="v-image"
+                                class="db-field-control" data-testid="admin-variation-form-image"
+                                placeholder="URL ou chemin ex. images/menu/poulet.png" />
+                            <small class="text-slate-400 text-xs mt-1 block">Vide = image auto par nom (catalogue Le Cayenne).</small>
+                            <small class="db-field-alert" v-if="errors.image_path">{{ errors.image_path[0] }}</small>
+                            <img v-if="props.form.image_path" :src="props.form.image_path" alt=""
+                                class="mt-2 h-16 w-16 object-cover rounded border border-slate-200"
+                                data-testid="admin-variation-form-image-preview" />
+                        </div>
+
                         <!-- Visibilité par surface -->
                         <div class="form-col-12">
                             <label class="db-field-title">Visible sur</label>
@@ -177,6 +201,8 @@ export default {
                 caution:           "",
                 status:            statusEnum.ACTIVE,
                 visible_on:        null,
+                description:       "",
+                image_path:        "",
             };
         },
         isSurfaceChecked(surface) {
