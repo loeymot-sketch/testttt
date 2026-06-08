@@ -691,7 +691,7 @@
                       N°{{ takeawayOrder.queue_number }}
                     </span>
                     <span v-if="isPaymentPendingCounter(takeawayOrder)" class="kds-counter-payment-badge">
-                      {{ $t("kds_counter_payment_unpaid") }}
+                      {{ $t("label.kds_counter_payment_unpaid") }}
                     </span>
                   </div>
                   <span class="py-0.5 px-2 rounded-[4px] text-[10px] font-client leading-4 capitalize"
@@ -870,7 +870,7 @@
                       N°{{ kioskOrder.queue_number }}
                     </span>
                     <span v-if="isPaymentPendingCounter(kioskOrder)" class="kds-counter-payment-badge">
-                      {{ $t("kds_counter_payment_unpaid") }}
+                      {{ $t("label.kds_counter_payment_unpaid") }}
                     </span>
                   </div>
                   <span class="py-0.5 px-2 rounded-[4px] text-[10px] font-client leading-4 capitalize"
@@ -1670,7 +1670,7 @@ export default {
           }
           if (this.kdsErrorBanner) {
             this.kdsErrorBanner.visible = true;
-            this.kdsErrorBanner.message = this.$t('label.kds_status_conflict');
+            this.kdsErrorBanner.message = this.$t('message.kds_status_conflict');
           }
         });
     },

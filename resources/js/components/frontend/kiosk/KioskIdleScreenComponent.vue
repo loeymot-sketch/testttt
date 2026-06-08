@@ -192,7 +192,7 @@ export default {
       tapHint: '',
       settingsOpen: false,
       orderTypes: KIOSK_ORDER_TYPES,
-      enabledLanguages: ['fr', 'en'], // Default, will be overridden by settings
+      enabledLanguages: ['fr'], // [FP-27] ADR-007 FR-lock V1: selector hidden (changeLanguage is a no-op) until real per-session switching exists
       languageLabels: {
         fr: 'FR',
         en: 'EN',
@@ -302,7 +302,10 @@ export default {
 
         // [PHASE-37] Load enabled languages from settings
         if (data.kiosk_languages_enabled) {
-          this.enabledLanguages = data.kiosk_languages_enabled;
+          // [FP-27] ADR-007 FR-lock: ignore multi-language settings while changeLanguage() is a no-op,
+          // so the dead selector stays hidden (v-if length>1). Reversible when real switching lands.
+          this.enabledLanguages = data.kiosk_languages_enabled.filter(l => l === 'fr');
+          if (!this.enabledLanguages.length) this.enabledLanguages = ['fr'];
         }
       } catch (_) {}
     },

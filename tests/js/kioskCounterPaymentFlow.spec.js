@@ -33,7 +33,11 @@ describe('B5b kiosk cash-at-counter flow', () => {
 
         expect(source).toContain('paymentStatusEnum.PENDING_COUNTER');
         expect(source).toContain('payment_pending_counter');
-        expect(source).toContain('PAIEMENT COMPTOIR - NON REGLE');
+        // [FP-11] The unpaid-counter badge renders via the namespaced i18n key
+        // ($t('label.kds_counter_payment_unpaid')), NOT a hardcoded literal. The
+        // previous assertion checked an uppercase literal that never existed in the
+        // component (this test was red at HEAD) — assert the real i18n key the card uses.
+        expect(source).toContain('label.kds_counter_payment_unpaid');
         expect(source).toContain('OrderPaidAtCounter');
     });
 });

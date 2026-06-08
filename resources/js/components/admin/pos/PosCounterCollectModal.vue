@@ -627,7 +627,7 @@ export default {
   height: 32px;
   border-radius: 8px;
   cursor: pointer;
-  color: var(--pos-v5-muted, #555);
+  color: var(--pos-v5-ink-soft, #5A5A5A);
 }
 .cc-modal-close:hover:not(:disabled) {
   background: var(--pos-v5-surface-2, #f3f3f3);
@@ -642,7 +642,7 @@ export default {
 }
 .cc-modal-order-no {
   font-weight: 700;
-  color: var(--pos-v5-muted, #555);
+  color: var(--pos-v5-ink-soft, #5A5A5A);
 }
 .cc-modal-source {
   font-size: 11px;
@@ -669,7 +669,7 @@ export default {
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--pos-v5-muted, #777);
+  color: var(--pos-v5-ink-soft, #5A5A5A);
   font-weight: 600;
 }
 .cc-hero-value {
@@ -735,7 +735,7 @@ export default {
 }
 .cc-mode-sub {
   font-size: 10.5px;
-  color: var(--pos-v5-muted, #777);
+  color: var(--pos-v5-ink-soft, #5A5A5A);
   text-align: center;
 }
 
@@ -747,7 +747,7 @@ export default {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--pos-v5-muted, #555);
+  color: var(--pos-v5-ink-soft, #5A5A5A);
   margin-bottom: 6px;
 }
 .cc-input {
@@ -800,7 +800,7 @@ export default {
 .cc-mode-info-text {
   margin: 0;
   font-size: 13px;
-  color: var(--pos-v5-muted, #555);
+  color: var(--pos-v5-ink-soft, #5A5A5A);
   line-height: 1.45;
 }
 

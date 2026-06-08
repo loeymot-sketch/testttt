@@ -289,9 +289,9 @@
                                 data-testid="cash-session-movement-row"
                             >
                                 <td>{{ formatTimestamp(movement.created_at) }}</td>
-                                <td>{{ movement.type }}</td>
+                                <td>{{ $t('label.cash_mvt_' + movement.type) }}</td>
                                 <td class="cash-session-dialog__td--right">{{ formatMoney(movement.amount) }}</td>
-                                <td class="cash-session-dialog__td--right">{{ movement.direction === 'in' ? '↑ IN' : '↓ OUT' }}</td>
+                                <td class="cash-session-dialog__td--right">{{ movement.direction === 'in' ? ('↑ ' + $t('label.cash_in')) : ('↓ ' + $t('label.cash_out')) }}</td>
                                 <td>{{ movement.notes || '—' }}</td>
                             </tr>
                         </tbody>
