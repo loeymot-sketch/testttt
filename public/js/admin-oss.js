@@ -560,10 +560,18 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
     },
     list: function list() {
       var _this9 = this;
-      this.loading.isActive = true;
+      // [OSS-UIUX-2026-06-08 P2] Show the full-board overlay spinner ONLY until the first
+      // successful load. list() is also called on every Echo `prepared`/status push (lines
+      // ~330/~335) and on each poll tick (~251); flashing LoadingContentComponent over the
+      // already-populated columns made the customer/staff wall STROBE on every realtime
+      // update. After the first hydrate, background refreshes update the board silently.
+      if (!this._didInitialLoad) {
+        this.loading.isActive = true;
+      }
       this.$store.dispatch("orderStatusScreenOrder/lists").then(function (res) {
         _this9._hydrateFromRows(res.data.data || []);
         _this9.loading.isActive = false;
+        _this9._didInitialLoad = true;
       })["catch"](function (err) {
         var _err$response;
         _this9.loading.isActive = false;

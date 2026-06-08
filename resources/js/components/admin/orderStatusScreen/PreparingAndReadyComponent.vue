@@ -458,12 +458,20 @@ export default {
       });
     },
     list() {
-      this.loading.isActive = true;
+      // [OSS-UIUX-2026-06-08 P2] Show the full-board overlay spinner ONLY until the first
+      // successful load. list() is also called on every Echo `prepared`/status push (lines
+      // ~330/~335) and on each poll tick (~251); flashing LoadingContentComponent over the
+      // already-populated columns made the customer/staff wall STROBE on every realtime
+      // update. After the first hydrate, background refreshes update the board silently.
+      if (!this._didInitialLoad) {
+        this.loading.isActive = true;
+      }
       this.$store
         .dispatch("orderStatusScreenOrder/lists")
         .then((res) => {
           this._hydrateFromRows(res.data.data || []);
           this.loading.isActive = false;
+          this._didInitialLoad = true;
         })
         .catch((err) => {
           this.loading.isActive = false;

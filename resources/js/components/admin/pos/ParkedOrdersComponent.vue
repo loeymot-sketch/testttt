@@ -64,7 +64,7 @@
                                     {{ order.label || $t('pos.parked_order_fallback_label') }}
                                 </h4>
                                 <p class="parked-orders-card-meta">
-                                    {{ order.items_count }} {{ $t('label.items') }} · {{ formatTimeAgo(order.created_at) }}
+                                    {{ order.items_count }} {{ $t(Number(order.items_count) > 1 ? 'label.items' : 'label.item') }} · {{ formatTimeAgo(order.created_at) }}
                                 </p>
                             </div>
                             <span class="parked-orders-total">
@@ -249,8 +249,11 @@ export default {
 
             const deltaSeconds = Math.round((target - Date.now()) / 1000);
             const absoluteSeconds = Math.abs(deltaSeconds);
-            const locale = this.setting.site_default_language || navigator.language || 'fr';
-            const formatter = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
+            // [POS-UIUX-2026-06-08 P1] V1 LOCAL is FR-only (ADR-007). The previous
+            // `site_default_language || navigator.language` fallback leaked the browser
+            // locale (e.g. en-US) and rendered "5 days ago" in English on the FR caisse.
+            // Hardcode fr-FR, matching the sibling formatMoney() above.
+            const formatter = new Intl.RelativeTimeFormat('fr-FR', { numeric: 'auto' });
 
             if (absoluteSeconds < 60) {
                 return formatter.format(deltaSeconds, 'second');
