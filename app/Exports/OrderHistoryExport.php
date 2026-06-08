@@ -62,9 +62,8 @@ class OrderHistoryExport implements FromCollection, WithHeadings
     {
         return [
             trans('all.label.order_serial_no'),
-            // [W4.4 inline-FR stopgap] No 'all.label.fiscal_number' key exists in
-            // the PHP lang files yet — hardcoded FR for the accountant export.
-            'N° fiscal',
+            // [Fbe3 heal 2026-06-09] now a real lang key (added to lang/{fr,en}/all.php).
+            trans('all.label.fiscal_number'),
             trans('all.label.order_type'),
             trans('all.label.customer'),
             trans('all.label.amount'),

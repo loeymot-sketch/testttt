@@ -39,6 +39,7 @@ return [
         'featured' => 'Vedette',
         'role' => 'Rôle',
         'order_serial_no' => 'N° de commande',
+        'fiscal_number' => 'N° fiscal',
         'date' => 'Date',
         'total' => 'Total',
         'delivery_charge' => 'Frais de livraison',
