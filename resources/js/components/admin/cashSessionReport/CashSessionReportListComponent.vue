@@ -100,6 +100,20 @@
                                         </td>
                                         <td class="px-3 py-2 text-right" :class="varianceClass(s.variance)">
                                             {{ s.variance === null ? '—' : formatMoney(s.variance) }}
+                                            <!-- [W2.4] Sur un écart non nul, on surface les champs déjà
+                                                 présents dans le payload (attendu vs compté + motif saisi)
+                                                 pour que le gérant comprenne l'écart sans rouvrir la session.
+                                                 Affichage seul : aucun montant n'est modifié. -->
+                                            <div v-if="hasVariance(s)" class="enc-variance-detail mt-1 text-xs font-normal text-gray-600 text-right">
+                                                <div>
+                                                    {{ $t('label.expected') }}: {{ s.expected_closing_amount === null ? '—' : formatMoney(s.expected_closing_amount) }}
+                                                    ·
+                                                    {{ $t('label.counted') }}: {{ s.closing_amount === null ? '—' : formatMoney(s.closing_amount) }}
+                                                </div>
+                                                <div v-if="s.variance_reason" class="italic break-words">
+                                                    {{ $t('label.variance_reason') }}: {{ s.variance_reason }}
+                                                </div>
+                                            </div>
                                         </td>
                                         <td class="px-3 py-2 text-right">{{ s.transactions_count }}</td>
                                         <td class="px-3 py-2">
@@ -263,6 +277,12 @@ export default {
             if (Math.abs(n) < 0.01) return 'text-green-700';
             if (n < 0) return 'text-red-700 font-semibold';
             return 'text-amber-700';
+        },
+        // [W2.4] Écart non nul → on affiche attendu/compté + motif. Garde
+        // alignée sur varianceClass (seuil 0,01 €) pour ne rien montrer quand
+        // la caisse est juste.
+        hasVariance(s) {
+            return s && s.variance !== null && s.variance !== undefined && Math.abs(Number(s.variance)) >= 0.01;
         },
         statusClass(s) {
             switch (s) {
