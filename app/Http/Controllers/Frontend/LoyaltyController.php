@@ -79,6 +79,24 @@ class LoyaltyController extends Controller
                 $user = User::where('phone', $phone)->first();
             }
 
+            // [SEC-FALSIFY-2026-06-08 P1] IDOR / PII-enumeration guard — mirror redeem()'s
+            // discriminator (L298-303). check() returns a customer's name + points + loyalty_code,
+            // and auth:sanctum is satisfied by a GUEST token (GuestSignupController mints
+            // `kiosk:order` guest tokens for anyone holding the public client API key), so without
+            // this gate a guest could enumerate ANY customer's PII by code/phone. Allow only a
+            // REAL kiosk machine (has a KioskMachine row), staff, or the owner of the looked-up
+            // account; everyone else gets the same 404 as a miss (no existence oracle).
+            $caller = $request->user();
+            $isKiosk = $caller
+                && $caller->tokenCan('kiosk:order')
+                && \App\Models\KioskMachine::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
+                    ->where('user_id', $caller->id)
+                    ->exists();
+            $isStaff = $caller && $caller->hasAnyRole(['Admin', 'Branch Manager', 'POS Operator', 'Stuff']);
+            if ($user && !$isKiosk && !$isStaff && (!$caller || (int) $caller->id !== (int) $user->id)) {
+                return response()->json(['status' => false, 'message' => 'Non trouvé'], 404);
+            }
+
             // [SUPERVISOR-AUDIT 2026-06-06] Accept BOTH legacy status 1 AND Status::ACTIVE (5)
             // via the canonical isCustomerActive() helper. The POS add-customer form persists
             // status=5, so the prior `== 1` gate 404'd caisse-created customers, leaving the

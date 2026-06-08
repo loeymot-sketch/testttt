@@ -82489,15 +82489,25 @@ function onEvents(branchId, bindings) {
   });
   return {
     unsubscribe: function unsubscribe() {
+      // [SYNC-01 2026-06-08] Remove ONLY this subscriber's own listeners on the SHARED
+      // branch channel. Two prior bugs are fixed here:
+      //   1. The old code called `window.Echo.leave(channelName)`, which tore down the
+      //      ENTIRE `branch.{id}` channel — but it is shared by the kiosk shell
+      //      (KioskAppComponent availability/86 pushes, subscribed once on boot), KDS,
+      //      OSS and the POS tracker. A child component unmounting (e.g.
+      //      KioskWaitingComponent after an order) thus killed the shell's live
+      //      availability stream for the rest of the session (no re-subscribe). Removed.
+      //   2. `stopListening('.event')` without a callback removes ALL callbacks for that
+      //      event — clobbering a co-subscriber listening to the same event. Pass our own
+      //      `rawHandler` so only THIS subscription is detached. The channel stays joined
+      //      for the other subscribers and is cleaned up by Echo on page unload.
       listeners.forEach(function (_ref2) {
-        var broadcastAs = _ref2.broadcastAs;
+        var broadcastAs = _ref2.broadcastAs,
+          rawHandler = _ref2.rawHandler;
         try {
-          channel.stopListening(".".concat(broadcastAs));
+          channel.stopListening(".".concat(broadcastAs), rawHandler);
         } catch (_) {}
       });
-      try {
-        window.Echo.leave(channelName);
-      } catch (_) {}
     }
   };
 }

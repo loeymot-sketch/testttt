@@ -95,12 +95,50 @@ class LoyaltyApiTest extends TestCase
             'status' => 1
         ]);
 
+        // [SEC-FALSIFY-2026-06-08] check() now requires an authorized caller (real kiosk machine,
+        // staff, or the account owner). A POS Operator is the canonical staff lookup.
+        $staff = \App\Models\User::factory()->create(['branch_id' => 0]);
+        $staff->assignRole('POS Operator');
+        $this->actingAs($staff, 'sanctum');
+
         $response = $this->postJson('/api/frontend/loyalty/check', [
             'code' => 'XYZ1234'
         ]);
 
         $response->assertStatus(200);
         $response->assertJsonFragment(['points' => 50]);
+    }
+
+    /**
+     * [SEC-FALSIFY-2026-06-08 P1] /loyalty/check must NOT let an unprivileged caller (a guest
+     * token with no KioskMachine row, no staff role, not the account owner) enumerate another
+     * customer's PII (name / points / loyalty_code) by code or phone. Such a caller gets the same
+     * 404 as a miss — no PII, no existence oracle. (Sibling of the healed register() 409 leak.)
+     */
+    public function test_check_guest_cannot_enumerate_another_users_pii()
+    {
+        $victim = \App\Models\User::forceCreate([
+            'name' => 'Victim Secret',
+            'username' => 'victim_secret',
+            'email' => 'victim2@example.com',
+            'phone' => '0612345678',
+            'password' => bcrypt('password'),
+            'loyalty_code' => 'VICT1234',
+            'loyalty_points' => 250,
+            'status' => 5,
+        ]);
+        // A plain guest: authenticated (Sanctum) but no KioskMachine row, no staff role.
+        $guest = \App\Models\User::factory()->create(['branch_id' => 0]);
+        $this->actingAs($guest, 'sanctum');
+
+        foreach (['VICT1234', '0612345678'] as $needle) {
+            $response = $this->postJson('/api/frontend/loyalty/check', ['code' => $needle]);
+            $response->assertStatus(404);
+            $body = $response->getContent();
+            $this->assertStringNotContainsString('Victim Secret', $body, 'must not leak the victim name');
+            $this->assertStringNotContainsString('VICT1234', $body, 'must not leak the loyalty_code');
+            $this->assertStringNotContainsString('250', $body, 'must not leak the points');
+        }
     }
 
     public function test_loyalty_add_points()

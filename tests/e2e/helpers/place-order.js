@@ -88,6 +88,7 @@ async function placeOrder(options = {}) {
     branchId: providedBranchId = null,
     skipPaymentConfirm = false,
     tokenPrefix = 'SUPERVISOR-WAVE-C-Z4',
+    orderType = ORDER_TYPE_KIOSK, // [sync-abuse 2026-06-08] override; V1 dine-in disabled → pass 10 (TAKEAWAY)
     baseURL,
   } = options;
 
@@ -125,7 +126,7 @@ async function placeOrder(options = {}) {
     branch_id: branchId,
     token: orderToken,
     discount: 0,
-    order_type: ORDER_TYPE_KIOSK,
+    order_type: orderType,
     is_advance_order: ASK_NO,
     source: SOURCE_KIOSK,
     payment_method: Number(paymentMethod),
