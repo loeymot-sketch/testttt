@@ -76,6 +76,26 @@ class ProvisionCayenneWizardsCommand extends Command
             }
 
             try {
+                // --force = REPLACE, not duplicate. The runtime resolver
+                // (ComposerProfileService::showForCategory) picks the LATEST id, so a
+                // fresh profile already wins — but leaving the prior profile published
+                // is stale clutter and makes the unordered is_published skip-guard
+                // above non-deterministic. Unpublish any prior published profile(s)
+                // first so exactly one stays published per category.
+                if ($this->option('force')) {
+                    $stale = ItemWizardProfile::query()
+                        ->whereNull('item_id')
+                        ->where('item_category_id', $category->id)
+                        ->where('is_published', true)
+                        ->get();
+                    foreach ($stale as $old) {
+                        $profiles->unpublish($old);
+                    }
+                    if ($stale->isNotEmpty()) {
+                        $this->line("  ↳ unpublished {$stale->count()} prior published profile(s) for '{$name}'");
+                    }
+                }
+
                 $payload = $templates->buildPayload($template, $rep);
                 $profile = $profiles->createForCategory($category, $payload);
                 $profiles->publish($profile->fresh());

@@ -74,4 +74,26 @@ class ProvisionCayenneWizardsCommandTest extends TestCase
             ->whereNull('item_id')->where('item_category_id', $category->id)->where('is_published', true)->count();
         $this->assertSame(1, $count, 'second run must not create a duplicate published wizard');
     }
+
+    public function test_force_replaces_prior_published_profile_keeping_single_published(): void
+    {
+        $category = ItemCategory::factory()->create(['name' => 'Tacos', 'status' => Status::ACTIVE]);
+        $item = Item::factory()->create(['item_category_id' => $category->id, 'status' => Status::ACTIVE]);
+        $attr = ItemAttribute::factory()->create(['name' => 'Viande 1', 'status' => Status::ACTIVE]);
+        ItemVariation::query()->create(['item_id' => $item->id, 'item_attribute_id' => $attr->id, 'name' => 'Poulet', 'price' => 0, 'status' => Status::ACTIVE]);
+
+        Artisan::call('foodking:provision-cayenne-wizards');                       // creates published #A
+        Artisan::call('foodking:provision-cayenne-wizards', ['--force' => true]);  // must REPLACE, not duplicate
+
+        $published = ItemWizardProfile::query()
+            ->whereNull('item_id')
+            ->where('item_category_id', $category->id)
+            ->where('is_published', true)
+            ->get();
+
+        $this->assertCount(1, $published, '--force must leave exactly one published profile (no stale duplicate)');
+        // And the survivor is the freshly-created one (highest id = what the resolver serves).
+        $latestId = ItemWizardProfile::query()->whereNull('item_id')->where('item_category_id', $category->id)->max('id');
+        $this->assertSame($latestId, $published->first()->id, 'the published survivor must be the latest profile');
+    }
 }
