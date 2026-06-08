@@ -1,0 +1,4 @@
+ADMIN cat5 composer select options sample: ["Toutes les branches","Le Cayenne (principal)","Attribut produit","Groupe extras","Addon catalogue","Toutes les options","Viande 1","Sauce (1ère Gratuite)","Le Cayenne (principal)"]
+item26 card present= 1
+STEP1 visible: hasMeat(Poulet mariné)= true  hasSauce(Algérienne/...)= false
+composer console.warns observed: 0 []
