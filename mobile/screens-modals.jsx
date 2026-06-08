@@ -245,10 +245,10 @@ function ScreenOrderDetail({ go, orderId = 'C-1234' }) {
             </div>
             <div style={{ margin: '14px 20px 0', background: 'var(--ink)', color: '#fff', borderRadius: 18, padding: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
-                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--orange)' }}>+ Loyalty</div>
-                <div style={{ fontSize: 14, fontWeight: 700, marginTop: 4 }}>+{Math.round(total)} pts crédités</div>
+                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--orange)' }}>+ Fidélité</div>
+                <div style={{ fontSize: 14, fontWeight: 700, marginTop: 4 }}>+{window.LC.loyalty.pointsFor(total)} pts crédités</div>
               </div>
-              <div className="lc-display" style={{ fontSize: 26, color: 'var(--yellow)' }}>+{Math.round(total)}</div>
+              <div className="lc-display" style={{ fontSize: 26, color: 'var(--yellow)' }}>+{window.LC.loyalty.pointsFor(total)}</div>
             </div>
             <div style={{ margin: '14px 20px 0', fontSize: 12, color: 'var(--gray-3)', textAlign: 'center' }}>
               Payé en caisse · Reçu fiscal NF525 #{orderId}-R

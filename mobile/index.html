@@ -215,7 +215,7 @@ function App() {
           hardcoded "+25 pts" literal. Falls back to 25 only if no order was snapshotted
           (defensive — should never happen in the pay flow but keeps the welcome bonus
           default for the modal's standalone story rendering). */}
-      {modal === 'gain' && <ModalPointsGain gain={lastOrder ? Math.round(lastOrder.total) : 25} onClose={()=>setModal(null)} onSee={()=>{ setModal(null); setHistory(h=>[...h,'loyalty']); setScreen('loyalty'); }}/>}
+      {modal === 'gain' && <ModalPointsGain gain={lastOrder ? window.LC.loyalty.pointsFor(lastOrder.total) : 25} onClose={()=>setModal(null)} onSee={()=>{ setModal(null); setHistory(h=>[...h,'loyalty']); setScreen('loyalty'); }}/>}
       {modal === 'redeem' && <WizardRedeem ctx={modalCtx} onClose={()=>{ setModal(null); setModalCtx(null); }} onSuccess={(r)=>{ /* WizardRedeem handles toast internally via step3 success state */ }}/>}
       {modal === 'optOut' && <ModalOptOutConfirm onClose={()=>setModal(null)} onConfirm={()=>{
         setModal(null);

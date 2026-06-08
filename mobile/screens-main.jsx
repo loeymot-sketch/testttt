@@ -659,7 +659,7 @@ function ScreenCart({ go, cart, setCart }) {
                     <span className="lc-stepper-val" aria-live="polite" aria-atomic="true">{it.qty}</span>
                     <button onClick={() => updateQty(idx, +1)} aria-label={`Augmenter la quantité de ${it.name}`}>+</button>
                   </div>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--orange)' }}>{(it.price*it.qty).toFixed(2).replace('.', ',')} €</span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--orange-text)' }}>{(it.price*it.qty).toFixed(2).replace('.', ',')} €</span>
                 </div>
               </div>
               <button onClick={() => remove(idx)} aria-label={`Retirer ${it.name} du panier`} style={{ background: 'transparent', border: 0, color: 'var(--gray-3)', cursor: 'pointer' }}><I.Trash size={16}/></button>
@@ -670,8 +670,8 @@ function ScreenCart({ go, cart, setCart }) {
         <div style={{ margin: '20px 20px 0', padding: 16, background: 'var(--yellow)', borderRadius: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ width: 40, height: 40, borderRadius: 10, background: 'var(--ink)', color: 'var(--orange)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><I.Gift size={20}/></div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 13, fontWeight: 700 }}>+{Math.round(total || 0)} pts gagnés sur cette commande</div>
-            <div style={{ fontSize: 11, color: 'var(--gray-4)', marginTop: 2 }}>Plus que 153 pts pour ton burger gratuit</div>
+            <div style={{ fontSize: 13, fontWeight: 700 }}>+{window.LC.loyalty.pointsFor(total)} pts gagnés sur cette commande</div>
+            <div style={{ fontSize: 11, color: 'var(--gray-4)', marginTop: 2 }}>{(() => { const p = window.LC.loyalty.progressToNext(window.LC.loyalty.account.balance); return p && p.remaining > 0 ? `Plus que ${p.remaining} pts pour ${p.target.name} ${p.target.icon}` : 'Tu peux déjà utiliser une récompense 🎉'; })()}</div>
           </div>
         </div>
         {/* upsell */}
@@ -892,7 +892,7 @@ function ScreenOrders({ go }) {
                 <div style={{ display: 'grid', gap: 8 }}>
                   {g.items.map(o => {
                     const summary = o.items_summary || (Array.isArray(o.items) ? o.items.map(i => i.name).join(' · ') : '');
-                    const points = Number(o.points_earned) || Math.round(Number(o.total) || 0);
+                    const points = window.LC.loyalty.pointsFor(o.total);
                     const statusLabel = o.status_label || 'Récupérée';
                     return (
                       <div key={o.id} data-testid={'orders-history-card-' + o.id} onClick={() => go('orderDetail', o.id)} style={{ background: 'var(--cream)', borderRadius: 14, padding: 14, position: 'relative', cursor: 'pointer' }}>
@@ -1328,7 +1328,7 @@ function ScreenLoyalty({ go }) {
           <div style={{ padding: '24px 20px 0' }}>
             <div className="lc-eyebrow" style={{ color: 'var(--gray-4)', marginBottom: 8 }}>Programme fidélité</div>
             <div style={{ background: 'var(--cream)', borderRadius: 14, padding: 14, fontSize: 12, color: 'var(--ink)', marginBottom: 8 }}>
-              {config.earn_ratio} pt par € dépensé · {config.redeem_ratio} pts = 1 € de réduction · Validité {config.expires_after_days} jours
+              {config.earn_ratio} pt{config.earn_ratio > 1 ? 's' : ''} par € dépensé · {config.redeem_ratio} pts = 1 € de réduction · Validité {config.expires_after_days} jours
             </div>
             <button
               data-testid="loyalty-opt-out-btn"

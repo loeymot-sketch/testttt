@@ -214,6 +214,16 @@
     return points / CONFIG.redeem_ratio;
   }
 
+  // [LOY P0 heal 2026-06-08] SSOT for points EARNED on a spend. The app previously
+  // computed Math.round(total) (=1 pt/€) on every earn surface while CONFIG advertised
+  // earn_ratio:10 — the headline gate-D1 inconsistency (a 29,80 € order showed "+30 pts"
+  // not 298). This helper honours earn_ratio (designed 10 pt/€ = 10% cashback with
+  // redeem_ratio 100; reward thresholds 100–2000 pts assume it). Owner economics gate:
+  // to change the rate, edit CONFIG.earn_ratio ONLY — every earn surface follows.
+  function pointsFor(total) {
+    return Math.round((Number(total) || 0) * CONFIG.earn_ratio);
+  }
+
   function progressToNext(balance) {
     const next = nextRewardForBalance(balance);
     if (!next || balance >= next.points_cost) return { pct: 100, remaining: 0, target: next };
@@ -288,6 +298,7 @@
     nextRewardForBalance,
     unlockedRewards,
     pointsToDiscount,
+    pointsFor,
     progressToNext,
   };
 
