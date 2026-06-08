@@ -2,16 +2,22 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\Status;
+use App\Http\Requests\ComposerPersonalPageRequest;
 use App\Http\Requests\ComposerProfileRequest;
 use App\Http\Resources\ComposerProfileResource;
 use App\Models\Item;
 use App\Models\ItemCategory;
+use App\Models\ItemExtra;
 use App\Models\ItemWizardProfile;
 use App\Services\Composer\ComposerDiffService;
 use App\Services\Composer\ComposerProfileService;
+use App\Services\Composer\ComposerStepService;
 use App\Services\Composer\ComposerTemplateService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class ComposerProfileController extends AdminController
@@ -179,6 +185,98 @@ class ComposerProfileController extends AdminController
             'success' => true,
             'data' => ['category_id' => (int) $category->id] + $this->buildAvailableSources($firstItem),
         ]);
+    }
+
+    /**
+     * [GOAL_WIZARD_DYNAMIC_BUILDER Wave 5] Construct-on-the-fly "personal/free page":
+     * create a NEW ItemExtra group (group_label = label) carrying each option's price
+     * ON THE CONSTRUCT, then bind ONE extra_group step to it — one atomic action.
+     *
+     * Scope by profile owner:
+     *  - item-owned profile -> the group is created on that item.
+     *  - category profile    -> the group is REPLICATED onto every item of the category,
+     *    because the projection reads each item's OWN extras (inheritance, not copy) so a
+     *    category page only renders on a sibling that actually carries the construct.
+     *
+     * NF525: option prices live on ItemExtra (catalog SSOT); the step never carries a price
+     * (ComposerPersonalPageRequest prohibits a page-level price).
+     */
+    public function createPersonalPage(ComposerPersonalPageRequest $request, ItemWizardProfile $profile): JsonResponse
+    {
+        $this->authorizeBranchScope($request, $profile->branch_id_scope);
+
+        $data = $request->validated();
+        $label = trim((string) $data['label']);
+        abort_if($label === '', 422, 'A page label is required.');
+
+        $items = $profile->item_id
+            ? Item::query()->whereKey($profile->item_id)->get()
+            : Item::query()->whereNull('deleted_at')->where('item_category_id', $profile->item_category_id)->get();
+
+        abort_if($items->isEmpty(), 422, 'No products to attach the personal page to.');
+
+        $visibleOn = $data['visible_on'] ?? ['pos', 'kiosk'];
+        $stepService = app(ComposerStepService::class);
+
+        $step = DB::transaction(function () use ($items, $data, $label, $visibleOn, $profile, $stepService) {
+            foreach ($items as $item) {
+                foreach ($data['options'] as $opt) {
+                    ItemExtra::query()->firstOrCreate(
+                        [
+                            'item_id' => $item->id,
+                            'name' => $opt['name'],
+                            'group_label' => $label,
+                        ],
+                        [
+                            'price' => $opt['price'],
+                            'status' => Status::ACTIVE,
+                            'visible_on' => $visibleOn,
+                            'description' => $opt['description'] ?? null,
+                            'image_path' => $opt['image_path'] ?? null,
+                        ]
+                    );
+                }
+            }
+
+            return $stepService->create($profile, [
+                'step_key' => $this->uniquePersonalStepKey($profile, $label),
+                'label' => $label,
+                'source_type' => 'extra_group',
+                'source_ref' => $label,
+                'min_select' => (int) ($data['min_select'] ?? 0),
+                'max_select' => (int) ($data['max_select'] ?? count($data['options'])),
+                'is_active' => true,
+                'visible_on' => $visibleOn,
+                'position' => (int) ($profile->steps()->max('position') ?? 0) + 1,
+                'addon_role' => null,
+            ]);
+        });
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'step_id' => (int) $step->id,
+                'step_key' => (string) $step->step_key,
+                'group_label' => $label,
+                'options_created' => count($data['options']),
+                'items_touched' => $items->count(),
+            ],
+        ], 201);
+    }
+
+    /** Unique step_key for a new personal page (DB unique(profile_id, step_key)). */
+    private function uniquePersonalStepKey(ItemWizardProfile $profile, string $label): string
+    {
+        $base = Str::slug($label, '_') ?: 'page';
+        $existing = $profile->steps()->pluck('step_key')->all();
+        $candidate = $base;
+        $i = 2;
+        while (in_array($candidate, $existing, true)) {
+            $candidate = $base . '_' . $i;
+            $i++;
+        }
+
+        return $candidate;
     }
 
     /**

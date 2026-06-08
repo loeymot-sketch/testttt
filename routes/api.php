@@ -783,6 +783,8 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
                 Route::get('/profiles/{profile}/diff', [ComposerProfileController::class, 'diff']);
                 Route::post('/profiles/{profile}/unpublish', [ComposerProfileController::class, 'unpublish']);
                 Route::post('/profiles/{profile}/steps', [ComposerStepController::class, 'store']);
+                // [GOAL_WIZARD_DYNAMIC_BUILDER Wave 5] Construct-on-the-fly personal/free page.
+                Route::post('/profiles/{profile}/personal-page', [ComposerProfileController::class, 'createPersonalPage']);
                 Route::match(['put', 'patch'], '/steps/{step}', [ComposerStepController::class, 'update']);
                 Route::delete('/steps/{step}', [ComposerStepController::class, 'destroy']);
             });
