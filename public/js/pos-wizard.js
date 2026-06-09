@@ -4140,6 +4140,33 @@
                 // [P6-1 FIX] Build addon instruction from menu_extras so it persists to DB and receipt
                 var extras = buildMenuExtras();
                 var addonInstruction = extras.length > 0 ? extras.join('\n') : '';
+                // [CAISSE-01 — owner-gated frozen patch, LOCK_CAISSE-01 signed 2026-06-09]
+                // Bill the frites Grande/Cheddar upgrades through the SSOT: when the selection is set
+                // AND a matching catalog ItemExtra exists on this item, emit its id in item_extras so
+                // PricingService charges it (recap already shows +2,00 €; this makes the charge match).
+                // GRACEFUL BY CONSTRUCTION: if no matching catalog construct exists, the arrays stay
+                // empty and behaviour is IDENTICAL to before this patch (the pre-fix unbilled state) —
+                // so this can never break the existing flow; billing activates only once the
+                // Grande/Cheddar ItemExtras are seeded on the frites items.
+                var fritesUpgIds = [];
+                var fritesUpgNames = [];
+                var fritesUpgTotal = 0;
+                if (lastItemData && lastItemData.extras && lineItemId != null) {
+                    var _findUpg = function (re) {
+                        return lastItemData.extras.find(function (ex) {
+                            return ex && ex.name && re.test(String(ex.name))
+                                && (ex.item_id == null || String(ex.item_id) === String(lineItemId));
+                        });
+                    };
+                    if (selections.fritesGrande) {
+                        var _g = _findUpg(/grande/i);
+                        if (_g) { fritesUpgIds.push(_g.id); fritesUpgNames.push(_g.name); fritesUpgTotal += parseFloat(_g.price) || 0; }
+                    }
+                    if (selections.fritesCheddar) {
+                        var _c = _findUpg(/cheddar/i);
+                        if (_c) { fritesUpgIds.push(_c.id); fritesUpgNames.push(_c.name); fritesUpgTotal += parseFloat(_c.price) || 0; }
+                    }
+                }
                 return {
                     parent_addon_id: String(ad.id),
                     name: ad.addon_item_name,
@@ -4150,9 +4177,9 @@
                     currency_price: cur,
                     convert_price: cvt,
                     item_variations: { variations: {}, names: {} },
-                    item_extras: { extras: [], names: [] },
+                    item_extras: { extras: fritesUpgIds, names: fritesUpgNames },
                     item_variation_total: parseFloat(ad.variation_total_convert_price) || 0,
-                    item_extra_total: 0,
+                    item_extra_total: fritesUpgTotal,
                     instruction: addonInstruction,
                     total_price: parseFloat(ad.total_convert_price) || 0,
                     // Extras menu (sauce frites, grande portion, cheddar) pour affichage panier

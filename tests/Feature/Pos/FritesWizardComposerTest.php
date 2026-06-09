@@ -262,6 +262,63 @@ class FritesWizardComposerTest extends TestCase
             'CAISSE-01: server bills a frites upgrade when sent as a catalog item_extra');
     }
 
+    /**
+     * [CAISSE-01 FULL +2,00 € proof] Grande Portion + Cheddar fondu, modelled the way the frozen-wizard
+     * patch + the catalog constructs do it: Grande in a SEPARATE no-step group ('frites_upgrade') so
+     * it isn't bound by the max-1 'frites_style' step, Cheddar in 'frites_style'. Both sent as
+     * item_extras (exactly what pos-wizard.js addonToPayload now emits) → server bills BOTH →
+     * order_items.item_extra_total == 2.00. This is the end-to-end shape of the applied frozen patch.
+     */
+    public function test_CAISSE01_frites_grande_and_cheddar_bill_2eur(): void
+    {
+        $this->actingAs($this->operator, 'sanctum');
+
+        // Part-1 catalog construct: Grande Portion as an ItemExtra in its OWN group + a bound
+        // max-1 wizard step (the quote validation requires every item_extra to belong to a step;
+        // a bare no-step extra is correctly rejected 422 — that's the catalog-modelling constraint).
+        $grandePortion = ItemExtra::create([
+            'item_id'      => $this->fritesItem->id,
+            'name'         => 'Grande Portion',
+            'group_label'  => 'frites_upgrade',
+            'price'        => 1.00,
+            'is_available' => 1,
+            'status'       => Status::ACTIVE,
+        ]);
+        ItemWizardStep::create([
+            'profile_id'   => $this->profile->id,
+            'step_key'     => 'frites_upgrade',
+            'label'        => 'Portion',
+            'source_type'  => 'extra_group',
+            'source_ref'   => 'frites_upgrade',
+            'min_select'   => 0,
+            'max_select'   => 1,
+            'allow_repeat' => 0,
+            'position'     => 3,
+            'is_active'    => 1,
+        ]);
+
+        $payload = $this->basePayload([
+            'item_price'  => 2.00,
+            'total_price' => 4.00, // base 2.00 + Grande 1.00 + Cheddar 1.00
+            'item_variations' => [['id' => $this->sauceKetchup->id, 'name' => 'Ketchup', 'price' => 0]],
+            'item_extras'     => [
+                ['id' => $grandePortion->id,      'name' => 'Grande Portion', 'price' => 1.00],
+                ['id' => $this->cheddarFondu->id, 'name' => 'Cheddar fondu',  'price' => 1.00],
+            ],
+        ]);
+
+        $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->postJson('/api/admin/pos', $this->payloadWithPosQuote($this->operator, $payload));
+
+        $response->assertStatus(201);
+        $orderId = (int) $response->json('data.id');
+
+        $orderItem = \App\Models\OrderItem::where('order_id', $orderId)->first();
+        $this->assertNotNull($orderItem, 'order item persisted');
+        $this->assertEquals(2.00, round((float) $orderItem->item_extra_total, 2),
+            'CAISSE-01: server bills BOTH frites upgrades (+2,00 €) in the patched-wizard shape');
+    }
+
     public function test_frites_with_paid_supplementary_sauce_succeeds(): void
     {
         $this->actingAs($this->operator, 'sanctum');
