@@ -1965,6 +1965,7 @@
         "subtitle": "الفئات، المنتجات، المعالجات والمخزون",
         "all_categories": "جميع الفئات",
         "category_wizard_button": "معالج الفئة",
+        "product_composer_button": "إنشاء / معالج المنتج",
         "category_wizard_hint": "ينطبق هذا المعالج على جميع منتجات هذه الفئة.",
         "products_count": "{n} منتج",
         "advanced_settings": "إعدادات متقدمة",

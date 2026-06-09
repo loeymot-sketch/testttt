@@ -2171,6 +2171,7 @@
         "all_categories": "Toutes les catégories",
         "category_wizard_button": "Wizard de la catégorie",
         "category_wizard_hint": "Ce wizard s'applique à TOUS les produits de cette catégorie.",
+        "product_composer_button": "Composer / wizard du produit",
         "products_count": "{n} articles",
         "advanced_settings": "Paramètres avancés",
         "stock_link": "Tableau de stock",

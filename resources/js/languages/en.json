@@ -2170,6 +2170,7 @@
         "subtitle": "Catégories, articles, parcours et stock",
         "all_categories": "Toutes les catégories",
         "category_wizard_button": "Category wizard",
+        "product_composer_button": "Compose / product wizard",
         "category_wizard_hint": "This wizard applies to ALL products in this category.",
         "products_count": "{n} articles",
         "advanced_settings": "Advanced settings",
