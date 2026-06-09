@@ -40,6 +40,11 @@ Fix CAISSE-01: POS frites wizard shows "Grande Portion (+1,00 €)" + "Avec Ched
 - R1: the 296KB hand-written wizard has deep frites-restore logic (`menu_restore`); the patch must NOT break cart-edit restore. Mitigation: keep `menu_extras` + `menu_restore` exactly as-is; ADD the item_extras emission only.
 - R2: the wizard must receive the ItemExtra ids; if the backend item-data feed doesn't include them, the wizard can't emit ids. Mitigation: part 1 wires the ids into the item data first; verified on :8766 before the frozen patch.
 
+## §11 — Server-side PROOF (done 2026-06-09, non-frozen, de-risks the patch to near-zero)
+- New test `tests/Feature/Pos/FritesWizardComposerTest::test_CAISSE01_frites_cheddar_upgrade_as_item_extra_is_billed` (`2cd01f6c6`, **5/5 GREEN**) proves: when a frites upgrade is sent as a real catalog `ItemExtra` in `item_extras`, the server (PricingService SSOT) **bills it** — `order_items.item_extra_total == 1.00`. So the server half already works; **the entire defect is the frozen wizard emitting `item_extras=[]`.**
+- **Refined catalog modelling (part 1):** Grande (size) and Cheddar (topping) must be in **SEPARATE `max_select=1` groups** + each its own wizard step — two extras in one max-1 group is correctly rejected 422 by the quote validation. So part 1 = create a "frites_size" group (Grande +1.00) AND keep "frites_style"/topping (Cheddar +1.00), each wired as its own published wizard step on the frites item.
+- Net: the frozen patch (§4 part 2) is now a verified-trivial "emit the two upgrade ids in item_extras" — the server is proven to charge them.
+
 ## §10 — HUMAN GATE sign-off (REQUIRED before the frozen patch)
 - [ ] **Owner:** "I have read this LOCK and authorize the surgical patch to `pos-wizard.js` per §2/§4-part-2, with the §6 triple-vert." (Owner already chose Route A via GATE-FROZEN-1; this §10 confirms the exact patch scope.)
 - [ ] On sign-off: I apply part 1 (catalog construct) + part 2 (frozen patch) as separate commits, run the §6 triple-vert, and transition this LOCK to CLOSED.
