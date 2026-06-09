@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Resources\ItemVariationGroupByAttributeResource;
-use Exception;
 use App\Models\Item;
 use App\Http\Requests\PaginateRequest;
 use App\Services\ItemVariationService;
@@ -27,7 +26,9 @@ class ItemVariationController extends AdminController
     {
         try {
             return ItemVariationResource::collection($this->itemVariationService->list($request, $item));
-        } catch (Exception $exception) {
+        } catch (\Throwable $exception) {
+            // [CENTRAL-P1-01] \Throwable (not just \Exception) so a \TypeError/\Error returns
+            // the 422 {status:false,message} envelope instead of escaping as a bare 500.
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }
     }
@@ -36,7 +37,9 @@ class ItemVariationController extends AdminController
     {
         try {
             return ItemVariationGroupByAttributeResource::collection($this->itemVariationService->listGroupByAttribute($request, $item));
-        } catch (Exception $exception) {
+        } catch (\Throwable $exception) {
+            // [CENTRAL-P1-01] \Throwable (not just \Exception) so a \TypeError/\Error returns
+            // the 422 {status:false,message} envelope instead of escaping as a bare 500.
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }
     }
@@ -46,7 +49,9 @@ class ItemVariationController extends AdminController
     {
         try {
             return new ItemVariationResource($this->itemVariationService->store($request, $item));
-        } catch (Exception $exception) {
+        } catch (\Throwable $exception) {
+            // [CENTRAL-P1-01] \Throwable (not just \Exception) so a \TypeError/\Error returns
+            // the 422 {status:false,message} envelope instead of escaping as a bare 500.
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }
     }
@@ -56,7 +61,9 @@ class ItemVariationController extends AdminController
     {
         try {
             return new ItemVariationResource($this->itemVariationService->update($request, $item, $itemVariation));
-        } catch (Exception $exception) {
+        } catch (\Throwable $exception) {
+            // [CENTRAL-P1-01] \Throwable (not just \Exception) so a \TypeError/\Error returns
+            // the 422 {status:false,message} envelope instead of escaping as a bare 500.
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }
     }
@@ -66,7 +73,9 @@ class ItemVariationController extends AdminController
     {
         try {
             return new ItemVariationResource($this->itemVariationService->show($item, $itemVariation));
-        } catch (Exception $exception) {
+        } catch (\Throwable $exception) {
+            // [CENTRAL-P1-01] \Throwable (not just \Exception) so a \TypeError/\Error returns
+            // the 422 {status:false,message} envelope instead of escaping as a bare 500.
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }
     }
@@ -77,7 +86,9 @@ class ItemVariationController extends AdminController
         try {
             $this->itemVariationService->destroy($item, $itemVariation);
             return response('', 202);
-        } catch (Exception $exception) {
+        } catch (\Throwable $exception) {
+            // [CENTRAL-P1-01] \Throwable (not just \Exception) so a \TypeError/\Error returns
+            // the 422 {status:false,message} envelope instead of escaping as a bare 500.
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }
     }
