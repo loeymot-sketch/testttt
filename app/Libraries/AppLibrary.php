@@ -313,6 +313,29 @@ class AppLibrary
         return (float)number_format($amount, (int) (env('CURRENCY_DECIMAL_POINT') ?? 2), '.', '');
     }
 
+    /**
+     * [WB-01] Canonical Spatie role name -> FR display label for V1-LOCAL (ADR-007
+     * FR-immutable). The role NAME stays the technical identifier everywhere; only the
+     * gerant-facing DISPLAY is localized. Unknown roles humanize gracefully.
+     */
+    public static function roleLabel($name): string
+    {
+        $key = strtolower(trim((string) $name));
+        return match ($key) {
+            'admin'           => 'Administrateur',
+            'tenant admin'    => 'Administrateur principal',
+            'branch manager'  => 'Responsable de filiale',
+            'pos operator'    => 'Opérateur caisse',
+            'chef'            => 'Chef',
+            'waiter'          => 'Serveur',
+            'delivery boy'    => 'Livreur',
+            'customer'        => 'Client',
+            'stuff', 'staff'  => 'Personnel',
+            ''                => '—',
+            default           => ucwords($key),
+        };
+    }
+
     public static function fcmDataBind($request)
     {
         $cdn = public_path("firebase-cdn.txt");

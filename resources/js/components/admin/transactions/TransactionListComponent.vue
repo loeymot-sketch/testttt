@@ -100,17 +100,17 @@
                                     {{ transaction.date }}
                                 </td>
                                 <td class="db-table-body-td">
-                                    {{ transaction.payment_method }}
+                                    {{ transaction.payment_method_label }}
                                 </td>
                                 <td class="db-table-body-td">
                                     {{ transaction.order_serial_no }}
                                 </td>
                                 <td class="db-table-body-td">
                                     <span class="text-[#2AC769]" v-if="transaction.sign == '+'">
-                                        {{ transaction.sign }} {{ transaction.amount }}
+                                        {{ transaction.sign }} {{ transaction.amount_display }}
                                     </span>
                                     <span class="text-[#FB4E4E]" v-else>
-                                        {{ transaction.sign }} {{ transaction.amount }}
+                                        {{ transaction.sign }} {{ transaction.amount_display }}
                                     </span>
                                 </td>
 

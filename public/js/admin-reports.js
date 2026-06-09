@@ -566,8 +566,18 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
       }
     },
     formatMoney: function formatMoney(v) {
+      var _this$$i18n3;
+      // [C-P1-CASHSESS-MONEY] FR currency (was en-US bare "50.00") — matches cash-overview.
       var n = Number(v || 0);
-      return n.toFixed(2);
+      var locale = ((_this$$i18n3 = this.$i18n) === null || _this$$i18n3 === void 0 ? void 0 : _this$$i18n3.locale) || 'fr-FR';
+      try {
+        return new Intl.NumberFormat(locale, {
+          style: 'currency',
+          currency: 'EUR'
+        }).format(n);
+      } catch (e) {
+        return n.toFixed(2).replace('.', ',') + ' €';
+      }
     },
     varianceClass: function varianceClass(v) {
       if (v === null || v === undefined) return '';

@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 
+use App\Libraries\AppLibrary;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class EmployeeResource extends JsonResource
@@ -27,6 +28,7 @@ class EmployeeResource extends JsonResource
             "status"       => $this->status,
             "role_id"      => optional($this->roles[0])->id,
             "role"         => optional($this->roles[0])->name,
+            "role_label"   => AppLibrary::roleLabel(optional($this->roles[0])->name),
             "image"        => $this->image,
             "country_code" => $this->country_code,
         ];

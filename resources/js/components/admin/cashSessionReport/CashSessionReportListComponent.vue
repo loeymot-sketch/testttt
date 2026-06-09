@@ -245,8 +245,14 @@ export default {
             }
         },
         formatMoney(v) {
+            // [C-P1-CASHSESS-MONEY] FR currency (was en-US bare "50.00") — matches cash-overview.
             const n = Number(v || 0);
-            return n.toFixed(2);
+            const locale = this.$i18n?.locale || 'fr-FR';
+            try {
+                return new Intl.NumberFormat(locale, { style: 'currency', currency: 'EUR' }).format(n);
+            } catch (e) {
+                return n.toFixed(2).replace('.', ',') + ' €';
+            }
         },
         varianceClass(v) {
             if (v === null || v === undefined) return '';

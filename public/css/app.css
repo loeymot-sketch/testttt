@@ -6336,6 +6336,9 @@ input:checked + div svg {
 .\!h-\[34px\] {
   height: 34px !important;
 }
+.\!h-\[36px\] {
+  height: 36px !important;
+}
 .\!h-\[42px\] {
   height: 42px !important;
 }

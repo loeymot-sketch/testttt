@@ -71,7 +71,7 @@
                                 }}</label>
 
                             <vue-select class="db-field-control f-b-custom-select" id="role_id"
-                                v-model="props.search.role_id" :options="roles" label-by="name" value-by="id"
+                                v-model="props.search.role_id" :options="roles" label-by="display_name" value-by="id"
                                 :closeOnSelect="true" :searchable="true" :clearOnClose="true" placeholder="--"
                                 search-placeholder="--" />
                         </div>
@@ -112,7 +112,7 @@
                             <td class="db-table-body-td">{{ employee.email }}</td>
                             <td class="db-table-body-td">{{ employee.phone ? (employee.country_code || '') + employee.phone
                                 : '' }}</td>
-                            <td class="db-table-body-td">{{ employee.role }}</td>
+                            <td class="db-table-body-td">{{ employee.role_label || employee.role }}</td>
                             <td class="db-table-body-td">
                                 <span :class="statusClass(employee.status)">
                                     {{ enums.statusEnumArray[employee.status] }}

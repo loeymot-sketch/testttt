@@ -17,10 +17,11 @@ class RoleResource extends JsonResource
     public function toArray( $request ) : array
     {
         return [
-            "id"          => $this->id,
-            "name"        => $this->name,
-            "guard"       => $this->guard_name,
-            'users_count' => $this->users_count
+            "id"           => $this->id,
+            "name"         => $this->name,
+            "display_name" => AppLibrary::roleLabel($this->name),
+            "guard"        => $this->guard_name,
+            'users_count'  => $this->users_count
         ];
 
     }
