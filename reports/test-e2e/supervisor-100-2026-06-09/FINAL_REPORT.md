@@ -22,7 +22,7 @@ Full remediation plan → `plans/GOAL_SUPERVISOR_100_PRODUCTION_PERFECT_2026-06-
 
 ## The 3 things that block a clean go-live (read GOAL §2/§5/§G for the full decomposition)
 1. **RC-01 — Branch fragmentation (P1):** deployed tree and `heal/deployed-dashboard-fixes-2026-06-08` are 15/15 divergent; neither is a superset. **No single shippable branch.** Integrating them forward-ports the FR-admin fix (CENTRAL-P1-02) + the `N°→Non` fix for free. → **GATE-INT-1.**
-2. **CAISSE-01 — POS under-billing (P1):** frites Grande/Cheddar shows **+2,00 €** in the recap, charges **0 €** (`pos-wizard.js:4153-4159` emits empty `item_extras`; server reprice drops the text). Revenue leak + display≠charge. `pos-wizard.js` frozen → **GATE-FROZEN-1.**
+2. **CAISSE-01 — POS under-billing (P1):** frites Grande/Cheddar shows **+2,00 €** in the recap, charges **0 €**. **Both halves confirmed read-only:** client — `pos-wizard.js:4153-4159` emits the upgrade as `menu_extras[]` text with **empty `item_extras`**; server — `grep menu_extras app/` is **empty** (no backend pricing path) and `PricingService` prices **only `item_extras`** (`:74,:169-170,:290-294`) → the upgrade is never charged. Revenue leak + display≠charge. `pos-wizard.js` frozen → **GATE-FROZEN-1** (or server-side: have `PricingService` resolve the named upgrades).
 3. **LIVE-DATA — dirty operating DB (P1 go-live):** ~200 soak-kiosk test orders + 146 aged SLA alerts on the production `foodking` DB. Needs a clean-state reset (with NF525 retention handling). → **GATE-DATA-1.**
 
 ## What was confirmed DONE & working (8 capability rows, live + code) → GOAL §1
