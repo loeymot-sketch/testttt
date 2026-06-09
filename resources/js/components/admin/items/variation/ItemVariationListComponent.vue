@@ -44,6 +44,10 @@
             </table>
         </div>
     </div>
+    <div class="p-4 text-center" v-else-if="loadError">
+        <span class="d-block mt-2 text-lg text-red-600">{{ $t('message.something_went_wrong') }}</span>
+        <button type="button" class="mt-3 text-sm text-primary underline" @click="list()">{{ $t('button.try_again') }}</button>
+    </div>
     <div class="p-4 text-center" v-else>
         <div class="max-w-[300px] mx-auto mt-2">
             <img class="w-full h-full" :src="ENV.API_URL + '/images/default/not-found.png'" alt="Not Found">
@@ -75,6 +79,7 @@ export default {
             loading: {
                 isActive: false
             },
+            loadError: false,
             enums: {
                 statusEnum: statusEnum,
                 statusEnumArray: {
@@ -118,10 +123,14 @@ export default {
         },
         list: function () {
             this.loading.isActive = true;
+            this.loadError = false;
             this.$store.dispatch("itemVariation/listGroupByAttributes", this.variationProps.search).then((res) => {
                 this.loading.isActive = false;
             }).catch((err) => {
+                // [CENTRAL-P1-01] surface a distinct error-state instead of falling through to the
+                // empty-state — a failed request must not be indistinguishable from "no variations".
                 this.loading.isActive = false;
+                this.loadError = true;
             });
         },
         edit: function (itemVariation) {

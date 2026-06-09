@@ -1190,6 +1190,7 @@
         "downloading": "جارٍ التنزيل…"
     },
     "button": {
+        "try_again": "أعد المحاولة",
         "kds_print_ticket": "طباعة التذكرة",
         "refresh": "تحديث",
         "add": "إضافة",

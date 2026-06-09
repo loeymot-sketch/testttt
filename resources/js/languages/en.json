@@ -1384,6 +1384,7 @@
         "downloading": "Downloading…"
     },
     "button": {
+        "try_again": "Try again",
         "kds_print_ticket": "Print ticket",
         "refresh": "Refresh",
         "add": "Add",

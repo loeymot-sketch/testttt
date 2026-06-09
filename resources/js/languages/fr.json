@@ -1349,6 +1349,7 @@
         "downloading": "Téléchargement…"
     },
     "button": {
+        "try_again": "Réessayer",
         "kds_print_ticket": "Imprimer ticket",
         "refresh": "Actualiser",
         "add": "Ajouter",
