@@ -45,6 +45,8 @@ Fix CAISSE-01: POS frites wizard shows "Grande Portion (+1,00 €)" + "Avec Ched
 - **Refined catalog modelling (part 1):** Grande (size) and Cheddar (topping) must be in **SEPARATE `max_select=1` groups** + each its own wizard step — two extras in one max-1 group is correctly rejected 422 by the quote validation. So part 1 = create a "frites_size" group (Grande +1.00) AND keep "frites_style"/topping (Cheddar +1.00), each wired as its own published wizard step on the frites item.
 - Net: the frozen patch (§4 part 2) is now a verified-trivial "emit the two upgrade ids in item_extras" — the server is proven to charge them.
 
-## §10 — HUMAN GATE sign-off (REQUIRED before the frozen patch)
-- [ ] **Owner:** "I have read this LOCK and authorize the surgical patch to `pos-wizard.js` per §2/§4-part-2, with the §6 triple-vert." (Owner already chose Route A via GATE-FROZEN-1; this §10 confirms the exact patch scope.)
-- [ ] On sign-off: I apply part 1 (catalog construct) + part 2 (frozen patch) as separate commits, run the §6 triple-vert, and transition this LOCK to CLOSED.
+## §10 — HUMAN GATE sign-off — ✅ SIGNED + CLOSED (2026-06-09)
+- [x] **Owner SIGNED** (via AskUserQuestion "Final step for literal 100%: apply the CAISSE-01 frozen-wizard patch now?" → **"Yes — apply it now"**) — authorizes both the surgical `pos-wizard.js` patch (§2/§4-part-2) AND the §3bis catalog ItemExtra constructs. This is the §7 explicit owner gate + §3bis catalog go-ahead.
+- [x] **frozen-override authorized:** this LOCK (`LOCK_CAISSE-01_POS_FRITES_UPGRADE_BILLING.md`) unblocks the pre-commit hook's Block-5 frozen-zone check for `public/js/pos-wizard.js` — via the hook's BUILT-IN LOCK-citation path, NOT `--no-verify` (all secret/.env/backup checks stay active).
+- [x] **Triple-vert GREEN:** `FritesWizardComposerTest` 6/6 (`item_extra_total==2.00`) + POS pricing regression 53/53 + frozen-sentinel PASS (baseline updated for the gated edit) + graceful-no-regression proven (no catalog construct ⇒ identical to pre-fix).
+- [x] **CLOSED.** Patch applied; `frozen-zone-sha256-baseline.json` updated for `pos-wizard.js`. Catalog seeding on the operating DB = a separate §3bis data op (the wizard activates billing once Grande/Cheddar ItemExtras + their max-1 wizard steps exist on the frites items).
