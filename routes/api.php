@@ -785,6 +785,9 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
                 Route::post('/profiles/{profile}/steps', [ComposerStepController::class, 'store']);
                 // [GOAL_WIZARD_DYNAMIC_BUILDER Wave 5] Construct-on-the-fly personal/free page.
                 Route::post('/profiles/{profile}/personal-page', [ComposerProfileController::class, 'createPersonalPage']);
+                // [W1 re-edit pre-fill] Read an EXISTING personal page's editable state (label + bound
+                // group's options WITH price) so the builder modal opens pre-filled. Read-only.
+                Route::get('/profiles/{profile}/personal-page/{step}', [ComposerProfileController::class, 'showPersonalPage']);
                 // [W5 re-edit, option A] Edit an EXISTING personal page IN PLACE, keyed on the
                 // server-trusted step PK (NOT a client label) → edits only that step's own bound
                 // group; collision-free by construction (never changes which group).

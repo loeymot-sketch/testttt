@@ -453,4 +453,51 @@ class ComposerPersonalPageTest extends TestCase
         $this->assertEquals(0.50, (float) ItemExtra::query()->where('group_label', 'Page X')
             ->where('name', 'X')->value('price'));
     }
+
+    /** [W1 re-edit pre-fill] GET returns the bound group's options WITH price + the step's label/min/max
+     *  so the builder modal opens pre-filled, then PUTs back to the same step. */
+    public function test_show_personal_page_returns_editable_state_with_prices(): void
+    {
+        [$profile, , $stepId] = $this->makePage([
+            ['name' => 'Algérienne', 'price' => '0.50', 'description' => 'Maison'],
+            ['name' => 'Blanche', 'price' => '0'],
+        ], 'Sauces Maison', 2);
+
+        $resp = $this->actingAs($this->admin, 'sanctum')->getJson(
+            "/api/admin/composer/profiles/{$profile->id}/personal-page/{$stepId}"
+        )->assertStatus(200)
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.step_id', $stepId)
+            ->assertJsonPath('data.label', 'Sauces Maison')
+            ->assertJsonPath('data.group_label', 'Sauces Maison');
+
+        // Options carry price (admin edits the construct; this is NOT the price-free projection).
+        $options = collect($resp->json('data.options'));
+        $this->assertCount(2, $options);
+        $this->assertEqualsCanonicalizing(['Algérienne', 'Blanche'], $options->pluck('name')->all());
+        $this->assertEquals(0.50, (float) $options->firstWhere('name', 'Algérienne')['price']);
+        $this->assertSame('Maison', $options->firstWhere('name', 'Algérienne')['description']);
+    }
+
+    /** [W1] GET pre-fill rejects a step of another profile (404) and a non-extra_group step (422). */
+    public function test_show_personal_page_guards_step_ownership_and_type(): void
+    {
+        [$profileA, , $stepA] = $this->makePage([['name' => 'X', 'price' => '0.50']], 'Page A');
+        [$profileB] = $this->makePage([['name' => 'Y', 'price' => '0.50']], 'Page B');
+
+        // Step of profile A queried under profile B → 404.
+        $this->actingAs($this->admin, 'sanctum')->getJson(
+            "/api/admin/composer/profiles/{$profileB->id}/personal-page/{$stepA}"
+        )->assertStatus(404);
+
+        // A non-extra_group step → 422.
+        $attrStep = ItemWizardStep::query()->create([
+            'profile_id' => $profileA->id, 'step_key' => 'attr_x', 'label' => 'Attr',
+            'source_type' => 'item_attribute', 'source_ref' => '7', 'min_select' => 0,
+            'max_select' => 1, 'is_active' => true, 'visible_on' => ['pos', 'kiosk'], 'position' => 9,
+        ]);
+        $this->actingAs($this->admin, 'sanctum')->getJson(
+            "/api/admin/composer/profiles/{$profileA->id}/personal-page/{$attrStep->id}"
+        )->assertStatus(422);
+    }
 }

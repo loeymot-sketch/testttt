@@ -394,6 +394,64 @@ class ComposerProfileController extends AdminController
     }
 
     /**
+     * [W1 re-edit pre-fill] Return the editable state of an EXISTING personal page so the builder
+     * modal can open PRE-FILLED, then submit back to updatePersonalPage(). Read-only; keyed on the
+     * server-trusted step PK (the SAME binding the PUT edits), so the pre-fill and the subsequent
+     * edit always describe the one group this step points at.
+     *
+     * Options ARE returned WITH price here: the admin editor edits the construct directly, and price
+     * lives on ItemExtra (the SSOT). This is the opposite concern from the kiosk/POS PROJECTION, which
+     * stays price-free and joins price by choice id — that invariant is untouched (we don't feed this
+     * payload into composer_profile; it only hydrates the admin form, mirroring the create modal's own
+     * price inputs).
+     */
+    public function showPersonalPage(Request $request, ItemWizardProfile $profile, ItemWizardStep $step): JsonResponse
+    {
+        $this->authorizeBranchScope($request, $profile->branch_id_scope);
+
+        abort_if((int) $step->profile_id !== (int) $profile->id, 404);
+        abort_if($step->source_type !== 'extra_group', 422, "Cette page n'est pas une page d'options modifiable.");
+
+        $groupLabel = (string) $step->source_ref;
+        abort_if($groupLabel === '', 422, 'This step is not bound to an options group.');
+
+        // A representative item carries the construct (create/update replicate it across every item,
+        // so any one is canonical). Read its options for the bound group — this is what PUT will edit.
+        $repItem = $profile->item_id
+            ? Item::query()->whereKey($profile->item_id)->first()
+            : Item::query()->whereNull('deleted_at')
+                ->where('item_category_id', $profile->item_category_id)
+                ->orderBy('id')
+                ->first();
+        abort_if($repItem === null, 422, 'No products to read the personal page from.');
+
+        $options = ItemExtra::query()
+            ->where('item_id', $repItem->id)
+            ->where('group_label', $groupLabel)
+            ->orderBy('id')
+            ->get()
+            ->map(fn ($extra) => [
+                'name' => (string) $extra->name,
+                'price' => (float) $extra->price,
+                'description' => $extra->description !== null ? (string) $extra->description : '',
+                'image_path' => $extra->image_path !== null ? (string) $extra->image_path : null,
+            ])->values();
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'step_id' => (int) $step->id,
+                'label' => (string) $step->label,
+                'group_label' => $groupLabel,
+                'min_select' => (int) $step->min_select,
+                'max_select' => (int) $step->max_select,
+                'visible_on' => $step->visible_on ?: ['pos', 'kiosk'],
+                'options' => $options,
+            ],
+        ]);
+    }
+
+    /**
      * Reserved kiosk step_keys that route to a FROZEN specialized component
      * (KioskWizardComponent STEP_KEY_REGISTRY + ADDON_ROLE_TO_TYPE keys). A builder-generated
      * step_key MUST avoid these, otherwise the page is hijacked by e.g. KioskStepSauceComponent

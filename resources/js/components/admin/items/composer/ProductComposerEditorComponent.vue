@@ -157,13 +157,25 @@
                                 {{ selectedStep ? selectedSourceLabel(selectedStep) : t('message.composer.no_steps', 'Ajoutez une page pour commencer.') }}
                             </p>
                         </div>
-                        <span
-                            class="rounded-full border px-3 py-1 text-xs font-semibold"
-                            :class="profile?.is_published ? 'border-[#b9e7c8] bg-[#edf9f1] text-[#14743a]' : 'border-[#e4d8b5] bg-[#fff8df] text-[#8a6812]'"
-                            data-testid="admin-composer-publish-state"
-                        >
-                            {{ profile?.is_published ? t('label.composer.published', 'Publie') : t('label.composer.draft', 'Brouillon') }}
-                        </span>
+                        <div class="flex items-center gap-3">
+                            <button
+                                v-if="selectedStepIsEditableGroup"
+                                type="button"
+                                class="db-btn-outline !h-[36px] !px-3 !text-xs !border-[#1ab759] !text-[#138445]"
+                                data-testid="composer-edit-personal-page"
+                                @click="editPersonalPage(selectedStep)"
+                            >
+                                <i class="lab lab-edit-2" aria-hidden="true"></i>
+                                {{ t('label.composer.edit_options', 'Modifier les options') }}
+                            </button>
+                            <span
+                                class="rounded-full border px-3 py-1 text-xs font-semibold"
+                                :class="profile?.is_published ? 'border-[#b9e7c8] bg-[#edf9f1] text-[#14743a]' : 'border-[#e4d8b5] bg-[#fff8df] text-[#8a6812]'"
+                                data-testid="admin-composer-publish-state"
+                            >
+                                {{ profile?.is_published ? t('label.composer.published', 'Publie') : t('label.composer.draft', 'Brouillon') }}
+                            </span>
+                        </div>
                     </div>
 
                     <ComposerStepFormPanel
@@ -352,8 +364,10 @@
             <div class="flex max-h-[90vh] w-full max-w-2xl flex-col rounded-lg bg-white shadow-xl">
                 <div class="flex items-start justify-between gap-3 border-b border-[#e3e8e5] p-5">
                     <div>
-                        <h3 class="text-lg font-semibold text-[#202824]">
-                            {{ t('label.composer.add_personal_page', 'Créer une page personnalisée') }}
+                        <h3 class="text-lg font-semibold text-[#202824]" data-testid="composer-personal-page-title">
+                            {{ personalPageIsEdit
+                                ? t('label.composer.edit_personal_page', 'Modifier la page personnalisée')
+                                : t('label.composer.add_personal_page', 'Créer une page personnalisée') }}
                         </h3>
                         <p class="mt-1 text-sm text-[#66756e]">
                             {{ t('message.composer.personal_page_hint', "Composez une page sur mesure : chaque option porte son propre prix (0 = offert). Le prix vit sur l'option, jamais sur la page.") }}
@@ -525,7 +539,11 @@
                         @click="submitPersonalPage"
                     >
                         <i class="lab lab-tick-circle-2" aria-hidden="true"></i>
-                        {{ personalPageSaving ? t('label.composer.saving', 'Enregistrement...') : t('label.composer.create_page', 'Créer la page') }}
+                        {{ personalPageSaving
+                            ? t('label.composer.saving', 'Enregistrement...')
+                            : (personalPageIsEdit
+                                ? t('label.composer.update_page', 'Mettre à jour la page')
+                                : t('label.composer.create_page', 'Créer la page')) }}
                     </button>
                 </div>
             </div>
@@ -602,6 +620,8 @@ export default {
             personalPageOpen: false,
             personalPageSaving: false,
             personalPageError: '',
+            // null = create mode; a step id = re-edit mode (PUT back to that step's bound group).
+            personalPageEditStepId: null,
             // Kept in sync with blankPersonalPage(); inlined here because Options-API
             // data() runs before methods are bound on the instance.
             personalPage: {
@@ -733,6 +753,16 @@ export default {
             set(value) {
                 this.updateSelectedStep(value);
             },
+        },
+        personalPageIsEdit() {
+            return this.personalPageEditStepId != null;
+        },
+        // The selected step is an editable options group (extra_group) that already exists server-side
+        // (has an id) → expose "Modifier les options". A draft step (no id) must be saved first.
+        selectedStepIsEditableGroup() {
+            return Boolean(this.selectedStep
+                && this.selectedStep.source_type === 'extra_group'
+                && this.selectedStep.id);
         },
         previewBranches() {
             if (!this.branches.length) return [];
@@ -943,10 +973,50 @@ export default {
         openPersonalPage() {
             this.personalPage = this.blankPersonalPage();
             this.personalPageError = '';
+            this.personalPageEditStepId = null;
             this.personalPageOpen = true;
+        },
+        async editPersonalPage(step) {
+            // Re-edit an EXISTING options page. Pre-fill from the server (the bound group's options +
+            // the step's display props), keyed on the step PK — the SAME binding the PUT will edit.
+            const target = step || this.selectedStep;
+            if (!target?.id || !this.profile?.id) return;
+            this.personalPageError = '';
+            this.personalPageEditStepId = target.id;
+            this.personalPage = this.blankPersonalPage();
+            this.personalPageOpen = true;
+            this.personalPageSaving = true;
+            try {
+                const response = await axios.get(
+                    `admin/composer/profiles/${this.profile.id}/personal-page/${target.id}`,
+                );
+                const data = response.data?.data || {};
+                const options = Array.isArray(data.options) && data.options.length
+                    ? data.options.map((option) => ({
+                        name: String(option.name || ''),
+                        price: Number(option.price || 0),
+                        description: option.description ? String(option.description) : '',
+                    }))
+                    : [{ name: '', price: 0, description: '' }];
+                this.personalPage = {
+                    label: String(data.label || target.label || ''),
+                    options,
+                    min_select: Number(data.min_select ?? target.min_select ?? 0),
+                    max_select: data.max_select == null ? null : Number(data.max_select),
+                    visible_on: Array.isArray(data.visible_on) && data.visible_on.length
+                        ? [...data.visible_on]
+                        : ['pos', 'kiosk'],
+                };
+            } catch (error) {
+                this.personalPageError = error?.response?.data?.message
+                    || this.t('message.composer.personal_page_load_failed', 'Impossible de charger la page à modifier.');
+            } finally {
+                this.personalPageSaving = false;
+            }
         },
         closePersonalPage() {
             this.personalPageOpen = false;
+            this.personalPageEditStepId = null;
         },
         addPersonalOption() {
             this.personalPage.options.push({ name: '', price: 0, description: '' });
@@ -999,9 +1069,20 @@ export default {
                     this.personalPageError = this.t('message.composer.personal_page_no_profile', "Sauvegardez d'abord le wizard.");
                     return;
                 }
-                await axios.post(`admin/composer/profiles/${this.profile.id}/personal-page`, payload);
-                this.personalPageOpen = false;
-                alertService.success(this.t('message.composer.personal_page_created', 'Page personnalisée créée.'));
+                if (this.personalPageEditStepId != null) {
+                    // Re-edit IN PLACE: PUT to the step's own bound group (server-trusted PK).
+                    await axios.put(
+                        `admin/composer/profiles/${this.profile.id}/personal-page/${this.personalPageEditStepId}`,
+                        payload,
+                    );
+                    this.personalPageOpen = false;
+                    this.personalPageEditStepId = null;
+                    alertService.success(this.t('message.composer.personal_page_updated', 'Page personnalisée mise à jour.'));
+                } else {
+                    await axios.post(`admin/composer/profiles/${this.profile.id}/personal-page`, payload);
+                    this.personalPageOpen = false;
+                    alertService.success(this.t('message.composer.personal_page_created', 'Page personnalisée créée.'));
+                }
                 await this.loadProfile();
             } catch (error) {
                 if (error?.response?.status === 422) {
