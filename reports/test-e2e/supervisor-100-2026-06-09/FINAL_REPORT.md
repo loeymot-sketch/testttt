@@ -29,8 +29,8 @@ Full remediation plan → `plans/GOAL_SUPERVISOR_100_PRODUCTION_PERFECT_2026-06-
 Pricing SSOT, NF525 chain, BranchScope×20, idempotency, order state machine, Sanctum, boot guards; kiosk idle; POS unified encaissement + D2 create-then-collect; KDS/OSS with D1 contract + polling fallback; dashboard cockpit FR money; catalogue 45/11; standalone web+mobile.
 
 ## Honesty ledger (proven vs pending)
-- ✅ PROVEN: 7-surface renders, FR money, 45 items, D2 queue, all 12 anchors, mobile-loyalty divergence (line-by-line).
-- ⏳ PENDING (scoped, not faked): per-finding mutation `e2e_check` on `:8766`, the kiosk→KDS→OSS sync mutation flow, and the full per-button sweep of ~58 admin pages (Wave-V).
+- ✅ PROVEN: all 12 anchors (grep); CAISSE-01 both halves; mobile-loyalty divergence (line-by-line); **and a full read-only per-page sweep of all 34 admin/operational pages live on `:8767` — 0 console errors each** (`SWEEP_COVERAGE.md`), which surfaced 5 more FR-locale findings (SWEEP-MONEY/TIME/PAYMODE/EMP/STUDIO-I18N).
+- ⏳ PENDING (scoped, not faked — Wave-V): *mutation* E2E only — placing an order through kiosk→KDS→OSS sync, CAISSE-01's DB-assert, recall paths, and destructive buttons (delete/save). These MUST run on the disposable `:8766` clone (never the operating chain) and they validate the *fixes*, which are owner-gated and not yet applied.
 
 ## Owner gates (must decide before remediation) → GOAL §G
 GATE-INT-1 (integration branch) · GATE-FROZEN-1 (CAISSE-01 frozen vs server-side) · GATE-LOYALTY-1 (mobile ratio) · GATE-PUBLISH-1 (web legal) · GATE-DATA-1 (DB clean-state).

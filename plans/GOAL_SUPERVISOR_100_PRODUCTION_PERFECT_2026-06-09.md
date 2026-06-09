@@ -151,9 +151,19 @@ The anti-hallucination stage is the supervisor's bad-mood second opinion. It **d
 | FR money on dashboard `31 773,90 €` / 45 items / D2 encaissement queue | live | ✅ PROVEN |
 | WEBAPP-L1 mobile loyalty 10× divergence | grep line-by-line + in-page eval | ✅ PROVEN (code) |
 | All 12 findings' `file:line` anchors | grep/Read by verify agents | ✅ PROVEN |
-| **Mutation flow** kiosk→KDS→OSS sync; CAISSE-01 under-bill; recall paths | **needs `:8766` disposable clone** (forbidden on `:8765` shared chain) | ⏳ PENDING (each task's `e2e_check`) |
-| Per-button click-through of all ~58 admin pages | — | ⏳ PENDING (Wave-V) |
-> **Honest stance:** the load-bearing renders + the 12 anchors are proven; the per-finding mutation proofs run on `:8766` as each fix lands (the `e2e_check` lines above). This campaign did not click all 200 buttons — that is Wave-V, scoped not faked.
+| **Per-page navigation sweep — all 27 navigable admin routes + 7 operational (34 pages)** | live Playwright `:8767` (deployed tree) read-only | ✅ **DONE** — 0 console errors each; 5 new FR-locale findings (see `reports/.../SWEEP_COVERAGE.md`) |
+| **Mutation flow** kiosk→KDS→OSS sync; CAISSE-01 under-bill DB-assert; recall paths; destructive buttons (delete/save) | **needs `:8766` disposable clone** (forbidden on `:8765`/`:8767` shared chain) | ⏳ PENDING (each task's `e2e_check`, Wave-V) |
+> **Honest stance:** the load-bearing renders, the 12 anchors, AND the read-only per-page sweep of all 34 admin/operational pages (0 console errors) are proven. What remains is *mutation* coverage — placing orders, exercising destructive buttons, CAISSE-01's DB-assert — which **must** run on the disposable `:8766` clone (never the operating chain) and validates the *fixes*, which are owner-gated and not yet applied. Mutation E2E is sequenced to the remediation waves, scoped not faked.
+
+### §4b — New findings from the per-page sweep (all P2, FR-locale/i18n/display)
+| ID | Page(s) | Finding | RC-01-linked? |
+|---|---|---|---|
+| SWEEP-MONEY-01 | items, transactions, items/studio | money `1.50`/`+ 8.50` en-US dot/no-€ vs correct `32 525,40 €` elsewhere | likely |
+| SWEEP-TIME-01 | sales-report, transactions | DATE en-US `01:41 PM` vs FR 24h `13:41` | likely |
+| SWEEP-PAYMODE-01 | transactions | MODE shows raw enum `COUNTER_CASH` not FR label | yes (sibling fix exists) |
+| SWEEP-EMP-01 | employees | phone renders `null0680718093` (null+number concat) | net-new |
+| SWEEP-STUDIO-I18N | items/studio | missing fr key `studio.product_composer_button` → 90 empty button labels | net-new |
+> Interpretation: FR-locale defects are **surface-specific** (cash-overview/dashboard/encaissement correct) = the live signature of RC-01; integrating the branches closes MONEY/TIME/PAYMODE. EMP-01 + STUDIO-I18N appear net-new. All roll into Wave-1 (integration) + Wave-3 (FR residue).
 
 ---
 
