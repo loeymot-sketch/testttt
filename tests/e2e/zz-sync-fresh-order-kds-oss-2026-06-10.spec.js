@@ -57,7 +57,7 @@ async function addSimple(page, ids) {
   }
 }
 
-async function checkoutCounter(page) {
+async function checkoutCounter(page, outDir) {
   await page.goto('/kiosk/cart', { waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(1800);
   const checkout = page.locator('[data-testid="kiosk-cart-checkout"]');
@@ -70,13 +70,19 @@ async function checkoutCounter(page) {
   await page.waitForTimeout(2000);
   const confirm = page.locator('[data-testid="kiosk-payment-counter-confirm"], [data-testid="kiosk-payment-confirm"]').first();
   await expect(confirm, 'payment confirm visible').toBeVisible({ timeout: 12_000 });
+  // [ADV-6 heal] the real order-create route is POST …/order (FrontendOrderController@store)
   const orderResp = page.waitForResponse(
-    (r) => /\/api\/kiosk\/order|\/kiosk\/orders|counter/i.test(r.url()) && r.request().method() === 'POST',
+    (r) => r.request().method() === 'POST' && /\/order\/?(\?|$)/i.test(r.url()),
     { timeout: 25_000 },
   ).catch(() => null);
   await confirm.click();
   const resp = await orderResp;
   await page.waitForURL(/\/kiosk\/(confirmation|waiting)/, { timeout: 25_000 }).catch(() => {});
+  // [ADV-1 heal] capture the confirmation/waiting screen IMMEDIATELY — the
+  // waiting screen auto-resets to idle within seconds.
+  if (outDir) {
+    await page.screenshot({ path: path.join(outDir, '01-kiosk-confirmation.png') }).catch(() => {});
+  }
   await page.waitForTimeout(2000);
   return resp ? resp.status() : null;
 }
@@ -93,9 +99,10 @@ test('fresh kiosk order syncs kiosk → KDS → bump → OSS with outbox dispatc
   await loginAsKiosk(page);
   await startTakeaway(page);
   await addSimple(page, [58]);
-  const apiStatus = await checkoutCounter(page);
-  await page.screenshot({ path: path.join(OUT, '01-kiosk-confirmation.png') }).catch(() => {});
+  const apiStatus = await checkoutCounter(page, OUT);
   console.log(`[SYNC] kiosk order placed apiStatus=${apiStatus}`);
+  expect(apiStatus, 'order POST observed with 2xx').toBeGreaterThanOrEqual(200);
+  expect(apiStatus, 'order POST observed with 2xx').toBeLessThan(300);
 
   const orderRow = db(`SELECT id, status, source_surface, DATE(created_at)=CURDATE() FROM orders WHERE id > ${baselineMax} AND source_surface='kiosk' ORDER BY id DESC LIMIT 1;`);
   expect(orderRow, 'a new kiosk order row exists').not.toBe('');
@@ -123,7 +130,10 @@ test('fresh kiosk order syncs kiosk → KDS → bump → OSS with outbox dispatc
   await page.waitForTimeout(3500);
   const kdsCard = page.locator('.kds-card').filter({ hasText: matcher }).first();
   await expect(kdsCard, `KDS shows fresh order ${orderId} (${idTokens.join('/')})`).toBeVisible({ timeout: 20_000 });
+  // [ADV-2 heal] prove the fresh card itself: scroll into view + element shot
+  await kdsCard.scrollIntoViewIfNeeded().catch(() => {});
   await page.screenshot({ path: path.join(OUT, '02-kds-fresh-order.png'), fullPage: true }).catch(() => {});
+  await kdsCard.screenshot({ path: path.join(OUT, '02b-kds-fresh-card.png') }).catch(() => {});
 
   // 4 — two-stage bump on that order's card: « Démarrer » (ACCEPT→PREPARING)
   //     then « Prêt » (PREPARING→PREPARED)
