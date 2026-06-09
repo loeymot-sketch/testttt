@@ -1,0 +1,101 @@
+[
+  {
+    "id": "WA-01",
+    "file": "database/seeders/SiteTableSeeder.php",
+    "line": "27,62",
+    "title": "site_time_format + TIME_FORMAT seeded 'h:i A' -> 'H:i' (FR 24h)",
+    "verdict": "HOLDS",
+    "severity": "P2",
+    "proof": "WT HEAD file shows 'H:i' at both lines (sed 24-28/59-63). AppLibrary.php is the only time-render helper and defaults env('TIME_FORMAT','H:i') at all 4 occurrences (lines 32,40,56,432). Grep across WT app/database/config for 'h:i A' -> ONLY residue is resources/js/enums/modules/timeFormatEnum.js:4, which is a selectable 12-hour DROPDOWN option (legitimate, not a default). No migration/other seeder reintroduces 'h:i A'. php -l clean.",
+    "reproduction": "WT=.../wave3-deployed-heal; sed -n '24,28p;59,63p' $WT/database/seeders/SiteTableSeeder.php; grep -rn 'h:i A' $WT/app $WT/database $WT/config $WT/resources; grep -n \"TIME_FORMAT\" $WT/app/Libraries/AppLibrary.php",
+    "remediation": "None for fresh installs. See WA-01-CAVEAT for the deployed box."
+  },
+  {
+    "id": "WA-01-CAVEAT",
+    "file": "database/seeders/SiteTableSeeder.php",
+    "line": "27,62",
+    "title": "Seeder fix is fresh-install-only; deployed box's existing site_time_format setting is NOT touched by this code change",
+    "verdict": "RISK",
+    "severity": "P3",
+    "proof": "Seeders only run on install/reseed. W1 commit message itself admits 'live .env + DB setting fixed on clone ... operating box = owner data-action'. On a branch named deployed-dashboard-fixes, the deployed Settings row site_time_format is set by code only at seed time; an already-deployed box keeps whatever value its DB holds until an owner data-action updates it.",
+    "reproduction": "Confirm on the deployed/operating box: Settings::group('site')->get('site_time_format') and env('TIME_FORMAT'). Code change alone does not retroactively migrate a live setting.",
+    "remediation": "Orchestrator/owner must consciously confirm the deployed render shows 24h (data-action), not assume the seeder retroactively fixed it. Low risk, display-only, NF525-neutral."
+  },
+  {
+    "id": "WA-02",
+    "file": "lang/fr/validation.php",
+    "line": "whole file",
+    "title": "Full FR translation of validation.php + attributes",
+    "verdict": "HOLDS",
+    "severity": "P2",
+    "proof": "php -l clean. Flattened key diff vs lang/en/validation.php = 0 missing keys in FR (EN 116 flat keys, FR 129 -> FR superset, no English fallback leak). Placeholder-integrity scan over every shared string = 0 mismatches (top-level) and 0 nested mismatches (min/max/between/size/gt/lt). All :attribute/:min/:value preserved verbatim. config/app.php locale='fr' (hardcoded, ADR-007) so FR file loads.",
+    "reproduction": "php -l $WT/lang/fr/validation.php; php -r '...flatten EN/FR, array_diff_key, regex :placeholder compare...' (see session). 0 missing, 0 placeholder mismatch.",
+    "remediation": "None."
+  },
+  {
+    "id": "WA-03",
+    "file": "app/Http/Requests/EmployeeRequest.php",
+    "line": "79-84 (removed)",
+    "title": "Removed EN messages() override 'role_id.required' => 'The role field is required.'",
+    "verdict": "HOLDS",
+    "severity": "P2",
+    "proof": "git show 4313f4547 confirms the removed messages() contained ONLY one EN string for role_id.required (no custom unique-email/password wording). rules() keeps role_id=['required','numeric']. With override gone it now resolves via FR validation.php: required='Le champ :attribute est obligatoire.' + attributes.role_id='rôle' => renders 'Le champ rôle est obligatoire.' (FR, better than the removed EN). All other EmployeeRequest fields (email/password/password_confirmation/username/phone) have FR attributes. The password-confirmation mismatch keeps its own __('auth...') message (untouched). php -l clean. This is an IMPROVEMENT (EN->FR), not a regression.",
+    "reproduction": "git show 4313f4547 -- app/Http/Requests/EmployeeRequest.php; php -r 'show fr required + attributes.role_id'; php -l $WT/app/Http/Requests/EmployeeRequest.php",
+    "remediation": "None."
+  },
+  {
+    "id": "WA-04",
+    "file": "resources/js/components/admin/items/{ItemListComponent,ItemShowComponent,CatalogStudioComponent}.vue",
+    "line": "216 / 60 / 134",
+    "title": "Price display switched {{ item.flat_price }} -> {{ item.currency_price }}",
+    "verdict": "HOLDS",
+    "severity": "P1",
+    "proof": "PROVENANCE CLOSED. app/Models/Item.php has NO accessor for flat_price OR currency_price -> both are resource-only (so the OLD flat_price binding was already 100% resource-dependent; identical provenance). All 3 item resources emit BOTH fields side-by-side: ItemResource.php:74/76, SimpleItemResource.php:35/37, NormalItemResource.php:92/94 (currency_price = AppLibrary::currencyAmountFormat($this->price), never blank — casts (float), fr-FR EUR NumberFormatter or FR fallback). ItemController::index -> SimpleItemResource::collection (feeds ItemList+CatalogStudio via $store getter item/lists, line 295/394), show -> new ItemResource (feeds ItemShow). No data path feeds raw models -> no blank-price regression possible. ItemListComponent.vue:586 still uses flat_price but that's loading a numeric EDIT-FORM input (correct, not a display).",
+    "reproduction": "grep -n 'flat_price\\|currency_price' $WT/app/Http/Resources/{ItemResource,SimpleItemResource,NormalItemResource}.php; grep -n 'getFlatPriceAttribute\\|getCurrencyPriceAttribute' $WT/app/Models/Item.php (none); grep -n 'SimpleItemResource::collection\\|new ItemResource' $WT/app/Http/Controllers/Admin/ItemController.php; grep -n 'item/lists' $WT/resources/js/components/admin/items/CatalogStudioComponent.vue",
+    "remediation": "None."
+  },
+  {
+    "id": "WA-05",
+    "file": "resources/js/components/admin/items/ItemPreviewComponent.vue",
+    "line": "352-365",
+    "title": "formatPrice rewritten from no-op to Intl fr-FR EUR",
+    "verdict": "HOLDS",
+    "severity": "P2",
+    "proof": "git show 4313f4547 confirms OLD body was literal no-op (return value; after null check). NEW body: Number.parseFloat -> Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',min/maxFractionDigits:2}) with FR-formatted catch fallback (toFixed.replace('.',',') + ' €'). Renders '1,50 €' / '12,00 €'. Guards null/undefined/''/non-finite. Genuine, not a no-op.",
+    "reproduction": "sed -n '352,366p' $WT/resources/js/components/admin/items/ItemPreviewComponent.vue; git show 4313f4547 -- that file",
+    "remediation": "None."
+  },
+  {
+    "id": "WA-06",
+    "file": "resources/js/components/admin/creditBalanceReport/CreditBalanceReportComponent.vue",
+    "line": "91",
+    "title": "{{ user.balance }} -> {{ user.currency_balance }}",
+    "verdict": "HOLDS",
+    "severity": "P1",
+    "proof": "PROVENANCE CLOSED. CreditBalanceReportController.php:47 returns CreditBalanceUserResource::collection(...). CreditBalanceUserResource.php:29 emits currency_balance => AppLibrary::currencyAmountFormat($this->balance) (and :28 still emits raw balance). Field guaranteed on the payload; currencyAmountFormat never blank. Binding matches.",
+    "reproduction": "grep -n 'currency_balance' $WT/resources/js/components/admin/creditBalanceReport/CreditBalanceReportComponent.vue; grep -n 'CreditBalanceUserResource::collection' $WT/app/Http/Controllers/Admin/CreditBalanceReportController.php; grep -n 'currency_balance' $WT/app/Http/Resources/CreditBalanceUserResource.php",
+    "remediation": "None."
+  },
+  {
+    "id": "WA-07",
+    "file": "resources/js/components/admin/cashSessionReport/CashSessionReportListComponent.vue",
+    "line": "261",
+    "title": "formatMoney -> Intl fr-FR EUR (all cells + header totals)",
+    "verdict": "HOLDS",
+    "severity": "P2",
+    "proof": "formatMoney(v): Number(v||0) -> Intl.NumberFormat('fr-FR' currency EUR 2dp) with FR fallback. Applied to header totals (lines 62,65 totalOpening/totalClosing) and every cell (97 opening,99 closing,102 variance,109 expected,111 counted) with explicit null='—' guards. Renders '12,00 €'.",
+    "reproduction": "sed -n '261,273p' $WT/resources/js/components/admin/cashSessionReport/CashSessionReportListComponent.vue; grep -n 'formatMoney' that file",
+    "remediation": "None."
+  },
+  {
+    "id": "WA-08",
+    "file": "resources/js/languages/fr.json",
+    "line": "1272",
+    "title": "label.tax_rate 'Taxe Taux' -> 'Taux de TVA'",
+    "verdict": "HOLDS",
+    "severity": "P3",
+    "proof": "fr.json is valid JSON (16 top keys). label.tax_rate = 'Taux de TVA', single occurrence. Duplicate-key scan via json.load object_pairs_hook Counter = NO duplicate 'tax_rate' anywhere. (Line is ~1272, not ~1255 as prompted, but key/value correct.)",
+    "reproduction": "python3 -c \"import json;json.load(open(FR),object_pairs_hook=dupscan)\"; grep -n '\\\"tax_rate\\\"' $WT/resources/js/languages/fr.json",
+    "remediation": "None."
+  }
+]

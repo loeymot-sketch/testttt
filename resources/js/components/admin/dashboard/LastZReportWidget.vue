@@ -15,15 +15,19 @@
                         {{ $t('label.last_z_report') }} #{{ resolvedReport.sequence_no }}
                     </p>
                     <p class="text-xs text-gray-600 mb-1 capitalize">
-                        {{ resolvedReport.status }}
+                        {{ localizedStatus }}
                     </p>
                     <p class="text-sm text-gray-600 mb-3">
                         {{ formattedClosedAt }}
                     </p>
                 </template>
+                <!-- [W3.5 COCKPIT 2026-06-08] Fiscal-correct copy: the generic
+                     "Voir toutes" (view_all_alerts) belonged to the stock-alerts
+                     widget. A "Dernier Z" widget links to the fiscal closures.
+                     Router target (transactions list) unchanged. -->
                 <router-link :to="{ name: 'admin.transactions.list' }" class="text-sm font-medium text-orange-700"
                     data-testid="last-z-report-link">
-                    {{ $t('label.view_all_alerts') }}
+                    {{ $t('label.view_z_reports') }}
                 </router-link>
             </div>
         </div>
@@ -48,6 +52,22 @@ export default {
         };
     },
     computed: {
+        // [W3.5 COCKPIT 2026-06-08] Render the Z status in FR. Reuse the existing
+        // cash_status_* keys (open/closed/reconciled). Use an explicit whitelist
+        // map rather than `$t('label.cash_status_' + status)` so an unexpected
+        // status value falls back to the raw string instead of leaking the raw
+        // i18n key (no-raw-label rule). Status is lowercase (see fetchReports).
+        localizedStatus() {
+            const row = this.resolvedReport;
+            if (! row || ! row.status) return '';
+            const map = {
+                open: 'label.cash_status_open',
+                closed: 'label.cash_status_closed',
+                reconciled: 'label.cash_status_reconciled',
+            };
+            const key = map[String(row.status).toLowerCase()];
+            return key ? this.$t(key) : String(row.status);
+        },
         formattedClosedAt() {
             const row = this.resolvedReport;
             if (! row) return '';

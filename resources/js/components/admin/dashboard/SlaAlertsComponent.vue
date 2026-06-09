@@ -4,7 +4,7 @@
             <div class="flex items-center justify-between mb-4">
                 <h4 class="font-semibold text-lg text-gray-800 flex items-center gap-2">
                     Alertes SLA (Cuisine > 15min)
-                    <span v-if="!hasError && alerts.length > 0" class="flex h-3 w-3 relative ml-2">
+                    <span v-if="!hasError && actionableAlerts.length > 0" class="flex h-3 w-3 relative ml-2">
                       <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
                       <span class="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
                     </span>
@@ -13,7 +13,11 @@
                      "0 Alerte(s)" — a false reassurance. Suppress it entirely
                      when hasError; render a neutral 'indisponible' chip instead. -->
                 <span v-if="hasError" data-testid="sla-alerts-status-unavailable" class="text-sm font-medium bg-gray-100 text-gray-600 px-3 py-1 rounded-full">Indisponible</span>
-                <span v-else data-testid="sla-alerts-count" class="text-sm font-medium bg-red-100 text-red-900 px-3 py-1 rounded-full">{{ alerts.length }} Alerte(s)</span>
+                <!-- [W3.2 COCKPIT 2026-06-08] Count reflects ONLY the actionable
+                     (<24h) bucket — old/abandoned zombie tickets are parked in a
+                     neutral line below and must not inflate the "handle now"
+                     signal nor latch the alarm badge. -->
+                <span v-else data-testid="sla-alerts-count" class="text-sm font-medium bg-red-100 text-red-900 px-3 py-1 rounded-full">{{ actionableAlerts.length }} Alerte(s)</span>
             </div>
 
             <!-- [DASH-04 FIX] Distinct neutral error state on API failure —
@@ -24,13 +28,19 @@
                 <p class="text-xs mt-1 text-gray-400">Impossible de charger les alertes SLA. Nouvelle tentative automatique.</p>
             </div>
 
-            <div v-else-if="alerts.length === 0" data-testid="sla-alerts-empty" class="flex flex-col items-center justify-center p-8 text-gray-600">
+            <!-- [W3.2 COCKPIT 2026-06-08] Green "flux optimal" empty-state keyed on
+                 the ACTIONABLE (<24h) bucket only. Old zombie tickets are shown
+                 below in a neutral de-emphasized line and do NOT suppress the
+                 green state — green means "nothing to handle right now". -->
+            <div v-else-if="actionableAlerts.length === 0" data-testid="sla-alerts-empty" class="flex flex-col items-center justify-center p-8 text-gray-600">
                 <i class="lab lab-check-circle text-4xl mb-2 text-green-400"></i>
                 <p>Aucune alerte SLA. Flux de cuisine optimal.</p>
             </div>
 
-            <div v-else class="space-y-3 max-h-[300px] overflow-y-auto pr-2">
-                <div v-for="alert in alerts" :key="alert.order_serial_no" class="flex items-center justify-between p-4 bg-red-50 border border-red-100 rounded-lg">
+            <!-- [W3.2 COCKPIT 2026-06-08] Actionable bucket: 15min – 24h, urgent
+                 first (longest wait on top via actionableAlerts sort DESC). -->
+            <div v-else data-testid="sla-alerts-list" class="space-y-3 max-h-[300px] overflow-y-auto pr-2">
+                <div v-for="alert in actionableAlerts" :key="alert.order_serial_no" class="flex items-center justify-between p-4 bg-red-50 border border-red-100 rounded-lg">
                     <div>
                         <h5 class="font-semibold text-red-700">Ticket #{{ alert.queue_number }} ({{ alert.order_serial_no }})</h5>
                         <p class="text-sm text-red-600 font-medium mt-1">
@@ -39,6 +49,15 @@
                         </p>
                     </div>
                 </div>
+            </div>
+
+            <!-- [W3.2 COCKPIT 2026-06-08] Neutral "old tickets" line (> 24 h):
+                 rendered INDEPENDENTLY of the actionable list/empty-state so
+                 abandoned zombies stay visible but de-emphasized — NOT alarm-
+                 styled, never counted in the badge. Hidden on API error. -->
+            <div v-if="!hasError && oldAlerts.length > 0" data-testid="sla-alerts-old" class="mt-4 pt-3 border-t border-gray-100 text-sm text-gray-500 flex items-center gap-2">
+                <i class="lab lab-time w-4 h-4 text-gray-400" aria-hidden="true"></i>
+                <span>{{ oldAlerts.length }} {{ $t('label.sla_old_tickets') }}</span>
             </div>
         </div>
     </div>
@@ -56,6 +75,22 @@ export default {
             hasError: false,
             timer: null
         }
+    },
+    computed: {
+        // [W3.2 COCKPIT 2026-06-08] Split the raw SLA alerts by age to defuse the
+        // "zombie" noise. `time_preparing` is in MINUTES (same field formatWait
+        // consumes); 24 h = 1440 min. Actionable = 15min–24h (the 15-min floor is
+        // already backend-enforced, hence the < 1440 cut only), sorted DESC so the
+        // longest-waiting / most-urgent ticket is on top. Old = >= 24 h (parked).
+        actionableAlerts() {
+            return (this.alerts || [])
+                .filter(a => (Number(a.time_preparing) || 0) < 1440)
+                .slice()
+                .sort((a, b) => (Number(b.time_preparing) || 0) - (Number(a.time_preparing) || 0));
+        },
+        oldAlerts() {
+            return (this.alerts || []).filter(a => (Number(a.time_preparing) || 0) >= 1440);
+        },
     },
     mounted() {
         this.fetchData();

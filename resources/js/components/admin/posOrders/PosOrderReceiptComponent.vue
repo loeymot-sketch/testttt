@@ -180,7 +180,7 @@
                 <div v-if="nf525FooterLines.length"
                     class="text-[10px] leading-snug text-heading text-center px-1 py-2 border-b border-dashed border-gray-400">
                     <p v-for="line in nf525FooterLines" :key="line.key" class="mb-0.5">
-                        <span class="font-semibold">{{ $t('label.' + line.key) }}:</span>
+                        <span class="font-semibold">{{ $t('label.' + String(line.key).toLowerCase()) }}:</span>
                         {{ line.value }}
                     </p>
                 </div>

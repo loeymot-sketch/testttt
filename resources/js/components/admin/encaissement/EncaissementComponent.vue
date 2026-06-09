@@ -20,6 +20,20 @@
                     </div>
                 </div>
 
+                <!-- [W2.3] Total en attente d'encaissement — somme client-side de la
+                     liste déjà fetchée (aucun nouvel appel API). Répond à la question
+                     quotidienne du gérant : « combien d'argent non encaissé attend ? » -->
+                <div v-if="orders.length" class="enc-total-banner">
+                    <span class="enc-total-label">{{ $t('label.encaisser_total_pending') }}</span>
+                    <span class="enc-total-right">
+                        <span class="enc-total-amount">{{ formatPrice(totalPending) }}</span>
+                        <!-- [G-DEC-1 heal] Honest caveat shown ONLY when the server cap
+                             (200) is hit — the sum is then a partial total, not the full
+                             amount owed. Hidden in the normal (<200) case. -->
+                        <span v-if="pendingCapped" class="enc-total-capnote">{{ $t('label.encaisser_total_capped') }}</span>
+                    </span>
+                </div>
+
                 <div class="enc-body">
                     <div v-if="orders.length === 0" class="enc-empty">
                         <div class="enc-empty-icon">✅</div>
@@ -32,7 +46,16 @@
                                 <span class="enc-origin-badge" :class="originBadge(order).cls">
                                     {{ originBadge(order).label }}
                                 </span>
-                                <span class="enc-queue" v-if="order.queue_number">N°{{ order.queue_number }}</span>
+                                <span class="enc-top-right">
+                                    <!-- [W2.2] Badge d'attente (aging) — calculé depuis created_at,
+                                         devient ambre puis rouge passé ~15 min pour que le gérant
+                                         serve d'abord la commande qui attend le plus. -->
+                                    <span class="enc-wait" :class="waitClass(order.created_at)"
+                                          :title="$t('label.encaisser_wait_title')">
+                                        {{ elapsedShort(order.created_at) }}
+                                    </span>
+                                    <span class="enc-queue" v-if="order.queue_number">N°{{ order.queue_number }}</span>
+                                </span>
                             </div>
                             <div class="enc-ticket-customer">{{ customerName(order) }}</div>
                             <ul class="enc-ticket-items" v-if="order.order_items && order.order_items.length">
@@ -90,7 +113,28 @@ export default {
             encaisseOrder: null,
             pollTimer: null,
             enums: { orderTypeEnum },
+            // [G-DEC-1 heal 2026-06-08] Server caps the pending fetch at
+            // limit(200) (routes/api.php admin/pos/counter-collect/pending).
+            // Mirror it so the total banner can flag a PARTIAL sum when capped.
+            PENDING_CAP: 200,
         };
+    },
+    computed: {
+        // [W2.3] Total en attente d'encaissement — somme client-side des
+        // montants dus de la liste déjà fetchée. Affichage uniquement : aucune
+        // valeur monétaire n'est recalculée côté serveur (orderAmount lit le
+        // champ dû exposé par OrderDetailsResource).
+        totalPending() {
+            return this.orders.reduce((sum, o) => sum + Number(this.orderAmount(o) || 0), 0);
+        },
+        // [G-DEC-1 heal 2026-06-08] The pending list is server-capped at 200;
+        // at the cap the client-side sum is a PARTIAL total, so the banner appends
+        // a caveat (avoids a false "Total" claim that silently under-reports money
+        // owed on a busy day). In real single-restaurant V1 the queue clears well
+        // under 200, so this caveat normally never shows and the label is a true Total.
+        pendingCapped() {
+            return this.orders.length >= this.PENDING_CAP;
+        },
     },
     mounted() {
         this.fetchPending();
@@ -170,11 +214,49 @@ export default {
             }
             return { label: this.$t('label.kiosk'), cls: 'origin-borne' };
         },
+        // [W2.1] Identité ticket propre. Les commandes Borne n'ont pas de vrai
+        // client : le compte machine kiosk (ex. "soak-kiosk-6a1866ebc6835") fuite
+        // sinon dans order.user.name. On détecte l'origine kiosk (source_surface,
+        // primaire) ET on garde un filet /kiosk/i sur le nom brut (si
+        // source_surface est null, le token machine ne doit JAMAIS s'afficher).
+        // Les vrais noms clients (non-borne) restent inchangés.
         customerName(order) {
-            return order.user?.name || order.customer_name || this.$t('label.guest');
+            const surface = String(order.source_surface || '').toLowerCase();
+            const rawName = order.user?.name || order.customer_name || '';
+            const looksLikeKioskToken = /kiosk/i.test(rawName);
+            if (surface === 'kiosk' || looksLikeKioskToken) {
+                return this.$t('label.client_borne');
+            }
+            return rawName || this.$t('label.guest');
         },
         itemName(it) {
             return it.item_name || it.name || it.orderItem?.name || it.order_item?.name || '';
+        },
+        // [W2.2] Étiquette d'attente — porté à l'identique de
+        // PosOrdersTrackerComponent.elapsedShort : "à l'instant" / "12 min" /
+        // "1h05". Affichage seul, calcul depuis created_at exposé par la resource.
+        elapsedShort(iso) {
+            if (!iso) return '';
+            const t = new Date(iso).getTime();
+            if (!Number.isFinite(t)) return '';
+            const diff = Math.max(0, Date.now() - t);
+            const mins = Math.floor(diff / 60000);
+            if (mins < 1) return this.$t('pos.tracker.now');
+            if (mins < 60) return mins + ' min';
+            const h = Math.floor(mins / 60);
+            const m = mins % 60;
+            return h + 'h' + (m < 10 ? '0' + m : m);
+        },
+        // [W2.2] Classe "vieillissement" : ambre passé 15 min, rouge passé 30 min,
+        // pour signaler visuellement la commande qui attend le plus.
+        waitClass(iso) {
+            if (!iso) return '';
+            const t = new Date(iso).getTime();
+            if (!Number.isFinite(t)) return '';
+            const mins = Math.floor(Math.max(0, Date.now() - t) / 60000);
+            if (mins >= 30) return 'enc-wait-critical';
+            if (mins >= 15) return 'enc-wait-stale';
+            return '';
         },
         orderAmount(order) {
             return order.cash_pending_amount ?? order.total ?? order.order_amount ?? 0;
@@ -250,7 +332,40 @@ export default {
     gap: 0.5rem;
     box-shadow: var(--pos-v5-shadow-sm);
 }
+/* [W2.3] Bandeau total en attente */
+.enc-total-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin: var(--pos-v5-space-4) var(--pos-v5-space-5) 0;
+    padding: 0.7rem 1rem;
+    border-radius: var(--pos-v5-radius-md);
+    background: var(--pos-v5-brand-red-faint);
+    border: 1px solid var(--pos-v5-border);
+}
+.enc-total-label { font-weight: 600; color: var(--pos-v5-ink-soft); }
+.enc-total-amount {
+    font-weight: 800;
+    font-size: 1.25rem;
+    color: var(--pos-v5-ink);
+    font-variant-numeric: tabular-nums;
+}
+/* [G-DEC-1 heal] right-aligned amount + optional partial-total caveat */
+.enc-total-right { display: flex; flex-direction: column; align-items: flex-end; gap: 0.1rem; }
+.enc-total-capnote { font-size: 0.7rem; font-weight: 600; color: #b45309; opacity: 0.9; }
 .enc-ticket-top { display: flex; align-items: center; justify-content: space-between; }
+.enc-top-right { display: inline-flex; align-items: center; gap: 0.5rem; }
+/* [W2.2] Badge d'attente (aging) */
+.enc-wait {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--pos-v5-ink-soft);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+.enc-wait-stale { color: #b45309; }
+.enc-wait-critical { color: #b91c1c; }
 .enc-origin-badge {
     display: inline-flex;
     align-items: center;

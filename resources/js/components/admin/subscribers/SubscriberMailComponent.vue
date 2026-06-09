@@ -27,8 +27,8 @@
                     <div class="form-col-12">
                         <div class="flex flex-wrap gap-3 mt-4">
                             <button type="submit" class="db-btn py-2 text-white bg-primary">
-                                <i class="lab lab-save"></i>
-                                <span>{{ $t("label.save") }}</span>
+                                <i class="lab lab-send-2"></i>
+                                <span>Envoyer l'email</span>
                             </button>
 
                             <button type="button" class="modal-btn-outline modal-close" @click="reset">
@@ -85,6 +85,13 @@ export default {
         },
 
         save: function () {
+            // [P1] This sends a LIVE email to the entire subscriber base. The trigger button
+            // was mislabeled "Enregistrer", so a gérant could mass-mail believing they saved a
+            // draft. Confirm before sending.
+            appService.confirmation(
+                "Cet email sera envoyé immédiatement à tous les abonnés. Continuer ?",
+                "Envoyer l'email à tous les abonnés ?"
+            ).then(() => {
             try {
                 this.loading.isActive = true;
                 this.$store
@@ -107,6 +114,7 @@ export default {
                 this.loading.isActive = false;
                 alertService.error(err);
             }
+            }).catch(() => { /* cancelled — nothing sent */ });
         },
     },
 };

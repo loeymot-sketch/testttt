@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Admin;
 use Exception;
 use App\Models\Order;
 use App\Services\OrderService;
+use App\Exports\OrderHistoryExport;
+use Maatwebsite\Excel\Facades\Excel;
 use App\Http\Requests\PaginateRequest;
 use App\Http\Resources\SimpleOrderResource;
 use App\Http\Resources\OrderDetailsResource;
@@ -54,6 +56,36 @@ class OrderHistoryController extends AdminController
 
         try {
             return SimpleOrderResource::collection($this->orderService->list($request));
+        } catch (Exception $exception) {
+            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+        }
+    }
+
+    /**
+     * [GOAL-CAISSE-UNIFIED W4.4 2026-06-08] Read-only export of the unified
+     * order history — the spreadsheet the gérant hands the accountant. Carries
+     * order_serial_no + fiscal_sequence_no for NF525 traceability and honors
+     * the SAME filters as index() (from_date/to_date, source_surface,
+     * order_type, status, payment_status) because it reuses OrderService::list.
+     *
+     * SECURITY: OrderHistoryController has NO constructor middleware (unlike
+     * PosOrderController whose export is gated by ->only('export')). The same
+     * inline gate as index()/show() is therefore MANDATORY here — without it
+     * this leaks the full all-origin order set. BranchScope still scopes a
+     * branch operator to their branch (OrderService::list uses scoped queries);
+     * admin (branch_id=0) sees all. No writes, no NF525 mutation.
+     */
+    public function export(
+        PaginateRequest $request
+    ): \Illuminate\Http\Response|\Symfony\Component\HttpFoundation\BinaryFileResponse|\Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\Routing\ResponseFactory {
+        abort_unless(
+            auth()->user()?->can('pos-orders')
+                || auth()->user()?->can('pos'),
+            403
+        );
+
+        try {
+            return Excel::download(new OrderHistoryExport($this->orderService, $request), 'Historique.xlsx');
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }

@@ -40,14 +40,23 @@
                     class="inline-flex items-center gap-2 rounded-xl border border-[#EFF0F6] bg-white px-4 py-2.5 text-sm font-medium text-heading shadow-xs transition hover:border-primary/40 hover:bg-primary/5">
                     <i :class="link.icon" class="text-primary" aria-hidden="true"></i>
                     <span>{{ link.label }}</span>
+                    <!-- [W5.5 2026-06-08] Live encaissement count badge — number of
+                         orders pending collection (admin/pos/counter-collect/pending).
+                         On-brand bg-primary (#F4501E) ; rendered only when > 0. -->
+                    <span v-if="link.to === '/admin/encaissement' && pendingCount > 0"
+                        class="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-primary text-white text-xs font-semibold leading-none">{{ pendingCount }}</span>
                 </router-link>
             </template>
         </div>
     </nav>
 
-    <ErrorBoundary><OverviewComponent/></ErrorBoundary>
-
+    <!-- [W3.1 COCKPIT 2026-06-08] "Today first" — the gérant's first-screen
+         priority is today's live KPIs (RealtimeReport / Suivi en direct), not
+         the lifetime cumulé tiles. Render the today widget ABOVE the lifetime
+         overview. Both kept inside their ErrorBoundary wrappers. -->
     <ErrorBoundary><RealtimeReportComponent/></ErrorBoundary>
+
+    <ErrorBoundary><OverviewComponent/></ErrorBoundary>
     <div class="row">
         <ErrorBoundary><SlaAlertsComponent/></ErrorBoundary>
         <ErrorBoundary><ChannelStatsComponent/></ErrorBoundary>
@@ -120,7 +129,16 @@ export default {
             demo : ENV.DEMO,
             // [V102-08 HEAL-3 2026-05-26] EOD PDF download state.
             eodDownloading: false,
+            // [W5.5 2026-06-08] Live count of orders pending collection, shown as
+            // a badge on the Encaissement quick-link. Fetched once on mount from
+            // the existing admin/pos/counter-collect/pending endpoint.
+            pendingCount: 0,
         };
+    },
+    mounted() {
+        // [W5.5 2026-06-08] Non-blocking fetch of the pending-collection count for
+        // the Encaissement badge. Failure is swallowed so the cockpit never breaks.
+        this.fetchPendingCount();
     },
     computed: {
         authInfo: function () {
@@ -218,6 +236,18 @@ export default {
                 greet = this.$t('message.good_evening');
             }
             return greet;
+        },
+        // [W5.5 2026-06-08] Fetch the count of orders pending collection and store
+        // it for the Encaissement quick-link badge. Reuses the SAME endpoint the
+        // Encaissement page polls (admin/pos/counter-collect/pending → res.data.data
+        // is the pending list). Wrapped in catch — a 403 / network failure must NOT
+        // break the cockpit, the badge simply stays hidden (pendingCount=0).
+        fetchPendingCount: function () {
+            axios.get('admin/pos/counter-collect/pending').then((res) => {
+                this.pendingCount = res.data?.data?.length || 0;
+            }).catch(() => {
+                this.pendingCount = 0;
+            });
         },
         // [V102-08 HEAL-3 2026-05-26] POST to /api/admin/dashboard/eod-pdf
         // with `responseType: 'blob'` (advisor flag — without it the binary

@@ -30,7 +30,7 @@
                             {{ $t('label.payment_type') }}:
 
                             <span class="text-heading">
-                                {{ posPaymentMethodEnumArray[order.pos_payment_method] }}
+                                {{ posPaymentMethodEnumArray[order.pos_payment_method] || '—' }}
 
                                 <span
                                     v-if="order.pos_payment_method !== enums.posPaymentMethodEnum.CASH && order.pos_payment_note">
@@ -42,10 +42,10 @@
                         <li class="text-xs">
                             {{ $t('label.order_type') }}:
                             <span class="text-heading">
-                                {{ orderTypeEnumArray[order.order_type] }}
+                                {{ orderTypeEnumArray[order.order_type] || '—' }}
                             </span>
                         </li>
-                        <li class="text-xs">{{
+                        <li class="text-xs" v-if="order.order_type === enums.orderTypeEnum.DELIVERY">{{
                             $t('label.delivery_time')
                         }}:
                             <span class="text-heading">
@@ -311,7 +311,7 @@
             <div class="col-12">
                 <div class="db-card">
                     <div class="db-card-header">
-                        <h3 class="db-card-title">{{ $t('label.delivery_information') }}</h3>
+                        <h3 class="db-card-title">{{ order.order_type === enums.orderTypeEnum.DELIVERY ? $t('label.delivery_information') : $t('label.customer_information') }}</h3>
                     </div>
                     <div class="db-card-body">
                         <div class="flex items-center gap-3 mb-4">
@@ -597,13 +597,24 @@ export default {
                 // page for titre-restaurant sales. Mirrors ReceiptComponent.vue
                 // (the printed ticket already has index 5).
                 [posPaymentMethodEnum.TICKET_RESTAURANT]: this.$t("label.ticket_restaurant"),
+                // [W3.6 2026-06-08] index 6 (COUNTER_DEFERRED) was missing →
+                // blank payment-type label for comptoir-différé sales. Mirrors
+                // PosOrderReceiptComponent.vue:234. Template lookup also has a
+                // `|| '—'` fallback so any future/unknown code never renders empty.
+                [posPaymentMethodEnum.COUNTER_DEFERRED]: this.$t("label.counter_deferred"),
             }
         },
         orderTypeEnumArray: function () {
             return {
                 [orderTypeEnum.DELIVERY]: this.$t("label.delivery"),
                 [orderTypeEnum.TAKEAWAY]: this.$t("label.takeaway"),
-                [orderTypeEnum.DINING_TABLE]: this.$t("label.dining_table")
+                [orderTypeEnum.DINING_TABLE]: this.$t("label.dining_table"),
+                // [W3.6 2026-06-08] POS(15)/KIOSK(25) were missing → blank
+                // order-type label for caisse + borne orders. Mirrors the
+                // sibling PosOrderListComponent.vue:262-268 map. Template lookup
+                // also has a `|| '—'` fallback for any unknown code.
+                [orderTypeEnum.POS]: this.$t("label.pos"),
+                [orderTypeEnum.KIOSK]: this.$t("label.kiosk")
             }
         },
         // [WT-D-R1-07 2026-05-20] Token is an internal kiosk/online reference,

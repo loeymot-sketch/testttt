@@ -231,6 +231,11 @@ const DEBOUNCE_MS = 500;
 
 const DEFAULT_REASON = 'out_of_stock_manual';
 
+// Stable key for the synthetic "⚠ Ruptures" bucket (union of all out-of-stock
+// products). Kept out of the default-landing selection (see pickDefaultBucketKey)
+// so it stays a one-click target, not the page's default view.
+const RUPTURES_BUCKET_KEY = '__ruptures__';
+
 const CATEGORY_ICONS = {
     burgers: '🍔',
     burger: '🍔',
@@ -374,6 +379,29 @@ export default {
                 });
             });
 
+            // Synthetic pinned bucket: the union of every out-of-stock product
+            // across all real buckets, so the gérant reaches "what's out" in one
+            // click instead of paging through ~22 categories. Client-side derived
+            // (no extra API call); product keys are globally unique across axes so
+            // the union never collides on the Vue :key. Appears ONLY when N>0 and
+            // is pinned first.
+            const unavailable = buckets.reduce((acc, b) => {
+                (b.items || []).forEach((p) => {
+                    if (!p.is_available) acc.push(p);
+                });
+                return acc;
+            }, []);
+            if (unavailable.length > 0) {
+                buckets.unshift({
+                    key: RUPTURES_BUCKET_KEY,
+                    kind: 'ruptures',
+                    label: this.$t('admin.stock_mgmt.rail_ruptures'),
+                    icon: '⚠',
+                    count: unavailable.length,
+                    items: unavailable,
+                });
+            }
+
             return buckets;
         },
         activeBucket() {
@@ -429,8 +457,11 @@ export default {
                 const lbl = String(b?.label || '').trim().toLowerCase();
                 return lbl === 'autres' || lbl.startsWith('autres ');
             };
-            const firstMeaningful = list.find((b) => !isAutres(b));
-            return (firstMeaningful || list[0]).key;
+            // Skip the synthetic "⚠ Ruptures" bucket too: it's a one-click target,
+            // not the default landing view (the landing must not flip with stock).
+            const isSynthetic = (b) => b?.key === RUPTURES_BUCKET_KEY;
+            const firstMeaningful = list.find((b) => !isAutres(b) && !isSynthetic(b));
+            return (firstMeaningful || list.find((b) => !isSynthetic(b)) || list[0]).key;
         },
 
         authBranchId() {

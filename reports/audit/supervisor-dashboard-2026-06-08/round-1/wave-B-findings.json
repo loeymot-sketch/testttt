@@ -1,0 +1,68 @@
+[
+  {
+    "id": "WB-DEFECT-01",
+    "file": "public/js/admin-shell.js | public/js/admin-reports.js",
+    "line": "admin-shell.js (host of EncaissementComponent) / admin-reports.js (host of CashSessionReportListComponent) — whole-bundle",
+    "title": "W2 Vue source edits are NOT compiled into the served bundles — all four W2 features (W2.1 Client borne, W2.2 aging badge, W2.3 totalPending banner, W2.4 variance detail) are INVISIBLE on the running app",
+    "verdict": "DEFECT — DISPROVES the campaign's 'landed/verified' framing for what the user actually sees",
+    "severity": "P1",
+    "proof": "EncaissementComponent compiles into admin-shell.js (pre-existing markers enc-ticket-customer x2, enc-origin-badge x2, originBadge x6 all present there). CashSessionReportListComponent compiles into admin-reports.js (varianceClass x2, transactions_count x2 present). HEAD is dev/non-minified bundles (commit 625482726 expanded admin-shell.js +96262 lines, admin-reports.js +4713 lines, pos-app.js +140266) so source CSS classes and i18n keys MUST appear verbatim if compiled. They do NOT: grep over the served bundles returns 0 for EVERY distinctive W2 token — client_borne=0, enc-total-banner=0, totalPending=0, enc-wait-critical=0, elapsedShort=0, waitClass=0, encaisser_total_pending=0 in admin-shell.js; hasVariance=0, expected_closing_amount=0, variance_reason=0, enc-variance-detail=0 in admin-reports.js. Global check: `grep -rl 'enc-total-banner|encaisser_total_pending|enc-variance-detail' public/` => ABSENT EVERYWHERE in public/. The W2 commit (2e61ee229) only touched admin-shell.js/pos-app.js/admin-reports.js by 1-2 lines each (a mix-manifest hash/comment bump), not a real recompile, despite the message claiming 'Build: npm run production'. The later HEAD dev-bundle rebuild (625482726) regenerated these bundles from a tree that did not include the W2 source edits.",
+    "reproduction": "1) `git show 2e61ee229 --stat -- public/js/admin-shell.js` => '1 insertion(+)' only. 2) `for s in client_borne enc-total-banner totalPending hasVariance expected_closing_amount; do grep -c \"$s\" public/js/admin-shell.js public/js/admin-reports.js; done` => all 0. 3) `grep -rl 'enc-total-banner' public/` => no output. 4) Source IS present: `grep -c enc-total-banner resources/js/components/admin/encaissement/EncaissementComponent.vue` => >0. Conclusion: source correct, build never landed in served output.",
+    "remediation": "Run `npm run production` (or `dev`) from this worktree against the current source tree, confirm the distinctive tokens (client_borne, enc-total-banner, hasVariance, expected_closing_amount) now appear in admin-shell.js / admin-reports.js, bump mix-manifest, and re-verify live on :8769 before declaring W2 shipped. Until then the four W2 corrections are code-only, not user-visible."
+  },
+  {
+    "id": "WB-RISK-02",
+    "file": "resources/js/components/admin/encaissement/EncaissementComponent.vue + routes/api.php:836",
+    "line": "EncaissementComponent.vue computed.totalPending (diff @@ +totalPending) ; routes/api.php:836 `->limit(200)`",
+    "title": "W2.3 'Total en attente d'encaissement' banner sums only the server-capped-at-200 fetched list, not the true pending total — banner under-reports when backlog > 200",
+    "verdict": "RISK — correction is mathematically correct for what it sums, but the LABEL overclaims completeness",
+    "severity": "P2",
+    "proof": "Banner: totalPending() = orders.reduce(sum + orderAmount(o)). The list comes from GET admin/pos/counter-collect/pending which ends `OrderDetailsResource::collection($query->limit(200)->get())` (routes/api.php:836), ordered created_at ASC. Empirically on clone foodking_dash_e2e: the exact pending set (payment_status=15 AND ((source_surface='kiosk' AND order_type IN (25,10)) OR (source_surface='pos' AND pos_payment_method=6))) has 1252 rows totalling 43 291,50 €, but the FIRST-200 FIFO slice sums to exactly 5 767,00 € — which matches the commit's 'Verified 5 767,00 €'. So the banner shows 5 767,00 € (13% of the real 43 291,50 € pending) whenever the list is capped. Label '$t(label.encaisser_total_pending)' = 'Total en attente d'encaissement' is unqualified.",
+    "reproduction": "mysql -u root foodking_dash_e2e: `SELECT SUM(total) FROM (SELECT total FROM orders WHERE payment_status=15 AND ((source_surface='kiosk' AND order_type IN(25,10)) OR (source_surface='pos' AND pos_payment_method=6)) ORDER BY created_at ASC LIMIT 200)t` => 5767.00 ; same without LIMIT => 43291.50 over 1252 rows.",
+    "remediation": "VISION-FILTERED: for V1 Le Cayenne single-restaurant the route comment itself notes 200 is 'far beyond any realistic single-restaurant uncollected backlog', so in production-realistic conditions banner == true total and this is benign. To be airtight, either (a) qualify the label when orders.length hits the 200 cap (e.g. append '(200+ premières)'), or (b) return a server-side SUM in the endpoint meta and bind the banner to that. Low priority for V1; do NOT block on it."
+  },
+  {
+    "id": "WB-CONFIRM-03",
+    "file": "resources/js/components/admin/encaissement/EncaissementComponent.vue",
+    "line": "elapsedShort/waitClass (diff @@ +196..+246) vs resources/js/components/admin/pos/PosOrdersTrackerComponent.vue:981-992",
+    "title": "W2.2 elapsedShort port from PosOrdersTracker is BYTE-FAITHFUL (no drift in thresholds/format/i18n key)",
+    "verdict": "CONFIRMED — port is correct",
+    "severity": "INFO",
+    "proof": "Source PosOrdersTrackerComponent.vue:981-992 and the ported EncaissementComponent.elapsedShort are line-identical: same `if(!iso)return''` guard, same `new Date(iso).getTime()` + `Number.isFinite` guard, same `Math.max(0, Date.now()-t)`, same /60000 divisor, same thresholds (mins<1 => $t('pos.tracker.now'); mins<60 => mins+' min'; else h+'h'+zero-padded m). i18n key pos.tracker.now resolves: fr.json line 286 'now':'à l'instant' under tracker(248) under pos(166). waitClass thresholds amber>=15 / red>=30 min match the commit description. Port owner-mandate: PosOrdersTrackerComponent.vue is NOT in CLAUDE.md frozen list (only the V5 row + payment comp are), so copying from it is allowed.",
+    "reproduction": "diff the two elapsedShort bodies (Read both); grep pos.tracker.now nesting in fr.json.",
+    "remediation": "None."
+  },
+  {
+    "id": "WB-CONFIRM-04",
+    "file": "resources/js/components/admin/encaissement/EncaissementComponent.vue",
+    "line": "customerName (diff @@ +196..+208)",
+    "title": "W2.1 kiosk-source detection is CORRECT — 'Client borne' replaces leaked machine token (soak-kiosk-*)",
+    "verdict": "CONFIRMED — correction is real and the bug it fixes is real",
+    "severity": "INFO",
+    "proof": "Field source: OrderDetailsResource exposes 'source_surface' (line 127) and 'user' (line 113). The pending endpoint only returns orders with source_surface IN ('kiosk','pos') (routes/api.php:814-820). customerName returns $t('label.client_borne') when surface==='kiosk' OR /kiosk/i matches raw name. EMPIRICAL on clone: pending kiosk rows (id 71,76,79,...) have user.name='soak-kiosk-6a1866ebc6835' — exactly the raw machine token the fix hides. label.client_borne='Client borne' exists (fr.json:444). Edge: a kiosk-source row with a human name (id 112 'Admin Le Cayenne') also renders 'Client borne' — acceptable, a kiosk order has no real customer identity. The /kiosk/i fallback is a defensive belt for null source_surface and cannot misfire on a real customer named with 'kiosk' in V1 single-restaurant practice.",
+    "reproduction": "mysql clone: `SELECT u.name FROM orders o JOIN users u ON u.id=o.user_id WHERE o.payment_status=15 AND o.source_surface='kiosk' LIMIT 5` => soak-kiosk-*. grep label.client_borne fr.json.",
+    "remediation": "None. NOTE: not user-visible yet — gated by WB-DEFECT-01 (bundle not rebuilt)."
+  },
+  {
+    "id": "WB-CONFIRM-05",
+    "file": "resources/js/components/admin/cashSessionReport/CashSessionReportListComponent.vue",
+    "line": "hasVariance (method, line 252 area) + template detail (diff @@ +100); app/Http/Controllers/Admin/CashSessionReportController.php:136-139",
+    "title": "W2.4 variance detail reads REAL populated payload fields and threshold is aligned with varianceClass — NOT dead UI",
+    "verdict": "CONFIRMED — fields exist, are populated, threshold matches",
+    "severity": "INFO",
+    "proof": "Controller index payload maps closing_amount, expected_closing_amount, variance, variance_reason with those exact keys (CashSessionReportController.php:136-139). DB columns exist on cash_drawer_sessions (decimal expected_closing_amount, closing_amount, variance; varchar variance_reason). EMPIRICAL: clone row #6 variance=10.00, expected=100.00, closing=110.00, reason='SYS-E adversarial test +10€' => hasVariance true => detail renders with real values (matches commit's 'Verified on #6'). Rows #1/#5 variance=0.00 => hasVariance false => detail hidden (no clutter for balanced drawer). Row #3 variance=-5.00 => renders. Threshold alignment EXACT: hasVariance uses Math.abs(variance)>=0.01; varianceClass returns green when Math.abs<0.01, red/amber otherwise — so the detail shows precisely when the cell is flagged non-green.",
+    "reproduction": "mysql clone: `SELECT id,variance,expected_closing_amount,closing_amount,variance_reason FROM cash_drawer_sessions ORDER BY id DESC` => #6 populated. Read varianceClass (line 251-257) and hasVariance side-by-side.",
+    "remediation": "None for the W2 logic. MINOR pre-existing (NOT a W2 regression): formatMoney(v)=Number(v).toFixed(2) renders '110.00' (US dot, no € symbol). The W2 detail reuses the same formatMoney the variance column already uses, so it matches existing component convention — a FR-locale display gap that predates W2 and is out of this cluster's scope. NOTE: not user-visible yet — gated by WB-DEFECT-01."
+  },
+  {
+    "id": "WB-HOLD-06",
+    "file": "CLAUDE.md (frozen-zone list) + both W2 files",
+    "line": "CLAUDE.md §7 frontend frozen list",
+    "title": "Neither W2 file is a frozen file — editing them did not breach §7",
+    "verdict": "HOLD CONFIRMED — frozen-zone discipline respected",
+    "severity": "INFO",
+    "proof": "grep 'EncaissementComponent|CashSessionReport' CLAUDE.md => no match. CLAUDE.md §7 frozen frontend list = KioskWizard/KioskApp/KioskUpsell, PaymentComponent.vue, PosV5TrancheRow.vue, and the Vanilla-JS pos-wizard. PosOrdersTrackerComponent.vue (the port SOURCE) is also NOT frozen. So all three touched/ported files are non-frozen; no owner gate required for these edits. Backend was untouched (W2 reads fields already exposed by OrderDetailsResource / CashSessionReportController).",
+    "reproduction": "grep the names against CLAUDE.md §7 list.",
+    "remediation": "None."
+  }
+]

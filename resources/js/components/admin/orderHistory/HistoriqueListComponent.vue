@@ -7,7 +7,28 @@
                 <div class="db-card-filter">
                     <TableLimitComponent :method="list" :search="props.search" :page="paginationPage" />
                     <FilterComponent @click.prevent="handleSlide('historique-filter')" />
+                    <div class="dropdown-group" v-if="permissionChecker('pos-orders')">
+                        <ExportComponent />
+                        <div
+                            class="dropdown-list db-card-filter-dropdown-list transition-all duration-300 scale-y-0 origin-top">
+                            <ExcelComponent :method="xls" />
+                        </div>
+                    </div>
                 </div>
+            </div>
+
+            <!-- [W4.3 2026-06-08] Active-filter indicator — rendered OUTSIDE the
+                 collapsible filter panel so the gérant always sees WHY the list
+                 is filtered, even when the panel is collapsed. One-click clear. -->
+            <div class="hist-active-filters" v-if="hasActiveFilter">
+                <span class="hist-active-filters-label">{{ $t('label.filter') }} :</span>
+                <span class="hist-filter-chip" v-for="chip in activeFilters" :key="chip.key">
+                    {{ chip.text }}
+                </span>
+                <button type="button" class="hist-clear-chip" @click="clear">
+                    <i class="lab lab-cross-line-2 lab-font-size-16"></i>
+                    <span>{{ $t('button.clear') }}</span>
+                </button>
             </div>
 
             <div class="table-filter-div" id="historique-filter">
@@ -141,7 +162,15 @@
                                     <div class="max-w-[300px] mx-auto mt-2">
                                         <img class="w-full h-full" :src="ENV.API_URL + '/images/default/not-found.png'" alt="Not Found">
                                     </div>
-                                    <span class="d-block mt-3 text-lg">{{ $t('message.no_data_available') }}</span>
+                                    <!-- [W4.3 2026-06-08] Filter-aware empty state: when a
+                                         filter matches nothing, say so explicitly + offer reset. -->
+                                    <span class="d-block mt-3 text-lg" v-if="hasActiveFilter">Aucune commande pour ce filtre</span>
+                                    <span class="d-block mt-3 text-lg" v-else>{{ $t('message.no_data_available') }}</span>
+                                    <button v-if="hasActiveFilter" type="button"
+                                        class="db-btn py-2 text-white bg-gray-600 mt-4 mx-auto" @click="clear">
+                                        <i class="lab lab-cross-line-2 lab-font-size-22"></i>
+                                        <span>{{ $t('button.clear') }}</span>
+                                    </button>
                                 </div>
                             </td>
                         </tr>
@@ -172,6 +201,9 @@ import SourceEnum from "../../../enums/modules/sourceEnum";
 import TableLimitComponent from "../components/TableLimitComponent";
 import SmIconViewComponent from "../components/buttons/SmIconViewComponent";
 import FilterComponent from "../components/buttons/collapse/FilterComponent";
+import ExportComponent from "../components/buttons/export/ExportComponent";
+import ExcelComponent from "../components/buttons/export/ExcelComponent";
+import alertService from "../../../services/alertService";
 import Datepicker from "@vuepic/vue-datepicker";
 import "@vuepic/vue-datepicker/dist/main.css";
 import { ref } from 'vue';
@@ -192,6 +224,8 @@ export default {
         LoadingComponent,
         SmIconViewComponent,
         FilterComponent,
+        ExportComponent,
+        ExcelComponent,
         Datepicker
     },
     setup() {
@@ -246,6 +280,9 @@ export default {
         }
     },
     mounted() {
+        // [W4.5 2026-06-08] Restore a previously-used date range (this session)
+        // before the first list so the gérant doesn't re-enter it.
+        this.restoreDateRange();
         this.list();
     },
     computed: {
@@ -268,6 +305,37 @@ export default {
                 { id: 'online', name: this.$t('label.online') },
                 { id: 'delivery', name: this.$t('label.delivery') },
             ];
+        },
+        // [W4.3 2026-06-08] True when ANY filter narrows the list — drives the
+        // visible active-filter bar and the filter-aware empty state.
+        hasActiveFilter: function () {
+            const s = this.props.search;
+            return !!(s.order_serial_no || this.props.origin || s.status
+                || s.payment_status || s.from_date || s.to_date);
+        },
+        // [W4.3 2026-06-08] Human-readable chips for each active filter so the
+        // gérant sees WHY the list is filtered (reuses existing label.* keys +
+        // the component's own origin/status/payment label maps).
+        activeFilters: function () {
+            const s = this.props.search;
+            const chips = [];
+            if (s.order_serial_no) {
+                chips.push({ key: 'order_id', text: this.$t('label.order_id') + ' : ' + s.order_serial_no });
+            }
+            if (this.props.origin) {
+                const opt = this.originOptions.find(o => o.id === this.props.origin);
+                chips.push({ key: 'origin', text: this.$t('label.origin') + ' : ' + (opt ? opt.name : this.props.origin) });
+            }
+            if (s.status) {
+                chips.push({ key: 'status', text: this.$t('label.status') + ' : ' + (this.enums.orderStatusEnumArray[s.status] || s.status) });
+            }
+            if (s.payment_status) {
+                chips.push({ key: 'payment_status', text: this.$t('label.payment_status') + ' : ' + this.paymentLabel(s.payment_status) });
+            }
+            if (s.from_date && s.to_date) {
+                chips.push({ key: 'date', text: this.$t('label.date') + ' : ' + this.formatDate(s.from_date) + ' → ' + this.formatDate(s.to_date) });
+            }
+            return chips;
         },
     },
     methods: {
@@ -351,6 +419,39 @@ export default {
                 this.props.search.from_date = null;
                 this.props.search.to_date = null;
             }
+            // [W4.5 2026-06-08] Persist the date range so it survives navigation
+            // back to Historique (minimal sessionStorage win — NOT a cross-
+            // component shared store; see report W4.5 decision).
+            this.persistDateRange();
+        },
+        // [W4.5 2026-06-08] sessionStorage persistence of the date filter only.
+        persistDateRange: function () {
+            try {
+                if (this.props.search.from_date && this.props.search.to_date) {
+                    sessionStorage.setItem('historique:dateRange', JSON.stringify({
+                        from: this.props.search.from_date,
+                        to: this.props.search.to_date,
+                    }));
+                } else {
+                    sessionStorage.removeItem('historique:dateRange');
+                }
+            } catch (e) { /* sessionStorage unavailable — ignore */ }
+        },
+        restoreDateRange: function () {
+            try {
+                const raw = sessionStorage.getItem('historique:dateRange');
+                if (!raw) return;
+                const saved = JSON.parse(raw);
+                if (saved && saved.from && saved.to) {
+                    const from = new Date(saved.from);
+                    const to = new Date(saved.to);
+                    if (!isNaN(from.getTime()) && !isNaN(to.getTime())) {
+                        this.props.search.from_date = saved.from;
+                        this.props.search.to_date = saved.to;
+                        this.props.form.date = [from, to];
+                    }
+                }
+            } catch (e) { /* corrupt/unavailable — ignore */ }
         },
         clear: function () {
             this.props.origin = null;
@@ -365,6 +466,8 @@ export default {
             this.props.search.from_date = "";
             this.props.search.to_date = "";
             this.props.form.date = null;
+            // [W4.5] Reset clears the persisted date range too.
+            try { sessionStorage.removeItem('historique:dateRange'); } catch (e) { /* ignore */ }
             this.list();
         },
         list: function (page = 1) {
@@ -374,6 +477,44 @@ export default {
                 this.loading.isActive = false;
             }).catch(() => {
                 this.loading.isActive = false;
+            });
+        },
+        // [W4.3 2026-06-08] Compact FR date label for the active-filter chip.
+        // from_date/to_date can be a Date (from the picker) or a string.
+        formatDate: function (value) {
+            if (!value) return '';
+            try {
+                const d = value instanceof Date ? value : new Date(value);
+                if (isNaN(d.getTime())) return String(value);
+                const dd = String(d.getDate()).padStart(2, '0');
+                const mm = String(d.getMonth() + 1).padStart(2, '0');
+                return dd + '/' + mm + '/' + d.getFullYear();
+            } catch (e) {
+                return String(value);
+            }
+        },
+        // [W4.4 2026-06-08] XLSX export of the unified history honoring the
+        // current filters. paginate:0 = FULL dataset (not the 10-row page).
+        // applyOriginFilter() first so an origin chosen but not yet "Searched"
+        // is still reflected in the export. Mirrors posOrders xls().
+        xls: function () {
+            this.applyOriginFilter();
+            this.loading.isActive = true;
+            this.$store.dispatch("orderHistory/export", { ...this.props.search, paginate: 0 }).then((res) => {
+                this.loading.isActive = false;
+                const blob = new Blob([res.data], {
+                    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                });
+                const link = document.createElement("a");
+                link.href = URL.createObjectURL(blob);
+                link.download = this.$t("menu.historique");
+                link.click();
+                URL.revokeObjectURL(link.href);
+            }).catch((err) => {
+                this.loading.isActive = false;
+                if (err && err.response && err.response.data && err.response.data.message) {
+                    alertService.error(err.response.data.message);
+                }
             });
         },
     }
@@ -488,4 +629,49 @@ export default {
     font-weight: var(--pos-v5-weight-semibold);
 }
 :deep(.db-btn.bg-gray-600:hover) { background: var(--pos-v5-border-strong) !important; }
+
+/* [W4.3] Active-filter indicator bar */
+.hist-active-filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.65rem var(--pos-v5-space-5);
+    background: var(--pos-v5-brand-red-faint);
+    border-bottom: 1px solid var(--pos-v5-border);
+}
+.hist-active-filters-label {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--pos-v5-ink-soft);
+    text-transform: uppercase;
+    letter-spacing: var(--pos-v5-tracking-caps);
+}
+.hist-filter-chip {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 9999px;
+    padding: 0.18rem 0.7rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    background: #fff;
+    color: var(--pos-v5-ink);
+    border: 1px solid var(--pos-v5-border-strong);
+    white-space: nowrap;
+}
+.hist-clear-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    border-radius: 9999px;
+    padding: 0.18rem 0.7rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    background: var(--pos-v5-brand-red);
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    transition: background var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);
+}
+.hist-clear-chip:hover { background: var(--pos-v5-brand-red-dark); }
 </style>

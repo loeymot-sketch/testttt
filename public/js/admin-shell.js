@@ -257,7 +257,7 @@ __webpack_require__.r(__webpack_exports__);
 
 var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
 // Module
-___CSS_LOADER_EXPORT___.push([module.id, "\n.enc-card[data-v-22c45b59] {\n    border-radius: var(--pos-v5-radius-lg);\n    box-shadow: var(--pos-v5-shadow-md);\n    border: 1px solid var(--pos-v5-border);\n    background: var(--pos-v5-bg-panel);\n    overflow: hidden;\n}\n.enc-header[data-v-22c45b59] {\n    display: flex;\n    align-items: center;\n    justify-content: space-between;\n    background: linear-gradient(180deg, var(--pos-v5-brand-red-faint), var(--pos-v5-bg-panel) 80%);\n    border-bottom: 1px solid var(--pos-v5-border);\n    padding: var(--pos-v5-space-4) var(--pos-v5-space-5);\n}\n.db-card-title[data-v-22c45b59] {\n    font-family: var(--pos-v5-font-sans);\n    font-size: var(--pos-v5-text-h5);\n    font-weight: var(--pos-v5-weight-extrabold);\n    color: var(--pos-v5-ink);\n}\n.enc-subtitle[data-v-22c45b59] { color: var(--pos-v5-ink-soft); font-size: 0.85rem; margin-top: 0.15rem;\n}\n.enc-header-actions[data-v-22c45b59] { display: flex; align-items: center; gap: 0.75rem;\n}\n.enc-count-chip[data-v-22c45b59] {\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    min-width: 2.2rem;\n    height: 2.2rem;\n    border-radius: 9999px;\n    background: var(--pos-v5-brand-red);\n    color: #fff;\n    font-weight: 800;\n    font-variant-numeric: tabular-nums;\n}\n.enc-body[data-v-22c45b59] { padding: var(--pos-v5-space-5);\n}\n.enc-empty[data-v-22c45b59] { text-align: center; padding: 3rem 1rem; color: var(--pos-v5-ink-soft);\n}\n.enc-empty-icon[data-v-22c45b59] { font-size: 2.5rem;\n}\n.enc-empty-title[data-v-22c45b59] { margin-top: 0.75rem; font-size: 1.05rem; font-weight: 600;\n}\n.enc-grid[data-v-22c45b59] {\n    display: grid;\n    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));\n    gap: 1rem;\n}\n.enc-ticket[data-v-22c45b59] {\n    border: 1px solid var(--pos-v5-border);\n    border-radius: var(--pos-v5-radius-md);\n    background: #fff;\n    padding: 0.9rem 1rem;\n    display: flex;\n    flex-direction: column;\n    gap: 0.5rem;\n    box-shadow: var(--pos-v5-shadow-sm);\n}\n.enc-ticket-top[data-v-22c45b59] { display: flex; align-items: center; justify-content: space-between;\n}\n.enc-origin-badge[data-v-22c45b59] {\n    display: inline-flex;\n    align-items: center;\n    border-radius: 9999px;\n    padding: 0.12rem 0.55rem;\n    font-size: 0.74rem;\n    font-weight: 700;\n    border: 1px solid transparent;\n}\n.origin-borne[data-v-22c45b59] { background: #fff7ed; color: #9a3412; border-color: #fed7aa;\n}\n.origin-caisse[data-v-22c45b59] { background: #eff6ff; color: #1e40af; border-color: #bfdbfe;\n}\n.origin-online[data-v-22c45b59] { background: #f5f3ff; color: #5b21b6; border-color: #ddd6fe;\n}\n.enc-queue[data-v-22c45b59] {\n    font-weight: 800;\n    color: #9a3412;\n    font-variant-numeric: tabular-nums;\n}\n.enc-ticket-customer[data-v-22c45b59] { font-weight: 600; color: var(--pos-v5-ink);\n}\n.enc-ticket-items[data-v-22c45b59] { list-style: none; padding: 0; margin: 0; font-size: 0.82rem; color: var(--pos-v5-ink-soft);\n}\n.enc-ticket-items li[data-v-22c45b59] { line-height: 1.4;\n}\n.enc-more[data-v-22c45b59] { font-style: italic;\n}\n.enc-ticket-bottom[data-v-22c45b59] {\n    display: flex;\n    align-items: center;\n    justify-content: space-between;\n    margin-top: 0.4rem;\n    padding-top: 0.6rem;\n    border-top: 1px dashed var(--pos-v5-border);\n}\n.enc-amount[data-v-22c45b59] { font-weight: 800; font-size: 1.1rem; color: var(--pos-v5-ink); font-variant-numeric: tabular-nums;\n}\n.enc-collect-btn[data-v-22c45b59] {\n    background: var(--pos-v5-brand-red);\n    color: #fff;\n    border: none;\n    border-radius: var(--pos-v5-radius-md);\n    padding: 0.5rem 1.1rem;\n    font-weight: 800;\n    cursor: pointer;\n    transition: background var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);\n}\n.enc-collect-btn[data-v-22c45b59]:hover { background: var(--pos-v5-brand-red-dark);\n}\n[data-v-22c45b59] .db-btn.bg-primary {\n    background: var(--pos-v5-brand-red) !important;\n    border-radius: var(--pos-v5-radius-md);\n    font-weight: var(--pos-v5-weight-bold);\n}\n[data-v-22c45b59] .db-btn.bg-primary:hover { background: var(--pos-v5-brand-red-dark) !important;\n}\n", ""]);
+___CSS_LOADER_EXPORT___.push([module.id, "\n.enc-card[data-v-22c45b59] {\n    border-radius: var(--pos-v5-radius-lg);\n    box-shadow: var(--pos-v5-shadow-md);\n    border: 1px solid var(--pos-v5-border);\n    background: var(--pos-v5-bg-panel);\n    overflow: hidden;\n}\n.enc-header[data-v-22c45b59] {\n    display: flex;\n    align-items: center;\n    justify-content: space-between;\n    background: linear-gradient(180deg, var(--pos-v5-brand-red-faint), var(--pos-v5-bg-panel) 80%);\n    border-bottom: 1px solid var(--pos-v5-border);\n    padding: var(--pos-v5-space-4) var(--pos-v5-space-5);\n}\n.db-card-title[data-v-22c45b59] {\n    font-family: var(--pos-v5-font-sans);\n    font-size: var(--pos-v5-text-h5);\n    font-weight: var(--pos-v5-weight-extrabold);\n    color: var(--pos-v5-ink);\n}\n.enc-subtitle[data-v-22c45b59] { color: var(--pos-v5-ink-soft); font-size: 0.85rem; margin-top: 0.15rem;\n}\n.enc-header-actions[data-v-22c45b59] { display: flex; align-items: center; gap: 0.75rem;\n}\n.enc-count-chip[data-v-22c45b59] {\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    min-width: 2.2rem;\n    height: 2.2rem;\n    border-radius: 9999px;\n    background: var(--pos-v5-brand-red);\n    color: #fff;\n    font-weight: 800;\n    font-variant-numeric: tabular-nums;\n}\n.enc-body[data-v-22c45b59] { padding: var(--pos-v5-space-5);\n}\n.enc-empty[data-v-22c45b59] { text-align: center; padding: 3rem 1rem; color: var(--pos-v5-ink-soft);\n}\n.enc-empty-icon[data-v-22c45b59] { font-size: 2.5rem;\n}\n.enc-empty-title[data-v-22c45b59] { margin-top: 0.75rem; font-size: 1.05rem; font-weight: 600;\n}\n.enc-grid[data-v-22c45b59] {\n    display: grid;\n    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));\n    gap: 1rem;\n}\n.enc-ticket[data-v-22c45b59] {\n    border: 1px solid var(--pos-v5-border);\n    border-radius: var(--pos-v5-radius-md);\n    background: #fff;\n    padding: 0.9rem 1rem;\n    display: flex;\n    flex-direction: column;\n    gap: 0.5rem;\n    box-shadow: var(--pos-v5-shadow-sm);\n}\n/* [W2.3] Bandeau total en attente */\n.enc-total-banner[data-v-22c45b59] {\n    display: flex;\n    align-items: center;\n    justify-content: space-between;\n    gap: 1rem;\n    margin: var(--pos-v5-space-4) var(--pos-v5-space-5) 0;\n    padding: 0.7rem 1rem;\n    border-radius: var(--pos-v5-radius-md);\n    background: var(--pos-v5-brand-red-faint);\n    border: 1px solid var(--pos-v5-border);\n}\n.enc-total-label[data-v-22c45b59] { font-weight: 600; color: var(--pos-v5-ink-soft);\n}\n.enc-total-amount[data-v-22c45b59] {\n    font-weight: 800;\n    font-size: 1.25rem;\n    color: var(--pos-v5-ink);\n    font-variant-numeric: tabular-nums;\n}\n/* [G-DEC-1 heal] right-aligned amount + optional partial-total caveat */\n.enc-total-right[data-v-22c45b59] { display: flex; flex-direction: column; align-items: flex-end; gap: 0.1rem;\n}\n.enc-total-capnote[data-v-22c45b59] { font-size: 0.7rem; font-weight: 600; color: #b45309; opacity: 0.9;\n}\n.enc-ticket-top[data-v-22c45b59] { display: flex; align-items: center; justify-content: space-between;\n}\n.enc-top-right[data-v-22c45b59] { display: inline-flex; align-items: center; gap: 0.5rem;\n}\n/* [W2.2] Badge d'attente (aging) */\n.enc-wait[data-v-22c45b59] {\n    font-size: 0.72rem;\n    font-weight: 700;\n    color: var(--pos-v5-ink-soft);\n    font-variant-numeric: tabular-nums;\n    white-space: nowrap;\n}\n.enc-wait-stale[data-v-22c45b59] { color: #b45309;\n}\n.enc-wait-critical[data-v-22c45b59] { color: #b91c1c;\n}\n.enc-origin-badge[data-v-22c45b59] {\n    display: inline-flex;\n    align-items: center;\n    border-radius: 9999px;\n    padding: 0.12rem 0.55rem;\n    font-size: 0.74rem;\n    font-weight: 700;\n    border: 1px solid transparent;\n}\n.origin-borne[data-v-22c45b59] { background: #fff7ed; color: #9a3412; border-color: #fed7aa;\n}\n.origin-caisse[data-v-22c45b59] { background: #eff6ff; color: #1e40af; border-color: #bfdbfe;\n}\n.origin-online[data-v-22c45b59] { background: #f5f3ff; color: #5b21b6; border-color: #ddd6fe;\n}\n.enc-queue[data-v-22c45b59] {\n    font-weight: 800;\n    color: #9a3412;\n    font-variant-numeric: tabular-nums;\n}\n.enc-ticket-customer[data-v-22c45b59] { font-weight: 600; color: var(--pos-v5-ink);\n}\n.enc-ticket-items[data-v-22c45b59] { list-style: none; padding: 0; margin: 0; font-size: 0.82rem; color: var(--pos-v5-ink-soft);\n}\n.enc-ticket-items li[data-v-22c45b59] { line-height: 1.4;\n}\n.enc-more[data-v-22c45b59] { font-style: italic;\n}\n.enc-ticket-bottom[data-v-22c45b59] {\n    display: flex;\n    align-items: center;\n    justify-content: space-between;\n    margin-top: 0.4rem;\n    padding-top: 0.6rem;\n    border-top: 1px dashed var(--pos-v5-border);\n}\n.enc-amount[data-v-22c45b59] { font-weight: 800; font-size: 1.1rem; color: var(--pos-v5-ink); font-variant-numeric: tabular-nums;\n}\n.enc-collect-btn[data-v-22c45b59] {\n    background: var(--pos-v5-brand-red);\n    color: #fff;\n    border: none;\n    border-radius: var(--pos-v5-radius-md);\n    padding: 0.5rem 1.1rem;\n    font-weight: 800;\n    cursor: pointer;\n    transition: background var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);\n}\n.enc-collect-btn[data-v-22c45b59]:hover { background: var(--pos-v5-brand-red-dark);\n}\n[data-v-22c45b59] .db-btn.bg-primary {\n    background: var(--pos-v5-brand-red) !important;\n    border-radius: var(--pos-v5-radius-md);\n    font-weight: var(--pos-v5-weight-bold);\n}\n[data-v-22c45b59] .db-btn.bg-primary:hover { background: var(--pos-v5-brand-red-dark) !important;\n}\n", ""]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 
@@ -497,7 +497,7 @@ __webpack_require__.r(__webpack_exports__);
 
 var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
 // Module
-___CSS_LOADER_EXPORT___.push([module.id, "\n[data-v-dbcfe378] .db-card {\n    border-radius: var(--pos-v5-radius-lg);\n    box-shadow: var(--pos-v5-shadow-md);\n    border: 1px solid var(--pos-v5-border);\n    background: var(--pos-v5-bg-panel);\n    overflow: hidden;\n}\n[data-v-dbcfe378] .db-card-header {\n    background: linear-gradient(180deg, var(--pos-v5-brand-red-faint), var(--pos-v5-bg-panel) 80%);\n    border-bottom: 1px solid var(--pos-v5-border);\n    padding: var(--pos-v5-space-4) var(--pos-v5-space-5);\n}\n[data-v-dbcfe378] .db-card-title {\n    font-family: var(--pos-v5-font-sans);\n    font-size: var(--pos-v5-text-h5);\n    font-weight: var(--pos-v5-weight-extrabold);\n    color: var(--pos-v5-ink);\n    letter-spacing: var(--pos-v5-tracking-tight);\n}\n[data-v-dbcfe378] .db-table-head { background: var(--pos-v5-bg-subtle);\n}\n[data-v-dbcfe378] .db-table-head-th {\n    font-family: var(--pos-v5-font-sans);\n    font-size: var(--pos-v5-text-eyebrow);\n    font-weight: var(--pos-v5-weight-bold);\n    letter-spacing: var(--pos-v5-tracking-caps);\n    text-transform: uppercase;\n    color: var(--pos-v5-ink-soft);\n    padding: var(--pos-v5-space-3) var(--pos-v5-space-4);\n}\n[data-v-dbcfe378] .db-table-body-tr { transition: background var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);\n}\n[data-v-dbcfe378] .db-table-body-tr:hover { background: var(--pos-v5-brand-red-faint);\n}\n[data-v-dbcfe378] .db-table-body-td {\n    font-family: var(--pos-v5-font-sans);\n    font-size: var(--pos-v5-text-body);\n    color: var(--pos-v5-ink);\n    padding: var(--pos-v5-space-3) var(--pos-v5-space-4);\n    font-feature-settings: \"tnum\";\n    font-variant-numeric: tabular-nums;\n}\n.pos-order-queue-chip[data-v-dbcfe378] {\n    display: inline-flex;\n    min-height: 2rem;\n    align-items: center;\n    border: 1px solid #fed7aa;\n    border-radius: 9999px;\n    background: #fff7ed;\n    color: #9a3412;\n    font-weight: var(--pos-v5-weight-extrabold);\n    padding: 0.2rem 0.65rem;\n    white-space: nowrap;\n}\n\n/* Origin badge — V1 Le Cayenne origin colors */\n.hist-origin-badge[data-v-dbcfe378] {\n    display: inline-flex;\n    align-items: center;\n    border-radius: 9999px;\n    padding: 0.15rem 0.6rem;\n    font-size: 0.78rem;\n    font-weight: 700;\n    white-space: nowrap;\n    border: 1px solid transparent;\n}\n.origin-borne[data-v-dbcfe378] { background: #fff7ed; color: #9a3412; border-color: #fed7aa;\n}\n.origin-caisse[data-v-dbcfe378] { background: #eff6ff; color: #1e40af; border-color: #bfdbfe;\n}\n.origin-online[data-v-dbcfe378] { background: #f5f3ff; color: #5b21b6; border-color: #ddd6fe;\n}\n.origin-delivery[data-v-dbcfe378] { background: #ecfdf5; color: #065f46; border-color: #a7f3d0;\n}\n\n/* Payment badge */\n.hist-pay-badge[data-v-dbcfe378] {\n    display: inline-flex;\n    align-items: center;\n    border-radius: 9999px;\n    padding: 0.12rem 0.55rem;\n    font-size: 0.75rem;\n    font-weight: 700;\n    white-space: nowrap;\n}\n.pay-paid[data-v-dbcfe378] { background: #ecfdf5; color: #065f46;\n}\n.pay-pending[data-v-dbcfe378] { background: #fffbeb; color: #92400e;\n}\n.pay-unpaid[data-v-dbcfe378] { background: #fef2f2; color: #991b1b;\n}\n.pay-refunded[data-v-dbcfe378] { background: #f1f5f9; color: #475569;\n}\n.hist-refund-tag[data-v-dbcfe378] { margin-left: 0.35rem; font-size: 0.72rem; color: #475569; font-weight: 600;\n}\n.hist-fiscal-chip[data-v-dbcfe378] {\n    display: inline-flex;\n    align-items: center;\n    border-radius: 0.4rem;\n    padding: 0.1rem 0.45rem;\n    background: var(--pos-v5-bg-subtle);\n    color: var(--pos-v5-ink);\n    font-weight: 700;\n    font-variant-numeric: tabular-nums;\n}\n[data-v-dbcfe378] .db-btn.bg-primary {\n    background: var(--pos-v5-brand-red) !important;\n    border-radius: var(--pos-v5-radius-md);\n    font-weight: var(--pos-v5-weight-bold);\n}\n[data-v-dbcfe378] .db-btn.bg-primary:hover { background: var(--pos-v5-brand-red-dark) !important;\n}\n[data-v-dbcfe378] .db-btn.bg-gray-600 {\n    background: var(--pos-v5-bg-subtle) !important;\n    color: var(--pos-v5-ink) !important;\n    border-radius: var(--pos-v5-radius-md);\n    font-weight: var(--pos-v5-weight-semibold);\n}\n[data-v-dbcfe378] .db-btn.bg-gray-600:hover { background: var(--pos-v5-border-strong) !important;\n}\n", ""]);
+___CSS_LOADER_EXPORT___.push([module.id, "\n[data-v-dbcfe378] .db-card {\n    border-radius: var(--pos-v5-radius-lg);\n    box-shadow: var(--pos-v5-shadow-md);\n    border: 1px solid var(--pos-v5-border);\n    background: var(--pos-v5-bg-panel);\n    overflow: hidden;\n}\n[data-v-dbcfe378] .db-card-header {\n    background: linear-gradient(180deg, var(--pos-v5-brand-red-faint), var(--pos-v5-bg-panel) 80%);\n    border-bottom: 1px solid var(--pos-v5-border);\n    padding: var(--pos-v5-space-4) var(--pos-v5-space-5);\n}\n[data-v-dbcfe378] .db-card-title {\n    font-family: var(--pos-v5-font-sans);\n    font-size: var(--pos-v5-text-h5);\n    font-weight: var(--pos-v5-weight-extrabold);\n    color: var(--pos-v5-ink);\n    letter-spacing: var(--pos-v5-tracking-tight);\n}\n[data-v-dbcfe378] .db-table-head { background: var(--pos-v5-bg-subtle);\n}\n[data-v-dbcfe378] .db-table-head-th {\n    font-family: var(--pos-v5-font-sans);\n    font-size: var(--pos-v5-text-eyebrow);\n    font-weight: var(--pos-v5-weight-bold);\n    letter-spacing: var(--pos-v5-tracking-caps);\n    text-transform: uppercase;\n    color: var(--pos-v5-ink-soft);\n    padding: var(--pos-v5-space-3) var(--pos-v5-space-4);\n}\n[data-v-dbcfe378] .db-table-body-tr { transition: background var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);\n}\n[data-v-dbcfe378] .db-table-body-tr:hover { background: var(--pos-v5-brand-red-faint);\n}\n[data-v-dbcfe378] .db-table-body-td {\n    font-family: var(--pos-v5-font-sans);\n    font-size: var(--pos-v5-text-body);\n    color: var(--pos-v5-ink);\n    padding: var(--pos-v5-space-3) var(--pos-v5-space-4);\n    font-feature-settings: \"tnum\";\n    font-variant-numeric: tabular-nums;\n}\n.pos-order-queue-chip[data-v-dbcfe378] {\n    display: inline-flex;\n    min-height: 2rem;\n    align-items: center;\n    border: 1px solid #fed7aa;\n    border-radius: 9999px;\n    background: #fff7ed;\n    color: #9a3412;\n    font-weight: var(--pos-v5-weight-extrabold);\n    padding: 0.2rem 0.65rem;\n    white-space: nowrap;\n}\n\n/* Origin badge — V1 Le Cayenne origin colors */\n.hist-origin-badge[data-v-dbcfe378] {\n    display: inline-flex;\n    align-items: center;\n    border-radius: 9999px;\n    padding: 0.15rem 0.6rem;\n    font-size: 0.78rem;\n    font-weight: 700;\n    white-space: nowrap;\n    border: 1px solid transparent;\n}\n.origin-borne[data-v-dbcfe378] { background: #fff7ed; color: #9a3412; border-color: #fed7aa;\n}\n.origin-caisse[data-v-dbcfe378] { background: #eff6ff; color: #1e40af; border-color: #bfdbfe;\n}\n.origin-online[data-v-dbcfe378] { background: #f5f3ff; color: #5b21b6; border-color: #ddd6fe;\n}\n.origin-delivery[data-v-dbcfe378] { background: #ecfdf5; color: #065f46; border-color: #a7f3d0;\n}\n\n/* Payment badge */\n.hist-pay-badge[data-v-dbcfe378] {\n    display: inline-flex;\n    align-items: center;\n    border-radius: 9999px;\n    padding: 0.12rem 0.55rem;\n    font-size: 0.75rem;\n    font-weight: 700;\n    white-space: nowrap;\n}\n.pay-paid[data-v-dbcfe378] { background: #ecfdf5; color: #065f46;\n}\n.pay-pending[data-v-dbcfe378] { background: #fffbeb; color: #92400e;\n}\n.pay-unpaid[data-v-dbcfe378] { background: #fef2f2; color: #991b1b;\n}\n.pay-refunded[data-v-dbcfe378] { background: #f1f5f9; color: #475569;\n}\n.hist-refund-tag[data-v-dbcfe378] { margin-left: 0.35rem; font-size: 0.72rem; color: #475569; font-weight: 600;\n}\n.hist-fiscal-chip[data-v-dbcfe378] {\n    display: inline-flex;\n    align-items: center;\n    border-radius: 0.4rem;\n    padding: 0.1rem 0.45rem;\n    background: var(--pos-v5-bg-subtle);\n    color: var(--pos-v5-ink);\n    font-weight: 700;\n    font-variant-numeric: tabular-nums;\n}\n[data-v-dbcfe378] .db-btn.bg-primary {\n    background: var(--pos-v5-brand-red) !important;\n    border-radius: var(--pos-v5-radius-md);\n    font-weight: var(--pos-v5-weight-bold);\n}\n[data-v-dbcfe378] .db-btn.bg-primary:hover { background: var(--pos-v5-brand-red-dark) !important;\n}\n[data-v-dbcfe378] .db-btn.bg-gray-600 {\n    background: var(--pos-v5-bg-subtle) !important;\n    color: var(--pos-v5-ink) !important;\n    border-radius: var(--pos-v5-radius-md);\n    font-weight: var(--pos-v5-weight-semibold);\n}\n[data-v-dbcfe378] .db-btn.bg-gray-600:hover { background: var(--pos-v5-border-strong) !important;\n}\n\n/* [W4.3] Active-filter indicator bar */\n.hist-active-filters[data-v-dbcfe378] {\n    display: flex;\n    flex-wrap: wrap;\n    align-items: center;\n    gap: 0.5rem;\n    padding: 0.65rem var(--pos-v5-space-5);\n    background: var(--pos-v5-brand-red-faint);\n    border-bottom: 1px solid var(--pos-v5-border);\n}\n.hist-active-filters-label[data-v-dbcfe378] {\n    font-size: 0.78rem;\n    font-weight: 700;\n    color: var(--pos-v5-ink-soft);\n    text-transform: uppercase;\n    letter-spacing: var(--pos-v5-tracking-caps);\n}\n.hist-filter-chip[data-v-dbcfe378] {\n    display: inline-flex;\n    align-items: center;\n    border-radius: 9999px;\n    padding: 0.18rem 0.7rem;\n    font-size: 0.78rem;\n    font-weight: 600;\n    background: #fff;\n    color: var(--pos-v5-ink);\n    border: 1px solid var(--pos-v5-border-strong);\n    white-space: nowrap;\n}\n.hist-clear-chip[data-v-dbcfe378] {\n    display: inline-flex;\n    align-items: center;\n    gap: 0.3rem;\n    border-radius: 9999px;\n    padding: 0.18rem 0.7rem;\n    font-size: 0.78rem;\n    font-weight: 700;\n    background: var(--pos-v5-brand-red);\n    color: #fff;\n    border: none;\n    cursor: pointer;\n    transition: background var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);\n}\n.hist-clear-chip[data-v-dbcfe378]:hover { background: var(--pos-v5-brand-red-dark);\n}\n", ""]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 
@@ -8353,16 +8353,40 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
       pollTimer: null,
       enums: {
         orderTypeEnum: _enums_modules_orderTypeEnum__WEBPACK_IMPORTED_MODULE_5__["default"]
-      }
+      },
+      // [G-DEC-1 heal 2026-06-08] Server caps the pending fetch at
+      // limit(200) (routes/api.php admin/pos/counter-collect/pending).
+      // Mirror it so the total banner can flag a PARTIAL sum when capped.
+      PENDING_CAP: 200
     };
   },
+  computed: {
+    // [W2.3] Total en attente d'encaissement — somme client-side des
+    // montants dus de la liste déjà fetchée. Affichage uniquement : aucune
+    // valeur monétaire n'est recalculée côté serveur (orderAmount lit le
+    // champ dû exposé par OrderDetailsResource).
+    totalPending: function totalPending() {
+      var _this = this;
+      return this.orders.reduce(function (sum, o) {
+        return sum + Number(_this.orderAmount(o) || 0);
+      }, 0);
+    },
+    // [G-DEC-1 heal 2026-06-08] The pending list is server-capped at 200;
+    // at the cap the client-side sum is a PARTIAL total, so the banner appends
+    // a caveat (avoids a false "Total" claim that silently under-reports money
+    // owed on a busy day). In real single-restaurant V1 the queue clears well
+    // under 200, so this caveat normally never shows and the label is a true Total.
+    pendingCapped: function pendingCapped() {
+      return this.orders.length >= this.PENDING_CAP;
+    }
+  },
   mounted: function mounted() {
-    var _this = this;
+    var _this2 = this;
     this.fetchPending();
     // Light poll so a cashier on this screen sees newly-arrived Borne
     // orders without a manual refresh. Cleared on unmount.
     this.pollTimer = setInterval(function () {
-      return _this.fetchPending(true);
+      return _this2.fetchPending(true);
     }, 20000);
     // [F-W5-01 sync heal 2026-06-03] Real-time push so newly-arrived Borne
     // orders + counter-collected ones reflect sub-second; the 20s poll above
@@ -8378,15 +8402,15 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
   },
   methods: {
     fetchPending: function fetchPending() {
-      var _this2 = this;
+      var _this3 = this;
       var silent = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
       if (!silent) this.loading.isActive = true;
       axios.get('admin/pos/counter-collect/pending').then(function (res) {
         var _res$data;
-        _this2.orders = ((_res$data = res.data) === null || _res$data === void 0 ? void 0 : _res$data.data) || [];
-        _this2.loading.isActive = false;
+        _this3.orders = ((_res$data = res.data) === null || _res$data === void 0 ? void 0 : _res$data.data) || [];
+        _this3.loading.isActive = false;
       })["catch"](function () {
-        _this2.loading.isActive = false;
+        _this3.loading.isActive = false;
       });
     },
     // [F-W5-01 sync heal 2026-06-03] Echo subscription mirrors KDS/OSS/tracker:
@@ -8408,7 +8432,7 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
       return 0;
     },
     subscribeEcho: function subscribeEcho() {
-      var _this3 = this;
+      var _this4 = this;
       if (!window.Echo) return;
       var branchId = this.authBranchId();
       if (branchId <= 0) return;
@@ -8417,17 +8441,17 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
         this._eventSub = (0,_services_eventContract__WEBPACK_IMPORTED_MODULE_7__.onEvents)(branchId, [{
           broadcastAs: 'OrderCreated',
           handler: function handler() {
-            return _this3.fetchPending(true);
+            return _this4.fetchPending(true);
           }
         }, {
           broadcastAs: 'OrderPaidAtCounter',
           handler: function handler() {
-            return _this3.fetchPending(true);
+            return _this4.fetchPending(true);
           }
         }, {
           broadcastAs: 'OrderStatusChanged',
           handler: function handler() {
-            return _this3.fetchPending(true);
+            return _this4.fetchPending(true);
           }
         }]);
       } catch (e) {
@@ -8465,13 +8489,51 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
         cls: 'origin-borne'
       };
     },
+    // [W2.1] Identité ticket propre. Les commandes Borne n'ont pas de vrai
+    // client : le compte machine kiosk (ex. "soak-kiosk-6a1866ebc6835") fuite
+    // sinon dans order.user.name. On détecte l'origine kiosk (source_surface,
+    // primaire) ET on garde un filet /kiosk/i sur le nom brut (si
+    // source_surface est null, le token machine ne doit JAMAIS s'afficher).
+    // Les vrais noms clients (non-borne) restent inchangés.
     customerName: function customerName(order) {
       var _order$user;
-      return ((_order$user = order.user) === null || _order$user === void 0 ? void 0 : _order$user.name) || order.customer_name || this.$t('label.guest');
+      var surface = String(order.source_surface || '').toLowerCase();
+      var rawName = ((_order$user = order.user) === null || _order$user === void 0 ? void 0 : _order$user.name) || order.customer_name || '';
+      var looksLikeKioskToken = /kiosk/i.test(rawName);
+      if (surface === 'kiosk' || looksLikeKioskToken) {
+        return this.$t('label.client_borne');
+      }
+      return rawName || this.$t('label.guest');
     },
     itemName: function itemName(it) {
       var _it$orderItem, _it$order_item;
       return it.item_name || it.name || ((_it$orderItem = it.orderItem) === null || _it$orderItem === void 0 ? void 0 : _it$orderItem.name) || ((_it$order_item = it.order_item) === null || _it$order_item === void 0 ? void 0 : _it$order_item.name) || '';
+    },
+    // [W2.2] Étiquette d'attente — porté à l'identique de
+    // PosOrdersTrackerComponent.elapsedShort : "à l'instant" / "12 min" /
+    // "1h05". Affichage seul, calcul depuis created_at exposé par la resource.
+    elapsedShort: function elapsedShort(iso) {
+      if (!iso) return '';
+      var t = new Date(iso).getTime();
+      if (!Number.isFinite(t)) return '';
+      var diff = Math.max(0, Date.now() - t);
+      var mins = Math.floor(diff / 60000);
+      if (mins < 1) return this.$t('pos.tracker.now');
+      if (mins < 60) return mins + ' min';
+      var h = Math.floor(mins / 60);
+      var m = mins % 60;
+      return h + 'h' + (m < 10 ? '0' + m : m);
+    },
+    // [W2.2] Classe "vieillissement" : ambre passé 15 min, rouge passé 30 min,
+    // pour signaler visuellement la commande qui attend le plus.
+    waitClass: function waitClass(iso) {
+      if (!iso) return '';
+      var t = new Date(iso).getTime();
+      if (!Number.isFinite(t)) return '';
+      var mins = Math.floor(Math.max(0, Date.now() - t) / 60000);
+      if (mins >= 30) return 'enc-wait-critical';
+      if (mins >= 15) return 'enc-wait-stale';
+      return '';
     },
     orderAmount: function orderAmount(order) {
       var _ref, _ref2, _order$cash_pending_a;
@@ -10069,8 +10131,19 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
       }
     },
     formatPrice: function formatPrice(value) {
-      if (value === null || value === undefined) return '';
-      return value;
+      if (value === null || value === undefined || value === '') return '';
+      var num = Number.parseFloat(value);
+      if (!Number.isFinite(num)) return value;
+      try {
+        return new Intl.NumberFormat('fr-FR', {
+          style: 'currency',
+          currency: 'EUR',
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        }).format(num);
+      } catch (_e) {
+        return num.toFixed(2).replace('.', ',') + ' €';
+      }
     },
     stepsForChannel: function stepsForChannel(channelKey) {
       if (!Array.isArray(this.steps)) return [];
@@ -15011,19 +15084,24 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _components_TableLimitComponent__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! ../components/TableLimitComponent */ "./resources/js/components/admin/components/TableLimitComponent.vue");
 /* harmony import */ var _components_buttons_SmIconViewComponent__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! ../components/buttons/SmIconViewComponent */ "./resources/js/components/admin/components/buttons/SmIconViewComponent.vue");
 /* harmony import */ var _components_buttons_collapse_FilterComponent__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! ../components/buttons/collapse/FilterComponent */ "./resources/js/components/admin/components/buttons/collapse/FilterComponent.vue");
-/* harmony import */ var _vuepic_vue_datepicker__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(/*! @vuepic/vue-datepicker */ "./node_modules/@vuepic/vue-datepicker/dist/vue-datepicker.js");
-/* harmony import */ var _vuepic_vue_datepicker_dist_main_css__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(/*! @vuepic/vue-datepicker/dist/main.css */ "./node_modules/@vuepic/vue-datepicker/dist/main.css");
-/* harmony import */ var vue__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(/*! vue */ "./node_modules/vue/dist/vue.esm-bundler.js");
-/* harmony import */ var date_fns__WEBPACK_IMPORTED_MODULE_15__ = __webpack_require__(/*! date-fns */ "./node_modules/date-fns/esm/endOfMonth/index.js");
-/* harmony import */ var date_fns__WEBPACK_IMPORTED_MODULE_16__ = __webpack_require__(/*! date-fns */ "./node_modules/date-fns/esm/endOfYear/index.js");
-/* harmony import */ var date_fns__WEBPACK_IMPORTED_MODULE_17__ = __webpack_require__(/*! date-fns */ "./node_modules/date-fns/esm/startOfMonth/index.js");
-/* harmony import */ var date_fns__WEBPACK_IMPORTED_MODULE_18__ = __webpack_require__(/*! date-fns */ "./node_modules/date-fns/esm/startOfYear/index.js");
-/* harmony import */ var date_fns__WEBPACK_IMPORTED_MODULE_19__ = __webpack_require__(/*! date-fns */ "./node_modules/date-fns/esm/subMonths/index.js");
-/* harmony import */ var _enums_modules_statusEnum__WEBPACK_IMPORTED_MODULE_20__ = __webpack_require__(/*! ../../../enums/modules/statusEnum */ "./resources/js/enums/modules/statusEnum.js");
-/* harmony import */ var _enums_modules_displayModeEnum__WEBPACK_IMPORTED_MODULE_21__ = __webpack_require__(/*! ../../../enums/modules/displayModeEnum */ "./resources/js/enums/modules/displayModeEnum.js");
-/* harmony import */ var _config_env__WEBPACK_IMPORTED_MODULE_22__ = __webpack_require__(/*! ../../../config/env */ "./resources/js/config/env.js");
-/* harmony import */ var _helpers_formatPrice__WEBPACK_IMPORTED_MODULE_23__ = __webpack_require__(/*! ../../../helpers/formatPrice */ "./resources/js/helpers/formatPrice.js");
+/* harmony import */ var _components_buttons_export_ExportComponent__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(/*! ../components/buttons/export/ExportComponent */ "./resources/js/components/admin/components/buttons/export/ExportComponent.vue");
+/* harmony import */ var _components_buttons_export_ExcelComponent__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(/*! ../components/buttons/export/ExcelComponent */ "./resources/js/components/admin/components/buttons/export/ExcelComponent.vue");
+/* harmony import */ var _services_alertService__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(/*! ../../../services/alertService */ "./resources/js/services/alertService.js");
+/* harmony import */ var _vuepic_vue_datepicker__WEBPACK_IMPORTED_MODULE_15__ = __webpack_require__(/*! @vuepic/vue-datepicker */ "./node_modules/@vuepic/vue-datepicker/dist/vue-datepicker.js");
+/* harmony import */ var _vuepic_vue_datepicker_dist_main_css__WEBPACK_IMPORTED_MODULE_16__ = __webpack_require__(/*! @vuepic/vue-datepicker/dist/main.css */ "./node_modules/@vuepic/vue-datepicker/dist/main.css");
+/* harmony import */ var vue__WEBPACK_IMPORTED_MODULE_17__ = __webpack_require__(/*! vue */ "./node_modules/vue/dist/vue.esm-bundler.js");
+/* harmony import */ var date_fns__WEBPACK_IMPORTED_MODULE_18__ = __webpack_require__(/*! date-fns */ "./node_modules/date-fns/esm/endOfMonth/index.js");
+/* harmony import */ var date_fns__WEBPACK_IMPORTED_MODULE_19__ = __webpack_require__(/*! date-fns */ "./node_modules/date-fns/esm/endOfYear/index.js");
+/* harmony import */ var date_fns__WEBPACK_IMPORTED_MODULE_20__ = __webpack_require__(/*! date-fns */ "./node_modules/date-fns/esm/startOfMonth/index.js");
+/* harmony import */ var date_fns__WEBPACK_IMPORTED_MODULE_21__ = __webpack_require__(/*! date-fns */ "./node_modules/date-fns/esm/startOfYear/index.js");
+/* harmony import */ var date_fns__WEBPACK_IMPORTED_MODULE_22__ = __webpack_require__(/*! date-fns */ "./node_modules/date-fns/esm/subMonths/index.js");
+/* harmony import */ var _enums_modules_statusEnum__WEBPACK_IMPORTED_MODULE_23__ = __webpack_require__(/*! ../../../enums/modules/statusEnum */ "./resources/js/enums/modules/statusEnum.js");
+/* harmony import */ var _enums_modules_displayModeEnum__WEBPACK_IMPORTED_MODULE_24__ = __webpack_require__(/*! ../../../enums/modules/displayModeEnum */ "./resources/js/enums/modules/displayModeEnum.js");
+/* harmony import */ var _config_env__WEBPACK_IMPORTED_MODULE_25__ = __webpack_require__(/*! ../../../config/env */ "./resources/js/config/env.js");
+/* harmony import */ var _helpers_formatPrice__WEBPACK_IMPORTED_MODULE_26__ = __webpack_require__(/*! ../../../helpers/formatPrice */ "./resources/js/helpers/formatPrice.js");
 function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+function ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
+function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
 function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
 function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : i + ""; }
 function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
@@ -15047,9 +15125,12 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
 
 
 
+
+
+
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
   name: "HistoriqueListComponent",
-  mixins: [_helpers_formatPrice__WEBPACK_IMPORTED_MODULE_23__.adminPriceMixin],
+  mixins: [_helpers_formatPrice__WEBPACK_IMPORTED_MODULE_26__.adminPriceMixin],
   components: {
     TableLimitComponent: _components_TableLimitComponent__WEBPACK_IMPORTED_MODULE_9__["default"],
     PaginationSMBox: _components_pagination_PaginationSMBox__WEBPACK_IMPORTED_MODULE_3__["default"],
@@ -15058,25 +15139,27 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
     LoadingComponent: _components_LoadingComponent__WEBPACK_IMPORTED_MODULE_0__["default"],
     SmIconViewComponent: _components_buttons_SmIconViewComponent__WEBPACK_IMPORTED_MODULE_10__["default"],
     FilterComponent: _components_buttons_collapse_FilterComponent__WEBPACK_IMPORTED_MODULE_11__["default"],
-    Datepicker: _vuepic_vue_datepicker__WEBPACK_IMPORTED_MODULE_12__["default"]
+    ExportComponent: _components_buttons_export_ExportComponent__WEBPACK_IMPORTED_MODULE_12__["default"],
+    ExcelComponent: _components_buttons_export_ExcelComponent__WEBPACK_IMPORTED_MODULE_13__["default"],
+    Datepicker: _vuepic_vue_datepicker__WEBPACK_IMPORTED_MODULE_15__["default"]
   },
   setup: function setup() {
-    var date = (0,vue__WEBPACK_IMPORTED_MODULE_14__.ref)();
-    var presetRanges = (0,vue__WEBPACK_IMPORTED_MODULE_14__.ref)([{
+    var date = (0,vue__WEBPACK_IMPORTED_MODULE_17__.ref)();
+    var presetRanges = (0,vue__WEBPACK_IMPORTED_MODULE_17__.ref)([{
       label: 'Aujourd’hui',
       range: [new Date(), new Date()]
     }, {
       label: 'Ce mois',
-      range: [(0,date_fns__WEBPACK_IMPORTED_MODULE_17__["default"])(new Date()), (0,date_fns__WEBPACK_IMPORTED_MODULE_15__["default"])(new Date())]
+      range: [(0,date_fns__WEBPACK_IMPORTED_MODULE_20__["default"])(new Date()), (0,date_fns__WEBPACK_IMPORTED_MODULE_18__["default"])(new Date())]
     }, {
       label: 'Mois dernier',
-      range: [(0,date_fns__WEBPACK_IMPORTED_MODULE_17__["default"])((0,date_fns__WEBPACK_IMPORTED_MODULE_19__["default"])(new Date(), 1)), (0,date_fns__WEBPACK_IMPORTED_MODULE_15__["default"])((0,date_fns__WEBPACK_IMPORTED_MODULE_19__["default"])(new Date(), 1))]
+      range: [(0,date_fns__WEBPACK_IMPORTED_MODULE_20__["default"])((0,date_fns__WEBPACK_IMPORTED_MODULE_22__["default"])(new Date(), 1)), (0,date_fns__WEBPACK_IMPORTED_MODULE_18__["default"])((0,date_fns__WEBPACK_IMPORTED_MODULE_22__["default"])(new Date(), 1))]
     }, {
       label: 'Cette année',
-      range: [(0,date_fns__WEBPACK_IMPORTED_MODULE_18__["default"])(new Date()), (0,date_fns__WEBPACK_IMPORTED_MODULE_16__["default"])(new Date())]
+      range: [(0,date_fns__WEBPACK_IMPORTED_MODULE_21__["default"])(new Date()), (0,date_fns__WEBPACK_IMPORTED_MODULE_19__["default"])(new Date())]
     }, {
       label: 'Cette année',
-      range: [(0,date_fns__WEBPACK_IMPORTED_MODULE_18__["default"])(new Date()), (0,date_fns__WEBPACK_IMPORTED_MODULE_16__["default"])(new Date())],
+      range: [(0,date_fns__WEBPACK_IMPORTED_MODULE_21__["default"])(new Date()), (0,date_fns__WEBPACK_IMPORTED_MODULE_19__["default"])(new Date())],
       slot: 'yearly'
     }]);
     return {
@@ -15119,10 +15202,13 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
           to_date: ""
         }
       },
-      ENV: _config_env__WEBPACK_IMPORTED_MODULE_22__["default"]
+      ENV: _config_env__WEBPACK_IMPORTED_MODULE_25__["default"]
     };
   },
   mounted: function mounted() {
+    // [W4.5 2026-06-08] Restore a previously-used date range (this session)
+    // before the first list so the gérant doesn't re-enter it.
+    this.restoreDateRange();
     this.list();
   },
   computed: {
@@ -15136,7 +15222,7 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
       return this.$store.getters['orderHistory/page'];
     },
     direction: function direction() {
-      return this.$store.getters['frontendLanguage/show'].display_mode === _enums_modules_displayModeEnum__WEBPACK_IMPORTED_MODULE_21__["default"].RTL ? 'rtl' : 'ltr';
+      return this.$store.getters['frontendLanguage/show'].display_mode === _enums_modules_displayModeEnum__WEBPACK_IMPORTED_MODULE_24__["default"].RTL ? 'rtl' : 'ltr';
     },
     originOptions: function originOptions() {
       return [{
@@ -15152,6 +15238,54 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
         id: 'delivery',
         name: this.$t('label.delivery')
       }];
+    },
+    // [W4.3 2026-06-08] True when ANY filter narrows the list — drives the
+    // visible active-filter bar and the filter-aware empty state.
+    hasActiveFilter: function hasActiveFilter() {
+      var s = this.props.search;
+      return !!(s.order_serial_no || this.props.origin || s.status || s.payment_status || s.from_date || s.to_date);
+    },
+    // [W4.3 2026-06-08] Human-readable chips for each active filter so the
+    // gérant sees WHY the list is filtered (reuses existing label.* keys +
+    // the component's own origin/status/payment label maps).
+    activeFilters: function activeFilters() {
+      var _this = this;
+      var s = this.props.search;
+      var chips = [];
+      if (s.order_serial_no) {
+        chips.push({
+          key: 'order_id',
+          text: this.$t('label.order_id') + ' : ' + s.order_serial_no
+        });
+      }
+      if (this.props.origin) {
+        var opt = this.originOptions.find(function (o) {
+          return o.id === _this.props.origin;
+        });
+        chips.push({
+          key: 'origin',
+          text: this.$t('label.origin') + ' : ' + (opt ? opt.name : this.props.origin)
+        });
+      }
+      if (s.status) {
+        chips.push({
+          key: 'status',
+          text: this.$t('label.status') + ' : ' + (this.enums.orderStatusEnumArray[s.status] || s.status)
+        });
+      }
+      if (s.payment_status) {
+        chips.push({
+          key: 'payment_status',
+          text: this.$t('label.payment_status') + ' : ' + this.paymentLabel(s.payment_status)
+        });
+      }
+      if (s.from_date && s.to_date) {
+        chips.push({
+          key: 'date',
+          text: this.$t('label.date') + ' : ' + this.formatDate(s.from_date) + ' → ' + this.formatDate(s.to_date)
+        });
+      }
+      return chips;
     }
   },
   methods: {
@@ -15273,6 +15407,39 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
         this.props.search.from_date = null;
         this.props.search.to_date = null;
       }
+      // [W4.5 2026-06-08] Persist the date range so it survives navigation
+      // back to Historique (minimal sessionStorage win — NOT a cross-
+      // component shared store; see report W4.5 decision).
+      this.persistDateRange();
+    },
+    // [W4.5 2026-06-08] sessionStorage persistence of the date filter only.
+    persistDateRange: function persistDateRange() {
+      try {
+        if (this.props.search.from_date && this.props.search.to_date) {
+          sessionStorage.setItem('historique:dateRange', JSON.stringify({
+            from: this.props.search.from_date,
+            to: this.props.search.to_date
+          }));
+        } else {
+          sessionStorage.removeItem('historique:dateRange');
+        }
+      } catch (e) {/* sessionStorage unavailable — ignore */}
+    },
+    restoreDateRange: function restoreDateRange() {
+      try {
+        var raw = sessionStorage.getItem('historique:dateRange');
+        if (!raw) return;
+        var saved = JSON.parse(raw);
+        if (saved && saved.from && saved.to) {
+          var from = new Date(saved.from);
+          var to = new Date(saved.to);
+          if (!isNaN(from.getTime()) && !isNaN(to.getTime())) {
+            this.props.search.from_date = saved.from;
+            this.props.search.to_date = saved.to;
+            this.props.form.date = [from, to];
+          }
+        }
+      } catch (e) {/* corrupt/unavailable — ignore */}
     },
     clear: function clear() {
       this.props.origin = null;
@@ -15287,17 +15454,62 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
       this.props.search.from_date = "";
       this.props.search.to_date = "";
       this.props.form.date = null;
+      // [W4.5] Reset clears the persisted date range too.
+      try {
+        sessionStorage.removeItem('historique:dateRange');
+      } catch (e) {/* ignore */}
       this.list();
     },
     list: function list() {
-      var _this = this;
+      var _this2 = this;
       var page = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 1;
       this.loading.isActive = true;
       this.props.search.page = page;
       this.$store.dispatch('orderHistory/lists', this.props.search).then(function () {
-        _this.loading.isActive = false;
+        _this2.loading.isActive = false;
       })["catch"](function () {
-        _this.loading.isActive = false;
+        _this2.loading.isActive = false;
+      });
+    },
+    // [W4.3 2026-06-08] Compact FR date label for the active-filter chip.
+    // from_date/to_date can be a Date (from the picker) or a string.
+    formatDate: function formatDate(value) {
+      if (!value) return '';
+      try {
+        var d = value instanceof Date ? value : new Date(value);
+        if (isNaN(d.getTime())) return String(value);
+        var dd = String(d.getDate()).padStart(2, '0');
+        var mm = String(d.getMonth() + 1).padStart(2, '0');
+        return dd + '/' + mm + '/' + d.getFullYear();
+      } catch (e) {
+        return String(value);
+      }
+    },
+    // [W4.4 2026-06-08] XLSX export of the unified history honoring the
+    // current filters. paginate:0 = FULL dataset (not the 10-row page).
+    // applyOriginFilter() first so an origin chosen but not yet "Searched"
+    // is still reflected in the export. Mirrors posOrders xls().
+    xls: function xls() {
+      var _this3 = this;
+      this.applyOriginFilter();
+      this.loading.isActive = true;
+      this.$store.dispatch("orderHistory/export", _objectSpread(_objectSpread({}, this.props.search), {}, {
+        paginate: 0
+      })).then(function (res) {
+        _this3.loading.isActive = false;
+        var blob = new Blob([res.data], {
+          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        });
+        var link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = _this3.$t("menu.historique");
+        link.click();
+        URL.revokeObjectURL(link.href);
+      })["catch"](function (err) {
+        _this3.loading.isActive = false;
+        if (err && err.response && err.response.data && err.response.data.message) {
+          _services_alertService__WEBPACK_IMPORTED_MODULE_14__["default"].error(err.response.data.message);
+        }
       });
     }
   }
@@ -17130,10 +17342,10 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
       return _defineProperty(_defineProperty({}, _enums_modules_paymentStatusEnum__WEBPACK_IMPORTED_MODULE_8__["default"].PAID, this.$t("label.paid")), _enums_modules_paymentStatusEnum__WEBPACK_IMPORTED_MODULE_8__["default"].UNPAID, this.$t("label.unpaid"));
     },
     posPaymentMethodEnumArray: function posPaymentMethodEnumArray() {
-      return _defineProperty(_defineProperty(_defineProperty(_defineProperty(_defineProperty({}, _enums_modules_posPaymentMethodEnum__WEBPACK_IMPORTED_MODULE_11__["default"].CASH, this.$t("label.cash")), _enums_modules_posPaymentMethodEnum__WEBPACK_IMPORTED_MODULE_11__["default"].CARD, this.$t("label.card")), _enums_modules_posPaymentMethodEnum__WEBPACK_IMPORTED_MODULE_11__["default"].MOBILE_BANKING, this.$t("label.mobile_banking")), _enums_modules_posPaymentMethodEnum__WEBPACK_IMPORTED_MODULE_11__["default"].OTHER, this.$t("label.other")), _enums_modules_posPaymentMethodEnum__WEBPACK_IMPORTED_MODULE_11__["default"].TICKET_RESTAURANT, this.$t("label.ticket_restaurant"));
+      return _defineProperty(_defineProperty(_defineProperty(_defineProperty(_defineProperty(_defineProperty({}, _enums_modules_posPaymentMethodEnum__WEBPACK_IMPORTED_MODULE_11__["default"].CASH, this.$t("label.cash")), _enums_modules_posPaymentMethodEnum__WEBPACK_IMPORTED_MODULE_11__["default"].CARD, this.$t("label.card")), _enums_modules_posPaymentMethodEnum__WEBPACK_IMPORTED_MODULE_11__["default"].MOBILE_BANKING, this.$t("label.mobile_banking")), _enums_modules_posPaymentMethodEnum__WEBPACK_IMPORTED_MODULE_11__["default"].OTHER, this.$t("label.other")), _enums_modules_posPaymentMethodEnum__WEBPACK_IMPORTED_MODULE_11__["default"].TICKET_RESTAURANT, this.$t("label.ticket_restaurant")), _enums_modules_posPaymentMethodEnum__WEBPACK_IMPORTED_MODULE_11__["default"].COUNTER_DEFERRED, this.$t("label.counter_deferred"));
     },
     orderTypeEnumArray: function orderTypeEnumArray() {
-      return _defineProperty(_defineProperty(_defineProperty({}, _enums_modules_orderTypeEnum__WEBPACK_IMPORTED_MODULE_12__["default"].DELIVERY, this.$t("label.delivery")), _enums_modules_orderTypeEnum__WEBPACK_IMPORTED_MODULE_12__["default"].TAKEAWAY, this.$t("label.takeaway")), _enums_modules_orderTypeEnum__WEBPACK_IMPORTED_MODULE_12__["default"].DINING_TABLE, this.$t("label.dining_table"));
+      return _defineProperty(_defineProperty(_defineProperty(_defineProperty(_defineProperty({}, _enums_modules_orderTypeEnum__WEBPACK_IMPORTED_MODULE_12__["default"].DELIVERY, this.$t("label.delivery")), _enums_modules_orderTypeEnum__WEBPACK_IMPORTED_MODULE_12__["default"].TAKEAWAY, this.$t("label.takeaway")), _enums_modules_orderTypeEnum__WEBPACK_IMPORTED_MODULE_12__["default"].DINING_TABLE, this.$t("label.dining_table")), _enums_modules_orderTypeEnum__WEBPACK_IMPORTED_MODULE_12__["default"].POS, this.$t("label.pos")), _enums_modules_orderTypeEnum__WEBPACK_IMPORTED_MODULE_12__["default"].KIOSK, this.$t("label.kiosk"));
     },
     // [WT-D-R1-07 2026-05-20] Token is an internal kiosk/online reference,
     // NOT the order number. Suppress it from the visible detail summary
@@ -17603,43 +17815,48 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
     },
     save: function save() {
       var _this2 = this;
-      try {
-        var fd = new FormData();
-        fd.append('title', this.form.title);
-        fd.append('role_id', this.form.role_id == null ? 0 : this.form.role_id);
-        fd.append('user_id', this.form.user_id == null ? 0 : this.form.user_id);
-        fd.append('branch_id', this.authBranchId);
-        fd.append('description', this.form.description);
-        if (this.image) {
-          fd.append('image', this.image);
+      // [P1] This dispatches a LIVE push broadcast to the selected audience (blank
+      // role + user = everyone). The trigger button was mislabeled "Enregistrer", so a
+      // gérant could broadcast believing they saved a draft. Confirm before sending.
+      _services_appService__WEBPACK_IMPORTED_MODULE_5__["default"].confirmation("Cette notification sera envoyée immédiatement aux destinataires sélectionnés (à tous les utilisateurs si aucun rôle ni utilisateur n'est choisi). Continuer ?", "Envoyer la notification ?").then(function () {
+        try {
+          var fd = new FormData();
+          fd.append('title', _this2.form.title);
+          fd.append('role_id', _this2.form.role_id == null ? 0 : _this2.form.role_id);
+          fd.append('user_id', _this2.form.user_id == null ? 0 : _this2.form.user_id);
+          fd.append('branch_id', _this2.authBranchId);
+          fd.append('description', _this2.form.description);
+          if (_this2.image) {
+            fd.append('image', _this2.image);
+          }
+          var tempId = _this2.$store.getters['pushNotification/temp'].temp_id;
+          _this2.loading.isActive = true;
+          _this2.$store.dispatch('pushNotification/save', {
+            form: fd,
+            search: _this2.props.search
+          }).then(function (res) {
+            _services_appService__WEBPACK_IMPORTED_MODULE_5__["default"].sideDrawerHide();
+            _this2.loading.isActive = false;
+            _services_alertService__WEBPACK_IMPORTED_MODULE_4__["default"].successFlip(tempId === null ? 0 : 1, _this2.$t('label.push_notification'));
+            _this2.form = {
+              title: "",
+              description: "",
+              role_id: null,
+              user_id: null,
+              status: _enums_modules_statusEnum__WEBPACK_IMPORTED_MODULE_2__["default"].ACTIVE
+            };
+            _this2.image = "";
+            _this2.errors = {};
+            _this2.$refs.imageProperty.value = null;
+          })["catch"](function (err) {
+            _this2.loading.isActive = false;
+            _this2.errors = err.response.data.errors;
+          });
+        } catch (err) {
+          _this2.loading.isActive = false;
+          _services_alertService__WEBPACK_IMPORTED_MODULE_4__["default"].error(err);
         }
-        var tempId = this.$store.getters['pushNotification/temp'].temp_id;
-        this.loading.isActive = true;
-        this.$store.dispatch('pushNotification/save', {
-          form: fd,
-          search: this.props.search
-        }).then(function (res) {
-          _services_appService__WEBPACK_IMPORTED_MODULE_5__["default"].sideDrawerHide();
-          _this2.loading.isActive = false;
-          _services_alertService__WEBPACK_IMPORTED_MODULE_4__["default"].successFlip(tempId === null ? 0 : 1, _this2.$t('label.push_notification'));
-          _this2.form = {
-            title: "",
-            description: "",
-            role_id: null,
-            user_id: null,
-            status: _enums_modules_statusEnum__WEBPACK_IMPORTED_MODULE_2__["default"].ACTIVE
-          };
-          _this2.image = "";
-          _this2.errors = {};
-          _this2.$refs.imageProperty.value = null;
-        })["catch"](function (err) {
-          _this2.loading.isActive = false;
-          _this2.errors = err.response.data.errors;
-        });
-      } catch (err) {
-        this.loading.isActive = false;
-        _services_alertService__WEBPACK_IMPORTED_MODULE_4__["default"].error(err);
-      }
+      })["catch"](function () {/* cancelled — nothing sent */});
     }
   }
 });
@@ -23670,6 +23887,22 @@ __webpack_require__.r(__webpack_exports__);
     }
   },
   methods: {
+    // [Wave 5 — i18n] Localize the weekday name (enum exposes EN). Map by the
+    // stable numeric enum id (1=Mon..6=Sat, 0=Sun) to the FR label.* key so the
+    // enum's value mapping stays intact and only the DISPLAYED name is FR.
+    dayLabel: function dayLabel(dayEnum) {
+      var keys = {
+        1: "label.day_monday",
+        2: "label.day_tuesday",
+        3: "label.day_wednesday",
+        4: "label.day_thursday",
+        5: "label.day_friday",
+        6: "label.day_saturday",
+        0: "label.day_sunday"
+      };
+      var key = keys[dayEnum.id];
+      return key ? this.$t(key) : dayEnum.name;
+    },
     taxTypeClass: function taxTypeClass(type) {
       return _services_appService__WEBPACK_IMPORTED_MODULE_6__["default"].taxTypeClass(type);
     },
@@ -24281,6 +24514,11 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
 
 var DEBOUNCE_MS = 500;
 var DEFAULT_REASON = 'out_of_stock_manual';
+
+// Stable key for the synthetic "⚠ Ruptures" bucket (union of all out-of-stock
+// products). Kept out of the default-landing selection (see pickDefaultBucketKey)
+// so it stays a one-click target, not the page's default view.
+var RUPTURES_BUCKET_KEY = '__ruptures__';
 var CATEGORY_ICONS = {
   burgers: '🍔',
   burger: '🍔',
@@ -24436,6 +24674,29 @@ function debounce(fn, ms) {
           items: items
         });
       });
+
+      // Synthetic pinned bucket: the union of every out-of-stock product
+      // across all real buckets, so the gérant reaches "what's out" in one
+      // click instead of paging through ~22 categories. Client-side derived
+      // (no extra API call); product keys are globally unique across axes so
+      // the union never collides on the Vue :key. Appears ONLY when N>0 and
+      // is pinned first.
+      var unavailable = buckets.reduce(function (acc, b) {
+        (b.items || []).forEach(function (p) {
+          if (!p.is_available) acc.push(p);
+        });
+        return acc;
+      }, []);
+      if (unavailable.length > 0) {
+        buckets.unshift({
+          key: RUPTURES_BUCKET_KEY,
+          kind: 'ruptures',
+          label: this.$t('admin.stock_mgmt.rail_ruptures'),
+          icon: '⚠',
+          count: unavailable.length,
+          items: unavailable
+        });
+      }
       return buckets;
     },
     activeBucket: function activeBucket() {
@@ -24502,10 +24763,17 @@ function debounce(fn, ms) {
         var lbl = String((b === null || b === void 0 ? void 0 : b.label) || '').trim().toLowerCase();
         return lbl === 'autres' || lbl.startsWith('autres ');
       };
+      // Skip the synthetic "⚠ Ruptures" bucket too: it's a one-click target,
+      // not the default landing view (the landing must not flip with stock).
+      var isSynthetic = function isSynthetic(b) {
+        return (b === null || b === void 0 ? void 0 : b.key) === RUPTURES_BUCKET_KEY;
+      };
       var firstMeaningful = list.find(function (b) {
-        return !isAutres(b);
+        return !isAutres(b) && !isSynthetic(b);
       });
-      return (firstMeaningful || list[0]).key;
+      return (firstMeaningful || list.find(function (b) {
+        return !isSynthetic(b);
+      }) || list[0]).key;
     },
     authBranchId: function authBranchId() {
       try {
@@ -25130,25 +25398,30 @@ __webpack_require__.r(__webpack_exports__);
     },
     save: function save() {
       var _this = this;
-      try {
-        this.loading.isActive = true;
-        this.$store.dispatch("subscriber/sendEmail", this.props).then(function (res) {
-          _services_appService__WEBPACK_IMPORTED_MODULE_5__["default"].sideDrawerHide();
+      // [P1] This sends a LIVE email to the entire subscriber base. The trigger button
+      // was mislabeled "Enregistrer", so a gérant could mass-mail believing they saved a
+      // draft. Confirm before sending.
+      _services_appService__WEBPACK_IMPORTED_MODULE_5__["default"].confirmation("Cet email sera envoyé immédiatement à tous les abonnés. Continuer ?", "Envoyer l'email à tous les abonnés ?").then(function () {
+        try {
+          _this.loading.isActive = true;
+          _this.$store.dispatch("subscriber/sendEmail", _this.props).then(function (res) {
+            _services_appService__WEBPACK_IMPORTED_MODULE_5__["default"].sideDrawerHide();
+            _this.loading.isActive = false;
+            _services_alertService__WEBPACK_IMPORTED_MODULE_4__["default"].successInfo(0, _this.$t("message.email_send"));
+            _this.props.form = {
+              subject: "",
+              message: ""
+            };
+            _this.errors = {};
+          })["catch"](function (err) {
+            _this.loading.isActive = false;
+            _this.errors = err.response.data.errors;
+          });
+        } catch (err) {
           _this.loading.isActive = false;
-          _services_alertService__WEBPACK_IMPORTED_MODULE_4__["default"].successInfo(0, _this.$t("message.email_send"));
-          _this.props.form = {
-            subject: "",
-            message: ""
-          };
-          _this.errors = {};
-        })["catch"](function (err) {
-          _this.loading.isActive = false;
-          _this.errors = err.response.data.errors;
-        });
-      } catch (err) {
-        this.loading.isActive = false;
-        _services_alertService__WEBPACK_IMPORTED_MODULE_4__["default"].error(err);
-      }
+          _services_alertService__WEBPACK_IMPORTED_MODULE_4__["default"].error(err);
+        }
+      })["catch"](function () {/* cancelled — nothing sent */});
     }
   }
 });
@@ -39090,44 +39363,65 @@ var _hoisted_9 = {
   "class": "enc-count-chip"
 };
 var _hoisted_10 = {
-  "class": "enc-body"
+  key: 0,
+  "class": "enc-total-banner"
 };
 var _hoisted_11 = {
+  "class": "enc-total-label"
+};
+var _hoisted_12 = {
+  "class": "enc-total-right"
+};
+var _hoisted_13 = {
+  "class": "enc-total-amount"
+};
+var _hoisted_14 = {
+  key: 0,
+  "class": "enc-total-capnote"
+};
+var _hoisted_15 = {
+  "class": "enc-body"
+};
+var _hoisted_16 = {
   key: 0,
   "class": "enc-empty"
 };
-var _hoisted_12 = {
+var _hoisted_17 = {
   "class": "enc-empty-title"
 };
-var _hoisted_13 = {
+var _hoisted_18 = {
   key: 1,
   "class": "enc-grid"
 };
-var _hoisted_14 = {
+var _hoisted_19 = {
   "class": "enc-ticket-top"
 };
-var _hoisted_15 = {
+var _hoisted_20 = {
+  "class": "enc-top-right"
+};
+var _hoisted_21 = ["title"];
+var _hoisted_22 = {
   key: 0,
   "class": "enc-queue"
 };
-var _hoisted_16 = {
+var _hoisted_23 = {
   "class": "enc-ticket-customer"
 };
-var _hoisted_17 = {
+var _hoisted_24 = {
   key: 0,
   "class": "enc-ticket-items"
 };
-var _hoisted_18 = {
+var _hoisted_25 = {
   key: 0,
   "class": "enc-more"
 };
-var _hoisted_19 = {
+var _hoisted_26 = {
   "class": "enc-ticket-bottom"
 };
-var _hoisted_20 = {
+var _hoisted_27 = {
   "class": "enc-amount"
 };
-var _hoisted_21 = ["onClick"];
+var _hoisted_28 = ["onClick"];
 function render(_ctx, _cache, $props, $setup, $data, $options) {
   var _component_LoadingComponent = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("LoadingComponent");
   var _component_BreadcrumbComponent = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("BreadcrumbComponent");
@@ -39141,24 +39435,27 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     }, ["prevent"]))
   }, [_cache[2] || (_cache[2] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
     "class": "lab lab-refresh-line lab-font-size-16"
-  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.refresh')), 1 /* TEXT */)])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_10, [$data.orders.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_11, [_cache[3] || (_cache[3] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.refresh')), 1 /* TEXT */)])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [W2.3] Total en attente d'encaissement — somme client-side de la\n                     liste déjà fetchée (aucun nouvel appel API). Répond à la question\n                     quotidienne du gérant : « combien d'argent non encaissé attend ? » "), $data.orders.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_10, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_11, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.encaisser_total_pending')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_12, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_13, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice($options.totalPending)), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [G-DEC-1 heal] Honest caveat shown ONLY when the server cap\n                             (200) is hit — the sum is then a partial total, not the full\n                             amount owed. Hidden in the normal (<200) case. "), $options.pendingCapped ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_14, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.encaisser_total_capped')), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_15, [$data.orders.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_16, [_cache[3] || (_cache[3] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
     "class": "enc-empty-icon"
-  }, "✅", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_12, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.encaisser_queue_empty')), 1 /* TEXT */)])) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_13, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($data.orders, function (order) {
+  }, "✅", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_17, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.encaisser_queue_empty')), 1 /* TEXT */)])) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_18, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($data.orders, function (order) {
     return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
       key: order.id,
       "class": "enc-ticket"
-    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_14, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_19, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
       "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["enc-origin-badge", $options.originBadge(order).cls])
-    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.originBadge(order).label), 3 /* TEXT, CLASS */), order.queue_number ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_15, "N°" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(order.queue_number), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_16, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.customerName(order)), 1 /* TEXT */), order.order_items && order.order_items.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("ul", _hoisted_17, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(order.order_items.slice(0, 4), function (it, idx) {
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.originBadge(order).label), 3 /* TEXT, CLASS */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_20, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [W2.2] Badge d'attente (aging) — calculé depuis created_at,\n                                         devient ambre puis rouge passé ~15 min pour que le gérant\n                                         serve d'abord la commande qui attend le plus. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+      "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["enc-wait", $options.waitClass(order.created_at)]),
+      title: _ctx.$t('label.encaisser_wait_title')
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.elapsedShort(order.created_at)), 11 /* TEXT, CLASS, PROPS */, _hoisted_21), order.queue_number ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_22, "N°" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(order.queue_number), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_23, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.customerName(order)), 1 /* TEXT */), order.order_items && order.order_items.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("ul", _hoisted_24, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(order.order_items.slice(0, 4), function (it, idx) {
       return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", {
         key: idx
       }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(it.quantity) + "× " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.itemName(it)), 1 /* TEXT */);
-    }), 128 /* KEYED_FRAGMENT */)), order.order_items.length > 4 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", _hoisted_18, " +" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(order.order_items.length - 4) + "… ", 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_19, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_20, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice($options.orderAmount(order))), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    }), 128 /* KEYED_FRAGMENT */)), order.order_items.length > 4 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", _hoisted_25, " +" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(order.order_items.length - 4) + "… ", 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_26, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_27, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice($options.orderAmount(order))), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
       "class": "enc-collect-btn",
       onClick: (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
         return $options.openEncaissement(order);
       }, ["prevent"])
-    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.encaisser')), 9 /* TEXT, PROPS */, _hoisted_21)])]);
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.encaisser')), 9 /* TEXT, PROPS */, _hoisted_28)])]);
   }), 128 /* KEYED_FRAGMENT */))]))])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Shared counter-collect modal (cash / card / mobile / ticket).\n             It POSTs admin/pos/counter-collect/{id}/confirm itself; on @confirmed\n             we refresh the queue so the now-paid order leaves the list. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PosCounterCollectModal, {
     order: $data.encaisseOrder,
     onConfirmed: $options.onEncaisseConfirmed,
@@ -41409,7 +41706,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "class": "db-tabBtn !justify-start"
   }, [_cache[16] || (_cache[16] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
     "class": "lab lab-eye lab-font-size-16"
-  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('admin.item_preview.tab_label')), 1 /* TEXT */)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_3, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_4, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_5, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_6, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_7, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.name')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_8, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.item.name), 1 /* TEXT */)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_9, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_10, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_11, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.price')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_12, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.item.flat_price), 1 /* TEXT */)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_13, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_14, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_15, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.category')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_16, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.item.category_name), 1 /* TEXT */)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_17, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_18, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_19, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.tax')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_20, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.tax_name), 1 /* TEXT */)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_21, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_22, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_23, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.type')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_24, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.enums.itemTypeEnumArray[$options.item.item_type]), 1 /* TEXT */)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_25, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_26, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_27, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.featured')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_28, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.enums.askEnumArray[$options.item.is_featured]), 1 /* TEXT */)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [GAP-27-1] Show is_upsell status in item detail view "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_29, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_30, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_31, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.is_upsell')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_32, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.enums.askEnumArray[$options.item.is_upsell]), 1 /* TEXT */)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_33, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_34, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_35, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.status')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_36, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.enums.statusEnumArray[$options.item.status]), 1 /* TEXT */)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_37, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_38, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_39, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_40, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.caution')), 1 /* TEXT */), _cache[17] || (_cache[17] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)()), _cache[18] || (_cache[18] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("br", null, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_41, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.item.caution), 1 /* TEXT */)])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_42, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_43, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_44, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_45, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.description')), 1 /* TEXT */), _cache[19] || (_cache[19] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("br", null, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_46, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.item.description), 1 /* TEXT */)])])])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_47, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_48, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_49, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("img", {
+  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('admin.item_preview.tab_label')), 1 /* TEXT */)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_3, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_4, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_5, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_6, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_7, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.name')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_8, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.item.name), 1 /* TEXT */)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_9, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_10, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_11, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.price')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_12, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.item.currency_price), 1 /* TEXT */)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_13, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_14, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_15, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.category')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_16, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.item.category_name), 1 /* TEXT */)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_17, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_18, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_19, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.tax')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_20, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.tax_name), 1 /* TEXT */)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_21, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_22, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_23, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.type')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_24, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.enums.itemTypeEnumArray[$options.item.item_type]), 1 /* TEXT */)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_25, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_26, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_27, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.featured')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_28, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.enums.askEnumArray[$options.item.is_featured]), 1 /* TEXT */)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [GAP-27-1] Show is_upsell status in item detail view "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_29, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_30, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_31, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.is_upsell')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_32, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.enums.askEnumArray[$options.item.is_upsell]), 1 /* TEXT */)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_33, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_34, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_35, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.status')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_36, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.enums.statusEnumArray[$options.item.status]), 1 /* TEXT */)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_37, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_38, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_39, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_40, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.caution')), 1 /* TEXT */), _cache[17] || (_cache[17] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)()), _cache[18] || (_cache[18] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("br", null, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_41, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.item.caution), 1 /* TEXT */)])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_42, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_43, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_44, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_45, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.description')), 1 /* TEXT */), _cache[19] || (_cache[19] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("br", null, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_46, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.item.description), 1 /* TEXT */)])])])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_47, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_48, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_49, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("img", {
     "class": "db-image",
     alt: "slider",
     src: $data.previewImage
@@ -47308,78 +47605,80 @@ var _hoisted_5 = {
   "class": "db-card-filter"
 };
 var _hoisted_6 = {
+  key: 0,
+  "class": "dropdown-group"
+};
+var _hoisted_7 = {
+  "class": "dropdown-list db-card-filter-dropdown-list transition-all duration-300 scale-y-0 origin-top"
+};
+var _hoisted_8 = {
+  key: 0,
+  "class": "hist-active-filters"
+};
+var _hoisted_9 = {
+  "class": "hist-active-filters-label"
+};
+var _hoisted_10 = {
   "class": "table-filter-div",
   id: "historique-filter"
 };
-var _hoisted_7 = {
-  "class": "row"
-};
-var _hoisted_8 = {
-  "class": "col-12 sm:col-6 md:col-4 xl:col-3"
-};
-var _hoisted_9 = {
-  "for": "order_id",
-  "class": "db-field-title after:hidden"
-};
-var _hoisted_10 = {
-  "class": "col-12 sm:col-6 md:col-4 xl:col-3"
-};
 var _hoisted_11 = {
-  "for": "searchOrigin",
-  "class": "db-field-title after:hidden"
+  "class": "row"
 };
 var _hoisted_12 = {
   "class": "col-12 sm:col-6 md:col-4 xl:col-3"
 };
 var _hoisted_13 = {
-  "for": "searchStatus",
+  "for": "order_id",
   "class": "db-field-title after:hidden"
 };
 var _hoisted_14 = {
   "class": "col-12 sm:col-6 md:col-4 xl:col-3"
 };
 var _hoisted_15 = {
-  "for": "searchPayment",
+  "for": "searchOrigin",
   "class": "db-field-title after:hidden"
 };
 var _hoisted_16 = {
   "class": "col-12 sm:col-6 md:col-4 xl:col-3"
 };
 var _hoisted_17 = {
+  "for": "searchStatus",
+  "class": "db-field-title after:hidden"
+};
+var _hoisted_18 = {
+  "class": "col-12 sm:col-6 md:col-4 xl:col-3"
+};
+var _hoisted_19 = {
+  "for": "searchPayment",
+  "class": "db-field-title after:hidden"
+};
+var _hoisted_20 = {
+  "class": "col-12 sm:col-6 md:col-4 xl:col-3"
+};
+var _hoisted_21 = {
   "for": "dp-input-searchStartDate",
   "class": "db-field-title after:hidden"
 };
-var _hoisted_18 = ["onClick"];
-var _hoisted_19 = {
+var _hoisted_22 = ["onClick"];
+var _hoisted_23 = {
   "class": "col-12"
 };
-var _hoisted_20 = {
+var _hoisted_24 = {
   "class": "flex flex-wrap gap-3 mt-4"
 };
-var _hoisted_21 = {
+var _hoisted_25 = {
   "class": "db-btn py-2 text-white bg-primary"
 };
-var _hoisted_22 = {
+var _hoisted_26 = {
   "class": "db-table-responsive"
 };
-var _hoisted_23 = ["dir"];
-var _hoisted_24 = {
+var _hoisted_27 = ["dir"];
+var _hoisted_28 = {
   "class": "db-table-head"
 };
-var _hoisted_25 = {
-  "class": "db-table-head-tr"
-};
-var _hoisted_26 = {
-  "class": "db-table-head-th"
-};
-var _hoisted_27 = {
-  "class": "db-table-head-th"
-};
-var _hoisted_28 = {
-  "class": "db-table-head-th"
-};
 var _hoisted_29 = {
-  "class": "db-table-head-th"
+  "class": "db-table-head-tr"
 };
 var _hoisted_30 = {
   "class": "db-table-head-th"
@@ -47397,29 +47696,27 @@ var _hoisted_34 = {
   "class": "db-table-head-th"
 };
 var _hoisted_35 = {
-  key: 0,
   "class": "db-table-head-th"
 };
 var _hoisted_36 = {
-  key: 0,
-  "class": "db-table-body"
+  "class": "db-table-head-th"
 };
 var _hoisted_37 = {
-  "class": "db-table-body-td"
+  "class": "db-table-head-th"
 };
 var _hoisted_38 = {
-  "class": "db-table-body-td"
+  "class": "db-table-head-th"
 };
 var _hoisted_39 = {
-  "class": "db-table-body-td"
+  key: 0,
+  "class": "db-table-head-th"
 };
 var _hoisted_40 = {
   key: 0,
-  "class": "pos-order-queue-chip"
+  "class": "db-table-body"
 };
 var _hoisted_41 = {
-  key: 1,
-  "class": "text-[#6E7191]"
+  "class": "db-table-body-td"
 };
 var _hoisted_42 = {
   "class": "db-table-body-td"
@@ -47428,65 +47725,86 @@ var _hoisted_43 = {
   "class": "db-table-body-td"
 };
 var _hoisted_44 = {
-  "class": "db-table-body-td"
+  key: 0,
+  "class": "pos-order-queue-chip"
 };
-var _hoisted_45 = ["title"];
+var _hoisted_45 = {
+  key: 1,
+  "class": "text-[#6E7191]"
+};
 var _hoisted_46 = {
   "class": "db-table-body-td"
 };
 var _hoisted_47 = {
-  key: 0,
-  "class": "hist-fiscal-chip"
-};
-var _hoisted_48 = {
-  key: 1,
-  "class": "text-[#6E7191]"
-};
-var _hoisted_49 = {
   "class": "db-table-body-td"
 };
+var _hoisted_48 = {
+  "class": "db-table-body-td"
+};
+var _hoisted_49 = ["title"];
 var _hoisted_50 = {
   "class": "db-table-body-td"
 };
 var _hoisted_51 = {
   key: 0,
-  "class": "db-table-body-td"
+  "class": "hist-fiscal-chip"
 };
 var _hoisted_52 = {
-  "class": "flex justify-start items-center gap-1.5"
+  key: 1,
+  "class": "text-[#6E7191]"
 };
 var _hoisted_53 = {
+  "class": "db-table-body-td"
+};
+var _hoisted_54 = {
+  "class": "db-table-body-td"
+};
+var _hoisted_55 = {
+  key: 0,
+  "class": "db-table-body-td"
+};
+var _hoisted_56 = {
+  "class": "flex justify-start items-center gap-1.5"
+};
+var _hoisted_57 = {
   key: 1,
   "class": "db-table-body"
 };
-var _hoisted_54 = {
+var _hoisted_58 = {
   "class": "db-table-body-tr"
 };
-var _hoisted_55 = {
+var _hoisted_59 = {
   "class": "db-table-body-td text-center",
   colspan: "10"
 };
-var _hoisted_56 = {
+var _hoisted_60 = {
   "class": "p-4"
 };
-var _hoisted_57 = {
+var _hoisted_61 = {
   "class": "max-w-[300px] mx-auto mt-2"
 };
-var _hoisted_58 = ["src"];
-var _hoisted_59 = {
+var _hoisted_62 = ["src"];
+var _hoisted_63 = {
+  key: 0,
   "class": "d-block mt-3 text-lg"
 };
-var _hoisted_60 = {
-  key: 0,
+var _hoisted_64 = {
+  key: 1,
+  "class": "d-block mt-3 text-lg"
+};
+var _hoisted_65 = {
+  key: 1,
   "class": "flex items-center justify-between border-t border-gray-200 bg-white px-4 py-6"
 };
-var _hoisted_61 = {
+var _hoisted_66 = {
   "class": "hidden sm:flex sm:flex-1 sm:items-center sm:justify-between"
 };
 function render(_ctx, _cache, $props, $setup, $data, $options) {
   var _component_LoadingComponent = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("LoadingComponent");
   var _component_TableLimitComponent = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("TableLimitComponent");
   var _component_FilterComponent = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("FilterComponent");
+  var _component_ExportComponent = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("ExportComponent");
+  var _component_ExcelComponent = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("ExcelComponent");
   var _component_vue_select = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("vue-select");
   var _component_Datepicker = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("Datepicker");
   var _component_SmIconViewComponent = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("SmIconViewComponent");
@@ -47503,23 +47821,38 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     onClick: _cache[0] || (_cache[0] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
       return $options.handleSlide('historique-filter');
     }, ["prevent"]))
-  })])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_6, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("form", {
+  }), $options.permissionChecker('pos-orders') ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_6, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_ExportComponent), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_7, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_ExcelComponent, {
+    method: $options.xls
+  }, null, 8 /* PROPS */, ["method"])])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [W4.3 2026-06-08] Active-filter indicator — rendered OUTSIDE the\n                 collapsible filter panel so the gérant always sees WHY the list\n                 is filtered, even when the panel is collapsed. One-click clear. "), $options.hasActiveFilter ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_8, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_9, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.filter')) + " :", 1 /* TEXT */), ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.activeFilters, function (chip) {
+    return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", {
+      "class": "hist-filter-chip",
+      key: chip.key
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(chip.text), 1 /* TEXT */);
+  }), 128 /* KEYED_FRAGMENT */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "hist-clear-chip",
+    onClick: _cache[1] || (_cache[1] = function () {
+      return $options.clear && $options.clear.apply($options, arguments);
+    })
+  }, [_cache[10] || (_cache[10] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+    "class": "lab lab-cross-line-2 lab-font-size-16"
+  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.clear')), 1 /* TEXT */)])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_10, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("form", {
     "class": "p-4 sm:p-5 mb-5",
-    onSubmit: _cache[7] || (_cache[7] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function () {
+    onSubmit: _cache[8] || (_cache[8] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function () {
       return $options.search && $options.search.apply($options, arguments);
     }, ["prevent"]))
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_7, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_8, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_9, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.order_id')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_11, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_12, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_13, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.order_id')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
     id: "order_id",
-    "onUpdate:modelValue": _cache[1] || (_cache[1] = function ($event) {
+    "onUpdate:modelValue": _cache[2] || (_cache[2] = function ($event) {
       return $data.props.search.order_serial_no = $event;
     }),
     type: "text",
     "class": "db-field-control"
-  }, null, 512 /* NEED_PATCH */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.props.search.order_serial_no]])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_10, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_11, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.origin')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_vue_select, {
+  }, null, 512 /* NEED_PATCH */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.props.search.order_serial_no]])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_14, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_15, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.origin')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_vue_select, {
     "class": "db-field-control f-b-custom-select",
     id: "searchOrigin",
     modelValue: $data.props.origin,
-    "onUpdate:modelValue": _cache[2] || (_cache[2] = function ($event) {
+    "onUpdate:modelValue": _cache[3] || (_cache[3] = function ($event) {
       return $data.props.origin = $event;
     }),
     options: $options.originOptions,
@@ -47530,11 +47863,11 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     clearOnClose: true,
     placeholder: "--",
     "search-placeholder": "--"
-  }, null, 8 /* PROPS */, ["modelValue", "options"])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_12, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_13, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.status')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_vue_select, {
+  }, null, 8 /* PROPS */, ["modelValue", "options"])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_16, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_17, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.status')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_vue_select, {
     "class": "db-field-control f-b-custom-select",
     id: "searchStatus",
     modelValue: $data.props.search.status,
-    "onUpdate:modelValue": _cache[3] || (_cache[3] = function ($event) {
+    "onUpdate:modelValue": _cache[4] || (_cache[4] = function ($event) {
       return $data.props.search.status = $event;
     }),
     options: [{
@@ -47557,11 +47890,11 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     clearOnClose: true,
     placeholder: "--",
     "search-placeholder": "--"
-  }, null, 8 /* PROPS */, ["modelValue", "options"])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_14, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_15, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.payment_status')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_vue_select, {
+  }, null, 8 /* PROPS */, ["modelValue", "options"])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_18, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_19, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.payment_status')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_vue_select, {
     "class": "db-field-control f-b-custom-select",
     id: "searchPayment",
     modelValue: $data.props.search.payment_status,
-    "onUpdate:modelValue": _cache[4] || (_cache[4] = function ($event) {
+    "onUpdate:modelValue": _cache[5] || (_cache[5] = function ($event) {
       return $data.props.search.payment_status = $event;
     }),
     options: [{
@@ -47584,14 +47917,14 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     clearOnClose: true,
     placeholder: "--",
     "search-placeholder": "--"
-  }, null, 8 /* PROPS */, ["modelValue", "options"])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_16, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_17, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.date')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_Datepicker, {
+  }, null, 8 /* PROPS */, ["modelValue", "options"])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_20, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_21, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.date')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_Datepicker, {
     uid: "searchStartDate",
     name: "searchStartDate",
     hideInputIcon: "",
     autoApply: "",
     enableTimePicker: false,
     utc: "false",
-    "onUpdate:modelValue": [$options.handleDate, _cache[5] || (_cache[5] = function ($event) {
+    "onUpdate:modelValue": [$options.handleDate, _cache[6] || (_cache[6] = function ($event) {
       return $data.props.form.date = $event;
     })],
     modelValue: $data.props.form.date,
@@ -47609,47 +47942,56 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
         onClick: function onClick($event) {
           return presetDateRange(range);
         }
-      }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(label), 9 /* TEXT, PROPS */, _hoisted_18)];
+      }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(label), 9 /* TEXT, PROPS */, _hoisted_22)];
     }),
     _: 1 /* STABLE */
-  }, 8 /* PROPS */, ["onUpdate:modelValue", "modelValue", "preset-ranges", "aria-labels"])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_19, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_20, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", _hoisted_21, [_cache[8] || (_cache[8] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+  }, 8 /* PROPS */, ["onUpdate:modelValue", "modelValue", "preset-ranges", "aria-labels"])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_23, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_24, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", _hoisted_25, [_cache[11] || (_cache[11] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
     "class": "lab lab-search-line lab-font-size-16"
   }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.search')), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     "class": "db-btn py-2 text-white bg-gray-600",
-    onClick: _cache[6] || (_cache[6] = function () {
+    onClick: _cache[7] || (_cache[7] = function () {
       return $options.clear && $options.clear.apply($options, arguments);
     })
-  }, [_cache[9] || (_cache[9] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+  }, [_cache[12] || (_cache[12] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
     "class": "lab lab-cross-line-2 lab-font-size-22"
-  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.clear')), 1 /* TEXT */)])])])])], 32 /* NEED_HYDRATION */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_22, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("table", {
+  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.clear')), 1 /* TEXT */)])])])])], 32 /* NEED_HYDRATION */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_26, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("table", {
     "class": "db-table stripe",
     dir: $options.direction
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("thead", _hoisted_24, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("tr", _hoisted_25, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("th", _hoisted_26, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.order_id')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("th", _hoisted_27, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.origin')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("th", _hoisted_28, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.queue_number')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("th", _hoisted_29, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.customer')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("th", _hoisted_30, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.amount')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("th", _hoisted_31, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.payment')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("th", _hoisted_32, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.fiscal_number')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("th", _hoisted_33, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.date')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("th", _hoisted_34, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.status')), 1 /* TEXT */), $options.permissionChecker('pos-orders') ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("th", _hoisted_35, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.action')), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])]), $options.orders.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("tbody", _hoisted_36, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.orders, function (order) {
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("thead", _hoisted_28, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("tr", _hoisted_29, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("th", _hoisted_30, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.order_id')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("th", _hoisted_31, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.origin')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("th", _hoisted_32, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.queue_number')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("th", _hoisted_33, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.customer')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("th", _hoisted_34, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.amount')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("th", _hoisted_35, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.payment')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("th", _hoisted_36, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.fiscal_number')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("th", _hoisted_37, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.date')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("th", _hoisted_38, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.status')), 1 /* TEXT */), $options.permissionChecker('pos-orders') ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("th", _hoisted_39, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.action')), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])]), $options.orders.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("tbody", _hoisted_40, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.orders, function (order) {
     return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("tr", {
       "class": "db-table-body-tr",
       key: order.id
-    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_37, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(order.order_serial_no), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_38, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_41, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(order.order_serial_no), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_42, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
       "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["hist-origin-badge", $options.originBadge(order).cls])
-    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.originBadge(order).label), 3 /* TEXT, CLASS */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_39, [order.queue_number ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_40, "N°" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(order.queue_number), 1 /* TEXT */)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_41, "—"))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_42, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(order.customer_name || '—'), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_43, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice(order.total)), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_44, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.originBadge(order).label), 3 /* TEXT, CLASS */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_43, [order.queue_number ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_44, "N°" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(order.queue_number), 1 /* TEXT */)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_45, "—"))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_46, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(order.customer_name || '—'), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_47, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice(order.total)), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_48, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
       "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["hist-pay-badge", $options.paymentBadgeClass(order.payment_status)])
     }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.paymentLabel(order.payment_status)), 3 /* TEXT, CLASS */), order.parent_order_id ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", {
       key: 0,
       "class": "hist-refund-tag",
       title: _ctx.$t('label.refunded')
-    }, " ↩ #" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(order.parent_order_id), 9 /* TEXT, PROPS */, _hoisted_45)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_46, [order.fiscal_sequence_no ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_47, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(order.fiscal_sequence_no), 1 /* TEXT */)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_48, "—"))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_49, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(order.order_datetime), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_50, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    }, " ↩ #" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(order.parent_order_id), 9 /* TEXT, PROPS */, _hoisted_49)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_50, [order.fiscal_sequence_no ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_51, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(order.fiscal_sequence_no), 1 /* TEXT */)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_52, "—"))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_53, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(order.order_datetime), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_54, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
       "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)($options.orderStatusClass(order.status))
-    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.enums.orderStatusEnumArray[order.status] || order.status_name), 3 /* TEXT, CLASS */)]), $options.permissionChecker('pos-orders') ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("td", _hoisted_51, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_52, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_SmIconViewComponent, {
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.enums.orderStatusEnumArray[order.status] || order.status_name), 3 /* TEXT, CLASS */)]), $options.permissionChecker('pos-orders') ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("td", _hoisted_55, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_56, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_SmIconViewComponent, {
       link: 'admin.pos-orders.show',
       id: order.id
     }, null, 8 /* PROPS */, ["id"])])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
-  }), 128 /* KEYED_FRAGMENT */))])) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("tbody", _hoisted_53, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("tr", _hoisted_54, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_55, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_56, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_57, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("img", {
+  }), 128 /* KEYED_FRAGMENT */))])) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("tbody", _hoisted_57, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("tr", _hoisted_58, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_59, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_60, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_61, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("img", {
     "class": "w-full h-full",
     src: $data.ENV.API_URL + '/images/default/not-found.png',
     alt: "Not Found"
-  }, null, 8 /* PROPS */, _hoisted_58)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_59, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('message.no_data_available')), 1 /* TEXT */)])])])]))], 8 /* PROPS */, _hoisted_23)]), $options.orders.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_60, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PaginationSMBox, {
+  }, null, 8 /* PROPS */, _hoisted_62)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [W4.3 2026-06-08] Filter-aware empty state: when a\n                                         filter matches nothing, say so explicitly + offer reset. "), $options.hasActiveFilter ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_63, "Aucune commande pour ce filtre")) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_64, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('message.no_data_available')), 1 /* TEXT */)), $options.hasActiveFilter ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+    key: 2,
+    type: "button",
+    "class": "db-btn py-2 text-white bg-gray-600 mt-4 mx-auto",
+    onClick: _cache[9] || (_cache[9] = function () {
+      return $options.clear && $options.clear.apply($options, arguments);
+    })
+  }, [_cache[13] || (_cache[13] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+    "class": "lab lab-cross-line-2 lab-font-size-22"
+  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.clear')), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])])])]))], 8 /* PROPS */, _hoisted_27)]), $options.orders.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_65, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PaginationSMBox, {
     pagination: $options.pagination,
     method: $options.list
-  }, null, 8 /* PROPS */, ["pagination", "method"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_61, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PaginationTextComponent, {
+  }, null, 8 /* PROPS */, ["pagination", "method"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_66, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PaginationTextComponent, {
     props: {
       page: $options.paginationPage
     }
@@ -48630,6 +48972,9 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     }, {
       id: $data.enums.orderStatusEnum.REJECTED,
       name: _ctx.$t('label.rejected')
+    }, {
+      id: $data.enums.orderStatusEnum.RETURNED,
+      name: _ctx.$t('label.returned')
     }],
     "label-by": "name",
     "value-by": "id",
@@ -49046,7 +49391,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", {
       key: line.key,
       "class": "mb-0.5"
-    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_54, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.' + line.key)) + ":", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(line.value), 1 /* TEXT */)]);
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_54, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.' + String(line.key).toLowerCase())) + ":", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(line.value), 1 /* TEXT */)]);
   }), 128 /* KEYED_FRAGMENT */))])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_55, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_56, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('message.thank_you')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_57, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('message.please_come_again')), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_58, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h5", _hoisted_59, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.powered_by')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h6", _hoisted_60, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.company.company_name), 1 /* TEXT */)])])], 8 /* PROPS */, _hoisted_2)]);
 }
 
@@ -49111,20 +49456,21 @@ var _hoisted_15 = {
   "class": "text-heading"
 };
 var _hoisted_16 = {
+  key: 0,
   "class": "text-xs"
 };
 var _hoisted_17 = {
   "class": "text-heading"
 };
 var _hoisted_18 = {
-  key: 0,
+  key: 1,
   "class": "text-xs"
 };
 var _hoisted_19 = {
   "class": "text-heading text-[10px] opacity-75 font-mono"
 };
 var _hoisted_20 = {
-  key: 1,
+  key: 2,
   "class": "text-xs"
 };
 var _hoisted_21 = {
@@ -49369,7 +49715,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)('text-xs capitalize px-2 rounded-3xl ' + $options.orderStatusClass($options.order.status))
   }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.orderStatusEnumArray[$options.order.status]), 3 /* TEXT, CLASS */)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("ul", _hoisted_8, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("li", _hoisted_9, [_cache[3] || (_cache[3] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
     "class": "lab lab-calendar-line lab-font-size-16"
-  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_10, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.order.order_datetime), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("li", _hoisted_11, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.payment_type')) + ": ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_12, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.posPaymentMethodEnumArray[$options.order.pos_payment_method]) + " ", 1 /* TEXT */), $options.order.pos_payment_method !== $data.enums.posPaymentMethodEnum.CASH && $options.order.pos_payment_note ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_13, " (" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.order.pos_payment_note) + ")", 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("li", _hoisted_14, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.order_type')) + ": ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_15, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.orderTypeEnumArray[$options.order.order_type]), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("li", _hoisted_16, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.delivery_time')) + ": ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_17, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.order.delivery_date) + " " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.order.delivery_time), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [WT-D-R1-07 2026-05-20] Internal token reference\n                             (kiosk/online flows). Relabelled FR \"Référence\n                             interne\" to avoid collision with `order_serial_no`\n                             (the real \"N° commande\" displayed at top). Hidden\n                             entirely if the token visually duplicates the\n                             customer first word (defensive guard against\n                             noisy fixture-injected tokens that bleed into\n                             the customer name field). "), $options.displayedToken ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", _hoisted_18, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.order_token')) + ": ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_19, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.displayedToken), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.order.table_name ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", _hoisted_20, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.table_name")) + ": ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_21, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.order.table_name), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])]), $options.order.status !== $data.enums.orderStatusEnum.REJECTED && $options.order.status !== $data.enums.orderStatusEnum.CANCELED ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_22, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [WT-D-R1-09 / WT-D-R1-02 2026-05-20] Delivery-boy\n                         assignment dropdown — WCAG AA combobox+listbox\n                         pattern overlaid on existing dropdown-group hover\n                         behaviour. data-testid hooks added for E2E.\n                         A live-region chip is rendered below the button when\n                         a driver is assigned so the cashier sees confirmation\n                         without consulting the toast. "), $options.order.order_type === $data.enums.orderTypeEnum.DELIVERY ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_10, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.order.order_datetime), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("li", _hoisted_11, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.payment_type')) + ": ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_12, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.posPaymentMethodEnumArray[$options.order.pos_payment_method] || '—') + " ", 1 /* TEXT */), $options.order.pos_payment_method !== $data.enums.posPaymentMethodEnum.CASH && $options.order.pos_payment_note ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_13, " (" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.order.pos_payment_note) + ")", 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("li", _hoisted_14, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.order_type')) + ": ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_15, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.orderTypeEnumArray[$options.order.order_type] || '—'), 1 /* TEXT */)]), $options.order.order_type === $data.enums.orderTypeEnum.DELIVERY ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", _hoisted_16, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.delivery_time')) + ": ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_17, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.order.delivery_date) + " " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.order.delivery_time), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [WT-D-R1-07 2026-05-20] Internal token reference\n                             (kiosk/online flows). Relabelled FR \"Référence\n                             interne\" to avoid collision with `order_serial_no`\n                             (the real \"N° commande\" displayed at top). Hidden\n                             entirely if the token visually duplicates the\n                             customer first word (defensive guard against\n                             noisy fixture-injected tokens that bleed into\n                             the customer name field). "), $options.displayedToken ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", _hoisted_18, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.order_token')) + ": ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_19, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.displayedToken), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.order.table_name ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", _hoisted_20, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.table_name")) + ": ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_21, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.order.table_name), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])]), $options.order.status !== $data.enums.orderStatusEnum.REJECTED && $options.order.status !== $data.enums.orderStatusEnum.CANCELED ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_22, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [WT-D-R1-09 / WT-D-R1-02 2026-05-20] Delivery-boy\n                         assignment dropdown — WCAG AA combobox+listbox\n                         pattern overlaid on existing dropdown-group hover\n                         behaviour. data-testid hooks added for E2E.\n                         A live-region chip is rendered below the button when\n                         a driver is assigned so the cashier sees confirmation\n                         without consulting the toast. "), $options.order.order_type === $data.enums.orderTypeEnum.DELIVERY ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
     key: 0,
     "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["dropdown-group", {
       'driver-assigned-flash': $data.driverFlashHighlight
@@ -49472,7 +49818,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     onClick: _cache[1] || (_cache[1] = function ($event) {
       return $data.loyaltyRedeemOpen = true;
     })
-  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.loyalty.redeem.title')), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_82, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_83, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_84, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_85, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.delivery_information')), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_86, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_87, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("img", {
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.loyalty.redeem.title')), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_82, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_83, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_84, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_85, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.order.order_type === $data.enums.orderTypeEnum.DELIVERY ? _ctx.$t('label.delivery_information') : _ctx.$t('label.customer_information')), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_86, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_87, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("img", {
     "class": "w-8 rounded-full",
     src: $options.orderUser.image,
     alt: "avatar"
@@ -49886,10 +50232,6 @@ var _hoisted_21 = {
 var _hoisted_22 = {
   "class": "flex flex-wrap gap-3 mt-4"
 };
-var _hoisted_23 = {
-  type: "submit",
-  "class": "db-btn py-2 text-white bg-primary"
-};
 function render(_ctx, _cache, $props, $setup, $data, $options) {
   var _component_LoadingComponent = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("LoadingComponent");
   var _component_SmSidebarModalCreateComponent = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("SmSidebarModalCreateComponent");
@@ -49962,15 +50304,18 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     }),
     "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)([$data.errors.description ? 'invalid' : '', "db-field-control"]),
     id: "description"
-  }, null, 2 /* CLASS */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.form.description]]), $data.errors.description ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("small", _hoisted_20, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.errors.description[0]), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_21, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_22, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", _hoisted_23, [_cache[9] || (_cache[9] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
-    "class": "lab lab-save"
-  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.save")), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+  }, null, 2 /* CLASS */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.form.description]]), $data.errors.description ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("small", _hoisted_20, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.errors.description[0]), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_21, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_22, [_cache[10] || (_cache[10] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "submit",
+    "class": "db-btn py-2 text-white bg-primary"
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+    "class": "lab lab-send-2"
+  }), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, "Envoyer la notification")], -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     type: "button",
     "class": "modal-btn-outline modal-close",
     onClick: _cache[7] || (_cache[7] = function () {
       return $options.reset && $options.reset.apply($options, arguments);
     })
-  }, [_cache[10] || (_cache[10] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+  }, [_cache[9] || (_cache[9] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
     "class": "lab lab-close"
   }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("button.close")), 1 /* TEXT */)])])])])], 32 /* NEED_HYDRATION */)])])], 64 /* STABLE_FRAGMENT */);
 }
@@ -59092,7 +59437,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", {
       "class": "flex sm:items-center flex-col sm:flex-row border-b border-[#EFF0F6]",
       key: dayEnum
-    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Slot weekenday name "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_6, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(dayEnum.name), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Slot content group "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_7, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Slot time box "), ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.timeSlots, function (timeSlot) {
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Slot weekenday name "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_6, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.dayLabel(dayEnum)), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Slot content group "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_7, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Slot time box "), ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.timeSlots, function (timeSlot) {
       return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
         "class": "flex items-center flex-wrap",
         key: timeSlot
@@ -60151,10 +60496,6 @@ var _hoisted_12 = {
 var _hoisted_13 = {
   "class": "flex flex-wrap gap-3 mt-4"
 };
-var _hoisted_14 = {
-  type: "submit",
-  "class": "db-btn py-2 text-white bg-primary"
-};
 function render(_ctx, _cache, $props, $setup, $data, $options) {
   var _component_LoadingComponent = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("LoadingComponent");
   var _component_SmSidebarModalCreateComponent = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("SmSidebarModalCreateComponent");
@@ -60184,15 +60525,18 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     }),
     "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)([$data.errors.message ? 'invalid' : '', "db-field-control"]),
     id: "message"
-  }, null, 2 /* CLASS */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $props.props.form.message]]), $data.errors.message ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("small", _hoisted_11, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.errors.message[0]), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_12, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_13, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", _hoisted_14, [_cache[5] || (_cache[5] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
-    "class": "lab lab-save"
-  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.save")), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+  }, null, 2 /* CLASS */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $props.props.form.message]]), $data.errors.message ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("small", _hoisted_11, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.errors.message[0]), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_12, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_13, [_cache[6] || (_cache[6] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "submit",
+    "class": "db-btn py-2 text-white bg-primary"
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+    "class": "lab lab-send-2"
+  }), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, "Envoyer l'email")], -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     type: "button",
     "class": "modal-btn-outline modal-close",
     onClick: _cache[3] || (_cache[3] = function () {
       return $options.reset && $options.reset.apply($options, arguments);
     })
-  }, [_cache[6] || (_cache[6] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+  }, [_cache[5] || (_cache[5] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
     "class": "lab lab-close"
   }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("button.close")), 1 /* TEXT */)])])])])], 32 /* NEED_HYDRATION */)])])], 64 /* STABLE_FRAGMENT */);
 }

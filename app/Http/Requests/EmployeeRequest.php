@@ -79,11 +79,4 @@ class EmployeeRequest extends FormRequest
             }
         });
     }
-
-    public function messages(): array
-    {
-        return [
-            'role_id.required' => 'The role field is required.'
-        ];
-    }
 }

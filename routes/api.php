@@ -981,6 +981,10 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
     // server-side. Distinct from pos-order (POS-source) and online-order (web).
     Route::prefix('order-history')->name('orderHistory.')->group(function () {
         Route::get('/', [OrderHistoryController::class, 'index'])->name('index');
+        // [W4.4 2026-06-08] Read-only XLSX export (order_serial_no +
+        // fiscal_sequence_no, all origins, honors index filters). Auth gated
+        // inline in the controller (no constructor middleware here).
+        Route::get('/export', [OrderHistoryController::class, 'export'])->name('export');
         Route::get('show/{order}', [OrderHistoryController::class, 'show'])->name('show');
     });
 

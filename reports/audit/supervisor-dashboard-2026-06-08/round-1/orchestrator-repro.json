@@ -1,0 +1,46 @@
+[
+  {
+    "id": "ORCH-BE-AUTHZ",
+    "file": "app/Http/Controllers/Admin/OrderHistoryController.php",
+    "line": "78-92 (export); route routes/api.php:973 inside admin group api.php:295",
+    "title": "W4 net-new export route authorization",
+    "verdict": "HOLDS",
+    "severity": "P0-candidate-cleared",
+    "proof": "export() carries identical abort_unless(can('pos-orders')||can('pos'),403) as proven index()/show(). order-history group nested in Route::prefix('admin')->middleware(['installed','apiKey','auth:sanctum','block_kiosk_token_admin','localization','throttle:admin-mutation']) at api.php:295. DYNAMIC: unauthenticated GET /api/admin/order-history/export -> HTTP 302 redirect to login (370B HTML), NOT 200 XLSX.",
+    "reproduction": "curl -s -o /dev/null -w '%{http_code}' 'http://127.0.0.1:8769/api/admin/order-history/export?from_date=2026-06-01&to_date=2026-06-08' => 302",
+    "remediation": "none — gate correct"
+  },
+  {
+    "id": "ORCH-BE-BRANCH",
+    "file": "app/Exports/OrderHistoryExport.php:40-43 + app/Services/OrderService.php:125-191",
+    "line": "OrderService::list 134 (Order::with) — no withoutGlobalScope",
+    "title": "W4 export branch isolation",
+    "verdict": "HOLDS",
+    "severity": "P0-candidate-cleared",
+    "proof": "OrderHistoryExport::collection calls orderService->list(); list() queries Order::with(...)->where(...) with NO withoutGlobalScope, so BranchScope (Order is one of the 20 sentinel-locked scoped models) ANDs branch_id=user.branch_id for branch operators. branch_id IS in $orderFilter (OrderService.php:74) so a crafted ?branch_id=2 adds where branch_id=2 AND (scope) branch_id=1 -> empty set. Admin branch_id=0 bypasses scope by design (sees all). No client-controlled cross-branch leak.",
+    "reproduction": "Read OrderService::list 125-191 + OrderHistoryExport 40-43; BranchScopeCoverageSentinelTest locks Order in the scoped set.",
+    "remediation": "none — scope backstop correct; latent cloud note only"
+  },
+  {
+    "id": "ORCH-BE-FISCAL",
+    "file": "app/Exports/OrderHistoryExport.php:40-74",
+    "line": "47-56 collection rows",
+    "title": "W4 export NF525 fiscal exposure",
+    "verdict": "HOLDS",
+    "severity": "P0-candidate-cleared",
+    "proof": "Export columns = order_serial_no, fiscal_sequence_no (blank for unsealed), order_type, customer name, total (flatAmountFormat), datetime, status. fiscal_sequence_no is the field the accountant needs for NF525 reconciliation, exposed only behind the privileged gate. FromCollection only reads sealed fields — zero writes to audit_logs/z_reports.",
+    "reproduction": "Read OrderHistoryExport.php; grep for any DB write -> none.",
+    "remediation": "P3 cosmetic only: 'N° fiscal' heading is a hardcoded FR stopgap (no all.label.fiscal_number lang key) — add key in a future polish wave."
+  },
+  {
+    "id": "ORCH-BUNDLE-FRESH",
+    "file": "public/js/app.js (manifest id c0907d79c5dbca5d8e39ce4ed3ed7b3c)",
+    "line": "n/a",
+    "title": "Served bundle freshness — audit validity gate",
+    "verdict": "HOLDS",
+    "severity": "info",
+    "proof": "grep of served public/js/app.js contains 'Client borne' (1), 'depuis le début' (2), 'Ruptures' (1), 'Taux de TVA' (1) -> :8769 serves the freshly-rebuilt dev bundles. All UI findings are against the real new code, not stale.",
+    "reproduction": "grep -c '<string>' public/js/app.js",
+    "remediation": "none"
+  }
+]

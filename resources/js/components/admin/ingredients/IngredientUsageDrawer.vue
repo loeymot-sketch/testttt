@@ -24,7 +24,7 @@
                         <h2 :id="titleId" class="text-base font-semibold text-slate-900">
                             {{ $t('label.ingredient.usage_drawer_title') }}
                         </h2>
-                        <p class="mt-1 text-xs text-slate-500">{{ globalId }}</p>
+                        <p v-if="typeLabel" class="mt-1 text-xs text-slate-500">{{ typeLabel }}</p>
                     </div>
                     <button
                         ref="closeButton"
@@ -54,7 +54,9 @@
                                 </span>
                             </p>
                             <p class="mt-1 text-xs text-slate-500" data-testid="ingredient-usage-count">
-                                {{ $t('label.ingredient.usage_count', { count: usedByCount }) }}
+                                {{ usedByCount > 0
+                                    ? $t('label.ingredient.usage_count', { count: usedByCount })
+                                    : $t('label.ingredient.usage_none') }}
                             </p>
                         </div>
 
@@ -100,6 +102,20 @@ export default {
         isOpen: { type: Boolean, default: false },
     },
     emits: ['close'],
+    computed: {
+        // Render a human, localized ingredient-type label instead of the raw
+        // internal globalId token (`type:id`, e.g. "attribute:8"). The type
+        // prefix maps to the same labels as the list tabs.
+        typeLabel() {
+            const type = String(this.globalId || '').split(':')[0];
+            const map = {
+                attribute: 'label.ingredient.tab_attribute',
+                extra: 'label.ingredient.tab_extra',
+                addon: 'label.ingredient.tab_addon',
+            };
+            return map[type] ? this.$t(map[type]) : '';
+        },
+    },
     data() {
         return {
             loading: false,

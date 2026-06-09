@@ -6648,6 +6648,9 @@ input:checked + div svg {
 .min-w-\[200px\] {
   min-width: 200px;
 }
+.min-w-\[20px\] {
+  min-width: 20px;
+}
 .min-w-\[220px\] {
   min-width: 220px;
 }

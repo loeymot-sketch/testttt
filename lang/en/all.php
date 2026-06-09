@@ -46,6 +46,7 @@ return [
         'featured' => 'Featured',
         'role' => 'Role',
         'order_serial_no' => 'Order Serial No',
+        'fiscal_number' => 'Fiscal No',
         'date' => 'Date',
         'total' => 'Total',
         'delivery_charge' => 'Delivery Charge',
