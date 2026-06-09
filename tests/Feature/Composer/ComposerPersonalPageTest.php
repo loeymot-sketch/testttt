@@ -544,4 +544,38 @@ class ComposerPersonalPageTest extends TestCase
         $this->assertSame('Crudités V2', $fresh->label, 'display label updated');
         $this->assertSame('Crudités', $fresh->source_ref, 'group binding (source_ref) immutable on re-edit');
     }
+
+    /**
+     * [W5 adversarial-fix P1 lock] showPersonalPage must pre-fill the UNION of options across ALL
+     * category items, not one representative. updatePersonalPage soft-deletes absent options across
+     * every item; if a heterogeneous sibling's extra option were hidden from the modal it would be
+     * silently destroyed on save. Union ⇒ every option is on-screen ⇒ no surprise deletion.
+     */
+    public function test_show_personal_page_unions_options_across_heterogeneous_siblings(): void
+    {
+        [, $items, $profile] = $this->categoryProfile(2);
+        $a = $items->first();
+        $b = $items->last();
+
+        // Heterogeneous group "Supp": both have X; only A has Y; only B has Z.
+        foreach ([$a, $b] as $it) {
+            ItemExtra::create(['item_id' => $it->id, 'name' => 'X', 'group_label' => 'Supp', 'price' => 1, 'status' => Status::ACTIVE, 'visible_on' => ['pos', 'kiosk']]);
+        }
+        ItemExtra::create(['item_id' => $a->id, 'name' => 'Y', 'group_label' => 'Supp', 'price' => 2, 'status' => Status::ACTIVE, 'visible_on' => ['pos', 'kiosk']]);
+        ItemExtra::create(['item_id' => $b->id, 'name' => 'Z', 'group_label' => 'Supp', 'price' => 3, 'status' => Status::ACTIVE, 'visible_on' => ['pos', 'kiosk']]);
+
+        $step = ItemWizardStep::query()->create([
+            'profile_id' => $profile->id, 'step_key' => 'supp', 'label' => 'Supp',
+            'source_type' => 'extra_group', 'source_ref' => 'Supp', 'min_select' => 0,
+            'max_select' => 3, 'is_active' => true, 'visible_on' => ['pos', 'kiosk'], 'position' => 1,
+        ]);
+
+        $resp = $this->actingAs($this->admin, 'sanctum')->getJson(
+            "/api/admin/composer/profiles/{$profile->id}/personal-page/{$step->id}"
+        )->assertStatus(200);
+
+        $names = collect($resp->json('data.options'))->pluck('name')->all();
+        // Without the union fix this would be only ['X','Y'] (item A) — and saving would soft-delete Z.
+        $this->assertEqualsCanonicalizing(['X', 'Y', 'Z'], $names, 'pre-fill shows the UNION across heterogeneous siblings');
+    }
 }

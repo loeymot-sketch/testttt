@@ -25,6 +25,11 @@ profile/extras, so the change appears **immediately**; `publish` updates `publis
 - after override + publish: `…/champignons.png` (builder per-option image WINS — `ItemExtra::getThumbAttribute` prefers a resolvable `image_path` over the name map)
 - after revert (`image_path=null`): `…/oignons-frits.png` again
 Builder per-option images propagate to the borne and override the legacy convention map.
+NB (adversarial-reconciled): evidence above reads the projection's `choices[].image`; the dedicated
+`KioskStepSupplements` component actually renders from `ItemExtraResource.thumb` — but BOTH derive from
+`ItemExtra::getThumbAttribute` (which reads `image_path` first), so the override reaches the rendered
+component too. The adversarial claim "image_path is orphaned" was refuted: image_path is in `$fillable`,
+read by `thumb`, emitted by `ItemExtraResource` + the projection.
 
 ## (d) Runtime sync borne→KDS (composition flows to the kitchen) ✓
 Kiosk order **#4313** (built via the wizard: sauce 202 + Boule gratinée 180, total 10.90) appears on

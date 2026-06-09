@@ -38,4 +38,16 @@ is collision-free by construction for any extra_group step. This fulfils the own
 page" while staying overwrite-proof. Soft-delete of absent options is reversible and never alters past orders
 (NF525 composition_snapshot frozen).
 
-## Verdict: W1 GREEN — P0+P1 = 0. Proceed to W2 (builder→borne render E2E).
+## W5 adversarial heal (added 2026-06-09)
+Adversarial pass found a REAL P1 in W1 and it was fixed:
+- **Cross-sibling silent delete**: `showPersonalPage` pre-filled from ONE representative item, but
+  `updatePersonalPage` soft-deletes options absent from the submission across ALL category items.
+  Heterogeneous siblings (category-1 'supplement' = 3 distinct sets across 12 items) meant editing
+  could silently delete options never shown in the modal. **Fix**: `showPersonalPage` now returns the
+  UNION across all scope items (dedupe by case-folded name). Test
+  `test_show_personal_page_unions_options_across_heterogeneous_siblings` + live-verified (category-1
+  supplement returns all 10 union options). Tests now **20/20**.
+- Also added `test_reedit_works_on_catalog_template_origin_step...` (catalog-template-origin re-edit
+  edits its own group + leaves a different group untouched).
+
+## Verdict: W1 GREEN (after heal) — 0 OPEN P0/P1, tests 20/20. Borne side proceeds.

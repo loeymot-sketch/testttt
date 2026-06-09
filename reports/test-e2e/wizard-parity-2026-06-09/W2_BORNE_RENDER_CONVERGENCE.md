@@ -30,8 +30,9 @@ progress bar, option cards with images, per-option prices, min-select validation
   **"VOTRE COMPOSITION: Sauce fromagère maison"** persists → step-2 "QUEL SUPPLÉMENT ?" active
   (5 options w/ prices) → step-3 "QUEL MENU ?" active. SUIVANT correctly gated by min-select.
 - **Full order completes E2E** (`POST /api/frontend/order`, kiosk, takeaway): order **#4313 created
-  (HTTP 201)**, persisted `subtotal 10.90, total 10.90, total_tax 0.99`. The **NF525
-  `composition_snapshot`** froze the exact selection at creation:
+  (HTTP 201)** for a Bols item (id 41 "Poulet mariné" — sibling of the screenshotted id 44 "crispy";
+  same Bols category, same wizard template, same €8,90 base). Persisted `subtotal 10.90, total 10.90,
+  total_tax 0.99`. The **NF525 `composition_snapshot`** froze the exact selection at creation:
   `lines:[{variation_id 202, "Sauce fromagère maison", unit_price 0}]`,
   `extras:[{extra_id 180, "Boule gratinée", line_total 2}]`, `schema_version 1`. So the wizard
   composition → order → frozen-snapshot chain works (orderable, total frozen, not a client value).

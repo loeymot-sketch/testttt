@@ -415,21 +415,28 @@ class ComposerProfileController extends AdminController
         $groupLabel = (string) $step->source_ref;
         abort_if($groupLabel === '', 422, 'This step is not bound to an options group.');
 
-        // A representative item carries the construct (create/update replicate it across every item,
-        // so any one is canonical). Read its options for the bound group — this is what PUT will edit.
-        $repItem = $profile->item_id
-            ? Item::query()->whereKey($profile->item_id)->first()
+        // Read the UNION of options across ALL items the PUT will write to — NOT a single
+        // representative. [W5 adversarial-fix P1] updatePersonalPage soft-deletes options absent from
+        // the submission across EVERY item in scope; a category group can have HETEROGENEOUS sibling
+        // option-sets (e.g. category 'supplement' has 3 distinct sets across 12 items). If this pre-fill
+        // showed only one item's subset, options present only on OTHER siblings would be invisible in
+        // the modal and then SILENTLY soft-deleted on save. The union surfaces every option that exists
+        // on any sibling, so a removal is always an informed, on-screen choice — never a surprise.
+        $items = $profile->item_id
+            ? Item::query()->whereKey($profile->item_id)->get()
             : Item::query()->whereNull('deleted_at')
                 ->where('item_category_id', $profile->item_category_id)
-                ->orderBy('id')
-                ->first();
-        abort_if($repItem === null, 422, 'No products to read the personal page from.');
+                ->get();
+        abort_if($items->isEmpty(), 422, 'No products to read the personal page from.');
 
         $options = ItemExtra::query()
-            ->where('item_id', $repItem->id)
+            ->whereIn('item_id', $items->pluck('id'))
             ->where('group_label', $groupLabel)
             ->orderBy('id')
             ->get()
+            // Dedupe by name with the SAME case-folding the create guard / projection use, so the union
+            // is one row per distinct option (first occurrence keeps its price/media as representative).
+            ->unique(fn ($extra) => mb_strtolower((string) $extra->name))
             ->map(fn ($extra) => [
                 'name' => (string) $extra->name,
                 'price' => (float) $extra->price,
