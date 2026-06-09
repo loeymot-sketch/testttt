@@ -131,7 +131,7 @@
                             <h4>{{ item.name }}</h4>
                             <p>{{ item.category_name }}</p>
                             <div class="catalog-studio__product-meta">
-                                <span>{{ item.flat_price }}</span>
+                                <span>{{ item.currency_price || item.flat_price }}</span>
                                 <span :class="statusClass(item.status)">{{ enums.statusEnumArray[item.status] }}</span>
                             </div>
                         </div>
