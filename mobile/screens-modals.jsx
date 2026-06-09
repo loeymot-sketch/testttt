@@ -82,7 +82,7 @@ function ScreenStripe({ go, total = 33 }) {
           <label style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--gray-3)' }}>Numéro de carte</label>
           <div style={{ marginTop: 8, padding: '14px 14px', background: '#fff', borderRadius: 12, fontFamily: 'var(--font-mono)', fontSize: 15, letterSpacing: '0.06em', color: 'var(--ink)', display: 'flex', justifyContent: 'space-between' }}>
             <span>4242 4242 4242 4242</span>
-            <span style={{ fontSize: 11, color: 'var(--orange)', fontWeight: 700 }}>VISA</span>
+            <span style={{ fontSize: 11, color: 'var(--orange-text)', fontWeight: 700 }}>VISA</span>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 12 }}>
             <div>
@@ -261,7 +261,7 @@ function ScreenOrderDetail({ go, orderId = 'C-1234' }) {
             <div style={{ fontSize: 13, lineHeight: 1.5, marginBottom: 16 }}>
               Le détail de cette commande n'est pas disponible.
             </div>
-            <button onClick={() => go('orders')} style={{ background: 'transparent', border: 0, color: 'var(--orange)', fontSize: 13, fontWeight: 700, cursor: 'pointer', textDecoration: 'underline' }}>Retour à mes commandes</button>
+            <button onClick={() => go('orders')} style={{ background: 'transparent', border: 0, color: 'var(--orange-text)', fontSize: 13, fontWeight: 700, cursor: 'pointer', textDecoration: 'underline' }}>Retour à mes commandes</button>
           </div>
         )}
       </div>

@@ -58,7 +58,7 @@ function AllergenBadge({ allergens, size = 'sm' }) {
   const isLg = size === 'lg';
   return (
     <div
-      role="region"
+      role="img"
       aria-label={`Allergènes : ${allergens.map(k => (ALLERGEN_META[k]?.label || k)).join(', ')}`}
       style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: isLg ? '6px 10px' : '2px 6px', background: 'var(--cream)', borderRadius: 999, fontSize: isLg ? 11 : 9, color: 'var(--gray-4)', fontWeight: 600 }}
     >
@@ -619,7 +619,7 @@ function ScreenCart({ go, cart, setCart }) {
         <ScreenHeader left={<IconBtn onClick={() => go('back')} ariaLabel="Retour"><I.Back size={20}/></IconBtn>} center={<div style={{ fontSize: 13, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase' }}>PANIER</div>}/>
         <div style={{ padding: '8px 20px 0' }}>
           <h1 className="lc-display" style={{ margin: 0, fontSize: 52, lineHeight: 0.9 }}>Ta<br/>commande</h1>
-          <div style={{ marginTop: 8, fontSize: 13, color: 'var(--gray-3)' }}>{cart.length} article{cart.length>1?'s':''} · prêt dans ~12 min</div>
+          <div style={{ marginTop: 8, fontSize: 13, color: 'var(--gray-3)' }}>{cart.length} article{cart.length>1?'s':''}{cart.length>0 ? ' · prêt dans ~12 min' : ''}</div>
         </div>
         {/* items */}
         <div style={{ padding: '20px 20px 0', display: 'grid', gap: 12 }}>
@@ -666,7 +666,8 @@ function ScreenCart({ go, cart, setCart }) {
             </div>
           ))}
         </div>
-        {/* loyalty banner */}
+        {/* loyalty banner — only when the cart has items (P3-B: previously showed "+0 pts" on empty cart) */}
+        {cart.length > 0 && (
         <div style={{ margin: '20px 20px 0', padding: 16, background: 'var(--yellow)', borderRadius: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ width: 40, height: 40, borderRadius: 10, background: 'var(--ink)', color: 'var(--orange)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><I.Gift size={20}/></div>
           <div style={{ flex: 1 }}>
@@ -674,6 +675,7 @@ function ScreenCart({ go, cart, setCart }) {
             <div style={{ fontSize: 11, color: 'var(--gray-4)', marginTop: 2 }}>{(() => { const p = window.LC.loyalty.progressToNext(window.LC.loyalty.account.balance); return p && p.remaining > 0 ? `Plus que ${p.remaining} pts pour ${p.target.name} ${p.target.icon}` : 'Tu peux déjà utiliser une récompense 🎉'; })()}</div>
           </div>
         </div>
+        )}
         {/* upsell */}
         <div style={{ marginTop: 24 }}>
           <div className="lc-sec-title">
