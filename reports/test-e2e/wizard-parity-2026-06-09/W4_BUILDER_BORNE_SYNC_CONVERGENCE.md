@@ -34,7 +34,9 @@ Kiosk order **#4313** (built via the wizard: sauce 202 + Boule gratinée 180, to
 
 ## Notes
 - All builder mutations were reverted; the 6 category wizards + item 41 profile are back to their
-  recorded state (clone clean for re-runs).
+  recorded state. NB (adversarial P3): the re-edit endpoint's removal is a SOFT-delete, so reverting
+  left a soft-deleted `TEST-PARITY Extra` row (live count correctly 5); it was subsequently hard-deleted
+  so the clone is now fully clean (`leftover=0, supplément active=5`).
 - Definition-sync model: the borne projection is live (no stale-cache gap); publish writes the
   `published_at` snapshot timestamp. Runtime order sync borne→KDS confirmed for wizard-composed orders.
 - Caisse leg of "synchronized borne AND caisse" is W3 — GATED (see GATE-W6 surface below).

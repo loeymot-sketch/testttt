@@ -500,4 +500,48 @@ class ComposerPersonalPageTest extends TestCase
             "/api/admin/composer/profiles/{$profileA->id}/personal-page/{$attrStep->id}"
         )->assertStatus(422);
     }
+
+    /**
+     * [W5 adversarial-finding lock] Re-edit must work on a CATALOG-TEMPLATE-origin extra_group step
+     * (one NOT created via createPersonalPage), since the builder UI exposes "edit options" on every
+     * extra_group step. Prior tests only exercised personal-page-origin steps (makePage always POSTs).
+     * Proves: edits the step's own group + collision-safe (a DIFFERENT group is untouched).
+     */
+    public function test_reedit_works_on_catalog_template_origin_step_and_leaves_other_group_intact(): void
+    {
+        [, $items, $profile] = $this->categoryProfile(2);
+
+        // Simulate a TEMPLATE-seeded catalog group "Crudités" + a DIFFERENT group "Sauces" — neither
+        // created through createPersonalPage. The step below is bound like a template step would be.
+        foreach ($items as $item) {
+            ItemExtra::create(['item_id' => $item->id, 'name' => 'Salade', 'group_label' => 'Crudités', 'price' => 0, 'status' => Status::ACTIVE, 'visible_on' => ['pos', 'kiosk']]);
+            ItemExtra::create(['item_id' => $item->id, 'name' => 'Tomate', 'group_label' => 'Crudités', 'price' => 0, 'status' => Status::ACTIVE, 'visible_on' => ['pos', 'kiosk']]);
+            ItemExtra::create(['item_id' => $item->id, 'name' => 'Ketchup', 'group_label' => 'Sauces', 'price' => 0.5, 'status' => Status::ACTIVE, 'visible_on' => ['pos', 'kiosk']]);
+        }
+        $step = ItemWizardStep::query()->create([
+            'profile_id' => $profile->id, 'step_key' => 'crudites', 'label' => 'Crudités',
+            'source_type' => 'extra_group', 'source_ref' => 'Crudités', 'min_select' => 0,
+            'max_select' => 2, 'is_active' => true, 'visible_on' => ['pos', 'kiosk'], 'position' => 1,
+        ]);
+
+        // Re-edit the catalog-origin step: keep Salade, ADD Oignon, omit Tomate (→ removed).
+        $this->actingAs($this->admin, 'sanctum')->putJson(
+            "/api/admin/composer/profiles/{$profile->id}/personal-page/{$step->id}",
+            ['label' => 'Crudités V2', 'options' => [
+                ['name' => 'Salade', 'price' => '0'],
+                ['name' => 'Oignon', 'price' => '0'],
+            ], 'min_select' => 1, 'max_select' => 2]
+        )->assertStatus(200)->assertJsonPath('data.group_label', 'Crudités');
+
+        foreach ($items as $item) {
+            $this->assertSame(1, ItemExtra::query()->where('item_id', $item->id)->where('group_label', 'Crudités')->where('name', 'Oignon')->count(), 'added on each item');
+            $this->assertSame(0, ItemExtra::query()->where('item_id', $item->id)->where('group_label', 'Crudités')->where('name', 'Tomate')->count(), 'Tomate removed on each item');
+            // The OTHER group "Sauces" is completely untouched (collision-free by construction).
+            $this->assertSame(1, ItemExtra::query()->where('item_id', $item->id)->where('group_label', 'Sauces')->where('name', 'Ketchup')->count(), 'Sauces group untouched');
+            $this->assertEquals(0.5, (float) ItemExtra::query()->where('item_id', $item->id)->where('group_label', 'Sauces')->where('name', 'Ketchup')->value('price'), 'Sauces price untouched');
+        }
+        $fresh = ItemWizardStep::query()->find($step->id);
+        $this->assertSame('Crudités V2', $fresh->label, 'display label updated');
+        $this->assertSame('Crudités', $fresh->source_ref, 'group binding (source_ref) immutable on re-edit');
+    }
 }
