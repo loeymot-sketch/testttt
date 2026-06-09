@@ -559,6 +559,21 @@ export async function syncQueue(postFn) {
                         retry_count: entry.attempts,
                     });
                 } catch (error) {
+                    // [BORNE-01] A 409 IDEMPOTENCY_KEY_CONFLICT on replay proves the original POST
+                    // already succeeded server-side (the order is in the kitchen). It is
+                    // success-via-conflict, NOT a retryable failure — abandoning it would emit a
+                    // false `order_abandoned` signal and leave a permanent residue. Drop as synced.
+                    // (IDEMPOTENCY_IN_FLIGHT is deliberately NOT treated as success: still processing.)
+                    const _confStatus = error && error.response && error.response.status;
+                    const _confCode = error && error.response && error.response.data && error.response.data.code;
+                    if (_confStatus === 409 && _confCode === 'IDEMPOTENCY_KEY_CONFLICT') {
+                        synced += 1;
+                        _track('offline.replayed_via_conflict', {
+                            idempotency_key: entry.localKey,
+                            retry_count: entry.attempts,
+                        });
+                        continue;
+                    }
                     failed += 1;
                     const failedAt = now();
                     const attempts = entry.attempts + 1;

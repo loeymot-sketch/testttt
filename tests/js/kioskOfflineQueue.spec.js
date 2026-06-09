@@ -205,4 +205,51 @@ describe('kioskOfflineQueue', () => {
       expect(finalQueue).toEqual([]);
     });
   });
+
+  // ─── [BORNE-01] 409 IDEMPOTENCY_KEY_CONFLICT on replay = terminal SUCCESS ───
+  describe('[BORNE-01] idempotency-conflict replay', () => {
+    function conflictPost() {
+      return vi.fn(async () => {
+        const err = new Error('conflict');
+        err.response = { status: 409, data: { code: 'IDEMPOTENCY_KEY_CONFLICT' } };
+        throw err;
+      });
+    }
+
+    it('treats a 409 IDEMPOTENCY_KEY_CONFLICT as synced, never abandoned', async () => {
+      const trackSpy = vi.spyOn(analytics, 'track').mockImplementation(() => true);
+      saveOrder({ items: [{ item_id: 5 }] }, 'offline_key_409');
+      advanceClock(1500);
+
+      const postFn = conflictPost();
+      const result = await syncQueue(postFn);
+
+      expect(result.synced).toBe(1);
+      expect(result.failed).toBe(0);
+      expect(result.abandonedNew).toBe(0);
+      expect(getPendingCount()).toBe(0);
+      expect(getAbandonedCount()).toBe(0);
+
+      const conflictTracked = trackSpy.mock.calls.some(([n]) => n === 'offline.replayed_via_conflict');
+      const abandonedTracked = trackSpy.mock.calls.some(([n]) => n === 'offline.abandoned');
+      expect(conflictTracked).toBe(true);
+      expect(abandonedTracked).toBe(false);
+    });
+
+    it('a real failure (500) is still retried/abandoned — the 409 path is specific', async () => {
+      saveOrder({ items: [{ item_id: 6 }] }, 'offline_key_500');
+      advanceClock(1500);
+
+      const postFn = vi.fn(async () => {
+        const err = new Error('server');
+        err.response = { status: 500, data: { code: 'SERVER_ERROR' } };
+        throw err;
+      });
+      const result = await syncQueue(postFn);
+
+      expect(result.synced).toBe(0);
+      expect(result.failed).toBe(1);
+      expect(getPendingCount()).toBe(1);
+    });
+  });
 });
