@@ -1117,7 +1117,7 @@ function ScreenLoyalty({ go }) {
                   <span>{balance} / {progress.target.points_cost} pts</span>
                   <span style={{ color: 'var(--yellow)' }}>{progress.target.name.toUpperCase()}</span>
                 </div>
-                <div role="progressbar" aria-valuenow={balance} aria-valuemax={progress.target.points_cost} aria-valuetext={balance + ' sur ' + progress.target.points_cost + ' points'} style={{ height: 8, background: 'rgba(255,255,255,0.12)', borderRadius: 999, overflow: 'hidden', position: 'relative' }}>
+                <div role="progressbar" aria-label="Progression vers la prochaine récompense" aria-valuenow={balance} aria-valuemax={progress.target.points_cost} aria-valuetext={balance + ' sur ' + progress.target.points_cost + ' points'} style={{ height: 8, background: 'rgba(255,255,255,0.12)', borderRadius: 999, overflow: 'hidden', position: 'relative' }}>
                   <div style={{ width: progress.pct + '%', height: '100%', background: 'linear-gradient(90deg, var(--yellow), var(--orange))' }}/>
                 </div>
                 <div style={{ marginTop: 8, fontSize: 12, fontWeight: 600 }}>

@@ -235,7 +235,7 @@ function WizardHeader({ stepIndex, stepTotal, title, onBack, onClose, headingRef
           {title}
         </h1>
       </div>
-      <div className="rdw-progress" role="progressbar" aria-valuenow={stepIndex + 1} aria-valuemin={1} aria-valuemax={stepTotal} aria-valuetext={`Étape ${stepIndex + 1} sur ${stepTotal}`}>
+      <div className="rdw-progress" role="progressbar" aria-label="Progression de la personnalisation" aria-valuenow={stepIndex + 1} aria-valuemin={1} aria-valuemax={stepTotal} aria-valuetext={`Étape ${stepIndex + 1} sur ${stepTotal}`}>
         {Array.from({ length: stepTotal }, (_, i) => (
           <span key={i} className={i < stepIndex ? 'done' : i === stepIndex ? 'current' : ''}/>
         ))}
@@ -335,11 +335,11 @@ function ScreenStepViandes({ item, selections, setSelections, headingRef }) {
         <p style={{ margin: 0, fontSize: 14, color: 'var(--gray-4)' }}>
           Choisis <strong>{required}</strong> viande{required > 1 ? 's' : ''}
         </p>
-        <span style={{ fontSize: 11, fontWeight: 700, color: meatIds.length === required ? 'var(--green)' : 'var(--orange)', letterSpacing: '0.08em' }}>
+        <span style={{ fontSize: 11, fontWeight: 700, color: meatIds.length === required ? 'var(--green)' : 'var(--orange-text)', letterSpacing: '0.08em' }}>
           {meatIds.length}/{required}
         </span>
       </div>
-      <div role="radiogroup" aria-label={`Choisis ${required} viandes`} style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
+      <div role="group" aria-label={`Choisis ${required} viande${required > 1 ? 's' : ''}`} style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
         {lcMenu.meats.map(m => {
           const on = meatIds.includes(m.id);
           return (
