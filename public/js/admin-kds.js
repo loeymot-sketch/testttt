@@ -2163,27 +2163,107 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
               });
             case 1:
               r = _context.v;
-              if (r && r.ok === false && r.reason === "grace_expired") {
-                _services_alertService__WEBPACK_IMPORTED_MODULE_7__["default"].error(_this5.$t("message.kds_recall_grace_expired"));
+              if (!(r && r.ok === false && r.reason === "grace_expired")) {
+                _context.n = 2;
+                break;
               }
+              _services_alertService__WEBPACK_IMPORTED_MODULE_7__["default"].error(_this5.$t("message.kds_recall_grace_expired"));
+              return _context.a(2);
             case 2:
+              if (!(r && r.ok && order.status === _this5.enums.orderStatusEnum.PREPARED && !_this5.$store.getters["kds/isReadyOrder"](order))) {
+                _context.n = 3;
+                break;
+              }
+              _context.n = 3;
+              return _this5.recallOrderOnServer(order);
+            case 3:
               return _context.a(2);
           }
         }, _callee);
       }))();
     },
-    _bindWsService: function _bindWsService() {
+    recallOrderOnServer: function recallOrderOnServer(order) {
       var _this6 = this;
+      return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee2() {
+        var idempotencyKey, response, _e$response, status, _e$response2, _t2;
+        return _regenerator().w(function (_context2) {
+          while (1) switch (_context2.p = _context2.n) {
+            case 0:
+              if (!(!order || !order.id)) {
+                _context2.n = 1;
+                break;
+              }
+              return _context2.a(2);
+            case 1:
+              _this6._recallingOrderIds = _this6._recallingOrderIds || [];
+              if (!_this6._recallingOrderIds.includes(order.id)) {
+                _context2.n = 2;
+                break;
+              }
+              return _context2.a(2);
+            case 2:
+              // double-click guard
+              _this6._recallingOrderIds.push(order.id);
+              _context2.p = 3;
+              // /recall carries idempotency middleware (REQUIRES X-Idempotency-Key) — a stable
+              // per-minute key dedupes a network retry server-side, aligned with the 60s window.
+              idempotencyKey = "kds-recall-".concat(order.id, "-").concat(Math.floor(Date.now() / 60000));
+              _context2.n = 4;
+              return window.axios.post("admin/kds-order/recall/".concat(order.id), null, {
+                headers: {
+                  'X-Idempotency-Key': idempotencyKey
+                }
+              });
+            case 4:
+              response = _context2.v;
+              _this6.onKdsOrderRecalled({
+                orderId: order.id,
+                queueNumber: order.queue_number || null,
+                recalledAt: Date.now(),
+                payload: (response === null || response === void 0 ? void 0 : response.data) || null
+              });
+              _context2.n = 6;
+              break;
+            case 5:
+              _context2.p = 5;
+              _t2 = _context2.v;
+              status = _t2 === null || _t2 === void 0 || (_e$response = _t2.response) === null || _e$response === void 0 ? void 0 : _e$response.status;
+              if (status === 409) {
+                // already recalled by another chef on this branch → still surface the badge + refresh
+                _this6.onKdsOrderRecalled({
+                  orderId: order.id,
+                  queueNumber: order.queue_number || null,
+                  recalledAt: Date.now(),
+                  payload: null
+                });
+              } else {
+                _services_alertService__WEBPACK_IMPORTED_MODULE_7__["default"].error((_t2 === null || _t2 === void 0 || (_e$response2 = _t2.response) === null || _e$response2 === void 0 || (_e$response2 = _e$response2.data) === null || _e$response2 === void 0 ? void 0 : _e$response2.message) || _this6.$t('message.something_went_wrong'));
+                _this6._debouncedRefresh && _this6._debouncedRefresh();
+              }
+            case 6:
+              _context2.p = 6;
+              _this6._recallingOrderIds = _this6._recallingOrderIds.filter(function (id) {
+                return id !== order.id;
+              });
+              return _context2.f(6);
+            case 7:
+              return _context2.a(2);
+          }
+        }, _callee2, null, [[3, 5, 6, 7]]);
+      }))();
+    },
+    _bindWsService: function _bindWsService() {
+      var _this7 = this;
       var ws = window._wsService;
       if (!ws) return;
       this._onWsConnected = function () {
-        _this6.wsConnected = true;
-        _this6.refreshOrderList();
-        _this6._restartPolling();
+        _this7.wsConnected = true;
+        _this7.refreshOrderList();
+        _this7._restartPolling();
       };
       this._onWsDisconnected = function () {
-        _this6.wsConnected = false;
-        _this6._restartPolling();
+        _this7.wsConnected = false;
+        _this7._restartPolling();
       };
       ws.on('connected', this._onWsConnected);
       ws.on('disconnected', this._onWsDisconnected);
@@ -2208,17 +2288,17 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
       this.startAutoRefresh();
     },
     startAutoRefresh: function startAutoRefresh() {
-      var _this7 = this;
+      var _this8 = this;
       if (this.$route.path.includes('kitchen-display-system')) {
         this.autoRefreshInterval = setInterval(function () {
-          _this7.refreshOrderList();
+          _this8.refreshOrderList();
         }, this._pollingInterval());
       }
     },
     // [P4-1] Subscribe to branch Echo channel for real-time order updates.
     // Admin users (branch_id=0) rely on polling; branch staff get sub-second push.
     subscribeEcho: function subscribeEcho() {
-      var _this8 = this;
+      var _this9 = this;
       if (!window.Echo) return;
       var branchId = this.authBranchId();
       if (branchId <= 0) return; // Admin: polling fallback is sufficient
@@ -2235,19 +2315,19 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
         {
           broadcastAs: 'OrderStatusChanged',
           handler: function handler(parsed) {
-            if (_this8._statusChangeAffectsKds(parsed)) {
-              _this8._debouncedRefresh();
+            if (_this9._statusChangeAffectsKds(parsed)) {
+              _this9._debouncedRefresh();
             }
           }
         }, {
           broadcastAs: 'OrderCreated',
           handler: function handler() {
-            _this8._debouncedRefresh();
+            _this9._debouncedRefresh();
           }
         }, {
           broadcastAs: 'OrderPaidAtCounter',
           handler: function handler() {
-            _this8._debouncedRefresh();
+            _this9._debouncedRefresh();
           }
         },
         // [SYNC-001 + CV1-KDS-INFLIGHT-OOS-MARKER-001] KDS now also receives
@@ -2258,7 +2338,7 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
         {
           broadcastAs: 'ItemAvailabilityChanged',
           handler: function handler(parsed) {
-            _this8._onItemAvailabilityChanged(parsed);
+            _this9._onItemAvailabilityChanged(parsed);
           }
         },
         // [F-02] Floor-plan transfer / occupy → update the table label in place
@@ -2267,7 +2347,7 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
         {
           broadcastAs: 'OrderTableChanged',
           handler: function handler(payload) {
-            _this8._handleTableChanged(payload);
+            _this9._handleTableChanged(payload);
           }
         },
         // [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B]
@@ -2283,7 +2363,7 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
             var orderId = (parsed === null || parsed === void 0 || (_parsed$payload = parsed.payload) === null || _parsed$payload === void 0 ? void 0 : _parsed$payload.order_id) || (parsed === null || parsed === void 0 || (_parsed$payload2 = parsed.payload) === null || _parsed$payload2 === void 0 ? void 0 : _parsed$payload2.orderId);
             if (orderId) {
               var _parsed$payload3;
-              _this8.onKdsOrderRecalled({
+              _this9.onKdsOrderRecalled({
                 orderId: parseInt(orderId, 10),
                 queueNumber: (parsed === null || parsed === void 0 || (_parsed$payload3 = parsed.payload) === null || _parsed$payload3 === void 0 ? void 0 : _parsed$payload3.queue_number) || null,
                 recalledAt: Date.now(),
@@ -2337,9 +2417,9 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
       return true;
     },
     _applyOrderBuckets: function _applyOrderBuckets(rows) {
-      var _this9 = this;
+      var _this0 = this;
       var visibleRows = (Array.isArray(rows) ? rows : []).filter(function (item) {
-        return _this9._isVisibleInCurrentBoard(item);
+        return _this0._isVisibleInCurrentBoard(item);
       });
       // [test-e2e fix E-003 round-3] V1 dine-in disabled — kiosk orders are TAKEAWAY
       // (OrderRequest:200 enforces order_type=TAKEAWAY for ALL kiosk orders since
@@ -2372,25 +2452,25 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
       });
     },
     _refreshWithCurrentFilter: function _refreshWithCurrentFilter() {
-      var _this0 = this;
+      var _this1 = this;
       // [FIX-54-5] Re-fetch orders without modifying props.search.status
       // This ensures the current filter (e.g., status=7 PREPARING) is preserved
       // even when the value is 0 (ACCEPT) which is falsy in JavaScript
       this.loading.isActive = true;
       this.$store.dispatch("kitchenDisplaySystemOrder/lists", this.props.search).then(function (res) {
         var _res$data, _res$data2;
-        _this0._applyOrderBuckets((res === null || res === void 0 || (_res$data = res.data) === null || _res$data === void 0 ? void 0 : _res$data.data) || []);
-        _this0.kdsOverflowDetected = (res === null || res === void 0 || (_res$data2 = res.data) === null || _res$data2 === void 0 || (_res$data2 = _res$data2.meta) === null || _res$data2 === void 0 ? void 0 : _res$data2.overflow) === true;
-        _this0.loading.isActive = false;
-        _this0._kdsOrdersHydrated = true;
+        _this1._applyOrderBuckets((res === null || res === void 0 || (_res$data = res.data) === null || _res$data === void 0 ? void 0 : _res$data.data) || []);
+        _this1.kdsOverflowDetected = (res === null || res === void 0 || (_res$data2 = res.data) === null || _res$data2 === void 0 || (_res$data2 = _res$data2.meta) === null || _res$data2 === void 0 ? void 0 : _res$data2.overflow) === true;
+        _this1.loading.isActive = false;
+        _this1._kdsOrdersHydrated = true;
         // [test-e2e round-2 C-001] Successful poll → dismiss the persistent
         // error banner (kitchen connection restored).
-        _this0._clearKdsErrorBanner();
+        _this1._clearKdsErrorBanner();
       })["catch"](function (err) {
-        _this0.loading.isActive = false;
+        _this1.loading.isActive = false;
         // [test-e2e round-2 C-001] Persistent banner instead of ephemeral
         // toast — kitchen operator at 1m+ glance must NOT miss this.
-        _this0._raiseKdsErrorBanner(err);
+        _this1._raiseKdsErrorBanner(err);
       });
     },
     openFilterSlide: function openFilterSlide(event) {
@@ -2406,7 +2486,7 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
       }
     },
     list: function list() {
-      var _this1 = this;
+      var _this10 = this;
       var status = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : "";
       if (status) {
         this.props.search.status = status;
@@ -2416,18 +2496,18 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
       this.loading.isActive = true;
       this.$store.dispatch("kitchenDisplaySystemOrder/lists", this.props.search).then(function (res) {
         var _res$data3, _res$data4;
-        _this1._applyOrderBuckets((res === null || res === void 0 || (_res$data3 = res.data) === null || _res$data3 === void 0 ? void 0 : _res$data3.data) || []);
-        _this1.kdsOverflowDetected = (res === null || res === void 0 || (_res$data4 = res.data) === null || _res$data4 === void 0 || (_res$data4 = _res$data4.meta) === null || _res$data4 === void 0 ? void 0 : _res$data4.overflow) === true;
-        _this1.loading.isActive = false;
-        _this1._kdsOrdersHydrated = true;
+        _this10._applyOrderBuckets((res === null || res === void 0 || (_res$data3 = res.data) === null || _res$data3 === void 0 ? void 0 : _res$data3.data) || []);
+        _this10.kdsOverflowDetected = (res === null || res === void 0 || (_res$data4 = res.data) === null || _res$data4 === void 0 || (_res$data4 = _res$data4.meta) === null || _res$data4 === void 0 ? void 0 : _res$data4.overflow) === true;
+        _this10.loading.isActive = false;
+        _this10._kdsOrdersHydrated = true;
         // [test-e2e round-2 C-001] Auto-dismiss the persistent banner
         // on next successful /api/admin/kds-order response.
-        _this1._clearKdsErrorBanner();
+        _this10._clearKdsErrorBanner();
       })["catch"](function (err) {
-        _this1.loading.isActive = false;
+        _this10.loading.isActive = false;
         // [test-e2e round-2 C-001] Persistent banner instead of ephemeral
         // toast — see _raiseKdsErrorBanner / kdsErrorBanner data prop.
-        _this1._raiseKdsErrorBanner(err);
+        _this10._raiseKdsErrorBanner(err);
       });
     },
     _raiseKdsErrorBanner: function _raiseKdsErrorBanner(err) {
@@ -2466,14 +2546,14 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
       this._clearKdsErrorBanner();
     },
     items: function items() {
-      var _this10 = this;
+      var _this11 = this;
       this.loading.isActive = true;
       this.$store.dispatch("kitchenDisplaySystemOrder/orderItems").then(function (res) {
-        _this10.loading.isActive = false;
+        _this11.loading.isActive = false;
       })["catch"](function (err) {
         var _err$response4;
-        _this10.loading.isActive = false;
-        _services_alertService__WEBPACK_IMPORTED_MODULE_7__["default"].error((err === null || err === void 0 || (_err$response4 = err.response) === null || _err$response4 === void 0 || (_err$response4 = _err$response4.data) === null || _err$response4 === void 0 ? void 0 : _err$response4.message) || _this10.$t('message.something_wrong'));
+        _this11.loading.isActive = false;
+        _services_alertService__WEBPACK_IMPORTED_MODULE_7__["default"].error((err === null || err === void 0 || (_err$response4 = err.response) === null || _err$response4 === void 0 || (_err$response4 = _err$response4.data) === null || _err$response4 === void 0 ? void 0 : _err$response4.message) || _this11.$t('message.something_wrong'));
       });
     },
     openSidebar: function openSidebar() {
@@ -2522,7 +2602,7 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
     // No external library needed — uses native window.print() on an isolated document.
     // [AUDIT-P47-BUG4] All dynamic values escaped to prevent stored XSS.
     printKitchenTicket: function printKitchenTicket(order) {
-      var _this11 = this;
+      var _this12 = this;
       var e = this.escapeHtml.bind(this);
       var lines = [];
       var orderLabel = e(order.order_serial_no) || '#' + e(order.id);
@@ -2550,7 +2630,7 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
         if (Array.isArray(item.item_addons) && item.item_addons.length > 0) {
           var addons = item.item_addons.map(function (addon) {
             var qty = Number(addon.quantity || 1);
-            var name = e(_this11.kdsAddonDisplayName(addon));
+            var name = e(_this12.kdsAddonDisplayName(addon));
             return qty > 1 ? "".concat(name, " \xD7").concat(qty) : name;
           }).join(', ');
           lines.push("<div style=\"font-size:12px;color:#444;margin-top:2px;\">+ ".concat(addons, "</div>"));
@@ -2579,19 +2659,19 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
       win.close();
     },
     orderStatus: function orderStatus(order, status) {
-      var _this12 = this;
+      var _this13 = this;
       try {
         this.loading.isActive = true;
         var payload = (0,_store_modules_kds__WEBPACK_IMPORTED_MODULE_13__.kdsStatusPayload)(order, status);
         this.$store.dispatch("kitchenDisplaySystemOrder/changeStatus", _objectSpread({}, payload)).then(function (res) {
-          _this12.loading.isActive = false;
-          _services_alertService__WEBPACK_IMPORTED_MODULE_7__["default"].successFlip(1, _this12.$t("label.status"));
+          _this13.loading.isActive = false;
+          _services_alertService__WEBPACK_IMPORTED_MODULE_7__["default"].successFlip(1, _this13.$t("label.status"));
           // [CV1-KDS-A11Y-RICH-001] Announce the transition to screen readers
           // via the aria-live region (does NOT steal focus, polite politeness).
-          _this12.kdsAnnounceTransition(order, status);
+          _this13.kdsAnnounceTransition(order, status);
           // [AUDIT-P49-BUG7] Debounce refresh: list() triggers items update via store,
           // and Echo broadcast also triggers refresh. Use debounce to prevent triple API calls.
-          _this12._debouncedRefresh();
+          _this13._debouncedRefresh();
           // Propager le changement de statut à tous les composants qui écoutent (OSS, autres KDS)
           window.dispatchEvent(new CustomEvent('realtime-order-update', {
             detail: {
@@ -2602,10 +2682,10 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
           }));
         })["catch"](function (err) {
           var _err$response5, _err$response6;
-          _this12.loading.isActive = false;
+          _this13.loading.isActive = false;
           if ((err === null || err === void 0 || (_err$response5 = err.response) === null || _err$response5 === void 0 ? void 0 : _err$response5.status) === 409) {
-            _services_alertService__WEBPACK_IMPORTED_MODULE_7__["default"].error(_this12.$t("message.kds_status_conflict"));
-            _this12._debouncedRefresh();
+            _services_alertService__WEBPACK_IMPORTED_MODULE_7__["default"].error(_this13.$t("message.kds_status_conflict"));
+            _this13._debouncedRefresh();
             return;
           }
           // [AUDIT-P47-BUG7] Null-safe guard — err.response is undefined on network timeout
@@ -2707,7 +2787,7 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
     kdsAnnounceTransition: function kdsAnnounceTransition(order, status) {
       var _ref5,
         _order$order_serial_n,
-        _this13 = this;
+        _this14 = this;
       if (!order) return;
       var serial = (_ref5 = (_order$order_serial_n = order.order_serial_no) !== null && _order$order_serial_n !== void 0 ? _order$order_serial_n : order.id) !== null && _ref5 !== void 0 ? _ref5 : '';
       if (serial === '' || serial === null || serial === undefined) return;
@@ -2731,7 +2811,7 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
       // transitions still trigger an aria-live announcement.
       this.kdsAriaLiveMessage = '';
       this.$nextTick(function () {
-        _this13.kdsAriaLiveMessage = label;
+        _this14.kdsAriaLiveMessage = label;
       });
     },
     /**
@@ -2746,7 +2826,7 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
      * Idempotent: receiving the same payload twice resets the 2s timer.
      */
     _handleTableChanged: function _handleTableChanged(payload) {
-      var _this14 = this;
+      var _this15 = this;
       var orderId = parseInt((payload === null || payload === void 0 ? void 0 : payload.order_id) || 0);
       if (orderId <= 0) {
         this._debouncedRefresh();
@@ -2757,22 +2837,22 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
         clearTimeout(this._tableFlashTimers[orderId]);
       }
       this._tableFlashTimers[orderId] = setTimeout(function () {
-        var next = _objectSpread({}, _this14.flashTableChangeIds);
+        var next = _objectSpread({}, _this15.flashTableChangeIds);
         delete next[orderId];
-        _this14.flashTableChangeIds = next;
-        delete _this14._tableFlashTimers[orderId];
+        _this15.flashTableChangeIds = next;
+        delete _this15._tableFlashTimers[orderId];
       }, 2000);
       this._debouncedRefresh();
     },
     // [AUDIT-P49-BUG7] Debounced refresh: prevents simultaneous list()+items()+Echo refresh.
     _debouncedRefresh: function _debouncedRefresh() {
-      var _this15 = this;
+      var _this16 = this;
       if (this._refreshTimeout) {
         clearTimeout(this._refreshTimeout);
       }
       this._refreshTimeout = setTimeout(function () {
-        _this15._refreshWithCurrentFilter();
-        _this15.items();
+        _this16._refreshWithCurrentFilter();
+        _this16.items();
       }, 300); // 300ms debounce — sufficient to absorb Echo broadcast + manual call
     },
     toggleFilter: function toggleFilter(index) {

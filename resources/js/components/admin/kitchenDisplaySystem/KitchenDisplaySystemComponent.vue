@@ -1899,6 +1899,47 @@ export default {
       });
       if (r && r.ok === false && r.reason === "grace_expired") {
         alertService.error(this.$t("message.kds_recall_grace_expired"));
+        return;
+      }
+      // [KDS-OSS-01] The legacy inline 'Annuler' was localStorage-ONLY. If this un-bump
+      // brings a server-PREPARED order below fully-ready, the correction must reach the
+      // server (NF525 ledger row + OSS + other KDS stations) — not just this browser.
+      // Mirror KdsHistoryDrawer's idempotent recall POST.
+      if (r && r.ok
+          && order.status === this.enums.orderStatusEnum.PREPARED
+          && !this.$store.getters["kds/isReadyOrder"](order)) {
+        await this.recallOrderOnServer(order);
+      }
+    },
+    async recallOrderOnServer(order) {
+      if (!order || !order.id) return;
+      this._recallingOrderIds = this._recallingOrderIds || [];
+      if (this._recallingOrderIds.includes(order.id)) return; // double-click guard
+      this._recallingOrderIds.push(order.id);
+      try {
+        // /recall carries idempotency middleware (REQUIRES X-Idempotency-Key) — a stable
+        // per-minute key dedupes a network retry server-side, aligned with the 60s window.
+        const idempotencyKey = `kds-recall-${order.id}-${Math.floor(Date.now() / 60000)}`;
+        const response = await window.axios.post(`admin/kds-order/recall/${order.id}`, null, {
+          headers: { 'X-Idempotency-Key': idempotencyKey },
+        });
+        this.onKdsOrderRecalled({
+          orderId: order.id,
+          queueNumber: order.queue_number || null,
+          recalledAt: Date.now(),
+          payload: response?.data || null,
+        });
+      } catch (e) {
+        const status = e?.response?.status;
+        if (status === 409) {
+          // already recalled by another chef on this branch → still surface the badge + refresh
+          this.onKdsOrderRecalled({ orderId: order.id, queueNumber: order.queue_number || null, recalledAt: Date.now(), payload: null });
+        } else {
+          alertService.error(e?.response?.data?.message || this.$t('message.something_went_wrong'));
+          this._debouncedRefresh && this._debouncedRefresh();
+        }
+      } finally {
+        this._recallingOrderIds = this._recallingOrderIds.filter((id) => id !== order.id);
       }
     },
     _bindWsService() {

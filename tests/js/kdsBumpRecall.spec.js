@@ -62,4 +62,20 @@ describe('KDS bump / recall store', () => {
         await store.dispatch('kds/bumpItem', { orderId: 5, itemId: 202 });
         expect(store.getters['kds/isReadyOrder'](order)).toBe(true);
     });
+
+    // [KDS-OSS-01] Gate precondition: un-bumping ONE line of a fully-bumped order makes
+    // isReadyOrder FALSE again. kdsRecall checks exactly this (+ order.status===PREPARED)
+    // to decide whether to POST the server recall so the correction leaves localStorage.
+    it('un-bumping one line of a fully-ready order makes isReadyOrder false again', async () => {
+        const store = buildStore();
+        const order = { id: 7, status: 4, order_items: [{ id: 301 }, { id: 302 }] };
+        await store.dispatch('kds/bumpItem', { orderId: 7, itemId: 301 });
+        await store.dispatch('kds/bumpItem', { orderId: 7, itemId: 302 });
+        const ts = store.getters['kds/bumpedItems'](7)[301];
+        expect(store.getters['kds/isReadyOrder'](order)).toBe(true);
+        const r = await store.dispatch('kds/recallItem', { orderId: 7, itemId: 301, now: ts + 10_000 });
+        expect(r.ok).toBe(true);
+        // This false transition is what triggers kdsRecall's server-recall POST.
+        expect(store.getters['kds/isReadyOrder'](order)).toBe(false);
+    });
 });
