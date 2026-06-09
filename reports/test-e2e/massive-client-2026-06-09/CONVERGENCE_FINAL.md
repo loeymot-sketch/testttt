@@ -41,5 +41,30 @@ Loyalty now reconciles at **1 pt/€** across every surface, both apps:
 - Targeted axe (home/menu only) MISSED 5 of 8 defects — the **full-surface sweep** is what caught orders/loyalty/rewards. Always axe every state, not just the landing.
 - axe flagged large-display orange accents (`cumuler.`/`retrouver`) that theoretical "3:1 large-text" reasoning had passed → empirical axe > hand-reasoning.
 
-## Adversarial supervisor
-A read-only no-browser adversarial pass was dispatched to dispute convergence + the 3 E2E commits (numeric integrity from source, axe blind-spots, uncovered surfaces). Findings appended on completion.
+## Adversarial supervisor — DISPUTED round 1, then re-converged (the real value)
+The read-only adversarial pass **DISPUTED** the first "14 surfaces clean" claim with 2 grep-confirmed findings — both legitimate axe blind-spots (sub-states my top-level sweep never navigated to):
+1. **Green-as-text contrast**: `--green` (#1FA653, ~3.0:1) used as small bold text in 5 spots — I'd fixed only the `--orange` branch of the same toggle-counters and left the green sibling failing.
+2. **Points drift (created by my own fix)**: `Number(o.points_earned) || pointsFor()` made order C-1100 show +38 on the history card (seed, double-counting the welcome bonus) vs +13 on the detail (`pointsFor`).
+
+This triggered an **empirical blind-spot sweep** of every sub-state (orders EN-COURS + HISTORIQUE, order-detail, loyalty Mes-points/Récompenses/Historique, gain/redeem modals) which found a whole cluster the top-level pass missed:
+
+### Wave M-3 (commit 628a8def8) — blind-spot fixes
+| Sev | Surface | Defect | Fix |
+|-----|---------|--------|-----|
+| P2 | wizard/crudités/orders | 5× `--green` small text (~3.0:1) | → `--green-text` #0C6B31 (6.6:1) |
+| P2 | loyalty Historique | earn/spend pts `--green`/`--red` | → `--green-text`/`--red-text` |
+| P2 | orders HISTORIQUE | order total `--orange` 22px | → `--orange-text` |
+| P2 | order-detail | total `--orange` 24px | → `--orange-text` |
+| P2 | orders stats | "Dépensé" white-on-orange + 0.85-alpha label | bg→`--orange-text`, label→#fff |
+| P2 | order-detail | delivered badge white-on-`--green` | → white-on-`--green-text` |
+| P2 | gain modal | "points gagnés" `--orange` on **yellow** (1.81:1) | → `--ink` |
+| P1 | loyalty Historique | `aria-prohibited-attr` ×3: source dot had aria-label on a div with no role | + `role="img"` |
+| P2 | data | C-1100 `points_earned` 38→13 (drop double-counted welcome → card==detail==pointsFor(total)); active estimate 33→30 |
+
+### Final convergence (16 surfaces ×2)
+After Wave M-3, two consecutive comprehensive cycles over **16 surfaces** (the 9 mobile sub-states + 7 web) — **ALL CLEAN, 0 errors, identical empty findings**.
+
+**Note — W-menu reveal artifact (not a defect):** the web drink-menu's later-revealing cards (`.lc-rv-4`, transition-delay 240ms) flagged 4 transient contrast nodes when axe scanned *mid-fade* (card opacity <1 → page cream bleeds behind text → 4.1/4.2:1). Verified: once the reveal settles (opacity=1, the state a user sees) the cards are axe-CLEAN. `prefers-reduced-motion` is handled, so users who can't tolerate the fade never see it. The convergence harness now waits for reveal completion before scanning — the correct rendered-state evaluation.
+
+## Lesson (codified)
+Targeted/top-level axe is necessary but NOT sufficient — **5 of 8 (Wave M/M-2) + the entire M-3 cluster lived in sub-states** (tabs, modals, completed toggle states, delivered orders) the landing-surface sweep never reaches. An adversarial "what states did you NOT navigate?" pass + an empirical sub-state sweep is what closes the gap. Also: distinguish a real persistent failure from a mid-animation artifact before fixing (check the settled state).
