@@ -38,6 +38,17 @@ Each P1 was triaged against primary-source code + live evidence (not auto-accept
   `showPersonalPage` now returns the **UNION** of options across all scope items (dedupe by case-folded
   name). Test `test_show_personal_page_unions_options_across_heterogeneous_siblings` (20/20) +
   **live-verified**: category-1 supplement step now returns all 10 union options = DB union.
+
+  **Disclosure (homogenize-on-save — owner-confirm):** the union fix changed the READ
+  (`showPersonalPage` now pre-fills the union), NOT the WRITE. `updatePersonalPage` still
+  `updateOrCreate`s the submitted options and soft-deletes absent ones across ALL items in the
+  category scope. So re-saving a re-edit **homogenizes the bound group's full option set —
+  membership AND per-option price — across every item in the category, even on a label-only
+  edit**. With no reliable per-item provenance marker (the forgeable one was reverted in the W5
+  saga), this is the intended category-wizard semantics: a category page is one shared template.
+  It is overwrite-proof and never alters past orders (NF525 `composition_snapshot` frozen). Flagged
+  for **owner-confirm** that whole-category homogenization on save is the desired behavior (vs.
+  per-item divergence, which V1 does not model).
 - **W4 P1 — "image_path is orphaned / doesn't propagate" = REFUTED (agent factually wrong).** Verified
   against current code: `image_path` IS in `ItemExtra::$fillable` (line 15) + casts (27); `getThumbAttribute`
   reads it first (50-51); `ItemExtraResource` (the field `KioskStepSupplements` renders) emits
