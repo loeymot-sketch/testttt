@@ -686,7 +686,7 @@ function ScreenStepBolSupplements({ item, selections, setSelections, headingRef 
                   </span>}
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)' }}>
-                  {s.name}{isGratine && <span style={{ marginLeft: 6, fontSize: 10, padding: '2px 6px', background: 'var(--orange)', color: '#fff', borderRadius: 4, fontWeight: 700, letterSpacing: '0.05em' }}>POPULAIRE</span>}
+                  {s.name}{isGratine && <span style={{ marginLeft: 6, fontSize: 10, padding: '2px 6px', background: 'var(--orange-text)', color: '#fff', borderRadius: 4, fontWeight: 700, letterSpacing: '0.05em' }}>POPULAIRE</span>}
                 </div>
                 <div style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--ink)', fontWeight: 700, marginTop: 2 }}>
                   + {s.price.toFixed(2).replace('.', ',')} €

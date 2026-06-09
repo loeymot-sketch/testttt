@@ -17,8 +17,10 @@
   --gray-3: #6F6A60;          /* WCAG AA : 4.7:1 on white (was #8A857B = 3.05:1 fail per audit Agent-4 §6.1) */
   --gray-4: #4A4640;
   --red: #E5341A;
+  --red-text: #A8142A;         /* [E2E 2026-06-09] WCAG AA dark red for red-AS-TEXT on light bg (7.4:1) + white-on-red pills. Mirrors web styles.css. --red stays for fills/large. */
   --green: #1FA653;
   --green-dark: #168842;       /* WCAG AA-compliant 4.7:1 for white-on-green buttons */
+  --green-text: #0C6B31;       /* [E2E 2026-06-09] WCAG AA dark green for green-AS-TEXT on light bg (6.6:1). Mirrors web styles.css. Was referenced by E2E fixes but UNDEFINED → fell back to --ink (black text) / transparent (invisible delivered badge). --green/--green-dark stay for fills/dots/large. */
 
   /* Typography — overridden by Tweaks */
   --font-display: 'Anton', 'Bebas Neue', 'Archivo Black', sans-serif;

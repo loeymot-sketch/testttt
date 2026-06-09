@@ -145,7 +145,7 @@ function ModalPointsGain({ onClose, onSee, gain = 25 }) {
 function ModalRedeem({ onClose, onConfirm, reward = 'Burger gratuit', cost = 1000 }) {
   return (
     <ModalShell onClose={onClose} labelledBy="modal-redeem-title" dataModalKind="redeem">
-      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', background: 'var(--orange)', color: '#fff', borderRadius: 999, fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase' }}>★ Récompense</div>
+      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', background: 'var(--orange-text)', color: '#fff', borderRadius: 999, fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase' }}>★ Récompense</div>
       <h2 id="modal-redeem-title" className="lc-display" style={{ margin: '12px 0 4px', fontSize: 36, lineHeight: 0.92, color: 'var(--ink)' }}>Confirmer<br/>l'échange ?</h2>
       <p style={{ margin: '0 0 18px', color: 'var(--gray-3)', fontSize: 13 }}>Cette action est irréversible.</p>
 
@@ -275,7 +275,7 @@ function ScreenOrderDetail({ go, orderId = 'C-1234' }) {
 // ---------- Toast ----------
 function Toast({ message, kind = 'info', onClose }) {
   useEffect_m(() => { const t = setTimeout(onClose, 3000); return () => clearTimeout(t); }, []);
-  const bg = kind === 'success' ? 'var(--green)' : kind === 'error' ? 'var(--red)' : 'var(--ink)';
+  const bg = kind === 'success' ? 'var(--green-dark)' : kind === 'error' ? 'var(--red-text)' : 'var(--ink)';
   return (
     <div data-testid="toast" data-kind={kind} role="status" aria-live="polite" style={{ position: 'absolute', top: 'calc(var(--ios-safe-top) + 8px)', left: 14, right: 14, zIndex: 70, background: bg, color: '#fff', borderRadius: 14, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10, boxShadow: '0 8px 22px rgba(0,0,0,0.25)', animation: 'lc-slide-down 0.3s ease' }}>
       <span style={{ width: 8, height: 8, borderRadius: 999, background: kind === 'success' ? 'var(--yellow)' : '#fff' }}/>
@@ -328,7 +328,7 @@ function ModalOptOutConfirm({ onClose, onConfirm }) {
   return (
     <div data-testid="modal" data-modal-kind="opt-out-confirm" role="dialog" aria-modal="true" aria-labelledby="modal-opt-out-title">
       <ModalShell onClose={onClose}>
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', background: 'var(--red)', color: '#fff', borderRadius: 999, fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase' }}>⚠ RGPD</div>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', background: 'var(--red-text)', color: '#fff', borderRadius: 999, fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase' }}>⚠ RGPD</div>
         <h2 id="modal-opt-out-title" className="lc-display" style={{ margin: '12px 0 4px', fontSize: 30, lineHeight: 0.92, color: 'var(--ink)' }}>Désactiver mon<br/>compte fidélité ?</h2>
         <p style={{ margin: '0 0 14px', color: 'var(--gray-4)', fontSize: 13, lineHeight: 1.5 }}>
           Tes points ne seront plus crédités lors de tes achats. <b style={{ color: 'var(--red)' }}>Tes {currentBalance} points actuels seront effacés</b> (droit à l'effacement, RGPD article 17). Cette action est irréversible.

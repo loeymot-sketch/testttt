@@ -394,8 +394,8 @@ function ScreenItem({ go, itemId, addToCart }) {
         <div style={{ padding: '24px 20px 0' }}>
           <div style={{ display: 'flex', gap: 6, marginBottom: 10, alignItems: 'center', flexWrap: 'wrap' }}>
             {(item.tags || []).map(t => <Tag key={t} t={t}/>)}
-            {item.is_halal && <span className="lc-pill" style={{ background: 'var(--green)', color: '#fff', fontSize: 9 }}>HALAL</span>}
-            {item.is_vegetarian && <span className="lc-pill" style={{ background: 'var(--green)', color: '#fff', fontSize: 9 }}>VEGGIE</span>}
+            {item.is_halal && <span className="lc-pill" style={{ background: 'var(--green-dark)', color: '#fff', fontSize: 9 }}>HALAL</span>}
+            {item.is_vegetarian && <span className="lc-pill" style={{ background: 'var(--green-dark)', color: '#fff', fontSize: 9 }}>VEGGIE</span>}
             <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--gray-4)', display: 'flex', alignItems: 'center', gap: 4, marginLeft: 'auto' }}>
               <I.StarFilled size={14} stroke="var(--orange)"/> 4.8
             </span>
@@ -765,7 +765,7 @@ function ScreenConfirm({ go, order }) {
             </div>
             <div style={{ textAlign: 'right' }}>
               <div style={{ fontSize: 9, color: 'var(--gray-3)', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Total</div>
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, color: 'var(--orange)' }}>{orderTotal.toFixed(2).replace('.', ',')} €</div>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, color: 'var(--orange-text)' }}>{orderTotal.toFixed(2).replace('.', ',')} €</div>
             </div>
           </div>
         </div>
@@ -1233,7 +1233,7 @@ function ScreenLoyalty({ go }) {
                         <div style={{ fontSize: 11, color: 'var(--gray-4)', marginTop: 2 }}>{unlocked ? '✓ Disponible' : missing + ' pts manquants'}</div>
                       </div>
                       {unlocked && (
-                        <button onClick={() => go('redeem', { reward: matchingReward.id || tier })} data-testid={'reward-redeem-btn-' + tier} style={{ background: 'var(--green)', color: '#fff', border: 0, padding: '8px 14px', borderRadius: 999, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>UTILISER</button>
+                        <button onClick={() => go('redeem', { reward: matchingReward.id || tier })} data-testid={'reward-redeem-btn-' + tier} style={{ background: 'var(--green-dark)', color: '#fff', border: 0, padding: '8px 14px', borderRadius: 999, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>UTILISER</button>
                       )}
                     </div>
                   );

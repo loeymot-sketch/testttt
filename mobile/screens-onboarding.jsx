@@ -142,7 +142,7 @@ function ScreenOnb3({ onNext, onSkip }) {
       hero={hero}
       onNext={onNext}
       onSkip={onSkip}
-      eyebrow="03 — Pickup"
+      eyebrow="03 — Retrait"
       title="Ta commande t'attend"
       body="Pas de file, pas d'attente. Cash ou CB sur place. Ton sac est prêt quand tu pousses la porte."
       accent="var(--orange)"
