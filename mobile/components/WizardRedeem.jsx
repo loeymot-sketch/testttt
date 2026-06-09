@@ -142,7 +142,7 @@
             {/* STEP 1 — Preview & confirm */}
             {step === 1 && (
               <>
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', background: 'var(--orange)', color: '#fff', borderRadius: 999, fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase' }}>★ Récompense</div>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', background: 'var(--orange-text)', color: '#fff', borderRadius: 999, fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase' }}>★ Récompense</div>
                 <h2 id="wizard-redeem-title" className="lc-display" style={{ margin: '12px 0 4px', fontSize: 32, lineHeight: 0.92, color: 'var(--ink)' }}>
                   Confirmer<br/>l'échange ?
                 </h2>
@@ -162,11 +162,11 @@
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--gray-4)' }}>
                     <span>Coût</span>
-                    <span style={{ fontWeight: 700, color: 'var(--orange)' }}>−{reward.points_cost} pts</span>
+                    <span style={{ fontWeight: 700, color: 'var(--orange-text)' }}>−{reward.points_cost} pts</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 6, borderTop: '2px solid var(--ink)', marginTop: 6, fontSize: 13 }}>
                     <span style={{ fontWeight: 700 }}>Solde après</span>
-                    <span className="lc-display" style={{ fontSize: 22, color: balanceAfter >= 0 ? 'var(--green)' : 'var(--red)' }}>{balanceAfter} pts</span>
+                    <span className="lc-display" style={{ fontSize: 22, color: balanceAfter >= 0 ? 'var(--green-text)' : 'var(--red-text)' }}>{balanceAfter} pts</span>
                   </div>
                 </div>
 
@@ -184,7 +184,7 @@
                 <p style={{ margin: '8px 0 18px', color: 'var(--gray-4)', fontSize: 13 }}>{reward.name} · −{reward.points_cost} pts</p>
 
                 {error && (
-                  <div role="alert" data-testid="redeem-error-banner" style={{ background: 'var(--red)', color: '#fff', borderRadius: 10, padding: 12, marginBottom: 12, fontSize: 13 }}>{error.message}</div>
+                  <div role="alert" data-testid="redeem-error-banner" style={{ background: 'var(--red-text)', color: '#fff', borderRadius: 10, padding: 12, marginBottom: 12, fontSize: 13 }}>{error.message}</div>
                 )}
 
                 <button
