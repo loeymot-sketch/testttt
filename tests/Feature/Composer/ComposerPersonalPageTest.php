@@ -168,8 +168,14 @@ class ComposerPersonalPageTest extends TestCase
         )->assertStatus(403);
     }
 
-    /** [W7 audit P2/P3] Re-submitting the same page UPDATES option prices and does NOT duplicate the step. */
-    public function test_resubmit_updates_price_and_keeps_single_step(): void
+    /**
+     * [W5 conservative guard] Create-only: re-POSTing the SAME label is REJECTED (the group now
+     * exists). The original options are untouched (no in-place overwrite). This is the robust-by-
+     * construction contract that replaced the unsound idempotent-re-edit ownership exception
+     * (3 adversarial rounds proved every provenance-marker variant overwrite-able). In-builder
+     * re-edit restoration is an owner design decision (WIZARD_W5_PERSONAL_PAGE_REEDIT_DESIGN_GATE.md).
+     */
+    public function test_resubmit_same_label_rejected_and_original_preserved(): void
     {
         [, $items, $profile] = $this->categoryProfile(1);
         $url = "/api/admin/composer/profiles/{$profile->id}/personal-page";
@@ -179,30 +185,26 @@ class ComposerPersonalPageTest extends TestCase
             'options' => [['name' => 'Algérienne', 'price' => '0.50']],
         ])->assertStatus(201);
 
-        // Re-submit with a corrected price.
+        // Re-submit with a different price for the same label → rejected, original kept.
         $this->actingAs($this->admin, 'sanctum')->postJson($url, [
             'label' => 'Sauces Maison',
             'options' => [['name' => 'Algérienne', 'price' => '1.50']],
-        ])->assertStatus(201);
+        ])->assertStatus(422);
 
         $this->assertSame(1, ItemWizardStep::query()->where('profile_id', $profile->id)
-            ->where('source_ref', 'Sauces Maison')->count(), 're-submit must not duplicate the step');
-        $this->assertEquals(1.5, (float) ItemExtra::query()->where('item_id', $items->first()->id)
-            ->where('name', 'Algérienne')->value('price'), 're-submit must update the option price');
+            ->where('source_ref', 'Sauces Maison')->count(), 'rejected re-submit must not duplicate the step');
+        $this->assertEquals(0.5, (float) ItemExtra::query()->where('item_id', $items->first()->id)
+            ->where('name', 'Algérienne')->value('price'), 'rejected re-submit must NOT overwrite the original price');
     }
 
     /**
-     * [heal advisor P2] A fresh personal-page label that matches an EXISTING catalog group_label
-     * (one NOT owned by a personal-page step on this profile) would merge into / overwrite that
-     * real group's prices via updateOrCreate. Reject it so the builder can't silently rewrite an
-     * existing catalog extra group. (Re-editing one's OWN page stays idempotent — covered above.)
+     * [W5 conservative guard] A label that matches an EXISTING catalog group_label is rejected —
+     * the builder can only create NEW groups, never overwrite a real catalog extra group's prices.
      */
     public function test_rejects_label_colliding_with_existing_catalog_group(): void
     {
         [, $items, $profile] = $this->categoryProfile(2);
 
-        // A pre-existing catalog extra group "Sauces" on one category item — NOT created via a
-        // personal-page step, so the profile does not "own" the label.
         ItemExtra::create([
             'item_id' => $items->first()->id,
             'name' => 'Algérienne',
@@ -217,10 +219,93 @@ class ComposerPersonalPageTest extends TestCase
             ['label' => 'Sauces', 'options' => [['name' => 'Blanche', 'price' => '0']]]
         )->assertStatus(422);
 
-        // The pre-existing group is untouched: original price kept, no rogue "Blanche" option added.
         $this->assertEquals(0.80, (float) ItemExtra::query()->where('item_id', $items->first()->id)
             ->where('name', 'Algérienne')->value('price'), 'existing catalog price must be preserved');
         $this->assertSame(0, ItemExtra::query()->where('group_label', 'Sauces')->where('name', 'Blanche')->count(),
             'collision must not inject the personal-page option into the existing group');
+    }
+
+    /**
+     * [W5 conservative guard — adversarial regression] The collision guard must reject a colliding
+     * label REGARDLESS of whether a normal composed step is already bound to that group (the earlier
+     * provenance-marker guard was disarmable by such a step; the conservative guard keys only on the
+     * existence of the catalog group, so it cannot be disarmed).
+     */
+    public function test_collision_guard_holds_even_when_a_normal_step_is_bound(): void
+    {
+        [, $items, $profile] = $this->categoryProfile(2);
+
+        ItemExtra::create([
+            'item_id' => $items->first()->id,
+            'name' => 'Ketchup',
+            'group_label' => 'Sauces',
+            'price' => 0.80,
+            'status' => Status::ACTIVE,
+            'visible_on' => ['pos', 'kiosk'],
+        ]);
+
+        // A normal composed step bound to that real group.
+        app(\App\Services\Composer\ComposerStepService::class)->create($profile, [
+            'step_key' => 'sauces_catalog',
+            'label' => 'Sauces',
+            'source_type' => 'extra_group',
+            'source_ref' => 'Sauces',
+            'min_select' => 0,
+            'max_select' => 2,
+            'is_active' => true,
+            'visible_on' => ['pos', 'kiosk'],
+            'position' => 1,
+        ]);
+
+        $this->actingAs($this->admin, 'sanctum')->postJson(
+            "/api/admin/composer/profiles/{$profile->id}/personal-page",
+            ['label' => 'Sauces', 'options' => [['name' => 'Ketchup', 'price' => '9.99'], ['name' => 'Blanche', 'price' => '0']]]
+        )->assertStatus(422);
+
+        $this->assertEquals(0.80, (float) ItemExtra::query()->where('item_id', $items->first()->id)
+            ->where('name', 'Ketchup')->value('price'), 'catalog price must be preserved despite the bound step');
+        $this->assertSame(0, ItemExtra::query()->where('group_label', 'Sauces')->where('name', 'Blanche')->count(),
+            'guard must not let the personal page inject into the real group');
+    }
+
+    /**
+     * [W5 conservative guard — case-folding parity] The collision guard must fold case with the SAME
+     * algorithm the kiosk projection uses (mb_strtolower), NOT the DB collation. A SQL
+     * `where('group_label', $label)` is case-sensitive on SQLite but the projection matches
+     * group_label case-insensitively (mb_strtolower) — so a case-variant label ("sauces" vs an
+     * existing catalog "Sauces") used to PASS the guard yet project a DUPLICATE kiosk step whose
+     * render cross-contaminated the pre-existing group's options. The guard now compares in PHP so
+     * guard ⊇ projection on any database: the case-variant is rejected and no duplicate page projects.
+     */
+    public function test_case_variant_of_existing_group_is_rejected_no_duplicate_projection(): void
+    {
+        [, $items, $profile] = $this->categoryProfile(1);
+        $item = $items->first();
+
+        ItemExtra::create([
+            'item_id' => $item->id, 'name' => 'Ketchup', 'group_label' => 'Sauces',
+            'price' => 0.80, 'status' => Status::ACTIVE, 'visible_on' => ['pos', 'kiosk'],
+        ]);
+        app(\App\Services\Composer\ComposerStepService::class)->create($profile, [
+            'step_key' => 'sauces_catalog', 'label' => 'Sauces', 'source_type' => 'extra_group',
+            'source_ref' => 'Sauces', 'min_select' => 0, 'max_select' => 2, 'is_active' => true,
+            'visible_on' => ['pos', 'kiosk'], 'position' => 1,
+        ]);
+
+        $this->actingAs($this->admin, 'sanctum')->postJson(
+            "/api/admin/composer/profiles/{$profile->id}/personal-page",
+            ['label' => 'sauces', 'options' => [['name' => 'Mayo Maison', 'price' => '0']]]
+        )->assertStatus(422);
+
+        $fresh = $item->fresh(['variations.itemAttribute', 'extras', 'addons.addonItem']);
+        $projected = app(ComposerProfileProjection::class)->project($profile->fresh('steps'), $fresh, 'kiosk');
+        $sauceSteps = collect($projected['steps'])->filter(
+            fn ($s) => mb_strtolower((string) $s['source_ref']) === 'sauces'
+        );
+        $this->assertSame(1, $sauceSteps->count(), 'a case-variant must not create a second projected step for the same group');
+        $this->assertNotContains('Mayo Maison', collect($sauceSteps->first()['choices'])->pluck('name')->all(),
+            'the personal-page option must not leak into the pre-existing catalog group render');
+        $this->assertEquals(0.80, (float) ItemExtra::query()->where('item_id', $item->id)
+            ->where('name', 'Ketchup')->value('price'), 'catalog price preserved');
     }
 }

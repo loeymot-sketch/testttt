@@ -218,21 +218,34 @@ class ComposerProfileController extends AdminController
 
         abort_if($items->isEmpty(), 422, 'No products to attach the personal page to.');
 
-        // Collision guard: a label that matches an EXISTING catalog group_label (NOT already owned by
-        // a personal-page step on this profile) would merge into / overwrite that group via
-        // updateOrCreate. Re-editing one's OWN page (the step already exists) stays idempotent; a fresh
-        // label that clashes with a real catalog group (e.g. "Garnitures", "Sauces") is rejected.
-        $ownsLabelStep = $profile->steps()
-            ->where('source_type', 'extra_group')
-            ->where('source_ref', $label)
-            ->exists();
-        if (! $ownsLabelStep) {
-            $collides = ItemExtra::query()
-                ->whereIn('item_id', $items->pluck('id'))
-                ->where('group_label', $label)
-                ->exists();
-            abort_if($collides, 422, "Le libellé « {$label} » est déjà utilisé par un groupe d'options existant — choisissez un autre nom.");
-        }
+        // Collision guard (CONSERVATIVE, create-only) — robust by construction:
+        // a personal page may only CREATE a NEW options group, never touch an existing one. If ANY
+        // ItemExtra with this group_label already exists on a target item, reject. Because the check
+        // runs BEFORE the transaction, by the time updateOrCreate runs no group with $label exists, so
+        // it can only INSERT — it can NEVER overwrite a real catalog group's prices. No provenance
+        // marker, no client-resendable ownership key, no bypass class.
+        //
+        // The earlier "ownership exception" (allow idempotent re-submit when this profile already
+        // owns a step bound to $label) was REMOVED: distinguishing a personal-page step from a normal
+        // catalog-bound step required step-level provenance that the editor's delete+recreate flow
+        // erased and a client could forge — re-opening a catalog-price overwrite (3 adversarial rounds
+        // proved each variant unsound). Trade-off: re-editing a created page by re-POSTing the same
+        // label is no longer supported here; its options are edited via the catalog/step editor.
+        // Restoring in-builder re-edit safely is an owner design decision — see
+        // reports/test-e2e/wizard-dynamic-2026-06-08/WIZARD_W5_PERSONAL_PAGE_REEDIT_DESIGN_GATE.md.
+        // Compare case-insensitively IN PHP with the SAME folding the projection uses
+        // (mb_strtolower) — NOT via SQL `where('group_label', $label)`, whose equality is decided by
+        // the DB collation (MySQL utf8mb4_unicode_ci ≠ PHP mbstring case-folding). If the guard's
+        // "equal" set were not a superset of the projection's, a case-variant label (e.g. "sauces"
+        // vs catalog "Sauces") would pass the guard yet project a DUPLICATE kiosk step whose render
+        // cross-contaminates the pre-existing group's options. Folding here makes guard ⊇ projection
+        // by construction on ANY database (SQLite test == MySQL prod).
+        $needle = mb_strtolower($label);
+        $collides = ItemExtra::query()
+            ->whereIn('item_id', $items->pluck('id'))
+            ->pluck('group_label')
+            ->contains(fn ($gl) => mb_strtolower((string) $gl) === $needle);
+        abort_if($collides, 422, "Le libellé « {$label} » est déjà utilisé par un groupe d'options existant — choisissez un autre nom.");
 
         $visibleOn = $data['visible_on'] ?? ['pos', 'kiosk'];
         $stepService = app(ComposerStepService::class);
