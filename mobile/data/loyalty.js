@@ -46,7 +46,7 @@
   // backend defaults so the UI shows the correct numbers immediately.
   // ───────────────────────────────────────────────────────────────────────
   const CONFIG = {
-    earn_ratio: 10,              // 1 € spent = 10 points (backend default; admin-editable)
+    earn_ratio: 1,               // 1 € spent = 1 point — matches ALL authored content (onboarding copy, seed history, balance 347) + the web app. [LOY P0 2026-06-08: was 10, which contradicted every seed surface; adversarial review found the same order = +13 in Loyalty tab vs +130 in Orders. 1 pt/€ is the consistent state. A gamified 10 pt/€ mobile economy (gate-D1) would require re-baselining all seed ×10 = owner gate.]
     redeem_ratio: 100,           // 100 points = 1 € discount (backend default)
     min_redeem_points: 100,      // backend kiosk default; controller default is 50 (drift documented)
     expires_after_days: 365,     // V0 mock — backend has no expiry cron yet
@@ -214,12 +214,12 @@
     return points / CONFIG.redeem_ratio;
   }
 
-  // [LOY P0 heal 2026-06-08] SSOT for points EARNED on a spend. The app previously
-  // computed Math.round(total) (=1 pt/€) on every earn surface while CONFIG advertised
-  // earn_ratio:10 — the headline gate-D1 inconsistency (a 29,80 € order showed "+30 pts"
-  // not 298). This helper honours earn_ratio (designed 10 pt/€ = 10% cashback with
-  // redeem_ratio 100; reward thresholds 100–2000 pts assume it). Owner economics gate:
-  // to change the rate, edit CONFIG.earn_ratio ONLY — every earn surface follows.
+  // [LOY P0 heal 2026-06-08] SSOT for points EARNED on a spend. Every earn surface
+  // (cart preview, gain modal, order detail, order history) routes through this so the
+  // rate can never drift between screens again. Honours CONFIG.earn_ratio (currently 1 pt/€,
+  // matching all authored seed + onboarding + the web app). Owner economics gate: to switch
+  // to a 10 pt/€ gamified mobile economy, edit CONFIG.earn_ratio AND re-baseline the seed
+  // (DEFAULT_HISTORY earn rows, orders.js points_earned, account.balance) so they reconcile.
   function pointsFor(total) {
     return Math.round((Number(total) || 0) * CONFIG.earn_ratio);
   }

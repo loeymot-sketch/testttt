@@ -892,7 +892,7 @@ function ScreenOrders({ go }) {
                 <div style={{ display: 'grid', gap: 8 }}>
                   {g.items.map(o => {
                     const summary = o.items_summary || (Array.isArray(o.items) ? o.items.map(i => i.name).join(' · ') : '');
-                    const points = window.LC.loyalty.pointsFor(o.total);
+                    const points = Number(o.points_earned) || window.LC.loyalty.pointsFor(o.total);
                     const statusLabel = o.status_label || 'Récupérée';
                     return (
                       <div key={o.id} data-testid={'orders-history-card-' + o.id} onClick={() => go('orderDetail', o.id)} style={{ background: 'var(--cream)', borderRadius: 14, padding: 14, position: 'relative', cursor: 'pointer' }}>
