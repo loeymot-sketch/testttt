@@ -9,6 +9,7 @@ Pre-flight: DB-safe (`.env.testing=foodking_test` + DEVDB-GUARD) ✓ · NF525 ba
 | **T4.1** BORNE-01 — 409 conflict = terminal success | BORNE-01 | `fca760443` | ✅ **Vitest 11/11 GREEN** (new 409→synced + 500→still-fails cases) | 0 |
 | **T3.5** studio.product_composer_button i18n key (fr/en/ar) | SWEEP-STUDIO-I18N | `5cedaf316` | jq valid + key resolves (kills 90 intlify warns + raw a11y label) | 0 |
 | **T3.4** phone null-guard — **systemic, 16 sites / 15 files** | SWEEP-EMP-01 | `99ebd70e5` | grep 0 buggy remaining + per-file diff verified; DB-confirmed it's a display concat (0 stored null-phones) | 0 |
+| **T5.1 backend** CENTRAL-P1-01 — `catch \Throwable` ×6 (not just \Exception) | CENTRAL-P1-01 | `738f4ed4c` | `php -l` clean; **monotonically safer** (Throwable ⊃ Exception → cannot regress); a \TypeError/\Error now returns 422 not bare 500. Behavioral assert (forced 5xx→422) → Wave-V :8766. Frontend error-state half deferred to build wave. | 0 |
 
 ## HONESTY CAVEAT (frontend fixes)
 T3.4 + T3.5 are committed in **source** but **NOT yet built into bundles** — the served `:8767` still runs the old compiled JS until `npm run prod` is run. A build + visual verification (CLAUDE.md §6 mandate) is **deferred: blocked by disk (160Mi) + concurrent-job build contention**. BORNE-01 is unit-verified (Vitest reads source, no build needed). Net: source-correct + committed; live-deploy + visual pending stable disk.
