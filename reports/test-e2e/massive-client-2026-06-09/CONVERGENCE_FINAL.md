@@ -66,5 +66,30 @@ After Wave M-3, two consecutive comprehensive cycles over **16 surfaces** (the 9
 
 **Note — W-menu reveal artifact (not a defect):** the web drink-menu's later-revealing cards (`.lc-rv-4`, transition-delay 240ms) flagged 4 transient contrast nodes when axe scanned *mid-fade* (card opacity <1 → page cream bleeds behind text → 4.1/4.2:1). Verified: once the reveal settles (opacity=1, the state a user sees) the cards are axe-CLEAN. `prefers-reduced-motion` is handled, so users who can't tolerate the fade never see it. The convergence harness now waits for reveal completion before scanning — the correct rendered-state evaluation.
 
-## Lesson (codified)
-Targeted/top-level axe is necessary but NOT sufficient — **5 of 8 (Wave M/M-2) + the entire M-3 cluster lived in sub-states** (tabs, modals, completed toggle states, delivered orders) the landing-surface sweep never reaches. An adversarial "what states did you NOT navigate?" pass + an empirical sub-state sweep is what closes the gap. Also: distinguish a real persistent failure from a mid-animation artifact before fixing (check the settled state).
+## Adversarial round 2 — caught a REGRESSION I introduced (the axe-blind-spot lesson)
+Round-2 adversarial **DISPUTED again** and found a critical regression M-3 introduced that **axe could not see**:
+- **`--green-text`/`--red-text` were UNDEFINED in mobile** (they existed only in *web* styles.css — I'd misread a multi-file grep). So my M-3 `color: var(--green-text)` fell back to inherited `--ink` (**black** — which *passes* axe contrast, so my re-scans looked clean) and `background: var(--green-text)` on the delivered-order badge fell back to **transparent → invisible "RÉCUPÉRÉE" badge**.
+
+### Wave M-4 (commit 6ffd3cd19) — regression fix + pills + i18n
+- Added `--green-text`/`--red-text` to mobile styles.css. **VISUALLY verified**: badge bg now rgb(12,107,49) green + visible; history earn/spend render green/red not black. (This is exactly what CLAUDE.md §6 visual-mandate exists for — axe was satisfied by the black fallback.)
+- Receipt total (screens-main:768) `--orange`→`--orange-text` (3rd order-total sibling).
+- White-on-color pills (pre-existing AA fails): HALAL/VEGGIE/UTILISER white-on-`--green` (3.16:1)→`--green-dark` (4.7:1); Récompense/POPULAIRE white-on-`--orange`→`--orange-text`; RGPD/error-toast white-on-`--red` (4.34:1)→`--red-text`.
+- i18n: onboarding eyebrow "03 — Pickup" (visible English) → "03 — Retrait".
+
+### Waves M-5 / W-3 / W-4 — exhaustive long-tail drain
+An exhaustive self-grep (the deterministic part of a completeness sweep) found the same `--green/--red`-as-text pattern pervasively, pre-existing, on state-gated surfaces. All migrated to AA `-text` tokens:
+- Web W-3 (`92d5776`): leaderboard/cart-suggest/ticket/track/step/diet-chip/promo/logout (~13 spots).
+- Mobile M-5 (`7f57142d9`): RGPD opt-out warning, logout, "Code invalide" alert.
+- Web W-4 (`5ef1e08`): funnel promo, wizard OBLIGATOIRE/validation alert, hours-status + remove-chip tint pills.
+
+**Anti-landmine check:** every referenced `--*-text`/`--*-dark` token is now defined in its app (mobile 7/7, web 3/3) — no undefined-token fallbacks remain. Remaining `--green/red/orange` are all verified dark-bg / large-display / icon / border (all pass).
+
+### Final convergence: 16 surfaces ×2 CLEAN (no regression across all of M-4/M-5/W-3/W-4).
+
+## Lessons (codified)
+1. Targeted/top-level axe is necessary but NOT sufficient — **5 of 8 (M/M-2) + the entire M-3 cluster + the M-5/W-3/W-4 long tail lived in SUB-STATES** (tabs, modals, completed-toggle, delivered orders, leaderboard, promo-applied, ticket) the landing sweep never reaches. Adversarial "what states did you NOT navigate?" + empirical sub-state sweep + exhaustive grep is what closes it.
+2. **axe can be satisfied by a WRONG fallback.** An undefined CSS var → text falls back to black (passes contrast) or background to transparent (invisible) — axe says CLEAN while the UI is broken. **The visual mandate (§6) is non-negotiable; an undefined-token grep is mandatory after any `var(--x-text)` migration.**
+3. A "route-everything-through-one-SSOT" fix can RELOCATE/CREATE drift when seed data has special cases (the welcome bonus) — verify card==detail per-item, not just "uses the helper".
+4. axe flagged large-display orange accents that "3:1 large-text" hand-reasoning passed → empirical > theory.
+5. Distinguish a persistent fail from a mid-ANIMATION artifact (web `.lc-rv` reveal) — evaluate the settled state users see.
+6. `--green`/`--red` are for fills/dots/large/borders; small text needs `--green-text`/`--red-text` (AA). White-on-`--green` fills need `--green-dark`; white-on-`--orange` needs `--orange-text`.
