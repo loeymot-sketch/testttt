@@ -10,6 +10,7 @@ use App\Models\Item;
 use App\Models\ItemCategory;
 use App\Models\ItemExtra;
 use App\Models\ItemWizardProfile;
+use App\Models\ItemWizardStep;
 use App\Services\Composer\ComposerDiffService;
 use App\Services\Composer\ComposerProfileService;
 use App\Services\Composer\ComposerStepService;
@@ -306,6 +307,90 @@ class ComposerProfileController extends AdminController
                 'items_touched' => $items->count(),
             ],
         ], 201);
+    }
+
+    /**
+     * [W5 re-edit — option A, owner-picked 2026-06-09] Edit an EXISTING personal page IN PLACE.
+     *
+     * The page is identified by its STEP, route-bound by PRIMARY KEY ($step) — server-trusted, NOT a
+     * client-supplied label. The group it edits is the step's OWN server-stored binding
+     * ($step->source_ref); the request body can NEVER redirect the edit to a different group. So this
+     * endpoint is collision-free by construction: it cannot "discover" and overwrite some other
+     * pre-existing catalog group (the failure mode that sank the 3 create-time re-edit attempts). It
+     * only ever touches the one group this step already points at. The create endpoint keeps its
+     * conservative create-only guard; re-edit is the explicit, in-place editor.
+     *
+     * Semantics: full option sync of the bound group across the profile's items — updateOrCreate the
+     * submitted options (price/media refresh), soft-delete options no longer present — plus the step's
+     * display label + min/max/visible_on. The group identity (source_ref) and step_key are immutable
+     * here (renaming the group is out of scope — it would reintroduce collision handling).
+     */
+    public function updatePersonalPage(ComposerPersonalPageRequest $request, ItemWizardProfile $profile, ItemWizardStep $step): JsonResponse
+    {
+        $this->authorizeWritableBranchScope($request, $profile->branch_id_scope);
+
+        // The step must belong to THIS profile and be an option-group page. Route-model binding does
+        // not scope {step} to {profile}, so enforce it (prevents editing another profile's step).
+        abort_if((int) $step->profile_id !== (int) $profile->id, 404);
+        abort_if($step->source_type !== 'extra_group', 422, "Cette page n'est pas une page d'options modifiable.");
+
+        $groupLabel = (string) $step->source_ref;            // server-derived binding — never from the body
+        abort_if($groupLabel === '', 422, 'This step is not bound to an options group.');
+
+        $data = $request->validated();
+        $visibleOn = $data['visible_on'] ?? ($step->visible_on ?: ['pos', 'kiosk']);
+
+        $items = $profile->item_id
+            ? Item::query()->whereKey($profile->item_id)->get()
+            : Item::query()->whereNull('deleted_at')->where('item_category_id', $profile->item_category_id)->get();
+        abort_if($items->isEmpty(), 422, 'No products to attach the personal page to.');
+
+        $submittedNames = collect($data['options'])->pluck('name')->map(fn ($n) => (string) $n)->all();
+
+        DB::transaction(function () use ($items, $data, $groupLabel, $visibleOn, $submittedNames, $step) {
+            foreach ($items as $item) {
+                foreach ($data['options'] as $opt) {
+                    ItemExtra::query()->updateOrCreate(
+                        ['item_id' => $item->id, 'name' => $opt['name'], 'group_label' => $groupLabel],
+                        [
+                            'price' => $opt['price'],
+                            'status' => Status::ACTIVE,
+                            'visible_on' => $visibleOn,
+                            'description' => $opt['description'] ?? null,
+                            'image_path' => $opt['image_path'] ?? null,
+                        ]
+                    );
+                }
+
+                // Removal: soft-delete options of THIS group no longer present in the submission.
+                // Scoped to (item, group_label) so a different group is never touched. Soft-delete is
+                // reversible and does not alter past orders (NF525 composition_snapshot is frozen).
+                ItemExtra::query()
+                    ->where('item_id', $item->id)
+                    ->where('group_label', $groupLabel)
+                    ->whereNotIn('name', $submittedNames)
+                    ->delete();
+            }
+
+            // Update display + selection props on the step. source_ref / step_key stay immutable.
+            $step->forceFill([
+                'label' => (string) $data['label'],
+                'min_select' => (int) ($data['min_select'] ?? $step->min_select),
+                'max_select' => (int) ($data['max_select'] ?? max((int) $step->max_select, count($data['options']))),
+                'visible_on' => $visibleOn,
+            ])->save();
+        });
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'step_id' => (int) $step->id,
+                'step_key' => (string) $step->step_key,
+                'group_label' => $groupLabel,
+                'options_synced' => count($data['options']),
+                'items_touched' => $items->count(),
+            ],
+        ], 200);
     }
 
     /**

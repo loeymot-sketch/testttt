@@ -308,4 +308,149 @@ class ComposerPersonalPageTest extends TestCase
         $this->assertEquals(0.80, (float) ItemExtra::query()->where('item_id', $item->id)
             ->where('name', 'Ketchup')->value('price'), 'catalog price preserved');
     }
+
+    // ── W5 re-edit (option A: edit by server-trusted step PK) ─────────────────────────────────
+
+    /** Create a personal page and return [profile, items, stepId, url]. */
+    private function makePage(array $options, string $label = 'Sauces Maison', int $items = 1): array
+    {
+        [, $made, $profile] = $this->categoryProfile($items);
+        $resp = $this->actingAs($this->admin, 'sanctum')->postJson(
+            "/api/admin/composer/profiles/{$profile->id}/personal-page",
+            ['label' => $label, 'options' => $options, 'min_select' => 0, 'max_select' => count($options)]
+        )->assertStatus(201);
+
+        return [$profile, $made, (int) $resp->json('data.step_id')];
+    }
+
+    /** [W5 re-edit] Editing by step-id updates prices, ADDS new options, REMOVES (soft-deletes) absent
+     *  ones, and updates the step's display label + min/max. */
+    public function test_reedit_updates_prices_adds_and_removes_options(): void
+    {
+        [$profile, $items, $stepId] = $this->makePage([
+            ['name' => 'Algérienne', 'price' => '0.50'],
+            ['name' => 'Blanche', 'price' => '0.50'],
+        ], 'Sauces Maison', 2); // 2 category items → re-edit must replicate across both
+        $item = $items->first();
+
+        $this->actingAs($this->admin, 'sanctum')->putJson(
+            "/api/admin/composer/profiles/{$profile->id}/personal-page/{$stepId}",
+            [
+                'label' => 'Sauces Maison V2',
+                'options' => [
+                    ['name' => 'Algérienne', 'price' => '1.20'],      // updated price
+                    ['name' => 'Samouraï', 'price' => '0.80'],        // added
+                ],                                                     // 'Blanche' omitted → removed
+                'min_select' => 1, 'max_select' => 2,
+            ]
+        )->assertStatus(200)->assertJsonPath('data.items_touched', 2);
+
+        // Re-edit replicates across ALL category items (update + add + remove on each).
+        foreach ($items as $sibling) {
+            $this->assertEquals(1.20, (float) ItemExtra::query()->where('item_id', $sibling->id)
+                ->where('name', 'Algérienne')->where('group_label', 'Sauces Maison')->value('price'), 'price updated on each item');
+            $this->assertSame(1, ItemExtra::query()->where('item_id', $sibling->id)
+                ->where('name', 'Samouraï')->where('group_label', 'Sauces Maison')->count(), 'new option added on each item');
+            $this->assertSame(0, ItemExtra::query()->where('item_id', $sibling->id)
+                ->where('name', 'Blanche')->where('group_label', 'Sauces Maison')->count(), 'absent option soft-deleted on each item');
+        }
+
+        $step = ItemWizardStep::query()->find($stepId);
+        $this->assertSame('Sauces Maison V2', $step->label, 'display label updated');
+        $this->assertSame('Sauces Maison', $step->source_ref, 'group binding (source_ref) is immutable on re-edit');
+        $this->assertSame(1, (int) $step->min_select);
+        $this->assertSame(2, (int) $step->max_select);
+    }
+
+    /**
+     * [W5 re-edit — THE safety property] Re-edit targets the STEP's own server-stored group
+     * (source_ref), NEVER the body label. Even when the body label equals a DIFFERENT pre-existing
+     * catalog group, that other group is untouched — collision-free by construction.
+     */
+    public function test_reedit_targets_steps_own_group_not_body_label(): void
+    {
+        [$profile, $items, $stepId] = $this->makePage([['name' => 'Algérienne', 'price' => '0.50']], 'Sauces Maison');
+        $item = $items->first();
+
+        // A DIFFERENT, pre-existing real catalog group "Sauces".
+        ItemExtra::create([
+            'item_id' => $item->id, 'name' => 'Ketchup', 'group_label' => 'Sauces',
+            'price' => 0.80, 'status' => Status::ACTIVE, 'visible_on' => ['pos', 'kiosk'],
+        ]);
+
+        // Re-edit the "Sauces Maison" step but send body label="Sauces" (the OTHER group's name) +
+        // an option named "Ketchup" @ 9.99. The edit must hit "Sauces Maison", NOT "Sauces".
+        $this->actingAs($this->admin, 'sanctum')->putJson(
+            "/api/admin/composer/profiles/{$profile->id}/personal-page/{$stepId}",
+            ['label' => 'Sauces', 'options' => [['name' => 'Ketchup', 'price' => '9.99']]]
+        )->assertStatus(200)->assertJsonPath('data.group_label', 'Sauces Maison');
+
+        // The REAL "Sauces" group is completely untouched.
+        $this->assertEquals(0.80, (float) ItemExtra::query()->where('item_id', $item->id)
+            ->where('name', 'Ketchup')->where('group_label', 'Sauces')->value('price'),
+            'the body label must NOT redirect the edit onto the real "Sauces" group');
+        // The edit landed in "Sauces Maison": Ketchup@9.99 added there, Algérienne removed.
+        $this->assertEquals(9.99, (float) ItemExtra::query()->where('item_id', $item->id)
+            ->where('name', 'Ketchup')->where('group_label', 'Sauces Maison')->value('price'));
+        $this->assertSame(0, ItemExtra::query()->where('item_id', $item->id)
+            ->where('name', 'Algérienne')->where('group_label', 'Sauces Maison')->count());
+    }
+
+    /** [W5 re-edit] A step belonging to another profile cannot be edited through this profile (404). */
+    public function test_reedit_404_for_step_of_other_profile(): void
+    {
+        [$profileA] = $this->makePage([['name' => 'A', 'price' => '0']], 'Page A');
+        [$profileB, , $stepB] = $this->makePage([['name' => 'B', 'price' => '0']], 'Page B');
+
+        $this->actingAs($this->admin, 'sanctum')->putJson(
+            "/api/admin/composer/profiles/{$profileA->id}/personal-page/{$stepB}",
+            ['label' => 'Page B', 'options' => [['name' => 'B', 'price' => '1.00']]]
+        )->assertStatus(404);
+    }
+
+    /** [W5 re-edit] Only extra_group (option-page) steps are editable here. */
+    public function test_reedit_422_for_non_extra_group_step(): void
+    {
+        [, , $profile] = $this->categoryProfile(1);
+        $step = app(\App\Services\Composer\ComposerStepService::class)->create($profile, [
+            'step_key' => 'taille', 'label' => 'Taille', 'source_type' => 'item_attribute',
+            'source_ref' => '1', 'min_select' => 1, 'max_select' => 1, 'is_active' => true,
+            'visible_on' => ['pos', 'kiosk'], 'position' => 1,
+        ]);
+
+        $this->actingAs($this->admin, 'sanctum')->putJson(
+            "/api/admin/composer/profiles/{$profile->id}/personal-page/{$step->id}",
+            ['label' => 'Taille', 'options' => [['name' => 'GM', 'price' => '0']]]
+        )->assertStatus(422);
+    }
+
+    /** [W5 re-edit] NF525: a page-level price is prohibited on re-edit too. */
+    public function test_reedit_rejects_page_level_price_nf525(): void
+    {
+        [$profile, , $stepId] = $this->makePage([['name' => 'X', 'price' => '0.50']], 'Page X');
+
+        $this->actingAs($this->admin, 'sanctum')->putJson(
+            "/api/admin/composer/profiles/{$profile->id}/personal-page/{$stepId}",
+            ['label' => 'Page X', 'options' => [['name' => 'X', 'price' => '1.00']], 'price' => '5.00']
+        )->assertStatus(422)->assertJsonValidationErrors(['price']);
+    }
+
+    /** [W5 re-edit] A non-admin Branch Manager must NOT re-edit a global/null-scope catalog. */
+    public function test_reedit_branch_manager_cannot_mutate_global_profile(): void
+    {
+        [$profile, , $stepId] = $this->makePage([['name' => 'X', 'price' => '0.50']], 'Page X');
+        Role::firstOrCreate(['name' => 'Branch Manager', 'guard_name' => 'sanctum']);
+        $bm = User::factory()->create(['branch_id' => 2]);
+        $bm->assignRole('Admin');
+        $bm->syncRoles(['Branch Manager']);
+
+        $this->actingAs($bm, 'sanctum')->putJson(
+            "/api/admin/composer/profiles/{$profile->id}/personal-page/{$stepId}",
+            ['label' => 'Page X', 'options' => [['name' => 'X', 'price' => '9.99']]]
+        )->assertStatus(403);
+
+        // Price untouched by the rejected write.
+        $this->assertEquals(0.50, (float) ItemExtra::query()->where('group_label', 'Page X')
+            ->where('name', 'X')->value('price'));
+    }
 }

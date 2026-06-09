@@ -785,6 +785,10 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
                 Route::post('/profiles/{profile}/steps', [ComposerStepController::class, 'store']);
                 // [GOAL_WIZARD_DYNAMIC_BUILDER Wave 5] Construct-on-the-fly personal/free page.
                 Route::post('/profiles/{profile}/personal-page', [ComposerProfileController::class, 'createPersonalPage']);
+                // [W5 re-edit, option A] Edit an EXISTING personal page IN PLACE, keyed on the
+                // server-trusted step PK (NOT a client label) → edits only that step's own bound
+                // group; collision-free by construction (never changes which group).
+                Route::match(['put', 'patch'], '/profiles/{profile}/personal-page/{step}', [ComposerProfileController::class, 'updatePersonalPage']);
                 Route::match(['put', 'patch'], '/steps/{step}', [ComposerStepController::class, 'update']);
                 Route::delete('/steps/{step}', [ComposerStepController::class, 'destroy']);
             });
