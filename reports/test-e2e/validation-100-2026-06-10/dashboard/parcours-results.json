@@ -1,0 +1,376 @@
+{
+  "generatedAt": "2026-06-09T23:47:46.425Z",
+  "kpis": {
+    "daily_sales": "0,00 €",
+    "daily_orders": "10",
+    "average_ticket": "0,00 €"
+  },
+  "results": [
+    {
+      "name": "dashboard",
+      "path": "/admin/dashboard",
+      "finalUrl": "http://127.0.0.1:8766/admin/dashboard",
+      "consoleErrors": [],
+      "pageErrors": [],
+      "badResponses": [],
+      "rawLabels": [],
+      "crashMarker": null,
+      "bodyLength": 6556,
+      "realtimeKpis": {
+        "daily_sales": "0,00 €",
+        "daily_orders": "10",
+        "average_ticket": "0,00 €"
+      }
+    },
+    {
+      "name": "sales-report",
+      "path": "/admin/sales-report",
+      "finalUrl": "http://127.0.0.1:8766/admin/sales-report",
+      "consoleErrors": [],
+      "pageErrors": [],
+      "badResponses": [],
+      "rawLabels": [],
+      "crashMarker": null,
+      "bodyLength": 1833
+    },
+    {
+      "name": "items-report",
+      "path": "/admin/items-report",
+      "finalUrl": "http://127.0.0.1:8766/admin/items-report",
+      "consoleErrors": [],
+      "pageErrors": [],
+      "badResponses": [],
+      "rawLabels": [],
+      "crashMarker": null,
+      "bodyLength": 1290
+    },
+    {
+      "name": "credit-balance-report",
+      "path": "/admin/credit-balance-report",
+      "finalUrl": "http://127.0.0.1:8766/admin/credit-balance-report",
+      "consoleErrors": [],
+      "pageErrors": [],
+      "badResponses": [],
+      "rawLabels": [],
+      "crashMarker": null,
+      "bodyLength": 960
+    },
+    {
+      "name": "transactions",
+      "path": "/admin/transactions",
+      "finalUrl": "http://127.0.0.1:8766/admin/transactions",
+      "consoleErrors": [],
+      "pageErrors": [],
+      "badResponses": [],
+      "rawLabels": [],
+      "crashMarker": null,
+      "bodyLength": 1618
+    },
+    {
+      "name": "historique",
+      "path": "/admin/historique",
+      "finalUrl": "http://127.0.0.1:8766/admin/historique",
+      "consoleErrors": [],
+      "pageErrors": [],
+      "badResponses": [],
+      "rawLabels": [],
+      "crashMarker": null,
+      "bodyLength": 1812
+    },
+    {
+      "name": "online-orders",
+      "path": "/admin/online-orders",
+      "finalUrl": "http://127.0.0.1:8766/admin/online-orders",
+      "consoleErrors": [],
+      "pageErrors": [],
+      "badResponses": [],
+      "rawLabels": [],
+      "crashMarker": null,
+      "bodyLength": 1621
+    },
+    {
+      "name": "pos-orders",
+      "path": "/admin/pos-orders",
+      "finalUrl": "http://127.0.0.1:8766/admin/pos-orders",
+      "consoleErrors": [],
+      "pageErrors": [],
+      "badResponses": [],
+      "rawLabels": [],
+      "crashMarker": null,
+      "bodyLength": 1690
+    },
+    {
+      "name": "pos-orders-tracker",
+      "path": "/admin/pos-orders-tracker",
+      "finalUrl": "http://127.0.0.1:8766/admin/pos-orders-tracker",
+      "consoleErrors": [],
+      "pageErrors": [],
+      "badResponses": [],
+      "rawLabels": [],
+      "crashMarker": null,
+      "bodyLength": 1688
+    },
+    {
+      "name": "encaissement",
+      "path": "/admin/encaissement",
+      "finalUrl": "http://127.0.0.1:8766/admin/encaissement",
+      "consoleErrors": [],
+      "pageErrors": [],
+      "badResponses": [],
+      "rawLabels": [],
+      "crashMarker": null,
+      "bodyLength": 3735
+    },
+    {
+      "name": "cash-overview",
+      "path": "/admin/cash-overview",
+      "finalUrl": "http://127.0.0.1:8766/admin/cash-overview",
+      "consoleErrors": [],
+      "pageErrors": [],
+      "badResponses": [],
+      "rawLabels": [],
+      "crashMarker": null,
+      "bodyLength": 1168
+    },
+    {
+      "name": "cash-sessions-report",
+      "path": "/admin/cash-sessions-report",
+      "finalUrl": "http://127.0.0.1:8766/admin/cash-sessions-report",
+      "consoleErrors": [],
+      "pageErrors": [],
+      "badResponses": [],
+      "rawLabels": [],
+      "crashMarker": null,
+      "bodyLength": 2125
+    },
+    {
+      "name": "stock-rupture",
+      "path": "/admin/stock/rupture",
+      "finalUrl": "http://127.0.0.1:8766/admin/stock/rupture",
+      "consoleErrors": [],
+      "pageErrors": [],
+      "badResponses": [],
+      "rawLabels": [],
+      "crashMarker": null,
+      "bodyLength": 1253
+    },
+    {
+      "name": "items",
+      "path": "/admin/items",
+      "finalUrl": "http://127.0.0.1:8766/admin/items",
+      "consoleErrors": [],
+      "pageErrors": [],
+      "badResponses": [],
+      "rawLabels": [],
+      "crashMarker": null,
+      "bodyLength": 1851
+    },
+    {
+      "name": "categories",
+      "path": "/admin/settings/item-categories/list",
+      "finalUrl": "http://127.0.0.1:8766/admin/settings/item-categories/list",
+      "consoleErrors": [],
+      "pageErrors": [],
+      "badResponses": [],
+      "rawLabels": [],
+      "crashMarker": null,
+      "bodyLength": 1410
+    },
+    {
+      "name": "coupons",
+      "path": "/admin/coupons",
+      "finalUrl": "http://127.0.0.1:8766/admin/coupons",
+      "consoleErrors": [],
+      "pageErrors": [],
+      "badResponses": [],
+      "rawLabels": [
+        "label.monday_short",
+        "label.tuesday_short",
+        "label.wednesday_short",
+        "label.thursday_short",
+        "label.friday_short",
+        "label.saturday_short",
+        "label.sunday_short",
+        "label.branch_scope_help"
+      ],
+      "crashMarker": null,
+      "bodyLength": 1466
+    },
+    {
+      "name": "offers",
+      "path": "/admin/offers",
+      "finalUrl": "http://127.0.0.1:8766/admin/offers",
+      "consoleErrors": [],
+      "pageErrors": [],
+      "badResponses": [],
+      "rawLabels": [],
+      "crashMarker": null,
+      "bodyLength": 920
+    },
+    {
+      "name": "employees",
+      "path": "/admin/employees",
+      "finalUrl": "http://127.0.0.1:8766/admin/employees",
+      "consoleErrors": [],
+      "pageErrors": [],
+      "badResponses": [],
+      "rawLabels": [],
+      "crashMarker": null,
+      "bodyLength": 1911
+    },
+    {
+      "name": "customers",
+      "path": "/admin/customers",
+      "finalUrl": "http://127.0.0.1:8766/admin/customers",
+      "consoleErrors": [],
+      "pageErrors": [],
+      "badResponses": [],
+      "rawLabels": [],
+      "crashMarker": null,
+      "bodyLength": 1080
+    },
+    {
+      "name": "administrators",
+      "path": "/admin/administrators",
+      "finalUrl": "http://127.0.0.1:8766/admin/administrators",
+      "consoleErrors": [],
+      "pageErrors": [],
+      "badResponses": [],
+      "rawLabels": [],
+      "crashMarker": null,
+      "bodyLength": 990
+    },
+    {
+      "name": "chefs",
+      "path": "/admin/chefs",
+      "finalUrl": "http://127.0.0.1:8766/admin/chefs",
+      "consoleErrors": [],
+      "pageErrors": [],
+      "badResponses": [],
+      "rawLabels": [],
+      "crashMarker": null,
+      "bodyLength": 937
+    },
+    {
+      "name": "delivery-boys",
+      "path": "/admin/delivery-boys",
+      "finalUrl": "http://127.0.0.1:8766/admin/delivery-boys",
+      "consoleErrors": [],
+      "pageErrors": [],
+      "badResponses": [],
+      "rawLabels": [],
+      "crashMarker": null,
+      "bodyLength": 956
+    },
+    {
+      "name": "subscribers",
+      "path": "/admin/subscribers",
+      "finalUrl": "http://127.0.0.1:8766/admin/subscribers",
+      "consoleErrors": [],
+      "pageErrors": [],
+      "badResponses": [],
+      "rawLabels": [],
+      "crashMarker": null,
+      "bodyLength": 778
+    },
+    {
+      "name": "messages",
+      "path": "/admin/messages",
+      "finalUrl": "http://127.0.0.1:8766/admin/messages",
+      "consoleErrors": [],
+      "pageErrors": [],
+      "badResponses": [],
+      "rawLabels": [],
+      "crashMarker": null,
+      "bodyLength": 720
+    },
+    {
+      "name": "push-notifications",
+      "path": "/admin/push-notifications",
+      "finalUrl": "http://127.0.0.1:8766/admin/push-notifications",
+      "consoleErrors": [],
+      "pageErrors": [],
+      "badResponses": [],
+      "rawLabels": [],
+      "crashMarker": null,
+      "bodyLength": 884
+    },
+    {
+      "name": "settings-company",
+      "path": "/admin/settings/company",
+      "finalUrl": "http://127.0.0.1:8766/admin/settings/company",
+      "consoleErrors": [],
+      "pageErrors": [],
+      "badResponses": [],
+      "rawLabels": [],
+      "crashMarker": null,
+      "bodyLength": 840
+    },
+    {
+      "name": "settings-site",
+      "path": "/admin/settings/site",
+      "finalUrl": "http://127.0.0.1:8766/admin/settings/site",
+      "consoleErrors": [],
+      "pageErrors": [],
+      "badResponses": [],
+      "rawLabels": [],
+      "crashMarker": null,
+      "bodyLength": 1331
+    },
+    {
+      "name": "settings-order-setup",
+      "path": "/admin/settings/order-setup",
+      "finalUrl": "http://127.0.0.1:8766/admin/settings/order-setup",
+      "consoleErrors": [],
+      "pageErrors": [],
+      "badResponses": [],
+      "rawLabels": [],
+      "crashMarker": null,
+      "bodyLength": 1042
+    },
+    {
+      "name": "settings-kiosk-setup",
+      "path": "/admin/settings/kiosk-setup",
+      "finalUrl": "http://127.0.0.1:8766/admin/settings/kiosk-setup",
+      "consoleErrors": [],
+      "pageErrors": [],
+      "badResponses": [],
+      "rawLabels": [],
+      "crashMarker": null,
+      "bodyLength": 1011
+    },
+    {
+      "name": "observability",
+      "path": "/admin/observability",
+      "finalUrl": "http://127.0.0.1:8766/admin/observability/outbox",
+      "consoleErrors": [],
+      "pageErrors": [],
+      "badResponses": [],
+      "rawLabels": [],
+      "crashMarker": null,
+      "bodyLength": 4320
+    },
+    {
+      "name": "order-status-screen",
+      "path": "/admin/order-status-screen",
+      "finalUrl": "http://127.0.0.1:8766/admin/order-status-screen",
+      "consoleErrors": [],
+      "pageErrors": [],
+      "badResponses": [],
+      "rawLabels": [],
+      "crashMarker": null,
+      "bodyLength": 261
+    },
+    {
+      "name": "kds",
+      "path": "/admin/kitchen-display-system",
+      "finalUrl": "http://127.0.0.1:8766/admin/kitchen-display-system",
+      "consoleErrors": [],
+      "pageErrors": [],
+      "badResponses": [],
+      "rawLabels": [],
+      "crashMarker": null,
+      "bodyLength": 1132
+    }
+  ]
+}
