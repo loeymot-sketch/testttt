@@ -6333,6 +6333,12 @@ input:checked + div svg {
 .\!h-40 {
   height: 10rem !important;
 }
+.\!h-\[34px\] {
+  height: 34px !important;
+}
+.\!h-\[42px\] {
+  height: 42px !important;
+}
 .h-0 {
   height: 0px;
 }
@@ -6480,6 +6486,9 @@ input:checked + div svg {
 }
 .max-h-\[75vh\] {
   max-height: 75vh;
+}
+.max-h-\[90vh\] {
+  max-height: 90vh;
 }
 .max-h-\[min\(100dvh\2c 100vh\)\] {
   max-height: min(100dvh,100vh);
@@ -7180,6 +7189,10 @@ input:checked + div svg {
   --tw-border-opacity: 1 !important;
   border-color: rgb(215 165 70 / var(--tw-border-opacity, 1)) !important;
 }
+.\!border-\[\#e0a3a3\] {
+  --tw-border-opacity: 1 !important;
+  border-color: rgb(224 163 163 / var(--tw-border-opacity, 1)) !important;
+}
 .border-\[\#0F766E\] {
   --tw-border-opacity: 1;
   border-color: rgb(15 118 110 / var(--tw-border-opacity, 1));
@@ -7223,6 +7236,10 @@ input:checked + div svg {
 .border-\[\#d9dfdc\] {
   --tw-border-opacity: 1;
   border-color: rgb(217 223 220 / var(--tw-border-opacity, 1));
+}
+.border-\[\#e3e8e5\] {
+  --tw-border-opacity: 1;
+  border-color: rgb(227 232 229 / var(--tw-border-opacity, 1));
 }
 .border-\[\#e4d8b5\] {
   --tw-border-opacity: 1;
@@ -8183,6 +8200,10 @@ input:checked + div svg {
 .font-rubik {
   font-family: 'Rubik', sans-serif;
 }
+.\!text-xs {
+  font-size: 0.75rem !important;
+  line-height: 1rem !important;
+}
 .text-2xl {
   font-size: 1.5rem;
   line-height: 2rem;
@@ -8353,6 +8374,9 @@ input:checked + div svg {
 .tracking-\[0\.02em\] {
   letter-spacing: 0.02em;
 }
+.tracking-\[0\.06em\] {
+  letter-spacing: 0.06em;
+}
 .tracking-\[0\.08em\] {
   letter-spacing: 0.08em;
 }
@@ -8377,6 +8401,10 @@ input:checked + div svg {
 .\!text-\[\#8d6318\] {
   --tw-text-opacity: 1 !important;
   color: rgb(141 99 24 / var(--tw-text-opacity, 1)) !important;
+}
+.\!text-\[\#9b2f2f\] {
+  --tw-text-opacity: 1 !important;
+  color: rgb(155 47 47 / var(--tw-text-opacity, 1)) !important;
 }
 .\!text-\[\#FB4E4E\] {
   --tw-text-opacity: 1 !important;
@@ -10079,6 +10107,10 @@ input[type="search"]::-webkit-search-results-decoration { display: none; }
 
   .sm\:w-60 {
     width: 15rem;
+  }
+
+  .sm\:w-\[130px\] {
+    width: 130px;
   }
 
   .sm\:w-\[360px\] {
