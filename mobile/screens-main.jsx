@@ -415,7 +415,7 @@ function ScreenItem({ go, itemId, addToCart }) {
             <div style={{ marginTop: 24 }}>
               <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 10 }}>
                 <h3 className="lc-display" style={{ margin: 0, fontSize: 20 }}>Choisis {item.viandes} viande{item.viandes > 1 ? 's' : ''}</h3>
-                <span style={{ fontSize: 10, color: meatsOK ? 'var(--green)' : 'var(--orange)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>{meatIds.length}/{item.viandes}</span>
+                <span style={{ fontSize: 10, color: meatsOK ? 'var(--green-text)' : 'var(--orange-text)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>{meatIds.length}/{item.viandes}</span>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
                 {lcMenu.meats.map(m => {
@@ -474,7 +474,7 @@ function ScreenItem({ go, itemId, addToCart }) {
                   return (
                     // [test-e2e fix B-005 round-2 2026-05-11] longhand to avoid React warning
                     <div key={c.id} onClick={() => toggleCrudite(c.id)} style={{ padding: '12px 8px', borderRadius: 12, border: on ? '2px solid var(--green)' : '2px solid var(--gray-2)', background: on ? '#E8F8ED' : 'var(--cream)', cursor: 'pointer', textAlign: 'center', textDecorationLine: on ? 'none' : 'line-through', textDecorationColor: 'var(--gray-3)' }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: on ? 'var(--green)' : 'var(--gray-3)' }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: on ? 'var(--green-text)' : 'var(--gray-3)' }}>
                         {on ? '✓' : '✕'} {c.name}
                       </div>
                     </div>
@@ -874,8 +874,8 @@ function ScreenOrders({ go }) {
                 <div style={{ fontSize: 10, color: 'var(--yellow)', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase' }}>Commandes</div>
                 <div data-testid="orders-stat-count" className="lc-display" style={{ fontSize: 26, color: '#fff' }}>{history.length}</div>
               </div>
-              <div style={{ flex: 1, background: 'var(--orange)', color: '#fff', borderRadius: 14, padding: '12px 14px' }}>
-                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.85)', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase' }}>Dépensé</div>
+              <div style={{ flex: 1, background: 'var(--orange-text)', color: '#fff', borderRadius: 14, padding: '12px 14px' }}>
+                <div style={{ fontSize: 10, color: '#fff', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase' }}>Dépensé</div>
                 <div data-testid="orders-stat-total" className="lc-display" style={{ fontSize: 26 }}>{Math.round(histTotal)}€</div>
               </div>
               <div style={{ flex: 1, background: 'var(--yellow)', color: 'var(--ink)', borderRadius: 14, padding: '12px 14px' }}>
@@ -903,11 +903,11 @@ function ScreenOrders({ go }) {
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                               <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--gray-3)' }}>#{o.id}</span>
                               <span style={{ width: 4, height: 4, borderRadius: 999, background: 'var(--gray-2)' }}/>
-                              <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--green)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>✓ {statusLabel}</span>
+                              <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--green-text)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>✓ {statusLabel}</span>
                             </div>
                             <div style={{ fontSize: 14, fontWeight: 700, lineHeight: 1.3 }}>{summary}</div>
                             <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 10 }}>
-                              <span style={{ fontFamily: 'var(--font-display)', fontSize: 22, color: 'var(--orange)' }}>{fmtEur(o.total)}</span>
+                              <span style={{ fontFamily: 'var(--font-display)', fontSize: 22, color: 'var(--orange-text)' }}>{fmtEur(o.total)}</span>
                               <span style={{ fontSize: 10, color: 'var(--gray-3)', fontWeight: 600 }}>+{points} pts</span>
                             </div>
                           </div>
@@ -1310,7 +1310,7 @@ function ScreenLoyalty({ go }) {
                     const positive = h.points > 0;
                     return (
                       <div key={h.id} className="rdl-hist" data-testid={'history-entry-' + h.id}>
-                        <div className={'rdl-hist-dot rdl-hist-dot--' + (positive ? 'earn' : 'spend')} data-testid="history-source-icon" data-source-surface={h.source_surface || 'unknown'} aria-label={'Source : ' + (h.source_surface || 'inconnu')}/>
+                        <div role="img" className={'rdl-hist-dot rdl-hist-dot--' + (positive ? 'earn' : 'spend')} data-testid="history-source-icon" data-source-surface={h.source_surface || 'unknown'} aria-label={'Source : ' + (h.source_surface || 'inconnu')}/>
                         <div className="rdl-hist-body">
                           <div className="rdl-hist-title">{h.description}</div>
                           <div className="rdl-hist-date">{h.date} · {h.source_surface || '—'}</div>

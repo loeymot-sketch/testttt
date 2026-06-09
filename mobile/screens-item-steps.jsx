@@ -335,7 +335,7 @@ function ScreenStepViandes({ item, selections, setSelections, headingRef }) {
         <p style={{ margin: 0, fontSize: 14, color: 'var(--gray-4)' }}>
           Choisis <strong>{required}</strong> viande{required > 1 ? 's' : ''}
         </p>
-        <span style={{ fontSize: 11, fontWeight: 700, color: meatIds.length === required ? 'var(--green)' : 'var(--orange-text)', letterSpacing: '0.08em' }}>
+        <span style={{ fontSize: 11, fontWeight: 700, color: meatIds.length === required ? 'var(--green-text)' : 'var(--orange-text)', letterSpacing: '0.08em' }}>
           {meatIds.length}/{required}
         </span>
       </div>
@@ -436,7 +436,7 @@ function ScreenStepCrudites({ item, selections, setSelections, headingRef }) {
                 {c.image && (
                   <img src={c.image} alt="" aria-hidden="true" style={{ width: 44, height: 44, objectFit: 'cover', borderRadius: 8, margin: '0 auto 6px', opacity: on ? 1 : 0.35, display: 'block' }}/>
                 )}
-                <div style={{ fontSize: 13, fontWeight: 700, color: on ? 'var(--green)' : 'var(--gray-3)' }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: on ? 'var(--green-text)' : 'var(--gray-3)' }}>
                   <span aria-hidden="true">{on ? '✓' : '✕'}</span> {c.name}
                 </div>
               </div>

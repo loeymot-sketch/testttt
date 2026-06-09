@@ -132,7 +132,7 @@ function ModalPointsGain({ onClose, onSee, gain = 25 }) {
       <div style={{ position: 'relative', background: 'var(--yellow)', borderRadius: 28, padding: '32px 24px', textAlign: 'center', maxWidth: 320, boxShadow: '8px 8px 0 var(--ink)' }}>
         <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--ink)' }}>// Bienvenue au club</div>
         <div id="modal-points-gain-title" className="lc-display" style={{ fontSize: 88, lineHeight: 0.85, color: 'var(--ink)', margin: '6px 0 4px' }}>+{gain}</div>
-        <div className="lc-display" style={{ fontSize: 24, lineHeight: 0.9, color: 'var(--orange)' }}>points gagnés</div>
+        <div className="lc-display" style={{ fontSize: 24, lineHeight: 0.9, color: 'var(--ink)' }}>points gagnés</div>
         <p style={{ fontSize: 12.5, color: 'var(--gray-4)', margin: '14px 0 18px', lineHeight: 1.45 }}>Tu fais partie du club Le Cayenne. Continue à commander pour débloquer des récompenses gratuites.</p>
         <button onClick={onSee} className="lc-btn" style={{ background: 'var(--ink)', color: '#fff', width: '100%', height: 50, marginBottom: 8 }}>Voir ma carte</button>
         <button onClick={onClose} style={{ background: 'transparent', border: 0, color: 'var(--gray-4)', fontSize: 12, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}>Plus tard</button>
@@ -156,7 +156,7 @@ function ModalRedeem({ onClose, onConfirm, reward = 'Burger gratuit', cost = 100
         </div>
         <div style={{ textAlign: 'right' }}>
           <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--gray-3)' }}>Tu dépenses</div>
-          <div className="lc-display" style={{ fontSize: 24, color: 'var(--orange)', lineHeight: 1 }}>−{cost}</div>
+          <div className="lc-display" style={{ fontSize: 24, color: 'var(--orange-text)', lineHeight: 1 }}>−{cost}</div>
           <div style={{ fontSize: 11, color: 'var(--gray-4)' }}>points</div>
         </div>
       </div>
@@ -224,7 +224,7 @@ function ScreenOrderDetail({ go, orderId = 'C-1234' }) {
         {items ? (
           <>
             <div style={{ padding: '6px 20px 0' }}>
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', background: isDelivered ? 'var(--green)' : 'var(--orange)', color: '#fff', borderRadius: 999, fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase' }}>{isDelivered ? '✓' : '●'} {status}</div>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', background: isDelivered ? 'var(--green-text)' : 'var(--orange-text)', color: '#fff', borderRadius: 999, fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase' }}>{isDelivered ? '✓' : '●'} {status}</div>
               <h1 className="lc-display" style={{ margin: '8px 0 2px', fontSize: 38, lineHeight: 0.9, color: 'var(--ink)' }}>#{orderId}</h1>
               <div style={{ fontSize: 12, color: 'var(--gray-3)' }}>{dateLabel} · {branch}</div>
             </div>
@@ -240,7 +240,7 @@ function ScreenOrderDetail({ go, orderId = 'C-1234' }) {
               ))}
               <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 14, marginTop: 6, borderTop: '2px solid var(--ink)' }}>
                 <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--gray-3)' }}>Total</span>
-                <span className="lc-display" style={{ fontSize: 24, color: 'var(--orange)' }}>{total.toFixed(2).replace('.', ',')} €</span>
+                <span className="lc-display" style={{ fontSize: 24, color: 'var(--orange-text)' }}>{total.toFixed(2).replace('.', ',')} €</span>
               </div>
             </div>
             <div style={{ margin: '14px 20px 0', background: 'var(--ink)', color: '#fff', borderRadius: 18, padding: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>

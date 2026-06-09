@@ -644,8 +644,8 @@
   font-weight: 700;
   font-size: 14px;
 }
-.rdl-hist-pts.earn  { color: var(--green); }
-.rdl-hist-pts.spend { color: var(--red); }
+.rdl-hist-pts.earn  { color: var(--green-text); } /* [E2E a11y 2026-06-09] --green/--red (3.x:1) -> AA text tokens */
+.rdl-hist-pts.spend { color: var(--red-text); }
 
 
 /* ======================================================
