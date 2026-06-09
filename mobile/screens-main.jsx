@@ -848,7 +848,7 @@ function ScreenOrders({ go }) {
                 <div key={o.id} role="button" tabIndex={0} aria-label={`Commande ${o.id} en cours — voir détails`} className="lc-tap" onClick={() => go('orderDetail', o.id)} onKeyDown={window.lcTapKey(() => go('orderDetail', o.id))} style={{ background: 'var(--ink)', color: '#fff', borderRadius: 20, padding: 20, position: 'relative', overflow: 'hidden', cursor: 'pointer', marginBottom: 12 }}>
                   <div style={{ position: 'absolute', top: -20, right: -20, width: 140, height: 140, opacity: 0.06 }}><I.Pepper size={140} stroke="#FF5A1F"/></div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span className="lc-pill" style={{ background: 'var(--orange)', color: '#fff' }}><span className="lc-status-dot" style={{ background: '#fff' }}/> {statusLabel}</span>
+                    <span className="lc-pill" style={{ background: 'var(--orange-text)', color: '#fff' }}><span className="lc-status-dot" style={{ background: '#fff' }}/> {statusLabel}</span>
                     <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'rgba(255,255,255,0.6)' }}>#{o.id}</span>
                   </div>
                   <div className="lc-display" style={{ fontSize: 36, marginTop: 14, color: 'var(--yellow)' }}>~{eta} MIN</div>

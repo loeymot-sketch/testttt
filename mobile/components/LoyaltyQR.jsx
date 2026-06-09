@@ -53,17 +53,21 @@
     const expiringSoon = remainingMs < 60000;
 
     return (
-      <div data-testid="loyalty-qr" data-payload={payload} role="img" aria-label={'Code QR fidélité ' + payload + ', expire dans ' + countdownText}>
+      <div data-testid="loyalty-qr" data-payload={payload}>
         {/* SR-only live region for QR refresh announcements */}
         <div ref={liveRegionRef} role="status" aria-live="polite" aria-atomic="true" style={{ position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', border: 0 }} />
-        {/* The actual QR/Barcode visual */}
-        {mode === 'barcode' ? (
-          <window.BarcodeMock value={payload} width={264} height={88} />
-        ) : (
-          <div className={remainingMs > 0 && !expiringSoon ? 'lc-pulse' : ''} style={{ borderRadius: 12, padding: 4, display: 'inline-block' }}>
-            <window.QRMock size={208} value={payload} />
-          </div>
-        )}
+        {/* The actual QR/Barcode visual — role="img" scoped to the visual ONLY so the
+            refresh button + timer below stay interactive (was on the outer container,
+            which made them nested-interactive descendants of an image). */}
+        <div role="img" aria-label={'Code QR fidélité ' + payload}>
+          {mode === 'barcode' ? (
+            <window.BarcodeMock value={payload} width={264} height={88} />
+          ) : (
+            <div className={remainingMs > 0 && !expiringSoon ? 'lc-pulse' : ''} style={{ borderRadius: 12, padding: 4, display: 'inline-block' }}>
+              <window.QRMock size={208} value={payload} />
+            </div>
+          )}
+        </div>
         {/* Member badge */}
         <div style={{ marginTop: 10, textAlign: 'center' }}>
           <div className="lc-eyebrow" style={{ color: 'var(--gray-4)' }} data-testid="loyalty-member-number">
