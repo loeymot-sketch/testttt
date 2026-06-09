@@ -901,7 +901,7 @@ function ScreenStepRecap({ item, selections, setSelections, headingRef }) {
             <I.Minus size={14} stroke="#fff"/>
           </button>
           <span aria-live="polite" style={{ color: 'var(--orange)', fontFamily: 'var(--font-display)', fontSize: 24, minWidth: 24, textAlign: 'center' }}>{qty}</span>
-          <button onClick={() => setQty(qty + 1)} aria-label="Augmenter la quantité" style={{ width: 32, height: 32, borderRadius: 999, background: 'var(--orange)', border: 0, color: '#fff', cursor: 'pointer' }}>
+          <button onClick={() => setQty(qty + 1)} aria-label="Augmenter la quantité" style={{ width: 32, height: 32, borderRadius: 999, background: 'var(--orange-text)', border: 0, color: '#fff', cursor: 'pointer' }}>
             <I.Plus size={14} stroke="#fff"/>
           </button>
         </div>
@@ -1172,7 +1172,7 @@ function ScreenItemDirectAdd({ item, selections, setSelections, go, addToCart })
                 <I.Minus size={14} stroke="#fff"/>
               </button>
               <span aria-live="polite" style={{ color: 'var(--orange)', fontFamily: 'var(--font-display)', fontSize: 24, minWidth: 24, textAlign: 'center' }}>{qty}</span>
-              <button onClick={() => setQty(qty + 1)} aria-label="Augmenter la quantité" style={{ width: 32, height: 32, borderRadius: 999, background: 'var(--orange)', border: 0, color: '#fff', cursor: 'pointer' }}>
+              <button onClick={() => setQty(qty + 1)} aria-label="Augmenter la quantité" style={{ width: 32, height: 32, borderRadius: 999, background: 'var(--orange-text)', border: 0, color: '#fff', cursor: 'pointer' }}>
                 <I.Plus size={14} stroke="#fff"/>
               </button>
             </div>

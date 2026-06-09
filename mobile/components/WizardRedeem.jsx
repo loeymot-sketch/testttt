@@ -250,7 +250,7 @@
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.4fr', gap: 10 }}>
                   <button data-testid="redeem-share-btn" onClick={onShare} className="lc-btn" style={{ background: 'var(--cream)', color: 'var(--ink)', height: 50 }}>Partager</button>
-                  <button data-testid="redeem-close-btn" onClick={onClose} className="lc-btn" style={{ background: 'var(--orange)', color: '#fff', height: 50 }}>Fermer</button>
+                  <button data-testid="redeem-close-btn" onClick={onClose} className="lc-btn" style={{ background: 'var(--orange-text)', color: '#fff', height: 50 }}>Fermer</button>
                 </div>
               </div>
             )}

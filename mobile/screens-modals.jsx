@@ -168,7 +168,7 @@ function ModalRedeem({ onClose, onConfirm, reward = 'Burger gratuit', cost = 100
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.6fr', gap: 10, marginTop: 18 }}>
         <button onClick={onClose} className="lc-btn" style={{ background: 'var(--cream)', color: 'var(--ink)', height: 54 }}>Annuler</button>
-        <button onClick={onConfirm} className="lc-btn" style={{ background: 'var(--orange)', color: '#fff', height: 54 }}>Confirmer</button>
+        <button onClick={onConfirm} className="lc-btn" style={{ background: 'var(--orange-text)', color: '#fff', height: 54 }}>Confirmer</button>
       </div>
     </ModalShell>
   );
@@ -188,7 +188,7 @@ function ModalCardLink({ onClose, onScan }) {
         <div style={{ position: 'absolute', bottom: 24, right: 24, width: 24, height: 24, borderBottom: '4px solid var(--yellow)', borderRight: '4px solid var(--yellow)', borderBottomRightRadius: 14 }}/>
         <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>Cadre la carte ici</div>
       </div>
-      <button onClick={onScan} className="lc-btn" style={{ background: 'var(--orange)', color: '#fff', width: '100%', height: 54, marginTop: 16 }}>Activer l'appareil photo</button>
+      <button onClick={onScan} className="lc-btn" style={{ background: 'var(--orange-text)', color: '#fff', width: '100%', height: 54, marginTop: 16 }}>Activer l'appareil photo</button>
       <button onClick={onClose} style={{ background: 'transparent', border: 0, color: 'var(--gray-4)', fontSize: 12, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', display: 'block', margin: '12px auto 0' }}>Pas maintenant</button>
     </ModalShell>
   );
@@ -266,7 +266,7 @@ function ScreenOrderDetail({ go, orderId = 'C-1234' }) {
         )}
       </div>
       <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, background: '#fff', padding: '14px 20px 30px', borderTop: '1px solid var(--gray-1)' }}>
-        <button onClick={() => go(items ? 'menu' : 'orders')} className="lc-btn" style={{ background: 'var(--orange)', color: '#fff', width: '100%', height: 56 }}>{items ? '↻ Recommander' : '← Retour'}</button>
+        <button onClick={() => go(items ? 'menu' : 'orders')} className="lc-btn" style={{ background: 'var(--orange-text)', color: '#fff', width: '100%', height: 56 }}>{items ? '↻ Recommander' : '← Retour'}</button>
       </div>
     </div>
   );
@@ -311,7 +311,7 @@ function ModalWalletV0Notice({ onClose, onSeeQR, kind = 'apple' }) {
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
           <button onClick={onClose} className="lc-btn" style={{ background: 'var(--cream)', color: 'var(--ink)', height: 50 }}>Fermer</button>
-          <button onClick={onSeeQR} className="lc-btn" style={{ background: 'var(--orange)', color: '#fff', height: 50 }}>Voir mon QR</button>
+          <button onClick={onSeeQR} className="lc-btn" style={{ background: 'var(--orange-text)', color: '#fff', height: 50 }}>Voir mon QR</button>
         </div>
       </ModalShell>
     </div>
