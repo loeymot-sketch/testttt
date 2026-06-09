@@ -1000,7 +1000,7 @@ function ScreenProfile({ go }) {
               </div>
             ))}
           </div>
-          <button onClick={() => go('logout')} style={{ width: '100%', marginTop: 12, background: 'transparent', border: 0, padding: 16, fontSize: 13, fontWeight: 700, color: 'var(--red)', textTransform: 'uppercase', letterSpacing: '0.1em', cursor: 'pointer' }}>Se déconnecter</button>
+          <button onClick={() => go('logout')} style={{ width: '100%', marginTop: 12, background: 'transparent', border: 0, padding: 16, fontSize: 13, fontWeight: 700, color: 'var(--red-text)', textTransform: 'uppercase', letterSpacing: '0.1em', cursor: 'pointer' }}>Se déconnecter</button>
         </div>
       </div>
     </div>
@@ -1395,7 +1395,7 @@ function PromoCodeRow({ onApply }) {
         <button onClick={apply} disabled={!code.trim()} aria-label="Appliquer le code promo" style={{ padding: '0 16px', fontSize: 12, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', background: code.trim() ? 'var(--ink)' : 'var(--gray-1)', color: code.trim() ? 'var(--yellow)' : 'var(--gray-3)', border: 0, borderRadius: 10, cursor: code.trim() ? 'pointer' : 'not-allowed' }}>Appliquer</button>
       </div>
       {status === 'invalid' && (
-        <div role="alert" aria-live="assertive" style={{ marginTop: 4, fontSize: 11, color: 'var(--red)', fontWeight: 600 }}>Code invalide</div>
+        <div role="alert" aria-live="assertive" style={{ marginTop: 4, fontSize: 11, color: 'var(--red-text)', fontWeight: 600 }}>Code invalide</div>
       )}
     </div>
   );

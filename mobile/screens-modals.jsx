@@ -331,7 +331,7 @@ function ModalOptOutConfirm({ onClose, onConfirm }) {
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', background: 'var(--red-text)', color: '#fff', borderRadius: 999, fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase' }}>⚠ RGPD</div>
         <h2 id="modal-opt-out-title" className="lc-display" style={{ margin: '12px 0 4px', fontSize: 30, lineHeight: 0.92, color: 'var(--ink)' }}>Désactiver mon<br/>compte fidélité ?</h2>
         <p style={{ margin: '0 0 14px', color: 'var(--gray-4)', fontSize: 13, lineHeight: 1.5 }}>
-          Tes points ne seront plus crédités lors de tes achats. <b style={{ color: 'var(--red)' }}>Tes {currentBalance} points actuels seront effacés</b> (droit à l'effacement, RGPD article 17). Cette action est irréversible.
+          Tes points ne seront plus crédités lors de tes achats. <b style={{ color: 'var(--red-text)' }}>Tes {currentBalance} points actuels seront effacés</b> (droit à l'effacement, RGPD article 17). Cette action est irréversible.
         </p>
         <div style={{ background: 'var(--yellow-soft)', borderRadius: 12, padding: 12, marginBottom: 16, fontSize: 12, color: 'var(--ink)', display: 'flex', gap: 8 }}>
           <span style={{ flexShrink: 0 }}>ℹ︎</span>
