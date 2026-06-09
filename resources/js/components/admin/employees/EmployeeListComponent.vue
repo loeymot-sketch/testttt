@@ -110,7 +110,7 @@
                         <tr class="db-table-body-tr" v-for="employee in employees" :key="employee">
                             <td class="db-table-body-td">{{ textShortener(employee.name, 20) }}</td>
                             <td class="db-table-body-td">{{ employee.email }}</td>
-                            <td class="db-table-body-td">{{ employee.phone ? employee.country_code + '' + employee.phone
+                            <td class="db-table-body-td">{{ employee.phone ? (employee.country_code || '') + employee.phone
                                 : '' }}</td>
                             <td class="db-table-body-td">{{ employee.role }}</td>
                             <td class="db-table-body-td">
