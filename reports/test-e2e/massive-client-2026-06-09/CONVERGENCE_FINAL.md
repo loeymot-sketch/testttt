@@ -84,7 +84,14 @@ An exhaustive self-grep (the deterministic part of a completeness sweep) found t
 
 **Anti-landmine check:** every referenced `--*-text`/`--*-dark` token is now defined in its app (mobile 7/7, web 3/3) — no undefined-token fallbacks remain. Remaining `--green/red/orange` are all verified dark-bg / large-display / icon / border (all pass).
 
-### Final convergence: 16 surfaces ×2 CLEAN (no regression across all of M-4/M-5/W-3/W-4).
+### Adversarial round 3 — 2 more missed siblings (M-6) + 1 owner-gate (P2)
+Round-3 (final gate) confirmed the token-regression CLOSED (anti-landmine table clean, all swaps pass AA, i18n clean, numeric reconciles) but found the "fixed the modal, missed the parallel component" pattern once more:
+- **Wave M-6 (commit 9549b8292)** — `components/WizardRedeem.jsx` (redeem flow, never scanned): ★ Récompense pill white-on-`--orange` (3.12:1)→`--orange-text`; error banner white-on-`--red` (4.34:1)→`--red-text`; "−N pts" cost (2.91:1)→`--orange-text`; balance-after `--green`/`--red` (2.96:1)→`--green-text`/`--red-text`. Redeem step now axe CLEAN.
+
+### OPEN — OWNER GATE (P2, NOT silently fixed): mobile primary orange CTAs
+`.lc-btn` is `font-size:15px; font-weight:700` (styles.css:88) = normal text (below the 18.66px-bold large threshold). The ~10 inline primary CTAs with `background:var(--orange)` + white text (e.g. cart "VALIDER MA COMMANDE · 2,40 €", "Confirmer", "Voir mon QR") render at **3.14:1 — FAIL AA 4.5:1**. The WEB app already resolved this (`.lc-btn--orange { background: var(--orange-text) }`, 5.18:1, owner-accepted per W3-HEAL P1-02). Mobile kept `--orange` for solid fills per the documented mobile palette mandate (NOIR/ORANGE/JAUNE/BLANC). **This is a brand decision, not a silent fix (CLAUDE.md §10/§12)** — escalated to owner: mirror web (swap mobile primary-CTA fills to `--orange-text` = subtle burnt-orange shift, closes AA) OR formally exempt white-on-brand-orange fills. Tracked separately; does NOT block the a11y loop's closure for all non-CTA surfaces.
+
+### Final convergence: 16 surfaces ×2 CLEAN + redeem flow CLEAN (no regression across M-4/M-5/M-6/W-3/W-4). Only open item = the owner-gate CTA decision above.
 
 ## Lessons (codified)
 1. Targeted/top-level axe is necessary but NOT sufficient — **5 of 8 (M/M-2) + the entire M-3 cluster + the M-5/W-3/W-4 long tail lived in SUB-STATES** (tabs, modals, completed-toggle, delivered orders, leaderboard, promo-applied, ticket) the landing sweep never reaches. Adversarial "what states did you NOT navigate?" + empirical sub-state sweep + exhaustive grep is what closes it.
