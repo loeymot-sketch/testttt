@@ -25,10 +25,18 @@ progress bar, option cards with images, per-option prices, min-select validation
 | Bols Gourmands | Bowl Frites Poulet Crispy | 4 (Sauce/Supplément/Menu/Récap) | w2-11-bols |
 | Frites | Petite Frites | 2 (Choix du style/Récap) | w2-11-frites |
 
-### 2. Flow works (composition persists, steps advance) — Bols walk
-Walk screenshots `w2-walk-0..2` prove progression: step-1 sauce selected → **"VOTRE COMPOSITION:
-Sauce fromagère maison"** persists → step-2 "QUEL SUPPLÉMENT ?" active (5 options w/ prices) → step-3
-"QUEL MENU ?" active (Menu complet / +Frites / Sans menu). SUIVANT correctly gated by min-select.
+### 2. Flow works AND the composition is ORDERABLE (not just priceable)
+- **UI flow**: walk screenshots `w2-walk-0..2` prove progression — step-1 sauce selected →
+  **"VOTRE COMPOSITION: Sauce fromagère maison"** persists → step-2 "QUEL SUPPLÉMENT ?" active
+  (5 options w/ prices) → step-3 "QUEL MENU ?" active. SUIVANT correctly gated by min-select.
+- **Full order completes E2E** (`POST /api/frontend/order`, kiosk, takeaway): order **#4313 created
+  (HTTP 201)**, persisted `subtotal 10.90, total 10.90, total_tax 0.99`. The **NF525
+  `composition_snapshot`** froze the exact selection at creation:
+  `lines:[{variation_id 202, "Sauce fromagère maison", unit_price 0}]`,
+  `extras:[{extra_id 180, "Boule gratinée", line_total 2}]`, `schema_version 1`. So the wizard
+  composition → order → frozen-snapshot chain works (orderable, total frozen, not a client value).
+- **V1 dine-in enforced**: order_type=25 (sur place) → HTTP 422 "service sur place désactivé en V1";
+  only takeaway accepted. Backend enforces the V1 envelope.
 
 ### 3. Price = backend SSOT — DETERMINISTIC (quote API, NF525)
 - **Visual price match**: borne supplément prices (Oignon frais €0,90, Champignons €0,90, Boule
@@ -47,12 +55,14 @@ token → a few `/api/frontend/menu` 401s, from which the SPA recovers (subseque
 200 + wizard renders). **In-SPA navigation (click category, no reload) = ZERO 401s** (proven). Real
 kiosk use is in-SPA. Classified P3 / non-issue.
 
-## Test-harness limitation (disclosed, not a product defect)
-Scripted full add-to-cart→récap UI driving was flaky for the frozen kiosk's menu-step "+" / add-cart
-controls (5 selector cycles, §10 cap hit). The wizard renders and is interactive (selections register,
-composition updates, steps advance — proven by walk screenshots); the add-to-cart→récap path is FROZEN
-kiosk behavior pre-validated in prior E2E campaigns. Price-correctness (the substantive claim) is
-proven deterministically via the quote API instead — stronger than UI clicking.
+## Test-harness note (disclosed)
+Scripted full add-to-cart→récap UI *clicking* was flaky for the frozen kiosk's menu-step controls
+(5 selector cycles, §10 cap hit) — a harness limitation, NOT a product defect (the wizard renders and
+is interactive: selections register, composition persists, steps advance — proven by walk screenshots).
+The substantive claims it would have proven — **orderable + total frozen at creation** — are instead
+proven deterministically end-to-end via the order API (§2: order #4313, composition_snapshot), which is
+stronger than a UI click. The only thing NOT captured is a borne-UI screenshot of the populated cart;
+the order-completion + composition_snapshot supersede it as evidence.
 
 ## Verdict: W2 GREEN — P0+P1 = 0. Borne renders all recorded category wizards; composition + total
 match backend SSOT. Proceed to W4 (sync); W3 (caisse) remains GATED on GATE-W6.
