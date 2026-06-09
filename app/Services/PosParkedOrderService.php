@@ -8,6 +8,7 @@ use App\Models\ItemVariation;
 use App\Models\PosParkedOrder;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -71,7 +72,9 @@ final class PosParkedOrderService
 
     public function recall(int $userId, int $branchId, int $parkedId): ?PosParkedOrder
     {
-        return DB::transaction(function () use ($userId, $branchId, $parkedId): ?PosParkedOrder {
+        $cacheKey = $this->recallSnapshotCacheKey($userId, $branchId, $parkedId);
+
+        return DB::transaction(function () use ($userId, $branchId, $parkedId, $cacheKey): ?PosParkedOrder {
             $parked = PosParkedOrder::query()
                 ->where('id', $parkedId)
                 ->where('user_id', $userId)
@@ -80,26 +83,45 @@ final class PosParkedOrderService
                 ->first();
 
             if (! $parked) {
-                return null;
+                // [CAISSE-02] Recall is destructive (hard delete). If the success response is lost
+                // (a tab reload mid-request) and the client retries the GET, the row is already gone
+                // and a 404 would PERMANENTLY lose the parked ticket. Serve the snapshot cached on the
+                // first recall so the retried GET is idempotent. Single-box file cache is sufficient.
+                $cached = Cache::get($cacheKey);
+
+                return $cached instanceof PosParkedOrder ? $cached : null;
             }
 
-            $unavailableVariationWarnings = [];
-            $payload = is_array($parked->payload_json) ? $parked->payload_json : [];
-            $prunedPayload = $this->pruneUnavailableParkedVariations($payload, $unavailableVariationWarnings);
-
-            $snapshot = $parked->replicate();
-            $snapshot->setAttribute('id', $parked->id);
-            $snapshot->setAttribute('created_at', $parked->created_at);
-            $snapshot->setAttribute('updated_at', $parked->updated_at);
-            $snapshot->payload_json = $prunedPayload;
-            $snapshot->setAttribute('warnings', [
-                'unavailable_variations' => $unavailableVariationWarnings,
-            ]);
+            $snapshot = $this->buildRecallSnapshot($parked);
 
             $parked->delete();
+            Cache::put($cacheKey, $snapshot, now()->addMinutes(10));
 
             return $snapshot;
         });
+    }
+
+    private function buildRecallSnapshot(PosParkedOrder $parked): PosParkedOrder
+    {
+        $unavailableVariationWarnings = [];
+        $payload = is_array($parked->payload_json) ? $parked->payload_json : [];
+        $prunedPayload = $this->pruneUnavailableParkedVariations($payload, $unavailableVariationWarnings);
+
+        $snapshot = $parked->replicate();
+        $snapshot->setAttribute('id', $parked->id);
+        $snapshot->setAttribute('created_at', $parked->created_at);
+        $snapshot->setAttribute('updated_at', $parked->updated_at);
+        $snapshot->payload_json = $prunedPayload;
+        $snapshot->setAttribute('warnings', [
+            'unavailable_variations' => $unavailableVariationWarnings,
+        ]);
+
+        return $snapshot;
+    }
+
+    private function recallSnapshotCacheKey(int $userId, int $branchId, int $parkedId): string
+    {
+        return "pos:parked-recall-snapshot:{$branchId}:{$userId}:{$parkedId}";
     }
 
     /**
