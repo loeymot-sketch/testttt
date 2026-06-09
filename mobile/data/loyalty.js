@@ -46,7 +46,12 @@
   // backend defaults so the UI shows the correct numbers immediately.
   // ───────────────────────────────────────────────────────────────────────
   const CONFIG = {
-    earn_ratio: 10,              // 1 € spent = 10 points (backend default; admin-editable)
+    // [GATE-LOYALTY-1 2026-06-09 owner decision: canonical rate = 1 pt/€] Unifies the advertised
+    // rate (this value, shown on the loyalty banner) with the credited rate (the earn sites all use
+    // Math.round(total) = 1 pt/€). Was 10 here while credit did 1 → a 10× display-vs-credit divergence.
+    // On backend wireup, route every earn computation through computeEarnedPoints() below so the
+    // displayed rate can never drift from the credited rate again.
+    earn_ratio: 1,               // 1 € spent = 1 point (owner-canonical; admin-editable on wireup)
     redeem_ratio: 100,           // 100 points = 1 € discount (backend default)
     min_redeem_points: 100,      // backend kiosk default; controller default is 50 (drift documented)
     expires_after_days: 365,     // V0 mock — backend has no expiry cron yet
@@ -214,6 +219,14 @@
     return points / CONFIG.redeem_ratio;
   }
 
+  // [GATE-LOYALTY-1] Single source of truth for "points earned for a spend". Every earn-display
+  // surface should call this so the credited amount is ALWAYS config-driven and can never diverge
+  // from the advertised earn_ratio again. At earn_ratio=1 this equals Math.round(total) (the V0
+  // credit logic), so adopting it is behaviour-preserving today and drift-proof on wireup.
+  function computeEarnedPoints(total) {
+    return Math.round((Number(total) || 0) * CONFIG.earn_ratio);
+  }
+
   function progressToNext(balance) {
     const next = nextRewardForBalance(balance);
     if (!next || balance >= next.points_cost) return { pct: 100, remaining: 0, target: next };
@@ -288,6 +301,7 @@
     nextRewardForBalance,
     unlockedRewards,
     pointsToDiscount,
+    computeEarnedPoints,
     progressToNext,
   };
 
