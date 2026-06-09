@@ -227,6 +227,41 @@ class FritesWizardComposerTest extends TestCase
         $this->assertGreaterThan(0, $orderId);
     }
 
+    /**
+     * [CAISSE-01 server-side proof] When a frites upgrade (Cheddar fondu) is sent as a REAL catalog
+     * ItemExtra in item_extras, the server (PricingService SSOT) BILLS it — the line's
+     * item_extra_total == 1.00. This isolates the CAISSE-01 defect to the frozen wizard's payload
+     * (it currently emits item_extras=[] + menu_extras TEXT instead of the id). The frozen-wizard
+     * fix = emit the upgrade ids; the server already charges them, as this proves.
+     *
+     * Catalog-modelling note surfaced by this proof: Grande (size) and Cheddar (topping) must live in
+     * SEPARATE max_select=1 groups so BOTH can be selected (+2,00 €) — two extras in one max-1 group
+     * is (correctly) rejected 422 by the quote validation. Recorded in LOCK_CAISSE-01 (awaiting §10).
+     */
+    public function test_CAISSE01_frites_cheddar_upgrade_as_item_extra_is_billed(): void
+    {
+        $this->actingAs($this->operator, 'sanctum');
+
+        $payload = $this->basePayload([
+            'item_price'  => 2.00,
+            'total_price' => 3.00, // base 2.00 + Cheddar 1.00
+            'item_variations' => [['id' => $this->sauceKetchup->id, 'name' => 'Ketchup', 'price' => 0]],
+            'item_extras'     => [['id' => $this->cheddarFondu->id, 'name' => 'Cheddar fondu', 'price' => 1.00]],
+        ]);
+
+        $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->postJson('/api/admin/pos', $this->payloadWithPosQuote($this->operator, $payload));
+
+        $response->assertStatus(201);
+        $orderId = (int) $response->json('data.id');
+
+        // The server SSOT charged the upgrade: the line item_extra_total == 1.00.
+        $orderItem = \App\Models\OrderItem::where('order_id', $orderId)->first();
+        $this->assertNotNull($orderItem, 'order item persisted');
+        $this->assertEquals(1.00, round((float) $orderItem->item_extra_total, 2),
+            'CAISSE-01: server bills a frites upgrade when sent as a catalog item_extra');
+    }
+
     public function test_frites_with_paid_supplementary_sauce_succeeds(): void
     {
         $this->actingAs($this->operator, 'sanctum');
