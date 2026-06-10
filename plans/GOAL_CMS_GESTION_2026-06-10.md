@@ -8,8 +8,11 @@
 
 ## §0 — PRÉAMBULE (gouverne chaque tâche)
 
+### 0.0 ⚠️ PIVOT SPINE (2026-06-10, post-audit topologie)
+La base initiale `3ce18f767` (lignée cms-pr1-quickwins) n'avait que 2 commits docs au-dessus du merge-base `ad29e7875`, alors que la **spine `heal/pre-cloud-exec-2026-06-05` est 269 commits devant** et contient DÉJÀ : waves wizard W1/W2/W4/W5/W6 livrées + parité borne convergée (`plans/GOAL_WIZARD_E2E_PARITY_2026-06-09.md`), validation profonde 100% (PHPUnit 3092/0, Vitest 2098/0), DEVDB-GUARD natif. **Exécution re-basée sur la spine** : branche `goal/cms-gestion-2026-06-10-spine` depuis `7ebb1f252` (même worktree, switch in-place, plan cherry-pické). Voir §5 RE-SCOPE. Anti-fragmentation : ne JAMAIS exécuter un GOAL multi-système sans vérifier `git rev-list --left-right --count <base>...<spine>`.
+
 ### 0.1 Working-tree / discipline
-- **Worktree dédié** `.claude/worktrees/cms-gestion-2026-06-10`, branche `goal/cms-gestion-2026-06-10` depuis `3ce18f767` (checkout `heal/cms-pr1-quickwins-2026-05-18`, là où TOUS les anchors ont été re-vérifiés primary-source 2026-06-10). Le WIP non-commité d'autres sessions (KDS remediation) n'est PAS embarqué — isolation propre.
+- **Worktree dédié** `.claude/worktrees/cms-gestion-2026-06-10`, branche **`goal/cms-gestion-2026-06-10-spine`** depuis spine `7ebb1f252`. Anchors P1/P2 re-vérifiés sur la spine (identiques, sauf delete catégorie = `ItemCategoryService::destroy:165` + FK_CHECKS `:196-198`).
 - **No push** sans owner explicite (CLAUDE.md §10). Commits checkpoint par wave (`checkpoint-commit`), `git add <fichiers explicites>` jamais `-A`.
 - **Pipeline par tâche** = `ultra-audit-profond` (5 specialists RO → implement TDD → RED dispute → test → visual → self-correct ≤3). NON re-décrit ici.
 - **Bootstrap worktree (Wave 0, BLOCKERS certains — vérifié RED 2026-06-10)** : le worktree n'a NI `vendor/` NI `node_modules/` NI aucun `.env*` réel (gitignorés). Wave 0 DOIT : (a) `cp -Rc` vendor depuis le checkout principal (vendor réel non-symlink vérifié) ; (b) copier `node_modules` (ou `npm ci`, build = **Mix**) ; (c) copier `.env`, `.env.testing` (→ `foodking_test` ✓) et `.env.e2e` (→ `foodking_e2e` ✓) depuis le checkout principal + vérifier que la DB `foodking_e2e` existe ; (d) **DEVDB-GUARD est ABSENT de cette branche** (`tests/CreatesApplication.php` = vanilla) → le ré-appliquer (port depuis lignée `pre-cloud-exec`) OU contrôle manuel `.env.testing` avant CHAQUE run PHPUnit.
@@ -121,7 +124,15 @@ Le gérant ajoute/modifie/supprime catégorie, sous-catégorie et produit depuis
 
 ## §5 — PARTIE 3 : BUILDER WIZARD CAISSE + BORNE (waves W) — PAR RÉFÉRENCE
 
-**Document d'exécution = `plans/GOAL_WIZARD_DYNAMIC_BUILDER_2026-06-08.md`** (waves 0-8, anchors re-vérifiés @ 3ce18f767). Ce GOAL l'incorpore tel quel avec ce séquencement et ces ajustements :
+**⚠️ RE-SCOPE POST-PIVOT SPINE (vérifié primary-source 2026-06-10 @ 7ebb1f252)** — l'essentiel des waves est DÉJÀ LIVRÉ sur la spine :
+- **W1 DONE** : `ItemVariation` porte `description`+`image_path` (tags `[W1]`), thumb precedence stored-first
+- **W2 DONE** : `ComposerProfileProjection` émet image+description par choix, prix exclu NF525 (`:98-103,128-130,171`)
+- **W3 DONE (core)** : `allow_repeat` exposé dans `ComposerStepFormPanel.vue` (8 occ.) ; re-edit UI page perso livrée (`70f176abc`)
+- **W4 DONE** : templates turnkey + **16 wizards réels publiés** (6 catégorie : Sandwich Cayenne 5 steps / Galette 4 / Sandwich Classique 5 / Burgers 4 / Tacos 4 / Bols Gourmands 2 ; + 10 item-level) via `ProvisionCayenneWizardsCommand`
+- **W5 DONE** (page perso create+edit) · **W6 DONE (borne)** : `KioskStepGenericChoicesComponent` rend image+desc, box routé générique ; parité borne convergée (`GOAL_WIZARD_E2E_PARITY_2026-06-09.md`)
+- **RESTE P3 exécutable** : (a) **T-W5b suppression d'un wizard ENTIER** (aucun `destroy` profil sur la spine — re-vérifié) ; (b) **G-0c héritage sous-catégorie** (décision + warning UI, lié C1) ; (c) audit visuel/UX builder owner-grade. **Gates owner (hors exécution autonome)** : GATE-W6 caisse = `renderGenericChoicesStep` dans `pos-wizard.js` FROZEN + flip flag (LOCK).
+
+**Document de référence** = `plans/GOAL_WIZARD_DYNAMIC_BUILDER_2026-06-08.md` + `plans/GOAL_WIZARD_E2E_PARITY_2026-06-09.md` (présents sur la spine). Séquencement original (historique, statuts ci-dessus priment) :
 
 | Wave P3 | Contenu (réf. plan wizard) | Frozen ? |
 |---|---|---|
