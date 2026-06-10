@@ -211,7 +211,8 @@
       "choice_logic": "পছন্দের লজিক",
       "preset_single": "একক পছন্দ (১টি বাধ্যতামূলক)",
       "preset_multiple": "একাধিক পছন্দ (মুক্ত)",
-      "preset_custom": "কাস্টম (নিচের সেটিংস)"
+      "preset_custom": "কাস্টম (নিচের সেটিংস)",
+      "min_max_summary_required_one": "= বাধ্যতামূলক, ঠিক ১টি নির্বাচন করতে হবে।"
     },
     "wizard_configured": "উইজার্ড কনফিগার করা",
     "view_product": "পণ্য দেখুন",
@@ -280,7 +281,7 @@
     "catalog_pos_kiosk": "পিওএস / কিয়স্ক",
     "catalog_summary_aria": "ক্যাটালগ সারাংশ",
     "catalog_actions_aria": "ক্যাটালগ ক্রিয়াকলাপ",
-    "catalog_metric_products": "পণ্য",
+    "catalog_metric_products": "পণ্য | পণ্য | পণ্য",
     "catalog_metric_categories": "বিভাগ",
     "catalog_metric_active": "সক্রিয়",
     "catalog_metric_unavailable": "অনুপলব্ধ",
@@ -832,7 +833,10 @@
     "surface": "সারফেস",
     "parent_category": "মূল ক্যাটাগরি",
     "none": "কোনটি নয়",
-    "subcategory_of": "উপ-ক্যাটাগরি"
+    "subcategory_of": "উপ-ক্যাটাগরি",
+    "add_category_title": "ক্যাটাগরি যোগ করুন",
+    "edit_category_title": "ক্যাটাগরি সম্পাদনা",
+    "no_file_chosen": "কোনো ফাইল নির্বাচিত হয়নি"
   },
   "button": {
     "kds_print_ticket": "টিকিট প্রিন্ট করুন",
@@ -932,7 +936,8 @@
     "composer": {
       "choose_template_v2": "একটি টেমপ্লেট বেছে নিন",
       "add_page_manual": "ম্যানুয়ালি পৃষ্ঠা যোগ করুন"
-    }
+    },
+    "choose_file": "ছবি নির্বাচন করুন"
   },
   "number": {
     "10": "10",
@@ -1049,7 +1054,8 @@
       "toggle_success": "স্ট্যাটাস আপডেট হয়েছে।",
       "toggle_error": "আপডেট ব্যর্থ হয়েছে। আবার চেষ্টা করুন।"
     },
-    "subcategory_wizard_hint": "মূল ক্যাটাগরির উইজার্ড উপ-ক্যাটাগরিতে স্বয়ংক্রিয়ভাবে প্রযোজ্য হয় না।"
+    "subcategory_wizard_hint": "মূল ক্যাটাগরির উইজার্ড উপ-ক্যাটাগরিতে স্বয়ংক্রিয়ভাবে প্রযোজ্য হয় না।",
+    "parent_locked_has_children": "এই ক্যাটাগরির উপ-ক্যাটাগরি আছে: এটি নিজে উপ-ক্যাটাগরি হতে পারে না।"
   },
   "kiosk": {
     "welcome": "Bienvenue !",
@@ -1723,7 +1729,7 @@
     "category_wizard_button": "ক্যাটাগরির উইজার্ড",
     "product_composer_button": "কম্পোজ / পণ্যের উইজার্ড",
     "category_wizard_hint": "এই উইজার্ড এই ক্যাটাগরির সমস্ত পণ্যের জন্য প্রযোজ্য।",
-    "products_count": "{n} পণ্য",
+    "products_count": "{n} পণ্য | {n} পণ্য | {n} পণ্য",
     "advanced_settings": "উন্নত সেটিংস",
     "stock_link": "স্টক ড্যাশবোর্ড",
     "quick_create_product": "দ্রুত পণ্য যোগ করুন",

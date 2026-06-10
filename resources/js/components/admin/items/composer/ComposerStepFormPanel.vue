@@ -12,7 +12,9 @@
             />
         </label>
 
-        <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <!-- [GOAL POLISH T-P2.4 — B-005] 1 colonne : dans le rail 390px, 2
+             colonnes tronquaient les selects (« Toutes les op… »). -->
+        <div class="grid grid-cols-1 gap-4">
             <label class="block">
                 <span class="mb-1 flex items-center gap-2 text-sm font-semibold text-[#405149]">
                     {{ t('label.composer.source_type_human', "D'où viennent les choix ?") }}
@@ -252,7 +254,9 @@
                 {{ t('label.composer.min_max_summary_optional_one', '= Optionnel, le client peut choisir 1 article maximum.') }}
             </span>
             <span v-else-if="Number(draft.min_select) === Number(draft.max_select)">
-                {{ t('label.composer.min_max_summary_required_n', '= Obligatoire, le client doit choisir exactement {n} articles.', { n: Number(draft.min_select) }) }}
+                {{ Number(draft.min_select) === 1
+                    ? t('label.composer.min_max_summary_required_one', '= Obligatoire, le client doit choisir exactement 1 article.')
+                    : t('label.composer.min_max_summary_required_n', '= Obligatoire, le client doit choisir exactement {n} articles.', { n: Number(draft.min_select) }) }}
             </span>
             <span v-else>
                 {{ t('label.composer.min_max_summary_range', '= Le client peut choisir entre {min} et {max} articles.', { min: Number(draft.min_select), max: Number(draft.max_select) }) }}

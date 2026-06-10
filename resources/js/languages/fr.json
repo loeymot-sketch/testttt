@@ -561,7 +561,8 @@
       "choice_logic": "Logique des choix",
       "preset_single": "Choix unique (1 obligatoire)",
       "preset_multiple": "Choix multiples (libre)",
-      "preset_custom": "Personnalisé (réglages ci-dessous)"
+      "preset_custom": "Personnalisé (réglages ci-dessous)",
+      "min_max_summary_required_one": "= Obligatoire, le client doit choisir exactement 1 article."
     },
     "wizard_configured": "Wizard configuré",
     "view_product": "Voir le produit",
@@ -666,7 +667,7 @@
     "catalog_pos_kiosk": "POS / borne",
     "catalog_summary_aria": "Résumé catalogue",
     "catalog_actions_aria": "Actions catalogue",
-    "catalog_metric_products": "produits",
+    "catalog_metric_products": "PRODUIT | PRODUIT | PRODUITS",
     "catalog_metric_categories": "catégories",
     "catalog_metric_active": "actifs",
     "catalog_metric_unavailable": "indisponibles",
@@ -1391,7 +1392,10 @@
     "surface": "Surface",
     "parent_category": "Catégorie parente",
     "none": "Aucune",
-    "subcategory_of": "sous-catégorie de"
+    "subcategory_of": "sous-catégorie de",
+    "add_category_title": "Ajouter une catégorie",
+    "edit_category_title": "Modifier la catégorie",
+    "no_file_chosen": "Aucun fichier choisi"
   },
   "button": {
     "try_again": "Réessayer",
@@ -1504,7 +1508,8 @@
       "choose_template_v2": "Choisir un template",
       "add_page_manual": "Ajouter une page manuellement"
     },
-    "menu": "Menu"
+    "menu": "Menu",
+    "choose_file": "Choisir une image"
   },
   "error": {
     "rate_limited": "Trop de requêtes — patientez {seconds}s avant de réessayer.",
@@ -1638,7 +1643,8 @@
       "toggle_success": "Statut mis à jour.",
       "toggle_error": "Échec de la mise à jour. Réessaye."
     },
-    "subcategory_wizard_hint": "Le wizard d'une catégorie parente ne s'applique pas automatiquement à ses sous-catégories."
+    "subcategory_wizard_hint": "Le wizard d'une catégorie parente ne s'applique pas automatiquement à ses sous-catégories.",
+    "parent_locked_has_children": "Cette catégorie a des sous-catégories : elle ne peut pas devenir elle-même une sous-catégorie."
   },
   "kiosk": {
     "dine_in": "Sur place",
@@ -2221,7 +2227,7 @@
     "category_wizard_button": "Wizard de la catégorie",
     "category_wizard_hint": "Ce wizard s'applique à TOUS les produits de cette catégorie.",
     "product_composer_button": "Composer / wizard du produit",
-    "products_count": "{n} articles",
+    "products_count": "{n} article | {n} article | {n} articles",
     "advanced_settings": "Paramètres avancés",
     "stock_link": "Tableau de stock",
     "quick_create_product": "Ajouter rapidement un produit",

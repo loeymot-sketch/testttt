@@ -4,7 +4,7 @@
         <div class="modal-dialog">
             <div class="modal-header">
                 <h3 class="modal-title">{{ $t("menu.item_categories") }}</h3>
-                <button class="modal-close fa-solid fa-xmark text-xl text-slate-400 hover:text-red-500"
+                <button :aria-label="$t('button.close')" class="modal-close fa-solid fa-xmark text-xl text-slate-400 hover:text-red-500"
                     @click="reset"></button>
             </div>
             <div class="modal-body">

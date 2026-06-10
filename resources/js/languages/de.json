@@ -211,7 +211,8 @@
       "choice_logic": "Auswahllogik",
       "preset_single": "Einzelauswahl (1 erforderlich)",
       "preset_multiple": "Mehrfachauswahl (frei)",
-      "preset_custom": "Benutzerdefiniert (Einstellungen unten)"
+      "preset_custom": "Benutzerdefiniert (Einstellungen unten)",
+      "min_max_summary_required_one": "= Pflicht, genau 1 Artikel wählen."
     },
     "wizard_configured": "Wizard konfiguriert",
     "view_product": "Produkt anzeigen",
@@ -280,7 +281,7 @@
     "catalog_pos_kiosk": "Kasse / Kiosk",
     "catalog_summary_aria": "Katalogübersicht",
     "catalog_actions_aria": "Katalogaktionen",
-    "catalog_metric_products": "Produkte",
+    "catalog_metric_products": "PRODUKT | PRODUKT | PRODUKTE",
     "catalog_metric_categories": "Kategorien",
     "catalog_metric_active": "aktiv",
     "catalog_metric_unavailable": "nicht verfügbar",
@@ -832,7 +833,10 @@
     "surface": "Oberfläche",
     "parent_category": "Übergeordnete Kategorie",
     "none": "Keine",
-    "subcategory_of": "Unterkategorie von"
+    "subcategory_of": "Unterkategorie von",
+    "add_category_title": "Kategorie hinzufügen",
+    "edit_category_title": "Kategorie bearbeiten",
+    "no_file_chosen": "Keine Datei gewählt"
   },
   "button": {
     "kds_print_ticket": "Ticket drucken",
@@ -932,7 +936,8 @@
     "composer": {
       "choose_template_v2": "Template waehlen",
       "add_page_manual": "Seite manuell hinzufuegen"
-    }
+    },
+    "choose_file": "Bild auswählen"
   },
   "number": {
     "10": "10",
@@ -1049,7 +1054,8 @@
       "toggle_success": "Status aktualisiert.",
       "toggle_error": "Aktualisierung fehlgeschlagen. Bitte erneut versuchen."
     },
-    "subcategory_wizard_hint": "Der Assistent einer übergeordneten Kategorie gilt nicht automatisch für ihre Unterkategorien."
+    "subcategory_wizard_hint": "Der Assistent einer übergeordneten Kategorie gilt nicht automatisch für ihre Unterkategorien.",
+    "parent_locked_has_children": "Diese Kategorie hat Unterkategorien: sie kann selbst keine Unterkategorie werden."
   },
   "kiosk": {
     "welcome": "Bienvenue !",
@@ -1723,7 +1729,7 @@
     "category_wizard_button": "Kategorie-Assistent",
     "product_composer_button": "Composer / Produkt-Assistent",
     "category_wizard_hint": "Dieser Assistent gilt für ALLE Produkte dieser Kategorie.",
-    "products_count": "{n} Produkte",
+    "products_count": "{n} Artikel | {n} Artikel | {n} Artikel",
     "advanced_settings": "Erweiterte Einstellungen",
     "stock_link": "Lager-Dashboard",
     "quick_create_product": "Produkt schnell hinzufügen",

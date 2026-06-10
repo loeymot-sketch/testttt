@@ -18,7 +18,7 @@
             <div class="catalog-control-plane__metrics" :aria-label="$t('label.catalog_summary_aria')">
                 <button type="button" class="catalog-control-plane__metric" :title="`${itemsCount} ${$t('label.catalog_metric_products')}`" :aria-label="`${$t('label.filter')} ${itemsCount} ${$t('label.catalog_metric_products')}`" @click.prevent="clear">
                     <span>{{ itemsCount }}</span>
-                    <small>{{ $t('label.catalog_metric_products') }}</small>
+                    <small>{{ $t('label.catalog_metric_products', {}, itemsCount) }}</small>
                 </button>
                 <router-link class="catalog-control-plane__metric" :title="`${categoriesCount} ${$t('label.catalog_metric_categories')}`" :aria-label="`${$t('label.view')} ${categoriesCount} ${$t('label.catalog_metric_categories')}`" :to="{ name: 'admin.settings.itemCategory.list' }">
                     <span>{{ categoriesCount }}</span>
@@ -263,7 +263,7 @@
                                             @click.prevent="duplicate(item)"
                                             v-if="permissionChecker('items_create')"
                                         >
-                                            <i class="lab lab-add-circle-line"></i>
+                                            <i class="lab lab-addons"></i>
                                             <span class="db-tooltip">{{ $t('label.duplicate') }}</span>
                                         </button>
                                     </span>
@@ -803,6 +803,11 @@ export default {
     font-size: 11px;
     font-weight: 800;
     text-transform: uppercase;
+    /* [GOAL POLISH T-P2.4 — A-009] "INDISPONIBLES" was clipped in the 4-col
+       grid: let long labels wrap instead of overflowing. */
+    white-space: normal;
+    overflow-wrap: anywhere;
+    line-height: 1.2;
 }
 
 .catalog-control-plane__metric--alert span {

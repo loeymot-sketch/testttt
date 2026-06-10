@@ -531,7 +531,8 @@
       "choice_logic": "Choice logic",
       "preset_single": "Single choice (1 required)",
       "preset_multiple": "Multiple choices (free)",
-      "preset_custom": "Custom (settings below)"
+      "preset_custom": "Custom (settings below)",
+      "min_max_summary_required_one": "= Required, the customer must pick exactly 1 item."
     },
     "wizard_configured": "Wizard configured",
     "view_product": "View product",
@@ -651,7 +652,7 @@
     "catalog_pos_kiosk": "POS / Kiosk",
     "catalog_summary_aria": "Catalog summary",
     "catalog_actions_aria": "Catalog actions",
-    "catalog_metric_products": "products",
+    "catalog_metric_products": "PRODUCT | PRODUCT | PRODUCTS",
     "catalog_metric_categories": "categories",
     "catalog_metric_active": "active",
     "catalog_metric_unavailable": "unavailable",
@@ -1408,7 +1409,10 @@
     "surface": "Surface",
     "parent_category": "Parent category",
     "none": "None",
-    "subcategory_of": "subcategory of"
+    "subcategory_of": "subcategory of",
+    "add_category_title": "Add a category",
+    "edit_category_title": "Edit category",
+    "no_file_chosen": "No file chosen"
   },
   "button": {
     "try_again": "Try again",
@@ -1520,7 +1524,8 @@
       "choose_template_v2": "Choose a template",
       "add_page_manual": "Add a page manually"
     },
-    "menu": "Menu"
+    "menu": "Menu",
+    "choose_file": "Choose an image"
   },
   "error": {
     "something_wrong": "Something Wrong.",
@@ -1639,7 +1644,8 @@
       "toggle_success": "Status updated.",
       "toggle_error": "Update failed. Please try again."
     },
-    "subcategory_wizard_hint": "A parent category wizard does not automatically apply to its subcategories."
+    "subcategory_wizard_hint": "A parent category wizard does not automatically apply to its subcategories.",
+    "parent_locked_has_children": "This category has sub-categories: it cannot become a sub-category itself."
   },
   "kiosk": {
     "dine_in": "Dine in",
@@ -2203,7 +2209,7 @@
     "category_wizard_button": "Category wizard",
     "product_composer_button": "Compose / product wizard",
     "category_wizard_hint": "This wizard applies to ALL products in this category.",
-    "products_count": "{n} articles",
+    "products_count": "{n} product | {n} product | {n} products",
     "advanced_settings": "Advanced settings",
     "stock_link": "Tableau de stock",
     "quick_create_product": "Quick add product",
