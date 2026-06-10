@@ -34,4 +34,12 @@
 ## Suites
 - PHPUnit ciblé : Order 50/50 · Dashboard 28/28 · Items 18/18 · Pos 90/90 · Kds 43/43 · sentinels payment 20/20.
 - Vitest : **311 fichiers / 2128 tests verts** (bruit async pré-existant du KioskWizard frozen en jsdom, fluctuant, 0 échec).
-- PHPUnit complet : 3182 tests — 1er run 6 erreurs/5 échecs sur DB test PARTAGÉE (suspicion flakes inter-sessions, PosSimulationHardware re-run isolé 2× vert) ; rerun complet en cours, verdict en annexe.
+- PHPUnit complet run 1 : 6 erreurs + 5 échecs → triage : les 6 erreurs = **flakes inter-sessions DB test partagée** (re-runs isolés verts ×2) ; les 5 échecs = retombées légitimes de mes fixes, tous corrigés : 3 tests promo (activent désormais `kiosk.promos_redeemable` pour tester la mécanique G7), garde P0 passée à `withoutGlobalScope(BranchScope)` singulier (sentinelle Z6-P1-WGS — soft-deleted exclus à raison de la trace tender).
+- Risky `TpeSimulationDepthSentinelTest` (0 assertion) : **pré-existant sur release/v1** (reproduit à l'identique sur le worktree release) — hors vague.
+- PHPUnit complet run FINAL : voir annexe ci-dessous.
+
+## Pièges process documentés (vécus cette vague)
+- Tokens admin partagés révoqués par les re-logins concurrents des autres sessions → toujours créer un utilisateur dédié par session de validation.
+- Cache redis PARTAGÉ entre serveurs e2e (:8768/:8769) → purger `kiosk.menu.branch.*` avant d'attester un fix de payload menu.
+- FS case-insensitive : `tests/Feature/KDS/` (majuscule) est le chemin canonique — un Write en `Kds/` crée un doublon d'index qui deviendrait 2 dossiers sur le Linux OVH.
+- Un outil data-repair d'une autre session a écrit dans CE worktree à 01:23 (`reports/data-repair/MULTI_VARIATION_AUDIT_2026-06-11.md`, « DB MUTATED ») — vigilance shared-worktree maintenue, fichier non commité.
