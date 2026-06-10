@@ -14,6 +14,11 @@
 - **Options** : (A) porter les 9 fichiers KDS/OSS + 6 fichiers borne + leurs 12 fichiers de tests sur la spine (clean-apply à vérifier), re-run leurs suites ; (B) committer dans le checkout principal sur une branche dédiée et merger ; (C) ignorer (perte de 22 fixes validés).
 - **Recommandation** : A — je peux l'exécuter sur ton GO (aucun frozen touché par ces fixes).
 
+## GATE-Z-GAP-1 — Agrégateur Z : fenêtre par created_at vs gaps sans Z ouvert (NOUVEAU, P1)
+- **Constat (prouvé empiriquement 2026-06-10 sur le clone)** : `ZReportService::aggregate` (FROZEN) fenêtre par `created_at ∈ (opened_at, closed_at]`. Une commande numérotée créée pendant qu'AUCUN Z n'est ouvert (gap entre close N et open N+1) n'est agrégée par AUCUN Z signé — silencieusement. Repro : Z seq 20 fermé à **0,00 € / 0 commande** alors que **10 commandes numérotées PAYÉES (22,70 €)** étaient settled dans sa fenêtre (créées dans le gap 06-08→07:04).
+- **Mitigation livrée (non-frozen)** : détecteur `fiscal:verify-z-membership` healé (classe NO-Z-GAP) + 2 tests régression (4/4). Sur le clone : 2110 orphelins-gap détectés (artefact data de test ; les Z n'étaient ouverts que sporadiquement).
+- **Décisions owner** : (1) exécuter le détecteur healé sur **OVH prod** (combien d'orphelins réels ?) ; (2) trancher le fix d'altitude dans le FROZEN `ZReportService` (rattacher le gap au Z suivant : borne basse = max(closed_at précédent, opened_at) — chantier M6-002/S13-02 déjà gated) ; (3) en attendant : garantir la continuité open/close par cron (jamais de gap pendant le service).
+
 ## GATE-W6 (hérité, re-confirmé) — Parité wizard CAISSE
 - La caisse ne rend les wizards dynamiques que derrière `FK_POS_WIZARD_COMPOSER_AWARE_ENABLED=true` ET il faut écrire un renderer `generic_choices` dans le FROZEN `pos-wizard.js`. Doc : `reports/test-e2e/wizard-parity-2026-06-09/W3_CAISSE_GATE_W6_DECISION.md`. Path A = LOCK + parité ; Path B = dette V1.0.X.
 
