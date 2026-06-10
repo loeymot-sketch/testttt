@@ -39,6 +39,8 @@
     let currentStep = 0;
     let steps = [];
     let selections = {};
+    // [LOCK-W6 heal] per-step "Voir plus" expansion survives re-renders
+    let genericExpanded = {};
     let itemQuantity = 1;
     let instructionText = '';
     let currentCategory = 'unknown'; // module-level so buildTicketInstruction can read it
@@ -559,6 +561,7 @@
 
         var s = [];
         selections = {};
+        genericExpanded = {};
 
         // Detect category and allowed steps
         var category = detectCategory(data);
@@ -1454,9 +1457,14 @@
             s.options.forEach(function (choice) {
                 var count = sel[choice.id] || 0;
                 if (count > 0) {
+                    // [heal RED P2] strip HTML-significant chars from builder
+                    // names: the ticket string is consumed BOTH as innerHTML
+                    // (ticket preview) and plain text (textarea/KDS) — entity
+                    // escaping would leak, stripping kills tag injection.
+                    var safeName = String(choice.name || '').replace(/[<>]/g, '');
                     out.push({
-                        stepKey: s.key, stepLabel: s.label, id: choice.id,
-                        name: choice.name, source_type: choice.source_type,
+                        stepKey: s.key, stepLabel: String(s.label || '').replace(/[<>]/g, ''), id: choice.id,
+                        name: safeName, source_type: choice.source_type,
                         price: composerChoicePrice(choice), count: count
                     });
                 }
@@ -1485,19 +1493,23 @@
             h += '</div>';
         }
 
-        h += '<div class="wizard-options">';
+        var isExpanded = !!genericExpanded[step.key];
+        h += '<div class="wizard-options' + (isExpanded ? ' expanded' : '') + '">';
         var opts = Array.isArray(step.options) ? step.options : [];
-        opts.forEach(function (choice, idx) {
+        // [heal RED P1] collapsed = render only the first 6 (pre-existing CSS
+        // bug: the .wizard-options.expanded reveal rule loses to the
+        // !important hide — frozen CSS untouched, state-driven instead).
+        var renderedOpts = isExpanded ? opts : opts.slice(0, 6);
+        renderedOpts.forEach(function (choice, idx) {
             var count = sel[choice.id] || 0;
             var unavailable = choice.is_available === false;
             var price = composerChoicePrice(choice);
             var classes = 'wizard-option micro-opt';
             if (count > 0) classes += ' selected';
             if (unavailable) classes += ' disabled';
-            if (idx >= 6) classes += ' hidden-opt';
             h += '<div class="' + classes + '" data-type="generic" data-step-key="' + escWiz(step.key) + '" data-id="' + escWiz(choice.id) + '"' + (unavailable ? ' data-unavailable="1"' : '') + '>';
             h += '<span class="check-mark"><i class="fa-solid fa-check"></i></span>';
-            h += renderOptionIcon(choice.image, '🍽️', true, !choice.image);
+            h += renderOptionIcon(escWiz(choice.image), '🍽️', true, !choice.image);
             h += '<span class="option-name">' + escWiz(choice.name) + '</span>';
             if (unavailable) {
                 h += '<span class="option-price">Épuisé</span>';
@@ -1517,7 +1529,12 @@
         });
         h += '</div>';
         if (opts.length > 6) {
-            h += '<button type="button" class="btn-voir-plus">Voir plus</button>';
+            // [heal RED P1] state-driven (genericExpanded) — an inline-onclick
+            // toggle was lost at every refreshWizard() re-render (each card
+            // selection re-collapsed the grid).
+            var hiddenN = opts.length - 6;
+            h += '<button type="button" class="btn-voir-plus generic-voir-plus" data-step-key="' + escWiz(step.key) + '">'
+                + (isExpanded ? '▲ Masquer' : '▼ Voir tous (+' + hiddenN + ')') + '</button>';
         }
         return h;
     }
@@ -4232,18 +4249,20 @@
             var wanted = normalizeStr(m.name || '');
             if (!wanted) return;
             if (m.source_type === 'extra') {
-                var cbs = originalBody.querySelectorAll('.extra .custom-checkbox-field');
-                cbs.forEach(function (cb) {
-                    var scope = cb.closest('.extra');
-                    var lbl = scope ? normalizeStr(scope.textContent || '') : '';
-                    if (lbl.includes(wanted) && !cb.checked) cb.click();
-                });
+                // [heal RED P2] exact-match-first + FIRST match only — the
+                // substring forEach checked every collision ("Cheddar" also
+                // ticked "Double Cheddar"), same defect class as W5-FIX :4209.
+                var cbs = Array.from(originalBody.querySelectorAll('.extra .custom-checkbox-field'));
+                var lblOf = function (cb) { var s = cb.closest('.extra'); return s ? normalizeStr(s.textContent || '') : ''; };
+                var hit = cbs.find(function (cb) { return lblOf(cb) === wanted; })
+                    || cbs.find(function (cb) { return lblOf(cb).includes(wanted); });
+                if (hit && !hit.checked) hit.click();
             } else if (m.source_type === 'addon') {
-                var cards = originalBody.querySelectorAll('.addon');
-                cards.forEach(function (card) {
-                    var lbl = normalizeStr(card.textContent || '');
-                    if (lbl.includes(wanted) && !card.classList.contains('active')) card.click();
-                });
+                var cards = Array.from(originalBody.querySelectorAll('.addon'));
+                var cLbl = function (card) { return normalizeStr(card.textContent || ''); };
+                var cHit = cards.find(function (card) { return cLbl(card) === wanted; })
+                    || cards.find(function (card) { return cLbl(card).includes(wanted); });
+                if (cHit && !cHit.classList.contains('active')) cHit.click();
             } else if (m.source_type === 'variation') {
                 var selects = originalBody.querySelectorAll('select');
                 selects.forEach(function (selEl) {
@@ -5040,6 +5059,7 @@
         currentStep = 0;
         steps = [];
         selections = {};
+        genericExpanded = {};
         itemQuantity = 1;
         instructionText = '';
         currentCategory = 'unknown';
@@ -6184,6 +6204,13 @@
                     sel[id] -= 1;
                     if (sel[id] <= 0) delete sel[id];
                 }
+                refreshWizard();
+            });
+        });
+        wizardEl.querySelectorAll('.generic-voir-plus').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var stepKey = this.getAttribute('data-step-key');
+                genericExpanded[stepKey] = !genericExpanded[stepKey];
                 refreshWizard();
             });
         });

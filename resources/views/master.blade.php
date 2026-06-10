@@ -275,7 +275,7 @@
             fritesCheddarPrice: {{ (float) (\Smartisan\Settings\Facades\Settings::group('order_setup')->get('order_setup_frites_cheddar_price') ?? 1.00) }}
         };
     </script>
-    <script src="{{ asset('js/pos-wizard.js') }}?v=9"></script>
+    <script src="{{ asset('js/pos-wizard.js') }}?v=10"></script>
 
     <!-- Masquer Dine-In dans le POS : uniquement Emporter et Livraison -->
     <style>

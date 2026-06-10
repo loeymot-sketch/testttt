@@ -32,6 +32,14 @@ Découverte à l'implémentation : le chemin VIVANT du wizard est la version **s
 - e2e **flag OFF** : 0 section générique, sections legacy viande+sauce intactes, même item, même total — chemins nouveaux inatteignables
 - Fix périphérique non-frozen requis : `master.blade.php` (shell SPA) n'injectait pas `posWizardComposerAware` → ajouté (parité avec admin-pos-v4.blade:109)
 
+## §5ter Boucle adversariale finale (2026-06-10) — verdict initial HEAL-THEN-SHIP → SHIP
+RED final (agent a780c055) : 0 P0 ; périmètre LOCK tenu (déviation P3-a actée : `if`→`else if` en tête de dispatch, comportement-neutre flag OFF). Heals appliqués + re-prouvés live :
+- **P1 « Voir plus » mort** → state-driven `genericExpanded` + rendu slice(0,6) (bug CSS pré-existant : règle reveal sans !important, CSS frozen intouché) — prouvé : 6→10 sauces, expansion survit au re-render, 9e sauce sélectionnée (capture w6-pos-voir-plus-healed.png)
+- **P2 substring multi-clic** syncAndSubmit → exact-match-first + premier match seulement (classe W5-FIX)
+- **P2 XSS** → `choice.image` échappé (breakout d'attribut) + noms builder strippés <> dans le ticket (consommé HTML ET texte brut)
+- Périphérique : `master.blade.php` cache-bust v=9→v=10 (déploiement du wizard)
+P3 restants divulgués (fmtPrice en-US pré-existant POS-ERG-07, .shake absent, images options POS emoji-only, addon kiosk fallback NaN) — backlog.
+
 ## §5bis Validation exigée avant clôture (référence)
 Specs `posWizardComposerAware` étendu + `posWizardGenericRender` (À CRÉER) verts · e2e :8767 flag ON : render + sélection + total + recap + ticket + payload backend prouvés par captures/network · flag OFF : legacy bit-identique · adversarial dispute 0 P0/P1 · frozen-diff HORS périmètre §2 = 0.
 
