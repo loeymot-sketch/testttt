@@ -82,4 +82,72 @@ class VerifyZMembershipCommandTest extends TestCase
             ->expectsOutputToContain('A9999')
             ->assertExitCode(1);
     }
+
+    /**
+     * [Z-GAP-1 2026-06-10] Order created while NO Z was open (gap between the
+     * previous close and the next open) can never be aggregated: the next Z's
+     * window lower bound is its own opened_at (> created_at). The detector
+     * must flag it instead of assuming "the next Z will pick it up".
+     * Empirical repro: clone foodking_e2e — Z seq 20 closed total 0,00 € while
+     * 10 numbered PAID orders (22,70 €) had been settled in the gap.
+     */
+    public function test_order_created_in_no_open_z_gap_is_flagged(): void
+    {
+        $branch = Branch::factory()->create();
+        [$opened, $closed] = $this->sealedZ($branch->id); // closed 2026-05-01 20:00
+
+        // Next Z opens the NEXT morning → gap [20:00 → 08:00].
+        ZReport::create([
+            'branch_id'   => $branch->id,
+            'sequence_no' => 2,
+            'opened_at'   => Carbon::parse('2026-05-02 08:00:00'),
+            'closed_at'   => null,
+            'status'      => 'open',
+        ]);
+
+        $order = Order::factory()->create([
+            'branch_id'       => $branch->id,
+            'status'          => OrderStatus::ACCEPT,
+            'payment_status'  => PaymentStatus::PAID,
+            'total'           => 22.70,
+            'order_serial_no' => 'GAP-1',
+            'created_at'      => Carbon::parse('2026-05-01 23:30:00'), // in the gap
+        ]);
+        $this->numberOrder($order->id, 6, Carbon::parse('2026-05-01 23:31:00'));
+
+        // NB: the table cell wraps in the test console, so we assert on the
+        // serial + non-zero exit (the NO-Z-GAP label is visually verified live).
+        $this->artisan('fiscal:verify-z-membership', ['--branch' => $branch->id])
+            ->expectsOutputToContain('GAP-1')
+            ->assertExitCode(1);
+    }
+
+    /**
+     * [Z-GAP-1 guard] An order created while a Z IS open (normal day flow) must
+     * NOT be flagged by the gap heuristic — it will be aggregated at close.
+     */
+    public function test_order_created_inside_currently_open_z_is_not_flagged(): void
+    {
+        $branch = Branch::factory()->create();
+
+        ZReport::create([
+            'branch_id'   => $branch->id,
+            'sequence_no' => 1,
+            'opened_at'   => Carbon::parse('2026-05-01 08:00:00'),
+            'closed_at'   => null,
+            'status'      => 'open',
+        ]);
+
+        $order = Order::factory()->create([
+            'branch_id'      => $branch->id,
+            'status'         => OrderStatus::ACCEPT,
+            'payment_status' => PaymentStatus::PAID,
+            'total'          => 10.00,
+            'created_at'     => Carbon::parse('2026-05-01 12:00:00'), // Z open
+        ]);
+        $this->numberOrder($order->id, 7, Carbon::parse('2026-05-01 12:01:00'));
+
+        $this->artisan('fiscal:verify-z-membership', ['--branch' => $branch->id])
+            ->assertExitCode(0);
+    }
 }

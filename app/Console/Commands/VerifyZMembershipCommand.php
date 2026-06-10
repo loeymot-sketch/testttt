@@ -67,8 +67,39 @@ class VerifyZMembershipCommand extends Command
                     ->first();
 
                 if (! $coveringZ) {
-                    // created_at is in the still-open current window → it will be
-                    // aggregated by the next Z. Not an orphan.
+                    // [Z-GAP-1 heal 2026-06-10] "No covering closed Z" does NOT
+                    // always mean "will be aggregated by the next Z": the
+                    // aggregator windows by created_at ∈ (opened_at, closed_at],
+                    // so an order created while NO Z was open (gap between the
+                    // previous close and the next open) can never be covered —
+                    // the next Z's lower bound is its own opened_at, which is
+                    // AFTER the order's created_at. Empirical repro (clone
+                    // foodking_e2e 2026-06-10): 10 numbered PAID orders created
+                    // in a 2-day no-open-Z gap → Z seq 20 closed with total 0.00
+                    // while 22,70 € were settled, and this detector said OK.
+                    //
+                    // Safe iff a Z opened BEFORE the order exists and is still
+                    // open (or will be) — i.e. some Z (any status) has
+                    // opened_at < created_at and (closed_at IS NULL OR
+                    // closed_at >= created_at). The closed case is $coveringZ
+                    // above; here we check the open case.
+                    $openCovering = ZReport::query()
+                        ->where('branch_id', $bid)
+                        ->where('status', '!=', ZReport::STATUS_CLOSED)
+                        ->where('opened_at', '<', $o->created_at)
+                        ->exists();
+                    if ($openCovering) {
+                        // genuinely in the still-open current window → fine.
+                        continue;
+                    }
+                    $candidates[] = [
+                        'branch'      => $bid,
+                        'order'       => (string) ($o->order_serial_no ?? $o->id),
+                        'seq'         => (int) $o->fiscal_sequence_no,
+                        'total'       => number_format((float) $o->total, 2),
+                        'created_at'  => (string) $o->created_at,
+                        'Z_closed_at' => 'NO-Z-GAP (created while no Z open — unaggregatable)',
+                    ];
                     continue;
                 }
 
