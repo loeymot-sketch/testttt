@@ -20,6 +20,9 @@ Interprétation : autorisation explicite du travail caisse = franchissement de G
 - XSS : tout champ d'origine builder (`name/label/description/subtitle`) passé par `escWiz` au render ; updates dynamiques en `textContent` (convention existante :3251+).
 - Flag OFF ⇒ chemins nouveaux inatteignables (early-return `:553`) — prouvé par captures avant/après identiques sur wizard legacy.
 
+## §2bis Addendum d'exécution (2026-06-10, même périmètre)
+Découverte à l'implémentation : le chemin VIVANT du wizard est la version **single-page** (`renderSinglePage`/`bindSinglePageEvents`) — le multi-step (`renderWizard`) est dormant. Le LOCK s'applique donc au chemin single-page : sections composer remplacent les sections legacy **sous `composerMode`** (2 lignes de garde `if (!composerMode)`), handlers dans `bindSinglePageEvents`, gate min_select sur le bouton « Ajouter au panier », ticket via `buildTicketInstruction`, mapping form via `syncAndSubmit` §4bis. Le chemin multi-step dormant a reçu les mêmes branchements (inactifs). Aucun renderer legacy modifié ; flag OFF prouvé inatteignable (`composer_step` posé uniquement par `buildStepsFromComposerProfile`, pinné par spec).
+
 ## §4 Rollback
 `git revert` du/des commits taggés `[LOCK-W6]` (ajouts isolés, insertions 1-ligne) ; aucun schéma, aucune donnée.
 
