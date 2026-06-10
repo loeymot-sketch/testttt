@@ -21,6 +21,20 @@
 
 
                         <div class="form-col-12 sm:form-col-6">
+                            <label for="parent_id" class="db-field-title">{{ $t('label.parent_category') }}</label>
+                            <select v-model="props.form.parent_id" id="parent_id" class="db-field-control"
+                                v-bind:class="errors.parent_id ? 'invalid' : ''"
+                                data-testid="admin-category-form-parent">
+                                <option :value="null">{{ $t('label.none') }}</option>
+                                <option v-for="parent in parentOptions" :key="parent.id" :value="parent.id">
+                                    {{ parent.name }}
+                                </option>
+                            </select>
+                            <small class="db-field-hint">{{ $t('message.subcategory_wizard_hint') }}</small>
+                            <small class="db-field-alert" v-if="errors.parent_id">{{ errors.parent_id[0] }}</small>
+                        </div>
+
+                        <div class="form-col-12 sm:form-col-6">
                             <label for="image" class="db-field-title">{{ $t('label.image') }} (74px,48px)</label>
                             <input @change="changeImage" v-bind:class="errors.image ? 'invalid' : ''" id="image" type="file"
                                 class="db-field-control" ref="imageProperty" accept="image/png, image/jpeg, image/jpg" data-testid="admin-category-form-image">
@@ -206,6 +220,15 @@ export default {
     computed: {
         addButton: function () {
             return { title: this.$t('button.add_item_category') };
+        },
+        // [GOAL CMS C1.1] Eligible parents = top-level categories only
+        // (2-level hierarchy enforced backend by ItemCategoryHierarchyService)
+        // minus the category being edited (no self-parent).
+        parentOptions: function () {
+            const editingId = this.$store.getters['itemCategory/temp'].temp_id;
+            return (this.$store.getters['itemCategory/lists'] || []).filter(
+                (category) => !category.parent_id && category.id !== editingId
+            );
         }
     },
     methods: {
@@ -221,6 +244,7 @@ export default {
                 name: "",
                 description: "",
                 status: statusEnum.ACTIVE,
+                parent_id: null,
                 wizard_template: 'simple',
                 has_menu: 0,
                 default_menu_kiosk: 0,
@@ -240,6 +264,9 @@ export default {
                 fd.append('name', this.props.form.name);
                 fd.append('status', this.props.form.status);
                 fd.append('description', this.props.form.description);
+                // Empty string is converted to null backend-side
+                // (ConvertEmptyStringsToNull) so clearing the parent works.
+                fd.append('parent_id', this.props.form.parent_id ?? '');
                 fd.append('wizard_template', this.props.form.wizard_template || 'simple');
                 fd.append('has_menu', this.props.form.has_menu ?? 0);
                 fd.append('default_menu_kiosk', this.props.form.default_menu_kiosk ?? 0);
@@ -263,6 +290,7 @@ export default {
                         name: "",
                         description: "",
                         status: statusEnum.ACTIVE,
+                        parent_id: null,
                         wizard_template: 'simple',
                         has_menu: 0,
                         default_menu_kiosk: 0,

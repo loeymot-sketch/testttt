@@ -42,7 +42,14 @@
                     @end="sortCategory" :handle="'.drag-handle'">
                     <tr class="db-table-body-tr" v-for="itemCategory in categories" :key="itemCategory" :data-testid="`admin-category-row-${itemCategory.id}`">
                         <td class="db-table-body-td"><i class="lab lab-move cursor-move drag-handle"></i></td>
-                        <td class="db-table-body-td">{{ itemCategory.name }}</td>
+                        <td class="db-table-body-td">
+                            <span v-if="itemCategory.parent_id" class="category-subrow-indent"
+                                :data-testid="`admin-category-subrow-${itemCategory.id}`">↳&nbsp;</span>
+                            {{ itemCategory.name }}
+                            <span v-if="itemCategory.parent_id" class="db-badge db-badge-secondary category-subrow-badge">
+                                {{ $t('label.subcategory_of') }} {{ parentName(itemCategory.parent_id) }}
+                            </span>
+                        </td>
                         <td class="db-table-body-td">
                             <span :class="statusClass(itemCategory.status)">
                                 {{ enums.statusEnumArray[itemCategory.status] }}
@@ -198,6 +205,10 @@ export default {
                 this.loading.isActive = false;
             });
         },
+        parentName: function (parentId) {
+            const parent = (this.categories || []).find((category) => category.id === parentId);
+            return parent ? parent.name : '#' + parentId;
+        },
         edit: function (itemCategory) {
             appService.modalShow("#categoryModal");
             this.loading.isActive = true;
@@ -206,6 +217,7 @@ export default {
             this.props.form = {
                 name: itemCategory.name,
                 status: itemCategory.status,
+                parent_id: itemCategory.parent_id ?? null,
                 description: itemCategory.description || '',
                 wizard_template: itemCategory.wizard_template || 'simple',
                 has_menu: yn(itemCategory.has_menu),
