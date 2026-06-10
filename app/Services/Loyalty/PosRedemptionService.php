@@ -199,6 +199,16 @@ final class PosRedemptionService
                 throw $e;
             }
 
+            // [L2 LOYALTY-SYNC 2026-06-11] push the new balance to the bus
+            // (after-commit; replay-safe — idempotency keyed in the outbox).
+            \App\Events\LoyaltyBalanceChanged::dispatch(
+                (int) $customer->id,
+                (int) ($order->branch_id ?? 1),
+                (int) $balanceAfter,
+                -$points,
+                'redeem'
+            );
+
             // [LOCK §3 step 2] Update order totals + link loyalty code.
             $currentDiscount = (float) ($order->discount ?? 0);
             $currentTax      = (float) ($order->total_tax ?? 0);

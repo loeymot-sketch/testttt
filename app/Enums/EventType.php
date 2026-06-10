@@ -19,6 +19,8 @@ class EventType
     // [F-016a-BIS] Branch-scoped variation rupture toggles.
     const MENU_VARIATION_AVAILABILITY_CHANGED = 'menu.variation_availability_changed';
     const CATALOG_CHANGED = 'catalog.changed';
+    // [GOAL LOYALTY_UNIFIED_SYNC L2 2026-06-11] loyalty balance movements
+    const LOYALTY_BALANCE_CHANGED = 'loyalty.balance_changed';
     const STOCK_LOW = 'stock.low';
     // [PROMO-DASH-2026-05-06] Code promo CRUD/toggle propagation pour les
     // surfaces (POS/kiosk/web) abonnées au canal `branch.{id}` de chaque

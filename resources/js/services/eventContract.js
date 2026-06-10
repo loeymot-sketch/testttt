@@ -13,6 +13,7 @@ export const EVENT_TYPES = {
     COUPON_CHANGED: 'promo.coupon_changed',
     // [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B compensating action]
     KDS_ORDER_RECALLED: 'kds.order_recalled',
+    LOYALTY_BALANCE_CHANGED: 'loyalty.balance_changed',
 };
 
 export const BROADCAST_MAP = {
@@ -26,6 +27,8 @@ export const BROADCAST_MAP = {
     CouponChanged: EVENT_TYPES.COUPON_CHANGED,
     // [Heal-5] Kitchen recall — emitted by the chef "↶ Annuler bump" path.
     KdsOrderRecalled: EVENT_TYPES.KDS_ORDER_RECALLED,
+    // [GOAL LOYALTY-SYNC L2 2026-06-11] loyalty balance movements (earn/redeem/clawback)
+    LoyaltyBalanceChanged: EVENT_TYPES.LOYALTY_BALANCE_CHANGED,
 };
 
 function warnValidation(reason, data) {

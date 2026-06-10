@@ -87,6 +87,15 @@ class LoyaltyService
 
         $balanceAfter = $loyaltyUser->loyalty_points + $totalPointsToRefund;
 
+        // [L2 LOYALTY-SYNC 2026-06-11]
+        \App\Events\LoyaltyBalanceChanged::dispatch(
+            (int) $loyaltyUser->id,
+            (int) ($order->branch_id ?? 1),
+            (int) $balanceAfter,
+            (int) $totalPointsToRefund,
+            'refund'
+        );
+
         LoyaltyTransaction::create([
             'user_id' => $loyaltyUser->id,
             'loyalty_code' => $loyaltyUser->loyalty_code,
@@ -186,6 +195,11 @@ class LoyaltyService
                 'source_surface' => 'refund',
                 'description' => $reason . ' — commande #' . $orderId,
             ]);
+
+            // [L2 LOYALTY-SYNC 2026-06-11]
+            \App\Events\LoyaltyBalanceChanged::dispatch(
+                (int) $userId, 1, (int) $newBalance, -$actualDeducted, 'clawback'
+            );
 
             Log::info('[Loyalty] Earned points clawed back on refund', [
                 'order_id' => $orderId,

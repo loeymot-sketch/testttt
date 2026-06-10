@@ -172,6 +172,7 @@
  *   - Error / success bands carry role="alert" + role="status"
  */
 import axios from 'axios';
+import { onEvents } from '../../../services/eventContract';
 
 export default {
     name: 'PosLoyaltyRedeemModal',
@@ -188,8 +189,43 @@ export default {
             type: Number,
             default: 100,
         },
+        // [GOAL LOYALTY-SYNC L2 2026-06-11] live balance subscription scope.
+        branchId: {
+            type: [Number, String],
+            default: 0,
+        },
     },
     emits: ['close', 'applied'],
+    mounted() {
+        // [L2] Subscribe to balance movements: another surface (kiosk earn,
+        // refund clawback, other till) changing the customer's points updates
+        // THIS open modal instead of leaving a stale balance.
+        const branchId = Number(this.branchId) || 0;
+        if (branchId <= 0) return;
+        try {
+            this._loyaltySub = onEvents(branchId, [
+                {
+                    broadcastAs: 'LoyaltyBalanceChanged',
+                    handler: (event) => {
+                        if (this._destroyed) return;
+                        if (this.customerBalance === null) return; // no lookup yet
+                        const after = Number(event?.balance_after);
+                        if (Number.isFinite(after)) {
+                            this.customerBalance = after;
+                        }
+                    },
+                },
+            ]);
+        } catch (subscribeError) {
+            // Degradation = stale-until-next-lookup (polling invariant §7).
+        }
+    },
+    beforeUnmount() {
+        this._destroyed = true;
+        if (this._loyaltySub && typeof this._loyaltySub.unsubscribe === 'function') {
+            this._loyaltySub.unsubscribe();
+        }
+    },
     data() {
         return {
             loyaltyCode: '',

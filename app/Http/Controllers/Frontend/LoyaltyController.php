@@ -217,6 +217,10 @@ class LoyaltyController extends Controller
                     'source_surface' => 'kiosk',
                     'description'    => 'Bonus de bienvenue',
                 ]);
+                // [L2 LOYALTY-SYNC]
+                \App\Events\LoyaltyBalanceChanged::dispatch(
+                    (int) $user->id, 1, (int) $user->loyalty_points, $welcomePoints, 'welcome'
+                );
             }
 
             return response()->json([
@@ -285,6 +289,11 @@ class LoyaltyController extends Controller
                         'updated_at'     => now(),
                     ]);
                 }
+
+                // [L2 LOYALTY-SYNC] push new balance (after-commit)
+                \App\Events\LoyaltyBalanceChanged::dispatch(
+                    (int) $user->id, 1, $balance, $pointsToAdd, 'earn'
+                );
                 return $balance;
             });
 
@@ -402,6 +411,11 @@ class LoyaltyController extends Controller
                 ]);
 
                 Log::info("Loyalty redeem: {$pointsToRedeem} pts redeemed from user #{$user->id}");
+
+                // [L2 LOYALTY-SYNC] push new balance (after-commit)
+                \App\Events\LoyaltyBalanceChanged::dispatch(
+                    (int) $user->id, 1, (int) $balanceAfter, -$pointsToRedeem, 'redeem'
+                );
 
                 return ['points' => $user->loyalty_points - $pointsToRedeem, 'user_id' => $user->id];
             });

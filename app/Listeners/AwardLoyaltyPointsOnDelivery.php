@@ -140,6 +140,15 @@ class AwardLoyaltyPointsOnDelivery
                 DB::table('orders')
                     ->where('id', $order->id)
                     ->update(['loyalty_points_awarded' => $pointsToAward]);
+
+                // [L2 LOYALTY-SYNC] push the new balance to the bus (after-commit)
+                \App\Events\LoyaltyBalanceChanged::dispatch(
+                    (int) $user->id,
+                    (int) ($order->branch_id ?? 1),
+                    $balanceAfter,
+                    $pointsToAward,
+                    'earn'
+                );
             });
 
             Log::info(sprintf(

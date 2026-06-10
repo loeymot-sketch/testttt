@@ -1124,6 +1124,7 @@
     <PosLoyaltyRedeemModal
         :open="loyaltyRedeemMainOpen"
         :order-id="currentLoyaltyOrder ? currentLoyaltyOrder.id : null"
+        :branch-id="authBranchId()"
         @close="closeLoyaltyMainModal"
         @applied="onLoyaltyMainApplied"
     />
