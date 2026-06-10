@@ -19,6 +19,10 @@ class ItemCategoryResource extends JsonResource
             'id'              => $this->id,
             'name'            => $this->name,
             'slug'            => $this->slug,
+            // [GOAL CMS C1.4 2026-06-10] Sub-category support: without this
+            // field no admin UI can build the category tree (schema has had
+            // parent_id since migration 2026_04_18_120001).
+            'parent_id'       => $this->parent_id !== null ? (int) $this->parent_id : null,
             'description'     => $this->description === null ? '' : $this->description,
             'status'          => $this->status,
             'sort'            => (int) ($this->sort ?? 0),
