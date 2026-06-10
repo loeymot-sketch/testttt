@@ -223,7 +223,7 @@
                                 </a>
                                 <p v-if="item.item_variations.length !== 0" class="capitalize text-xs mb-1.5">
                                     <span v-for="(variation, index) in item.item_variations">
-                                        {{ variation.variation_name }}: {{ variation.name }}<span
+                                        {{ variation.attribute_name || variation.variation_name }}: {{ variation.name || variation.variation_name }}<span
                                             v-if="index + 1 < item.item_variations.length">,&nbsp;</span>
                                     </span>
                                 </p>
@@ -237,7 +237,7 @@
                                 <h3 class="capitalize text-xs w-fit whitespace-nowrap">{{ $t('label.extras') }}:</h3>
                                 <p class="text-xs">
                                     <span v-for="(extra, index) in item.item_extras">
-                                        {{ extra.name }}<span v-if="index + 1 < item.item_extras.length">,&nbsp;</span>
+                                        {{ extra.extra_name || extra.name }}<span v-if="index + 1 < item.item_extras.length">,&nbsp;</span>
                                     </span>
                                 </p>
                             </li>

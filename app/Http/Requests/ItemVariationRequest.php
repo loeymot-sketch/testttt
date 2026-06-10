@@ -31,10 +31,17 @@ class ItemVariationRequest extends FormRequest
                 'required',
                 'string',
                 'max:190',
+                // [RED-01 / ultra-audit 2026-06-10] Uniqueness is scoped per
+                // (item, attribute), not per item alone: the same option name
+                // legitimately exists under several attributes ("Poulet mariné"
+                // in Viande 1 + Viande 2). Without the attribute scope the twin
+                // row matched on every update — even a price-only change on the
+                // variation's own unchanged name returned 422, making all
+                // twin-named options permanently non-editable.
                 Rule::unique("item_variations", "name")->whereNull('deleted_at')->ignore($this->route('itemVariation.id'))->where(
                     'item_id',
                     $this->route('item.id')
-                )
+                )->where('item_attribute_id', $this->input('item_attribute_id'))
             ],
             'item_attribute_id' => ['required', 'numeric'],
             'price'             => ['required', new IniAmount(true)],
