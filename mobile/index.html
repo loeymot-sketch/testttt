@@ -206,7 +206,9 @@ function App() {
 
   return (
     <div className="lc-device">
-      {body}
+      {/* [a11y P2-B 2026-06-08] main-content landmark — positioned identically to the previous
+          bare body layer so the absolute-inset screens are visually unchanged. */}
+      <main style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>{body}</main>
       {showTab && <TabBar active={activeTab} onChange={(t) => go(t)}/>}
       {modal === 'pay' && <ModalPayChoice total={total} onClose={()=>setModal(null)} onPickCounter={()=>{ setModal(null); setHistory(h=>[...h,'confirm']); setScreen('confirm'); setCart([]); setTimeout(()=>setModal('gain'), 900); }} onPickCard={()=>{ setModal(null); setHistory(h=>[...h,'stripe']); setScreen('stripe'); }}/>}
       {/* [test-e2e fix C-003 round-2 2026-05-11] derive pointsEarned from the snapshotted
@@ -215,7 +217,7 @@ function App() {
           hardcoded "+25 pts" literal. Falls back to 25 only if no order was snapshotted
           (defensive — should never happen in the pay flow but keeps the welcome bonus
           default for the modal's standalone story rendering). */}
-      {modal === 'gain' && <ModalPointsGain gain={lastOrder ? Math.round(lastOrder.total) : 25} onClose={()=>setModal(null)} onSee={()=>{ setModal(null); setHistory(h=>[...h,'loyalty']); setScreen('loyalty'); }}/>}
+      {modal === 'gain' && <ModalPointsGain gain={lastOrder ? window.LC.loyalty.pointsFor(lastOrder.total) : 25} onClose={()=>setModal(null)} onSee={()=>{ setModal(null); setHistory(h=>[...h,'loyalty']); setScreen('loyalty'); }}/>}
       {modal === 'redeem' && <WizardRedeem ctx={modalCtx} onClose={()=>{ setModal(null); setModalCtx(null); }} onSuccess={(r)=>{ /* WizardRedeem handles toast internally via step3 success state */ }}/>}
       {modal === 'optOut' && <ModalOptOutConfirm onClose={()=>setModal(null)} onConfirm={()=>{
         setModal(null);

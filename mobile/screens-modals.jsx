@@ -141,7 +141,7 @@ function ModalPointsGain({ onClose, onSee, gain = 25 }) {
       <div style={{ position: 'relative', background: 'var(--yellow)', borderRadius: 28, padding: '32px 24px', textAlign: 'center', maxWidth: 320, boxShadow: '8px 8px 0 var(--ink)' }}>
         <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--ink)' }}>// Bienvenue au club</div>
         <div id="modal-points-gain-title" className="lc-display" style={{ fontSize: 88, lineHeight: 0.85, color: 'var(--ink)', margin: '6px 0 4px' }}>+{gain}</div>
-        <div className="lc-display" style={{ fontSize: 24, lineHeight: 0.9, color: 'var(--orange-text)' }}>points gagnés</div>
+        <div className="lc-display" style={{ fontSize: 24, lineHeight: 0.9, color: 'var(--ink)' }}>points gagnés</div>
         <p style={{ fontSize: 12.5, color: 'var(--gray-4)', margin: '14px 0 18px', lineHeight: 1.45 }}>Tu fais partie du club Le Cayenne. Continue à commander pour débloquer des récompenses gratuites.</p>
         <button onClick={onSee} className="lc-btn" style={{ background: 'var(--ink)', color: '#fff', width: '100%', height: 50, marginBottom: 8 }}>Voir ma carte</button>
         <button onClick={onClose} style={{ background: 'transparent', border: 0, color: 'var(--gray-4)', fontSize: 12, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}>Plus tard</button>
@@ -154,7 +154,7 @@ function ModalPointsGain({ onClose, onSee, gain = 25 }) {
 function ModalRedeem({ onClose, onConfirm, reward = 'Burger gratuit', cost = 1000 }) {
   return (
     <ModalShell onClose={onClose} labelledBy="modal-redeem-title" dataModalKind="redeem">
-      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', background: 'var(--orange)', color: 'var(--ink)', borderRadius: 999, fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase' }}>★ Récompense</div>
+      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', background: 'var(--orange-text)', color: '#fff', borderRadius: 999, fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase' }}>★ Récompense</div>
       <h2 id="modal-redeem-title" className="lc-display" style={{ margin: '12px 0 4px', fontSize: 36, lineHeight: 0.92, color: 'var(--ink)' }}>Confirmer<br/>l'échange ?</h2>
       <p style={{ margin: '0 0 18px', color: 'var(--gray-3)', fontSize: 13 }}>Cette action est irréversible.</p>
 
@@ -177,7 +177,7 @@ function ModalRedeem({ onClose, onConfirm, reward = 'Burger gratuit', cost = 100
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.6fr', gap: 10, marginTop: 18 }}>
         <button onClick={onClose} className="lc-btn" style={{ background: 'var(--cream)', color: 'var(--ink)', height: 54 }}>Annuler</button>
-        <button onClick={onConfirm} className="lc-btn" style={{ background: 'var(--orange)', color: '#fff', height: 54 }}>Confirmer</button>
+        <button onClick={onConfirm} className="lc-btn" style={{ background: 'var(--orange-text)', color: '#fff', height: 54 }}>Confirmer</button>
       </div>
     </ModalShell>
   );
@@ -197,7 +197,7 @@ function ModalCardLink({ onClose, onScan }) {
         <div style={{ position: 'absolute', bottom: 24, right: 24, width: 24, height: 24, borderBottom: '4px solid var(--yellow)', borderRight: '4px solid var(--yellow)', borderBottomRightRadius: 14 }}/>
         <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>Cadre la carte ici</div>
       </div>
-      <button onClick={onScan} className="lc-btn" style={{ background: 'var(--orange)', color: '#fff', width: '100%', height: 54, marginTop: 16 }}>Activer l'appareil photo</button>
+      <button onClick={onScan} className="lc-btn" style={{ background: 'var(--orange-text)', color: '#fff', width: '100%', height: 54, marginTop: 16 }}>Activer l'appareil photo</button>
       <button onClick={onClose} style={{ background: 'transparent', border: 0, color: 'var(--gray-4)', fontSize: 12, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', display: 'block', margin: '12px auto 0' }}>Pas maintenant</button>
     </ModalShell>
   );
@@ -233,9 +233,7 @@ function ScreenOrderDetail({ go, orderId = 'C-1234' }) {
         {items ? (
           <>
             <div style={{ padding: '6px 20px 0' }}>
-              {/* [W3 HEAL r2 P1-A11Y contrast 2026-06-06] white-on-orange/green fill ≈ 3.1:1 (fail).
-                  Keep brand fill, switch text to ink (ink-on-orange 6.35:1, ink-on-green 6.26:1). Mirrors orders-list pill. */}
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', background: isDelivered ? 'var(--green)' : 'var(--orange)', color: 'var(--ink)', borderRadius: 999, fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase' }}>{isDelivered ? '✓' : '●'} {status}</div>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', background: isDelivered ? 'var(--green-text)' : 'var(--orange-text)', color: '#fff', borderRadius: 999, fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase' }}>{isDelivered ? '✓' : '●'} {status}</div>
               <h1 className="lc-display" style={{ margin: '8px 0 2px', fontSize: 38, lineHeight: 0.9, color: 'var(--ink)' }}>#{orderId}</h1>
               <div style={{ fontSize: 12, color: 'var(--gray-3)' }}>{dateLabel} · {branch}</div>
             </div>
@@ -256,10 +254,10 @@ function ScreenOrderDetail({ go, orderId = 'C-1234' }) {
             </div>
             <div style={{ margin: '14px 20px 0', background: 'var(--ink)', color: '#fff', borderRadius: 18, padding: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
-                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--orange)' }}>+ Loyalty</div>
-                <div style={{ fontSize: 14, fontWeight: 700, marginTop: 4 }}>+{Math.round(total)} pts crédités</div>
+                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--orange)' }}>+ Fidélité</div>
+                <div style={{ fontSize: 14, fontWeight: 700, marginTop: 4 }}>+{window.LC.loyalty.pointsFor(total)} pts crédités</div>
               </div>
-              <div className="lc-display" style={{ fontSize: 26, color: 'var(--yellow)' }}>+{Math.round(total)}</div>
+              <div className="lc-display" style={{ fontSize: 26, color: 'var(--yellow)' }}>+{window.LC.loyalty.pointsFor(total)}</div>
             </div>
             {/* [W3 HEAL P1-HONESTY 2026-06-06] §0.2 mock boundary — badge ONLY; the
                 NF525 fiscal text is left intact per contract (whether a customer app
@@ -284,7 +282,7 @@ function ScreenOrderDetail({ go, orderId = 'C-1234' }) {
         )}
       </div>
       <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, background: '#fff', padding: '14px 20px 30px', borderTop: '1px solid var(--gray-1)' }}>
-        <button onClick={() => go(items ? 'menu' : 'orders')} className="lc-btn" style={{ background: 'var(--orange)', color: '#fff', width: '100%', height: 56 }}>{items ? '↻ Recommander' : '← Retour'}</button>
+        <button onClick={() => go(items ? 'menu' : 'orders')} className="lc-btn" style={{ background: 'var(--orange-text)', color: '#fff', width: '100%', height: 56 }}>{items ? '↻ Recommander' : '← Retour'}</button>
       </div>
     </div>
   );
@@ -293,7 +291,7 @@ function ScreenOrderDetail({ go, orderId = 'C-1234' }) {
 // ---------- Toast ----------
 function Toast({ message, kind = 'info', onClose }) {
   useEffect_m(() => { const t = setTimeout(onClose, 3000); return () => clearTimeout(t); }, []);
-  const bg = kind === 'success' ? 'var(--green)' : kind === 'error' ? 'var(--red)' : 'var(--ink)';
+  const bg = kind === 'success' ? 'var(--green-dark)' : kind === 'error' ? 'var(--red-text)' : 'var(--ink)';
   return (
     <div data-testid="toast" data-kind={kind} role="status" aria-live="polite" style={{ position: 'absolute', top: 'calc(var(--ios-safe-top) + 8px)', left: 14, right: 14, zIndex: 70, background: bg, color: '#fff', borderRadius: 14, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10, boxShadow: '0 8px 22px rgba(0,0,0,0.25)', animation: 'lc-slide-down 0.3s ease' }}>
       <span style={{ width: 8, height: 8, borderRadius: 999, background: kind === 'success' ? 'var(--yellow)' : '#fff' }}/>
@@ -329,7 +327,7 @@ function ModalWalletV0Notice({ onClose, onSeeQR, kind = 'apple' }) {
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
           <button onClick={onClose} className="lc-btn" style={{ background: 'var(--cream)', color: 'var(--ink)', height: 50 }}>Fermer</button>
-          <button onClick={onSeeQR} className="lc-btn" style={{ background: 'var(--orange)', color: '#fff', height: 50 }}>Voir mon QR</button>
+          <button onClick={onSeeQR} className="lc-btn" style={{ background: 'var(--orange-text)', color: '#fff', height: 50 }}>Voir mon QR</button>
         </div>
       </ModalShell>
     </div>
@@ -346,10 +344,10 @@ function ModalOptOutConfirm({ onClose, onConfirm }) {
   return (
     <div data-testid="modal" data-modal-kind="opt-out-confirm" role="dialog" aria-modal="true" aria-labelledby="modal-opt-out-title">
       <ModalShell onClose={onClose}>
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', background: 'var(--red)', color: '#fff', borderRadius: 999, fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase' }}>⚠ RGPD</div>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', background: 'var(--red-text)', color: '#fff', borderRadius: 999, fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase' }}>⚠ RGPD</div>
         <h2 id="modal-opt-out-title" className="lc-display" style={{ margin: '12px 0 4px', fontSize: 30, lineHeight: 0.92, color: 'var(--ink)' }}>Désactiver mon<br/>compte fidélité ?</h2>
         <p style={{ margin: '0 0 14px', color: 'var(--gray-4)', fontSize: 13, lineHeight: 1.5 }}>
-          Tes points ne seront plus crédités lors de tes achats. <b style={{ color: 'var(--red)' }}>Tes {currentBalance} points actuels seront effacés</b> (droit à l'effacement, RGPD article 17). Cette action est irréversible.
+          Tes points ne seront plus crédités lors de tes achats. <b style={{ color: 'var(--red-text)' }}>Tes {currentBalance} points actuels seront effacés</b> (droit à l'effacement, RGPD article 17). Cette action est irréversible.
         </p>
         <div style={{ background: 'var(--yellow-soft)', borderRadius: 12, padding: 12, marginBottom: 16, fontSize: 12, color: 'var(--ink)', display: 'flex', gap: 8 }}>
           <span style={{ flexShrink: 0 }}>ℹ︎</span>

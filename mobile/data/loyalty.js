@@ -49,7 +49,7 @@
     // [GATE-LOYALTY-1 2026-06-09 owner decision: canonical rate = 1 pt/€] Unifies the advertised
     // rate (this value, shown on the loyalty banner) with the credited rate (the earn sites all use
     // Math.round(total) = 1 pt/€). Was 10 here while credit did 1 → a 10× display-vs-credit divergence.
-    // On backend wireup, route every earn computation through computeEarnedPoints() below so the
+    // On backend wireup, route every earn computation through pointsFor() below so the
     // displayed rate can never drift from the credited rate again.
     earn_ratio: 1,               // 1 € spent = 1 point (owner-canonical; admin-editable on wireup)
     redeem_ratio: 100,           // 100 points = 1 € discount (backend default)
@@ -219,11 +219,13 @@
     return points / CONFIG.redeem_ratio;
   }
 
-  // [GATE-LOYALTY-1] Single source of truth for "points earned for a spend". Every earn-display
-  // surface should call this so the credited amount is ALWAYS config-driven and can never diverge
-  // from the advertised earn_ratio again. At earn_ratio=1 this equals Math.round(total) (the V0
-  // credit logic), so adopting it is behaviour-preserving today and drift-proof on wireup.
-  function computeEarnedPoints(total) {
+  // [LOY P0 heal 2026-06-08] SSOT for points EARNED on a spend. Every earn surface
+  // (cart preview, gain modal, order detail, order history) routes through this so the
+  // rate can never drift between screens again. Honours CONFIG.earn_ratio (currently 1 pt/€,
+  // matching all authored seed + onboarding + the web app). Owner economics gate: to switch
+  // to a 10 pt/€ gamified mobile economy, edit CONFIG.earn_ratio AND re-baseline the seed
+  // (DEFAULT_HISTORY earn rows, orders.js points_earned, account.balance) so they reconcile.
+  function pointsFor(total) {
     return Math.round((Number(total) || 0) * CONFIG.earn_ratio);
   }
 
@@ -301,7 +303,7 @@
     nextRewardForBalance,
     unlockedRewards,
     pointsToDiscount,
-    computeEarnedPoints,
+    pointsFor,
     progressToNext,
   };
 

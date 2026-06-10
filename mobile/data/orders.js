@@ -45,7 +45,7 @@
         { id: 3, item_id: 602,  name: 'Bowl Frites Poulet curry', qty: 1, line_total: 10.90, extras_summary: 'Boule gratinée +2,00 €' },
         { id: 4, item_id: 1001, name: 'Coca-Cola 33cl',           qty: 1, line_total: 1.50,  extras_summary: '' },
       ],
-      points_earned_estimate: 33,
+      points_earned_estimate: 30,  // [E2E 2026-06-09] = pointsFor(29.80) = round(29.80) at 1pt/€ (was 33, latent mismatch vs the detail screen's computed value)
     },
   ];
 
@@ -110,7 +110,7 @@
         { id: 1, item_id: 302, name: 'Big Classique', qty: 1, line_total: 9.00, extras_summary: 'Poulet crispy · Sauce algérienne · Cheddar + Œuf + Jambon inclus' },
         { id: 2, item_id: 902, name: 'Tarte Daim',    qty: 1, line_total: 3.80, extras_summary: '' },
       ],
-      points_earned: 38,  // 13 + welcome bonus 25
+      points_earned: 13,  // [E2E drift fix 2026-06-09] was 38 (=13 + welcome 25) but the +25 welcome is its OWN loyalty ledger row (loyalty.js), so 38 double-counted it AND drifted from the order-detail which shows pointsFor(12.80)=13. Now seed == pointsFor(total) for every order → history card == detail.
     },
   ];
 
