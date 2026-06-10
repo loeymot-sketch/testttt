@@ -1,0 +1,49 @@
+{
+  "results": [
+    {
+      "orderId": "4303",
+      "status": 200,
+      "mode": "CASH",
+      "expectDb": 1
+    },
+    {
+      "orderId": "4305",
+      "status": 200,
+      "mode": "CASH",
+      "expectDb": 1
+    },
+    {
+      "orderId": "4308",
+      "status": 200,
+      "mode": "CARD",
+      "expectDb": 2
+    },
+    {
+      "orderId": "4307",
+      "status": 200,
+      "mode": "CARD",
+      "expectDb": 2
+    },
+    {
+      "orderId": "4306",
+      "status": 200,
+      "mode": "TICKET",
+      "expectDb": 5
+    },
+    {
+      "orderId": "4309",
+      "status": 200,
+      "mode": "TICKET",
+      "expectDb": 5
+    }
+  ],
+  "seqs": [
+    2108,
+    2109,
+    2110,
+    2111,
+    2112,
+    2113
+  ],
+  "pageErrors": []
+}

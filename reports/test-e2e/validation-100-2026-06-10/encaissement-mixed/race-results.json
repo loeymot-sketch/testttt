@@ -1,0 +1,16 @@
+{
+  "target": "4311",
+  "ra": {
+    "status": 200,
+    "order": "4311"
+  },
+  "rb": {
+    "status": 200,
+    "order": "4311"
+  },
+  "successes": 2,
+  "payBefore": 0,
+  "payAfter": 1,
+  "fiscalCount": 1,
+  "dupSeq": "0"
+}
