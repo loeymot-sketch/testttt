@@ -1,0 +1,93 @@
+Filiale
+Le Cayenne (Principal)
+Le Cayenne (Principal)
+Bonjour
+Admin Le Cayenne
+Admin Le Cayenne
+
+admin@lecayenne.fr
+
++330600000000
+
+2,00 €
+Modifier Le Profil
+Changer Le Mot De Passe
+Déconnexion
+Tableau De Bord
+POS
+Produits & Stock
+Catalogue
+Attribut D’articles
+Ingrédients
+Commandes Caisse
+Historique
+Encaissement
+Vue Caisse Unifiée
+Caisse Livreur
+CAISSE ET COMMANDES
+Écran Cuisine
+Suivi Client
+COMMUNICATIONS
+Notifications Push
+Messages
+Abonnés
+UTILISATEURS
+Administrateurs
+Employés
+Chefs
+COMPTES
+Transactions
+RAPPORTS
+Rapport Des Ventes
+Rapport Articles
+CONFIGURATION
+Paramètres
+Tableau De Bord
+Commandes Caisse
+Voir
+
+N° Commande: #1006264474
+
+Payé
+En Préparation
+09:12, 10-06-2026
+Type de paiement: Espèces
+Type de commande: À emporter
+Référence interne: 1
+Payé
+Payé
+Non Payé
+En Préparation
+Accepter
+En Préparation
+Préparée
+Livré
+Imprimer La Facture
+💸
+Rembourser
+Détails Commande
+1
+Sandwich Cayenne
+
+Poulet Mariné: , Algérienne:
+
+7,00 €
+Instruction:
+
+SANDWICH CAYENNE Viandes : Poulet mariné - Salade, Tomate, Oignon + Menu (Frites + Boisson) (+3,00 €) ↳ Grande Portion (+€1.00) ↳ Cheddar Fondu (+€1.00)
+
+1
+Menu (Frites + Boisson)
+3,00 €
+Instruction:
+
+Grande Portion (+€1.00) Cheddar Fondu (+€1.00)
+
+Sous-Total
+10,00 €
+Remise
+0,00 €
+Total
+10,00 €
+Informations Client
+Passager

@@ -1,0 +1,110 @@
+🔧 MODE TEST — IMPRESSION BYPASSÉE
+←
+Fermer
+👨‍🍳
+Ticket Cuisine
+🧾
+Ticket Client
+
+Ticket client
+
+SIRET: 10417050100019
+
+TVA intra: FR19104170501
+
+Opérateur: Admin Le Cayenne
+
+Le Cayenne
+437 Rue Élie Gruyelle, 62110 Hénin-Beaumont
+Tel: +33600000000
+Commande #1006264473
+10-06-2026	09:06
+Qté	
+Article Description
+Prix
+
+
+
+1
+
+	
+Sandwich Cayenne
+
+6,36 €
+
+Viande 1: Poulet mariné ,Sauce (1ère Gratuite): Algérienne
+
+
+
+
+1
+
+	
+Menu (Frites + Boisson)
+
+2,73 €
+
+SOUS-TOTAL:	9,09 €
+TOTAL TAXES:	0,91 €
+VAT (10%)· Base HT 9,09 €	0,91 €
+REMISE:	0,00 €
+TOTAL:	10,00 €
+Type de commande: À emporter
+Type de paiement: Espèces	
+Espèces: 22,00 €
+Rendu : 12,00 €
+N°A0117
+
+N° ticket NF525: 2155
+
+Empreinte audit: fe4b53436ed2
+
+Mentions légales: TVA intracommunautaire - Merci de votre visite
+
+Merci
+
+À Très Bientôt !
+
+Propulsé par
+Le Cayenne
+
+Ticket cuisine
+
+CUISINE
+
+Le Cayenne
+
+437 Rue Élie Gruyelle, 62110 Hénin-Beaumont
+
+Commande #1006264473
+
+10-06-2026 · 09:06
+
+Opérateur: Admin Le Cayenne
+
+N°A0117
+
+À EMPORTER
+
+Qté	Article Description
+1	
+
+Sandwich Cayenne
+
+Viande 1: Poulet mariné ·Sauce (1ère Gratuite): Algérienne
+
+Instruction: SANDWICH CAYENNE
+Viandes : Poulet mariné - Salade, Tomate, Oignon
++ Menu (Frites + Boisson) (+3,00 €)
+↳ Grande Portion (+€1.00)
+↳ Cheddar Fondu (+€1.00)
+
+
+1	
+
+Menu (Frites + Boisson)
+
+Instruction: Grande Portion (+€1.00)
+Cheddar Fondu (+€1.00)
+
+Préparation — ne pas remettre au client

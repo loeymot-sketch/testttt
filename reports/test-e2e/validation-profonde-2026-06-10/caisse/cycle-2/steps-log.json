@@ -1,0 +1,311 @@
+[
+  {
+    "test": "T0",
+    "db": {
+      "purged_backlog_rows": "1",
+      "force_closed_open_sessions": "0",
+      "baseline_max_order_id": 4473,
+      "baseline_max_fiscal": 2155,
+      "baseline_orders_count": 2362
+    },
+    "ts": "2026-06-10T07:10:27.651Z"
+  },
+  {
+    "test": "T1",
+    "console_errors": [],
+    "console_errors_filtered_ws": 0,
+    "page_errors": [],
+    "http_errors": [],
+    "screenshots": 7,
+    "notes": {
+      "session_dialog_auto_opened": true,
+      "session_db": {
+        "id": "18",
+        "status": "open",
+        "opening": "50.00"
+      },
+      "tiles_all": 45,
+      "tiles_tacos": 2,
+      "tiles_search_cayenne": 3,
+      "search_all_match": true
+    },
+    "ts": "2026-06-10T07:10:45.491Z"
+  },
+  {
+    "test": "T2",
+    "console_errors": [],
+    "console_errors_filtered_ws": 0,
+    "page_errors": [],
+    "http_errors": [],
+    "screenshots": 7,
+    "notes": {
+      "wizard": {
+        "wizardTotal": 12,
+        "totalTxt": "€12.00",
+        "picks": [
+          "viande+",
+          "menu=full",
+          "frites=grande",
+          "frites+cheddar",
+          "note"
+        ]
+      },
+      "grand_total": {
+        "value": 12,
+        "text": "Total\n12,00 €"
+      },
+      "price_match_wizard_vs_cart": true
+    },
+    "ts": "2026-06-10T07:11:03.062Z"
+  },
+  {
+    "test": "T3",
+    "console_errors": [
+      {
+        "step": "b3-04-remise-gate-sans-raison",
+        "text": "[vuex] unknown action type: posCart/discountReason"
+      },
+      {
+        "step": "b3-05-remise-appliquee",
+        "text": "[vuex] unknown action type: posCart/discountReason"
+      },
+      {
+        "step": "b3-07-drawer-commandes-en-attente",
+        "text": "Failed to load resource: the server responded with a status of 422 (Unprocessable Content)"
+      }
+    ],
+    "console_errors_filtered_ws": 0,
+    "page_errors": [
+      {
+        "step": "b3-04-remise-gate-sans-raison",
+        "text": "Cannot read properties of undefined (reading 'then')"
+      },
+      {
+        "step": "b3-05-remise-appliquee",
+        "text": "Cannot read properties of undefined (reading 'then')"
+      }
+    ],
+    "http_errors": [
+      {
+        "step": "b3-07-drawer-commandes-en-attente",
+        "status": 422,
+        "url": "http://127.0.0.1:8766/api/frontend/loyalty/balance?code="
+      }
+    ],
+    "screenshots": 11,
+    "notes": {
+      "qty_increment": {
+        "before": 3.8,
+        "after": 7.6,
+        "doubled": true
+      },
+      "qty_decrement": {
+        "back_to": 3.8,
+        "restored": true
+      },
+      "discount_gate_apply_disabled_without_reason": true,
+      "discount_applied": {
+        "total_after": 3.8,
+        "expected_minus_10pct": 3.42
+      },
+      "park_api_status": 201,
+      "park_cart_emptied": true,
+      "parked_rows_db": 10,
+      "recall_cart_restored": true,
+      "recall_total": {
+        "restored_total": 3.8,
+        "expected": 3.8,
+        "match": true
+      },
+      "clear_cart_empty_state": true
+    },
+    "ts": "2026-06-10T07:11:28.078Z"
+  },
+  {
+    "test": "T4",
+    "console_errors": [],
+    "console_errors_filtered_ws": 0,
+    "page_errors": [],
+    "http_errors": [],
+    "screenshots": 12,
+    "notes": {
+      "wizard": {
+        "wizardTotal": 12,
+        "totalTxt": "€12.00",
+        "picks": [
+          "viande+",
+          "menu=full",
+          "frites=grande",
+          "frites+cheddar"
+        ]
+      },
+      "cart_total_ui": {
+        "value": 12,
+        "text": "Total\n12,00 €"
+      },
+      "quote_server": "NO_QUOTE_CALL_OBSERVED",
+      "change_due": {
+        "received": 22,
+        "displayed": "10.00€",
+        "value": 10,
+        "expected": 10
+      },
+      "order_post_status": 201,
+      "order_post_total": 10,
+      "receipt_visible": true,
+      "receipt_mentions": {
+        "operateur": true,
+        "tva": true,
+        "siret": true,
+        "vat_intra": true,
+        "designation_sandwich": true,
+        "total_eur": true
+      },
+      "print_button_visible": true,
+      "db_order": {
+        "id": 4474,
+        "source": 15,
+        "payment_status": 5,
+        "status": 7,
+        "total": 10,
+        "fiscal_sequence_no": 2156,
+        "pos_received_amount": 22,
+        "pos_payment_method": 1
+      },
+      "db_transactions": [],
+      "db_transactions_note": "table transactions = gateways online uniquement (0 rows attendu pour POS cash)",
+      "db_cash_movements": [
+        {
+          "type": "order_payment",
+          "dir": "in",
+          "amount": 10,
+          "session": 18
+        }
+      ],
+      "db_order_items": [
+        {
+          "id": "4228",
+          "item_id": "22",
+          "qty": "1",
+          "total_price": 7,
+          "item_extra_total": 0,
+          "snapshot_head": "{\"lines\": [{\"quantity\": 1, \"line_total\": 0, \"unit_price\": 0, \"attribute_id\": 1, \"variation_id\": 1, \"attribute_name\": \"Viande 1\", \"variation_name\": \"Poulet mariné\"}, {\"quantity\": 1, \"line_total\": 0, \"unit_price\": 0, \"attribute_id\": 5, \"variation_id\": 281, \"attribute_name\": \"Sauce (1ère Gratuite)\", \"variation_name\": \"Algérienne\"}], \"addons\": [], \"extras\": [], \"captured_at\": \"2026-06-10T09:12:06+02:0"
+        },
+        {
+          "id": "4229",
+          "item_id": "1",
+          "qty": "1",
+          "total_price": 3,
+          "item_extra_total": 0,
+          "snapshot_head": "{\"lines\": [], \"addons\": [], \"extras\": [], \"captured_at\": \"2026-06-10T09:12:06+02:00\", \"schema_version\": 1}"
+        }
+      ],
+      "caisse01": {
+        "upgrades_picked": [
+          "frites=grande",
+          "frites+cheddar"
+        ],
+        "wizard_total_shown": 12,
+        "ui_cart_total": 12,
+        "db_total": 10,
+        "delta_ui_vs_db": 2,
+        "sum_item_extra_total": 0,
+        "verdict": "CONFIRMED UNDER-BILLING: total affiché != total facturé DB (CAISSE-01, wizard frozen)"
+      }
+    },
+    "ts": "2026-06-10T07:12:12.924Z"
+  },
+  {
+    "test": "T5",
+    "console_errors": [
+      {
+        "step": "init",
+        "text": "Failed to load resource: the server responded with a status of 422 (Unprocessable Content)"
+      }
+    ],
+    "console_errors_filtered_ws": 0,
+    "page_errors": [],
+    "http_errors": [
+      {
+        "step": "init",
+        "status": 422,
+        "url": "http://127.0.0.1:8766/api/admin/pos/cash-drawer/open"
+      }
+    ],
+    "screenshots": 5,
+    "notes": {
+      "no_sale": {
+        "clicked": true,
+        "api_status": 422
+      },
+      "expected_in_drawer": {
+        "text": "60,00 €",
+        "value": 60
+      },
+      "movement_rows_ui": 1,
+      "variance_displayed": {
+        "counted": 62,
+        "text": "+2,00 €"
+      },
+      "db_session": {
+        "id": 18,
+        "status": "reconciled",
+        "opening": 50,
+        "closing": 62,
+        "expected": 60,
+        "variance": 2,
+        "reason": "Ecart test W-B +2"
+      },
+      "db_session_movements": [
+        {
+          "type": "order_payment",
+          "dir": "in",
+          "amount": 10
+        }
+      ]
+    },
+    "ts": "2026-06-10T07:12:33.410Z"
+  },
+  {
+    "test": "T6",
+    "console_errors": [],
+    "console_errors_filtered_ws": 0,
+    "page_errors": [],
+    "http_errors": [],
+    "screenshots": 3,
+    "notes": {
+      "list_fr_badges": {
+        "has_paye": false,
+        "has_status_fr": true,
+        "raw_label_leak": false,
+        "null_leak": false
+      },
+      "show": {
+        "order_id": 4474,
+        "phone_null_leak": false,
+        "has_total_eur": true
+      },
+      "tracker": {
+        "has_columns": true,
+        "raw_label_leak": false
+      }
+    },
+    "ts": "2026-06-10T07:13:00.184Z"
+  },
+  {
+    "test": "T7",
+    "console_errors": [],
+    "console_errors_filtered_ws": 0,
+    "page_errors": [],
+    "http_errors": [],
+    "screenshots": 1,
+    "notes": {
+      "queue": {
+        "pending_count_chip": "29",
+        "collect_buttons": 29
+      },
+      "duplicate_ticket_numbers": []
+    },
+    "ts": "2026-06-10T07:13:13.166Z"
+  }
+]

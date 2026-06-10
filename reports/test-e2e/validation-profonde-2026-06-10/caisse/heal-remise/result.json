@@ -1,0 +1,7 @@
+{
+  "before": 3.8,
+  "after": 3.42,
+  "expected": 3.42,
+  "console_errors": [],
+  "page_errors": []
+}
