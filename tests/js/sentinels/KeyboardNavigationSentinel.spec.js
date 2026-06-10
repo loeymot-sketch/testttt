@@ -189,7 +189,9 @@ describe('Keyboard navigation — focus-visible CSS contract (FK-L5.3-001)', () 
 
     it('Global :focus-visible ring is defined for buttons and [role=button]', () => {
         expect(appCss).toMatch(/button:focus-visible/);
-        expect(appCss).toMatch(/\[role="button"\]:focus-visible/);
+        // [W-F heal 2026-06-10] prod minifier (cssnano) strips optional attribute
+        // quotes: [role=button] — accept both forms (contract = the ring exists).
+        expect(appCss).toMatch(/\[role="?button"?\]:focus-visible/);
     });
 
     it('Kiosk touch surfaces declare a focus-visible outline (WCAG 2.4.7)', () => {
