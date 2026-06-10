@@ -502,6 +502,8 @@ export default {
   padding: 6px 18px 24px;
   background: transparent;
   min-height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .kiosk-step-title {
@@ -562,14 +564,16 @@ export default {
   border-radius: 50px;
 }
 
+/* [BU-01 2026-06-10] Responsive formula grid fills the canvas. */
 .kiosk-menu-options {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 22px 18px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 24px 20px;
   margin-bottom: 20px;
-  max-width: 820px;
+  max-width: 1040px;
   margin-left: auto;
   margin-right: auto;
+  align-content: start;
 }
 
 .kiosk-boisson-included {
@@ -581,9 +585,9 @@ export default {
 }
 
 .kiosk-menu-card {
-  min-height: 196px;
+  min-height: 232px;
   border-radius: 20px;
-  border: 1px solid var(--kiosk-border, #efefef);
+  border: 2px solid var(--kiosk-border, #ececec);
   background: var(--kiosk-surface, #fff);
   display: flex;
   flex-direction: column;
@@ -611,10 +615,11 @@ export default {
   outline-offset: 3px;
 }
 
+/* [BU-02 2026-06-10] Clear single-select (radio) affordance. */
 .kiosk-menu-card.selected {
   border-color: var(--kiosk-primary, #f4501e);
-  background: var(--kiosk-primary-light, rgba(244, 80, 30, 0.02));
-  box-shadow: 0 0 0 2px var(--kiosk-primary-light, rgba(244, 80, 30, 0.08)), var(--kiosk-shadow-card, none);
+  background: rgba(244, 80, 30, 0.08);
+  box-shadow: 0 0 0 3px rgba(244, 80, 30, 0.16), var(--kiosk-shadow-card, none);
 }
 
 .kiosk-menu-emoji {
@@ -678,18 +683,20 @@ export default {
   color: var(--kiosk-text, #333);
 }
 
+/* [BU-01 2026-06-10] Responsive drink grid fills the canvas. */
 .kiosk-boisson-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px 18px;
-  max-width: 900px;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 22px 20px;
+  max-width: 1040px;
   margin: 0 auto;
+  align-content: start;
 }
 
 .kiosk-boisson-card {
-  min-height: 170px;
+  min-height: 190px;
   border-radius: 20px;
-  border: 1px solid var(--kiosk-border, #efefef);
+  border: 2px solid var(--kiosk-border, #ececec);
   background: var(--kiosk-surface, #fff);
   display: flex;
   flex-direction: column;
@@ -710,10 +717,11 @@ export default {
   transform: scale(0.95);
 }
 
+/* [BU-02 2026-06-10] Clear single-select (radio) affordance. */
 .kiosk-boisson-card.selected {
   border-color: var(--kiosk-primary, #f4501e);
-  background: var(--kiosk-primary-light, rgba(244, 80, 30, 0.02));
-  box-shadow: 0 0 0 2px var(--kiosk-primary-light, rgba(244, 80, 30, 0.08)), var(--kiosk-shadow-card, none);
+  background: rgba(244, 80, 30, 0.08);
+  box-shadow: 0 0 0 3px rgba(244, 80, 30, 0.16), var(--kiosk-shadow-card, none);
 }
 
 .kiosk-boisson-visual {

@@ -319,7 +319,13 @@ export default {
   padding: 6px 18px 24px;
   background: transparent;
   min-height: 100%;
+  display: flex;
+  flex-direction: column;
 }
+/* [BU-01 2026-06-10] Flex column so the option grid can vertically center in
+   the tall portrait canvas — balances dead space instead of dumping it all at
+   the bottom (modern borne layout). margin:auto on the grid collapses to 0 when
+   content is tall, so long lists still flow/scroll from the top. */
 
 .kiosk-step-title {
   font-size: 15px;
@@ -388,26 +394,29 @@ export default {
   border: 1px solid rgba(245, 158, 11, 0.28);
 }
 
+/* [BU-01 2026-06-10] Responsive grid fills the portrait canvas (was rigid
+   2-col 900px which left ~60% of a tall borne empty); taller cards too. */
 .kiosk-viande-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 14px 18px;
-  max-width: 900px;
-  margin: 0 auto;
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  gap: 18px 20px;
+  max-width: 1100px;
+  margin: auto;            /* [BU-01] center both axes in the flex-column canvas */
+  align-content: center;
 }
 
 .kiosk-viande-card {
   display: grid;
-  grid-template-columns: 116px minmax(0, 1fr);
+  grid-template-columns: 132px minmax(0, 1fr);
   grid-template-rows: auto auto auto;
   align-items: center;
   justify-content: initial;
-  column-gap: 16px;
+  column-gap: 18px;
   row-gap: 8px;
-  min-height: 138px;
-  padding: 14px 18px;
+  min-height: 162px;
+  padding: 18px 20px;
   border-radius: 22px;
-  border: 1px solid var(--kiosk-border, #efefef);
+  border: 2px solid var(--kiosk-border, #ececec);
   background:
     linear-gradient(180deg, rgba(255,255,255,0.98), rgba(255,250,245,0.98));
   transition:
@@ -453,11 +462,13 @@ export default {
   font-size: 14px;
 }
 
+/* [BU-02 2026-06-10] Clear selected affordance — solid brand border + brand
+   ring + tinted fill so the chosen meat reads at a glance. */
 .kiosk-viande-card.active {
   border-color: var(--kiosk-primary, #F4501E);
   background:
-    linear-gradient(180deg, rgba(255,255,255,1), rgba(255,245,247,0.98));
-  box-shadow: 0 0 0 2px var(--kiosk-primary-light, rgba(244, 80, 30,0.08)), var(--kiosk-shadow-card, none);
+    linear-gradient(180deg, rgba(255,250,248,1), rgba(255,238,232,0.98));
+  box-shadow: 0 0 0 3px rgba(244, 80, 30, 0.16), var(--kiosk-shadow-card, none);
 }
 
 .kiosk-viande-card.is-selectable::after {
@@ -471,8 +482,8 @@ export default {
 
 .kiosk-viande-visual {
   grid-row: 1 / 4;
-  width: 110px;
-  height: 96px;
+  width: 124px;
+  height: 110px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -678,12 +689,12 @@ export default {
   }
 
   .kiosk-viande-card {
-    grid-template-columns: 96px minmax(0, 1fr);
+    grid-template-columns: 108px minmax(0, 1fr);
   }
 
   .kiosk-viande-visual {
-    width: 92px;
-    height: 82px;
+    width: 104px;
+    height: 94px;
   }
 }
 </style>

@@ -312,18 +312,21 @@ export default {
   border: 1px solid var(--kiosk-border, rgba(244, 80, 30,0.12));
 }
 
+/* [BU-01 2026-06-10] auto-fit keeps 4 wide on a borne but reflows gracefully
+   and fills the canvas; taller cards improve readability. */
 .kiosk-sauce-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 24px 18px;
-  max-width: 1040px;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 24px 20px;
+  max-width: 1100px;
   margin: 0 auto;
+  align-content: start;
 }
 
 .kiosk-option-card {
-  min-height: 188px;
+  min-height: 214px;
   border-radius: 20px;
-  border: 1px solid var(--kiosk-border, transparent);
+  border: 2px solid var(--kiosk-border, #ececec);
   background: var(--kiosk-surface, #fff);
   display: flex;
   flex-direction: column;
@@ -348,10 +351,12 @@ export default {
   outline-offset: 2px;
 }
 
+/* [BU-02 2026-06-10] Clear multi-select (checkbox) affordance — solid brand
+   border + tinted fill + ring; numbered order badge already shows pick order. */
 .kiosk-option-card.selected {
   border-color: var(--kiosk-primary, #F4501E);
-  background: var(--kiosk-primary-light, rgba(244, 80, 30,0.025));
-  box-shadow: 0 0 0 2px var(--kiosk-primary-light, rgba(244, 80, 30,0.08)), var(--kiosk-shadow-card, none);
+  background: rgba(244, 80, 30, 0.08);
+  box-shadow: 0 0 0 3px rgba(244, 80, 30, 0.16), var(--kiosk-shadow-card, none);
 }
 
 .kiosk-option-card.kiosk-variation--disabled {
