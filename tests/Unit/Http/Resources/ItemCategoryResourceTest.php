@@ -13,6 +13,7 @@ class ItemCategoryResourceTest extends TestCase
     {
         $resource = new ItemCategoryResource((object) [
             'id' => 1,
+            'parent_id' => null, // [release-v1 heal 2026-06-10] colonne hiérarchie (migration 2026_04_18) — stub schema-exact pour ItemCategoryResource.parent_id
             'name' => 'Sandwichs',
             'slug' => 'nos-sandwichs',
             'description' => null,
