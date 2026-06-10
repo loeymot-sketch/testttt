@@ -1,0 +1,42 @@
+[
+  {
+    "step": "A1 idle + À emporter + dine-in OFF",
+    "status": "PASS",
+    "proof": "a1-idle.jpg, a1-order-type.jpg"
+  },
+  {
+    "step": "A2 sidebar + 8 captures catégories",
+    "status": "PASS",
+    "proof": "a2-sidebar-full.jpg, a2-cat-{1..6,9,10}.jpg"
+  },
+  {
+    "step": "A3 wizards 7 items + back + next-disabled + cancel",
+    "status": "PASS",
+    "proof": "a3-*-step*.jpg, a3-next-disabled.jpg, a3-back-*.jpg, a3-cancel-*.jpg"
+  },
+  {
+    "step": "A4 panier complet (+1/-1, clamp 20, remove, clear, refill)",
+    "status": "PASS",
+    "proof": "a4-*.jpg"
+  },
+  {
+    "step": "A5 upsell SKIP + ACCEPT",
+    "status": "DEFECT-CAPTURED",
+    "proof": "a5-cart-with-upsell.jpg (+after-reload) — panier blanc, F-BORNE-07 live (heal pending merge); total paiement vérifié (+upsell)"
+  },
+  {
+    "step": "A6 loyalty code invalide -> message propre",
+    "status": "PASS",
+    "proof": "a6-loyalty-screen.jpg, a6-loyalty-invalid.jpg"
+  },
+  {
+    "step": "A7 confirm -> caisse + DB PENDING_COUNTER + no-dup",
+    "status": "PASS",
+    "proof": "a7-payment.jpg, a7-confirmation.jpg (order 4479 status=4)"
+  },
+  {
+    "step": "A8 rupture live + restore",
+    "status": "PASS",
+    "proof": "a8-rupture-badge.jpg, a8-rupture-click-noop.jpg, a8-restored.jpg"
+  }
+]
