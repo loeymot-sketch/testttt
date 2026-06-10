@@ -81,7 +81,7 @@ class AwardLoyaltyPointsOnDelivery
         }
 
         try {
-            $rate = (int) Settings::group('loyalty_setup')->get('loyalty_points_per_euro', 10);
+            $rate = (int) Settings::group('loyalty_setup')->get('loyalty_points_per_euro', 1);
             if ($rate <= 0) {
                 DB::table('orders')
                     ->where('id', $order->id)
@@ -99,7 +99,8 @@ class AwardLoyaltyPointsOnDelivery
             } else {
                 $orderTotal = (float) ($order->order_amount ?? $order->total ?? 0);
             }
-            $pointsToAward = (int) floor($orderTotal * $rate);
+            // [L1 D11] round (client parity: 0,90 € → 1 pt) — was floor.
+            $pointsToAward = (int) round($orderTotal * $rate);
 
             if ($pointsToAward <= 0) {
                 DB::table('orders')
