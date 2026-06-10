@@ -56,8 +56,9 @@
                     <div class="flex items-center justify-between md:justify-center gap-4">
                         <div v-if="setting.site_language_switch === enums.activityEnum.ENABLE"
                             class="dropdown-group relative">
-                            <button class="dropdown-btn flex items-center gap-2 h-9 px-3 rounded-lg bg-[#FFE8DD]">
-                                <img :src="language.image" alt="flag" class="w-4 h-4 rounded-full">
+                            <button class="dropdown-btn flex items-center gap-2 h-9 px-3 rounded-lg bg-[#FFE8DD]"
+                                :aria-label="$t('label.language')">
+                                <img :src="language.image" alt="" class="w-4 h-4 rounded-full">
                                 <span
                                     class="hidden md:block whitespace-nowrap text-xs font-medium capitalize text-heading">
                                     {{ language.name }}

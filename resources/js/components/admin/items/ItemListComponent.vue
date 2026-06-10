@@ -804,9 +804,12 @@ export default {
     font-weight: 800;
     text-transform: uppercase;
     /* [GOAL POLISH T-P2.4 — A-009] "INDISPONIBLES" was clipped in the 4-col
-       grid: let long labels wrap instead of overflowing. */
+       grid: let long labels wrap instead of overflowing.
+       [NEW-R4-04] hyphenate at linguistic boundaries instead of mid-word. */
     white-space: normal;
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
+    hyphens: auto;
+    -webkit-hyphens: auto;
     line-height: 1.2;
 }
 

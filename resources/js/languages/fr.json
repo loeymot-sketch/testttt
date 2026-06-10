@@ -1395,7 +1395,8 @@
     "subcategory_of": "sous-catégorie de",
     "add_category_title": "Ajouter une catégorie",
     "edit_category_title": "Modifier la catégorie",
-    "no_file_chosen": "Aucun fichier choisi"
+    "no_file_chosen": "Aucun fichier choisi",
+    "import_categories_title": "Importer des catégories"
   },
   "button": {
     "try_again": "Réessayer",
@@ -1509,7 +1510,8 @@
       "add_page_manual": "Ajouter une page manuellement"
     },
     "menu": "Menu",
-    "choose_file": "Choisir une image"
+    "choose_file": "Choisir une image",
+    "browse_file": "Choisir un fichier"
   },
   "error": {
     "rate_limited": "Trop de requêtes — patientez {seconds}s avant de réessayer.",
@@ -1629,7 +1631,7 @@
     "not_authorize": "Vous n’avez pas l’autorisation d’accéder à cette page.",
     "order_process_stage": "Étape de traitement de votre commande.",
     "order_ready_for_delivery": "Votre commande est prête pour la livraison.",
-    "pagination_label": "Affichage de {from} à {to} sur {total} entrées",
+    "pagination_label": "Affichage de {from} à {to} sur {total} entrée | Affichage de {from} à {to} sur {total} entrée | Affichage de {from} à {to} sur {total} entrées",
     "payment_method": "Le mode de paiement est obligatoire.",
     "photo_update": "Photo Mettre à jourd Successfully.",
     "please_check_your_order_list": "Veuillez consulter votre liste de commandes.",

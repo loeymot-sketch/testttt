@@ -1217,7 +1217,8 @@
     "subcategory_of": "فئة فرعية من",
     "add_category_title": "إضافة فئة",
     "edit_category_title": "تعديل الفئة",
-    "no_file_chosen": "لم يتم اختيار ملف"
+    "no_file_chosen": "لم يتم اختيار ملف",
+    "import_categories_title": "استيراد الفئات"
   },
   "button": {
     "try_again": "أعد المحاولة",
@@ -1330,7 +1331,8 @@
       "add_page_manual": "إضافة صفحة يدويًا"
     },
     "menu": "القائمة",
-    "choose_file": "اختر صورة"
+    "choose_file": "اختر صورة",
+    "browse_file": "اختر ملفًا"
   },
   "error": {
     "something_wrong": "هل هناك خطب ما",
@@ -1384,7 +1386,7 @@
     },
     "kds_recall_grace_expired": "لا يمكن التراجع: انتهت مهلة الإلغاء (60 ثانية).",
     "kds_status_conflict": "تم تعديل الطلب في مكان آخر. تم تحديث القائمة — راجع الحالة قبل المتابعة.",
-    "pagination_label": "عرض {from} إلى {to} من مدخلات {total}",
+    "pagination_label": "عرض {from} إلى {to} من {total} إدخال | عرض {from} إلى {to} من {total} إدخال | عرض {from} إلى {to} من {total} إدخالات",
     "password_update": "تم تحديث كلمة المرور بنجاح.",
     "photo_update": "تم تحديث الصورة بنجاح.",
     "image_update": "تم تحديث الصورة بنجاح.",

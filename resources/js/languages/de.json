@@ -836,7 +836,8 @@
     "subcategory_of": "Unterkategorie von",
     "add_category_title": "Kategorie hinzufügen",
     "edit_category_title": "Kategorie bearbeiten",
-    "no_file_chosen": "Keine Datei gewählt"
+    "no_file_chosen": "Keine Datei gewählt",
+    "import_categories_title": "Kategorien importieren"
   },
   "button": {
     "kds_print_ticket": "Ticket drucken",
@@ -937,7 +938,8 @@
       "choose_template_v2": "Template waehlen",
       "add_page_manual": "Seite manuell hinzufuegen"
     },
-    "choose_file": "Bild auswählen"
+    "choose_file": "Bild auswählen",
+    "browse_file": "Datei auswählen"
   },
   "number": {
     "10": "10",
@@ -990,7 +992,7 @@
       "delete_profile_confirm": "Diesen Assistenten endgültig löschen (Seiten + Versionen)? Nicht rückgängig machbar.",
       "choice_prices_hint": "Preise werden auf der Produktseite gepflegt (nie auf der Assistentenseite)."
     },
-    "pagination_label": "Anzeigen {from} Zu {to} von {total} einträge",
+    "pagination_label": "Zeige {from} bis {to} von {total} Eintrag | Zeige {from} bis {to} von {total} Eintrag | Zeige {from} bis {to} von {total} Einträgen",
     "password_update": "Passwort erfolgreich aktualisiert.",
     "photo_update": "Foto erfolgreich aktualisiert.",
     "image_upload": "Bild-Upload erfolgreich.",

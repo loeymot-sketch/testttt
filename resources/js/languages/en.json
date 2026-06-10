@@ -1412,7 +1412,8 @@
     "subcategory_of": "subcategory of",
     "add_category_title": "Add a category",
     "edit_category_title": "Edit category",
-    "no_file_chosen": "No file chosen"
+    "no_file_chosen": "No file chosen",
+    "import_categories_title": "Import categories"
   },
   "button": {
     "try_again": "Try again",
@@ -1525,7 +1526,8 @@
       "add_page_manual": "Add a page manually"
     },
     "menu": "Menu",
-    "choose_file": "Choose an image"
+    "choose_file": "Choose an image",
+    "browse_file": "Choose a file"
   },
   "error": {
     "something_wrong": "Something Wrong.",
@@ -1583,7 +1585,7 @@
     "kds_status_conflict": "Cette commande a été modifiée ailleurs. L'écran a été rafraîchi ; vérifiez l'état avant d'agir.",
     "new_pos_order": "New order",
     "new_pos_order_with_id": "New order #{id}",
-    "pagination_label": "Showing {from} to {to} of {total} entries",
+    "pagination_label": "Showing {from} to {to} of {total} entry | Showing {from} to {to} of {total} entry | Showing {from} to {to} of {total} entries",
     "password_update": "Password Updated Successfully.",
     "photo_update": "Photo Updated Successfully.",
     "image_update": "Image Updated Successfully.",
