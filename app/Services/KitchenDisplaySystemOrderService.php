@@ -491,7 +491,19 @@ class KitchenDisplaySystemOrderService
             // [P3-2 FIX] Include ACCEPT orders so new POS orders appear on items board immediately
             // without waiting for chef to click "Start Preparing"
             $query = Order::with('orderItems')
-                ->whereIn('status', KitchenReleaseRule::itemBoardStatuses());
+                ->whereIn('status', KitchenReleaseRule::itemBoardStatuses())
+                // [RED-KDS-01 / ultra-audit 2026-06-10 — LOT E] Same release
+                // predicate as the main board (lines 74-82): unreleased orders
+                // (DELIVERY+UNPAID, POS+UNPAID non-cash) must not feed kitchen
+                // prep through the items board side door.
+                ->where(function ($query) {
+                    $query->where('payment_status', PaymentStatus::PAID)
+                        ->orWhere('payment_status', PaymentStatus::PENDING_COUNTER)
+                        ->orWhere(function ($cashQuery) {
+                            $cashQuery->where('order_type', OrderType::POS)
+                                ->where('pos_payment_method', PosPaymentMethod::CASH);
+                        });
+                });
 
             // Admin bypass: branch_id=0 sees all branches
             if ($userBranchId > 0) {

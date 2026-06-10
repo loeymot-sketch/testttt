@@ -63,9 +63,27 @@ export function getPriceOptionsFromStore(lists) {
     if (!lists) return {};
     return {
         currencySymbol: lists.site_default_currency_symbol || '€',
-        position: lists.site_currency_position || 'right',
+        position: normalizeCurrencyPosition(lists.site_currency_position),
         digits: parseInt(lists.site_digit_after_decimal_point, 10) || 2,
     };
+}
+
+/**
+ * [F-BV-01 / ultra-audit 2026-06-10] settings.site_currency_position is the
+ * NUMERIC CurrencyPosition enum (LEFT=5, RIGHT=10 — app/Enums/
+ * CurrencyPosition.php), but formatKioskPrice compares position to the
+ * STRING 'right' (10 === 'right' was always false) → the whole kiosk fell
+ * back to symbol-before "€1,50". Normalize numeric/string enum values to the
+ * 'left'/'right' strings the formatter expects; FR default = 'right'.
+ * @param {number|string|undefined} raw - raw settings value (5, 10, '5', '10', 'left', 'right')
+ * @returns {'left'|'right'}
+ */
+export function normalizeCurrencyPosition(raw) {
+    const numeric = parseInt(raw, 10);
+    if (numeric === 5) return 'left';
+    if (numeric === 10) return 'right';
+    if (typeof raw === 'string' && raw.toLowerCase() === 'left') return 'left';
+    return 'right';
 }
 
 /**
