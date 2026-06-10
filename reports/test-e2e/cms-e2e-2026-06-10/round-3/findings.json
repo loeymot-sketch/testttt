@@ -1,0 +1,44 @@
+{
+  "round": 3,
+  "reviewer": "adversarial-supervisor-round-3",
+  "reviewed_at": "2026-06-10",
+  "scope": "Convergence-confirmation sweep on FRESH round-3 captures (17 states A1-A7d + B1-B6): raw-i18n regex on all 18 DOMs (incl. B6 iframe), console/network on every state, key PNGs read + zoom crops (A3, A4, A6 card, A7a stats, B3, B6 panel+select), proof JSONs (A4-parent-options, B6-panel-elements, sync-proof, cleanup), set-equality vs round-2 findings.json.",
+  "p0_p1_count": 0,
+  "stability": {
+    "round1_p1_fixes_still_hold": {
+      "A-001_parent_lock": "A4-parent-options.json = [\"Aucune\"]; A4 DOM select#parent_id contains exactly one <option>Aucune</option>; A4 PNG shows closed select 'Aucune'. LOCK HOLDS.",
+      "A-002_glyphs": "A6 PNG zoom: product card footer renders 3 crisp glyphs (cog/eye/trash); studio rows render pencil+trash. No empty pills.",
+      "B-001_fieldset_fr": "B6 iframe DOM + PNG zoom: <legend>Logique des choix</legend> + 3 FR radios (Choix unique/multiples/Personnalisé), 0 raw keys.",
+      "B-002_no_prices_panel": "B6-panel-elements.json {prices:false, presetSingle/Multiple/Custom:true}; PNG shows fieldset -> Min/Max -> Quantite, no prices panel.",
+      "B-003_csp": "All console.json contain ONLY allowlisted ws://127.0.0.1:6001 Pusher warnings (A1,A5,A7a,A7c,B1,B5x2); zero errors, zero CSP violations."
+    },
+    "hygiene": {
+      "console": "17/17 clean (allowlist-only)",
+      "network": "17/17 network.json empty — zero >=400",
+      "i18n_raw_keys": "0 hits across all 18 DOM files",
+      "numeric_integrity": "PASS — categories 12->13->12 (A1/A3/A7d 'sur N entrées'); articles 45->46->45 (A5 '45 articles', A6 '46 articles', A7a '1 produits/46 actifs' -> A7b '0 produits/45 actifs'); price 5,00 € FR on A6 card",
+      "cleanup": "PASS — round-3 rows item 79 + category 24 soft-deleted (deleted_at 15:50:46 / 15:50:55); prior rounds' rows 77/78 + 22/23 unchanged",
+      "sync_proof": "COHERENT — is_available 0 after rupture / 1 after restore, last_domain_events = ItemAvailabilityChanged + CatalogChanged at BOTH steps, matching B3 'RUPTURE' badge and B4 'EN STOCK' PNG/DOM"
+    },
+    "new_p0": 0,
+    "new_p1": 0,
+    "new_p2_p3": 0
+  },
+  "set_equal_with_round2": true,
+  "differences": [],
+  "open_set_reproduction": [
+    {"id": "R2-NEW-01", "severity": "P2", "reproduced": true, "evidence": "B6 iframe DOM composer-step-source-ref = exactly 3 options (Toutes les options / Viande 1 / Sauce (1ère Gratuite)); still no Taille / Viande 2 / Garnitures group."},
+    {"id": "A-003", "severity": "P2", "reproduced": true, "evidence": "A1/A3 DOM+PNG: '↳ Tacos Signature SOUS-CATÉGORIE DE TACOS' parked at row 2 under Sandwich Cayenne while Tacos sits lower in the list."},
+    {"id": "A-004", "severity": "P2", "reproduced": true, "evidence": "A5 DOM: bg-rose-700 x1 + bg-green-700 x1 studio CTAs."},
+    {"id": "A-005", "severity": "P2", "reproduced": true, "evidence": "A5 DOM: dropdown-btn buttons without accessible name + xmark button present."},
+    {"id": "A-006", "severity": "P3", "reproduced": true, "evidence": "'1 articles' x2 (A6 DOM), '1 PRODUITS' stats (A7a DOM+PNG zoom), 'exactement 1 articles' (B6 iframe + PNG zoom 'doit choisir exactement 1')."},
+    {"id": "A-007", "severity": "P3", "reproduced": true, "evidence": "type=file native input in A2/A4 DOM; A4 PNG shows English 'Choose File / No fil...hosen' inside FR modal."},
+    {"id": "A-008", "severity": "P3", "reproduced": true, "evidence": "A2/A4 DOM+PNG: modal-title still 'Catégories' in create and edit modes."},
+    {"id": "A-009", "severity": "P3", "reproduced": true, "evidence": "A7a PNG zoom: 'INDISPONIBLES' clipped at stats-card right edge."},
+    {"id": "R2-NEW-02", "severity": "P3", "reproduced": true, "evidence": "A4 DOM: only hint under locked parent select is still the generic wizard note; no 'has children' explanation."},
+    {"id": "R2-NEW-03", "severity": "P3", "reproduced": true, "evidence": "A7a DOM: aria-label='Dupliquer' still renders lab-add-circle-line (circled plus) x2."},
+    {"id": "B-005", "severity": "P3", "reproduced": true, "evidence": "B6 PNG zoom: source selects truncate ('…t prod', 'Toutes les op')."}
+  ],
+  "notes": "Anti-flake confirmation cycle: the round-3 open set is byte-for-byte the same 3 P2 + 8 P3 as round-2 (same symptoms, same loci), zero new findings of any severity, zero regressions on the 5 round-1 P1 fixes, A4 lock and sync events stable on fresh captures. Two consecutive clean adversarial cycles with identical residual sets = convergence confirmed.",
+  "verdict": "CONVERGED"
+}
