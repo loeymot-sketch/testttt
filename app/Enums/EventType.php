@@ -63,6 +63,12 @@ class EventType
             self::MENU_EXTRA_AVAILABILITY_CHANGED,
             self::MENU_VARIATION_AVAILABILITY_CHANGED,
             self::CATALOG_CHANGED,
+            // [GOAL LOYALTY_UNIFIED_SYNC L2 2026-06-11 — heal audit petits-systemes]
+            // Le const existait (l.23) mais manquait dans all() : EventContract::validate()
+            // (EventContract.php:109) rejetait chaque envelope loyalty.balance_changed
+            // (48 final failures DispatchDomainEventsJob, laravel-2026-06-11.log) →
+            // le push live du solde fidélité ne partait jamais.
+            self::LOYALTY_BALANCE_CHANGED,
             self::STOCK_LOW,
             self::COUPON_CHANGED,
             // [P13]

@@ -40,6 +40,11 @@ class EventContractTest extends TestCase
             'menu.extra_availability_changed',
             'menu.variation_availability_changed',
             'catalog.changed',
+            // [GOAL LOYALTY_UNIFIED_SYNC L2 2026-06-11 — heal audit petits-systemes]
+            // Le commit L2 (e784f9353) a déclaré le const + dispatché l'event mais a
+            // oublié all() ET cette liste canonique : chaque envelope
+            // loyalty.balance_changed était rejetée par EventContract::validate().
+            'loyalty.balance_changed',
             'stock.low',
             // [PROMO-DASH-2026-05-06] cycle-6 Dashboard promo broadcast
             'promo.coupon_changed',
