@@ -148,7 +148,17 @@ export default {
         },
         sourceLabel(step) {
             const key = `${step.source_type}:${String(step.source_ref ?? '')}`;
-            return this.sourceLabels[key] || step.source_type;
+            if (this.sourceLabels[key]) return this.sourceLabels[key];
+            // [VADV-2 heal 2026-06-10] humanise le source_type plutôt que de laisser
+            // fuiter le token snake_case brut (ex 'item_attribute') devant le gérant.
+            const human = {
+                item_attribute: this.$t('label.item_attribute') || 'Attribut produit',
+                extra_group: this.$t('label.extra_group') || 'Groupe de suppléments',
+                menu_component: this.$t('label.menu_component') || 'Composant menu',
+                generic_choices: this.$t('label.generic_choices') || 'Choix génériques',
+            };
+            return human[step.source_type]
+                || String(step.source_type || '').replace(/_/g, ' ').replace(/^\w/, (c) => c.toUpperCase());
         },
         iconFor(step) {
             if (step.source_type === 'addon') return 'lab lab-addon';

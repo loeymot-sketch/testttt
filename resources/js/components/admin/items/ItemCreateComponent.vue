@@ -5,7 +5,7 @@
     <div id="sidebar" class="drawer">
         <div class="drawer-header">
             <h3 class="drawer-title">{{ $t("menu.items") }}</h3>
-            <button class="fa-solid fa-xmark close-btn" @click="reset"></button>
+            <button type="button" class="fa-solid fa-xmark close-btn" @click="reset" :aria-label="$t('button.close')" :title="$t('button.close')"></button>
         </div>
         <div class="drawer-body">
             <form @submit.prevent="save">
@@ -47,7 +47,7 @@
                     </div>
 
                     <div class="form-col-12 sm:form-col-6">
-                        <label class="db-field-title">{{ $t("label.image") }}</label>
+                        <label for="image" class="db-field-title">{{ $t("label.image") }}</label>
                         <input @change="changeImage" v-bind:class="errors.image ? 'invalid' : ''" id="image" type="file"
                             class="db-field-control" ref="imageProperty" accept="image/png, image/jpeg, image/jpg" data-testid="admin-item-form-image">
                         <small class="db-field-alert" v-if="errors.image">{{ errors.image[0] }}</small>
