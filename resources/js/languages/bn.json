@@ -112,7 +112,7 @@
         "promo": "প্রচার",
         "communications": "যোগাযোগ",
         "users": "ব্যবহারকারী",
-        "accounts": "হিসাব",
+        "accounts": "অ্যাকাউন্ট",
         "reports": "রিপোর্ট",
         "setup": "সেটআপ",
         "home": "হোম",
@@ -126,12 +126,7 @@
         "kiosk_machines": "কিয়স্ক মেশিন",
         "ingredients": "উপকরণ",
         "advanced_tools": "উন্নত টুল",
-        "demo_wizard_advanced": "উন্নত উইজার্ড ডেমো",
-        "communications": "যোগাযোগ",
-        "users": "ব্যবহারকারী",
-        "accounts": "অ্যাকাউন্ট",
-        "reports": "রিপোর্ট",
-        "setup": "সেটআপ"
+        "demo_wizard_advanced": "উন্নত উইজার্ড ডেমো"
     },
     "label": {
         "kds_served_ago_hours": "{hours} ঘণ্টা আগে",
@@ -811,7 +806,22 @@
             "usage_drawer_close": "বন্ধ করুন",
             "usage_empty": "কোনো পণ্য বা বিভাগ এই উপকরণটি ব্যবহার করে না।",
             "view_details": "বিস্তারিত দেখুন"
-        }
+        },
+        "max_uses_global": "সর্বোচ্চ ব্যবহার (মোট)",
+        "valid_hours_start": "বৈধতার শুরুর সময়",
+        "valid_hours_end": "বৈধতার শেষ সময়",
+        "valid_days_of_week": "বৈধ সপ্তাহের দিন",
+        "surfaces": "সারফেস",
+        "branch_scope": "শাখার সীমা",
+        "branch_scope_help": "কমা দিয়ে আলাদা শাখা আইডি (খালি = সব)।",
+        "monday_short": "সোম",
+        "tuesday_short": "মঙ্গল",
+        "wednesday_short": "বুধ",
+        "thursday_short": "বৃহ",
+        "friday_short": "শুক্র",
+        "saturday_short": "শনি",
+        "sunday_short": "রবি",
+        "surface": "সারফেস"
     },
     "button": {
         "kds_print_ticket": "টিকিট প্রিন্ট করুন",

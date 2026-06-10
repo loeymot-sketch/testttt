@@ -162,10 +162,17 @@
                     <div class="form-col-12">
                         <label class="db-field-title">{{ $t('label.valid_days_of_week') }}</label>
                         <div class="flex flex-wrap gap-3" role="group" aria-label="valid_days_of_week">
+                            <!-- [F-WC-01 heal 2026-06-10] .custom-checkbox-field is absolute
+                                 w-full h-full and REQUIRES the .custom-checkbox relative
+                                 wrapper (design-system pair, cf. RoleShowComponent) — without
+                                 it the invisible input stretched over the whole form and
+                                 intercepted the Save click. -->
                             <label v-for="d in dayOptions" :key="d.id" class="inline-flex items-center gap-1">
-                                <input type="checkbox" :value="d.id" v-model="props.form.valid_days_of_week"
-                                    :id="'day_' + d.id" class="custom-checkbox-field" />
-                                <span class="custom-checkbox-span"></span>
+                                <span class="custom-checkbox">
+                                    <input type="checkbox" :value="d.id" v-model="props.form.valid_days_of_week"
+                                        :id="'day_' + d.id" class="custom-checkbox-field" />
+                                    <i class="fa-solid fa-check custom-checkbox-icon"></i>
+                                </span>
                                 <span>{{ d.name }}</span>
                             </label>
                         </div>
@@ -175,9 +182,11 @@
                         <label class="db-field-title">{{ $t('label.surfaces') }}</label>
                         <div class="flex flex-wrap gap-3" role="group" aria-label="surfaces">
                             <label v-for="s in surfaceOptions" :key="s.id" class="inline-flex items-center gap-1">
-                                <input type="checkbox" :value="s.id" v-model="props.form.surfaces"
-                                    :id="'surface_' + s.id" class="custom-checkbox-field" />
-                                <span class="custom-checkbox-span"></span>
+                                <span class="custom-checkbox">
+                                    <input type="checkbox" :value="s.id" v-model="props.form.surfaces"
+                                        :id="'surface_' + s.id" class="custom-checkbox-field" />
+                                    <i class="fa-solid fa-check custom-checkbox-icon"></i>
+                                </span>
                                 <span>{{ s.name }}</span>
                             </label>
                         </div>

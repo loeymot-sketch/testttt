@@ -37,10 +37,13 @@ class SiteRequest extends FormRequest
             'site_language_switch'           => ['required', 'numeric'],
             'site_app_debug'                 => ['required', 'numeric'],
             'site_auto_update'               => ['nullable', 'numeric'],
-            'site_google_map_key'            => ['required', 'string', 'max:190'],
+            // [F-WC-02 heal 2026-06-10] shipped empty on V1 LOCAL (no Google
+            // Maps usage) — 'required' made EVERY Paramètres/Site save 422.
+            'site_google_map_key'            => ['nullable', 'string', 'max:190'],
             'site_android_app_link'          => ['nullable', 'string', 'max:190'],
             'site_ios_app_link'              => ['nullable', 'string', 'max:190'],
-            'site_copyright'                 => ['required', 'string', 'max:190'],
+            // [F-WC-02 heal 2026-06-10] same: empty by default → save blocked.
+            'site_copyright'                 => ['nullable', 'string', 'max:190'],
             'site_online_payment_gateway'    => ['required', 'numeric'],
             'site_default_sms_gateway'       => ['nullable', 'numeric'],
             'site_guest_login'               => ['required', 'numeric'],

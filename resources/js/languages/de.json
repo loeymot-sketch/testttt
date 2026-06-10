@@ -114,7 +114,7 @@
         "users": "Benutzer",
         "accounts": "Konten",
         "reports": "Berichte",
-        "setup": "aufstellen",
+        "setup": "Einrichtung",
         "home": "Heim",
         "dining_tables": "Eettafels",
         "table_orders": "Tafelbestellingen",
@@ -126,12 +126,7 @@
         "kiosk_machines": "Kiosk Machines",
         "ingredients": "Zutaten",
         "advanced_tools": "Erweiterte Werkzeuge",
-        "demo_wizard_advanced": "Demo erweiterter Wizard",
-        "communications": "Kommunikation",
-        "users": "Benutzer",
-        "accounts": "Konten",
-        "reports": "Berichte",
-        "setup": "Einrichtung"
+        "demo_wizard_advanced": "Demo erweiterter Wizard"
     },
     "label": {
         "kds_served_ago_hours": "vor {hours} Std.",
@@ -811,7 +806,22 @@
             "usage_drawer_close": "Schließen",
             "usage_empty": "Kein Produkt und keine Kategorie verwendet diese Zutat.",
             "view_details": "Details anzeigen"
-        }
+        },
+        "max_uses_global": "Max. Nutzungen (gesamt)",
+        "valid_hours_start": "Gültig ab (Uhrzeit)",
+        "valid_hours_end": "Gültig bis (Uhrzeit)",
+        "valid_days_of_week": "Gültige Wochentage",
+        "surfaces": "Oberflächen",
+        "branch_scope": "Filial-Beschränkung",
+        "branch_scope_help": "Filial-IDs durch Kommas getrennt (leer = alle).",
+        "monday_short": "Mo",
+        "tuesday_short": "Di",
+        "wednesday_short": "Mi",
+        "thursday_short": "Do",
+        "friday_short": "Fr",
+        "saturday_short": "Sa",
+        "sunday_short": "So",
+        "surface": "Oberfläche"
     },
     "button": {
         "kds_print_ticket": "Ticket drucken",
