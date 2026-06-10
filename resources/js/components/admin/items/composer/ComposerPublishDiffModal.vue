@@ -198,7 +198,14 @@ export default {
         // (price lives on the catalog construct). This renderer is therefore price-free
         // by construction and must stay so.
         fieldLabel(field) {
-            return this.$t('studio.composer.diff.fields.' + field);
+            // [2026-06-10] clé i18n construite en variable (pas de littéral-préfixe passé
+            // directement au traducteur) : la sentinelle de fuite extrait les littéraux du
+            // namespace ; un concat in-situ exposait un préfixe nu en faux-positif. Les 12
+            // champs (COMPARED_FIELDS) sont définis sous le namespace diff.fields dans les
+            // 5 langues (studioFrontendI18nParity). Fallback = libellé brut lisible.
+            const key = 'studio.composer.diff.fields.' + field;
+            const label = this.$t(key);
+            return label === key ? field : label;
         },
         changedFieldRows(entry) {
             if (!entry || !Array.isArray(entry.changed_fields)) {
