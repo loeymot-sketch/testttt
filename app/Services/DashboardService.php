@@ -194,6 +194,11 @@ class DashboardService
                 $orderSummaryArray["rejected"] = 0;
             }
 
+            // [CDV-05 / ultra-audit 2026-06-10] Real order count for the donut
+            // center label — the series above are PERCENTAGES, so the frontend
+            // summing them displayed a meaningless "95" instead of the total.
+            $orderSummaryArray["total_orders"] = $total_order;
+
             return $orderSummaryArray;
         } catch (Exception $exception) {
             Log::info($exception->getMessage());

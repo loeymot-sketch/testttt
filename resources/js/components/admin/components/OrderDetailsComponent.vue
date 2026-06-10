@@ -194,7 +194,9 @@ export default {
                 },
                 paymentStatusEnumArray: {
                     [paymentStatusEnum.PAID]: this.$t("label.paid"),
-                    [paymentStatusEnum.UNPAID]: this.$t("label.unpaid")
+                    [paymentStatusEnum.UNPAID]: this.$t("label.unpaid"),
+                    [paymentStatusEnum.PENDING_COUNTER]: this.$t("label.pending_counter"),
+                    [paymentStatusEnum.REFUNDED]: this.$t("label.refunded")
                 },
                 paymentTypeEnumArray: {
                     [paymentTypeEnum.CASH_ON_DELIVERY]: this.$t("label.cash_on_delivery"),

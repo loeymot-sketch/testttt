@@ -114,6 +114,8 @@ export default {
         this.returned = res.data.data.returned;
         this.canceled = res.data.data.canceled;
         this.rejected = res.data.data.rejected;
+        // [CDV-05] real count for the donut center (series are percentages)
+        const totalOrders = parseInt(res.data.data.total_orders ?? 0);
 
         this.options = {
           series: [parseInt(this.delivered), parseInt(this.returned), parseInt(this.canceled), parseInt(this.rejected)],
@@ -140,8 +142,10 @@ export default {
                 total: {
                   show: true,
                   label: this.$t('label.total'),
-                  formatter: function (w) {
-                    return w.config.series.reduce((a, b) => a + b, 0);
+                  // [CDV-05] the series are PERCENTAGES — summing them showed
+                  // a meaningless "95". Display the real order count instead.
+                  formatter: function () {
+                    return String(totalOrders);
                   }
                 }
               }
