@@ -1,0 +1,53 @@
+diff --git a/resources/js/components/admin/items/composer/ProductComposerEditorComponent.vue b/resources/js/components/admin/items/composer/ProductComposerEditorComponent.vue
+index d8ffeb83e..79c521df6 100644
+--- a/resources/js/components/admin/items/composer/ProductComposerEditorComponent.vue
++++ b/resources/js/components/admin/items/composer/ProductComposerEditorComponent.vue
+@@ -758,11 +758,18 @@ export default {
+             return this.personalPageEditStepId != null;
+         },
+         // The selected step is an editable options group (extra_group) that already exists server-side
+-        // (has an id) → expose "Modifier les options". A draft step (no id) must be saved first.
++        // (has an id) AND is bound to a named group (non-empty source_ref) → expose "Modifier les
++        // options". A draft step (no id) must be saved first. The source_ref guard mirrors the backend:
++        // showPersonalPage/updatePersonalPage both abort 422 when source_ref is empty (an UNBOUND
++        // extra_group step — e.g. a provisioned catch-all "garnitures"/"suppléments" page whose
++        // template step matched no real category group). Without this guard the button appeared on
++        // unbound steps and clicking it surfaced a 422 error banner — a broken affordance. is_active is
++        // deliberately NOT required: a bound-but-inactive group is still a coherent edit target.
+         selectedStepIsEditableGroup() {
+             return Boolean(this.selectedStep
+                 && this.selectedStep.source_type === 'extra_group'
+-                && this.selectedStep.id);
++                && this.selectedStep.id
++                && String(this.selectedStep.source_ref ?? '').trim() !== '');
+         },
+         previewBranches() {
+             if (!this.branches.length) return [];
+diff --git a/tests/js/composerPersonalPageReedit.spec.js b/tests/js/composerPersonalPageReedit.spec.js
+index 7cbb4a5cf..e59bb7137 100644
+--- a/tests/js/composerPersonalPageReedit.spec.js
++++ b/tests/js/composerPersonalPageReedit.spec.js
+@@ -181,4 +181,23 @@ describe('ProductComposerEditorComponent personal-page re-edit (W1)', () => {
+         );
+         expect(axios.put).not.toHaveBeenCalled();
+     });
++
++    // [GOAL_WIZARD_E2E_PARITY W6 heal] An UNBOUND extra_group step (empty source_ref — e.g. a
++    // provisioned catch-all "garnitures"/"suppléments" page that matched no real category group)
++    // is NOT editable: the backend showPersonalPage/updatePersonalPage both abort 422 when
++    // source_ref is empty. The edit affordance must therefore be HIDDEN on it, so the gérant never
++    // hits a 422 error banner from a button that promised an edit.
++    it('hides "Modifier les options" on an UNBOUND extra_group step (empty source_ref)', async () => {
++        const wrapper = await mountEditor({ itemId: 7 });
++        // Bound step → button shows (sanity).
++        expect(wrapper.vm.selectedStepIsEditableGroup).toBe(true);
++        expect(wrapper.find('[data-testid="composer-edit-personal-page"]').exists()).toBe(true);
++
++        // Unbind the selected step (mirror a provisioned unbound catch-all page).
++        wrapper.vm.selectedStep.source_ref = '';
++        await wrapper.vm.$nextTick();
++
++        expect(wrapper.vm.selectedStepIsEditableGroup).toBe(false);
++        expect(wrapper.find('[data-testid="composer-edit-personal-page"]').exists()).toBe(false);
++    });
+ });
