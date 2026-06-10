@@ -215,7 +215,22 @@ export default {
             image: "",
             errors: {},
             showAdvanced: false,
+            // [heal P2-1] full unpaginated category list for the parent
+            // select (the table's store list is paginated at 50 — beyond
+            // that, parents would silently vanish from the dropdown).
+            allCategories: null,
         }
+    },
+    mounted() {
+        const http = typeof axios !== 'undefined' ? axios : (typeof window !== 'undefined' ? window.axios : null);
+        if (!http) return; // test env without global axios → fallback = store lists
+        http.get('admin/setting/item-category', { params: { paginate: 0, status: 5 } })
+            .then((response) => {
+                this.allCategories = response.data?.data || [];
+            })
+            .catch(() => {
+                this.allCategories = null; // fallback = store lists
+            });
     },
     computed: {
         addButton: function () {
@@ -227,7 +242,9 @@ export default {
         // self-parent). A category that HAS children cannot itself get a
         // parent (depth 3) — backend rejects it, so hide the select too.
         parentOptions: function () {
-            const lists = this.$store.getters['itemCategory/lists'] || [];
+            const lists = (Array.isArray(this.allCategories) && this.allCategories.length)
+                ? this.allCategories
+                : (this.$store.getters['itemCategory/lists'] || []);
             const editingId = this.$store.getters['itemCategory/temp'].temp_id;
             const editedHasChildren = editingId !== null && editingId !== undefined
                 && lists.some((category) => category.parent_id === editingId);
