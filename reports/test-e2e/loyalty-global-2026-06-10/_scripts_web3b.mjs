@@ -1,0 +1,17 @@
+import { chromium } from 'playwright';
+const OUT='/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/.claude/worktrees/cms-gestion-2026-06-10/reports/test-e2e/loyalty-global-2026-06-10';
+const b = await chromium.launch();
+const p = await (await b.newContext({viewport:{width:1440,height:900}})).newPage();
+await p.goto('http://127.0.0.1:8096/',{waitUntil:'networkidle'});
+await p.waitForTimeout(2500);
+await p.locator('button').filter({hasText:/Se connecter/}).first().click();
+await p.waitForTimeout(1500);
+await p.locator('input[type=email]').fill('ikyes@example.com');
+await p.locator('input[type=password]').fill('motdepasse123');
+const btns = await p.evaluate(()=>[...document.querySelectorAll('button')].map(e=>e.textContent.trim()));
+console.log('MODAL BTNS:', JSON.stringify(btns.filter(Boolean)));
+await p.keyboard.press('Enter');
+await p.waitForTimeout(2500);
+console.log('AFTER:', (await p.evaluate(()=>document.body.innerText.slice(0,300))).replace(/\n+/g,' | '));
+await p.screenshot({path:OUT+'/L-B8-web-after-login.png'});
+await b.close();

@@ -1,0 +1,22 @@
+import { chromium } from 'playwright';
+const OUT='/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/.claude/worktrees/cms-gestion-2026-06-10/reports/test-e2e/loyalty-global-2026-06-10';
+const b = await chromium.launch();
+const p = await (await b.newContext({viewport:{width:1440,height:900}})).newPage();
+await p.goto('http://127.0.0.1:8096/',{waitUntil:'networkidle'});
+await p.waitForTimeout(2500);
+await p.locator('button').filter({hasText:/Se connecter/}).first().click();
+await p.waitForTimeout(1500);
+await p.locator('input[type=email]').fill('ikyes@example.com');
+await p.locator('input[type=password]').fill('motdepasse123');
+await p.locator('.lc-modal button').filter({hasText:'Se connecter'}).last().click({force:true});
+await p.waitForTimeout(2500);
+// close welcome modal
+const closeBtn = p.locator('button[aria-label="Fermer"]').last();
+if(await closeBtn.count()) await closeBtn.click({force:true});
+await p.waitForTimeout(1500);
+await p.locator('header').locator('a,button').filter({hasText:'Fidélité'}).first().click({force:true});
+await p.waitForTimeout(2500);
+await p.screenshot({path:OUT+'/L-B8-web-loyalty-connected.png',fullPage:true});
+const t = await p.evaluate(()=>document.body.innerText);
+console.log('LOYALTY:', t.slice(0,2200).replace(/\n+/g,' | '));
+await b.close();

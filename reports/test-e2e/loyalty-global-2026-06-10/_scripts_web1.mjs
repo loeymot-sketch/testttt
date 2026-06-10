@@ -1,0 +1,11 @@
+import { chromium } from 'playwright';
+const OUT='/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/.claude/worktrees/cms-gestion-2026-06-10/reports/test-e2e/loyalty-global-2026-06-10';
+const b = await chromium.launch();
+const p = await (await b.newContext({viewport:{width:1440,height:900}})).newPage();
+await p.goto('http://127.0.0.1:8096/',{waitUntil:'networkidle'});
+await p.waitForTimeout(3000);
+await p.screenshot({path:OUT+'/L-B8-web-home.png'});
+console.log('HOME:', (await p.evaluate(()=>document.body.innerText.slice(0,400))).replace(/\n+/g,' | '));
+const navs = await p.evaluate(()=>[...document.querySelectorAll('a,button')].map(e=>e.textContent.trim()).filter(t=>t&&t.length<30).slice(0,40));
+console.log('NAV:', JSON.stringify([...new Set(navs)]));
+await b.close();

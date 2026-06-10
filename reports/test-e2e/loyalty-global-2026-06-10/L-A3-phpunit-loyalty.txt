@@ -1,0 +1,25 @@
+   PASS  Tests\Feature\Boot\ProductionBootGuardsCompletenessSentinelTest
+   PASS  Tests\Feature\ConcurrentOrderTest
+   PASS  Tests\Feature\Configuration\EnvExampleHasLoyaltyQrSecretSentinelTest
+   PASS  Tests\Feature\Fiscal\ManualDiscountDisabledV1SentinelTest
+   PASS  Tests\Feature\FrontendDiscountIntegrityTest
+   PASS  Tests\Feature\KioskLoyaltyDoubleRedeemRefusedTest
+   PASS  Tests\Feature\KioskLoyaltyLedgerAtomicTest
+   PASS  Tests\Feature\KioskPhase1\LoyaltyConsentTest
+   PASS  Tests\Feature\KioskPhase1\LoyaltyOptInEndpointTest
+   PASS  Tests\Feature\KioskPhase1\Phase1MigrationsTest
+   PASS  Tests\Feature\Loyalty\KioskRedeemWholePointSnapSentinelTest
+   PASS  Tests\Feature\Loyalty\LoyaltyBalanceThrottleParityTest
+   PASS  Tests\Feature\Loyalty\LoyaltyClawbackOnRefundSentinelTest
+   PASS  Tests\Feature\Loyalty\LoyaltyRefundPointsIdempotentTest
+   PASS  Tests\Feature\Loyalty\PosCustomerActiveStatus5LoyaltyTest
+   PASS  Tests\Feature\Loyalty\PosLoyaltyAccrualRealPathTest
+   PASS  Tests\Feature\Loyalty\PosRedemptionTtcTaxDoubleCountSentinelTest
+   PASS  Tests\Feature\LoyaltyApiTest
+   PASS  Tests\Feature\OrderCancellationLoyaltyTest
+   PASS  Tests\Feature\Pos\PosLoyaltyRedeemTest
+   PASS  Tests\Feature\Refund\RefundLoyaltyTryCatchHardenedSentinelTest
+   PASS  Tests\Feature\Refund\RefundWithCounterEntryRefundsLoyaltyPointsTest
+   PASS  Tests\Feature\Sentinels\LoyaltyQrSigningSentinelTest
+   PASS  Tests\Feature\Database\IndexCoverageSentinel
+  Tests:  79 passed

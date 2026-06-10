@@ -1,0 +1,5 @@
+DB=foodking_e2e
+SETTING {"id":73,"group":"loyalty_setup","key":"loyalty_points_per_euro","payload":"{\"$cast\": null, \"$value\": 10}","settingable_type":null,"settingable_id":null,"created_at":"2026-06-10 23:09:07","updated_at":"2026-06-10 23:09:07"}
+SETTING {"id":74,"group":"loyalty_setup","key":"loyalty_points_for_1_euro_discount","payload":"{\"$cast\": null, \"$value\": 100}","settingable_type":null,"settingable_id":null,"created_at":"2026-06-10 23:09:07","updated_at":"2026-06-10 23:09:07"}
+SETTING {"id":75,"group":"loyalty_setup","key":"loyalty_min_redeem_points","payload":"{\"$cast\": null, \"$value\": 50}","settingable_type":null,"settingable_id":null,"created_at":"2026-06-10 23:09:07","updated_at":"2026-06-10 23:09:07"}
+CUSTOMER id=44 name=Victim Secret phone=0612345678 code=VICT1234 points=250
