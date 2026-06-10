@@ -1,0 +1,102 @@
+{"step":"E1a","kind":"http-401","detail":"GET http://127.0.0.1:8766/api/admin/dashboard/realtime-report"}
+{"step":"E1a","kind":"console","detail":"Failed to load resource: the server responded with a status of 401 (Unauthorized)"}
+{"step":"E1a","kind":"http-401","detail":"GET http://127.0.0.1:8766/api/admin/dashboard/total-sales"}
+{"step":"E1a","kind":"console","detail":"Failed to load resource: the server responded with a status of 401 (Unauthorized)"}
+{"step":"E1a","kind":"http-401","detail":"GET http://127.0.0.1:8766/api/admin/dashboard/total-orders"}
+{"step":"E1a","kind":"console","detail":"Failed to load resource: the server responded with a status of 401 (Unauthorized)"}
+{"step":"E1a","kind":"http-401","detail":"GET http://127.0.0.1:8766/api/admin/dashboard/total-menu-items"}
+{"step":"E1a","kind":"console","detail":"Failed to load resource: the server responded with a status of 401 (Unauthorized)"}
+{"step":"E1a","kind":"http-401","detail":"GET http://127.0.0.1:8766/api/admin/dashboard/sla-alerts"}
+{"step":"E1a","kind":"console","detail":"Failed to load resource: the server responded with a status of 401 (Unauthorized)"}
+{"step":"E1a","kind":"http-401","detail":"GET http://127.0.0.1:8766/api/admin/dashboard/channel-statistics"}
+{"step":"E1a","kind":"console","detail":"Failed to load resource: the server responded with a status of 401 (Unauthorized)"}
+{"step":"E1a","kind":"http-401","detail":"GET http://127.0.0.1:8766/api/admin/dashboard/audit-trail"}
+{"step":"E1a","kind":"console","detail":"Failed to load resource: the server responded with a status of 401 (Unauthorized)"}
+{"step":"E1a","kind":"pageerror","detail":"Request failed with status code 401"}
+{"step":"E1a","kind":"http-401","detail":"GET http://127.0.0.1:8766/api/admin/dashboard/order-statistics"}
+{"step":"E1a","kind":"console","detail":"Failed to load resource: the server responded with a status of 401 (Unauthorized)"}
+{"step":"E1a","kind":"http-401","detail":"GET http://127.0.0.1:8766/api/admin/dashboard/sales-summary"}
+{"step":"E1a","kind":"console","detail":"Failed to load resource: the server responded with a status of 401 (Unauthorized)"}
+{"step":"E1a","kind":"http-401","detail":"GET http://127.0.0.1:8766/api/admin/dashboard/order-summary"}
+{"step":"E1a","kind":"console","detail":"Failed to load resource: the server responded with a status of 401 (Unauthorized)"}
+{"step":"E1a","kind":"http-401","detail":"GET http://127.0.0.1:8766/api/admin/fiscal/z-report"}
+{"step":"E1a","kind":"console","detail":"Failed to load resource: the server responded with a status of 401 (Unauthorized)"}
+{"step":"E1a","kind":"http-401","detail":"GET http://127.0.0.1:8766/api/admin/dashboard/featured-items"}
+{"step":"E1a","kind":"console","detail":"Failed to load resource: the server responded with a status of 401 (Unauthorized)"}
+{"step":"E1a","kind":"http-401","detail":"GET http://127.0.0.1:8766/api/admin/dashboard/popular-items"}
+{"step":"E1a","kind":"console","detail":"Failed to load resource: the server responded with a status of 401 (Unauthorized)"}
+{"step":"E1a","kind":"http-401","detail":"GET http://127.0.0.1:8766/api/admin/dashboard/customer-states"}
+{"step":"E1a","kind":"console","detail":"Failed to load resource: the server responded with a status of 401 (Unauthorized)"}
+{"step":"E1a","kind":"http-401","detail":"GET http://127.0.0.1:8766/api/admin/dashboard/top-customers"}
+{"step":"E1a","kind":"console","detail":"Failed to load resource: the server responded with a status of 401 (Unauthorized)"}
+{"step":"E1a","kind":"http-401","detail":"GET http://127.0.0.1:8766/api/admin/pos/counter-collect/pending"}
+{"step":"E1a","kind":"console","detail":"Failed to load resource: the server responded with a status of 401 (Unauthorized)"}
+{"step":"E1a","kind":"http-401","detail":"POST http://127.0.0.1:8766/api/auth/logout"}
+{"step":"E1a","kind":"console","detail":"Failed to load resource: the server responded with a status of 401 (Unauthorized)"}
+{"step":"E1a","kind":"http-401","detail":"GET http://127.0.0.1:8766/api/admin/dashboard/realtime-report"}
+{"step":"E1a","kind":"console","detail":"Failed to load resource: the server responded with a status of 401 (Unauthorized)"}
+{"step":"E1a","kind":"http-401","detail":"GET http://127.0.0.1:8766/api/admin/dashboard/total-sales"}
+{"step":"E1a","kind":"console","detail":"Failed to load resource: the server responded with a status of 401 (Unauthorized)"}
+{"step":"E1a","kind":"http-401","detail":"GET http://127.0.0.1:8766/api/admin/dashboard/total-orders"}
+{"step":"E1a","kind":"console","detail":"Failed to load resource: the server responded with a status of 401 (Unauthorized)"}
+{"step":"E1a","kind":"http-401","detail":"GET http://127.0.0.1:8766/api/admin/dashboard/total-menu-items"}
+{"step":"E1a","kind":"console","detail":"Failed to load resource: the server responded with a status of 401 (Unauthorized)"}
+{"step":"E1a","kind":"http-401","detail":"GET http://127.0.0.1:8766/api/admin/dashboard/sla-alerts"}
+{"step":"E1a","kind":"console","detail":"Failed to load resource: the server responded with a status of 401 (Unauthorized)"}
+{"step":"E1a","kind":"http-401","detail":"GET http://127.0.0.1:8766/api/admin/dashboard/channel-statistics"}
+{"step":"E1a","kind":"console","detail":"Failed to load resource: the server responded with a status of 401 (Unauthorized)"}
+{"step":"E1a","kind":"http-401","detail":"GET http://127.0.0.1:8766/api/admin/dashboard/audit-trail"}
+{"step":"E1a","kind":"console","detail":"Failed to load resource: the server responded with a status of 401 (Unauthorized)"}
+{"step":"E1a","kind":"pageerror","detail":"Request failed with status code 401"}
+{"step":"E1a","kind":"http-401","detail":"GET http://127.0.0.1:8766/api/admin/dashboard/order-statistics"}
+{"step":"E1a","kind":"console","detail":"Failed to load resource: the server responded with a status of 401 (Unauthorized)"}
+{"step":"E1a","kind":"http-401","detail":"GET http://127.0.0.1:8766/api/admin/dashboard/sales-summary"}
+{"step":"E1a","kind":"console","detail":"Failed to load resource: the server responded with a status of 401 (Unauthorized)"}
+{"step":"E1a","kind":"http-401","detail":"GET http://127.0.0.1:8766/api/admin/dashboard/order-summary"}
+{"step":"E1a","kind":"console","detail":"Failed to load resource: the server responded with a status of 401 (Unauthorized)"}
+{"step":"E1b","kind":"http-400","detail":"POST http://127.0.0.1:8766/api/auth/login"}
+{"step":"E1b","kind":"console","detail":"Failed to load resource: the server responded with a status of 400 (Bad Request)"}
+{"step":"E1c","kind":"http-429","detail":"POST http://127.0.0.1:8766/api/auth/login"}
+{"step":"E1c","kind":"console","detail":"Failed to load resource: the server responded with a status of 429 (Too Many Requests)"}
+{"step":"E2a","kind":"http-401","detail":"GET http://127.0.0.1:8766/api/login"}
+{"step":"E2a","kind":"console","detail":"Failed to load resource: the server responded with a status of 401 (Unauthorized)"}
+{"step":"E3a","kind":"http-401","detail":"POST http://127.0.0.1:8766/api/auth/logout"}
+{"step":"E3a","kind":"console","detail":"Failed to load resource: the server responded with a status of 401 (Unauthorized)"}
+{"step":"E3a","kind":"pageerror","detail":"Request failed with status code 401"}
+{"step":"E3a","kind":"http-401","detail":"POST http://127.0.0.1:8766/api/auth/logout"}
+{"step":"E3a","kind":"console","detail":"Failed to load resource: the server responded with a status of 401 (Unauthorized)"}
+{"step":"E4","kind":"http-401","detail":"GET http://127.0.0.1:8766/api/admin/dashboard/realtime-report"}
+{"step":"E4","kind":"console","detail":"Failed to load resource: the server responded with a status of 401 (Unauthorized)"}
+{"step":"E4","kind":"http-401","detail":"GET http://127.0.0.1:8766/api/admin/dashboard/total-sales"}
+{"step":"E4","kind":"console","detail":"Failed to load resource: the server responded with a status of 401 (Unauthorized)"}
+{"step":"E4","kind":"http-401","detail":"GET http://127.0.0.1:8766/api/admin/dashboard/total-orders"}
+{"step":"E4","kind":"console","detail":"Failed to load resource: the server responded with a status of 401 (Unauthorized)"}
+{"step":"E4","kind":"http-401","detail":"GET http://127.0.0.1:8766/api/admin/dashboard/total-menu-items"}
+{"step":"E4","kind":"console","detail":"Failed to load resource: the server responded with a status of 401 (Unauthorized)"}
+{"step":"E4","kind":"http-401","detail":"GET http://127.0.0.1:8766/api/admin/dashboard/sla-alerts"}
+{"step":"E4","kind":"console","detail":"Failed to load resource: the server responded with a status of 401 (Unauthorized)"}
+{"step":"E4","kind":"http-401","detail":"GET http://127.0.0.1:8766/api/admin/dashboard/channel-statistics"}
+{"step":"E4","kind":"console","detail":"Failed to load resource: the server responded with a status of 401 (Unauthorized)"}
+{"step":"E4","kind":"http-401","detail":"GET http://127.0.0.1:8766/api/admin/dashboard/audit-trail"}
+{"step":"E4","kind":"console","detail":"Failed to load resource: the server responded with a status of 401 (Unauthorized)"}
+{"step":"E4","kind":"pageerror","detail":"Request failed with status code 401"}
+{"step":"E4","kind":"http-401","detail":"GET http://127.0.0.1:8766/api/admin/dashboard/order-statistics"}
+{"step":"E4","kind":"console","detail":"Failed to load resource: the server responded with a status of 401 (Unauthorized)"}
+{"step":"E4","kind":"http-401","detail":"GET http://127.0.0.1:8766/api/admin/dashboard/sales-summary"}
+{"step":"E4","kind":"console","detail":"Failed to load resource: the server responded with a status of 401 (Unauthorized)"}
+{"step":"E4","kind":"http-401","detail":"GET http://127.0.0.1:8766/api/admin/dashboard/order-summary"}
+{"step":"E4","kind":"console","detail":"Failed to load resource: the server responded with a status of 401 (Unauthorized)"}
+{"step":"E4","kind":"http-401","detail":"GET http://127.0.0.1:8766/api/admin/fiscal/z-report"}
+{"step":"E4","kind":"console","detail":"Failed to load resource: the server responded with a status of 401 (Unauthorized)"}
+{"step":"E4","kind":"http-401","detail":"GET http://127.0.0.1:8766/api/admin/dashboard/featured-items"}
+{"step":"E4","kind":"console","detail":"Failed to load resource: the server responded with a status of 401 (Unauthorized)"}
+{"step":"E4","kind":"http-401","detail":"GET http://127.0.0.1:8766/api/admin/dashboard/popular-items"}
+{"step":"E4","kind":"console","detail":"Failed to load resource: the server responded with a status of 401 (Unauthorized)"}
+{"step":"E4","kind":"http-401","detail":"GET http://127.0.0.1:8766/api/admin/dashboard/customer-states"}
+{"step":"E4","kind":"console","detail":"Failed to load resource: the server responded with a status of 401 (Unauthorized)"}
+{"step":"E4","kind":"http-401","detail":"GET http://127.0.0.1:8766/api/admin/dashboard/top-customers"}
+{"step":"E4","kind":"console","detail":"Failed to load resource: the server responded with a status of 401 (Unauthorized)"}
+{"step":"E4","kind":"http-401","detail":"GET http://127.0.0.1:8766/api/admin/pos/counter-collect/pending"}
+{"step":"E4","kind":"console","detail":"Failed to load resource: the server responded with a status of 401 (Unauthorized)"}
+{"step":"E4","kind":"http-401","detail":"POST http://127.0.0.1:8766/api/auth/logout"}
+{"step":"E4","kind":"console","detail":"Failed to load resource: the server responded with a status of 401 (Unauthorized)"}

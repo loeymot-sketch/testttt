@@ -1,0 +1,9 @@
+{"step":"E1a","status":"PASS","proof":"login 201 -> /admin/dashboard -> logout -> re-login 201 -> logout"}
+{"step":"E1b","status":"PASS","proof":"400 generique identique existing/ghost; UI FR=true"}
+{"step":"E1c","status":"PASS","proof":"429 au plafond (max=500); UI shown=true fr=false; purge -> login 201"}
+{"step":"E2a","status":"PASS","proof":"url=http://127.0.0.1:8766/kiosk/idle — page auto-login KioskLoginComponent"}
+{"step":"E2b","status":"PASS","proof":"F3 present=false; generique actif/inconnu identiques; inactive+wrong=\"Cette borne est désactivée. Réactivez-la dans Admin → Paramè\"; relogin 201"}
+{"step":"E3a-/admin/administrators","status":"OBSERVED","proof":"final=/admin/dashboard blank=false"}
+{"step":"E3a-/admin/settings/site","status":"OBSERVED","proof":"final=/admin/dashboard blank=false"}
+{"step":"E3b","status":"PASS","proof":"kiosk:order -> 403 token_ability_insufficient; no-token -> 401"}
+{"step":"E4","status":"PASS","proof":"back->/login (dashboard non visible); direct->/login"}

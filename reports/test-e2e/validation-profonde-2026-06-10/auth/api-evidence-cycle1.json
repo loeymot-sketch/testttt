@@ -1,0 +1,100 @@
+{
+  "e1b_existing_wrong_pw": {
+    "status": 400,
+    "body": {
+      "errors": {
+        "validation": "Identifiants invalides ou compte bloqué"
+      }
+    }
+  },
+  "e1b_ghost_wrong_pw": {
+    "status": 400,
+    "body": {
+      "errors": {
+        "validation": "Identifiants invalides ou compte bloqué"
+      }
+    }
+  },
+  "e1c_lockout_429": {
+    "maxAttempts": 500,
+    "method": "seeded-to-cap-then-1-real-attempt",
+    "response": {
+      "status": 429,
+      "body": {
+        "message": "Too many login attempts. Please try again later.",
+        "retry_after": 600
+      }
+    }
+  },
+  "e1c_after_purge_good_login": {
+    "status": 201
+  },
+  "e2a_kiosk_login_page": {
+    "finalUrl": "http://127.0.0.1:8766/kiosk/idle",
+    "text": "🌮\n🍔\n🍟\nBienvenue !\n\nCommandez en quelques touches\n\nÀ emporter\nJe récupère ma commande\n\nCHOISISSEZ UNE OPTION POUR COMMENCER"
+  },
+  "e2b_active_wrong_pw": {
+    "status": 400,
+    "body": {
+      "errors": {
+        "validation": "Identifiants invalides ou compte bloqué"
+      }
+    }
+  },
+  "e2b_unknown_username": {
+    "status": 400,
+    "body": {
+      "errors": {
+        "validation": "Identifiants invalides ou compte bloqué"
+      }
+    }
+  },
+  "e2b_inactive_wrong_pw": {
+    "status": 400,
+    "body": {
+      "errors": {
+        "validation": "Cette borne est désactivée. Réactivez-la dans Admin → Paramètres → Bornes (statut actif)."
+      }
+    }
+  },
+  "e2b_inactive_correct_pw": {
+    "status": 400,
+    "body": {
+      "errors": {
+        "validation": "Cette borne est désactivée. Réactivez-la dans Admin → Paramètres → Bornes (statut actif)."
+      }
+    }
+  },
+  "e2b_active_correct_pw": {
+    "status": 201,
+    "hasToken": true
+  },
+  "e3a_/admin/administrators": {
+    "finalPath": "/admin/dashboard",
+    "blank": false,
+    "textSample": "Bonjour\nE2E WE Rbac\nE2E WE Rbac\n\ne2e-we-rbac@test.fr\n\n0,00 €\nModifier Le Profil\nChanger Le Mot De Passe\nDéconnexion\nTableau De Bord\nPOS\nIngrédients\nCommandes Caisse\nHistorique\nEncaissement\nVue Caisse "
+  },
+  "e3a_/admin/settings/site": {
+    "finalPath": "/admin/dashboard",
+    "blank": false,
+    "textSample": "Bonjour\nE2E WE Rbac\nE2E WE Rbac\n\ne2e-we-rbac@test.fr\n\n0,00 €\nModifier Le Profil\nChanger Le Mot De Passe\nDéconnexion\nTableau De Bord\nPOS\nIngrédients\nCommandes Caisse\nHistorique\nEncaissement\nVue Caisse "
+  },
+  "e3b_kiosk_token_admin_route": {
+    "status": 403,
+    "body": {
+      "message": "Kiosk-scoped tokens cannot access admin routes.",
+      "error": "token_ability_insufficient"
+    }
+  },
+  "e3b_no_token": {
+    "status": 401
+  },
+  "e4_back_after_logout": {
+    "finalPath": "/login",
+    "dashboardVisible": false,
+    "textSample": "Français\nAnglais\nFrançais\nConnexion\nBon Retour\nEmail\nMot De Passe\nSe Souvenir De Moi\nMot De Passe Oublié\nConnexion"
+  },
+  "e4_direct_dashboard": {
+    "directPath": "/login"
+  }
+}
