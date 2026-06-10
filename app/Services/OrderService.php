@@ -2306,7 +2306,7 @@ class OrderService
     {
         $hasTrace = $order->fiscal_sequence_no !== null
             || \App\Models\OrderPayment::query()
-                ->withoutGlobalScopes()
+                ->withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
                 ->where('order_id', $order->id)
                 ->exists()
             || \App\Models\Transaction::query()
