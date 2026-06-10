@@ -312,7 +312,7 @@
                 </button>
                 <button
                     type="button"
-                    class="db-btn h-[44px] justify-center bg-[#1ab759] text-white"
+                    class="db-btn h-[44px] justify-center bg-[#15803d] text-white"
                     data-testid="admin-composer-publish"
                     :disabled="conflictDetected || publishing"
                     @click="publishConfirmOpen = true"
@@ -341,7 +341,7 @@
                     <button type="button" class="db-btn-outline" data-testid="composer-publish-cancel" @click="publishConfirmOpen = false">
                         {{ t('label.cancel', 'Annuler') }}
                     </button>
-                    <button type="button" class="db-btn bg-[#1ab759] text-white" data-testid="composer-publish-confirm" @click="publish">
+                    <button type="button" class="db-btn bg-[#15803d] text-white" data-testid="composer-publish-confirm" @click="publish">
                         <i class="lab lab-tick-circle-2" aria-hidden="true"></i>
                         {{ t('label.composer.publish', 'Publier') }}
                     </button>
@@ -554,7 +554,7 @@
                     </button>
                     <button
                         type="button"
-                        class="db-btn bg-[#1ab759] text-white"
+                        class="db-btn bg-[#15803d] text-white"
                         data-testid="composer-personal-page-submit"
                         :disabled="personalPageSaving"
                         @click="submitPersonalPage"
@@ -1438,6 +1438,10 @@ export default {
             if (this.isDirty && !this.confirmLeave()) {
                 return;
             }
+            // [CMS-UX-1 heal 2026-06-10] L'utilisateur a déjà confirmé l'abandon ici ;
+            // marque clean AVANT le push pour que beforeRouteLeave ne re-déclenche pas
+            // une 2e confirmation identique (double-prompt). Pas de perte : on quitte.
+            this.markClean();
             if (this.$router?.push) {
                 if (this.isCategoryComposer) {
                     this.$router.push({ name: 'admin.items.studio', query: { item_category_id: this.resolvedEntityId } });

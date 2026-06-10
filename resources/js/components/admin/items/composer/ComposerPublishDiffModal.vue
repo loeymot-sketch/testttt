@@ -236,6 +236,19 @@ export default {
                 }
                 return value.map((surface) => this.surfaceLabel(surface)).join(', ');
             }
+            // [CMS-UX-2 heal 2026-06-10] source_type : token technique -> libellé gérant
+            // (item_attribute/extra_group/addon). Évite d'afficher l'enum brut dans le diff.
+            if (field === 'source_type') {
+                const map = {
+                    item_attribute: this.$t('label.item_attribute'),
+                    extra_group: this.$t('label.extra_group'),
+                    addon: this.$t('label.composer.source_addon'),
+                    menu_component: this.$t('label.menu_component'),
+                    generic_choices: this.$t('label.generic_choices'),
+                };
+                const lbl = map[value];
+                if (lbl && lbl !== '' && !/^label\./.test(lbl)) return lbl;
+            }
             return String(value);
         },
         surfaceLabel(surface) {
@@ -453,7 +466,7 @@ export default {
 
 .composer-diff-modal__primary {
     border: 1px solid #1ab759;
-    background: #1ab759;
+    background: #15803d;
     color: #ffffff;
 }
 

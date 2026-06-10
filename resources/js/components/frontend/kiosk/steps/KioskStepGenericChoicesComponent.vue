@@ -190,6 +190,12 @@ export default {
 <style scoped>
 .kiosk-step-generic {
   padding: 8px 18px 28px;
+  /* [BU-01 2026-06-10 heal] centrage vertical du canvas portrait — ce step (rendu
+     par item 33 + tout wizard CMS retombant sur generic_choices) avait été omis du
+     lot BU-01 initial : le vide était dumpé en bas. Même pattern que les steps nommés. */
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .kiosk-step-title {
@@ -217,6 +223,11 @@ export default {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 12px;
+  /* [BU-01 2026-06-10 heal] centre la grille dans le canvas flex-column ; margin
+     auto retombe à 0 quand le contenu est haut (longues listes scrollent depuis le haut). */
+  margin: auto;
+  align-content: center;
+  width: 100%;
 }
 
 /* [BU-01 2026-06-10] Slightly larger, more readable choice cards. */
