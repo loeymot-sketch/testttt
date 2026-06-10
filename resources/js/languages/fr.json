@@ -561,7 +561,8 @@
             "choice_logic": "Logique des choix",
             "preset_single": "Choix unique (1 obligatoire)",
             "preset_multiple": "Choix multiples (libre)",
-            "preset_custom": "Personnalisé (réglages ci-dessous)"
+            "preset_custom": "Personnalisé (réglages ci-dessous)",
+            "unsaved_changes": "Modifications non sauvegardées"
         },
         "wizard_configured": "Wizard configuré",
         "view_product": "Voir le produit",
@@ -1567,7 +1568,8 @@
             "guidance_zero_steps_option_template": "Préférable : choisis un template (Tacos, Sandwich…) pour partir d'une base prête.",
             "guidance_zero_steps_option_manual": "Sinon : ajoute une page manuelle pour configurer ton propre parcours.",
             "delete_profile_confirm": "Supprimer définitivement ce wizard (pages + versions) ? Cette action est irréversible.",
-            "choice_prices_hint": "Prix modifiables depuis la fiche produit (jamais sur la page wizard)."
+            "choice_prices_hint": "Prix modifiables depuis la fiche produit (jamais sur la page wizard).",
+            "unsaved_leave_confirm": "Vous avez des modifications non sauvegardées. Quitter sans sauvegarder le brouillon ?"
         },
         "kds_recall_grace_expired": "Rappel impossible : délai d'annulation (60 s) dépassé.",
         "kds_status_conflict": "Cette commande a été modifiée ailleurs. L'écran a été rafraîchi — vérifiez l'état avant d'agir.",
@@ -2248,7 +2250,26 @@
                 "cancel": "Annuler",
                 "loading": "Calcul du diff…",
                 "error": "Impossible de calculer le diff",
-                "retry": "Réessayer"
+                "retry": "Réessayer",
+                "before": "Avant",
+                "after": "Après",
+                "empty_value": "—",
+                "yes": "Oui",
+                "no": "Non",
+                "fields": {
+                    "label": "Titre de la page",
+                    "source_type": "Type de source",
+                    "source_ref": "Source liée",
+                    "source_item_attribute_id": "Attribut produit",
+                    "min_select": "Sélection minimale",
+                    "max_select": "Sélection maximale",
+                    "allow_repeat": "Répétition autorisée",
+                    "visible_on": "Visible sur",
+                    "stockable_choices": "Choix gérés en stock",
+                    "position": "Position",
+                    "is_active": "Page active",
+                    "addon_role": "Rôle addon"
+                }
             },
             "conflict": {
                 "title": "Conflit de version",

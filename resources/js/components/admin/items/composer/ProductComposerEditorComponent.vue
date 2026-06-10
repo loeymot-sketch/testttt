@@ -182,6 +182,14 @@
                                 {{ t('label.composer.edit_options', 'Modifier les options') }}
                             </button>
                             <span
+                                v-if="isDirty"
+                                class="inline-flex items-center gap-1.5 rounded-full border border-[#f0b840] bg-[#fff3d6] px-3 py-1 text-xs font-semibold text-[#8a5a12]"
+                                data-testid="admin-composer-dirty-badge"
+                            >
+                                <span class="h-2 w-2 rounded-full bg-[#f4501e]" aria-hidden="true"></span>
+                                {{ t('label.composer.unsaved_changes', 'Modifications non sauvegardées') }}
+                            </span>
+                            <span
                                 class="rounded-full border px-3 py-1 text-xs font-semibold"
                                 :class="profile?.is_published ? 'border-[#b9e7c8] bg-[#edf9f1] text-[#14743a]' : 'border-[#e4d8b5] bg-[#fff8df] text-[#8a6812]'"
                                 data-testid="admin-composer-publish-state"
@@ -630,6 +638,10 @@ export default {
             previewRefreshKey: 0,
             previewTimer: null,
             loadError: '',
+            // CMS-UX-1 dirty guard — JSON snapshot of the saved (clean) editor state.
+            // Compared against the live editor state to surface a "modifications non
+            // sauvegardées" badge + confirm-on-leave. Refreshed on every load/save/publish.
+            cleanSnapshot: '',
             personalPageOpen: false,
             personalPageSaving: false,
             personalPageError: '',
@@ -791,14 +803,48 @@ export default {
             if (!scoped) return this.branches;
             return [scoped, ...this.branches.filter((branch) => Number(branch.id) !== Number(this.branchIdScope))];
         },
+        // CMS-UX-1 — serialized live editor state (pages + branch scope). The wizard's
+        // editable surface is `steps` + `branchIdScope`; that is exactly what saveDraft()
+        // persists via profilePayload(). Snapshot uses the SAME normalized step payload so
+        // cosmetic key/position re-derivation never produces a false-positive dirty.
+        editorSnapshot() {
+            return JSON.stringify({
+                branch_id_scope: this.branchIdScope || null,
+                steps: this.steps.map((step, index) => this.payloadForStep({ ...step, position: index })),
+            });
+        },
+        isDirty() {
+            // Before the first load completes cleanSnapshot is '' — never flag dirty then.
+            if (this.cleanSnapshot === '') return false;
+            return this.editorSnapshot !== this.cleanSnapshot;
+        },
     },
     mounted() {
         this.load();
+        // CMS-UX-1 — guard hard browser navigation/close (tab close, refresh, URL
+        // change) while the wizard has unsaved edits. Vue-router in-app navigation is
+        // covered separately by beforeRouteLeave below.
+        if (typeof window !== 'undefined') {
+            window.addEventListener('beforeunload', this.handleBeforeUnload);
+        }
     },
     beforeUnmount() {
         if (this.previewTimer) {
             clearTimeout(this.previewTimer);
         }
+        if (typeof window !== 'undefined') {
+            window.removeEventListener('beforeunload', this.handleBeforeUnload);
+        }
+    },
+    // CMS-UX-1 — block in-app route changes (back to product, sidebar nav…) when the
+    // wizard is dirty. Registered only when vue-router injects the guard; harmless when
+    // the component is mounted outside a router (unit tests mount it bare).
+    beforeRouteLeave(to, from, next) {
+        if (this.isDirty && !this.confirmLeave()) {
+            next(false);
+            return;
+        }
+        next();
     },
     methods: {
         t(key, fallback, params) {
@@ -811,6 +857,28 @@ export default {
             // the JS fallback (already string-interpolated) is used instead.
             const translated = params ? this.$t(key, params) : this.$t(key);
             return translated === key ? fallback : translated;
+        },
+        // CMS-UX-1 — snapshot the current editor state as the new "clean" baseline.
+        markClean() {
+            this.cleanSnapshot = this.editorSnapshot;
+        },
+        confirmLeave() {
+            if (typeof window === 'undefined' || typeof window.confirm !== 'function') {
+                return true;
+            }
+            return window.confirm(
+                this.t(
+                    'message.composer.unsaved_leave_confirm',
+                    'Vous avez des modifications non sauvegardées. Quitter sans sauvegarder le brouillon ?'
+                )
+            );
+        },
+        handleBeforeUnload(event) {
+            if (!this.isDirty) return undefined;
+            event.preventDefault();
+            // Legacy browsers require returnValue to be set to trigger the native prompt.
+            event.returnValue = '';
+            return '';
         },
         currentRoute() {
             const routerRoute = this.$router?.currentRoute;
@@ -886,6 +954,7 @@ export default {
                     this.expectedVersion = null;
                     this.steps = [];
                     this.selectedStepKey = null;
+                    this.$nextTick(() => this.markClean());
                     return;
                 }
                 throw error;
@@ -922,6 +991,7 @@ export default {
             this.steps = (profile?.steps || []).map((step, index) => this.normalizeStep(step, index));
             this.selectedStepKey = this.steps[0]?._uid || null;
             this.schedulePreviewRefresh();
+            this.$nextTick(() => this.markClean());
         },
         normalizeStep(step = {}, index = 0) {
             const sourceType = SOURCE_TYPES.includes(step.source_type) ? step.source_type : 'item_attribute';
@@ -1364,6 +1434,10 @@ export default {
             }, 500);
         },
         returnToItem() {
+            // CMS-UX-1 — the back button is an explicit nav; warn before discarding edits.
+            if (this.isDirty && !this.confirmLeave()) {
+                return;
+            }
             if (this.$router?.push) {
                 if (this.isCategoryComposer) {
                     this.$router.push({ name: 'admin.items.studio', query: { item_category_id: this.resolvedEntityId } });
