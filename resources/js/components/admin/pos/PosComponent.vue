@@ -3740,10 +3740,15 @@ export default {
                     return alertService.error(this.$t('message.discount_reason_required') || 'A reason is required for any POS discount (min 3 characters).');
                 }
                 this.checkoutProps.form.discount_reason = reason;
-                this.$store.dispatch('posCart/discountReason', reason).then().catch(); // [M4-02] persist reason with cart
+                // [W-B CAISSE-REMISE-01 2026-06-10] `discountReason` n'existe que
+                // comme MUTATION dans posCart.js (pas d'action) — l'ancien
+                // dispatch() loggait "[vuex] unknown action type" et retournait
+                // undefined → `.then()` jetait un TypeError qui ABANDONNAIT
+                // applyDiscount avant d'appliquer la remise (total inchangé).
+                this.$store.commit('posCart/discountReason', reason); // [M4-02] persist reason with cart
             } else {
                 this.checkoutProps.form.discount_reason = null;
-                this.$store.dispatch('posCart/discountReason', '').then().catch(); // [M4-02]
+                this.$store.commit('posCart/discountReason', ''); // [M4-02] (commit — voir CAISSE-REMISE-01)
             }
 
             if (this.discountType == discountTypeEnum.FIXED) {
