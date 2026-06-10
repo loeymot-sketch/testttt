@@ -1,0 +1,271 @@
+{
+  "cycles": {
+    "c1": {
+      "orderId": 4485,
+      "queueNo": "A0129",
+      "transitions": "1>4| ; 4>7| ; 7>8|"
+    },
+    "c2": {
+      "orderId": 4487,
+      "queueNo": "A0131",
+      "transitions": "1>4| ; 4>7| ; 7>8|"
+    }
+  },
+  "latencies": {
+    "c1-oss-preparing-ms": 7238,
+    "c1-oss-ready-ms": 2,
+    "c1-new-order-posteA-ms": 9769,
+    "c1-new-order-posteB-ms": 10024,
+    "c1-new-order-probe-offset-ms": 239,
+    "c1-bump-demarrer-propagation-ms": 610,
+    "c1-bump-pret-propagation-ms": 405,
+    "c2-oss-preparing-ms": 6653,
+    "c2-oss-ready-ms": 3,
+    "c2-new-order-posteA-ms": 3595,
+    "c2-new-order-posteB-ms": 3594,
+    "c2-new-order-probe-offset-ms": 238,
+    "c2-bump-demarrer-propagation-ms": 611,
+    "c2-bump-pret-propagation-ms": 406,
+    "d6-public-wall-shows-c2-ms": 2,
+    "d5-banner-apparition-ms": -1,
+    "d5-polling-fallback-ms": 2278,
+    "d5-ws-reconnexion-ms": 2,
+    "d5-post-relance-propagation-ms": 2554
+  },
+  "findings": [
+    "D3: pas de bouton refresh dédié dans le drawer (design: fetch au watch-open + « Réessayer » en état erreur uniquement) — refetch close/reopen PROUVÉ réseau (2e GET history-today 200)",
+    "D5 exécuté UNE seule fois (justification: kill soketi est destructif pour les pilotes parallèles W-A/W-B/W-C partageant :8766/:6001 ; le fallback polling est déterministe — cadence 5s hardcodée _pollingInterval, une 2e passe ne produirait aucune information nouvelle)"
+  ],
+  "issues": [
+    {
+      "page": "kdsA-chef",
+      "kind": "http409",
+      "detail": "POST http://127.0.0.1:8766/api/admin/kds-order/recall/4485"
+    },
+    {
+      "page": "kdsA-chef",
+      "kind": "console",
+      "detail": "Failed to load resource: the server responded with a status of 409 (Conflict)"
+    },
+    {
+      "page": "kdsA-chef",
+      "kind": "http409",
+      "detail": "POST http://127.0.0.1:8766/api/admin/kds-order/recall/4487"
+    },
+    {
+      "page": "kdsA-chef",
+      "kind": "console",
+      "detail": "Failed to load resource: the server responded with a status of 409 (Conflict)"
+    },
+    {
+      "page": "kiosk",
+      "kind": "console",
+      "detail": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error during WebSocket handshake: net::ERR_CONNECTION_RESET"
+    },
+    {
+      "page": "kdsB-clone",
+      "kind": "console",
+      "detail": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error during WebSocket handshake: net::ERR_CONNECTION_RESET"
+    },
+    {
+      "page": "oss-public",
+      "kind": "console",
+      "detail": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error during WebSocket handshake: net::ERR_CONNECTION_RESET"
+    },
+    {
+      "page": "kdsA-chef",
+      "kind": "console",
+      "detail": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error during WebSocket handshake: net::ERR_CONNECTION_RESET"
+    },
+    {
+      "page": "kiosk",
+      "kind": "console",
+      "detail": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "page": "kdsB-clone",
+      "kind": "console",
+      "detail": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "page": "oss-public",
+      "kind": "console",
+      "detail": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "page": "oss-chef",
+      "kind": "console",
+      "detail": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "page": "kdsA-chef",
+      "kind": "console",
+      "detail": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "page": "oss-chef",
+      "kind": "console",
+      "detail": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "page": "kdsA-chef",
+      "kind": "console",
+      "detail": "WebSocket connection to 'wss://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "page": "oss-public",
+      "kind": "console",
+      "detail": "WebSocket connection to 'wss://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "page": "kdsB-clone",
+      "kind": "console",
+      "detail": "WebSocket connection to 'wss://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "page": "kiosk",
+      "kind": "console",
+      "detail": "WebSocket connection to 'wss://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "page": "oss-chef",
+      "kind": "console",
+      "detail": "WebSocket connection to 'wss://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "page": "kiosk",
+      "kind": "console",
+      "detail": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "page": "oss-public",
+      "kind": "console",
+      "detail": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "page": "kdsB-clone",
+      "kind": "console",
+      "detail": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "page": "kdsA-chef",
+      "kind": "console",
+      "detail": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "page": "oss-chef",
+      "kind": "console",
+      "detail": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "page": "kdsA-chef",
+      "kind": "console",
+      "detail": "WebSocket connection to 'wss://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "page": "oss-public",
+      "kind": "console",
+      "detail": "WebSocket connection to 'wss://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "page": "kdsB-clone",
+      "kind": "console",
+      "detail": "WebSocket connection to 'wss://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "page": "kiosk",
+      "kind": "console",
+      "detail": "WebSocket connection to 'wss://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "page": "oss-chef",
+      "kind": "console",
+      "detail": "WebSocket connection to 'wss://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "page": "kiosk",
+      "kind": "console",
+      "detail": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "page": "kdsB-clone",
+      "kind": "console",
+      "detail": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "page": "oss-public",
+      "kind": "console",
+      "detail": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "page": "kdsA-chef",
+      "kind": "console",
+      "detail": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "page": "oss-chef",
+      "kind": "console",
+      "detail": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "page": "kdsA-chef",
+      "kind": "console",
+      "detail": "WebSocket connection to 'wss://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "page": "oss-public",
+      "kind": "console",
+      "detail": "WebSocket connection to 'wss://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "page": "kdsB-clone",
+      "kind": "console",
+      "detail": "WebSocket connection to 'wss://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "page": "kiosk",
+      "kind": "console",
+      "detail": "WebSocket connection to 'wss://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "page": "oss-chef",
+      "kind": "console",
+      "detail": "WebSocket connection to 'wss://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "page": "kiosk",
+      "kind": "console",
+      "detail": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "page": "kiosk",
+      "kind": "console",
+      "detail": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "page": "kiosk",
+      "kind": "console",
+      "detail": "WebSocket connection to 'wss://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "page": "kiosk",
+      "kind": "console",
+      "detail": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "page": "kiosk",
+      "kind": "console",
+      "detail": "WebSocket connection to 'wss://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "page": "kiosk",
+      "kind": "console",
+      "detail": "WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    },
+    {
+      "page": "kiosk",
+      "kind": "console",
+      "detail": "WebSocket connection to 'wss://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED"
+    }
+  ]
+}
