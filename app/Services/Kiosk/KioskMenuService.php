@@ -122,7 +122,10 @@ final class KioskMenuService
             'categories' => $this->projectCategories($visibleCategories),
             'items' => $this->projectItems($visibleItems, $availability, $branchId),
             'upsell_rules' => $this->projectUpsellRules($upsellRules),
-            'promos' => $this->projectPromos($promos),
+            // [BORNE-PROMO-01 / LOT D] No promo banner while the chain is
+            // dormant (config/kiosk.php promos_redeemable) — advertising a
+            // code the order path cannot bill is a price lie to the customer.
+            'promos' => config('kiosk.promos_redeemable') ? $this->projectPromos($promos) : [],
             'snapshot_version' => $this->snapshot()->current($branchId),
             'branch_id' => $branchId,
             'channel' => self::CHANNEL,

@@ -428,6 +428,19 @@ class KitchenDisplaySystemOrderService
                     throw new Exception(trans('all.message.invalid_status_transition'), 422);
                 }
 
+                // [KDS-OSS-01 / ultra-audit 2026-06-10 — LOT E] Release guard:
+                // orders the board does not even show (DELIVERY+UNPAID,
+                // POS+UNPAID non-cash) were bumpable through the raw API.
+                // Mirror the board predicate via KitchenReleaseRule (PAID OR
+                // PENDING_COUNTER counter-collect OR POS+CASH). Checked on the
+                // LOCKED row so a concurrent payment flip cannot race the guard.
+                if (! KitchenReleaseRule::orderIsReleased($locked)) {
+                    throw new Exception(
+                        'Commande non libérée en cuisine (paiement requis avant préparation).',
+                        422
+                    );
+                }
+
                 $locked->status = $newStatus;
                 $locked->save();
 

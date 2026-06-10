@@ -38,6 +38,15 @@ final class KioskPromoService
         $at ??= now();
         $code = trim($code);
 
+        // [BORNE-PROMO-01 / LOT D] Dormancy gate — see config/kiosk.php
+        // `promos_redeemable`. While the order path cannot bill the discount
+        // (OrderQuoteService:416 copies kiosk_promo_code as non-financial
+        // metadata only), validating a code here re-creates the phantom
+        // −5,00 € display the customer never receives.
+        if (! config('kiosk.promos_redeemable')) {
+            return $this->fail('Les codes promo ne sont pas disponibles pour le moment.');
+        }
+
         if ($code === '') {
             return $this->fail('Code vide.');
         }

@@ -79,11 +79,15 @@ final class PricingPreviewService
                 ),
                 $this->couponService
             );
-            $kioskPromo = KioskPromo::findValid(
-                $branchId,
-                $kioskPromoCode,
-                (float) $draft->subtotal
-            );
+            // [BORNE-PROMO-01 / LOT D] Dormancy gate: never preview a discount
+            // the order path cannot bill (config/kiosk.php promos_redeemable).
+            $kioskPromo = config('kiosk.promos_redeemable')
+                ? KioskPromo::findValid(
+                    $branchId,
+                    $kioskPromoCode,
+                    (float) $draft->subtotal
+                )
+                : null;
             if ($kioskPromo) {
                 $kioskDiscount = $kioskPromo->computeDiscount((float) $draft->subtotal);
                 return $this->envelope(
