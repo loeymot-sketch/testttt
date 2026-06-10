@@ -21,7 +21,7 @@
 
 ## Transversales
 - **Intégrité numérique cross-surface** : montant commande == transaction == bandeau caisse == dashboard (68,90 € / IDs exacts) ; total kiosk == DB (volume specs assert items+totaux+snapshots).
-- **Adversarial** : round 1 = 14 findings → 1 réel healé (TIME_FORMAT env clone), 2 réfutés sur preuve, 4 gaps d'évidence harnais healés, reste P2/P3 divulgués. Round 2 = en annexe (verdict d'épuisement).
+- **Adversarial** : round 1 = 14 findings → 1 réel healé (TIME_FORMAT env clone), 2 réfutés sur preuve, 4 gaps d'évidence harnais healés, reste P2/P3 divulgués. **Round 2 = verdict EXHAUSTED (échec à casser)** : les 6 verdicts r1 tiennent sur preuves nouvelles (confirmation kiosk « Rendez-vous en caisse #A0113 » réelle, carte KDS élément, apiStatus=201, timers mm:ss prouvés par progression +3s exacte inter-captures, PNG non recyclés) ; 3 P2 nouveaux divulgués : ADV2-1 coupons i18n résiduel (formulaire), ADV2-2 divergence env↔DB du format horaire (`site_time_format` DB = « 12 Hour » — data-op owner), ADV2-3 collision visuelle de codes journaliers « N°A0001 » ×2 dans la file encaissement (commandes stale inter-jours sans désambiguateur) ; + 2 P3 (« ATTENT » tronqué ; replay 2xx silencieux pour le 2e caissier d'une race).
 - **Frozen zones** : 0 ligne modifiée sur les 15 fichiers §7 (tous les commits de session = lang/tests/specs/harnais/détecteur non-frozen + rapports).
 - **Découverte P1 (gate)** : **Z-GAP-1** — l'agrégateur Z (frozen) ne couvre pas les commandes créées hors fenêtre Z ; détecteur `fiscal:verify-z-membership` healé (classe NO-Z-GAP, 4/4 tests) ; chantier aggregateur = gate owner M6-002/S13-02 (cf. GATES).
 
