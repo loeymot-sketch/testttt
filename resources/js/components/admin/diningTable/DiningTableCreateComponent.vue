@@ -6,7 +6,7 @@
         <div class="drawer-dialog">
             <div class="drawer-header">
                 <h3 class="drawer-title">{{ $t('menu.dining_tables') }}</h3>
-                <button class="fa-solid fa-xmark close-btn" @click="reset"></button>
+                <button class="fa-solid fa-xmark close-btn" @click="reset" type="button" :aria-label="$t('button.close')" :title="$t('button.close')"></button>
             </div>
             <div class="drawer-body">
                 <form @submit.prevent="save">

@@ -5,7 +5,7 @@
     <div id="sidebar" class="drawer">
         <div class="drawer-header">
             <h3 class="drawer-title">{{ $t('menu.push_notifications') }}</h3>
-            <button @click="reset" class="fa-solid fa-xmark close-btn"></button>
+            <button @click="reset" class="fa-solid fa-xmark close-btn" type="button" :aria-label="$t('button.close')" :title="$t('button.close')"></button>
         </div>
         <div class="drawer-body">
             <form @submit.prevent="save">
