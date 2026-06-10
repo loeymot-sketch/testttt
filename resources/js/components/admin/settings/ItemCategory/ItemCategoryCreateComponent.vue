@@ -221,12 +221,20 @@ export default {
         addButton: function () {
             return { title: this.$t('button.add_item_category') };
         },
-        // [GOAL CMS C1.1] Eligible parents = top-level categories only
-        // (2-level hierarchy enforced backend by ItemCategoryHierarchyService)
-        // minus the category being edited (no self-parent).
+        // [GOAL CMS C1.1 + heal P1-1] Eligible parents = top-level categories
+        // only (2-level hierarchy enforced backend by
+        // ItemCategoryHierarchyService) minus the category being edited (no
+        // self-parent). A category that HAS children cannot itself get a
+        // parent (depth 3) — backend rejects it, so hide the select too.
         parentOptions: function () {
+            const lists = this.$store.getters['itemCategory/lists'] || [];
             const editingId = this.$store.getters['itemCategory/temp'].temp_id;
-            return (this.$store.getters['itemCategory/lists'] || []).filter(
+            const editedHasChildren = editingId !== null && editingId !== undefined
+                && lists.some((category) => category.parent_id === editingId);
+            if (editedHasChildren) {
+                return [];
+            }
+            return lists.filter(
                 (category) => !category.parent_id && category.id !== editingId
             );
         }

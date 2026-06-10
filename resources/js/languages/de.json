@@ -203,7 +203,9 @@
       "is_active_help": "Wenn du einen Schritt deaktivierst, wird er vor Kunden verborgen, ohne ihn zu loeschen.",
       "min_max_summary_optional_one": "= Optional, der Kunde kann maximal 1 Artikel auswaehlen.",
       "min_max_summary_required_n": "= Pflicht, der Kunde muss genau {n} Artikel auswaehlen.",
-      "min_max_summary_range": "= Der Kunde kann zwischen {min} und {max} Artikeln auswaehlen."
+      "min_max_summary_range": "= Der Kunde kann zwischen {min} und {max} Artikeln auswaehlen.",
+      "delete_profile": "Assistent löschen",
+      "delete_profile_error": "Löschen nicht möglich."
     },
     "wizard_configured": "Wizard konfiguriert",
     "view_product": "Produkt anzeigen",
@@ -973,7 +975,8 @@
       "guidance_zero_steps_title": "Wie funktioniert der Wizard?",
       "guidance_zero_steps_intro": "Der Wizard ist der Weg, den dein Kunde nutzt, um dieses Produkt zu personalisieren (Fleisch, Sauce, Groesse usw.). Jede Seite ist ein Auswahlschritt.",
       "guidance_zero_steps_option_template": "Empfohlen: Waehle ein Template (Tacos, Sandwich usw.), um mit einer fertigen Basis zu starten.",
-      "guidance_zero_steps_option_manual": "Oder: Fuege manuell eine Seite hinzu, um deinen eigenen Ablauf zu konfigurieren."
+      "guidance_zero_steps_option_manual": "Oder: Fuege manuell eine Seite hinzu, um deinen eigenen Ablauf zu konfigurieren.",
+      "delete_profile_confirm": "Diesen Assistenten endgültig löschen (Seiten + Versionen)? Nicht rückgängig machbar."
     },
     "pagination_label": "Anzeigen {from} Zu {to} von {total} einträge",
     "password_update": "Passwort erfolgreich aktualisiert.",

@@ -523,7 +523,9 @@
       "is_active_help": "Disabling a step hides it from customers without deleting it.",
       "min_max_summary_optional_one": "= Optional, the customer can choose at most 1 item.",
       "min_max_summary_required_n": "= Required, the customer must choose exactly {n} items.",
-      "min_max_summary_range": "= The customer can choose between {min} and {max} items."
+      "min_max_summary_range": "= The customer can choose between {min} and {max} items.",
+      "delete_profile": "Delete wizard",
+      "delete_profile_error": "Could not delete."
     },
     "wizard_configured": "Wizard configured",
     "view_product": "View product",
@@ -1562,7 +1564,8 @@
       "guidance_zero_steps_title": "How does the wizard work?",
       "guidance_zero_steps_intro": "The wizard is the path your customer follows to customize this product (meat, sauce, size, etc.). Each page is one choice step.",
       "guidance_zero_steps_option_template": "Best option: choose a template (Tacos, Sandwich, etc.) to start from a ready-made base.",
-      "guidance_zero_steps_option_manual": "Otherwise: add a manual page to configure your own flow."
+      "guidance_zero_steps_option_manual": "Otherwise: add a manual page to configure your own flow.",
+      "delete_profile_confirm": "Permanently delete this wizard (pages + versions)? This cannot be undone."
     },
     "kds_recall_grace_expired": "Rappel impossible : le délai d'annulation de 60 secondes est dépassé.",
     "kds_status_conflict": "Cette commande a été modifiée ailleurs. L'écran a été rafraîchi ; vérifiez l'état avant d'agir.",

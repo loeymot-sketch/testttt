@@ -204,8 +204,11 @@ class ItemCategoryService
             ->where('item_category_id', $itemCategory->id)
             ->count();
         if ($wizardProfileCount > 0) {
+            // [heal P2-4] Wording: unpublishing does NOT detach the profile —
+            // only DELETING the wizard (builder) detaches it and unblocks
+            // category deletion.
             throw new Exception(
-                'Un wizard est rattaché à cette catégorie. Supprimez ou dépubliez ce wizard (builder) avant de supprimer la catégorie.',
+                'Un wizard est rattaché à cette catégorie. Supprimez ce wizard dans le builder (la suppression le détache) avant de supprimer la catégorie.',
                 409
             );
         }

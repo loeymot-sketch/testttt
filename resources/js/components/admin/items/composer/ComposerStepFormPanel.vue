@@ -111,6 +111,46 @@
             </select>
         </label>
 
+        <!-- [GOAL CMS heal P1-3 2026-06-10] Presets lisibles owner : pilotent
+             min/max/allow_repeat sans raisonner en chiffres. -->
+        <fieldset class="rounded-lg border border-[#d9dfdc] bg-[#fbfcfb] p-4">
+            <legend class="px-1 text-sm font-semibold text-[#405149]">
+                {{ t('label.composer.choice_logic', 'Logique des choix') }}
+            </legend>
+            <div class="flex flex-wrap gap-4">
+                <label class="flex items-center gap-2 text-sm">
+                    <input
+                        type="radio"
+                        value="single"
+                        :checked="choicePreset === 'single'"
+                        data-testid="composer-step-preset-single"
+                        @change="applyPreset('single')"
+                    >
+                    {{ t('label.composer.preset_single', 'Choix unique (1 obligatoire)') }}
+                </label>
+                <label class="flex items-center gap-2 text-sm">
+                    <input
+                        type="radio"
+                        value="multiple"
+                        :checked="choicePreset === 'multiple'"
+                        data-testid="composer-step-preset-multiple"
+                        @change="applyPreset('multiple')"
+                    >
+                    {{ t('label.composer.preset_multiple', 'Choix multiples (libre)') }}
+                </label>
+                <label class="flex items-center gap-2 text-sm">
+                    <input
+                        type="radio"
+                        value="custom"
+                        :checked="choicePreset === 'custom'"
+                        data-testid="composer-step-preset-custom"
+                        disabled
+                    >
+                    {{ t('label.composer.preset_custom', 'Personnalisé (réglages ci-dessous)') }}
+                </label>
+            </div>
+        </fieldset>
+
         <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <label class="rounded-lg border border-[#d9dfdc] bg-[#fbfcfb] p-4">
                 <span class="flex items-center justify-between gap-3 text-sm font-semibold text-[#405149]">
@@ -329,6 +369,15 @@ export default {
             const list = this.availableSources?.[this.draft.source_type];
             return Array.isArray(list) ? list : [];
         },
+        // [heal P1-3] reverse mapping: which preset matches current settings.
+        choicePreset() {
+            const min = Number(this.draft.min_select);
+            const max = Number(this.draft.max_select);
+            const repeat = Boolean(this.draft.allow_repeat);
+            if (min === 1 && max === 1 && !repeat) return 'single';
+            if (min === 0 && max === 10 && repeat) return 'multiple';
+            return 'custom';
+        },
     },
     watch: {
         modelValue: {
@@ -361,6 +410,19 @@ export default {
         commit() {
             this.$emit('update:modelValue', this.clone(this.draft));
             this.$emit('change', this.clone(this.draft));
+        },
+        // [heal P1-3] preset → min/max/allow_repeat mapping.
+        applyPreset(preset) {
+            if (preset === 'single') {
+                this.draft.min_select = 1;
+                this.draft.max_select = 1;
+                this.draft.allow_repeat = false;
+            } else if (preset === 'multiple') {
+                this.draft.min_select = 0;
+                this.draft.max_select = 10;
+                this.draft.allow_repeat = true;
+            }
+            this.commit();
         },
         onSourceTypeChange() {
             this.draft.source_ref = '';

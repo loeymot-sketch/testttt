@@ -269,13 +269,30 @@ class ComposerProfileService
         }
 
         DB::transaction(function () use ($profile): void {
-            $payload = $this->composerChangedPayload($profile, 'deleted');
+            // [heal P2-2] Re-check under row lock: a concurrent publish
+            // committed between the optimistic check above and this
+            // transaction must not let a LIVE wizard be hard-deleted.
+            $locked = ItemWizardProfile::query()
+                ->whereKey($profile->id)
+                ->lockForUpdate()
+                ->first();
+            if ($locked === null) {
+                return; // already gone
+            }
+            if ((bool) $locked->is_published) {
+                throw new \Exception(
+                    'Ce wizard est publié. Dépubliez-le avant de le supprimer.',
+                    409
+                );
+            }
+
+            $payload = $this->composerChangedPayload($locked, 'deleted');
             // Explicit detach (don't rely on FK nullOnDelete — absent on
             // sqlite where ALTER-added constraints are ignored).
             ItemCategory::query()
-                ->where('wizard_profile_id', $profile->id)
+                ->where('wizard_profile_id', $locked->id)
                 ->update(['wizard_profile_id' => null]);
-            $profile->delete();
+            $locked->delete();
             ComposerProfileChanged::dispatch(...$payload);
         });
     }

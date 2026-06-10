@@ -101,6 +101,26 @@ class CategoryCrudHierarchyTest extends TestCase
         $top->assertJsonPath('data.parent_id', null);
     }
 
+    public function test_reparenting_a_category_with_children_is_rejected(): void
+    {
+        // [heal P1-1] giving a parent to a category that HAS children would
+        // create depth 3 silently and break the 2-level tree renderers.
+        $grandparent = ItemCategory::factory()->create();
+        $parent = ItemCategory::factory()->create();
+        ItemCategory::factory()->create(['parent_id' => $parent->id]);
+
+        $response = $this->actingAs($this->admin(), 'sanctum')
+            ->withApiKey()
+            ->patchJson('/api/admin/setting/item-category/' . $parent->id, [
+                'name'      => $parent->name,
+                'status'    => 5,
+                'parent_id' => $grandparent->id,
+            ]);
+
+        $response->assertStatus(422);
+        $this->assertNull($parent->fresh()->parent_id);
+    }
+
     public function test_update_can_set_then_clear_parent(): void
     {
         $parent = ItemCategory::factory()->create();

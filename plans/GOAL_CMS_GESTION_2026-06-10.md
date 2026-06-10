@@ -199,5 +199,19 @@ Dispatch : 5 specialists RO = 1 seul message multi-Agent (parallèle). Rapports 
 - Mémoire : `[[reference_composer_wizard_hinge_2026-06-07]]`, `[[project_wizard_dynamic_exec_2026-06-08]]`, `[[reference_e2e_harness_foodking_e2e_2026-06-07]]`, `[[feedback_shared_worktree_git_commit_collision_2026-06-09]]`
 - Skills : `ultra-audit-profond` (pipeline/tâche), `test-e2e` (phase), `superpower-gstack`, `lock-plan` (si gate), `verify-before-report`, `checkpoint-commit`
 
+## §S — STATUT FINAL (2026-06-10, post-exécution + audit RED final)
+
+**EXÉCUTÉ ET CONVERGÉ (branche `goal/cms-gestion-2026-06-10-spine`, 0 frozen, 0 P0)** :
+- **C1** : sous-catégories bout-en-bout (sélecteur parent + hint G-0c, Resource `parent_id`, arbres Studio + liste settings, delete-safety service FK_CHECKS retiré + guards enfants/wizard 409, rename-sync lock vert) — preuve live :8767 (« ↳ Tacos Signature » DB id=21, guard FR à l'écran)
+- **S2/S3** : rail stock hiérarchique (catalogOverview `parent_id`, buckets imbriqués) — **sync prouvée live** : toggle rupture → override DB + outbox `ItemAvailabilityChanged` + snapshot 2→3 → projection borne `available=false` → restore
+- **C2** : cycle produit complet prouvé live (create 9,50 € → projeté borne ; edit 10,00 € → projeté ; delete → soft-deleted + retiré projection)
+- **W5b** : suppression wizard entier (service 409-si-publié + lock anti-TOCTOU, DELETE route, bouton builder, détache catégorie) ; **G-0c pinné** (pas d'héritage parent→sous-cat, `CategoryHierarchyWizardResolutionTest`)
+- **Heals audit final** : P1-1 profondeur-3 par re-parentage bloquée (backend+UI+tests) ; P1-3 presets « Choix unique/multiples » dans le builder ; P2-2 lock destroy ; P2-3 i18n ×5 ; P2-4 message guard
+- **Suites** : Catalog 55✓ / Composer 118✓ / Stock 68✓ / Availability 5✓ + Vitest spécs CMS toutes vertes ; frozen diff = 0 sur tout le range.
+
+**DÉCISIONS ACTÉES** : borne rend les catégories À PLAT (sous-catégorie = onglet propre si peuplée+active ; hiérarchie = outil d'organisation admin/stock) — revisiter si l'owner veut un rendu imbriqué borne. RBAC catégories = `permission:settings` (documenté, pas aligné silencieusement).
+**BACKLOG (non bloquant, owner)** : P1-4 echo prix read-only des options DANS le builder (le prix est éditable aujourd'hui via la fiche produit — prouvé live sur /admin/items/show) ; P2-1 parentOptions sur liste paginée 50 (falaise >50 catégories) ; presets custom max=10 arbitraire.
+**GATES OWNER PENDING** : G-1 (GATE-G PricingService), G-4/GATE-W6 (render POS frozen + flip flag), **G-5** (flip `FEATURE_WIZARD_PER_ITEM_DEMO` — requis aussi pour DELETE des 10 wizards item-level, pinné par test 404).
+
 ## §F — RÈGLE FINALE (DONE)
 Le GOAL est atteint quand, **sans dev** : (P1) le gérant navigue catégorie→sous-catégorie→produits→état stock (manuel + compté) dans une vue hiérarchique propre (palette Cayenne) et chaque bascule se propage prouvée-live à borne/POS/KDS ; (P2) il crée/modifie/supprime catégories, sous-catégories et produits avec persistance prouvée, delete-safety et sync ; (P3) il compose/ajoute/modifie/supprime des pages wizard (single/multi/payant) sur item/catégorie/box, les ~10 vrais wizards Le Cayenne sont câblés avec vraies images, la page personnelle crée son construct, le tout rendu correct sur borne (POS = gates W8 prêtes à contresigner) ; **0 touche frozen sans LOCK, 0 prix sur step, NF525 chain intacte, suites PHPUnit+Vitest+e2e vertes, test-e2e par phase passé, audit final d'amélioration exécuté, convergence 2 cycles identiques.** Sinon : heal ou block — production-perfect ou rien.

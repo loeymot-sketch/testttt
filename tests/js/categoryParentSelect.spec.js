@@ -100,14 +100,26 @@ describe('ItemCategoryCreateComponent — parent selector (sub-categories)', () 
     });
 
     it('excludes the category being edited from parent options', () => {
+        // Tacos (id 1) has no children in the fixture.
+        const wrapper = mountForm({ lists: CATS, tempId: 1 });
+        const labels = wrapper
+            .find('[data-testid="admin-category-form-parent"]')
+            .findAll('option')
+            .map((o) => o.text());
+
+        expect(labels).not.toContain('Tacos');
+        expect(labels).toContain('Sandwich Cayenne');
+    });
+
+    it('offers no parent when the edited category has children (heal P1-1, depth 3 forbidden)', () => {
+        // Sandwich Cayenne (id 2) has the child "Signature" (id 3).
         const wrapper = mountForm({ lists: CATS, tempId: 2 });
         const labels = wrapper
             .find('[data-testid="admin-category-form-parent"]')
             .findAll('option')
             .map((o) => o.text());
 
-        expect(labels).not.toContain('Sandwich Cayenne');
-        expect(labels).toContain('Tacos');
+        expect(labels).toEqual(['None']);
     });
 
     it('binds the selection to form.parent_id', async () => {

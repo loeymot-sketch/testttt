@@ -30,6 +30,8 @@ class ComposerProfileDeleteTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->seedMinimalSettings();
+        $this->seedSpatieRoles();
         Event::fake([ComposerProfileChanged::class]);
     }
 
@@ -64,6 +66,47 @@ class ComposerProfileDeleteTest extends TestCase
         } catch (\Exception $exception) {
             $this->assertSame(409, (int) $exception->getCode());
         }
+
+        $this->assertDatabaseHas('item_wizard_profiles', ['id' => $profile->id]);
+    }
+
+    public function test_delete_route_works_for_category_owned_profile(): void
+    {
+        $this->seed(\Database\Seeders\ComposerPermissionsMinimalSeeder::class);
+        $admin = \App\Models\User::factory()->create();
+        $admin->assignRole('Admin');
+
+        [$category, $profile] = $this->categoryProfile(false);
+
+        $this->actingAs($admin, 'sanctum')
+            ->deleteJson('/api/admin/composer/profiles/' . $profile->id)
+            ->assertSuccessful();
+
+        $this->assertDatabaseMissing('item_wizard_profiles', ['id' => $profile->id]);
+        $this->assertNull($category->fresh()->wizard_profile_id);
+    }
+
+    public function test_delete_route_returns_404_for_item_owned_profile_while_demo_flag_off(): void
+    {
+        // [PIN — gate G-5] EnsureProfileNotItemOwnedUnlessDemoEnabled gates the
+        // whole per-item profile lifecycle (update/unpublish/DELETE) behind
+        // FEATURE_WIZARD_PER_ITEM_DEMO (default false). Deleting the 10
+        // item-level wizards therefore requires the G-5 owner flip — pinned
+        // here so any change to that behaviour is an explicit decision.
+        $this->seed(\Database\Seeders\ComposerPermissionsMinimalSeeder::class);
+        $admin = \App\Models\User::factory()->create();
+        $admin->assignRole('Admin');
+
+        $item = \App\Models\Item::factory()->create();
+        $profile = ItemWizardProfile::factory()->create([
+            'item_id'          => $item->id,
+            'item_category_id' => null,
+            'is_published'     => false,
+        ]);
+
+        $this->actingAs($admin, 'sanctum')
+            ->deleteJson('/api/admin/composer/profiles/' . $profile->id)
+            ->assertStatus(404);
 
         $this->assertDatabaseHas('item_wizard_profiles', ['id' => $profile->id]);
     }
