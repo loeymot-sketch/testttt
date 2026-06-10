@@ -118,7 +118,7 @@ test('C — pay → confirm: charged total == displayed discounted total (F1 end
   fs.writeFileSync(path.join(SHOTS, 'C-console.txt'), errs.join('\n'));
 });
 
-test('D — loyalty: rules advertise 10 pt/€ (F2), screen renders (F9 progress)', async ({ page }) => {
+test('D — loyalty: rules advertise 1 pt/€ (owner-canonical GATE-LOYALTY-1), screen renders (F9 progress)', async ({ page }) => {
   const errs = track(page);
   await boot(page);
   await tab(page, 'Profil');
@@ -126,7 +126,7 @@ test('D — loyalty: rules advertise 10 pt/€ (F2), screen renders (F9 progress
   await page.waitForSelector('[data-testid="loyalty-screen"]', { timeout: 15000 });
   await page.waitForTimeout(600);
   await snap(page, '04-loyalty');
-  expect(await page.locator('[data-testid="loyalty-screen"]').innerText()).toMatch(/10\s*pt par/);
+  expect(await page.locator('[data-testid="loyalty-screen"]').innerText()).toMatch(/1\s*pt par € dépensé/);
   fs.writeFileSync(path.join(SHOTS, 'D-console.txt'), errs.join('\n'));
 });
 
@@ -146,7 +146,8 @@ test('F — item wizard: "Sans sauce" selectable in the sauce step (F6)', async 
   const errs = track(page);
   await boot(page);
   await tab(page, 'Menu');
-  await page.getByText('Galette Normale').first().click();
+  // [a11y overlay heal 2026-06-10] whole-card tap is now a stretched <button aria-label="Voir …"> (uiux nested-interactive fix) — target it, not the title span (which the overlay intercepts).
+  await page.getByRole('button', { name: /^Voir Galette Normale/ }).first().click();
   // wizard label is "09 Item Wizard <stepTitle>", not "09 Item Detail"
   await page.waitForSelector('[data-screen-label^="09 Item Wizard"]', { timeout: 15000 });
   await page.waitForTimeout(500);
@@ -167,7 +168,7 @@ test('G — bol wizard: Boule gratinée surfaces lactose in the recap allergens 
   const errs = track(page);
   await boot(page);
   await tab(page, 'Menu');
-  await page.getByText('Bowl Frites Poulet curry').first().click();
+  await page.getByRole('button', { name: /^Voir Bowl Frites Poulet curry/ }).first().click();
   await page.waitForSelector('[data-screen-label^="09 Item Wizard"]', { timeout: 15000 });
   await page.waitForTimeout(500);
   // walk the bol steps to the recap, selecting "Boule gratinée" when it appears

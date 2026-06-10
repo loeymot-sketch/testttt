@@ -1,0 +1,146 @@
+[
+  {
+    "order": "C-1234",
+    "item_id": 102,
+    "line_total": 9.5,
+    "qty": 1,
+    "menuPrice": 9.5,
+    "expected": 9.5,
+    "delta": 0
+  },
+  {
+    "order": "C-1234",
+    "item_id": 502,
+    "line_total": 8.9,
+    "qty": 1,
+    "menuPrice": 8.9,
+    "expected": 8.9,
+    "delta": 0
+  },
+  {
+    "order": "C-1234",
+    "item_id": 602,
+    "line_total": 10.9,
+    "qty": 1,
+    "menuPrice": 8.9,
+    "expected": 8.9,
+    "delta": 2
+  },
+  {
+    "order": "C-1234",
+    "item_id": 1001,
+    "line_total": 1.5,
+    "qty": 1,
+    "menuPrice": 1.5,
+    "expected": 1.5,
+    "delta": 0
+  },
+  {
+    "order": "C-1212",
+    "item_id": 101,
+    "line_total": 7.5,
+    "qty": 1,
+    "menuPrice": 7,
+    "expected": 7,
+    "delta": 0.5
+  },
+  {
+    "order": "C-1212",
+    "item_id": 702,
+    "line_total": 4,
+    "qty": 1,
+    "menuPrice": 4,
+    "expected": 4,
+    "delta": 0
+  },
+  {
+    "order": "C-1212",
+    "item_id": 1001,
+    "line_total": 1.5,
+    "qty": 1,
+    "menuPrice": 1.5,
+    "expected": 1.5,
+    "delta": 0
+  },
+  {
+    "order": "C-1208",
+    "item_id": 401,
+    "line_total": 13.8,
+    "qty": 2,
+    "menuPrice": 6.9,
+    "expected": 13.8,
+    "delta": 0
+  },
+  {
+    "order": "C-1208",
+    "item_id": 701,
+    "line_total": 2.5,
+    "qty": 1,
+    "menuPrice": 2.5,
+    "expected": 2.5,
+    "delta": 0
+  },
+  {
+    "order": "C-1190",
+    "item_id": 202,
+    "line_total": 7,
+    "qty": 1,
+    "menuPrice": 7,
+    "expected": 7,
+    "delta": 0
+  },
+  {
+    "order": "C-1190",
+    "item_id": 608,
+    "line_total": 8.9,
+    "qty": 1,
+    "menuPrice": 8.9,
+    "expected": 8.9,
+    "delta": 0
+  },
+  {
+    "order": "C-1190",
+    "item_id": 1002,
+    "line_total": 1.5,
+    "qty": 1,
+    "menuPrice": 1.5,
+    "expected": 1.5,
+    "delta": 0
+  },
+  {
+    "order": "C-1142",
+    "item_id": 301,
+    "line_total": 7,
+    "qty": 1,
+    "menuPrice": 6.5,
+    "expected": 6.5,
+    "delta": 0.5
+  },
+  {
+    "order": "C-1142",
+    "item_id": 1001,
+    "line_total": 1.5,
+    "qty": 1,
+    "menuPrice": 1.5,
+    "expected": 1.5,
+    "delta": 0
+  },
+  {
+    "order": "C-1100",
+    "item_id": 302,
+    "line_total": 9,
+    "qty": 1,
+    "menuPrice": 9,
+    "expected": 9,
+    "delta": 0
+  },
+  {
+    "order": "C-1100",
+    "item_id": 902,
+    "line_total": 3.8,
+    "qty": 1,
+    "menuPrice": 3.8,
+    "expected": 3.8,
+    "delta": 0
+  }
+]

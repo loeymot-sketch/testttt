@@ -143,6 +143,10 @@ test.describe('Le Cayenne mobile — massive E2E', () => {
     await page.getByRole('button', { name: 'Passer' }).first().click();
     await expect.soft(page.locator('[data-screen-label="05 Login"]')).toBeVisible();
     await shot(page, '05-login');
+    // [a11y heal 2026-06-08] the login CTA is now disabled until a valid FR mobile
+    // number is entered (was always-enabled) — fill the field first.
+    await page.getByLabel(/Numéro de téléphone mobile/).fill('0612345678'); // valid = >=10 digits (screens-onboarding.jsx:201)
+    await page.waitForTimeout(200);
     await page.getByRole('button', { name: /Recevoir le code/ }).click();
     await expect.soft(page.locator('[data-screen-label="06 OTP"]')).toBeVisible();
     await shot(page, '06-otp');
