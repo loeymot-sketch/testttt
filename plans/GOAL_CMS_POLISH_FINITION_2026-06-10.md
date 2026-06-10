@@ -1,6 +1,6 @@
 # GOAL — CMS POLISH & FINITION : résiduels e2e + intégration spine + gates owner
 
-**Date:** 2026-06-10 · **Statut:** PLAN-ONLY (attend `lance le GOAL` owner)
+**Date:** 2026-06-10 · **Statut:** ✅ EXÉCUTÉ ET CONVERGÉ (waves P1+P2 + 4 P3 round-4 ; adversarial 11/11 CLOSED + 4 nouveaux P3 fixés ; P3.1 ff différé — spine occupée, merge-into-mine maintenu superset ; P3.2-P3.5 = gates owner PENDING)
 **Base:** branche `goal/cms-gestion-2026-06-10-spine` (post-convergence test-e2e 3 rounds, P0+P1=0)
 **Fondation:** `reports/test-e2e/cms-e2e-2026-06-10/CONVERGENCE_FINAL.md` (11 résiduels P2/P3 stables 2 cycles, chacun avec preuve PNG/DOM) + gates du `GOAL_CMS_GESTION §S`
 
