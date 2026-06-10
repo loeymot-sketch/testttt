@@ -84,6 +84,10 @@ return [
         // missing from required_routes — WE-4 final convergence sentinel
         // IdempotencyRequiredRoutesCoverageTest correctly flagged the gap.
         'api/admin/pos-order/*/redeem-loyalty',
+        // [T-COMPO-4 / 2026-06-10] Composer profile publish — bump version + snapshot
+        // + dispatch 2 sync events (borne+caisse). Route déclare `idempotency` ;
+        // required_routes complété (IdempotencyRequiredRoutesCoverageTest).
+        'api/admin/composer/profiles/*/publish',
     ],
 
     'cache_store' => env('IDEMPOTENCY_CACHE_STORE'),
