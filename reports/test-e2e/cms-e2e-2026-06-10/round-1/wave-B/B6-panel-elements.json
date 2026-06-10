@@ -1,0 +1,6 @@
+{
+  "prices": true,
+  "presetSingle": true,
+  "presetMultiple": true,
+  "presetCustom": true
+}

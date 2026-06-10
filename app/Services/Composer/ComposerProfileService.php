@@ -248,6 +248,55 @@ class ComposerProfileService
         });
     }
 
+    /**
+     * [GOAL CMS GESTION T-W5b 2026-06-10] Delete a whole wizard profile.
+     *
+     * Published profiles are REFUSED (409): the owner must unpublish first so
+     * the kiosk never loses a live wizard by accident. Hard delete cascades
+     * steps + step versions (FK cascadeOnDelete) and detaches
+     * `item_categories.wizard_profile_id` (FK nullOnDelete) — which also
+     * unblocks category deletion (C1.2 guard).
+     *
+     * @throws \Exception code 409 while the profile is published
+     */
+    public function destroy(ItemWizardProfile $profile): void
+    {
+        if ((bool) $profile->is_published) {
+            throw new \Exception(
+                'Ce wizard est publié. Dépubliez-le avant de le supprimer.',
+                409
+            );
+        }
+
+        DB::transaction(function () use ($profile): void {
+            // [heal P2-2] Re-check under row lock: a concurrent publish
+            // committed between the optimistic check above and this
+            // transaction must not let a LIVE wizard be hard-deleted.
+            $locked = ItemWizardProfile::query()
+                ->whereKey($profile->id)
+                ->lockForUpdate()
+                ->first();
+            if ($locked === null) {
+                return; // already gone
+            }
+            if ((bool) $locked->is_published) {
+                throw new \Exception(
+                    'Ce wizard est publié. Dépubliez-le avant de le supprimer.',
+                    409
+                );
+            }
+
+            $payload = $this->composerChangedPayload($locked, 'deleted');
+            // Explicit detach (don't rely on FK nullOnDelete — absent on
+            // sqlite where ALTER-added constraints are ignored).
+            ItemCategory::query()
+                ->where('wizard_profile_id', $locked->id)
+                ->update(['wizard_profile_id' => null]);
+            $locked->delete();
+            ComposerProfileChanged::dispatch(...$payload);
+        });
+    }
+
     private function composerChangedPayload(ItemWizardProfile $profile, string $changeType): array
     {
         return [

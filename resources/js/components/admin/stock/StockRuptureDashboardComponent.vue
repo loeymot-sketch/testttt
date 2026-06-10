@@ -70,12 +70,16 @@
                         <button
                             type="button"
                             class="w-full flex items-center justify-between gap-2 rounded px-3 py-2 text-left text-sm transition-colors hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
-                            :class="bucket.key === activeBucketKey ? 'bg-slate-900 text-white hover:bg-slate-900' : 'text-slate-700'"
+                            :class="[
+                                bucket.key === activeBucketKey ? 'bg-slate-900 text-white hover:bg-slate-900' : 'text-slate-700',
+                                bucket.depth ? 'pl-7' : '',
+                            ]"
                             :data-testid="`stock-mgmt-bucket-${bucket.key}`"
                             :aria-current="bucket.key === activeBucketKey ? 'true' : 'false'"
                             @click="activeBucketKey = bucket.key"
                         >
                             <span class="flex items-center gap-2">
+                                <span v-if="bucket.depth" aria-hidden="true">↳</span>
                                 <span aria-hidden="true">{{ bucket.icon }}</span>
                                 <span>{{ bucket.label }}</span>
                             </span>
@@ -319,8 +323,25 @@ export default {
         buckets() {
             const buckets = [];
 
-            // Item categories.
-            (this.categories || []).forEach((cat) => {
+            // Item categories — [GOAL CMS S2.2 2026-06-10] hierarchical rail:
+            // top-level categories keep API order, each immediately followed
+            // by its sub-categories (parent_id emitted by catalogOverview),
+            // rendered indented via `depth`.
+            const cats = this.categories || [];
+            const topCats = cats.filter((cat) => !cat.parent_id);
+            const childCats = cats.filter((cat) => cat.parent_id);
+            const orderedCats = topCats.flatMap((top) => [
+                { cat: top, depth: 0 },
+                ...childCats
+                    .filter((child) => Number(child.parent_id) === Number(top.id))
+                    .map((child) => ({ cat: child, depth: 1 })),
+            ]);
+            // Orphan children (parent inactive/missing) stay visible at root.
+            childCats
+                .filter((child) => !topCats.some((top) => Number(top.id) === Number(child.parent_id)))
+                .forEach((child) => orderedCats.push({ cat: child, depth: 0 }));
+
+            orderedCats.forEach(({ cat, depth }) => {
                 const items = (cat.items || []).map((it) => ({
                     key: `item-${it.id}`,
                     kind: 'item',
@@ -335,6 +356,7 @@ export default {
                     label: cat.name,
                     icon: pickIcon(cat.name),
                     count: items.length,
+                    depth,
                     items,
                 });
             });

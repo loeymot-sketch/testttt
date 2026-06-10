@@ -342,9 +342,12 @@ class StockRuptureDashboardController extends AdminController
 
         $categoriesPayload = $categories->map(function (ItemCategory $cat) use ($itemOverrides): array {
             return [
-                'id'    => (int) $cat->id,
-                'name'  => (string) $cat->name,
-                'slug'  => (string) ($cat->slug ?? ''),
+                'id'        => (int) $cat->id,
+                'name'      => (string) $cat->name,
+                'slug'      => (string) ($cat->slug ?? ''),
+                // [GOAL CMS S2.1 2026-06-10] hierarchical rail: lets the
+                // dashboard nest sub-categories under their parent bucket.
+                'parent_id' => $cat->parent_id !== null ? (int) $cat->parent_id : null,
                 'items' => $cat->items->map(function (Item $item) use ($itemOverrides): array {
                     $override = $itemOverrides->get((int) $item->id);
                     $isAvailable = (bool) $item->is_available;

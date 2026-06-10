@@ -780,6 +780,9 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
             Route::get('/categories/{category}/available-sources', [ComposerProfileController::class, 'availableSourcesForCategory']);
             Route::middleware('wizard.per_item_profile_guard')->group(function () {
                 Route::match(['put', 'patch'], '/profiles/{profile}', [ComposerProfileController::class, 'update']);
+                // [GOAL CMS GESTION T-W5b 2026-06-10] Delete a whole wizard
+                // profile (409 while published — unpublish first).
+                Route::delete('/profiles/{profile}', [ComposerProfileController::class, 'destroy']);
                 Route::get('/profiles/{profile}/diff', [ComposerProfileController::class, 'diff']);
                 Route::post('/profiles/{profile}/unpublish', [ComposerProfileController::class, 'unpublish']);
                 Route::post('/profiles/{profile}/steps', [ComposerStepController::class, 'store']);

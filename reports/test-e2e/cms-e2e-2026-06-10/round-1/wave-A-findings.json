@@ -1,0 +1,123 @@
+{
+  "wave": "A",
+  "round": 1,
+  "states_reviewed": 10,
+  "reviewer": "adversarial-supervisor-wave-A",
+  "reviewed_at": "2026-06-10",
+  "artifact_hygiene": {
+    "console": "10/10 clean — only allowlisted ws://127.0.0.1:6001 Pusher warnings (A1, A5, A7a, A7c)",
+    "network": "10/10 empty — zero 4xx/5xx, zero slow requests",
+    "i18n_raw_keys": "0 hits across all 10 DOM files (regex >[a-z]+(\\.[a-z_]+){1,4}<)",
+    "numeric_integrity": "PASS — articles 45→46→45 and categories 12→13→12 cascade coherently across settings list, studio tree, stats bar; price 5,00 € identical on studio card (A6) and articles row (A7a); cleanup.json confirms both E2E rows soft-deleted (deleted_at set)"
+  },
+  "findings": [
+    {
+      "id": "A-001",
+      "severity": "P1",
+      "category": "functional_regression",
+      "state": "A4-galette-edit-parent-locked",
+      "title": "Anti-depth-3 parent lock ABSENT: Galette (has child E2E-AUDIT Sub) is offered 10 active parent categories in edit modal",
+      "evidence": "A4-parent-options.json lists 11 options ('Aucune' + 10 parents: Menu enfant, Boissons, Desserts, Suppléments, Frites, Bols Gourmands, Tacos, Burgers, Sandwich Classique, Sandwich Cayenne). DOM A4-galette-edit-parent-locked.dom.html: <select id=\"parent_id\" data-testid=\"admin-category-form-parent\"> contains all 10 <option> WITHOUT any disabled attribute and the select itself is not disabled. The state is literally named 'parent-locked' — the lock does not exist. Self-exclusion (Galette absent) and subcategory-exclusion (Tacos Signature / E2E-AUDIT Sub absent) DO work; only the has-children lock is missing.",
+      "reproduction": "Paramètres > Catégories > Modifier 'Galette' (which has subcategory E2E-AUDIT Sub) > open 'Catégorie parente' select > 10 parents selectable. Selecting e.g. 'Tacos' + Enregistrer would create a depth-3 chain Tacos > Galette > E2E-AUDIT Sub.",
+      "recommendation": "Disable (or empty to 'Aucune' only) the parent select when the edited category has children, with an explanatory hint; verify the backend FormRequest also rejects parent_id when children exist (artifacts contain no save attempt, so server-side guard is UNPROVEN — if it is also missing this escalates to P0 data integrity)."
+    },
+    {
+      "id": "A-002",
+      "severity": "P1",
+      "category": "visual_regression",
+      "state": "A6-product-created",
+      "title": "Action buttons render as empty glyph-less pink pills — wizard/view/delete on the studio product card are visually unidentifiable",
+      "evidence": "A6-product-created.png (zoom crop of E2E-AUDIT Prod card footer): the 3 action buttons are blank pale-pink rounded rectangles with NO visible icon. DOM confirms they are real actions: data-testid catalog-studio-product-wizard-77 (icon class lab-cog), catalog-studio-product-view-77 (lab-view-line), catalog-studio-product-delete-77 (lab-delete-line). Same defect on every studio sidebar category row: catalog-studio-category-delete-N (lab-delete-line) shows as a faint dash next to the correctly-rendered orange lab-edit-line pencil (A5/A6 png). Same on Articles list (A7a-item-delete-confirm.png row crop): 'Dupliquer' button (lab-copy) is an empty pale pill between the visible edit and trash icons. Root-cause pattern: lab-cog / lab-view-line / lab-delete-line (studio) / lab-copy glyphs do not render while lab-edit-line does.",
+      "reproduction": "Catalogue (studio) > select E2E-AUDIT Sub > look at the E2E-AUDIT Prod card footer: three blank pills. Hover reveals tooltips only.",
+      "recommendation": "Fix the lab icon-font/sprite so lab-cog, lab-view-line, lab-delete-line (studio context) and lab-copy glyphs render; add a visual regression assertion that each .db-table-action contains a non-empty rendered glyph. aria-label/title are present, so a11y name is OK — the defect is purely visual but blocks sighted users from identifying primary product actions."
+    },
+    {
+      "id": "A-003",
+      "severity": "P2",
+      "category": "visual_hierarchy",
+      "state": "A1-category-list",
+      "title": "Settings category list detaches subcategories from their parents: '↳ Tacos Signature' sits at row 2 under 'Sandwich Cayenne' while parent 'Tacos' is row 6",
+      "evidence": "A1-category-list.png: row order = Sandwich Cayenne, ↳ Tacos Signature (badge SOUS-CATÉGORIE DE TACOS), Galette, Sandwich Classique, Burgers, Tacos, ... The ↳ glyph visually claims the row above (Sandwich Cayenne) is the parent — it is not. A3-subcategory-created.png repeats it: ↳ E2E-AUDIT Sub (DE GALETTE) is row 3, ABOVE its parent Galette (row 4), and Tacos Signature still floats at row 2. Contrast: the Catalog Studio tree (A5/A6) nests both children correctly under Tacos and Galette — the two surfaces disagree on hierarchy presentation. A7d shows the defect persists after cleanup.",
+      "reproduction": "Paramètres > Catégories: subcategories are clustered near the top of the table instead of directly under their parent row.",
+      "recommendation": "Sort the settings table parent-first with each child immediately following its own parent (same algorithm as the studio tree), or drop the ↳ indent and keep only the badge."
+    },
+    {
+      "id": "A-004",
+      "severity": "P2",
+      "category": "palette_drift",
+      "state": "A5-studio-sidebar",
+      "title": "Catalog Studio header CTAs use bg-rose-700 (crimson) and bg-green-700 — off Cayenne brand #F4501E and inconsistent with Settings, where the identical action is brand orange",
+      "evidence": "A5-studio-sidebar.dom.html: <button class=\"db-btn py-2 bg-rose-700 text-white\" data-testid=\"catalog-studio-add-category\"> and <button class=\"db-btn py-2 bg-green-700 text-white\" data-testid=\"catalog-studio-add-product\">. A5/A6 PNGs show crimson + green buttons; A1-category-list.png shows the same 'Ajouter Une Catégorie D'articles' action rendered in brand orange #F4501E on the Settings page. 'Wizard De La Catégorie' button (A6) is also crimson.",
+      "reproduction": "Compare Catalogue header buttons vs Paramètres > Catégories header button.",
+      "recommendation": "Use the brand primary (#F4501E) for the primary CTA; if a secondary distinction is needed use the accent #FFB800 or an outline variant — not rose/green Tailwind defaults."
+    },
+    {
+      "id": "A-005",
+      "severity": "P2",
+      "category": "aria_keyboard",
+      "state": "A1-category-list",
+      "title": "Icon-only global header buttons lack accessible name: .dropdown-btn (×2 header shortcuts) and .fa-xmark close buttons have no aria-label, no title, no inner text",
+      "evidence": "DOM grep across A5/A6/A7a (present on all pages): <button class=\"dropdown-btn flex items-center gap-2 h-9 px-3 rounded-lg bg-[#FFE8DD]\"> (empty text, no aria-label), <button class=\"fa-solid fa-xmark xmark-btn close-db-menu\">, <button class=\"modal-close fa-solid fa-xmark ...\"> and <button data-v-44d030c7 class=\"fa-solid fa-xmark close-btn\"> (A7a). Note: table row actions (Voir/Modifier/Supprimer/Dupliquer) DO have aria-label or inner tooltip text — only these header/close buttons are nameless.",
+      "reproduction": "Screen reader on any admin page: header icon shortcuts and modal close buttons announce as 'button' with no name.",
+      "recommendation": "Add aria-label (e.g. 'Fermer', 'Accès POS', 'Accès borne') to each icon-only button."
+    },
+    {
+      "id": "A-006",
+      "severity": "P3",
+      "category": "i18n_grammar",
+      "state": "A6-product-created",
+      "title": "French pluralization wrong on counts: '1 articles' (studio sidebar) and '1 PRODUITS' (Articles stats card)",
+      "evidence": "A6-product-created.dom.html: <small>1 articles</small> inside catalog-studio-category-row-22 (E2E-AUDIT Sub). A7a-item-delete-confirm.png stats bar: '1 PRODUITS'. ('0 indisponibles' is also non-standard French — 0 takes singular.)",
+      "reproduction": "Create a category containing exactly 1 product; filter Articles to 1 result.",
+      "recommendation": "Use pluralization helper (count > 1 ? 'articles' : 'article')."
+    },
+    {
+      "id": "A-007",
+      "severity": "P3",
+      "category": "i18n_native_control",
+      "state": "A2-create-modal",
+      "title": "Native file input shows English 'Choose File' / truncated 'No fil...hosen' inside the fully-French category modal",
+      "evidence": "A2-create-modal.png and A4-galette-edit-parent-locked.png: IMAGE field renders browser-native 'Choose File' + 'No fil...hosen'. Browser-locale dependent (native control), but every other string in the modal is French.",
+      "reproduction": "Paramètres > Catégories > Ajouter / Modifier — IMAGE (74PX,48PX) field.",
+      "recommendation": "Wrap the file input with a styled French label (pattern already used elsewhere in the admin) to control both language and truncation."
+    },
+    {
+      "id": "A-008",
+      "severity": "P3",
+      "category": "copy_quality",
+      "state": "A2-create-modal",
+      "title": "Modal titled generically 'Catégories' for both create (A2) and edit (A4) — no Ajouter/Modifier context; delete dialog copy claims irreversibility while delete is soft",
+      "evidence": "A2/A4 PNGs: modal header 'Catégories' in both modes. A7a/A7c PNGs: 'Vous ne pourrez pas récupérer l'enregistrement supprimé !' yet cleanup.json shows soft-delete (rows present with deleted_at: item 77, category 22) — recoverable in DB, contradicting the copy.",
+      "reproduction": "Open create then edit modal; trigger any delete.",
+      "recommendation": "Title modals 'Ajouter une catégorie' / 'Modifier la catégorie' ; keep the warning but it is acceptable as-is for end users (info only)."
+    },
+    {
+      "id": "A-009",
+      "severity": "P3",
+      "category": "truncation_with_tooltip",
+      "state": "A7a-item-delete-confirm",
+      "title": "Stats metric label 'INDISPONIBLES' clipped at card edge",
+      "evidence": "A7a-item-delete-confirm.png stats bar crop: label reads 'INDISPONIBLE' cut at the card boundary. DOM has title=\"0 indisponibles\" and aria-label — tooltip present, hence P3 not P2 per protocol category 2.",
+      "reproduction": "Articles page, control-plane stats bar at 1440px viewport.",
+      "recommendation": "Widen the metric card or reduce label font-size/letter-spacing."
+    }
+  ],
+  "substance_checks": {
+    "subcategory_everywhere": "PASS — E2E-AUDIT Sub appears in settings list with ↳ + badge 'SOUS-CATÉGORIE DE GALETTE' (A3) AND nested under Galette in studio tree (A5/A6); after creation toast shown; counts 12→13.",
+    "product_quick_create": "PASS — E2E-AUDIT Prod visible on studio card (A6) and Articles list (A7a) with same price 5,00 € FR format; total articles 45→46.",
+    "price_fr_format": "PASS — '5,00 €' (comma + space + €) on both surfaces; no en-US '5.00' anywhere in artifacts.",
+    "deletes": "PASS — both confirm dialogs render centered with FR copy and orange confirm CTA; toasts 'suppression réussie'; counts revert 46→45 articles, 13→12 categories; cleanup.json proves soft-deletes.",
+    "a4_parent_options": "CONFIRMED defect — see A-001; 10 enabled options, no disabled attr, no select lock."
+  },
+  "summary": {
+    "P0": 0,
+    "P1": 2,
+    "P2": 3,
+    "P3": 4,
+    "open_P0": 0,
+    "open_P1": 2,
+    "open_P2": 3,
+    "open_P3": 4
+  },
+  "verdict": "RED"
+}

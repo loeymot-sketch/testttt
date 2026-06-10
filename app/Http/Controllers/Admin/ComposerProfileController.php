@@ -100,6 +100,25 @@ class ComposerProfileController extends AdminController
         return new ComposerProfileResource($this->profiles->unpublish($profile));
     }
 
+    /**
+     * [GOAL CMS GESTION T-W5b 2026-06-10] Delete a whole wizard profile.
+     * Published profiles are refused with 409 (unpublish first).
+     */
+    public function destroy(Request $request, ItemWizardProfile $profile)
+    {
+        $this->authorizeWritableBranchScope($request, $profile->branch_id_scope);
+
+        try {
+            $this->profiles->destroy($profile);
+
+            return response()->json(['status' => true], 200);
+        } catch (\Exception $exception) {
+            $status = (int) $exception->getCode() === 409 ? 409 : 422;
+
+            return response()->json(['status' => false, 'message' => $exception->getMessage()], $status);
+        }
+    }
+
     public function diff(Request $request, ItemWizardProfile $profile): JsonResponse
     {
         $this->authorizeBranchScope($request, $profile->branch_id_scope);
@@ -503,15 +522,27 @@ class ComposerProfileController extends AdminController
     {
         $item->loadMissing(['variations.itemAttribute', 'extras', 'addons.addonItem']);
 
+        // [GOAL CMS heal P1-4 2026-06-10] each source carries its read-only
+        // `choices` (id, name, PRICE from the catalog construct) so the
+        // builder can show what each option costs. Admin-only payload — the
+        // kiosk projection stays price-free (NF525 SSOT untouched).
         $attributes = $item->variations
-            ->pluck('itemAttribute')
-            ->filter()
-            ->unique('id')
-            ->map(fn ($attr) => [
-                'id' => (int) $attr->id,
-                'name' => (string) $attr->name,
-                'source_type' => 'item_attribute',
-            ])->values();
+            ->filter(fn ($variation) => $variation->itemAttribute !== null)
+            ->groupBy(fn ($variation) => (int) $variation->itemAttribute->id)
+            ->map(function ($variations) {
+                $attr = $variations->first()->itemAttribute;
+
+                return [
+                    'id' => (int) $attr->id,
+                    'name' => (string) $attr->name,
+                    'source_type' => 'item_attribute',
+                    'choices' => $variations->map(fn ($variation) => [
+                        'id' => (int) $variation->id,
+                        'name' => (string) $variation->name,
+                        'price' => (float) $variation->price,
+                    ])->values()->all(),
+                ];
+            })->values();
 
         $extras = $item->extras
             ->groupBy(fn ($extra) => (string) ($extra->group_label ?? 'default'))
@@ -520,6 +551,11 @@ class ComposerProfileController extends AdminController
                 'name' => $label === 'default' ? 'Extras' : (string) $label,
                 'source_type' => 'extra_group',
                 'count' => $group->count(),
+                'choices' => $group->map(fn ($extra) => [
+                    'id' => (int) $extra->id,
+                    'name' => (string) $extra->name,
+                    'price' => (float) $extra->price,
+                ])->values()->all(),
             ])->values();
 
         $addons = $item->addons
@@ -528,6 +564,7 @@ class ComposerProfileController extends AdminController
                 'name' => $addon->addonItem?->name ?? "Addon #{$addon->id}",
                 'source_type' => 'addon',
                 'addon_role' => $addon->role,
+                'price' => $addon->addonItem !== null ? (float) $addon->addonItem->price : null,
             ])->values();
 
         return [

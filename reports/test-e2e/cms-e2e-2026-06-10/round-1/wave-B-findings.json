@@ -1,0 +1,71 @@
+{
+  "wave": "B",
+  "round": 1,
+  "reviewer": "adversarial-supervisor",
+  "states_reviewed": [
+    "B1-stock-rail", "B2-tacos-products", "B3-rupture-toggled", "B4-back-in-stock",
+    "B5-composer-drawer", "B6-step-taille-panel", "B6-step-taille-panel.iframe.dom",
+    "B6-panel-elements.json", "sync-proof.json"
+  ],
+  "findings": [
+    {
+      "id": "B-001",
+      "severity": "P1",
+      "category": "i18n_leak",
+      "state": "B5-composer-drawer.png / B6-step-taille-panel.iframe.dom.html",
+      "title": "4 clés i18n brutes visibles dans le fieldset presets du panneau step (legend + 3 radios)",
+      "evidence": "PNG B5 (crop fieldset) montre littéralement 'label.composer.choice_logic' en légende et 'label.composer.preset_single / preset_multiple / preset_custom' comme libellés radio. DOM iframe confirme: <legend>label.composer.choice_logic</legend> + 3 labels radio bruts. Root cause vérifiée code+catalogue: ComposerStepFormPanel.vue:146-177 appelle t('label.composer.choice_logic', fallback) mais le helper t() (methods, ~ligne 455) n'utilise le fallback QUE si this.$t n'est pas une fonction — or vue-i18n est présent et renvoie la clé brute quand elle manque. resources/js/languages/fr.json contient bien les clés sœurs (label.composer.choice_prices='Options et prix (lecture seule)', free_choice='Inclus', message.composer.choice_prices_hint) mais PAS choice_logic/preset_single/preset_multiple/preset_custom (vérifié python json lookup = None ×4).",
+      "reproduction": "Admin > Catalogue > catégorie Tacos > drawer 'Ouvrir le wizard' (iframe /admin/categories/5/composer) > sélectionner un step > fieldset 'Logique des choix'.",
+      "recommendation": "Ajouter les 4 clés label.composer.{choice_logic,preset_single,preset_multiple,preset_custom} dans resources/js/languages/{fr,en,ar,bn,de}.json (heal P1-3 a livré le markup mais pas les entrées catalogue) ; en défense, faire détecter au helper t() l'écho de clé ($t(key)===key → fallback)."
+    },
+    {
+      "id": "B-002",
+      "severity": "P1",
+      "category": "business_display_incoherence",
+      "state": "B5-composer-drawer.png / B6-step-taille-panel.iframe.dom.html",
+      "title": "Panneau 'Options et prix (lecture seule)' du step 'Choisis la taille' liste 14 viandes/sauces et zéro taille",
+      "evidence": "PNG B5/B6 + DOM iframe: step sélectionné = 'Choisis la taille' (Nom de la page = 'Choisis la taille'), mais data-testid=composer-step-choice-prices liste Poulet mariné/curry/tandoori/crispy + Algérienne/Andalouse/Blanche/Curry/Hannibal/Harissa/Ketchup/Mayonnaise/Samouraï/Spicy — tous 'Inclus'. Le select 'Limiter à un groupe précis' n'offre QUE [''=Toutes les options, 1=Viande 1, 5=Sauce (1ère Gratuite)] : aucun groupe 'Taille' n'existe dans availableSources. Root cause (1 phrase): ComposerStepFormPanel.vue:401-417 selectedSourceChoices, quand source_ref est vide, flatMap les choices de TOUTES les sources du type (commentaire « Toutes les options ») — donc le step taille affiche l'union Viande1+Sauce, et un step dont le source_ref pointe vers un groupe absent/ sans tableau choices retourne [] (cohérent avec le probe 'Choisis tes viandes' vide rapporté par l'agent de capture — non revérifiable, aucun artefact pour cet état). Qualification prix: PAS de prix numériquement FAUX affiché (tous price=0 → 'Inclus', aucun montant erroné) donc PAS un P0 numeric_integrity ; c'est un affichage MÉLANGÉ/mensonger (les options listées appartiennent à d'autres steps) qui induit le gérant en erreur sur ce que la borne proposera → P1 user-visible.",
+      "reproduction": "Drawer composer Tacos > step 'Choisis la taille' > observer le bloc 'Options et prix (lecture seule)'.",
+      "recommendation": "1) Ne pas flatMap l'union quand source_ref est vide — afficher un message 'sélectionnez un groupe' ou les choices effectivement résolus côté backend pour CE step ; 2) corriger le payload availableSources de /admin/categories/5/composer pour exposer tous les groupes d'attributs (Taille, Viande 2, Garnitures absents) sinon les selects ne peuvent pas représenter les bindings réels des steps."
+    },
+    {
+      "id": "B-003",
+      "severity": "P1",
+      "category": "console_error",
+      "state": "B5-composer-drawer.console.json",
+      "title": "CSP report-only frame-ancestors 'none' violée par l'iframe du drawer composer (cassera la feature si la CSP passe en enforce)",
+      "evidence": "B5-composer-drawer.console.json contient une entrée type='error': \"Framing 'http://127.0.0.1:8767/' violates the following report-only Content Security Policy directive: \\\"frame-ancestors 'none'\\\"\". Origine applicative (la page admin embarque /admin/categories/5/composer en iframe alors que l'app publie elle-même frame-ancestors 'none' en Report-Only). Non couverte par l'allowlist (qui n'exonère que l'endpoint csp-report 204, pas l'erreur console). Impact actuel nul (report-only, l'iframe rend — PNG le prouve) mais P0 latent: au passage en CSP enforcée, le drawer builder devient un cadre vide.",
+      "reproduction": "Ouvrir le drawer composer, observer la console au chargement de l'iframe.",
+      "recommendation": "Sur la route /admin/categories/*/composer (ou globalement pour l'admin), émettre frame-ancestors 'self' au lieu de 'none', ou exempter cette route du header report-only."
+    },
+    {
+      "id": "B-004",
+      "severity": "P2",
+      "category": "aria_keyboard",
+      "state": "B6-step-taille-panel.iframe.dom.html",
+      "title": "Radios presets sans attribut name commun : pas de vrai radiogroup (navigation flèches / annonce lecteur d'écran cassées)",
+      "evidence": "DOM iframe: les 3 <input type=\"radio\"> (data-testid composer-step-preset-single/multiple/custom) n'ont aucun attribut name — chaque radio forme son propre groupe pour le navigateur ; les flèches clavier ne circulent pas entre eux et un SR ne les annonce pas '1 sur 3'. Le radio 'custom' est disabled by design (indicateur calculé via choicePreset, ComposerStepFormPanel.vue:172-176) mais sans name le pattern radiogroup reste invalide.",
+      "reproduction": "Tab jusqu'au fieldset 'Logique des choix', tenter flèches haut/bas.",
+      "recommendation": "Ajouter name=\"composer-choice-preset\" (ou name dynamique par step) aux 3 radios."
+    },
+    {
+      "id": "B-005",
+      "severity": "P3",
+      "category": "text_truncation",
+      "state": "B5-composer-drawer.png",
+      "title": "Selects du panneau step tronquent leur valeur sélectionnée ('Attribut prod…', 'Toutes les op…')",
+      "evidence": "PNG B5 (zone 'D'où viennent les choix ?'): la valeur affichée est coupée à 'Attribut prod' et 'Toutes les op' faute de largeur. Texte complet accessible en ouvrant le select natif → cosmétique, pas de perte d'information bloquante.",
+      "reproduction": "Drawer composer, panneau step, observer les 2 selects côte à côte.",
+      "recommendation": "Élargir les selects ou les empiler verticalement sous ~1200px de viewport iframe."
+    }
+  ],
+  "clean_checks": {
+    "sync_proof": "PASS — chaîne cohérente: after_rupture is_available=0 puis after_restore is_available=1, avec ItemAvailabilityChanged + CatalogChanged émis dans les derniers domain_events aux deux étapes ; concorde avec le visuel B3 (Big Tacos RUPTURE) → B4 (EN STOCK).",
+    "stock_rail": "PASS — hiérarchie ↳ Tacos Signature visible (badge 0), badges EN STOCK/RUPTURE cohérents B1→B4, aucune clé i18n brute dans les DOM B1-B4.",
+    "network": "PASS — les 6 network.json sont vides (aucun 4xx/5xx, aucune requête >2000ms).",
+    "console_b1": "ALLOWLISTED — warning WebSocket ws://127.0.0.1:6001 (pusher dev) sur B1 et B5.",
+    "numeric_fr": "PASS — seul prix visible dans les DOM = '2,00 €' (format FR correct, menu profil masqué) ; panneau options n'affiche que 'Inclus', aucun montant en format en-US."
+  },
+  "summary": { "P0": 0, "P1": 3, "P2": 1, "P3": 1, "open_P0": 0, "open_P1": 3, "open_P2": 1, "open_P3": 1 },
+  "verdict": "RED"
+}

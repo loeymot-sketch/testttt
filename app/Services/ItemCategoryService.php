@@ -184,19 +184,45 @@ class ItemCategoryService
             );
         }
 
+        // [GOAL CMS C1.2 2026-06-10] Orphan guards. The delete below is a
+        // SOFT-delete (UPDATE deleted_at) so SQL cascade/null-on-delete never
+        // fires: deleting a parent would leave sub-categories pointing at an
+        // invisible parent, and deleting a category with a published wizard
+        // would leave the kiosk wizard profile orphaned. Refuse with 409.
+        $childCount = (int) $itemCategory->children()->count();
+        if ($childCount > 0) {
+            throw new Exception(
+                sprintf(
+                    'La catégorie contient %d sous-catégorie(s). Supprimez ou détachez ces sous-catégories avant de supprimer la catégorie.',
+                    $childCount
+                ),
+                409
+            );
+        }
+
+        $wizardProfileCount = (int) \App\Models\ItemWizardProfile::query()
+            ->where('item_category_id', $itemCategory->id)
+            ->count();
+        if ($wizardProfileCount > 0) {
+            // [heal P2-4] Wording: unpublishing does NOT detach the profile —
+            // only DELETING the wizard (builder) detaches it and unblocks
+            // category deletion.
+            throw new Exception(
+                'Un wizard est rattaché à cette catégorie. Supprimez ce wizard dans le builder (la suppression le détache) avant de supprimer la catégorie.',
+                409
+            );
+        }
+
         try {
             $categoryId = (int) $itemCategory->id;
             DB::transaction(function () use ($itemCategory, $categoryId): void {
-                // No active items remain (guarded above): safe to soft-delete.
-                if (DB::getDriverName() === 'sqlite') {
-                    DB::statement('PRAGMA foreign_keys=0');
-                    $itemCategory->delete();
-                    DB::statement('PRAGMA foreign_keys=1');
-                } else {
-                    DB::statement('SET FOREIGN_KEY_CHECKS=0');
-                    $itemCategory->delete();
-                    DB::statement('SET FOREIGN_KEY_CHECKS=1');
-                }
+                // No active items, children or wizard profile remain (guarded
+                // above): a plain soft-delete is safe. The historical
+                // FOREIGN_KEY_CHECKS=0 / PRAGMA foreign_keys=0 toggle around
+                // this soft-delete was a no-op footgun (it only matters for
+                // hard DELETEs, where it would silently bypass FK integrity)
+                // — removed per GOAL CMS C1.2 (RED P1-3).
+                $itemCategory->delete();
 
                 DB::afterCommit(function () use ($categoryId): void {
                     event(new CategoryDeleted($categoryId));

@@ -66,4 +66,54 @@ class ComposerAvailableSourcesTest extends TestCase
 
         $this->assertContains($response->status(), [401, 403, 419]);
     }
+
+    /**
+     * [GOAL CMS heal P1-4 2026-06-10] Echo prix read-only par option dans le
+     * builder : l'endpoint ADMIN available-sources émet `choices` (id, name,
+     * price) par source. NF525-safe : ce n'est PAS la projection kiosk (qui
+     * reste price-free) — le prix vient du construct catalogue, là où il vit.
+     */
+    public function test_sources_carry_choices_with_prices(): void
+    {
+        $attribute = \App\Models\ItemAttribute::query()->create(['name' => 'Taille']);
+        \App\Models\ItemVariation::query()->create([
+            'item_id' => $this->item->id,
+            'item_attribute_id' => $attribute->id,
+            'name' => 'Grande',
+            'price' => 1.5,
+            'status' => 5,
+        ]);
+        \App\Models\ItemExtra::query()->create([
+            'item_id' => $this->item->id,
+            'name' => 'Cheddar',
+            'price' => 1.0,
+            'group_label' => 'supplement',
+            'status' => 5,
+        ]);
+        $addonItem = Item::factory()->create(['price' => 2.5]);
+        \App\Models\ItemAddon::query()->create([
+            'item_id' => $this->item->id,
+            'addon_item_id' => $addonItem->id,
+            'addon_item_variation' => [],
+            'role' => 'drink',
+        ]);
+
+        $response = $this->actingAs($this->admin, 'sanctum')
+            ->getJson("/api/admin/composer/items/{$this->item->id}/available-sources");
+
+        $response->assertOk();
+
+        $attr = collect($response->json('data.item_attribute'))->firstWhere('name', 'Taille');
+        $this->assertNotNull($attr);
+        $this->assertSame('Grande', $attr['choices'][0]['name']);
+        $this->assertEqualsWithDelta(1.5, (float) $attr['choices'][0]['price'], 0.001);
+
+        $extraGroup = collect($response->json('data.extra_group'))->firstWhere('id', 'supplement');
+        $this->assertNotNull($extraGroup);
+        $this->assertSame('Cheddar', $extraGroup['choices'][0]['name']);
+        $this->assertEqualsWithDelta(1.0, (float) $extraGroup['choices'][0]['price'], 0.001);
+
+        $addon = collect($response->json('data.addon'))->first();
+        $this->assertEqualsWithDelta(2.5, (float) $addon['price'], 0.001);
+    }
 }

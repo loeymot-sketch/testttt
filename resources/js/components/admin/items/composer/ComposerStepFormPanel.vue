@@ -78,6 +78,34 @@
             </label>
         </div>
 
+        <!-- [GOAL CMS heal P1-4] Echo prix read-only des options de la source
+             sélectionnée (prix = construct catalogue ; modifiable via la fiche
+             produit, JAMAIS sur le step — NF525). -->
+        <div
+            v-if="selectedSourceChoices.length"
+            class="rounded-lg border border-[#d9dfdc] bg-[#fbfcfb] p-4"
+            data-testid="composer-step-choice-prices"
+        >
+            <span class="text-sm font-semibold text-[#405149]">
+                {{ t('label.composer.choice_prices', 'Options et prix (lecture seule)') }}
+            </span>
+            <ul class="mt-2 space-y-1">
+                <li
+                    v-for="choice in selectedSourceChoices"
+                    :key="choice.id"
+                    class="flex items-center justify-between text-sm text-[#405149]"
+                >
+                    <span>{{ choice.name }}</span>
+                    <span class="font-semibold">
+                        {{ choice.price > 0 ? formatPrice(choice.price) : t('label.composer.free_choice', 'Inclus') }}
+                    </span>
+                </li>
+            </ul>
+            <span class="mt-2 block text-xs text-neutral-500">
+                {{ t('message.composer.choice_prices_hint', 'Prix modifiables depuis la fiche produit (jamais sur la page wizard).') }}
+            </span>
+        </div>
+
         <label v-if="draft.source_type === 'addon'" class="block">
             <span class="mb-1 flex items-center gap-2 text-sm font-semibold text-[#405149]">
                 {{ t('label.composer.addon_role', "Rôle de l'add-on") }}
@@ -110,6 +138,49 @@
                 <option value="upsell">{{ t('label.composer.addon_role_upsell', 'Vente additionnelle') }}</option>
             </select>
         </label>
+
+        <!-- [GOAL CMS heal P1-3 2026-06-10] Presets lisibles owner : pilotent
+             min/max/allow_repeat sans raisonner en chiffres. -->
+        <fieldset class="rounded-lg border border-[#d9dfdc] bg-[#fbfcfb] p-4">
+            <legend class="px-1 text-sm font-semibold text-[#405149]">
+                {{ t('label.composer.choice_logic', 'Logique des choix') }}
+            </legend>
+            <div class="flex flex-wrap gap-4">
+                <label class="flex items-center gap-2 text-sm">
+                    <input
+                        type="radio"
+                        name="composer-choice-preset"
+                        value="single"
+                        :checked="choicePreset === 'single'"
+                        data-testid="composer-step-preset-single"
+                        @change="applyPreset('single')"
+                    >
+                    {{ t('label.composer.preset_single', 'Choix unique (1 obligatoire)') }}
+                </label>
+                <label class="flex items-center gap-2 text-sm">
+                    <input
+                        type="radio"
+                        name="composer-choice-preset"
+                        value="multiple"
+                        :checked="choicePreset === 'multiple'"
+                        data-testid="composer-step-preset-multiple"
+                        @change="applyPreset('multiple')"
+                    >
+                    {{ t('label.composer.preset_multiple', 'Choix multiples (libre)') }}
+                </label>
+                <label class="flex items-center gap-2 text-sm">
+                    <input
+                        type="radio"
+                        name="composer-choice-preset"
+                        value="custom"
+                        :checked="choicePreset === 'custom'"
+                        data-testid="composer-step-preset-custom"
+                        disabled
+                    >
+                    {{ t('label.composer.preset_custom', 'Personnalisé (réglages ci-dessous)') }}
+                </label>
+            </div>
+        </fieldset>
 
         <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <label class="rounded-lg border border-[#d9dfdc] bg-[#fbfcfb] p-4">
@@ -329,6 +400,33 @@ export default {
             const list = this.availableSources?.[this.draft.source_type];
             return Array.isArray(list) ? list : [];
         },
+        // [heal P1-4] read-only choices+prices of the selected source.
+        selectedSourceChoices() {
+            if (this.draft.source_type === 'addon') {
+                const addon = this.optionsForType.find((source) => String(source.id) === String(this.draft.source_ref));
+                return addon && addon.price !== null && addon.price !== undefined
+                    ? [{ id: addon.id, name: addon.name, price: Number(addon.price) }]
+                    : [];
+            }
+            const selected = this.optionsForType.find((source) => String(source.id) === String(this.draft.source_ref));
+            if (selected && Array.isArray(selected.choices)) {
+                return selected.choices;
+            }
+            // [heal E2E B-002] « Toutes les options » (source_ref vide) : ne
+            // RIEN afficher plutôt que concaténer des groupes sans rapport
+            // (le mélange viandes+sauces sur un step « taille » mentait au
+            // gérant). Le panneau n'apparaît que pour une source explicite.
+            return [];
+        },
+        // [heal P1-3] reverse mapping: which preset matches current settings.
+        choicePreset() {
+            const min = Number(this.draft.min_select);
+            const max = Number(this.draft.max_select);
+            const repeat = Boolean(this.draft.allow_repeat);
+            if (min === 1 && max === 1 && !repeat) return 'single';
+            if (min === 0 && max === 10 && repeat) return 'multiple';
+            return 'custom';
+        },
     },
     watch: {
         modelValue: {
@@ -361,6 +459,23 @@ export default {
         commit() {
             this.$emit('update:modelValue', this.clone(this.draft));
             this.$emit('change', this.clone(this.draft));
+        },
+        // [heal P1-4] FR currency for the read-only price echo.
+        formatPrice(value) {
+            return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(Number(value) || 0);
+        },
+        // [heal P1-3] preset → min/max/allow_repeat mapping.
+        applyPreset(preset) {
+            if (preset === 'single') {
+                this.draft.min_select = 1;
+                this.draft.max_select = 1;
+                this.draft.allow_repeat = false;
+            } else if (preset === 'multiple') {
+                this.draft.min_select = 0;
+                this.draft.max_select = 10;
+                this.draft.allow_repeat = true;
+            }
+            this.commit();
         },
         onSourceTypeChange() {
             this.draft.source_ref = '';

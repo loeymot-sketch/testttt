@@ -21,6 +21,20 @@
 
 
                         <div class="form-col-12 sm:form-col-6">
+                            <label for="parent_id" class="db-field-title">{{ $t('label.parent_category') }}</label>
+                            <select v-model="props.form.parent_id" id="parent_id" class="db-field-control"
+                                v-bind:class="errors.parent_id ? 'invalid' : ''"
+                                data-testid="admin-category-form-parent">
+                                <option :value="null">{{ $t('label.none') }}</option>
+                                <option v-for="parent in parentOptions" :key="parent.id" :value="parent.id">
+                                    {{ parent.name }}
+                                </option>
+                            </select>
+                            <small class="db-field-hint">{{ $t('message.subcategory_wizard_hint') }}</small>
+                            <small class="db-field-alert" v-if="errors.parent_id">{{ errors.parent_id[0] }}</small>
+                        </div>
+
+                        <div class="form-col-12 sm:form-col-6">
                             <label for="image" class="db-field-title">{{ $t('label.image') }} (74px,48px)</label>
                             <input @change="changeImage" v-bind:class="errors.image ? 'invalid' : ''" id="image" type="file"
                                 class="db-field-control" ref="imageProperty" accept="image/png, image/jpeg, image/jpg" data-testid="admin-category-form-image">
@@ -201,14 +215,59 @@ export default {
             image: "",
             errors: {},
             showAdvanced: false,
+            // [heal P2-1] full unpaginated category list for the parent
+            // select (the table's store list is paginated at 50 — beyond
+            // that, parents would silently vanish from the dropdown).
+            allCategories: null,
         }
+    },
+    mounted() {
+        this.refreshAllCategories();
     },
     computed: {
         addButton: function () {
             return { title: this.$t('button.add_item_category') };
+        },
+        // [GOAL CMS C1.1 + heal P1-1] Eligible parents = top-level categories
+        // only (2-level hierarchy enforced backend by
+        // ItemCategoryHierarchyService) minus the category being edited (no
+        // self-parent). A category that HAS children cannot itself get a
+        // parent (depth 3) — backend rejects it, so hide the select too.
+        parentOptions: function () {
+            // [heal E2E A-001] UNION snapshot complet + liste du store (le
+            // store est rafraîchi après chaque save : une sous-catégorie
+            // créée modal-ouvert est donc TOUJOURS vue par le verrou
+            // anti-depth-3, même si le snapshot mounted() est antérieur).
+            const byId = {};
+            (Array.isArray(this.allCategories) ? this.allCategories : [])
+                .concat(this.$store.getters['itemCategory/lists'] || [])
+                .forEach((category) => { byId[category.id] = category; });
+            const lists = Object.values(byId);
+            const editingId = this.$store.getters['itemCategory/temp'].temp_id;
+            const editedHasChildren = editingId !== null && editingId !== undefined
+                && lists.some((category) => Number(category.parent_id) === Number(editingId));
+            if (editedHasChildren) {
+                return [];
+            }
+            return lists.filter(
+                (category) => !category.parent_id && category.id !== editingId
+            );
         }
     },
     methods: {
+        // [heal E2E A-001] full unpaginated snapshot, refreshed after each
+        // save so the anti-depth-3 lock always sees fresh children.
+        refreshAllCategories: function () {
+            const http = typeof axios !== 'undefined' ? axios : (typeof window !== 'undefined' ? window.axios : null);
+            if (!http) return; // test env without global axios → fallback = store lists
+            http.get('admin/setting/item-category', { params: { paginate: 0, status: 5 } })
+                .then((response) => {
+                    this.allCategories = response.data?.data || [];
+                })
+                .catch(() => {
+                    this.allCategories = null;
+                });
+        },
         changeImage: function (e) {
             this.image = e.target.files[0];
         },
@@ -221,6 +280,7 @@ export default {
                 name: "",
                 description: "",
                 status: statusEnum.ACTIVE,
+                parent_id: null,
                 wizard_template: 'simple',
                 has_menu: 0,
                 default_menu_kiosk: 0,
@@ -240,6 +300,9 @@ export default {
                 fd.append('name', this.props.form.name);
                 fd.append('status', this.props.form.status);
                 fd.append('description', this.props.form.description);
+                // Empty string is converted to null backend-side
+                // (ConvertEmptyStringsToNull) so clearing the parent works.
+                fd.append('parent_id', this.props.form.parent_id ?? '');
                 fd.append('wizard_template', this.props.form.wizard_template || 'simple');
                 fd.append('has_menu', this.props.form.has_menu ?? 0);
                 fd.append('default_menu_kiosk', this.props.form.default_menu_kiosk ?? 0);
@@ -259,10 +322,12 @@ export default {
                     appService.modalHide();
                     this.loading.isActive = false;
                     alertService.successFlip((tempId === null ? 0 : 1), this.$t('menu.item_categories'));
+                    this.refreshAllCategories();
                     this.props.form = {
                         name: "",
                         description: "",
                         status: statusEnum.ACTIVE,
+                        parent_id: null,
                         wizard_template: 'simple',
                         has_menu: 0,
                         default_menu_kiosk: 0,

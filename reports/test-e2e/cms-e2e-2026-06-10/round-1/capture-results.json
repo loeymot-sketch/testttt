@@ -1,0 +1,71 @@
+[
+  {
+    "state": "A1-category-list",
+    "ok": true
+  },
+  {
+    "state": "A2-create-modal",
+    "ok": true
+  },
+  {
+    "state": "A3-subcategory-created",
+    "ok": true
+  },
+  {
+    "state": "A4-galette-edit-parent-locked",
+    "ok": true
+  },
+  {
+    "state": "A5-studio-sidebar",
+    "ok": true
+  },
+  {
+    "state": "A6-product-created",
+    "ok": true
+  },
+  {
+    "state": "A7a-item-delete-confirm",
+    "ok": true
+  },
+  {
+    "state": "A7b-item-deleted",
+    "ok": true
+  },
+  {
+    "state": "A7c-category-delete-confirm",
+    "ok": true
+  },
+  {
+    "state": "A7d-category-deleted",
+    "ok": true
+  },
+  {
+    "state": "B1-stock-rail",
+    "ok": true
+  },
+  {
+    "state": "B2-tacos-products",
+    "ok": true
+  },
+  {
+    "state": "B3-rupture-toggled",
+    "ok": true
+  },
+  {
+    "state": "B4-back-in-stock",
+    "ok": true
+  },
+  {
+    "state": "B5-composer-drawer",
+    "ok": true
+  },
+  {
+    "state": "B6-step-taille-panel",
+    "ok": true
+  },
+  {
+    "state": "B7-no-mutation",
+    "ok": true,
+    "note": "no publish/unpublish/delete clicked on Tacos wizard (capture-only rule respected)"
+  }
+]

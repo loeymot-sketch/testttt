@@ -86,7 +86,12 @@ class ItemCategoryController extends AdminController
             $this->itemCategoryService->destroy($itemCategory);
             return response('', 202);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            // [GOAL CMS C1.2 2026-06-10] Preserve the service's 409 conflict
+            // semantics (active items / children / wizard guards) instead of
+            // flattening every failure to 422.
+            $status = (int) $exception->getCode() === 409 ? 409 : 422;
+
+            return response(['status' => false, 'message' => $exception->getMessage()], $status);
         }
     }
 

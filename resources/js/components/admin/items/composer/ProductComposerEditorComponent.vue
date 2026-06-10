@@ -59,7 +59,7 @@
                             data-testid="admin-composer-back"
                             @click="returnToItem"
                         >
-                            <i class="lab lab-arrow-left" aria-hidden="true"></i>
+                            <i class="lab lab-back-bold" aria-hidden="true"></i>
                             {{ t('label.composer.back_to_product', 'Retour fiche produit') }}
                         </button>
                         <button
@@ -72,6 +72,19 @@
                         >
                             <i class="lab lab-close-circle" aria-hidden="true"></i>
                             {{ t('label.composer.unpublish', 'Depublier') }}
+                        </button>
+                        <!-- [GOAL CMS T-W5b] delete whole wizard — unpublished only
+                             (the backend refuses published profiles with 409). -->
+                        <button
+                            v-if="profile && profile.id && !profile.is_published"
+                            type="button"
+                            class="db-btn-outline h-[42px] !border-[#c0392b] !text-[#9b2f2f]"
+                            data-testid="admin-composer-delete-profile"
+                            :disabled="savingDraft"
+                            @click="destroyProfile"
+                        >
+                            <i class="lab lab-delete" aria-hidden="true"></i>
+                            {{ t('label.composer.delete_profile', 'Supprimer le wizard') }}
                         </button>
                     </div>
                 </div>
@@ -113,7 +126,7 @@
                     >
                         <i
                             class="lab"
-                            :class="applyingTemplate ? 'lab-refresh animate-spin' : 'lab-document-text'"
+                            :class="applyingTemplate ? 'lab-undo animate-spin' : 'lab-document-text'"
                             aria-hidden="true"
                         ></i>
                         {{ t('label.composer.choose_template', 'Choisir un template') }}
@@ -133,7 +146,7 @@
                         data-testid="admin-composer-add-personal-page"
                         @click="openPersonalPage"
                     >
-                        <i class="lab lab-magic-star" aria-hidden="true"></i>
+                        <i class="lab lab-add-circle" aria-hidden="true"></i>
                         {{ t('label.composer.add_personal_page', 'Créer une page personnalisée') }}
                     </button>
 
@@ -1307,6 +1320,26 @@ export default {
             if (!this.profile?.id) return;
             const response = await axios.post(`admin/composer/profiles/${this.profile.id}/unpublish`);
             this.hydrateProfile(response.data?.data || null);
+        },
+        // [GOAL CMS T-W5b] Delete the whole wizard profile (unpublished only —
+        // backend guards published with 409). window.confirm mirrors the
+        // category-publish confirm pattern already used in this component.
+        async destroyProfile() {
+            if (!this.profile?.id) return;
+            const confirmed = window.confirm(
+                this.t(
+                    'message.composer.delete_profile_confirm',
+                    'Supprimer définitivement ce wizard (pages + versions) ? Cette action est irréversible.'
+                )
+            );
+            if (!confirmed) return;
+            try {
+                await axios.delete(`admin/composer/profiles/${this.profile.id}`);
+                this.returnToItem();
+            } catch (error) {
+                this.loadError = error?.response?.data?.message
+                    || this.t('label.composer.delete_profile_error', 'Suppression impossible.');
+            }
         },
         onBranchScopeChange() {
             if (this.branchIdScope === '') {

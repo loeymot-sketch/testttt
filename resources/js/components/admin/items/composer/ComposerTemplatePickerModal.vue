@@ -84,7 +84,7 @@ export default {
                 },
                 {
                     key: 'menu',
-                    icon: 'lab lab-category',
+                    icon: 'lab lab-addons',
                     label: this.t('label.composer.template_menu', 'Menu'),
                     description: this.t('message.composer.template_menu', 'Menu : formule complete avec boisson et accompagnement.'),
                 },

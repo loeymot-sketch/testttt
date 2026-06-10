@@ -11,13 +11,13 @@
                 <button v-if="canCreateCategory" type="button" class="db-btn py-2 bg-rose-700 text-white"
                     data-testid="catalog-studio-add-category"
                     @click="onAddCategoryClick">
-                    <i class="lab lab-add-line"></i>
+                    <i class="lab lab-add-circle-line"></i>
                     <span>{{ $t("button.add_item_category") }}</span>
                 </button>
                 <button v-if="canCreateItem" type="button" class="db-btn py-2 bg-green-700 text-white"
                     data-testid="catalog-studio-add-product"
                     @click="onAddProductClick">
-                    <i class="lab lab-add-line"></i>
+                    <i class="lab lab-add-circle-line"></i>
                     <span>{{ $t("button.add_item") }}</span>
                 </button>
             </div>
@@ -45,17 +45,18 @@
                     <button type="button" class="db-btn py-2 bg-rose-700 text-white"
                         data-testid="catalog-studio-category-wizard-button"
                         @click="openCategoryComposerDrawer">
-                        <i class="lab lab-cog"></i>
+                        <i class="lab lab-settings"></i>
                         <span>{{ t("studio.category_wizard_button", "Wizard de la catégorie") }}</span>
                     </button>
                 </div>
 
                 <div v-for="category in categories" :key="category.id" class="catalog-studio__category-row"
+                    :class="{ 'catalog-studio__category-row--child': !!category.parent_id }"
                     :data-testid="`catalog-studio-category-row-${category.id}`">
                     <button type="button" class="catalog-studio__category"
                         :class="{ 'catalog-studio__category--active': selectedCategoryId === Number(category.id) }"
                         @click="selectCategory(Number(category.id))">
-                        <strong>{{ category.name }}</strong>
+                        <strong><span v-if="category.parent_id" aria-hidden="true">↳ </span>{{ category.name }}</strong>
                         <small>{{ $t("studio.products_count", { n: category.product_count || productsCountByCategory[category.id] || 0 }) }}</small>
                     </button>
                     <div class="catalog-studio__category-actions" v-if="canEditCategory || canDeleteCategory">
@@ -69,13 +70,13 @@
                             :title="$t('label.delete')" :aria-label="$t('label.delete')"
                             :data-testid="`catalog-studio-category-delete-${category.id}`"
                             @click="destroyCategory(category)">
-                            <i class="lab lab-delete-line"></i>
+                            <i class="lab lab-delete"></i>
                         </button>
                     </div>
                 </div>
 
                 <router-link class="catalog-studio__settings-link" :to="{ name: 'admin.settings.itemCategory.list' }">
-                    <i class="lab lab-setting-line"></i>
+                    <i class="lab lab-settings"></i>
                     <span>{{ $t("studio.advanced_settings") }}</span>
                 </router-link>
 
@@ -93,7 +94,7 @@
                     <input v-model.trim="searchTerm" type="text" class="db-field-control" :placeholder="$t('label.search_by_menu_item')" />
                     <router-link class="catalog-studio__stock-link" :to="{ name: 'admin.stock.rupture' }"
                         data-testid="catalog-studio-stock-link">
-                        <i class="lab lab-toggle-on"></i>
+                        <i class="lab lab-list"></i>
                         <span>{{ $t("studio.stock_link") }}</span>
                     </router-link>
                 </div>
@@ -145,18 +146,18 @@
                                 :data-testid="`catalog-studio-product-wizard-${item.id}`"
                                 @click="openComposerDrawer(item)"
                             >
-                                <i class="lab lab-cog"></i>
+                                <i class="lab lab-settings"></i>
                             </button>
                             <router-link v-if="canViewItem" :to="{ name: 'admin.item.show', params: { id: item.id } }"
                                 class="db-table-action view" :title="$t('label.view')"
                                 :data-testid="`catalog-studio-product-view-${item.id}`">
-                                <i class="lab lab-view-line"></i>
+                                <i class="lab lab-view"></i>
                             </router-link>
                             <button v-if="canDeleteItem" type="button" class="db-table-action delete"
                                 :title="$t('label.delete')" :aria-label="$t('label.delete')"
                                 :data-testid="`catalog-studio-product-delete-${item.id}`"
                                 @click="destroyItem(item)">
-                                <i class="lab lab-delete-line"></i>
+                                <i class="lab lab-delete"></i>
                             </button>
                         </div>
                     </article>
@@ -183,7 +184,7 @@
                         <router-link class="db-btn py-2 bg-rose-700 text-white"
                             :to="composerDrawerRoute"
                             :data-testid="'catalog-studio-composer-open-full'">
-                            <i class="lab lab-export"></i>
+                            <i class="lab lab-file-export"></i>
                             <span>{{ $t("studio.open_full_page") }}</span>
                         </router-link>
                         <button type="button" class="db-btn py-2" data-testid="catalog-studio-composer-close"
@@ -289,7 +290,21 @@ export default {
             return appService.permissionChecker("settings");
         },
         categories() {
-            return this.$store.getters["itemCategory/lists"] || [];
+            // [GOAL CMS C1.4] Tree ordering: top-level categories keep their
+            // store order, each immediately followed by its sub-categories
+            // (2-level hierarchy — parent_id emitted since GOAL CMS C1).
+            const lists = this.$store.getters["itemCategory/lists"] || [];
+            const tops = lists.filter((category) => !category.parent_id);
+            const childrenByParent = {};
+            lists.filter((category) => category.parent_id).forEach((child) => {
+                (childrenByParent[child.parent_id] ??= []).push(child);
+            });
+            const orphans = lists.filter(
+                (category) => category.parent_id && !tops.some((top) => top.id === category.parent_id)
+            );
+            return tops
+                .flatMap((top) => [top, ...(childrenByParent[top.id] || [])])
+                .concat(orphans.filter((orphan) => !tops.some((top) => (childrenByParent[top.id] || []).includes(orphan))));
         },
         products() {
             return this.$store.getters["item/lists"] || [];
@@ -718,6 +733,11 @@ export default {
     grid-template-columns: 1fr auto;
     gap: 6px;
     align-items: stretch;
+}
+
+/* [GOAL CMS C1.4] sub-category rows are indented under their parent */
+.catalog-studio__category-row--child {
+    margin-left: 16px;
 }
 
 .catalog-studio__category-actions {
