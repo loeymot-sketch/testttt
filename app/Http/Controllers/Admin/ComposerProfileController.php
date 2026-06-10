@@ -100,6 +100,25 @@ class ComposerProfileController extends AdminController
         return new ComposerProfileResource($this->profiles->unpublish($profile));
     }
 
+    /**
+     * [GOAL CMS GESTION T-W5b 2026-06-10] Delete a whole wizard profile.
+     * Published profiles are refused with 409 (unpublish first).
+     */
+    public function destroy(Request $request, ItemWizardProfile $profile)
+    {
+        $this->authorizeWritableBranchScope($request, $profile->branch_id_scope);
+
+        try {
+            $this->profiles->destroy($profile);
+
+            return response()->json(['status' => true], 200);
+        } catch (\Exception $exception) {
+            $status = (int) $exception->getCode() === 409 ? 409 : 422;
+
+            return response()->json(['status' => false, 'message' => $exception->getMessage()], $status);
+        }
+    }
+
     public function diff(Request $request, ItemWizardProfile $profile): JsonResponse
     {
         $this->authorizeBranchScope($request, $profile->branch_id_scope);

@@ -248,6 +248,38 @@ class ComposerProfileService
         });
     }
 
+    /**
+     * [GOAL CMS GESTION T-W5b 2026-06-10] Delete a whole wizard profile.
+     *
+     * Published profiles are REFUSED (409): the owner must unpublish first so
+     * the kiosk never loses a live wizard by accident. Hard delete cascades
+     * steps + step versions (FK cascadeOnDelete) and detaches
+     * `item_categories.wizard_profile_id` (FK nullOnDelete) — which also
+     * unblocks category deletion (C1.2 guard).
+     *
+     * @throws \Exception code 409 while the profile is published
+     */
+    public function destroy(ItemWizardProfile $profile): void
+    {
+        if ((bool) $profile->is_published) {
+            throw new \Exception(
+                'Ce wizard est publié. Dépubliez-le avant de le supprimer.',
+                409
+            );
+        }
+
+        DB::transaction(function () use ($profile): void {
+            $payload = $this->composerChangedPayload($profile, 'deleted');
+            // Explicit detach (don't rely on FK nullOnDelete — absent on
+            // sqlite where ALTER-added constraints are ignored).
+            ItemCategory::query()
+                ->where('wizard_profile_id', $profile->id)
+                ->update(['wizard_profile_id' => null]);
+            $profile->delete();
+            ComposerProfileChanged::dispatch(...$payload);
+        });
+    }
+
     private function composerChangedPayload(ItemWizardProfile $profile, string $changeType): array
     {
         return [
