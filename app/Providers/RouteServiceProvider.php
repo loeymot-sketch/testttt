@@ -214,7 +214,8 @@ class RouteServiceProvider extends ServiceProvider
 
             return Limit::perMinute($maxAttempts)->by($key)->response(function () {
                 return response()->json([
-                    'message' => 'Too many kiosk login attempts. Please try again shortly.',
+                    // [AUTH-E1C-EN heal 2026-06-10] mandat FR (ADR-007)
+                    'message' => 'Trop de tentatives de connexion borne. Veuillez réessayer dans un instant.',
                     'retry_after' => 60,
                 ], 429);
             });
@@ -259,7 +260,8 @@ class RouteServiceProvider extends ServiceProvider
 
             return Limit::perMinutes($decayMinutes, $maxAttempts)->by($key)->response(function () use ($decayMinutes) {
                 return response()->json([
-                    'message' => 'Too many login attempts. Please try again later.',
+                    // [AUTH-E1C-EN heal 2026-06-10] mandat FR (ADR-007)
+                    'message' => 'Trop de tentatives de connexion. Veuillez réessayer plus tard.',
                     'retry_after' => $decayMinutes * 60,
                 ], 429);
             });

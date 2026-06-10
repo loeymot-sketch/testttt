@@ -147,7 +147,7 @@ class KioskThrottleKeysTest extends TestCase
         }
 
         $response->assertStatus(429)->assertExactJson([
-            'message' => 'Too many login attempts. Please try again later.',
+            'message' => 'Trop de tentatives de connexion. Veuillez réessayer plus tard.', // [AUTH-E1C-EN heal 2026-06-10]
             'retry_after' => 600,
         ]);
     }
@@ -167,7 +167,7 @@ class KioskThrottleKeysTest extends TestCase
         }
 
         $response->assertStatus(429)->assertExactJson([
-            'message' => 'Too many login attempts. Please try again later.',
+            'message' => 'Trop de tentatives de connexion. Veuillez réessayer plus tard.', // [AUTH-E1C-EN heal 2026-06-10]
             'retry_after' => 600,
         ]);
     }

@@ -62,6 +62,19 @@ class KioskMachineLoginController extends Controller
             ], 400);
         }
 
+        // [F3 heal 2026-06-09 — porté sur la spine 2026-06-10, AUTH-F3-SPINE]
+        // Verify the password BEFORE any account-state check. Returning distinct
+        // 'kiosk_machine_inactive' / 'kiosk_user_inactive' messages ahead of
+        // Hash::check let a caller enumerate valid usernames and probe account
+        // state with no credentials. Now those specific messages are only
+        // reachable WITH a valid password (legitimate staff keep the helpful
+        // copy); every other failure returns the generic 'credentials_invalid'.
+        if (! Hash::check((string) $request->post('password'), $kioskMachine->password)) {
+            return response()->json([
+                'errors' => ['validation' => trans('all.message.credentials_invalid')],
+            ], 400);
+        }
+
         // Borne désactivée dans Admin → Bornes (status ≠ actif)
         if ((int) $kioskMachine->status !== (int) Status::ACTIVE) {
             return response()->json([
@@ -73,12 +86,6 @@ class KioskMachineLoginController extends Controller
         if (! $linkedUser || (int) $linkedUser->status !== (int) Status::ACTIVE) {
             return response()->json([
                 'errors' => ['validation' => trans('all.message.kiosk_user_inactive')],
-            ], 400);
-        }
-
-        if (! Hash::check((string) $request->post('password'), $kioskMachine->password)) {
-            return response()->json([
-                'errors' => ['validation' => trans('all.message.credentials_invalid')],
             ], 400);
         }
 
