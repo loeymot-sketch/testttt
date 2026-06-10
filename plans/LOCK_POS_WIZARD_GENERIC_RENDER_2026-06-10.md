@@ -26,7 +26,13 @@ Découverte à l'implémentation : le chemin VIVANT du wizard est la version **s
 ## §4 Rollback
 `git revert` du/des commits taggés `[LOCK-W6]` (ajouts isolés, insertions 1-ligne) ; aucun schéma, aucune donnée.
 
-## §5 Validation exigée avant clôture
+## §5 Validation — ✅ FAITE 2026-06-10 (preuves archivées reports/test-e2e/cms-e2e-2026-06-10/w6-*.png)
+- Specs : posWizardComposerAware 9/9 + posWizardGenericRender 10/10 (pinne le périmètre)
+- e2e :8767 **flag ON** (Tacos, wizard catégorie publié) : 3 sections builder rendues dans le design owner (badges Obligatoire, « Jusqu'à 4 choix », compteur 1/4 ✓, Voir plus, coches) ; sélection viande (Inclus) + formule (+€3.00) → **total €8.50→€11.50** ; ticket cuisine groupé par page ; **gate min** : ajout sans sauce obligatoire BLOQUÉ ; avec sauce → **panier Vue Sous-total/Total 11,50 €** (mapping syncAndSubmit prouvé) ; 0 console error
+- e2e **flag OFF** : 0 section générique, sections legacy viande+sauce intactes, même item, même total — chemins nouveaux inatteignables
+- Fix périphérique non-frozen requis : `master.blade.php` (shell SPA) n'injectait pas `posWizardComposerAware` → ajouté (parité avec admin-pos-v4.blade:109)
+
+## §5bis Validation exigée avant clôture (référence)
 Specs `posWizardComposerAware` étendu + `posWizardGenericRender` (À CRÉER) verts · e2e :8767 flag ON : render + sélection + total + recap + ticket + payload backend prouvés par captures/network · flag OFF : legacy bit-identique · adversarial dispute 0 P0/P1 · frozen-diff HORS périmètre §2 = 0.
 
 ## §10 Sign-off
