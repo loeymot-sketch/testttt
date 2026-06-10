@@ -110,7 +110,9 @@ function ScreenHome({ go, name = 'Ikyes' }) {
         <div style={{ padding: '20px 20px 0' }}>
           {(() => {
             // Featured card pointing to a real Le Cayenne signature item.
-            const featured = window.LC.menu.findItem('tacos-xxl') || window.LC.menu.items[0];
+            // [T-4.3 F8] point at a real signature tacos ('tacos-xxl' was fictional →
+            // silent fallback to items[0] = Sandwich Cayenne).
+            const featured = window.LC.menu.findItem('big-tacos-2-viandes') || window.LC.menu.items[0];
             return (
               <div onClick={() => go('item', featured.slug)} style={{ borderRadius: 24, overflow: 'hidden', background: 'var(--yellow)', position: 'relative', height: 220, display: 'flex', cursor: 'pointer', boxShadow: '6px 6px 0 var(--ink)' }}>
                 <div style={{ flex: 1, padding: 20, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
@@ -603,12 +605,14 @@ function ScreenItem({ go, itemId, addToCart }) {
 }
 
 // CART
-function ScreenCart({ go, cart, setCart }) {
-  // [Adversarial cluster-7 P1 fix] Promo discount wired — banner appliqué applique vraiment
-  // une réduction (V0 mock : WELCOME10/CAYENNE = -10%). Avant : banner cosmetic-only,
-  // user pensait avoir -10% mais payait full price → mauvaise UX + risque légal.
-  const [promoCode, setPromoCode] = uS(null); // null | 'WELCOME10' | 'CAYENNE'
-  const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
+function ScreenCart({ go, cart, setCart, promoCode, setPromoCode }) {
+  // [T-1.1 G1] promo is now App-level state (passed in) so the -10% reaches the
+  // actual charge via snapshotOrder / pay modal / Stripe / confirm. Previously this
+  // was local useState → the discount was displayed but never billed (risque légal).
+  // [T-1.1 RED-fix] use price*qty (unit price × current qty), NOT the stale
+  // lineTotal captured at add-time — updateQty mutates qty only, so lineTotal would
+  // undercharge after a qty change and mismatch the per-line display (price*qty).
+  const subtotal = cart.reduce((s, i) => s + (i.price * i.qty), 0);
   const discount = promoCode ? Math.round(subtotal * 10) / 100 : 0; // -10%, arrondi 2 décimales
   const total = Math.max(0, subtotal - discount);
   const updateQty = (idx, d) => setCart(c => c.map((it, i) => i === idx ? { ...it, qty: Math.max(1, it.qty + d) } : it));
@@ -683,7 +687,8 @@ function ScreenCart({ go, cart, setCart }) {
             <span className="more">Notre conseil</span>
           </div>
           <div style={{ display: 'flex', gap: 10, padding: '0 20px', overflowX: 'auto' }}>
-            {ITEMS.filter(i => i.cat === 'sides' || i.cat === 'drinks' || i.cat === 'desserts').slice(0, 5).map(it => (
+            {/* [T-4.2 F5] canonical category slugs ('sides'/'drinks' matched nothing → only desserts showed) */}
+            {ITEMS.filter(i => i.cat === 'frites' || i.cat === 'boissons' || i.cat === 'desserts').slice(0, 5).map(it => (
               <div key={it.id} onClick={() => go('item', it.id)} style={{ flex: '0 0 130px', background: 'var(--cream)', borderRadius: 12, padding: 8, cursor: 'pointer' }}>
                 <div style={{ height: 80, borderRadius: 8, overflow: 'hidden', background: 'var(--ink)' }}>
                   <Slot id={it.slot} h="100%" radius={0} placeholder={it.name} src={it.image} alt={it.name} fit="contain"/>
@@ -700,7 +705,7 @@ function ScreenCart({ go, cart, setCart }) {
       </div>
       {/* sticky checkout */}
       {cart.length > 0 && (
-        <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, background: '#fff', padding: '14px 20px 36px', borderTop: '1px solid var(--gray-1)' }}>
+        <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, zIndex: 20, background: '#fff', padding: '14px 20px 36px', borderTop: '1px solid var(--gray-1)' }}>
           {/* [D6 + Adversarial cluster-7 P1 fix] Promo code input + REAL discount mock V0 */}
           <PromoCodeRow onApply={setPromoCode}/>
           {/* Total breakdown : sous-total / réduction / TOTAL */}
@@ -708,7 +713,7 @@ function ScreenCart({ go, cart, setCart }) {
             <div>
               <div style={{ fontSize: 11, color: 'var(--gray-3)', fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase' }}>Total</div>
               {discount > 0 && (
-                <div data-testid="cart-subtotal-strike" style={{ fontSize: 14, color: 'var(--gray-3)', textDecoration: 'line-through', fontFamily: 'var(--font-mono)' }}>{subtotal.toFixed(2).replace('.', ',')} €</div>
+                <div data-testid="cart-subtotal-strike" style={{ fontSize: 14, color: 'var(--gray-4)', textDecoration: 'line-through', fontFamily: 'var(--font-mono)' }}>{subtotal.toFixed(2).replace('.', ',')} €</div>
               )}
               <div className="lc-display" style={{ fontSize: 36, lineHeight: 1 }}>{total.toFixed(2).replace('.', ',')} €</div>
               {discount > 0 && (

@@ -152,7 +152,7 @@
   // Removed fictional refs: Box Nashville, Wrap Poulet, Smash Cheese, Le Gourmet,
   // "Box Nashville −50%".
   const DEFAULT_HISTORY = [
-    { id: 1001, date: '2026-05-08', type: 'earn',       points: +30,  description: 'Big Cayenne · Tacos L · Bowl Frites',  order_id: 'C-1234', source_surface: 'mobile' },
+    { id: 1001, date: '2026-05-08', type: 'earn',       points: +31,  description: 'Big Cayenne · Tacos L · Bowl Frites',  order_id: 'C-1234', source_surface: 'mobile' }, // [F7 cascade] pointsFor(30.80)=31
     { id: 1002, date: '2026-05-05', type: 'earn',       points: +13,  description: 'Sandwich Cayenne · Grande Frites',     order_id: 'C-1212', source_surface: 'mobile' },
     { id: 1003, date: '2026-05-02', type: 'redeem',     points: -1000, description: 'Burger gratuit (Big Chicken)',         order_id: null,     source_surface: 'mobile', reward_id: 5 },
     { id: 1004, date: '2026-04-30', type: 'earn',       points: +17,  description: 'Galette Cayenne · Bowl Riz',           order_id: 'C-1190', source_surface: 'kiosk' },

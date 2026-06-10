@@ -384,6 +384,14 @@ function ScreenStepSauce({ item, selections, setSelections, headingRef, sauceFie
         1 gratuite · sup <strong>0,50 €</strong> par sauce additionnelle
       </p>
       <div role="group" aria-label="Sauces" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 6 }}>
+        {/* [T-5.1 F6] render the 'Sans sauce' option (exclusivity was handled in
+            toggle() but never displayed → customers could not order sauce-less). */}
+        <ChoiceCard key={SANS_SAUCE} on={sauceIds.includes(SANS_SAUCE)} onPick={() => toggle(SANS_SAUCE)} ariaRole="checkbox">
+          <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink)', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span aria-hidden="true">🚫</span>
+            Sans sauce
+          </span>
+        </ChoiceCard>
         {lcMenu.sauces.map(s => {
           const on = sauceIds.includes(s.id);
           const idx = sauceIds.indexOf(s.id);
@@ -808,18 +816,18 @@ function ScreenStepRecap({ item, selections, setSelections, headingRef }) {
       const s = lcMenu.supplementsBols.find(x => x.id === id);
       ((s && s.allergens) || []).forEach(a => set.add(a));
     });
-    if (selections.drinkId) {
-      const d = lcMenu.items.find(x => x.slug === selections.drinkId || x.id === selections.drinkId);
+    // [T-3.2 F11] formule-drink ids ('d-coca') differ from catalog slugs ('coca');
+    // map id→slug for BOTH the formule drink and the bol drink (previously only the
+    // bol path mapped, so the formule-drink allergens were silently dropped).
+    const drinkSlugMap = { 'd-coca': 'coca', 'd-coca-zero': 'coca-zero', 'd-fanta': 'fanta', 'd-sprite': 'sprite', 'd-oasis': 'oasis', 'd-orangina': 'orangina', 'd-eau': 'eau-plate', 'd-capri': 'capri-sun' };
+    const addDrinkAllergens = (formuleDrinkId) => {
+      if (!formuleDrinkId) return;
+      const slug = drinkSlugMap[formuleDrinkId] || formuleDrinkId;
+      const d = lcMenu.items.find(x => x.slug === slug || x.id === formuleDrinkId);
       ((d && d.allergens) || []).forEach(a => set.add(a));
-    }
-    if (selections.bolDrinkId && selections.bolDrinkId !== null) {
-      const drinkSlugMap = { 'd-coca': 'coca', 'd-coca-zero': 'coca-zero', 'd-fanta': 'fanta', 'd-sprite': 'sprite', 'd-oasis': 'oasis', 'd-orangina': 'orangina', 'd-eau': 'eau-plate', 'd-capri': 'capri-sun' };
-      const slug = drinkSlugMap[selections.bolDrinkId];
-      if (slug) {
-        const d = lcMenu.items.find(x => x.slug === slug);
-        ((d && d.allergens) || []).forEach(a => set.add(a));
-      }
-    }
+    };
+    addDrinkAllergens(selections.drinkId);
+    addDrinkAllergens(selections.bolDrinkId);
     return Array.from(set);
   })();
 

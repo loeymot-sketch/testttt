@@ -33,7 +33,7 @@
       branch_id: 1,
       branch_name: 'Le Cayenne',
       branch_city: 'Hénin-Beaumont',
-      total: 29.80,                   // 9.50 + 7.90 + 10.90 + 1.50
+      total: 30.80,                   // [T-4.1 G3] 9.50 + 8.90 + 10.90 + 1.50 (Tacos L = 8.90 SSOT)
       payment_status: 'pending',      // pending | paid
       payment_method: 'cash_at_counter', // cash_at_counter | card_at_counter | stripe
       pickup_code: 'C-1234',
@@ -41,11 +41,11 @@
       items_summary: 'Big Cayenne · Tacos L · Bowl Frites Curry · Coca-Cola',
       items: [
         { id: 1, item_id: 102,  name: 'Big Cayenne',              qty: 1, line_total: 9.50,  extras_summary: 'Cheddar · Œuf · Jambon' },
-        { id: 2, item_id: 502,  name: 'Tacos L',                  qty: 1, line_total: 7.90,  extras_summary: '2 viandes · Sauce fromagère' },
+        { id: 2, item_id: 502,  name: 'Tacos L',                  qty: 1, line_total: 8.90,  extras_summary: '2 viandes · Sauce fromagère' },
         { id: 3, item_id: 602,  name: 'Bowl Frites Poulet curry', qty: 1, line_total: 10.90, extras_summary: 'Boule gratinée +2,00 €' },
         { id: 4, item_id: 1001, name: 'Coca-Cola 33cl',           qty: 1, line_total: 1.50,  extras_summary: '' },
       ],
-      points_earned_estimate: 30,  // [E2E 2026-06-09] = pointsFor(29.80) = round(29.80) at 1pt/€ (was 33, latent mismatch vs the detail screen's computed value)
+      points_earned_estimate: 31,  // [F7 cascade 2026-06-10] = pointsFor(30.80) = round(30.80) at 1 pt/€ (total re-baselined 29.80→30.80 by F7 Tacos L 8,90 — invariant carte==détail==pointsFor)
     },
   ];
 

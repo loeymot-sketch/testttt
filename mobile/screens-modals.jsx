@@ -215,6 +215,14 @@ function ScreenOrderDetail({ go, orderId = 'C-1234' }) {
     ? real.items.map(i => ({ name: i.name, sups: i.extras_summary || '', qty: i.qty, price: i.line_total / Math.max(1, i.qty) }))
     : null;
   const total = real ? real.total : 0;
+  // [T-2.1 G2] show the order's RECORDED points (a historical order earned at its
+  // own rate); fall back to the current earn_ratio only when no record exists.
+  const earnRatio = (window.LC.loyalty && window.LC.loyalty.config && window.LC.loyalty.config.earn_ratio) || 1;
+  const loyaltyPts = real
+    ? (real.points_earned != null ? real.points_earned
+      : real.points_earned_estimate != null ? real.points_earned_estimate
+      : Math.round(total * earnRatio))
+    : 0;
   const dateLabel = real
     ? new Date(real.created_at).toLocaleString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }).replace(',', ' ·')
     : '';
