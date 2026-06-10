@@ -79,10 +79,20 @@ final class ComposerProfileProjection
         $usesStockableChoices = (bool) $step->stockable_choices;
 
         if ($sourceType === 'item_attribute') {
+            // [T-COMPO-3 2026-06-10] Resolve by the STABLE FK source_item_attribute_id
+            // FIRST (validated + diffed), source_ref (fuzzy name) only as fallback. The
+            // name match alone was ambiguous for homonym attributes and broke silently on
+            // rename. FK present → exact; FK null (legacy/template) → name/id ref fallback.
+            $attrFk = $step->source_item_attribute_id !== null ? (int) $step->source_item_attribute_id : null;
+
             return $item->variations
                 ->filter(fn ($variation): bool => (int) $variation->status === Status::ACTIVE
                     && $variation->isVisibleOn($surface)
-                    && $this->matchesAttributeRef($variation->itemAttribute, $sourceRef))
+                    && (
+                        $attrFk !== null
+                            ? (int) ($variation->item_attribute_id ?? 0) === $attrFk
+                            : $this->matchesAttributeRef($variation->itemAttribute, $sourceRef)
+                    ))
                 ->map(function ($variation) use ($choiceAvailability): array {
                     $availability = $choiceAvailability !== null
                         ? ($choiceAvailability['variations'][(int) $variation->id] ?? ['is_available' => true, 'unavailable_reason' => null])

@@ -799,8 +799,11 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
                 Route::delete('/steps/{step}', [ComposerStepController::class, 'destroy']);
             });
         });
+        // [T-COMPO-4 2026-06-10] idempotency : publish() bump version + snapshot
+        // ItemWizardStepVersion + dispatch 2 events sync (borne+caisse). Un double-POST
+        // (retry admin) doublait version/snapshot/sync. Aligné sur les autres mutations.
         Route::post('/profiles/{profile}/publish', [ComposerProfileController::class, 'publish'])
-            ->middleware('permission:catalog.publish');
+            ->middleware(['permission:catalog.publish', 'idempotency']);
     });
 
     Route::prefix('pos')->name('pos.')->group(function () {

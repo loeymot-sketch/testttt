@@ -241,6 +241,41 @@ class MenuProjectionComposerProfileTest extends TestCase
         $this->assertSame(['item_step'], collect($kioskProfile['steps'])->pluck('step_key')->all());
     }
 
+    /**
+     * [T-COMPO-3 2026-06-10] item_attribute step resolves by the STABLE FK
+     * source_item_attribute_id, NOT the fuzzy name. Two homonym attributes ("Sauce"
+     * twice) on the same item: a name match would be ambiguous (both match), but the
+     * FK disambiguates → only the targeted attribute's variations are projected.
+     */
+    public function test_item_attribute_step_resolves_by_fk_not_ambiguous_name(): void
+    {
+        $category = ItemCategory::factory()->create(['name' => 'FK Cat', 'status' => Status::ACTIVE, 'channels' => null]);
+        $item = Item::factory()->create([
+            'item_category_id' => $category->id, 'tax_id' => $this->tax->id,
+            'name' => 'Assiette FK', 'slug' => 'assiette-fk-' . uniqid(), 'price' => 9.90,
+            'status' => Status::ACTIVE, 'channels' => null,
+        ]);
+
+        // Two attributes with the IDENTICAL name "Sauce" (homonym) on the same item.
+        $sauceA = ItemAttribute::factory()->create(['name' => 'Sauce', 'status' => Status::ACTIVE, 'min_select' => 0, 'max_select' => 1, 'allow_repeat' => false]);
+        $sauceB = ItemAttribute::factory()->create(['name' => 'Sauce', 'status' => Status::ACTIVE, 'min_select' => 0, 'max_select' => 1, 'allow_repeat' => false]);
+        $this->makeVariation($item, $sauceA, 'Algerienne A', ['kiosk']);
+        $this->makeVariation($item, $sauceB, 'Samourai B', ['kiosk']);
+
+        // Step targets sauceB by FK; source_ref kept as the ambiguous name on purpose.
+        $this->publishProfile($item, [[
+            'step_key' => 'sauce', 'label' => 'Sauce', 'source_type' => 'item_attribute',
+            'source_ref' => 'sauce', 'source_item_attribute_id' => $sauceB->id, 'visible_on' => ['kiosk'],
+        ]]);
+
+        $proj = $this->projectedComposerProfile('kiosk', $item->id);
+        $choices = collect($proj['steps'])->firstWhere('step_key', 'sauce')['choices'];
+
+        // FK disambiguation: ONLY sauceB's variation, never sauceA's (name alone would take both).
+        $this->assertSame(['Samourai B'], collect($choices)->pluck('name')->all());
+        $this->assertSame([(int) $sauceB->id], collect($choices)->pluck('item_attribute_id')->unique()->values()->all());
+    }
+
     private function publishCategoryProfile(ItemCategory $category, array $steps, ?int $branchIdScope = null, string $template = 'tacos'): ItemWizardProfile
     {
         $profile = ItemWizardProfile::query()->create([
@@ -259,6 +294,8 @@ class MenuProjectionComposerProfileTest extends TestCase
                 'label' => $step['label'],
                 'source_type' => $step['source_type'],
                 'source_ref' => $step['source_ref'],
+                'source_item_attribute_id' => $step['source_item_attribute_id'] ?? null,
+                'source_item_attribute_id' => $step['source_item_attribute_id'] ?? null,
                 'min_select' => 0,
                 'max_select' => 2,
                 'allow_repeat' => false,
@@ -420,6 +457,8 @@ class MenuProjectionComposerProfileTest extends TestCase
                 'label' => $step['label'],
                 'source_type' => $step['source_type'],
                 'source_ref' => $step['source_ref'],
+                'source_item_attribute_id' => $step['source_item_attribute_id'] ?? null,
+                'source_item_attribute_id' => $step['source_item_attribute_id'] ?? null,
                 'min_select' => 0,
                 'max_select' => 2,
                 'allow_repeat' => false,
