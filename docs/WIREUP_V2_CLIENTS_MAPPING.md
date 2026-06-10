@@ -28,6 +28,13 @@
 | login/OTP simulés | Sanctum customer tokens (`/api/auth/...`) | OTP réel = config SMS à décider |
 | points localStorage, earn 1pt/€, redeem linéaire 100pts=1€ (PARITÉ 6/6 prouvée 2026-06-10) | backend loyalty (accrual caisse phone-keyed déjà livré `d2b244df5`) | le barème backend devra adopter le linéaire A ; redeem côté caisse = modal LOCKée existante |
 
+## 4bis. Fidélité — séquence wireup précise (post D11/D12, e2e 2026-06-10/11)
+- **Barème** : backend désormais SSOT seedé (`foodking:set-loyalty-rates 1 100 100`, sentinel `LoyaltyRateParitySentinelTest` verrouille les 3 sources) ; au wireup, les clients liront `/api/frontend/loyalty/config` au boot et JETTERONT leurs constantes locales.
+- **QR** : remplacer le fallback plaintext `FK:<code>` (rejeté caisse, `accept_legacy_plaintext=false`) par mint signé `POST /api/frontend/loyalty/qr` (HMAC `config/loyalty.php`, TTL) — le scanner caisse existant le consomme tel quel.
+- **Solde live** : event `LoyaltyBalanceChanged` (private-branch.{id}) déjà sur le bus — l'app/web abonnés via Echo verront earn/redeem en temps réel (tracker client V2 : ajouter un canal user-scopé si besoin, décision à ce moment-là).
+- **Récompenses LCY** (si D12=wireup) : table `loyalty_rewards` (id, points_cost, type enum discount|item, ref, label, active) + `POST /loyalty/rewards/{id}/redeem` idempotent qui débite via le chemin PosRedemption-like + génère un code one-shot vérifiable caisse. Spec only — rien en V1.
+- **+25 bienvenue** : DÉJÀ backé (register → ledger + event 'welcome') — au wireup, l'app appelle le vrai register et hérite du bonus.
+
 ## 5. Étapes mécaniques du jour J (V2)
 1. D2 (DB propre) + D9 (nommage) tranchés → table de correspondance name→item_id générée par script (à écrire : compare miroir vs `/api/frontend/items`).
 2. Couche `apiClient.js` par produit (fetch + clé API frontend) derrière un flag `WIREUP_ENABLED` default false — l'app reste 100% fonctionnelle offline si OFF (le SW couvre déjà l'app-shell).
