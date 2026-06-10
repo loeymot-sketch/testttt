@@ -205,7 +205,9 @@
       "min_max_summary_required_n": "= Pflicht, der Kunde muss genau {n} Artikel auswaehlen.",
       "min_max_summary_range": "= Der Kunde kann zwischen {min} und {max} Artikeln auswaehlen.",
       "delete_profile": "Assistent löschen",
-      "delete_profile_error": "Löschen nicht möglich."
+      "delete_profile_error": "Löschen nicht möglich.",
+      "choice_prices": "Optionen und Preise (nur Lesen)",
+      "free_choice": "Inklusive"
     },
     "wizard_configured": "Wizard konfiguriert",
     "view_product": "Produkt anzeigen",
@@ -976,7 +978,8 @@
       "guidance_zero_steps_intro": "Der Wizard ist der Weg, den dein Kunde nutzt, um dieses Produkt zu personalisieren (Fleisch, Sauce, Groesse usw.). Jede Seite ist ein Auswahlschritt.",
       "guidance_zero_steps_option_template": "Empfohlen: Waehle ein Template (Tacos, Sandwich usw.), um mit einer fertigen Basis zu starten.",
       "guidance_zero_steps_option_manual": "Oder: Fuege manuell eine Seite hinzu, um deinen eigenen Ablauf zu konfigurieren.",
-      "delete_profile_confirm": "Diesen Assistenten endgültig löschen (Seiten + Versionen)? Nicht rückgängig machbar."
+      "delete_profile_confirm": "Diesen Assistenten endgültig löschen (Seiten + Versionen)? Nicht rückgängig machbar.",
+      "choice_prices_hint": "Preise werden auf der Produktseite gepflegt (nie auf der Assistentenseite)."
     },
     "pagination_label": "Anzeigen {from} Zu {to} von {total} einträge",
     "password_update": "Passwort erfolgreich aktualisiert.",

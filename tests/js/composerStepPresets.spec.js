@@ -10,7 +10,10 @@ import ComposerStepFormPanel from '../../resources/js/components/admin/items/com
 function mountPanel(step = {}) {
     return mount(ComposerStepFormPanel, {
         global: {
-            mocks: { $t: (k, fallback) => fallback || k, t: (k, fallback) => fallback || k },
+            // Pas de $t mocké : le helper interne t(key, fallback) du panneau
+            // retombe alors sur le fallback FR (comportement runtime réel
+            // quand vue-i18n manque).
+            mocks: { $t: undefined },
         },
         props: {
             modelValue: {
@@ -50,6 +53,37 @@ describe('ComposerStepFormPanel — presets logique des choix', () => {
         expect(last.min_select).toBe(0);
         expect(last.max_select).toBe(10);
         expect(last.allow_repeat).toBe(true);
+    });
+
+    it('shows read-only choice prices of the selected source (heal P1-4)', () => {
+        const wrapper = mountPanel(
+            { source_type: 'extra_group', source_ref: 'sauce' },
+        );
+        wrapper.setProps({
+            availableSources: {
+                extra_group: [
+                    {
+                        id: 'sauce',
+                        name: 'Sauces',
+                        source_type: 'extra_group',
+                        choices: [
+                            { id: 1, name: 'Blanche', price: 0 },
+                            { id: 2, name: 'Algérienne', price: 0.5 },
+                        ],
+                    },
+                ],
+                item_attribute: [],
+                addon: [],
+            },
+        });
+        return wrapper.vm.$nextTick().then(() => {
+            const panel = wrapper.find('[data-testid="composer-step-choice-prices"]');
+            expect(panel.exists()).toBe(true);
+            expect(panel.text()).toContain('Blanche');
+            expect(panel.text()).toContain('Algérienne');
+            expect(panel.text()).toContain('0,50');
+            expect(panel.text()).toContain('Inclus');
+        });
     });
 
     it('reflects current settings as the matching preset', () => {

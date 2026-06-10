@@ -555,7 +555,9 @@
       "addon_role_menu_component": "Composant menu",
       "addon_role_upsell": "Vente additionnelle",
       "delete_profile": "Supprimer le wizard",
-      "delete_profile_error": "Suppression impossible."
+      "delete_profile_error": "Suppression impossible.",
+      "choice_prices": "Options et prix (lecture seule)",
+      "free_choice": "Inclus"
     },
     "wizard_configured": "Wizard configuré",
     "view_product": "Voir le produit",
@@ -1556,7 +1558,8 @@
       "guidance_zero_steps_intro": "Le wizard est le parcours que ton client suit pour personnaliser ce produit (choix de la viande, sauce, taille, etc.). Chaque page = une étape de choix.",
       "guidance_zero_steps_option_template": "Préférable : choisis un template (Tacos, Sandwich…) pour partir d'une base prête.",
       "guidance_zero_steps_option_manual": "Sinon : ajoute une page manuelle pour configurer ton propre parcours.",
-      "delete_profile_confirm": "Supprimer définitivement ce wizard (pages + versions) ? Cette action est irréversible."
+      "delete_profile_confirm": "Supprimer définitivement ce wizard (pages + versions) ? Cette action est irréversible.",
+      "choice_prices_hint": "Prix modifiables depuis la fiche produit (jamais sur la page wizard)."
     },
     "kds_recall_grace_expired": "Rappel impossible : délai d'annulation (60 s) dépassé.",
     "kds_status_conflict": "Cette commande a été modifiée ailleurs. L'écran a été rafraîchi — vérifiez l'état avant d'agir.",

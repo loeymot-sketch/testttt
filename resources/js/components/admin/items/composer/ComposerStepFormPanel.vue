@@ -78,6 +78,34 @@
             </label>
         </div>
 
+        <!-- [GOAL CMS heal P1-4] Echo prix read-only des options de la source
+             sélectionnée (prix = construct catalogue ; modifiable via la fiche
+             produit, JAMAIS sur le step — NF525). -->
+        <div
+            v-if="selectedSourceChoices.length"
+            class="rounded-lg border border-[#d9dfdc] bg-[#fbfcfb] p-4"
+            data-testid="composer-step-choice-prices"
+        >
+            <span class="text-sm font-semibold text-[#405149]">
+                {{ t('label.composer.choice_prices', 'Options et prix (lecture seule)') }}
+            </span>
+            <ul class="mt-2 space-y-1">
+                <li
+                    v-for="choice in selectedSourceChoices"
+                    :key="choice.id"
+                    class="flex items-center justify-between text-sm text-[#405149]"
+                >
+                    <span>{{ choice.name }}</span>
+                    <span class="font-semibold">
+                        {{ choice.price > 0 ? formatPrice(choice.price) : t('label.composer.free_choice', 'Inclus') }}
+                    </span>
+                </li>
+            </ul>
+            <span class="mt-2 block text-xs text-neutral-500">
+                {{ t('message.composer.choice_prices_hint', 'Prix modifiables depuis la fiche produit (jamais sur la page wizard).') }}
+            </span>
+        </div>
+
         <label v-if="draft.source_type === 'addon'" class="block">
             <span class="mb-1 flex items-center gap-2 text-sm font-semibold text-[#405149]">
                 {{ t('label.composer.addon_role', "Rôle de l'add-on") }}
@@ -369,6 +397,24 @@ export default {
             const list = this.availableSources?.[this.draft.source_type];
             return Array.isArray(list) ? list : [];
         },
+        // [heal P1-4] read-only choices+prices of the selected source.
+        selectedSourceChoices() {
+            if (this.draft.source_type === 'addon') {
+                const addon = this.optionsForType.find((source) => String(source.id) === String(this.draft.source_ref));
+                return addon && addon.price !== null && addon.price !== undefined
+                    ? [{ id: addon.id, name: addon.name, price: Number(addon.price) }]
+                    : [];
+            }
+            const selected = this.optionsForType.find((source) => String(source.id) === String(this.draft.source_ref));
+            if (selected && Array.isArray(selected.choices)) {
+                return selected.choices;
+            }
+            // « Toutes les options » : concatène les choix de toutes les sources du type.
+            if (!this.draft.source_ref) {
+                return this.optionsForType.flatMap((source) => Array.isArray(source.choices) ? source.choices : []);
+            }
+            return [];
+        },
         // [heal P1-3] reverse mapping: which preset matches current settings.
         choicePreset() {
             const min = Number(this.draft.min_select);
@@ -410,6 +456,10 @@ export default {
         commit() {
             this.$emit('update:modelValue', this.clone(this.draft));
             this.$emit('change', this.clone(this.draft));
+        },
+        // [heal P1-4] FR currency for the read-only price echo.
+        formatPrice(value) {
+            return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(Number(value) || 0);
         },
         // [heal P1-3] preset → min/max/allow_repeat mapping.
         applyPreset(preset) {
