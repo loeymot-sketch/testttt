@@ -53,9 +53,12 @@ describe('ItemListComponent — wizard button (T-WC-LIST-01)', () => {
             new RegExp("name:\\s*'admin\\.items\\.composer'\\s*,\\s*params:\\s*\\{\\s*id:\\s*item\\.id\\s*\\}"),
         );
 
-        // Visual sentinel: cog icon (lab-cog) marks the wizard / configuration concept
-        // and is the only icon present on this new control.
-        expect(source).toContain('lab-cog');
+        // Visual sentinel: settings/cog icon marks the wizard / configuration concept.
+        // [release-v1 heal 2026-06-10] was 'lab-cog' — a NON-EXISTENT glyph; the cms
+        // line (a92580233 'glyphes lab inexistants remplacés') fixed it to the real
+        // 'lab-settings'. The button feature (testid+route) is intact; only the glyph
+        // was corrected to one that actually renders.
+        expect(source).toContain('lab-settings');
 
         // Anchor the button to the actions block: the per-row wrapper span
         // immediately precedes the data-testid for the new button. The proximity
