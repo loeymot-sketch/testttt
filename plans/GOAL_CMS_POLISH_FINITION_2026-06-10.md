@@ -42,4 +42,4 @@ P1 (séquentiel, ~1 session) → P2 (batch, même session) → re-capture set-eq
 ## §F — DONE
 Les 11 résiduels e2e fermés (ou explicitement acceptés owner), palette/a11y/i18n owner-grade sur les 4 surfaces CMS, branche intégrée à la spine, gates G-1/G-4/G-5 décidés par l'owner, push effectué. Production-perfect ou rien.
 
-**⏸️ PLAN-ONLY — attend `lance le GOAL`.**
+**✅ EXÉCUTÉ 2026-06-10** — waves P1+P2 livrées, adversarial round-4 : 11/11 résiduels CLOSED + 4 nouveaux P3 fixés et vérifiés live. Evidence : `reports/test-e2e/cms-e2e-2026-06-10/round-4/`. Reste owner : G-5, G-4/GATE-W6, G-1, push, et le ff spine (spine active — branche maintenue superset par merges).
