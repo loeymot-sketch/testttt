@@ -1,0 +1,60 @@
+{
+  "count": 11,
+  "sidebarDump": [
+    {
+      "tid": "kiosk-categories-sidebar-item-1",
+      "txt": "SANDWICH CAYENNE",
+      "hasImg": true
+    },
+    {
+      "tid": "kiosk-categories-sidebar-item-2",
+      "txt": "GALETTE",
+      "hasImg": true
+    },
+    {
+      "tid": "kiosk-categories-sidebar-item-3",
+      "txt": "SANDWICH CLASSIQUE",
+      "hasImg": true
+    },
+    {
+      "tid": "kiosk-categories-sidebar-item-4",
+      "txt": "BURGERS",
+      "hasImg": true
+    },
+    {
+      "tid": "kiosk-categories-sidebar-item-5",
+      "txt": "TACOS",
+      "hasImg": true
+    },
+    {
+      "tid": "kiosk-categories-sidebar-item-6",
+      "txt": "BOLS GOURMANDS",
+      "hasImg": true
+    },
+    {
+      "tid": "kiosk-categories-sidebar-item-11",
+      "txt": "MENU ENFANT",
+      "hasImg": true
+    },
+    {
+      "tid": "kiosk-categories-sidebar-item-7",
+      "txt": "FRITES",
+      "hasImg": true
+    },
+    {
+      "tid": "kiosk-categories-sidebar-item-8",
+      "txt": "SUPPLÉMENTS",
+      "hasImg": true
+    },
+    {
+      "tid": "kiosk-categories-sidebar-item-9",
+      "txt": "DESSERTS",
+      "hasImg": true
+    },
+    {
+      "tid": "kiosk-categories-sidebar-item-10",
+      "txt": "BOISSONS",
+      "hasImg": true
+    }
+  ]
+}

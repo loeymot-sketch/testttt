@@ -539,10 +539,18 @@ export default {
     cartLineAllergenSelections(line) {
       const cat = this.cartLineCatalogItem(line);
       if (!cat) return { variations: [], extras: [] };
-      const vars = (line.item_variations || [])
+      // [W-A BORNE 2026-06-10] Les lignes ajoutées par l'upsell (frozen
+      // KioskUpsellComponent.vue:234) portent l'ancien format objet
+      // `{ variations: {}, names: {} }` / `{ extras: [], names: [] }` —
+      // garder le guard dual-format comme getItemSelectionSummary ([GAP-22-2])
+      // sinon `.map` jette un TypeError (pageerror à chaque rendu du panier
+      // contenant une ligne upsell).
+      const rawVars = Array.isArray(line.item_variations) ? line.item_variations : [];
+      const rawExt = Array.isArray(line.item_extras) ? line.item_extras : [];
+      const vars = rawVars
         .map((v) => findVariationObjectById(cat, v.id))
         .filter(Boolean);
-      const ext = (line.item_extras || [])
+      const ext = rawExt
         .map((e) => findExtraObjectById(cat, e.id))
         .filter(Boolean);
       return { variations: vars, extras: ext };

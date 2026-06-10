@@ -1,0 +1,2 @@
+{"id":"A5-BLANK-CART-F07","sev":"P1","step":"A5","detail":"rendu panier AVORTÉ (blanc) après accept upsell — manifestation live de F-BORNE-07 (TypeError item_variations legacy), heal en worktree","capture":"a5-cart-with-upsell.jpg"}
+{"id":"A6-THROTTLE-RAW","sev":"P2","step":"A6","detail":"message throttle brut anglais \"Too Many Attempts.\" affiché au client (KioskLoyaltyComponent.vue:505-506 passthrough)","capture":"a6-loyalty-invalid-throttled.jpg"}

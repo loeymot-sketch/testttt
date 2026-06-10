@@ -1,0 +1,115 @@
+{
+  "all": [
+    {
+      "step": "A1",
+      "kind": "http-401",
+      "detail": "GET http://127.0.0.1:8766/api/login"
+    },
+    {
+      "step": "A1",
+      "kind": "console",
+      "detail": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "step": "A2",
+      "kind": "http-401",
+      "detail": "GET http://127.0.0.1:8766/api/login"
+    },
+    {
+      "step": "A2",
+      "kind": "console",
+      "detail": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "step": "A3",
+      "kind": "http-401",
+      "detail": "GET http://127.0.0.1:8766/api/login"
+    },
+    {
+      "step": "A3",
+      "kind": "console",
+      "detail": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "step": "A4",
+      "kind": "http-401",
+      "detail": "GET http://127.0.0.1:8766/api/login"
+    },
+    {
+      "step": "A4",
+      "kind": "console",
+      "detail": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "step": "A5-skip",
+      "kind": "http-401",
+      "detail": "GET http://127.0.0.1:8766/api/login"
+    },
+    {
+      "step": "A5-skip",
+      "kind": "console",
+      "detail": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "step": "A5-accept",
+      "kind": "pageerror",
+      "detail": "(line.item_variations || []).map is not a function"
+    },
+    {
+      "step": "A5-accept",
+      "kind": "pageerror",
+      "detail": "(line.item_variations || []).map is not a function"
+    },
+    {
+      "step": "A6",
+      "kind": "http-401",
+      "detail": "GET http://127.0.0.1:8766/api/login"
+    },
+    {
+      "step": "A6",
+      "kind": "console",
+      "detail": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "step": "A6",
+      "kind": "http-429",
+      "detail": "POST http://127.0.0.1:8766/api/frontend/loyalty/check"
+    },
+    {
+      "step": "A6",
+      "kind": "console",
+      "detail": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "step": "A6",
+      "kind": "http-404",
+      "detail": "POST http://127.0.0.1:8766/api/frontend/loyalty/check"
+    },
+    {
+      "step": "A6",
+      "kind": "console",
+      "detail": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    },
+    {
+      "step": "A7",
+      "kind": "http-401",
+      "detail": "GET http://127.0.0.1:8766/api/login"
+    },
+    {
+      "step": "A7",
+      "kind": "console",
+      "detail": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "step": "A8",
+      "kind": "http-401",
+      "detail": "GET http://127.0.0.1:8766/api/login"
+    },
+    {
+      "step": "A8",
+      "kind": "console",
+      "detail": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    }
+  ],
+  "hard": []
+}

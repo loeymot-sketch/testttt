@@ -1,0 +1,8 @@
+{"step":"A1 idle + À emporter + dine-in OFF","status":"PASS","proof":"a1-idle.jpg, a1-order-type.jpg"}
+{"step":"A2 sidebar + 8 captures catégories","status":"PASS","proof":"a2-sidebar-full.jpg, a2-cat-{1..6,9,10}.jpg"}
+{"step":"A3 wizards 7 items + back + next-disabled + cancel","status":"PASS","proof":"a3-*-step*.jpg, a3-next-disabled.jpg, a3-back-*.jpg, a3-cancel-*.jpg"}
+{"step":"A4 panier complet (+1/-1, clamp 20, remove, clear, refill)","status":"PASS","proof":"a4-*.jpg"}
+{"step":"A5 upsell SKIP + ACCEPT (ligne+total vérifiés)","status":"PASS","proof":"a5-upsell-screen.jpg, a5-upsell-selected.jpg, a5-payment-after-accept.jpg, a5-cart-with-upsell.jpg"}
+{"step":"A6 loyalty code invalide -> message propre","status":"PASS","proof":"a6-loyalty-screen.jpg, a6-loyalty-invalid.jpg"}
+{"step":"A7 confirm -> caisse + DB PENDING_COUNTER + no-dup","status":"PASS","proof":"a7-payment.jpg, a7-confirmation.jpg (order 4475 status=4)"}
+{"step":"A8 rupture live + restore","status":"PASS","proof":"a8-rupture-badge.jpg, a8-rupture-click-noop.jpg, a8-restored.jpg"}

@@ -248,10 +248,15 @@ final class KioskMenuService
     private function projectCategories(Collection $categories): array
     {
         // Sort par ordre kiosk (ou sort legacy), puis par id pour stabilité.
-        $sorted = $categories->sortBy([
-            fn (ItemCategory $c) => $c->sortFor(self::CHANNEL),
-            fn (ItemCategory $c) => (int) $c->id,
-        ])->values();
+        // [W-A BORNE P1 2026-06-10] Même root-cause que Wave Y A-001 (cf. sortItems
+        // :294) : `sortBy([fn, fn])` est interprété comme paires [clé, direction]
+        // → ordre catégories inversé/instable (payload renvoyait 10,11,8,9,6,7,5,
+        // 4,3,2,1 ⇒ la borne atterrissait sur « Boissons » au lieu de la première
+        // catégorie). Chained sortBy = tri stable (secondaire puis primaire).
+        $sorted = $categories
+            ->sortBy(fn (ItemCategory $c) => (int) $c->id)
+            ->sortBy(fn (ItemCategory $c) => $c->sortFor(self::CHANNEL))
+            ->values();
 
         $byId = $sorted->keyBy('id');
 
