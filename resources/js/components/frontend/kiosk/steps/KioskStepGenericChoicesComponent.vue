@@ -219,10 +219,11 @@ export default {
   gap: 12px;
 }
 
+/* [BU-01 2026-06-10] Slightly larger, more readable choice cards. */
 .kiosk-generic-choice {
-  min-height: 74px;
-  border: 1px solid var(--kiosk-border, #eee6d9);
-  border-radius: 8px;
+  min-height: 84px;
+  border: 2px solid var(--kiosk-border, #eae2d4);
+  border-radius: 10px;
   background: var(--kiosk-surface, #fff);
   color: var(--kiosk-text, #1a1a1a);
   padding: 12px 14px;
@@ -236,9 +237,11 @@ export default {
   box-shadow: var(--kiosk-shadow-card, 0 4px 18px rgba(20, 20, 20, 0.06));
 }
 
+/* [BU-02 2026-06-10] Clear selected affordance — solid brand border + ring. */
 .kiosk-generic-choice.selected {
   border-color: var(--kiosk-primary, #f4501e);
-  background: var(--kiosk-primary-light, rgba(244, 80, 30, 0.07));
+  background: rgba(244, 80, 30, 0.08);
+  box-shadow: 0 0 0 3px rgba(244, 80, 30, 0.16);
 }
 
 .kiosk-generic-choice.unavailable {

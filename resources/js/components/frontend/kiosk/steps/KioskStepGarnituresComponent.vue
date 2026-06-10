@@ -221,12 +221,14 @@ export default {
   color: var(--kiosk-text-muted, #999);
 }
 
+/* [BU-01 2026-06-10] Responsive grid fills the canvas (was rigid 3-col 980px). */
 .kiosk-garnitures-list {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 24px 18px;
-  max-width: 980px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 24px 20px;
+  max-width: 1100px;
   margin: 0 auto;
+  align-content: start;
 }
 
 .kiosk-garniture-row {
@@ -235,10 +237,10 @@ export default {
   align-items: center;
   justify-content: flex-start;
   gap: 8px;
-  min-height: 196px;
-  padding: 10px 10px 14px;
+  min-height: 224px;
+  padding: 14px 12px 16px;
   border-radius: 20px;
-  border: 1px solid transparent;
+  border: 2px solid #ececec;
   background: var(--kiosk-surface, #fff);
   cursor: pointer;
   touch-action: manipulation;
@@ -264,10 +266,13 @@ export default {
   font-size: 14px;
 }
 
+/* [BU-02 2026-06-10] Clear "AVEC" (kept) affordance — solid brand border +
+   tinted fill + ring. Deselected rows fall back to the neutral grey border so
+   "AVEC" vs "SANS" reads at a glance. */
 .kiosk-garniture-row.selected {
   border-color: var(--kiosk-primary, #f4501e);
-  background: var(--kiosk-primary-light, rgba(244, 80, 30,0.025));
-  box-shadow: 0 0 0 1px var(--kiosk-primary-light, rgba(244, 80, 30,0.06));
+  background: rgba(244, 80, 30, 0.08);
+  box-shadow: 0 0 0 3px rgba(244, 80, 30, 0.16);
 }
 
 .kiosk-garniture-row.kiosk-variation--disabled {

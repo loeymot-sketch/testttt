@@ -133,7 +133,13 @@ export default {
   padding: 6px 18px 24px;
   background: #fff;
   min-height: 100%;
+  display: flex;
+  flex-direction: column;
 }
+/* [BU-01 2026-06-10] Flex column so the option grid can vertically center in
+   the tall portrait canvas — balances dead space instead of dumping it all at
+   the bottom (modern borne layout). margin:auto on the grid collapses to 0 when
+   content is tall, so long lists still flow/scroll from the top. */
 
 .kiosk-step-title {
   font-size: 15px;
@@ -143,18 +149,20 @@ export default {
   color: #333;
 }
 
+/* [BU-01 2026-06-10] Responsive grid fills the portrait canvas. */
 .kiosk-taille-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 20px 18px;
-  max-width: 620px;
-  margin: 0 auto;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 22px 20px;
+  max-width: 1040px;
+  margin: auto;            /* [BU-01] center both axes in the flex-column canvas */
+  align-content: center;
 }
 
 .kiosk-taille-card {
-  min-height: 206px;
+  min-height: 248px;
   border-radius: 20px;
-  border: 1px solid #efefef;
+  border: 2px solid #ececec;
   background: #fff;
   display: flex;
   flex-direction: column;
@@ -176,10 +184,11 @@ export default {
   outline-offset: 2px;
 }
 
+/* [BU-02 2026-06-10] Clear single-select (radio) affordance. */
 .kiosk-taille-card.selected {
-  border-color: rgba(244, 80, 30,0.18);
-  background: rgba(244, 80, 30,0.02);
-  box-shadow: 0 0 0 1px rgba(244, 80, 30,0.06);
+  border-color: #F4501E;
+  background: rgba(244, 80, 30, 0.08);
+  box-shadow: 0 0 0 3px rgba(244, 80, 30, 0.16);
 }
 
 .kiosk-taille-media {

@@ -292,12 +292,15 @@ export default {
 
 .kiosk-empty-state p { font-size: 15px; }
 
+/* [BU-01 2026-06-10] Responsive grid fills the canvas — was rigid 2-col 860px
+   which left big side gaps on a portrait borne; now reflows to 3 wide. */
 .kiosk-supplements-list {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 22px 18px;
-  max-width: 860px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 24px 20px;
+  max-width: 1100px;
   margin: 0 auto;
+  align-content: start;
 }
 
 .kiosk-supplement-row {
@@ -328,10 +331,11 @@ export default {
   outline-offset: 2px;
 }
 
+/* [BU-02 2026-06-10] Harmonized multi-select ring with the other steps. */
 .kiosk-supplement-row.selected {
   border: 2px solid var(--kiosk-primary, #F4501E);
-  background: var(--kiosk-primary-light, rgba(244, 80, 30, 0.05));
-  box-shadow: 0 0 0 3px var(--kiosk-primary-light, rgba(244, 80, 30, 0.1)), var(--kiosk-shadow-card, none);
+  background: rgba(244, 80, 30, 0.08);
+  box-shadow: 0 0 0 3px rgba(244, 80, 30, 0.16), var(--kiosk-shadow-card, none);
 }
 
 .kiosk-supplement-row.kiosk-variation--disabled {
