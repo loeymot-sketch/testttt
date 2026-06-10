@@ -1,0 +1,256 @@
+{
+  "cycle": "C2",
+  "results": [
+    {
+      "step": "C1a-db",
+      "status": "INFO",
+      "msg": "items id=74 price=5.000000 cat=4 tax=3 status=5"
+    },
+    {
+      "step": "C1a-item-create",
+      "status": "PASS",
+      "msg": "attempt 1"
+    },
+    {
+      "step": "C1b-item-edit-price",
+      "status": "PASS",
+      "msg": "attempt 1"
+    },
+    {
+      "step": "C1c-db",
+      "status": "INFO",
+      "msg": "aria-checked=false item_branch_availability=[1\t0]"
+    },
+    {
+      "step": "C1c-item-toggle-unavailable",
+      "status": "PASS",
+      "msg": "attempt 1"
+    },
+    {
+      "step": "C1d-db",
+      "status": "INFO",
+      "msg": "items.deleted_at=2026-06-10 11:13:44"
+    },
+    {
+      "step": "C1d-item-delete-soft",
+      "status": "PASS",
+      "msg": "attempt 1"
+    },
+    {
+      "step": "C1e-category-crud",
+      "status": "PASS",
+      "msg": "attempt 1"
+    },
+    {
+      "step": "C2-raw-labels",
+      "status": "INFO",
+      "msg": "form coupon raw labels: [\"label.monday_short\",\"label.tuesday_short\",\"label.wednesday_short\",\"label.thursday_short\",\"label.friday_short\",\"label.saturday_short\",\"label.sunday_short\",\"label.branch_scope_help\"]"
+    },
+    {
+      "step": "C2a-overlay-proof",
+      "status": "INFO",
+      "msg": "elementFromPoint(centre Enregistrer) = null"
+    },
+    {
+      "step": "C2a-db",
+      "status": "INFO",
+      "msg": "coupons: 7 E2EWC10C2 10.000000 10 5"
+    },
+    {
+      "step": "C2a-coupon-create",
+      "status": "PASS",
+      "msg": "attempt 1"
+    },
+    {
+      "step": "C2b-coupon-edit",
+      "status": "PASS",
+      "msg": "attempt 1"
+    },
+    {
+      "step": "C2c-db",
+      "status": "INFO",
+      "msg": "coupons restants id=7: 0"
+    },
+    {
+      "step": "C2c-coupon-delete",
+      "status": "PASS",
+      "msg": "attempt 1"
+    },
+    {
+      "step": "C3a-db",
+      "status": "INFO",
+      "msg": "users: 57 0699001122 1 role=POS Operator"
+    },
+    {
+      "step": "C3a-employee-create",
+      "status": "PASS",
+      "msg": "attempt 1"
+    },
+    {
+      "step": "C3b-ui",
+      "status": "INFO",
+      "msg": "ligne employé affichée: \"E2E-WC Emp C2 wc-emp-c2@lecayenne.fr +330699001122 Opérateur caisse Actif \""
+    },
+    {
+      "step": "C3b-employee-role-label-fr",
+      "status": "PASS",
+      "msg": "attempt 1"
+    },
+    {
+      "step": "C3c-employee-edit-phone",
+      "status": "PASS",
+      "msg": "attempt 1"
+    },
+    {
+      "step": "C3d-db",
+      "status": "INFO",
+      "msg": "users.deleted_at=2026-06-10 11:14:27"
+    },
+    {
+      "step": "C3d-employee-delete",
+      "status": "PASS",
+      "msg": "attempt 1"
+    },
+    {
+      "step": "C4a-db-before",
+      "status": "INFO",
+      "msg": "site_time_format avant: H:i"
+    },
+    {
+      "step": "C4a-already-24h",
+      "status": "INFO",
+      "msg": "déjà en 24h (cycle 2 attendu) — on vérifie seulement"
+    },
+    {
+      "step": "C4a-db-after",
+      "status": "INFO",
+      "msg": "site_time_format après: H:i (GARDÉ — data-fix mandat FR)"
+    },
+    {
+      "step": "C4a-time-format-24h",
+      "status": "PASS",
+      "msg": "attempt 1"
+    },
+    {
+      "step": "C4b-scan",
+      "status": "INFO",
+      "msg": "occurrences AM/PM=0 | horaires détectés=10"
+    },
+    {
+      "step": "C4b-historique-24h",
+      "status": "PASS",
+      "msg": "attempt 1"
+    },
+    {
+      "step": "C4c-db-before",
+      "status": "INFO",
+      "msg": "company_website avant: https://lecayenne.fr"
+    },
+    {
+      "step": "C4c-db-after",
+      "status": "INFO",
+      "msg": "company_website reverté: https://lecayenne.fr"
+    },
+    {
+      "step": "C4c-company-edit-revert",
+      "status": "PASS",
+      "msg": "attempt 1"
+    },
+    {
+      "step": "C5a-db",
+      "status": "INFO",
+      "msg": "stock item id=75"
+    },
+    {
+      "step": "C5a-create-stock-item",
+      "status": "PASS",
+      "msg": "attempt 1"
+    },
+    {
+      "step": "C5b-persist",
+      "status": "INFO",
+      "msg": "après reload propre: aria=false db=0"
+    },
+    {
+      "step": "C5b-toggle-persistance",
+      "status": "PASS",
+      "msg": "attempt 1"
+    },
+    {
+      "step": "C5c-race-log",
+      "status": "INFO",
+      "msg": "#1: avant=false voulu=true aprèsReload=true db=1 ok || #2: avant=true voulu=false aprèsReload=false db=0 ok || #3: avant=false voulu=true aprèsReload=true db=1 ok"
+    },
+    {
+      "step": "C5c-race-toggle-reload-x3",
+      "status": "PASS",
+      "msg": "attempt 1"
+    },
+    {
+      "step": "C6a-export",
+      "status": "INFO",
+      "msg": "historique export size=86691o fiscal=true motsFR=[\"commande\",\"commande\",\"Montant\",\"Statut\",\"Caisse\"]"
+    },
+    {
+      "step": "C6a-export-historique",
+      "status": "PASS",
+      "msg": "attempt 1"
+    },
+    {
+      "step": "C6b-export",
+      "status": "INFO",
+      "msg": "sales-report export size=76506o motsFR=[\"commande\",\"Date\",\"Total\",\"Statut\",\"Espèces\",\"Carte\"]"
+    },
+    {
+      "step": "C6b-export-sales-report",
+      "status": "PASS",
+      "msg": "attempt 1"
+    },
+    {
+      "step": "C7a-db",
+      "status": "INFO",
+      "msg": "aucune push créée (formulaire seulement) — OK"
+    },
+    {
+      "step": "C7a-push-form-no-send",
+      "status": "PASS",
+      "msg": "attempt 1"
+    },
+    {
+      "step": "C7b-thread",
+      "status": "INFO",
+      "msg": "aucun thread cliquable — capture liste seule"
+    },
+    {
+      "step": "C7b-messages-thread",
+      "status": "PASS",
+      "msg": "attempt 1"
+    },
+    {
+      "step": "C8a-delete-stock-item-ui",
+      "status": "PASS",
+      "msg": "attempt 1"
+    },
+    {
+      "step": "C8b-dump",
+      "status": "INFO",
+      "msg": "items: 0 | item_categories: 0 | coupons: 0 | users: 0 | push: 0 | time_format: H:i (24h GARDÉ)"
+    },
+    {
+      "step": "C8b-sql-purge-and-dump",
+      "status": "PASS",
+      "msg": "attempt 1"
+    },
+    {
+      "step": "C8c-wd",
+      "status": "INFO",
+      "msg": "items 49-59 non touchés (aucune mutation E2E-WC dessus)"
+    },
+    {
+      "step": "C8c-wd-items-untouched-sanity",
+      "status": "PASS",
+      "msg": "attempt 1"
+    }
+  ],
+  "errors": []
+}
