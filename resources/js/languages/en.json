@@ -531,7 +531,8 @@
       "choice_logic": "Choice logic",
       "preset_single": "Single choice (1 required)",
       "preset_multiple": "Multiple choices (free)",
-      "preset_custom": "Custom (settings below)"
+      "preset_custom": "Custom (settings below)",
+      "unsaved_changes": "Unsaved changes"
     },
     "wizard_configured": "Wizard configured",
     "view_product": "View product",
@@ -1572,7 +1573,8 @@
       "guidance_zero_steps_option_template": "Best option: choose a template (Tacos, Sandwich, etc.) to start from a ready-made base.",
       "guidance_zero_steps_option_manual": "Otherwise: add a manual page to configure your own flow.",
       "delete_profile_confirm": "Permanently delete this wizard (pages + versions)? This cannot be undone.",
-      "choice_prices_hint": "Prices are edited on the product sheet (never on the wizard page)."
+      "choice_prices_hint": "Prices are edited on the product sheet (never on the wizard page).",
+      "unsaved_leave_confirm": "You have unsaved changes. Leave without saving the draft?"
     },
     "kds_recall_grace_expired": "Rappel impossible : le délai d'annulation de 60 secondes est dépassé.",
     "kds_status_conflict": "Cette commande a été modifiée ailleurs. L'écran a été rafraîchi ; vérifiez l'état avant d'agir.",
@@ -2226,7 +2228,26 @@
         "cancel": "Cancel",
         "loading": "Computing diff…",
         "error": "Could not compute diff",
-        "retry": "Retry"
+        "retry": "Retry",
+        "before": "Before",
+        "after": "After",
+        "empty_value": "—",
+        "yes": "Yes",
+        "no": "No",
+        "fields": {
+          "label": "Page title",
+          "source_type": "Source type",
+          "source_ref": "Bound source",
+          "source_item_attribute_id": "Product attribute",
+          "min_select": "Minimum selection",
+          "max_select": "Maximum selection",
+          "allow_repeat": "Allow repeat",
+          "visible_on": "Visible on",
+          "stockable_choices": "Stock-tracked choices",
+          "position": "Position",
+          "is_active": "Page active",
+          "addon_role": "Addon role"
+        }
       },
       "conflict": {
         "title": "Version conflict",

@@ -73,10 +73,40 @@
                         >
                             <h3>{{ $t('studio.composer.diff.modified') }} ({{ diffPayload.modified.length }})</h3>
                             <ul>
-                                <li v-for="entry in diffPayload.modified" :key="'modified-' + entry.step_key">
-                                    <strong>{{ entry.step_key }}</strong>
-                                    <span v-if="entry.changed_fields && entry.changed_fields.length">
-                                        : {{ entry.changed_fields.join(', ') }}
+                                <li v-for="entry in diffPayload.modified" :key="'modified-' + entry.step_key" class="composer-diff-modal__modified-entry">
+                                    <strong class="composer-diff-modal__step-key">{{ entry.step_key }}</strong>
+                                    <table
+                                        v-if="changedFieldRows(entry).length"
+                                        class="composer-diff-modal__field-table"
+                                        :data-testid="'diff-field-table-' + entry.step_key"
+                                    >
+                                        <thead>
+                                            <tr>
+                                                <th scope="col">{{ $t('studio.composer.diff.modified') }}</th>
+                                                <th scope="col">{{ $t('studio.composer.diff.before') }}</th>
+                                                <th scope="col" aria-hidden="true" class="composer-diff-modal__arrow-col">&rarr;</th>
+                                                <th scope="col">{{ $t('studio.composer.diff.after') }}</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr
+                                                v-for="row in changedFieldRows(entry)"
+                                                :key="entry.step_key + '-' + row.field"
+                                                :data-testid="'diff-field-row-' + entry.step_key + '-' + row.field"
+                                            >
+                                                <th scope="row" class="composer-diff-modal__field-name">{{ row.label }}</th>
+                                                <td class="composer-diff-modal__field-before">
+                                                    <del>{{ row.before }}</del>
+                                                </td>
+                                                <td aria-hidden="true" class="composer-diff-modal__arrow-col">&rarr;</td>
+                                                <td class="composer-diff-modal__field-after">
+                                                    <ins>{{ row.after }}</ins>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                    <span v-else-if="entry.changed_fields && entry.changed_fields.length" class="composer-diff-modal__field-fallback">
+                                        {{ entry.changed_fields.map(fieldLabel).join(', ') }}
                                     </span>
                                 </li>
                             </ul>
@@ -160,6 +190,55 @@ export default {
         confirmPublish() {
             this.$emit('confirm-publish');
             this.close();
+        },
+        // CMS-UX-2 — value-by-value diff. The backend (ComposerDiffService) ships each
+        // `modified` entry with full `before`/`after` step rows + `changed_fields`. We
+        // render only the fields that actually changed, old -> new. NF525 invariant:
+        // COMPARED_FIELDS carries NO price/amount — the wizard step never holds a price
+        // (price lives on the catalog construct). This renderer is therefore price-free
+        // by construction and must stay so.
+        fieldLabel(field) {
+            return this.$t('studio.composer.diff.fields.' + field);
+        },
+        changedFieldRows(entry) {
+            if (!entry || !Array.isArray(entry.changed_fields)) {
+                return [];
+            }
+            const before = entry.before || {};
+            const after = entry.after || {};
+            return entry.changed_fields.map((field) => ({
+                field,
+                label: this.fieldLabel(field),
+                before: this.formatFieldValue(field, before[field]),
+                after: this.formatFieldValue(field, after[field]),
+            }));
+        },
+        formatFieldValue(field, value) {
+            const empty = this.$t('studio.composer.diff.empty_value');
+            if (value === null || value === undefined || value === '') {
+                return empty;
+            }
+            // Booleans (allow_repeat, stockable_choices, is_active) -> Oui/Non.
+            if (typeof value === 'boolean') {
+                return value ? this.$t('studio.composer.diff.yes') : this.$t('studio.composer.diff.no');
+            }
+            // visible_on (array of surfaces) -> human surfaces, comma-joined.
+            if (Array.isArray(value)) {
+                if (!value.length) {
+                    return empty;
+                }
+                return value.map((surface) => this.surfaceLabel(surface)).join(', ');
+            }
+            return String(value);
+        },
+        surfaceLabel(surface) {
+            const map = {
+                pos: this.$t('label.composer.visible_pos'),
+                kiosk: this.$t('label.composer.visible_kiosk'),
+            };
+            const label = map[surface];
+            // Fallback to the raw token if the i18n key echoes back (missing key).
+            return label && label !== 'label.composer.visible_' + surface ? label : surface;
         },
     },
 };
@@ -282,6 +361,80 @@ export default {
 .composer-diff-modal__section--modified {
     border: 1px solid #f1d59a;
     background: #fff8df;
+    color: #8a6812;
+}
+
+.composer-diff-modal__modified-entry {
+    margin-bottom: 0.85rem;
+}
+
+.composer-diff-modal__modified-entry:last-child {
+    margin-bottom: 0;
+}
+
+.composer-diff-modal__step-key {
+    display: block;
+    margin-bottom: 0.35rem;
+    color: #5b430b;
+}
+
+.composer-diff-modal__field-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    background: #ffffff;
+    border-radius: 0.6rem;
+    overflow: hidden;
+    border: 1px solid #ecdcae;
+}
+
+.composer-diff-modal__field-table th,
+.composer-diff-modal__field-table td {
+    padding: 0.4rem 0.6rem;
+    text-align: left;
+    vertical-align: top;
+    border-bottom: 1px solid #f1e6c8;
+}
+
+.composer-diff-modal__field-table thead th {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #8a6812;
+    background: #fff3cf;
+}
+
+.composer-diff-modal__field-table tbody tr:last-child th,
+.composer-diff-modal__field-table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.composer-diff-modal__field-name {
+    font-weight: 600;
+    color: #405149;
+    white-space: nowrap;
+}
+
+.composer-diff-modal__arrow-col {
+    width: 1.6rem;
+    text-align: center;
+    color: #99a69f;
+}
+
+.composer-diff-modal__field-before del {
+    color: #9b2f2f;
+    text-decoration: line-through;
+}
+
+.composer-diff-modal__field-after ins {
+    color: #14743a;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.composer-diff-modal__field-fallback {
+    display: block;
+    margin-top: 0.2rem;
     color: #8a6812;
 }
 
