@@ -696,7 +696,7 @@ function ScreenCart({ go, cart, setCart, promoCode, setPromoCode }) {
                 <div style={{ marginTop: 6, fontSize: 12, fontWeight: 700, lineHeight: 1.2 }}>{it.name}</div>
                 <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <span style={{ fontSize: 11, fontWeight: 700, fontFamily: 'var(--font-mono)' }}>{it.price.toFixed(2).replace('.', ',')} €</span>
-                  <button onClick={(e) => { e.stopPropagation(); go('item', it.id); }} style={{ width: 26, height: 26, borderRadius: 999, background: 'var(--orange-text)', color: '#fff', border: 0, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>+</button>
+                  <button onClick={(e) => { e.stopPropagation(); go('item', it.id); }} aria-label={`Ajouter ${it.name} — ${it.price.toFixed(2).replace('.', ',')} €`} style={{ width: 26, height: 26, borderRadius: 999, background: 'var(--orange-text)', color: '#fff', border: 0, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>+</button>
                 </div>
               </div>
             ))}
