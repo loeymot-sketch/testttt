@@ -12,18 +12,18 @@
 - **Worktree dédié** `.claude/worktrees/cms-gestion-2026-06-10`, branche `goal/cms-gestion-2026-06-10` depuis `3ce18f767` (checkout `heal/cms-pr1-quickwins-2026-05-18`, là où TOUS les anchors ont été re-vérifiés primary-source 2026-06-10). Le WIP non-commité d'autres sessions (KDS remediation) n'est PAS embarqué — isolation propre.
 - **No push** sans owner explicite (CLAUDE.md §10). Commits checkpoint par wave (`checkpoint-commit`), `git add <fichiers explicites>` jamais `-A`.
 - **Pipeline par tâche** = `ultra-audit-profond` (5 specialists RO → implement TDD → RED dispute → test → visual → self-correct ≤3). NON re-décrit ici.
-- **Vendor worktree** : si PHPUnit échoue par vendor-shadow → vraie copie (`unlink vendor && cp -Rc` depuis checkout principal), leçon `[[project_pos_printer_saga_2026-06-04]]`.
-- **E2E mutation** : JAMAIS sur `:8765`/DB `foodking` (NF525 réelle). Harness `:8766`/`foodking_e2e` (`APP_ENV=e2e php artisan serve --port=8766`, re-clone = reset), cf. `[[reference_e2e_harness_foodking_e2e_2026-06-07]]`. PHPUnit : vérifier `.env.testing` pointe une DB de test (DEVDB-GUARD `tests/CreatesApplication.php`).
+- **Bootstrap worktree (Wave 0, BLOCKERS certains — vérifié RED 2026-06-10)** : le worktree n'a NI `vendor/` NI `node_modules/` NI aucun `.env*` réel (gitignorés). Wave 0 DOIT : (a) `cp -Rc` vendor depuis le checkout principal (vendor réel non-symlink vérifié) ; (b) copier `node_modules` (ou `npm ci`, build = **Mix**) ; (c) copier `.env`, `.env.testing` (→ `foodking_test` ✓) et `.env.e2e` (→ `foodking_e2e` ✓) depuis le checkout principal + vérifier que la DB `foodking_e2e` existe ; (d) **DEVDB-GUARD est ABSENT de cette branche** (`tests/CreatesApplication.php` = vanilla) → le ré-appliquer (port depuis lignée `pre-cloud-exec`) OU contrôle manuel `.env.testing` avant CHAQUE run PHPUnit.
+- **E2E mutation** : JAMAIS sur `:8765`/DB `foodking` (NF525 réelle). Harness `:8766`/`foodking_e2e` (`APP_ENV=e2e php artisan serve --port=8766`, re-clone = reset), cf. `[[reference_e2e_harness_foodking_e2e_2026-06-07]]`.
 
 ### 0.2 ⚖️ CONTRATS PORTEURS (toute tâche les respecte)
 1. **PRIX = SSOT NF525 backend.** Tout prix vit sur un construct catalogue (`Item`/`ItemVariation`/`ItemExtra`/`ItemAddon→addonItem`), calculé par `PricingService` (frozen). Le builder wizard ne porte JAMAIS un champ prix sur un step (`ComposerStepRequest.php:32` `'price'=>['prohibited']`). Tripwire : un champ `price` proposé sur un step → STOP.
-2. **SYNC = Outbox + snapshot_version, pas d'invention.** La propagation catalogue/stock existante : event in-process (`CatalogChanged`, `ItemAvailabilityChanged`, `StockLevelChanged`) → listeners `Persist*ToOutbox` + `BumpMenuSnapshotOnItemAvailabilityChanged` + `InvalidateKioskMenuCacheOnItemAvailabilityChanged` → surfaces consomment `snapshot_version` (`MenuProjectionService.php:324`). Toute nouvelle mutation CMS DOIT emprunter ce canal — pas de nouveau mécanisme parallèle. Contrat : `SYNC_CONTRACT.md` racine.
+2. **SYNC = Outbox + snapshot_version, pas d'invention.** La propagation catalogue/stock existante : event in-process (`CatalogChanged`, `ItemAvailabilityChanged`, `StockLevelChanged`) → listeners `Persist*ToOutbox` + `BumpMenuSnapshotOnItemAvailabilityChanged` + `InvalidateKioskMenuCacheOnItemAvailabilityChanged` → surfaces consomment `snapshot_version` (`MenuProjectionService.php:324`). Le câblage réel catalogue vit dans **`EventServiceProvider.php:221-291`** (bridge variation/extra/StockLevelChanged → outbox + invalidation ; `SYNC_CONTRACT.md §3` ne documente que les events ORDER → tâche T-C1.5 l'étend). `KioskAppComponent.vue:548-556` (frozen) écoute DÉJÀ `CatalogChanged`/`ItemAvailabilityChanged` — la sync borne marche sans toucher frozen. **Tripwire** : étendre le payload `CatalogChanged` = SHARED ZONE (`SYNC_CONTRACT.md §8`) → LOCK requis, à éviter. Toute nouvelle mutation CMS emprunte ce canal — pas de mécanisme parallèle.
 3. **FROZEN intouchables sans LOCK+gate** (CLAUDE.md §7) : `pos-wizard.js`, `admin-pos-v4.blade.php`, `KioskWizardComponent.vue`, `KioskAppComponent.vue`, `KioskUpsellComponent.vue`, `PaymentComponent.vue`, `PricingService.php`, fiscal services, `BranchScope`, `OrderStateMachine`, `IdempotencyKeyMiddleware`. La caisse : **analyser/comprendre OK, configurer par-dessus OK (data-driven via `composer_profile`), modifier = gate owner**.
 4. **SSOT menu = DB items (45 items V1 Le Cayenne).** JAMAIS inventer un produit/catégorie (CLAUDE.md §3bis).
-5. **Branch isolation** : tout nouveau endpoint/écriture respecte `BranchScope` + permissions Spatie existantes (`permission:items_*`) + idempotency sur POST mutants.
+5. **Authz + isolation (précisé post-RED)** : items CRUD = `permission:items_*` (`ItemController:31-35`) mais catégories CRUD = **`permission:settings`** (`ItemCategoryController:27-38`) → décision RBAC en Wave 0 (un gérant sans `settings` ne peut pas gérer les catégories — aligner ou documenter). `Item`/`ItemCategory` ne sont PAS branch-scopés ; BranchScope ne s'applique qu'à `ItemBranchAvailability`/`StockLevel`. Idempotency : les routes catalogue existantes n'en ont pas — les nouveaux endpoints suivent le pattern existant (pas d'idempotency unilatérale), décision documentée Wave 0.
 
 ### 0.3 Décisions de cadrage (anchored)
-- **Sous-catégories : EXISTENT déjà.** `item_categories.parent_id` (migration `2026_04_18_120001`), relations `parent()`/`children()` + garde profondeur 2 niveaux (`ItemCategory.php:161-193`). P1/P2 = exposer + fiabiliser, PAS créer le schéma.
+- **Sous-catégories : EXISTENT déjà côté schéma, INVISIBLES côté surfaces.** `item_categories.parent_id` (migration `2026_04_18_120001`), relations `parent():159`/`children():164` + garde profondeur 2 niveaux (`ItemCategory.php:159-193`, enforcement `ItemCategoryHierarchyService`). MAIS : `ItemCategoryResource` n'émet PAS `parent_id`, `MenuProjectionService::forChannel:69-76` projette toutes les catégories À PLAT, les 45 items V1 n'ont aucune sous-catégorie, et le composer matche `item_category_id` EXACT (zéro héritage parent, grep `parent` dans `app/Services/Composer/` = vide). P1/P2 = exposer + fiabiliser + trancher l'héritage (G-0c) et le rendu borne, PAS créer le schéma.
 - **« État stock » a 2 mécanismes distincts** (ne pas les confondre) : (a) **rupture manuelle** par construct = `ItemBranchAvailability` + toggles `AvailabilityController` (`:45` item, `:157` extra, `:187` variation) ; (b) **stock compté** = `StockLevel`/`StockMovement` + décrément commande (`StockService::decrementForOrder:27`) + bascule auto rupture au franchissement de seuil (`StockService::syncItemAvailabilityForStockLevel:162`). La vue hiérarchique doit refléter LES DEUX.
 - **Surfaces admin existantes** : Catalog Studio `/admin/items` (`CatalogStudioComponent.vue`, 971 l., sidebar catégories + produits), Stock dashboard `/admin/stock-rupture-dashboard` (`StockRuptureDashboardComponent.vue`, 649 l.), composer builder `/admin/items/:id/composer` (`itemRoutes.js:94`). Le GOAL **enrichit ces surfaces**, ne crée pas une 4e page concurrente sans gap-analysis préalable (Wave S1).
 - **Builder wizard** : décisions du plan P3 conservées — « type==catégorie » (item_type = flag diététique, pas un axe wizard), box = bundle prix-plein (G-0b=A résolu owner 2026-06-08), POS render = gate G-4, flag `FK_POS_WIZARD_COMPOSER_AWARE_ENABLED` flip = gate owner (`[[reference_composer_wizard_hinge_2026-06-07]]`).
@@ -64,17 +64,21 @@ Le gérant voit et pilote, dans UNE navigation hiérarchique : catégorie → so
   • acceptance: maquette/spec dans le rapport S1 + validation RED-team design (dispute UX)
 
 ### Sub S.2 — Implémentation vue hiérarchique
-- T-S2.1 Backend : endpoint overview hiérarchique (étendre `catalogOverview:294` ou nouveau) émettant l'arbre catégories (avec `parent_id`) → items → constructs avec états (`ItemBranchAvailability` + `StockLevel` + ruptures variation/extra via `ChoiceAvailabilityResolver::snapshotForItems:23`), branch-scoped, sans N+1.
-  • anchor: `StockRuptureDashboardController.php:294`, `ChoiceAvailabilityResolver.php:23-110`, `ItemCategory.php:161-166`
-  • acceptance: `(test À CRÉER tests/Feature/Stock/HierarchicalStockOverviewTest.php)` — arbre 2 niveaux, états corrects, 0 N+1 (assertions query-count), BranchScope respecté
-- T-S2.2 Frontend : rendu arbre + badges + toggles (réutilise `AvailabilityToggleComponent.vue` + endpoints toggle existants `:45/:157/:187`), throttle bucket `menu-availability` respecté (`api.php:274`).
+- T-S2.1 Backend : **EXTEND-ONLY** de `catalogOverview:294` (déjà ≤5 requêtes, categories→items+overrides+buckets — PAS de nouvel endpoint doublon) : ajouter `parent_id` au payload + détail constructs PAR item (aujourd'hui dédupliqués par nom de groupe) via `ChoiceAvailabilityResolver::snapshotForItems:23`, sans N+1.
+  • anchor: `StockRuptureDashboardController.php:294`, `ChoiceAvailabilityResolver.php:23-110`, `ItemCategory.php:159-167`
+  • acceptance: `(test À CRÉER tests/Feature/Stock/HierarchicalStockOverviewTest.php)` — arbre 2 niveaux, états corrects, 0 N+1 (assertions query-count), états `ItemBranchAvailability`/`StockLevel` scoped branch 1
+- T-S2.2 Frontend : rendu arbre + badges + toggles (réutilise `AvailabilityToggleComponent.vue` + endpoints toggle existants `:45/:157/:187`). ⚠️ `tests/js/stockRuptureDashboardComponent.spec.js` = **sentinel source-string** (regex sur le .vue, verrouille « no bulk endpoint » + test-ids V2) — la refonte le RÉÉCRIT explicitement, ne « l'étend » pas.
   • anchor: `resources/js/components/admin/stock/StockRuptureDashboardComponent.vue`, `AvailabilityToggleComponent.vue`
-  • acceptance: `tests/js/stockRuptureDashboardComponent.spec.js` étendu + `(test À CRÉER tests/js/hierarchicalStockTree.spec.js)` ; visual e2e (badge change instantané après toggle)
+  • acceptance: `(test À CRÉER tests/js/hierarchicalStockTree.spec.js)` **mount-level** (rendu arbre + toggle comportemental) + sentinel réécrit GREEN ; visual e2e (badge change instantané après toggle)
+- T-S2.3 Décision design **bascule niveau catégorie vs throttle** : toggle catégorie = fan-out N produits, limiter `menu-availability` = 60/min prod (`RouteServiceProvider:181`) → choisir bulk-endpoint dédié OU fan-out séquentiel borné OU raise documenté. Décision Wave S1, impl ici.
+  • acceptance: `(test À CRÉER tests/Feature/Stock/CategoryBulkToggleThrottleTest.php)` — bascule catégorie complète sous le plafond
+- T-S2.4 i18n FR : toutes nouvelles clés dans `resources/js/languages/fr.json` (+en) namespace `stock_mgmt`, `npm run i18n:audit` propre.
+  • acceptance: `tests/Feature/Stock/StockDashboardI18nIntegrityTest.php` GREEN + 0 raw label au visual
 
 ### Sub S.3 — Preuve de sync cross-systèmes (le cœur de la demande owner)
 - T-S3.1 E2E live (harness :8766) : toggle rupture produit en admin → vérifier kiosk (menu cache invalidé, produit grisé/retiré — `InvalidateKioskMenuCacheOnItemAvailabilityChanged`), POS (`posItemAvailabilityHandler.spec.js` pattern live), retour en-stock idem. Variation + extra idem (`ComposerProfileProjectionVariationRuptureTest` = lock point projection).
   • anchor: listeners `app/Listeners/{InvalidateKioskMenuCache,BumpMenuSnapshot}OnItemAvailabilityChanged.php`, `MenuProjectionService.php:324`
-  • acceptance: `tests/e2e/(À CRÉER) cms-s3-stock-sync-live.spec.js` GREEN + captures avant/après analysées + `tests/Feature/Stock/` + `tests/Feature/Availability/` suite GREEN
+  • acceptance: `tests/e2e/(À CRÉER) cms-s3-stock-sync-live.spec.js` GREEN + captures avant/après analysées + tests précis GREEN : `tests/Feature/Stock/StockRuptureAvailabilitySyncTest.php`, `tests/Feature/Stock/WizardOptionStockSyncTest.php`, `tests/Feature/Availability/StockReleaseTest.php`
 - T-S3.2 Stock compté : commande (e2e :8766) décrémente `StockLevel`, franchissement de seuil bascule la rupture auto + propage (boundary `StockService:451`).
   • acceptance: test Feature existant `tests/Feature/Stock/` filtré GREEN + scénario e2e décrément→rupture auto→kiosk reflète
 
@@ -91,11 +95,16 @@ Le gérant ajoute/modifie/supprime catégorie, sous-catégorie et produit depuis
 - T-C1.1 Audit + complétion UI : création/édition catégorie avec choix parent (sous-catégorie), tri (`sortCategory:93`), statut, images — dans Catalog Studio sidebar.
   • anchor: `ItemCategoryController.php:51,71,82,93`, `CatalogStudioComponent.vue:28` (sidebar-head), garde 2-niveaux `ItemCategory::193`
   • acceptance: `(test À CRÉER tests/Feature/Catalog/CategoryCrudHierarchyTest.php)` — store avec parent_id, refus profondeur 3, update, sort ; Vitest sidebar étendu
-- T-C1.2 Delete-safety catégorie : suppression bloquée/guidée si items actifs, enfants, ou `ItemWizardProfile` catégorie lié (`item_categories.wizard_profile_id`, migration `2026_05_05_000010`) ; dialog FR explicite (pattern global delete-dialog FR existant).
-  • anchor: `ItemCategoryController::destroy:82`, `app/Models/ItemWizardProfile.php` (ownership catégorie)
-  • acceptance: `(test À CRÉER tests/Feature/Catalog/CategoryDeleteSafetyTest.php)` + visual dialog
+- T-C1.2 Delete-safety catégorie — **P1 RED : la primitive actuelle est destructrice.** `ItemCategoryService::destroy:165-183` fait `SET FOREIGN_KEY_CHECKS=0` avant delete → bypasse le `cascadeOnDelete` de `item_wizard_profiles` (migration `2026_05_05_000020:17`) et le `nullOnDelete` de `wizard_profile_id` → profils orphelins + `parent_id` enfants dangling. Fix : supprimer le toggle FK_CHECKS, suppression bloquée/guidée si items actifs, enfants, ou wizard profile lié ; le dialog FR propose le **détachement** du wizard (évite le deadlock catégorie↔profil, cf. T-W5b).
+  • anchor: `ItemCategoryService.php:165-183` (la vraie cible), `ItemCategoryController::destroy:82`, `app/Models/ItemWizardProfile.php`
+  • acceptance: `(test À CRÉER tests/Feature/Catalog/CategoryDeleteSafetyTest.php)` — incl. régression « aucune désactivation FK » + visual dialog
 - T-C1.3 Sync rename/CRUD catégorie → surfaces (lock existant `CategoryRenameSyncTest`) + sidebar kiosk images par catégorie (fix récent `e5067d464` non régressé).
   • acceptance: `tests/Feature/Catalog/CategoryRenameSyncTest.php` GREEN + e2e kiosk sidebar
+- T-C1.4 **Rendu sous-catégorie sur les surfaces** : émettre `parent_id` dans `ItemCategoryResource` (aujourd'hui absent → la sidebar ne peut pas construire l'arbre) + décision rendu borne (nested / fusionné dans le parent / plat assumé — `MenuProjectionService::forChannel:69-76` projette à plat).
+  • anchor: `app/Http/Resources/ItemCategoryResource.php`, `MenuProjectionService.php:69-76`
+  • acceptance: `(test À CRÉER tests/Feature/Catalog/CategoryHierarchyProjectionTest.php)` + e2e visual kiosk sidebar avec sous-catégorie
+- T-C1.5 Doc : étendre `SYNC_CONTRACT.md §3` aux events catalogue (`CatalogChanged`/`ItemAvailabilityChanged`/`StockLevelChanged` → `EventServiceProvider:221-291`).
+  • acceptance: section ajoutée, revue RED
 
 ### Sub C.2 — CRUD produit
 - T-C2.1 Audit + polish du flow création produit (`ProductCreateWizardComponent.vue` + `ItemCreateComponent.vue`) : champs requis, catégorie/sous-catégorie, prix, image (`changeImage:186`), TVA, canaux (`2026_04_16_200000_add_channel_columns`), duplicate (`:156`, lock `ItemDuplicationTest`).
@@ -116,12 +125,12 @@ Le gérant ajoute/modifie/supprime catégorie, sous-catégorie et produit depuis
 
 | Wave P3 | Contenu (réf. plan wizard) | Frozen ? |
 |---|---|---|
-| W0 | Décisions G-0 (type==catégorie ✅, modèle save draft-publish, per-item flag policy) + baselines | non |
+| W0 | Décisions G-0 (type==catégorie ✅, modèle save draft-publish, per-item flag policy) + **G-0c héritage wizard parent→sous-catégorie** (défaut proposé : PAS d'héritage + warning UI au déplacement d'items hors d'une catégorie à wizard — le composer matche `item_category_id` EXACT `ComposerProfileService:106-109`, déplacer un item en sous-catégorie DÉTACHE silencieusement son wizard) + **unpublish-vs-delete profil** + baselines. Note : fix orphelin « publish silent no-op » DÉJÀ présent @ 3ce18f767 (`ProductComposerEditorComponent.vue:955`) — vérifier seulement le 2e fix (inheritance catégorie au render) | non |
 | W1 | Media constructs : migration additive description+image sur `item_variations`/`item_extras` + thumb precedence stored>config | non |
-| W2 | Projection enrichie (image/desc/prix read-only echo) `ComposerProfileProjection::choices:91-167` | non |
-| W3 | Surface édition option dans builder (binding vers endpoints construct existants `api.php:734-749`) | non |
+| W2 | Projection enrichie (image/desc/prix read-only echo) `ComposerProfileProjection::choices:75-170` | non |
+| W3 | Surface édition option dans builder (binding vers endpoints construct existants `api.php:734-749`) **+ T-W3.3 (P1 RED) : exposer `allow_repeat` + presets « Choix unique / Choix multiple » dans `ComposerStepFormPanel.vue`** (le backend l'accepte `ComposerStepRequest.php:25` mais AUCUN contrôle UI — grep vide sur 322 l. ; sans ça l'owner ne configure pas la logique des choix sans dev) | non |
 | W4 | Templates turnkey (`source_ref` non-vide, `ComposerTemplateService.php:46`) + **câbler les ~10 VRAIS wizards Le Cayenne** + modèle de sauvegarde (race version/snapshot `ComposerStepService:109-130`) | non |
-| W5 | Page personnelle/libre = construct à la volée (`PersonalPageCreatesConstructTest` À CRÉER) | non |
+| W5 | Page personnelle/libre = construct à la volée (`PersonalPageCreatesConstructTest` À CRÉER) **+ T-W5b (P1 RED) : suppression d'un wizard ENTIER** — demande owner explicite, aujourd'hui inexistante (`ComposerProfileController` n'a pas de `destroy`, routes = unpublish + DELETE step seulement). Décision W0 : unpublish-vs-delete ; impl = DELETE profile (ou detach + purge orphelins — `ownerType()='orphan'` existe) + `(test À CRÉER tests/Feature/Composer/ComposerProfileDeleteTest.php)` | non |
 | W6 | Box bundle prix-plein (G-0b=A) : escape-hatch `KioskStepGenericChoicesComponent` (id-keyed), découverte par `role='menu_component'`, AddonRoleBindingSentinel GREEN | non (G-3 non déclenché) |
 | W7 | Parité per-item + disposition piège `resolveForItem` CATEGORY-WINS mort (`ComposerProfileService:104-120`) | non (flip prod = G-5) |
 | W8 | Gates frozen : GATE-G PricingService inheritance (G-1), POS box render `pos-wizard.js` (G-4) | **OUI — owner LOCK requis, documentés PENDING, pas d'exécution sans contreseing** |
@@ -150,7 +159,7 @@ Dispatch : 5 specialists RO = 1 seul message multi-Agent (parallèle). Rapports 
 
 ## §X — VAGUES DE CONVERGENCE (ordre + checkpoints)
 
-**Ordre :** Wave 0 (pre-flight global) → **S1→S2→S3** (stock) → **C1→C2** (CRUD) → **W0→W7** (builder, W8=gates) → **Wave F** (convergence finale cross-surface).
+**Ordre (corrigé post-RED) :** Wave 0 (pre-flight + bootstrap worktree + décisions) → **C1** (CRUD catégorie/sous-catégorie D'ABORD — S2 a besoin de sous-catégories réelles pour l'arbre, les 45 items V1 sont plats ; pas de seed inventé §3bis) → **S1→S2→S3** (stock) → **C2** (CRUD produit) → **W0→W7** (builder, W8=gates) → **Wave F** (convergence finale cross-surface). W4 (10 vrais wizards) APRÈS C1 = catégories stables (`applyTemplateToCategory` + `availableSourcesForCategory` 422-si-catégorie-vide).
 **Parallélisme :** défaut séquentiel. Autorisé : audits RO en // dans chaque wave ; S et C partagent Catalog Studio/ItemCategory → PAS de chevauchement implementer ; W1-W2 (schéma composer) disjoints de S2 (stock UI) → chevauchement lecture OK, 1 implementer/fichier.
 **Wave 0 pre-flight :** baselines (PHPUnit count, `audit_logs` count+last_hash, Vitest count) ; backup branche + DB dump ; harness :8766 up ; décisions W0 ; vérif des 2 fixes orphelins (§5).
 **Checkpoint par wave (6 pts) :** tasks PASS · frozen-diff = 0 (`git diff --stat <start>..HEAD -- <13 frozen>`) · NF525 chain inchangée · visual gate tiré si frontend · RED dispute clos · BRAIN §2/§3 + commit checkpoint.
@@ -163,7 +172,8 @@ Dispatch : 5 specialists RO = 1 seul message multi-Agent (parallèle). Rapports 
 
 | Gate | Description | WHO | WHAT | WHERE | Statut |
 |---|---|---|---|---|---|
-| G-1 | GATE-G `PricingService` enforce composer catégorie-hérité (frozen) | Owner | contresign LOCK | `reports/test-e2e/wizard-dynamic-2026-06-08/GATE-G-PRICINGSERVICE-INHERITANCE-LOCK-REQUEST.md` | PENDING |
+| G-0c | Héritage wizard parent→sous-catégorie (défaut : NON + warning UI) + test croisé `(À CRÉER tests/Feature/Composer/CategoryHierarchyWizardResolutionTest.php)` | Owner | confirm défaut | Wave 0 / BRAIN §2 | PENDING — défaut appliqué si silence |
+| G-1 | GATE-G `PricingService` enforce composer catégorie-hérité (frozen) | Owner | contresign LOCK | LOCK doc **À RÉGÉNÉRER via skill `lock-plan` en W8** (l'original `GATE-G-…LOCK-REQUEST.md` vit sur la lignée wizard-exec non mergée, absent @ 3ce18f767) | PENDING |
 | G-2 | Préserver legacy menu-ratio kiosk intact (box générique À CÔTÉ) | Owner | confirm no-touch | Wave W6 | PENDING (défaut = préservé) |
 | G-4 | POS box render (frozen `pos-wizard.js`) | Owner | LOCK + waiver « design parfait » | Wave W8 | PENDING |
 | G-5 | Flip prod `FEATURE_WIZARD_PER_ITEM_DEMO` + `FK_POS_WIZARD_COMPOSER_AWARE_ENABLED` | Owner | go env-flags | Wave W7/W8 | PENDING |
@@ -173,7 +183,7 @@ Dispatch : 5 specialists RO = 1 seul message multi-Agent (parallèle). Rapports 
 **Protocole gate-pending :** S/C/W0-W7 exécutables SANS aucun gate frozen. Seule W8 attend. Wave F livre production-ready hors-W8, W8 documentée prête-à-contresigner.
 
 ## §R — RÉFÉRENCES
-- P3 exécutable : `plans/GOAL_WIZARD_DYNAMIC_BUILDER_2026-06-08.md` + `reports/test-e2e/wizard-dynamic-2026-06-08/ULTRA_AUDIT_VERDICT_2026-06-08.md`
+- P3 exécutable : `plans/GOAL_WIZARD_DYNAMIC_BUILDER_2026-06-08.md` (le rapport `ULTRA_AUDIT_VERDICT_2026-06-08.md` cité dedans vit sur la lignée wizard-exec, ABSENT @ 3ce18f767 — anchors re-vérifiés directement 2026-06-10, sondage 10/10 CONFIRMÉ)
 - Sync : `SYNC_CONTRACT.md` · Gouvernance : `CONSTITUTION.md`, `SYSTEM_MAP.md`, `PARALLEL_PROTOCOL.md`
 - Mémoire : `[[reference_composer_wizard_hinge_2026-06-07]]`, `[[project_wizard_dynamic_exec_2026-06-08]]`, `[[reference_e2e_harness_foodking_e2e_2026-06-07]]`, `[[feedback_shared_worktree_git_commit_collision_2026-06-09]]`
 - Skills : `ultra-audit-profond` (pipeline/tâche), `test-e2e` (phase), `superpower-gstack`, `lock-plan` (si gate), `verify-before-report`, `checkpoint-commit`
