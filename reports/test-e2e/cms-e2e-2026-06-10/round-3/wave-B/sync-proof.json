@@ -1,0 +1,10 @@
+{
+  "after_rupture": {
+    "item_branch_availability": "is_available\n0\n",
+    "last_domain_events": "broadcast_as\nItemAvailabilityChanged\nCatalogChanged\n"
+  },
+  "after_restore": {
+    "item_branch_availability": "is_available\n1\n",
+    "last_domain_events": "broadcast_as\nItemAvailabilityChanged\nCatalogChanged\n"
+  }
+}

@@ -1,0 +1,84 @@
+{
+  "round": 2,
+  "reviewer": "adversarial-supervisor-round-2",
+  "reviewed_at": "2026-06-10",
+  "scope": "Verification of 5 round-1 P1 fixes (PNG+DOM proof) + full re-attack sweep of all round-2 states (A1-A7d, B1-B6): vision on every PNG, raw-i18n-key regex on every DOM, console + network on every state.",
+  "fixes_verified": [
+    {
+      "id": "A-001",
+      "status": "FIXED",
+      "evidence": "round-2/wave-A/A4-parent-options.json = [\"Aucune\"] (round-1 had 11). DOM A4-galette-edit-parent-locked.dom.html: <select id=parent_id data-testid=admin-category-form-parent> contains exactly ONE <option>Aucune</option>. PNG A4 shows the closed select displaying 'Aucune'. Lock did NOT over-apply: A2 create-modal DOM still offers Aucune + 11 top-level parents (subcategories correctly excluded). Server-side guard ALSO confirmed in code (round-1 open question closed): app/Services/ItemCategoryHierarchyService.php:32-37 [GOAL CMS heal P1-1] throws InvalidArgumentException when re-parenting a category that has children; invoked from ItemCategoryService::store/update via validateParent. No P0 escalation."
+    },
+    {
+      "id": "A-002",
+      "status": "FIXED",
+      "evidence": "PNG zoom crops: A6 product-card footer shows 3 crisp glyphs (cog / eye / trash); A5/A6 studio sidebar rows show pencil + trash on every category row; A7a Articles row shows 4 glyphs (eye / green pencil / circled-plus / trash) — zero empty pills anywhere. DOM shows the fix = glyph-class swap to rendering classes: lab-settings (wizard), lab-delete (delete), lab-add-circle-line (Dupliquer) replacing the dead lab-cog/lab-delete-line/lab-copy. aria-label/title intact. Minor semantic note on Dupliquer glyph logged as R2-NEW-03 (P3)."
+    },
+    {
+      "id": "B-001",
+      "status": "FIXED",
+      "evidence": "B6-step-taille-panel.iframe.dom.html fieldset: <legend>Logique des choix</legend> + radios 'Choix unique (1 obligatoire)' / 'Choix multiples (libre)' / 'Personnalisé (réglages ci-dessous)' — all FR. Raw-key regex on the iframe DOM = 0 hits; 'label.composer' occurs 0 times. PNG zoom (B6 panel crop) shows the FR fieldset rendering cleanly, no overflow, no clipping. Bonus: the 3 radios now carry name=\"composer-choice-preset\" → round-1 B-004 (P2 radiogroup) is ALSO fixed incidentally."
+    },
+    {
+      "id": "B-002",
+      "status": "FIXED",
+      "evidence": "B6-panel-elements.json: {prices: false, presetSingle/Multiple/Custom: true}. Iframe DOM: data-testid composer-step-choice-prices = 0 occurrences, 'Options et prix' = 0, 'Inclus' = 0, 'Poulet'/'Algérienne' = 0 — the mixed meats/sauces panel is gone on the 'Choisis la taille' step with source 'Toutes les options'. PNG B6 panel crop confirms: fieldset → Minimum/Maximum → Quantité par choix, no prices panel. CAVEAT: only branch 1 of the round-1 recommendation was implemented (suppress the union display); branch 2 (availableSources payload still missing Taille/Viande 2/Garnitures groups) remains open → logged as residual R2-NEW-01 (P2), not a reopen of the P1 display defect."
+    },
+    {
+      "id": "B-003",
+      "status": "FIXED",
+      "evidence": "B5-composer-drawer.console.json round-2 contains ONLY 2 allowlisted ws://127.0.0.1:6001 Pusher warnings — the type=error 'Framing ... violates ... frame-ancestors \\'none\\'' entry from round-1 is gone. The iframe still renders fully (B5/B6 PNGs show the complete composer with steps list, form panel and live preview rails), proving the drawer works under the corrected directive."
+    }
+  ],
+  "new_findings": [
+    {
+      "id": "R2-NEW-01",
+      "severity": "P2",
+      "state": "B6-step-taille-panel",
+      "title": "Residual of B-002: availableSources still cannot represent the real binding of the step 'Choisis la taille' — the 'Limiter à un groupe précis' select only offers Toutes les options / Viande 1 / Sauce (1ère Gratuite)",
+      "evidence": "round-2 iframe DOM, data-testid=composer-step-source-ref: <option value=''>Toutes les options</option><option value='1'>Viande 1</option><option value='5'>Sauce (1ère Gratuite)</option>. No 'Taille', 'Viande 2' or 'Garnitures' group exists, while the steps list contains 'Choisis la taille', 'Viande 2', 'Choisis tes garnitures'. The misleading prices panel is gone (B-002 display fixed), but a gérant still cannot scope this step to its actual option group — and saving the panel could persist a source_ref that does not match what the kiosk really resolves.",
+      "recommendation": "Expose every attribute group of the category in the composer payload availableSources (Taille, Viande 2, Garnitures...), or pre-resolve and display the step's effective backend binding read-only when the group is not editable."
+    },
+    {
+      "id": "R2-NEW-02",
+      "severity": "P3",
+      "state": "A4-galette-edit-parent-locked",
+      "title": "Parent lock has no explanatory hint: the gérant editing Galette sees a select containing only 'Aucune' with zero explanation",
+      "evidence": "A4 DOM: the only hint under the select is the generic wizard note ('Le wizard d'une catégorie parente ne s'applique pas automatiquement à ses sous-catégories.'). Nothing says 'cette catégorie a des sous-catégories, elle ne peut pas devenir une sous-catégorie'. Round-1 A-001 recommendation explicitly asked for 'an explanatory hint'; only the option-filtering half was implemented. Backend rejection message exists (ItemCategoryHierarchyService.php:34-36) but would only surface on a crafted request.",
+      "recommendation": "When the edited category has children, render a small db-field-hint explaining why no parent is offered."
+    },
+    {
+      "id": "R2-NEW-03",
+      "severity": "P3",
+      "state": "A7a-item-delete-confirm",
+      "title": "Fix-introduced icon semantics drift: 'Dupliquer' now renders lab-add-circle-line (a circled plus), visually identical to an 'Ajouter' affordance",
+      "evidence": "A7a DOM: <button title='Dupliquer' aria-label='Dupliquer'><i class='lab lab-add-circle-line'>. PNG zoom of the Articles row shows ⊕ between the pencil and the trash. A sighted user scanning icons reads 'add', not 'duplicate'. Tooltip + aria-label mitigate (hence P3 per protocol).",
+      "recommendation": "Use a copy/duplicate glyph that renders (e.g. two overlapping squares) instead of the add-circle glyph."
+    }
+  ],
+  "carried_over_still_open_not_in_fix_scope": [
+    "A-003 (P2) settings list still detaches subcategories from parents: round-2 A1/A3 PNGs show ↳ Tacos Signature at row 2 under Sandwich Cayenne while Tacos is row 6",
+    "A-004 (P2) studio CTAs still bg-rose-700 / bg-green-700 (A5 DOM counts 1+1)",
+    "A-005 (P2) dropdown-btn / xmark buttons still have no accessible name (A5 DOM)",
+    "A-006 (P3) '1 articles' / '1 PRODUITS' pluralization (A6/A7a) + 'exactement 1 articles' hint in composer (pre-existing round-1, NOT fix-introduced)",
+    "A-007 (P3) native 'Choose File / No fil...hosen' in FR modal (A2/A4 PNG)",
+    "A-008 (P3) modal still titled 'Catégories' in create and edit modes",
+    "A-009 (P3) 'INDISPONIBLES' clipped on stats card (A7a PNG zoom)",
+    "B-005 (P3) source selects still truncate ('Attribut prod', 'Toutes les op…') in B6 panel zoom"
+  ],
+  "incidentally_fixed": [
+    "B-004 (P2) preset radios now share name=\"composer-choice-preset\" — valid radiogroup (B6 iframe DOM)"
+  ],
+  "hygiene_sweep": {
+    "console": "16/16 states clean — only allowlisted ws://127.0.0.1:6001 Pusher warnings (A1, A5, A7a, A7c, B1, B5x2); zero errors, zero CSP violations",
+    "network": "16/16 network.json empty — zero 4xx/5xx, zero slow requests",
+    "i18n_raw_keys": "0 hits across all 17 DOM files (incl. B6 iframe) with regex >[a-z]+(\\.[a-z_]+){1,4}<",
+    "numeric_integrity": "PASS — categories 12→13→12 (A1/A3/A7d), articles 45→46→45 ('46 articles' sidebar, '1 PRODUITS/46 ACTIFS' stats), price 5,00 € FR identical studio card (A6) and Articles row (A7a); cleanup.json: round-2 rows item 78 + category 23 soft-deleted (deleted_at 15:36:52 / 15:37:01)",
+    "sync_proof": "PASS — is_available 0→1 with ItemAvailabilityChanged + CatalogChanged at both steps, matching B3 RUPTURE → B4 EN STOCK PNGs"
+  },
+  "summary": {
+    "fixes": { "FIXED": 5, "STILL_OPEN": 0 },
+    "new": { "P0": 0, "P1": 0, "P2": 1, "P3": 2 }
+  },
+  "verdict": "GREEN-CONDITIONAL — all 5 round-1 P1 fixed with PNG+DOM+code proof, no P0/P1 regression introduced; 1 new P2 (residual availableSources gap behind B-002) + 2 new P3; round-1 P2/P3 backlog (A-003..A-009, B-005) remains open and was never in fix scope."
+}
