@@ -22,6 +22,19 @@ The bus is a **SHARED ZONE** (SYSTEM_MAP §6): no single system lane edits it al
 
 **⚠️ Broadcast mechanism (corrected, verified code-side 2026-06-03):** the 3 order events do **NOT** use Laravel `ShouldBroadcast`. They are **plain events** → a `Persist{Event}ToOutbox` listener writes a `domain_events` row (`channel=['private-branch.'.$branch_id]`, `broadcast_as='<Event>'`) → `DispatchDomainEventsJob->broadcast()` pushes to soketi. **Outbox pattern** (gate C9/KI-001 — `OrderCreated.php:12` comment: "replacing direct ShouldBroadcastNow"). Listeners: `app/Listeners/Persist{OrderCreated,OrderStatusChanged,KdsOrderRecalled}ToOutbox.php`. This is WHY worker-death degrades gracefully (rows persist, replay on recovery). **Channel naming:** `branch.{branchId}` (auth name, `channels.php:41`) == `private-branch.{branchId}` (wire name, Pusher `private-` convention) — same channel.
 
+### 3bis. Events CATALOGUE / STOCK (ajout GOAL CMS GESTION 2026-06-10 — T-C1.5)
+Le contrat ci-dessus ne couvrait que les events ORDER. Les mutations catalogue/stock suivent le MÊME pattern outbox + 2 mécanismes complémentaires :
+
+| Event | File | Propagation | Meaning |
+|---|---|---|---|
+| `CatalogChanged` | `app/Events/CatalogChanged.php` (**plain event**, PAS ShouldBroadcast) | `PersistCatalogChangedToOutbox` → `domain_events` → soketi `private-branch.{id}` + `InvalidateKioskMenuCacheOnCatalogChange` | item/catégorie/variation/extra créé·e/modifié·e/supprimé·e |
+| `ItemAvailabilityChanged` | `app/Events/ItemAvailabilityChanged.php` | `PersistItemAvailabilityChangedToOutbox` + `BumpMenuSnapshotOnItemAvailabilityChanged` + `InvalidateKioskMenuCacheOnItemAvailabilityChanged` | rupture manuelle / retour en stock (item, ou bridge variation/extra) |
+| `StockLevelChanged` | `app/Events/StockLevelChanged.php` | bridge → `PersistCatalogChangedToOutbox` (`EventServiceProvider.php:288-291`) | stock compté décrémenté / seuil franchi |
+| `CategoryUpdated` / `CategoryDeleted` | `app/Events/Category*.php` | `InvalidateKioskMenuCacheOnCatalogChange` + `PersistCatalogChangedToOutbox` | CRUD catégorie (rename sync lock : `CategoryRenameSyncTest`) |
+
+**Mécanisme complet (vérifié 2026-06-10)** : (1) event in-process → (2) outbox row + push soketi (live, `KioskAppComponent.vue:548-556` écoute) ; (3) bump `snapshot_version` (`MenuProjectionService.php:324`) → les surfaces qui pollent détectent le changement ; (4) invalidation cache menu kiosk. Câblage canonique : `EventServiceProvider.php:221-291`.
+**Règle** : toute nouvelle mutation CMS (stock hiérarchique, CRUD, builder wizard) DOIT dispatcher un de ces events existants — étendre le PAYLOAD de `CatalogChanged` = SHARED ZONE §8 (LOCK requis).
+
 ## 4. Payload contract — canonical KdsOrder (consume-side SSOT)
 From `app/Http/Resources/KDSOrderDetailsResource.php:21+` (header fields) + `KDSOrderItemsResource.php` (line items):
 - Header: `id`, `order_serial_no`, `token`, `order_type`, `source_surface`, `created_at_iso`, `updated_at` (ISO8601), `order_datetime`/`order_date`/`order_time`, status fields.

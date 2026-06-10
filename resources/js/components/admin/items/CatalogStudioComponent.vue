@@ -51,11 +51,12 @@
                 </div>
 
                 <div v-for="category in categories" :key="category.id" class="catalog-studio__category-row"
+                    :class="{ 'catalog-studio__category-row--child': !!category.parent_id }"
                     :data-testid="`catalog-studio-category-row-${category.id}`">
                     <button type="button" class="catalog-studio__category"
                         :class="{ 'catalog-studio__category--active': selectedCategoryId === Number(category.id) }"
                         @click="selectCategory(Number(category.id))">
-                        <strong>{{ category.name }}</strong>
+                        <strong><span v-if="category.parent_id" aria-hidden="true">↳ </span>{{ category.name }}</strong>
                         <small>{{ $t("studio.products_count", { n: category.product_count || productsCountByCategory[category.id] || 0 }) }}</small>
                     </button>
                     <div class="catalog-studio__category-actions" v-if="canEditCategory || canDeleteCategory">
@@ -289,7 +290,21 @@ export default {
             return appService.permissionChecker("settings");
         },
         categories() {
-            return this.$store.getters["itemCategory/lists"] || [];
+            // [GOAL CMS C1.4] Tree ordering: top-level categories keep their
+            // store order, each immediately followed by its sub-categories
+            // (2-level hierarchy — parent_id emitted since GOAL CMS C1).
+            const lists = this.$store.getters["itemCategory/lists"] || [];
+            const tops = lists.filter((category) => !category.parent_id);
+            const childrenByParent = {};
+            lists.filter((category) => category.parent_id).forEach((child) => {
+                (childrenByParent[child.parent_id] ??= []).push(child);
+            });
+            const orphans = lists.filter(
+                (category) => category.parent_id && !tops.some((top) => top.id === category.parent_id)
+            );
+            return tops
+                .flatMap((top) => [top, ...(childrenByParent[top.id] || [])])
+                .concat(orphans.filter((orphan) => !tops.some((top) => (childrenByParent[top.id] || []).includes(orphan))));
         },
         products() {
             return this.$store.getters["item/lists"] || [];
@@ -718,6 +733,11 @@ export default {
     grid-template-columns: 1fr auto;
     gap: 6px;
     align-items: stretch;
+}
+
+/* [GOAL CMS C1.4] sub-category rows are indented under their parent */
+.catalog-studio__category-row--child {
+    margin-left: 16px;
 }
 
 .catalog-studio__category-actions {
