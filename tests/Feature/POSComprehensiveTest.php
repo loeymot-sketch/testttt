@@ -179,13 +179,23 @@ class POSComprehensiveTest extends TestCase
             'payment_status' => \App\Enums\PaymentStatus::UNPAID,
             'order_datetime' => now(),
         ]);
-        
+
+        // [RED-DASH-02] tender trace required by the off-book settlement guard
+        \App\Models\Transaction::create([
+            'order_id'       => $order->id,
+            'transaction_no' => 'test-trace-' . $order->id,
+            'amount'         => (float) $order->total,
+            'payment_method' => '1',
+            'type'           => 'payment',
+            'sign'           => '+',
+        ]);
+
         $response = $this->actingAs($admin)
             ->withHeader('x-api-key', $this->apiKey())
             ->postJson("/api/admin/pos-order/change-payment-status/{$order->id}", [
                 'payment_status' => \App\Enums\PaymentStatus::PAID,
             ]);
-        
+
         $response->assertStatus(200);
     }
 

@@ -29,10 +29,15 @@ class MgmtReadAuthzGateSentinelTest extends TestCase
 {
     public function test_sales_report_overview_is_gated_by_sales_report_permission(): void
     {
+        // [CDASH-01 / ultra-audit 2026-06-10] ->only() matches the DISPATCHED
+        // method name. The route maps `salesReportOverview` (routes/api.php:1121),
+        // so this sentinel previously asserted the WRONG name ('overview') and
+        // green-lit a silently inoperative gate. Behavioral pin lives in
+        // tests/Feature/Reports/SalesReportOverviewPermissionTest.
         $this->assertMethodGated(
             $this->app->make(SalesReportController::class),
             'permission:sales-report',
-            'overview',
+            'salesReportOverview',
             'SalesReportController'
         );
     }

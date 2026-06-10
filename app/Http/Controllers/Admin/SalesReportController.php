@@ -37,7 +37,11 @@ class SalesReportController extends AdminController
         // [REP-AUTHZ-01 heal 2026-06-01] Gate `overview` too — GET /admin/sales-report/overview
         // returns the revenue aggregate and was omitted from this ->only() list, leaving it
         // readable by any auth:sanctum staff without `sales-report`. Same consumer as index.
-        $this->middleware(['permission:sales-report'])->only('index', 'export', 'pdf', 'overview');
+        // [CDASH-01 / ultra-audit 2026-06-10] ->only() matches the DISPATCHED method name:
+        // the route maps `salesReportOverview` (routes/api.php:1121), not `overview`, so the
+        // 2026-06-01 heal was silently a no-op and the endpoint stayed open. Pinned by
+        // tests/Feature/Reports/SalesReportOverviewPermissionTest.
+        $this->middleware(['permission:sales-report'])->only('index', 'export', 'pdf', 'salesReportOverview');
     }
 
     public function index(PaginateRequest $request): \Illuminate\Http\Response | \Illuminate\Http\Resources\Json\AnonymousResourceCollection | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory

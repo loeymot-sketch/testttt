@@ -95,6 +95,16 @@ class PaymentStatusStateMachineSentinelTest extends TestCase
             'total'          => 30.00,
         ]);
 
+        // [RED-DASH-02] tender trace required by the off-book settlement guard
+        \App\Models\Transaction::create([
+            'order_id'       => $order->id,
+            'transaction_no' => 'test-trace-' . $order->id,
+            'amount'         => 30.00,
+            'payment_method' => '1',
+            'type'           => 'payment',
+            'sign'           => '+',
+        ]);
+
         $key = 'sentinel-pssm-replay-' . uniqid();
 
         $first = $this->actingAs($cashier, 'sanctum')
