@@ -69,6 +69,8 @@ use App\Listeners\ReleaseStockOnOrderCanceled;
 use App\Listeners\ReleaseStockOnRefundCreated;
 use App\Listeners\PersistOrderCreatedToOutbox;
 use App\Listeners\PersistOrderPaidAtCounterToOutbox;
+use App\Listeners\PrintPosReceiptOnOrderCreated;
+use App\Listeners\PrintPosReceiptOnOrderPaidAtCounter;
 use App\Listeners\PersistOrderPaymentStatusChangedOnRefundCreated;
 use App\Listeners\PersistOrderPaymentStatusChangedToOutbox;
 use App\Listeners\PersistOrderStatusChangedToOutbox;
@@ -172,9 +174,17 @@ class EventServiceProvider extends ServiceProvider
             DecrementItemAvailabilityOnOrder::class,
             DecrementStockOnOrderCreated::class,
             SendFcmOnOrderCreated::class,
+            // [POS PRINTER 2026-06-04] Auto-print the NF525 ticket for the
+            // DEFAULT inline POS sale (source=pos + PAID). Last + best-effort:
+            // a printer error never affects the order/stock/broadcast cascade.
+            PrintPosReceiptOnOrderCreated::class,
         ],
         OrderPaidAtCounter::class => [
             PersistOrderPaidAtCounterToOutbox::class,
+            // [POS PRINTER 2026-06-04] Auto-print the NF525 customer ticket on
+            // the branch receipt-station printer (SAGA SGPR-200II, escpos_tcp
+            // LAN). Best-effort, post-commit, never throws — see listener.
+            PrintPosReceiptOnOrderPaidAtCounter::class,
         ],
         // [P13 — F-VERIFY-09-01 / F-VERIFY-09-10] payment_status transitions.
         OrderPaymentStatusChanged::class => [
