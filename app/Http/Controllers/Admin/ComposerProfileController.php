@@ -260,11 +260,19 @@ class ComposerProfileController extends AdminController
         // vs catalog "Sauces") would pass the guard yet project a DUPLICATE kiosk step whose render
         // cross-contaminates the pre-existing group's options. Folding here makes guard ⊇ projection
         // by construction on ANY database (SQLite test == MySQL prod).
-        $needle = mb_strtolower($label);
+        // [CPC-01 heal 2026-06-11] Fold case AND accents so the guard is a true SUPERSET of MySQL
+        // utf8mb4_unicode_ci (which folds BOTH). mb_strtolower alone (accent-SENSITIVE) let
+        // "Supplément" pass the guard while the removal sweep — running under the accent-INSENSITIVE
+        // DB collation — then matched and SOFT-DELETED the real "supplement" group's 9 catalog
+        // options (adversarial CPC-01, reproduced end-to-end 9/9). Str::ascii strips diacritics +
+        // expands ligatures → guard ⊇ DB equality on any driver. Proven: Supplément/SUPPLÉMENT/
+        // supplément all fold to 'supplement' (blocked); plural "Suppléments" → 'supplements' stays
+        // distinct (correctly allowed — genuinely different word).
+        $needle = $this->foldGroupLabel($label);
         $collides = ItemExtra::query()
             ->whereIn('item_id', $items->pluck('id'))
             ->pluck('group_label')
-            ->contains(fn ($gl) => mb_strtolower((string) $gl) === $needle);
+            ->contains(fn ($gl) => $this->foldGroupLabel((string) $gl) === $needle);
         abort_if($collides, 422, "Le libellé « {$label} » est déjà utilisé par un groupe d'options existant — choisissez un autre nom.");
 
         $visibleOn = $data['visible_on'] ?? ['pos', 'kiosk'];
@@ -382,13 +390,25 @@ class ComposerProfileController extends AdminController
                 }
 
                 // Removal: soft-delete options of THIS group no longer present in the submission.
-                // Scoped to (item, group_label) so a different group is never touched. Soft-delete is
+                // [CPC-01 heal 2026-06-11] BYTE-EXACT removal. The coarse DB `where('group_label')`
+                // runs under the connection collation (MySQL utf8mb4_unicode_ci folds accents) and
+                // would over-select a DIFFERENT group whose label is accent/case-equal (e.g. legacy
+                // data carrying BOTH "supplement" and "Supplément"). Every row of THIS step's group
+                // shares the EXACT byte label (createPersonalPage updateOrCreate keyed on the verbatim
+                // $label), so narrow to a byte-exact match in PHP before deleting — a group the step
+                // does not own is never touched, on any driver. The guard above blocks creating such
+                // a twin going forward; this also protects any pre-existing twin. Soft-delete is
                 // reversible and does not alter past orders (NF525 composition_snapshot is frozen).
-                ItemExtra::query()
+                $removableIds = ItemExtra::query()
                     ->where('item_id', $item->id)
                     ->where('group_label', $groupLabel)
                     ->whereNotIn('name', $submittedNames)
-                    ->delete();
+                    ->get(['id', 'group_label'])
+                    ->filter(fn ($extra) => (string) $extra->group_label === (string) $groupLabel)
+                    ->pluck('id');
+                if ($removableIds->isNotEmpty()) {
+                    ItemExtra::query()->whereIn('id', $removableIds)->delete();
+                }
             }
 
             // Update display + selection props on the step. source_ref / step_key stay immutable.
@@ -496,6 +516,19 @@ class ComposerProfileController extends AdminController
      * A bare label like "Sauce"/"Menu" slugs to a reserved key — prefix it so the page reaches the
      * NON-frozen generic component instead of a frozen specialized one.
      */
+    /**
+     * [CPC-01 heal 2026-06-11] Normalise a group_label for COLLISION DETECTION so the PHP guard is a
+     * true SUPERSET of the database collation used by the removal sweep. MySQL utf8mb4_unicode_ci
+     * folds BOTH case AND accents; mb_strtolower alone folds only case, leaving an accent gap that
+     * let "Supplément" pass the guard yet collide-and-delete the real "supplement" catalog group.
+     * Str::ascii strips diacritics and expands ligatures, so folding here ⊇ DB equality on every
+     * driver (SQLite test == MySQL prod). NOT used for storage or rendering — only the guard.
+     */
+    private function foldGroupLabel(string $label): string
+    {
+        return Str::ascii(mb_strtolower(trim($label)));
+    }
+
     private function personalPageStepKey(ItemWizardProfile $profile, string $label): string
     {
         $base = Str::slug($label, '_') ?: 'page';

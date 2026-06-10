@@ -226,6 +226,49 @@ class ComposerPersonalPageTest extends TestCase
     }
 
     /**
+     * [CPC-01 regression 2026-06-11] A label that differs from an existing catalog group ONLY by
+     * accents/case must ALSO be rejected — the guard folds accents (Str::ascii) so it is a SUPERSET
+     * of MySQL utf8mb4_unicode_ci. Before the heal, "Supplément" passed the accent-SENSITIVE guard
+     * yet the accent-INSENSITIVE removal sweep then soft-deleted the real "supplement" group's
+     * options (proven end-to-end 9/9). The existing options MUST remain intact.
+     */
+    public function test_rejects_accent_variant_label_and_preserves_real_group(): void
+    {
+        [, $items, $profile] = $this->categoryProfile(1);
+        $itemId = $items->first()->id;
+
+        foreach (['Cheddar', 'Raclette', 'Emmental'] as $name) {
+            ItemExtra::create([
+                'item_id' => $itemId,
+                'name' => $name,
+                'group_label' => 'supplement', // unaccented singular = the real catalog key
+                'price' => 0.90,
+                'status' => Status::ACTIVE,
+                'visible_on' => ['pos', 'kiosk'],
+            ]);
+        }
+
+        // Accent + case variant of the existing key → must be blocked (guard ⊇ DB collation).
+        foreach (['Supplément', 'SUPPLÉMENT', 'supplément'] as $variant) {
+            $this->actingAs($this->admin, 'sanctum')->postJson(
+                "/api/admin/composer/profiles/{$profile->id}/personal-page",
+                ['label' => $variant, 'options' => [['name' => 'Mon option', 'price' => '1.50']]]
+            )->assertStatus(422);
+        }
+
+        // The 3 real catalog options must be untouched (none soft-deleted, prices intact).
+        $this->assertSame(3, ItemExtra::query()->where('item_id', $itemId)
+            ->where('group_label', 'supplement')->whereNull('deleted_at')->count(),
+            'the real "supplement" group must survive an accent-variant collision attempt');
+
+        // A genuinely different word (plural) folds to a distinct token → correctly ALLOWED.
+        $this->actingAs($this->admin, 'sanctum')->postJson(
+            "/api/admin/composer/profiles/{$profile->id}/personal-page",
+            ['label' => 'Suppléments Maison', 'options' => [['name' => 'Spécial', 'price' => '2.00']]]
+        )->assertStatus(201);
+    }
+
+    /**
      * [W5 conservative guard — adversarial regression] The collision guard must reject a colliding
      * label REGARDLESS of whether a normal composed step is already bound to that group (the earlier
      * provenance-marker guard was disarmable by such a step; the conservative guard keys only on the
