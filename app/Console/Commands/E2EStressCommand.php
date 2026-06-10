@@ -343,7 +343,27 @@ class E2EStressCommand extends Command
                 ];
             } else {
                 $url = rtrim($baseUrl, '/') . '/api/admin/pos';
-                $body = json_encode($this->minimalPosOrderPayload($fixture['branch']->id));
+                // [GOAL-ULTRA-AUDIT 2026-06-10] POS lane heal: PosController@store
+                // now enforces the NF525 SSOT quote gate (401 "Order quote token
+                // and signature are required together") — mirror the kiosk lane:
+                // mint a signed quote first, distinct quantity per request so each
+                // quote is a real distinct order_quotes row (no intent_hash race).
+                $quantity = $i + 1;
+                $quote = $this->fetchPosQuote(
+                    $httpClient,
+                    $baseUrl,
+                    $fixture['cashier_token'],
+                    $apiKey,
+                    $fixture['branch']->id,
+                    $quantity
+                );
+                $body = json_encode(
+                    $this->minimalPosOrderPayload($fixture['branch']->id, $quantity)
+                    + [
+                        'quote_token'     => $quote['quote_token'] ?? '',
+                        'quote_signature' => $quote['signature'] ?? '',
+                    ]
+                );
                 $headers = [
                     'Content-Type'      => 'application/json',
                     'Accept'            => 'application/json',
@@ -402,7 +422,47 @@ class E2EStressCommand extends Command
      * is a best-effort baseline; if the validator rejects, the run still
      * surfaces the schema gap (visible as 422 in the report).
      */
-    private function minimalPosOrderPayload(int $branchId): array
+    /**
+     * [GOAL-ULTRA-AUDIT 2026-06-10] POS twin of fetchKioskQuote — mints a
+     * signed order quote via POST /api/admin/pos/quote (cashier token) so the
+     * POS lane passes the NF525 SSOT quote gate on PosController@store. The
+     * quoted items/qty MUST match the order payload (intent hash).
+     */
+    private function fetchPosQuote(Client $client, string $baseUrl, string $cashierToken, string $apiKey, int $branchId, int $quantity = 1): array
+    {
+        try {
+            $response = $client->post(rtrim($baseUrl, '/') . '/api/admin/pos/quote', [
+                'headers' => [
+                    'Content-Type'  => 'application/json',
+                    'Accept'        => 'application/json',
+                    'Authorization' => 'Bearer ' . $cashierToken,
+                    'x-api-key'     => $apiKey,
+                ],
+                'json' => [
+                    'branch_id'          => $branchId,
+                    'order_type'         => \App\Enums\OrderType::POS,
+                    'source'             => \App\Enums\Source::POS,
+                    'payment_method'     => \App\Enums\PaymentGateway::CARD,
+                    // POS surface canonical reads pos_payment_method (not
+                    // payment_method) — must match the order payload (CASH).
+                    'pos_payment_method' => \App\Enums\PosPaymentMethod::CASH,
+                    'discount'           => 0,
+                    'items'              => json_encode([
+                        ['item_id' => 1, 'quantity' => $quantity],
+                    ]),
+                ],
+            ]);
+            if ($response->getStatusCode() !== 200) {
+                return [];
+            }
+            $decoded = json_decode((string) $response->getBody(), true);
+            return is_array($decoded['data'] ?? null) ? $decoded['data'] : [];
+        } catch (Throwable $e) {
+            return [];
+        }
+    }
+
+    private function minimalPosOrderPayload(int $branchId, int $quantity = 1): array
     {
         // [F.2 SOAK 2026-05-23] Repair the three named-422 fields surfaced by
         // PosController OrderRequest validation (is_advance_order + source +
@@ -425,7 +485,7 @@ class E2EStressCommand extends Command
             'pos_payment_method'  => \App\Enums\PosPaymentMethod::CASH,
             'pos_received_amount' => 1000,
             'items'               => json_encode([
-                ['item_id' => 1, 'quantity' => 1],
+                ['item_id' => 1, 'quantity' => $quantity],
             ]),
             'total'    => 0,
             'subtotal' => 0,
