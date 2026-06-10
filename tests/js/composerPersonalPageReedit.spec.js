@@ -181,4 +181,23 @@ describe('ProductComposerEditorComponent personal-page re-edit (W1)', () => {
         );
         expect(axios.put).not.toHaveBeenCalled();
     });
+
+    // [GOAL_WIZARD_E2E_PARITY W6 heal] An UNBOUND extra_group step (empty source_ref — e.g. a
+    // provisioned catch-all "garnitures"/"suppléments" page that matched no real category group)
+    // is NOT editable: the backend showPersonalPage/updatePersonalPage both abort 422 when
+    // source_ref is empty. The edit affordance must therefore be HIDDEN on it, so the gérant never
+    // hits a 422 error banner from a button that promised an edit.
+    it('hides "Modifier les options" on an UNBOUND extra_group step (empty source_ref)', async () => {
+        const wrapper = await mountEditor({ itemId: 7 });
+        // Bound step → button shows (sanity).
+        expect(wrapper.vm.selectedStepIsEditableGroup).toBe(true);
+        expect(wrapper.find('[data-testid="composer-edit-personal-page"]').exists()).toBe(true);
+
+        // Unbind the selected step (mirror a provisioned unbound catch-all page).
+        wrapper.vm.selectedStep.source_ref = '';
+        await wrapper.vm.$nextTick();
+
+        expect(wrapper.vm.selectedStepIsEditableGroup).toBe(false);
+        expect(wrapper.find('[data-testid="composer-edit-personal-page"]').exists()).toBe(false);
+    });
 });

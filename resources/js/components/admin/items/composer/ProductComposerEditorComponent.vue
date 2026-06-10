@@ -758,11 +758,18 @@ export default {
             return this.personalPageEditStepId != null;
         },
         // The selected step is an editable options group (extra_group) that already exists server-side
-        // (has an id) → expose "Modifier les options". A draft step (no id) must be saved first.
+        // (has an id) AND is bound to a named group (non-empty source_ref) → expose "Modifier les
+        // options". A draft step (no id) must be saved first. The source_ref guard mirrors the backend:
+        // showPersonalPage/updatePersonalPage both abort 422 when source_ref is empty (an UNBOUND
+        // extra_group step — e.g. a provisioned catch-all "garnitures"/"suppléments" page whose
+        // template step matched no real category group). Without this guard the button appeared on
+        // unbound steps and clicking it surfaced a 422 error banner — a broken affordance. is_active is
+        // deliberately NOT required: a bound-but-inactive group is still a coherent edit target.
         selectedStepIsEditableGroup() {
             return Boolean(this.selectedStep
                 && this.selectedStep.source_type === 'extra_group'
-                && this.selectedStep.id);
+                && this.selectedStep.id
+                && String(this.selectedStep.source_ref ?? '').trim() !== '');
         },
         previewBranches() {
             if (!this.branches.length) return [];
