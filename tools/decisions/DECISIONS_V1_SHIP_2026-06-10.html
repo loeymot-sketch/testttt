@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Décisions V1 SHIP — batch owner D1-D10</title>
+<style>
+body{font-family:Inter,system-ui,sans-serif;background:#1A1A1A;color:#fff;margin:0;padding:24px;max-width:880px;margin-inline:auto}
+h1{color:#F4501E}.d{background:#242424;border:1px solid #3a3a3a;border-radius:12px;padding:16px;margin:14px 0}
+.d h2{margin:0 0 6px;font-size:17px;color:#FFB800}.d p{margin:6px 0;color:#ccc;font-size:14px;line-height:1.45}
+.opts{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+label{background:#2e2e2e;border:1px solid #4a4a4a;border-radius:8px;padding:8px 12px;cursor:pointer;font-size:14px}
+label:has(input:checked){background:#F4501E;border-color:#F4501E;font-weight:700}
+input[type=radio]{margin-right:6px}.def{font-size:12px;color:#7CFC9B}
+textarea{width:100%;background:#2e2e2e;color:#fff;border:1px solid #4a4a4a;border-radius:8px;padding:8px;margin-top:8px}
+button{background:#F4501E;color:#fff;border:0;border-radius:10px;padding:14px 22px;font-size:16px;font-weight:800;cursor:pointer;margin-top:18px}
+pre{background:#111;padding:12px;border-radius:8px;white-space:pre-wrap;word-break:break-all}
+</style></head><body>
+<h1>Décisions V1 SHIP — 10 réponses, ~30 minutes</h1>
+<p>Coche, ajoute des notes si besoin, clique « Générer » et colle le bloc JSON à Claude. Défaut recommandé marqué <span class="def">✦ défaut</span> — laisser coché = OK.</p>
+<div id="qs"></div>
+<h2 style="color:#FFB800">Notes libres</h2><textarea id="notes" rows="3" placeholder="Tout ce que tu veux préciser…"></textarea>
+<button onclick="gen()">Générer mes décisions (JSON)</button>
+<pre id="out"></pre>
+<script>
+const Q=[
+["D1","PUSH-1 — autoriser le push release/v1 → production (déploie TOUT le travail validé sur OVH)",["OUI après preuve build+tests sur l'arbre intégré ✦ défaut","NON, attendre"],"Sans D1, rien ne se livre. Pré-vol inclus : inventaire hot-patches box + rollback préparé."],
+["D2","DATA-1 — restaurer la DB locale fiscale propre (45 vrais items, purge des 63 étrangers, identité E.DELICE)",["OUI ✦ défaut","NON"],"Rend NF525 prouvable localement (verify-chain réel)."],
+["D3","Merger heal/mobile-update (apps clientes) dans release/v1",["OUI, merger ✦ défaut","NON, branche produit séparée"],"Anti-fragmentation ; le déploiement backend ne sert pas mobile/ → risque nul."],
+["D4","Seed Grande/Cheddar + étapes wizard → ACTIVE la facturation frites (CAISSE-01, ticket réel #2155 sous-facturé)",["OUI ✦ défaut","NON"],"Sinon l'under-billing persiste en prod."],
+["D5","Flips flags wizard : composer caisse (G-4, dé-risqué par LOCK-W6 prouvé live) + per-item demo (G-5)",["Les 2 ON","G-4 seul ON","Rester OFF (V1.0.X) ✦ défaut"],"OFF = wizard caisse legacy continue, builder catégorie OK partout sauf delete item-level."],
+["D6","Fidélité — modèle de redeem unique",["A : continu 100 pts = 1 € (mobile) ✦ défaut — DÉJÀ APPLIQUÉ et prouvé parité 6/6","B : revenir aux paliers web"],"A est implémenté des 2 côtés ; B = revert."],
+["D7","LCEN — remplir les 26 champs légaux restants",["Je remplis la page tools/legal/SAISIE_OWNER.html ✦ défaut","Publier avec placeholders (déconseillé)"],"3/29 déjà remplis (E.DELICE, SIRET, TVA)."],
+["D8","Publication clients : domaine web (ex. commande.lecayenne.fr) + go PWA mobile",["OUI — je fournis le DNS ✦ défaut","Plus tard"],"PWA prête côté code ; vhost playbook préparé."],
+["D9","Nommage/prix miroirs clients vs DB (Tacos M 6,90/L 8,90 vs Tacos 8,50/Big 11,50)",["Miroirs = vérité (renommer la DB au cutover V2) ✦ défaut","DB = vérité (mettre à jour les miroirs)"],"Bloque le câblage V2, pas la V1."],
+["D10","Imprimante SAGA — IP + branchement pour le ticket réel",["Je donne l'IP : (note ci-dessous)","Reporter ✦ défaut si IP indisponible"],"pos:configure-receipt-printer <IP> prêt."]];
+const qs=document.getElementById('qs');
+Q.forEach(([id,t,opts,why],i)=>{const d=document.createElement('div');d.className='d';
+d.innerHTML=`<h2>${id} — ${t}</h2><p>${why}</p><div class="opts">${opts.map((o,j)=>`<label><input type="radio" name="${id}" value="${o.replace(/ ✦ défaut/,'')}" ${o.includes('✦')?'checked':''}>${o}</label>`).join('')}</div>`;qs.appendChild(d);});
+function gen(){const r={date:new Date().toISOString().slice(0,10)};Q.forEach(([id])=>{const c=document.querySelector(`input[name="${id}"]:checked`);r[id]=c?c.value:null;});r.notes=document.getElementById('notes').value;document.getElementById('out').textContent=JSON.stringify(r,null,2);}
+</script></body></html>

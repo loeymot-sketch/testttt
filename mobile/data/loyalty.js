@@ -219,6 +219,20 @@
     return points / CONFIG.redeem_ratio;
   }
 
+  // [B1-M 2026-06-10] SSOT for the € value of a REDEMPTION — canonical model A:
+  // 100 pts = 1 €, minimum redeemable = 100 pts (CONFIG.min_redeem_points).
+  // Below the minimum the redemption is worth 0 € (not redeemable at all) —
+  // matches the reward catalog whose cheapest entries cost exactly 100 pts.
+  // Conversion is LINEAR (no floor): 250 pts = 2,50 € — this is the existing
+  // barème (reward id 3 '−2,50 € sur ta commande' = 250 pts). NO rate change.
+  // pointsToDiscount() above stays as the raw ungated converter used for
+  // balance-value display ("ta cagnotte vaut X €").
+  function redeemValueEuros(points) {
+    const p = Number(points) || 0;
+    if (p < CONFIG.min_redeem_points) return 0;
+    return p / CONFIG.redeem_ratio;
+  }
+
   // [LOY P0 heal 2026-06-08] SSOT for points EARNED on a spend. Every earn surface
   // (cart preview, gain modal, order detail, order history) routes through this so the
   // rate can never drift between screens again. Honours CONFIG.earn_ratio (currently 1 pt/€,
@@ -303,6 +317,7 @@
     nextRewardForBalance,
     unlockedRewards,
     pointsToDiscount,
+    redeemValueEuros,
     pointsFor,
     progressToNext,
   };

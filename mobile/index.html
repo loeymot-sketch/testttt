@@ -4,10 +4,16 @@
 <meta charset="UTF-8">
 <title>Le Cayenne — App mobile</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#FFD93D">
+<!-- [B3-M PWA 2026-06-10] theme-color aligned on the manifest (#FF5A1F orange brand) -->
+<meta name="theme-color" content="#FF5A1F">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Le Cayenne">
+
+<!-- [B3-M PWA 2026-06-10] installable PWA: manifest + iOS home-screen icon -->
+<link rel="icon" type="image/png" href="assets/icons/icon-192.png">
+    <link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="assets/icons/icon-192.png">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -60,6 +66,56 @@
 </head>
 <body>
 <div id="root"></div>
+
+<!-- [B3-M PWA 2026-06-10] service worker + install prompt (vanilla, pre-data-layer).
+     SW requires http(s) — silently skipped on file:// preview. beforeinstallprompt
+     is captured here (it can fire before React mounts) and exposed on window.LC.pwa;
+     ScreenProfile listens for 'lc:pwa-can-install' to reveal the install button. -->
+<script>
+(function () {
+  'use strict';
+  window.LC = window.LC || {};
+  window.LC.pwa = {
+    deferredPrompt: null,
+    canInstall: false,
+    installed: false,
+    // Called by the "Installer l'app" button (ScreenProfile).
+    promptInstall: function () {
+      var dp = window.LC.pwa.deferredPrompt;
+      if (!dp) return Promise.resolve({ outcome: 'unavailable' });
+      dp.prompt();
+      return dp.userChoice.then(function (choice) {
+        window.LC.pwa.deferredPrompt = null;
+        window.LC.pwa.canInstall = false;
+        window.dispatchEvent(new CustomEvent('lc:pwa-can-install', { detail: { canInstall: false } }));
+        return choice;
+      });
+    },
+  };
+
+  if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('sw.js').catch(function (err) {
+        console.warn('[LC PWA] SW registration failed:', err);
+      });
+    });
+  }
+
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault(); // keep the mini-infobar away; we surface our own button
+    window.LC.pwa.deferredPrompt = e;
+    window.LC.pwa.canInstall = true;
+    window.dispatchEvent(new CustomEvent('lc:pwa-can-install', { detail: { canInstall: true } }));
+  });
+
+  window.addEventListener('appinstalled', function () {
+    window.LC.pwa.installed = true;
+    window.LC.pwa.deferredPrompt = null;
+    window.LC.pwa.canInstall = false;
+    window.dispatchEvent(new CustomEvent('lc:pwa-can-install', { detail: { canInstall: false } }));
+  });
+})();
+</script>
 
 <!-- Data layer (vanilla JS, attaches to window.LC.*) -->
 <!-- storage.js first: loyalty.js hydrates from LC.storage.getLoyalty(). -->

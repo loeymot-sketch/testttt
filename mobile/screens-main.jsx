@@ -938,6 +938,22 @@ function ScreenOrders({ go }) {
 
 // PROFILE
 function ScreenProfile({ go }) {
+  // [B3-M PWA 2026-06-10] "Installer l'app" — only shown when the browser fired
+  // beforeinstallprompt (captured pre-mount in index.html → window.LC.pwa).
+  const [canInstall, setCanInstall] = uS(!!(window.LC.pwa && window.LC.pwa.canInstall));
+  uE(() => {
+    const handler = (e) => setCanInstall(!!(e.detail && e.detail.canInstall));
+    window.addEventListener('lc:pwa-can-install', handler);
+    return () => window.removeEventListener('lc:pwa-can-install', handler);
+  }, []);
+  const onInstall = () => {
+    if (!(window.LC.pwa && window.LC.pwa.promptInstall)) return;
+    window.LC.pwa.promptInstall().then((choice) => {
+      if (choice && choice.outcome === 'accepted') {
+        go('toast', { msg: 'Le Cayenne s\'installe sur ton écran d\'accueil 🎉', kind: 'success' });
+      }
+    });
+  };
   return (
     <div data-screen-label="13 Profile" style={{ position: 'absolute', inset: 0, background: '#fff' }}>
       <div className="lc-screen" style={{ paddingBottom: 100 }}>
@@ -1010,6 +1026,24 @@ function ScreenProfile({ go }) {
               </div>
             ))}
           </div>
+          {/* [B3-M PWA 2026-06-10] discrete install CTA — palette noir/orange/jaune, hidden unless installable */}
+          {canInstall && (
+            <button
+              data-testid="pwa-install-btn"
+              aria-label="Installer l'application Le Cayenne sur ton téléphone"
+              onClick={onInstall}
+              style={{ width: '100%', marginTop: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: 'var(--ink)', color: 'var(--yellow)', border: 0, padding: 16, borderRadius: 16, fontSize: 13, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer' }}
+            >
+              <span aria-hidden="true" style={{ color: 'var(--orange)' }}>↓</span> Installer l'app
+            </button>
+          )}
+          {/* [heal ADV P2-2] iOS Safari ne tire jamais beforeinstallprompt :
+              hint statique « Ajouter à l'écran d'accueil » (hors standalone). */}
+          {!canInstall && /iP(hone|ad|od)/.test(navigator.userAgent) && !window.matchMedia('(display-mode: standalone)').matches && !navigator.standalone && (
+            <p data-testid="pwa-ios-hint" style={{ marginTop: 14, fontSize: 12, lineHeight: 1.5, color: 'var(--sub-text, #B9B9B9)' }}>
+              📲 Pour installer l'app : bouton <strong>Partager</strong> de Safari → « <strong>Sur l'écran d'accueil</strong> ».
+            </p>
+          )}
           <button onClick={() => go('logout')} style={{ width: '100%', marginTop: 12, background: 'transparent', border: 0, padding: 16, fontSize: 13, fontWeight: 700, color: 'var(--red-text)', textTransform: 'uppercase', letterSpacing: '0.1em', cursor: 'pointer' }}>Se déconnecter</button>
         </div>
       </div>
@@ -1232,7 +1266,8 @@ function ScreenLoyalty({ go }) {
             {tab === 'points' && !isEmpty && (
               <div id="loyalty-tabpanel-points" role="tabpanel" style={{ display: 'grid', gap: 8 }}>
                 {config.tiers.map(tier => {
-                  const matchingReward = rewards.find(r => r.points_cost === tier) || { name: '−' + (tier / config.redeem_ratio).toFixed(2).replace('.', ',') + ' €', icon: '🎁', points_cost: tier };
+                  // [B1-M 2026-06-10] fallback € label routes through the redeemValueEuros SSOT (was inline tier/redeem_ratio)
+                  const matchingReward = rewards.find(r => r.points_cost === tier) || { name: '−' + window.LC.loyalty.redeemValueEuros(tier).toFixed(2).replace('.', ',') + ' €', icon: '🎁', points_cost: tier };
                   const unlocked = balance >= tier;
                   const missing = unlocked ? 0 : tier - balance;
                   return (
