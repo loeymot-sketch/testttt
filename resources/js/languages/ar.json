@@ -411,7 +411,11 @@
       "delete_profile": "حذف المعالج",
       "delete_profile_error": "تعذر الحذف.",
       "choice_prices": "الخيارات والأسعار (للقراءة فقط)",
-      "free_choice": "مشمول"
+      "free_choice": "مشمول",
+      "choice_logic": "منطق الاختيارات",
+      "preset_single": "اختيار واحد (إلزامي)",
+      "preset_multiple": "اختيارات متعددة (حر)",
+      "preset_custom": "مخصص (الإعدادات أدناه)"
     },
     "wizard_configured": "تم تكوين المعالج",
     "view_product": "عرض المنتج",

@@ -207,7 +207,11 @@
       "delete_profile": "Assistent löschen",
       "delete_profile_error": "Löschen nicht möglich.",
       "choice_prices": "Optionen und Preise (nur Lesen)",
-      "free_choice": "Inklusive"
+      "free_choice": "Inklusive",
+      "choice_logic": "Auswahllogik",
+      "preset_single": "Einzelauswahl (1 erforderlich)",
+      "preset_multiple": "Mehrfachauswahl (frei)",
+      "preset_custom": "Benutzerdefiniert (Einstellungen unten)"
     },
     "wizard_configured": "Wizard konfiguriert",
     "view_product": "Produkt anzeigen",

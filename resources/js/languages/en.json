@@ -527,7 +527,11 @@
       "delete_profile": "Delete wizard",
       "delete_profile_error": "Could not delete.",
       "choice_prices": "Options and prices (read-only)",
-      "free_choice": "Included"
+      "free_choice": "Included",
+      "choice_logic": "Choice logic",
+      "preset_single": "Single choice (1 required)",
+      "preset_multiple": "Multiple choices (free)",
+      "preset_custom": "Custom (settings below)"
     },
     "wizard_configured": "Wizard configured",
     "view_product": "View product",

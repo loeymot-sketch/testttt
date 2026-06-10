@@ -222,15 +222,7 @@ export default {
         }
     },
     mounted() {
-        const http = typeof axios !== 'undefined' ? axios : (typeof window !== 'undefined' ? window.axios : null);
-        if (!http) return; // test env without global axios → fallback = store lists
-        http.get('admin/setting/item-category', { params: { paginate: 0, status: 5 } })
-            .then((response) => {
-                this.allCategories = response.data?.data || [];
-            })
-            .catch(() => {
-                this.allCategories = null; // fallback = store lists
-            });
+        this.refreshAllCategories();
     },
     computed: {
         addButton: function () {
@@ -242,12 +234,18 @@ export default {
         // self-parent). A category that HAS children cannot itself get a
         // parent (depth 3) — backend rejects it, so hide the select too.
         parentOptions: function () {
-            const lists = (Array.isArray(this.allCategories) && this.allCategories.length)
-                ? this.allCategories
-                : (this.$store.getters['itemCategory/lists'] || []);
+            // [heal E2E A-001] UNION snapshot complet + liste du store (le
+            // store est rafraîchi après chaque save : une sous-catégorie
+            // créée modal-ouvert est donc TOUJOURS vue par le verrou
+            // anti-depth-3, même si le snapshot mounted() est antérieur).
+            const byId = {};
+            (Array.isArray(this.allCategories) ? this.allCategories : [])
+                .concat(this.$store.getters['itemCategory/lists'] || [])
+                .forEach((category) => { byId[category.id] = category; });
+            const lists = Object.values(byId);
             const editingId = this.$store.getters['itemCategory/temp'].temp_id;
             const editedHasChildren = editingId !== null && editingId !== undefined
-                && lists.some((category) => category.parent_id === editingId);
+                && lists.some((category) => Number(category.parent_id) === Number(editingId));
             if (editedHasChildren) {
                 return [];
             }
@@ -257,6 +255,19 @@ export default {
         }
     },
     methods: {
+        // [heal E2E A-001] full unpaginated snapshot, refreshed after each
+        // save so the anti-depth-3 lock always sees fresh children.
+        refreshAllCategories: function () {
+            const http = typeof axios !== 'undefined' ? axios : (typeof window !== 'undefined' ? window.axios : null);
+            if (!http) return; // test env without global axios → fallback = store lists
+            http.get('admin/setting/item-category', { params: { paginate: 0, status: 5 } })
+                .then((response) => {
+                    this.allCategories = response.data?.data || [];
+                })
+                .catch(() => {
+                    this.allCategories = null;
+                });
+        },
         changeImage: function (e) {
             this.image = e.target.files[0];
         },
@@ -311,6 +322,7 @@ export default {
                     appService.modalHide();
                     this.loading.isActive = false;
                     alertService.successFlip((tempId === null ? 0 : 1), this.$t('menu.item_categories'));
+                    this.refreshAllCategories();
                     this.props.form = {
                         name: "",
                         description: "",

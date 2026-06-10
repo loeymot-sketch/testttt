@@ -59,7 +59,7 @@
                             data-testid="admin-composer-back"
                             @click="returnToItem"
                         >
-                            <i class="lab lab-arrow-left" aria-hidden="true"></i>
+                            <i class="lab lab-back-bold" aria-hidden="true"></i>
                             {{ t('label.composer.back_to_product', 'Retour fiche produit') }}
                         </button>
                         <button
@@ -83,7 +83,7 @@
                             :disabled="savingDraft"
                             @click="destroyProfile"
                         >
-                            <i class="lab lab-delete-line" aria-hidden="true"></i>
+                            <i class="lab lab-delete" aria-hidden="true"></i>
                             {{ t('label.composer.delete_profile', 'Supprimer le wizard') }}
                         </button>
                     </div>
@@ -126,7 +126,7 @@
                     >
                         <i
                             class="lab"
-                            :class="applyingTemplate ? 'lab-refresh animate-spin' : 'lab-document-text'"
+                            :class="applyingTemplate ? 'lab-undo animate-spin' : 'lab-document-text'"
                             aria-hidden="true"
                         ></i>
                         {{ t('label.composer.choose_template', 'Choisir un template') }}
@@ -146,7 +146,7 @@
                         data-testid="admin-composer-add-personal-page"
                         @click="openPersonalPage"
                     >
-                        <i class="lab lab-magic-star" aria-hidden="true"></i>
+                        <i class="lab lab-add-circle" aria-hidden="true"></i>
                         {{ t('label.composer.add_personal_page', 'Créer une page personnalisée') }}
                     </button>
 

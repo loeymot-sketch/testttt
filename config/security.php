@@ -33,7 +33,7 @@ return [
             font-src 'self' data: https://fonts.gstatic.com;
             img-src 'self' data: blob: https:;
             connect-src 'self' ws: wss: https:;
-            frame-ancestors 'none';
+            frame-ancestors 'self';
             base-uri 'self';
             form-action 'self';
             object-src 'none';

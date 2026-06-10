@@ -207,7 +207,11 @@
       "delete_profile": "উইজার্ড মুছুন",
       "delete_profile_error": "মুছে ফেলা যায়নি।",
       "choice_prices": "অপশন ও দাম (শুধু পড়া)",
-      "free_choice": "অন্তর্ভুক্ত"
+      "free_choice": "অন্তর্ভুক্ত",
+      "choice_logic": "পছন্দের লজিক",
+      "preset_single": "একক পছন্দ (১টি বাধ্যতামূলক)",
+      "preset_multiple": "একাধিক পছন্দ (মুক্ত)",
+      "preset_custom": "কাস্টম (নিচের সেটিংস)"
     },
     "wizard_configured": "উইজার্ড কনফিগার করা",
     "view_product": "পণ্য দেখুন",

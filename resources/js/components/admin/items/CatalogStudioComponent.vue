@@ -11,13 +11,13 @@
                 <button v-if="canCreateCategory" type="button" class="db-btn py-2 bg-rose-700 text-white"
                     data-testid="catalog-studio-add-category"
                     @click="onAddCategoryClick">
-                    <i class="lab lab-add-line"></i>
+                    <i class="lab lab-add-circle-line"></i>
                     <span>{{ $t("button.add_item_category") }}</span>
                 </button>
                 <button v-if="canCreateItem" type="button" class="db-btn py-2 bg-green-700 text-white"
                     data-testid="catalog-studio-add-product"
                     @click="onAddProductClick">
-                    <i class="lab lab-add-line"></i>
+                    <i class="lab lab-add-circle-line"></i>
                     <span>{{ $t("button.add_item") }}</span>
                 </button>
             </div>
@@ -45,7 +45,7 @@
                     <button type="button" class="db-btn py-2 bg-rose-700 text-white"
                         data-testid="catalog-studio-category-wizard-button"
                         @click="openCategoryComposerDrawer">
-                        <i class="lab lab-cog"></i>
+                        <i class="lab lab-settings"></i>
                         <span>{{ t("studio.category_wizard_button", "Wizard de la catégorie") }}</span>
                     </button>
                 </div>
@@ -70,13 +70,13 @@
                             :title="$t('label.delete')" :aria-label="$t('label.delete')"
                             :data-testid="`catalog-studio-category-delete-${category.id}`"
                             @click="destroyCategory(category)">
-                            <i class="lab lab-delete-line"></i>
+                            <i class="lab lab-delete"></i>
                         </button>
                     </div>
                 </div>
 
                 <router-link class="catalog-studio__settings-link" :to="{ name: 'admin.settings.itemCategory.list' }">
-                    <i class="lab lab-setting-line"></i>
+                    <i class="lab lab-settings"></i>
                     <span>{{ $t("studio.advanced_settings") }}</span>
                 </router-link>
 
@@ -94,7 +94,7 @@
                     <input v-model.trim="searchTerm" type="text" class="db-field-control" :placeholder="$t('label.search_by_menu_item')" />
                     <router-link class="catalog-studio__stock-link" :to="{ name: 'admin.stock.rupture' }"
                         data-testid="catalog-studio-stock-link">
-                        <i class="lab lab-toggle-on"></i>
+                        <i class="lab lab-list"></i>
                         <span>{{ $t("studio.stock_link") }}</span>
                     </router-link>
                 </div>
@@ -146,18 +146,18 @@
                                 :data-testid="`catalog-studio-product-wizard-${item.id}`"
                                 @click="openComposerDrawer(item)"
                             >
-                                <i class="lab lab-cog"></i>
+                                <i class="lab lab-settings"></i>
                             </button>
                             <router-link v-if="canViewItem" :to="{ name: 'admin.item.show', params: { id: item.id } }"
                                 class="db-table-action view" :title="$t('label.view')"
                                 :data-testid="`catalog-studio-product-view-${item.id}`">
-                                <i class="lab lab-view-line"></i>
+                                <i class="lab lab-view"></i>
                             </router-link>
                             <button v-if="canDeleteItem" type="button" class="db-table-action delete"
                                 :title="$t('label.delete')" :aria-label="$t('label.delete')"
                                 :data-testid="`catalog-studio-product-delete-${item.id}`"
                                 @click="destroyItem(item)">
-                                <i class="lab lab-delete-line"></i>
+                                <i class="lab lab-delete"></i>
                             </button>
                         </div>
                     </article>
@@ -184,7 +184,7 @@
                         <router-link class="db-btn py-2 bg-rose-700 text-white"
                             :to="composerDrawerRoute"
                             :data-testid="'catalog-studio-composer-open-full'">
-                            <i class="lab lab-export"></i>
+                            <i class="lab lab-file-export"></i>
                             <span>{{ $t("studio.open_full_page") }}</span>
                         </router-link>
                         <button type="button" class="db-btn py-2" data-testid="catalog-studio-composer-close"

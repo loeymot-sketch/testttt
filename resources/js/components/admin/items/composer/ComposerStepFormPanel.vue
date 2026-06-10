@@ -149,6 +149,7 @@
                 <label class="flex items-center gap-2 text-sm">
                     <input
                         type="radio"
+                        name="composer-choice-preset"
                         value="single"
                         :checked="choicePreset === 'single'"
                         data-testid="composer-step-preset-single"
@@ -159,6 +160,7 @@
                 <label class="flex items-center gap-2 text-sm">
                     <input
                         type="radio"
+                        name="composer-choice-preset"
                         value="multiple"
                         :checked="choicePreset === 'multiple'"
                         data-testid="composer-step-preset-multiple"
@@ -169,6 +171,7 @@
                 <label class="flex items-center gap-2 text-sm">
                     <input
                         type="radio"
+                        name="composer-choice-preset"
                         value="custom"
                         :checked="choicePreset === 'custom'"
                         data-testid="composer-step-preset-custom"
@@ -409,10 +412,10 @@ export default {
             if (selected && Array.isArray(selected.choices)) {
                 return selected.choices;
             }
-            // « Toutes les options » : concatène les choix de toutes les sources du type.
-            if (!this.draft.source_ref) {
-                return this.optionsForType.flatMap((source) => Array.isArray(source.choices) ? source.choices : []);
-            }
+            // [heal E2E B-002] « Toutes les options » (source_ref vide) : ne
+            // RIEN afficher plutôt que concaténer des groupes sans rapport
+            // (le mélange viandes+sauces sur un step « taille » mentait au
+            // gérant). Le panneau n'apparaît que pour une source explicite.
             return [];
         },
         // [heal P1-3] reverse mapping: which preset matches current settings.

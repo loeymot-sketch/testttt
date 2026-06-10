@@ -557,7 +557,11 @@
       "delete_profile": "Supprimer le wizard",
       "delete_profile_error": "Suppression impossible.",
       "choice_prices": "Options et prix (lecture seule)",
-      "free_choice": "Inclus"
+      "free_choice": "Inclus",
+      "choice_logic": "Logique des choix",
+      "preset_single": "Choix unique (1 obligatoire)",
+      "preset_multiple": "Choix multiples (libre)",
+      "preset_custom": "Personnalisé (réglages ci-dessous)"
     },
     "wizard_configured": "Wizard configuré",
     "view_product": "Voir le produit",
