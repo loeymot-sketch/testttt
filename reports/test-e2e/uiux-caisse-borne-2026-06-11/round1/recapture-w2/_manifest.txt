@@ -1,0 +1,12 @@
+LOGIN → /admin/pos
+OK pos-orders → /admin/pos-orders
+OK historique → /admin/historique
+OK cash-overview → /admin/dashboard
+OK cash-sessions-report → /admin/dashboard
+OK tracker → /admin/pos-orders-tracker
+OK encaissement → /admin/encaissement
+OK floorplan → /admin/pos/floorplan
+OK pos-main → /admin/pos
+CONSOLE-ERR /admin/pos-orders/show/4511 :: Failed to load resource: the server responded with a status of 403 (Forbidden)
+OK pos-orders-show-pending → /admin/pos-orders/show/4511
+FAIL datepicker locator.click: Timeout 30000ms exceeded.

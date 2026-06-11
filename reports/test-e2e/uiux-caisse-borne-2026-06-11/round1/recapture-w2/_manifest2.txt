@@ -1,0 +1,6 @@
+OK cash-overview → /admin/cash-overview
+OK cash-sessions-report → /admin/cash-sessions-report
+OK pos-orders-show-pending → /admin/pos-orders/show/4511
+INPUTS: [{"cls":"w-3 cursor-pointer mb-[1px] accent-primary","ph":""},{"cls":"w-full h-full rounded-full opacity-0 cursor-pointer","ph":""},{"cls":"db-field-control","ph":""},{"cls":"","ph":"--"},{"cls":"","ph":"--"},{"cls":"","ph":"--"},{"cls":"dp__pointer dp__input_readonly dp__input dp__input_reg","ph":""}]
+dp click fail
+OK historique-datepicker-open
