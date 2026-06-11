@@ -365,6 +365,9 @@ import {
     normalizeReceiptAddons,
     receiptBranchHeader,
 } from "../../../helpers/posReceiptBuilder";
+// [UIUX-W2 F1 2026-06-11] FR EUR helper — addon line was the only frontend
+// `toFixed` (EN-US) amount on the ticket.
+import { formatPrice } from "../../../helpers/formatPrice";
 
 export default {
     name: "ReceiptComponent",
@@ -514,12 +517,12 @@ export default {
             if (n <= 0) {
                 return '';
             }
-            const decimal = Number(this.$store?.getters?.['setting/lists']?.site_digit_after_decimal_point ?? 2);
-            const symbol = String(this.$store?.getters?.['setting/lists']?.site_default_currency_symbol ?? '€');
-            const position = Number(this.$store?.getters?.['setting/lists']?.site_currency_position ?? 0);
-            const formatted = n.toFixed(Number.isFinite(decimal) ? decimal : 2);
-            // 0 = LEFT (per currencyPositionEnum), 1 = RIGHT
-            return position === 0 ? `${symbol}${formatted}` : `${formatted}${symbol}`;
+            // [UIUX-W2 F1 2026-06-11] Virgule FR. Every other amount on the
+            // ticket is a backend `*_currency_price` projection (AppLibrary
+            // NumberFormatter fr_FR EUR → "2,50 €") ; this addon line was the
+            // only frontend `toFixed` (point décimal + symbole collé). Align
+            // on the canonical admin helper so the ticket is uniform.
+            return formatPrice(n);
         },
         kitchenInstructionText: function (item) {
             return item && item.instruction ? String(item.instruction).trim() : '';

@@ -110,7 +110,7 @@
                         data-testid="pos-loyalty-redeem-preview"
                     >
                         {{ $t('pos.loyalty.redeem.preview_discount') }} :
-                        <strong>−{{ previewDiscountEur.toFixed(2) }} €</strong>
+                        <strong>−{{ formatPriceFr(previewDiscountEur) }}</strong>
                     </p>
                 </div>
 
@@ -172,6 +172,9 @@
  *   - Error / success bands carry role="alert" + role="status"
  */
 import axios from 'axios';
+// [UIUX-W2 F1 2026-06-11] FR money formatting only (modal design-LOCKED —
+// zero layout change) : "−2.50 €" → "−2,50 €" via the canonical admin helper.
+import { formatPrice } from '../../../helpers/formatPrice';
 
 export default {
     name: 'PosLoyaltyRedeemModal',
@@ -242,6 +245,10 @@ export default {
         },
     },
     methods: {
+        // [UIUX-W2 F1] FR EUR rendering ("2,50 €") — format only, no layout.
+        formatPriceFr(value) {
+            return formatPrice(value);
+        },
         emitClose() {
             this.$emit('close');
         },
@@ -310,7 +317,7 @@ export default {
                         : null;
                     const eur = Number(data.discount_eur) || 0;
                     this.successMessage = this.$t('pos.loyalty.redeem.success', {
-                        amount: `${eur.toFixed(2)} €`,
+                        amount: this.formatPriceFr(eur),
                     });
                     this.lastResponse = data;
                     this.$emit('applied', data);

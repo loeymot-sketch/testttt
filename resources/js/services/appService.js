@@ -68,11 +68,33 @@ export default {
         else e.preventDefault();
     },
 
+    // [UIUX-W2 F1 2026-06-11] FR EUR canonical rendering. The old
+    // `toFixed + concat` produced EN-US money ("€2.50" / "2.50€") on every
+    // surface delegating here (incl. the frozen POS PaymentComponent) while
+    // backend AppLibrary + helpers/formatPrice.js render "2,50 €".
+    // V1 LOCAL Le Cayenne = FR/EUR only (ADR-007) — `currency`/`position`
+    // are kept in the signature for call-site compat but the output follows
+    // FR typography (Intl fr-FR EUR), honoring the `decimal` digits setting.
+    // Display-only: no call-site re-parses this output (grep-verified, all
+    // template interpolations).
     currencyFormat(amount, decimal, currency, position) {
-        if (position === currencyPositionEnum.LEFT) {
-            return currency + parseFloat(amount).toFixed(decimal);
-        } else {
-            return parseFloat(amount).toFixed(decimal) + currency;
+        const digits = Number.isFinite(Number(decimal)) ? Number(decimal) : 2;
+        const value = parseFloat(amount);
+        const safe = Number.isFinite(value) ? value : 0;
+        try {
+            return new Intl.NumberFormat('fr-FR', {
+                style: 'currency',
+                currency: 'EUR',
+                minimumFractionDigits: digits,
+                maximumFractionDigits: digits,
+            }).format(safe);
+        } catch (_e) {
+            // Locale unavailable (very old runtime) — manual FR layout.
+            const symbol = currency != null ? String(currency) : '€';
+            const fr = safe.toFixed(digits).replace('.', ',');
+            return position === currencyPositionEnum.LEFT
+                ? `${symbol} ${fr}`
+                : `${fr} ${symbol}`;
         }
     },
     logoutConfirmation: function () {

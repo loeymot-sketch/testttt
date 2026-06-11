@@ -114,7 +114,8 @@ describe('PosLoyaltyRedeemModal', () => {
 
         const preview = wrapper.find('[data-testid="pos-loyalty-redeem-preview"]');
         expect(preview.exists()).toBe(true);
-        expect(preview.text()).toMatch(/2\.50/);
+        // [UIUX-W2 F1 2026-06-11] format FR "−2,50 €" (était toFixed "2.50")
+        expect(preview.text()).toMatch(/2,50/);
     });
 
     it('shows the rate hint with the rate prop value', async () => {
