@@ -502,7 +502,7 @@ class MenuSeeder extends Seeder
                 'slug' => Str::slug($addon['name']),
                 'item_category_id' => $itemCategoryId,
                 'price' => $addon['price'],
-                'description' => 'Upsell item',
+                'description' => 'Article complémentaire',
                 'status' => Status::ACTIVE,
                 'tax_id' => $this->defaultTaxId(),
             ]);
