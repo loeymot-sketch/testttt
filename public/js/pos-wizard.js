@@ -39,6 +39,8 @@
     let currentStep = 0;
     let steps = [];
     let selections = {};
+    // [LOCK-W6 heal] per-step "Voir plus" expansion survives re-renders
+    let genericExpanded = {};
     let itemQuantity = 1;
     let instructionText = '';
     let currentCategory = 'unknown'; // module-level so buildTicketInstruction can read it
@@ -559,6 +561,7 @@
 
         var s = [];
         selections = {};
+        genericExpanded = {};
 
         // Detect category and allowed steps
         var category = detectCategory(data);
@@ -1128,7 +1131,12 @@
         html += '</div>';
 
         // [REFACTORED SPRINT 4] New combined steps + legacy steps
-        if (step.type === 'viande') html += renderViandeStep(step);
+        // [LOCK-W6] composer-profile steps ALWAYS render via the generic
+        // renderer (legacy renderers read step.items which composer steps do
+        // not carry — TypeError/blank page). Unreachable when flag OFF
+        // (composer_step only set by buildStepsFromComposerProfile).
+        if (step.composer_step && step.type !== 'recap') html += renderGenericChoicesStep(step);
+        else if (step.type === 'viande') html += renderViandeStep(step);
         else if (step.type === 'sauce') html += renderSauceStep(step);
         else if (step.type === 'sauce_single') html += renderSauceSingleStep(step);
         else if (step.type === 'accompagnement') html += renderAccompagnementStep(step);
@@ -1325,6 +1333,9 @@
         if (selections.fritesGrande) addonTotal += FRITES_GRANDE_PRICE;
         if (selections.fritesCheddar) addonTotal += FRITES_CHEDDAR_PRICE;
 
+        // [LOCK-W6] builder generic selections (no-op when selections.generic empty)
+        addonTotal += composerAddonTotal();
+
         // [S21-2 FIX] addonTotal must be multiplied by itemQuantity — formule price applies per item
         return (basePrice + extra + addonTotal) * itemQuantity;
     }
@@ -1393,6 +1404,138 @@
             h += '</div>';
         });
         h += '</div>';
+        return h;
+    }
+
+    // [LOCK-W6 2026-06-10] ---- GENERIC COMPOSER STEP (builder pages) ----
+    // Renders ANY composer-profile step with the exact legacy option markup
+    // (.wizard-options / .wizard-option / .check-mark / .option-name /
+    // .option-price). Prices are NEVER read from the step (NF525): they are
+    // joined by id+source_type from lastItemData (catalogue). Builder-origin
+    // strings are escaped (escWiz) — less trusted surface than the catalogue.
+    function escWiz(s) {
+        return String(s == null ? '' : s)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    function composerChoicePrice(choice) {
+        if (!choice || !lastItemData) return 0;
+        var id = parseInt(choice.id);
+        var st = String(choice.source_type || '').toLowerCase();
+        var p = 0;
+        if (st === 'extra' && Array.isArray(lastItemData.extras)) {
+            var ex = lastItemData.extras.find(function (e) { return parseInt(e.id) === id; });
+            if (ex) p = parseFloat(ex.convert_price != null ? ex.convert_price : ex.price) || 0;
+        } else if (st === 'addon' && Array.isArray(lastItemData.addons)) {
+            var ad = lastItemData.addons.find(function (a) {
+                return parseInt(a.id) === id || parseInt(a.addon_item_id) === id;
+            });
+            if (ad) {
+                var raw = (ad.addon_item_currency_price || '').replace(/[^0-9.,]/g, '').replace(',', '.');
+                p = parseFloat(raw) || parseFloat(ad.convert_price != null ? ad.convert_price : ad.price) || 0;
+            }
+        } else if (st === 'variation' && lastItemData.variations) {
+            Object.keys(lastItemData.variations).forEach(function (attrId) {
+                var rows = lastItemData.variations[attrId];
+                if (!Array.isArray(rows)) return;
+                var v = rows.find(function (r) { return parseInt(r.id) === id; });
+                if (v) p = parseFloat(v.convert_price != null ? v.convert_price : v.price) || 0;
+            });
+        }
+        return p > 0 ? p : 0;
+    }
+
+    function composerGenericMeta() {
+        // [stepKey][choiceId] -> { name, source_type, price, count }
+        var out = [];
+        if (!selections.generic) return out;
+        (steps || []).forEach(function (s) {
+            if (!s.composer_step || !Array.isArray(s.options)) return;
+            var sel = selections.generic[s.key];
+            if (!sel) return;
+            s.options.forEach(function (choice) {
+                var count = sel[choice.id] || 0;
+                if (count > 0) {
+                    // [heal RED P2] strip HTML-significant chars from builder
+                    // names: the ticket string is consumed BOTH as innerHTML
+                    // (ticket preview) and plain text (textarea/KDS) — entity
+                    // escaping would leak, stripping kills tag injection.
+                    var safeName = String(choice.name || '').replace(/[<>]/g, '');
+                    out.push({
+                        stepKey: s.key, stepLabel: String(s.label || '').replace(/[<>]/g, ''), id: choice.id,
+                        name: safeName, source_type: choice.source_type,
+                        price: composerChoicePrice(choice), count: count
+                    });
+                }
+            });
+        });
+        return out;
+    }
+
+    function composerAddonTotal() {
+        var total = 0;
+        composerGenericMeta().forEach(function (m) { total += m.price * m.count; });
+        return total;
+    }
+
+    function renderGenericChoicesStep(step) {
+        var h = '';
+        var sel = (selections.generic && selections.generic[step.key]) || {};
+        var totalSel = Object.keys(sel).reduce(function (acc, k) { return acc + (sel[k] || 0); }, 0);
+        var max = Number(step.max) || 1;
+        var min = Number(step.min) || 0;
+
+        if (max > 1) {
+            h += '<div class="viande-total-header">';
+            h += '<span class="viande-total">' + totalSel + ' / ' + max + '</span>';
+            if (min > 0 && totalSel >= min) h += '<span class="viande-complete-badge"><i class="fa-solid fa-check"></i></span>';
+            h += '</div>';
+        }
+
+        var isExpanded = !!genericExpanded[step.key];
+        h += '<div class="wizard-options' + (isExpanded ? ' expanded' : '') + '">';
+        var opts = Array.isArray(step.options) ? step.options : [];
+        // [heal RED P1] collapsed = render only the first 6 (pre-existing CSS
+        // bug: the .wizard-options.expanded reveal rule loses to the
+        // !important hide — frozen CSS untouched, state-driven instead).
+        var renderedOpts = isExpanded ? opts : opts.slice(0, 6);
+        renderedOpts.forEach(function (choice, idx) {
+            var count = sel[choice.id] || 0;
+            var unavailable = choice.is_available === false;
+            var price = composerChoicePrice(choice);
+            var classes = 'wizard-option micro-opt';
+            if (count > 0) classes += ' selected';
+            if (unavailable) classes += ' disabled';
+            h += '<div class="' + classes + '" data-type="generic" data-step-key="' + escWiz(step.key) + '" data-id="' + escWiz(choice.id) + '"' + (unavailable ? ' data-unavailable="1"' : '') + '>';
+            h += '<span class="check-mark"><i class="fa-solid fa-check"></i></span>';
+            h += renderOptionIcon(escWiz(choice.image), '🍽️', true, !choice.image);
+            h += '<span class="option-name">' + escWiz(choice.name) + '</span>';
+            if (unavailable) {
+                h += '<span class="option-price">Épuisé</span>';
+            } else if (price > 0) {
+                h += '<span class="option-price paid">+' + fmtPrice(price) + '</span>';
+            } else {
+                h += '<span class="option-price free">Inclus</span>';
+            }
+            if (step.allow_repeat && !unavailable) {
+                h += '<span class="viande-controls">';
+                h += '<button type="button" class="viande-btn generic-qty" data-action="minus" data-step-key="' + escWiz(step.key) + '" data-id="' + escWiz(choice.id) + '">−</button>';
+                h += '<span class="viande-count">' + count + '</span>';
+                h += '<button type="button" class="viande-btn generic-qty" data-action="plus" data-step-key="' + escWiz(step.key) + '" data-id="' + escWiz(choice.id) + '">+</button>';
+                h += '</span>';
+            }
+            h += '</div>';
+        });
+        h += '</div>';
+        if (opts.length > 6) {
+            // [heal RED P1] state-driven (genericExpanded) — an inline-onclick
+            // toggle was lost at every refreshWizard() re-render (each card
+            // selection re-collapsed the grid).
+            var hiddenN = opts.length - 6;
+            h += '<button type="button" class="btn-voir-plus generic-voir-plus" data-step-key="' + escWiz(step.key) + '">'
+                + (isExpanded ? '▲ Masquer' : '▼ Voir tous (+' + hiddenN + ')') + '</button>';
+        }
         return h;
     }
 
@@ -2818,6 +2961,28 @@
             h += '</div>';
         }
 
+        // [LOCK-W6] Composer mode (flag ON + published profile): the builder
+        // pages REPLACE the auto-detected legacy sections — one .wizard-section
+        // per composer step, options grid via renderGenericChoicesStep.
+        // Unreachable flag OFF (steps carry composer_step only via
+        // buildStepsFromComposerProfile).
+        var composerSteps = (steps || []).filter(function (s) { return s.composer_step && s.type !== 'recap'; });
+        var composerMode = composerSteps.length > 0;
+        if (composerMode) {
+            composerSteps.forEach(function (cs) {
+                h += '<div class="wizard-section generic-section" data-step-key="' + escWiz(cs.key) + '">';
+                h += '<div class="section-header"><h3>' + escWiz(cs.label) + '</h3>';
+                var csMin = Number(cs.min) || 0;
+                var csMax = Number(cs.max) || 1;
+                if (csMin > 0) h += '<span class="section-badge required">Obligatoire</span>';
+                if (csMax > 1) h += '<span class="section-hint">Jusqu’à ' + csMax + ' choix</span>';
+                h += '</div>';
+                h += renderGenericChoicesStep(cs);
+                h += '</div>';
+            });
+        }
+
+        if (!composerMode) {
         // Pain/Galette (sandwich only) — affiché seul sans section "Qté"
         if (lastItemData && lastItemData.itemAttributes && category === 'sandwich') {
             var painAttr = lastItemData.itemAttributes.find(function (attr) {
@@ -3173,6 +3338,8 @@
 
             h += '</div>';
         }
+
+        } // [LOCK-W6] end !composerMode (legacy auto-detected sections)
 
         // === SECTION 7: COMMENTAIRE ===
         h += '<div class="wizard-section comment-section">';
@@ -3699,6 +3866,16 @@
         if (firstLine) allLines.push(firstLine);
         extraLines.forEach(function (l) { allLines.push(l); });
 
+        // [LOCK-W6] builder generic selections → kitchen ticket, grouped per page
+        var genericByStep = {};
+        composerGenericMeta().forEach(function (m) {
+            if (!genericByStep[m.stepLabel]) genericByStep[m.stepLabel] = [];
+            genericByStep[m.stepLabel].push(m.count > 1 ? m.count + '× ' + m.name : m.name);
+        });
+        Object.keys(genericByStep).forEach(function (label) {
+            allLines.push(label.toUpperCase() + ' : ' + genericByStep[label].join(', '));
+        });
+
         return allLines.join('\n');
     }
 
@@ -4062,6 +4239,43 @@
                 });
             }
         }
+
+        // [LOCK-W6] 4bis. Builder generic selections → Vue form, by source_type.
+        // Same matching mechanics as the legacy paths above: extras via
+        // .extra .custom-checkbox-field (name match), addons via .addon card
+        // click, variations via <select> option text. Backend pricing stays
+        // SSOT — this only mirrors the wizard state into the real form.
+        composerGenericMeta().forEach(function (m) {
+            var wanted = normalizeStr(m.name || '');
+            if (!wanted) return;
+            if (m.source_type === 'extra') {
+                // [heal RED P2] exact-match-first + FIRST match only — the
+                // substring forEach checked every collision ("Cheddar" also
+                // ticked "Double Cheddar"), same defect class as W5-FIX :4209.
+                var cbs = Array.from(originalBody.querySelectorAll('.extra .custom-checkbox-field'));
+                var lblOf = function (cb) { var s = cb.closest('.extra'); return s ? normalizeStr(s.textContent || '') : ''; };
+                var hit = cbs.find(function (cb) { return lblOf(cb) === wanted; })
+                    || cbs.find(function (cb) { return lblOf(cb).includes(wanted); });
+                if (hit && !hit.checked) hit.click();
+            } else if (m.source_type === 'addon') {
+                var cards = Array.from(originalBody.querySelectorAll('.addon'));
+                var cLbl = function (card) { return normalizeStr(card.textContent || ''); };
+                var cHit = cards.find(function (card) { return cLbl(card) === wanted; })
+                    || cards.find(function (card) { return cLbl(card).includes(wanted); });
+                if (cHit && !cHit.classList.contains('active')) cHit.click();
+            } else if (m.source_type === 'variation') {
+                var selects = originalBody.querySelectorAll('select');
+                selects.forEach(function (selEl) {
+                    var match = Array.from(selEl.options).find(function (opt) {
+                        return normalizeStr(opt.textContent || '') === wanted;
+                    });
+                    if (match && selEl.value !== match.value) {
+                        selEl.value = match.value;
+                        selEl.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+                });
+            }
+        });
 
         // 5. Set instruction — [S25] Use buildTicketInstruction() for compact ticket format
         var fullInstruction = buildTicketInstruction();
@@ -4845,6 +5059,7 @@
         currentStep = 0;
         steps = [];
         selections = {};
+        genericExpanded = {};
         itemQuantity = 1;
         instructionText = '';
         currentCategory = 'unknown';
@@ -5427,6 +5642,53 @@
             });
         });
 
+        // [LOCK-W6] Generic composer choices — card toggles, +/- steppers
+        wizardEl.querySelectorAll('.wizard-option[data-type="generic"]').forEach(function (opt) {
+            opt.addEventListener('click', function (ev) {
+                if (ev.target.closest('.generic-qty')) return; // steppers handle themselves
+                if (this.getAttribute('data-unavailable') === '1') return;
+                var stepKey = this.getAttribute('data-step-key');
+                var id = this.getAttribute('data-id');
+                var curStep = (steps || []).find(function (s) { return s.composer_step && s.key === stepKey; });
+                if (!curStep) return;
+                if (!selections.generic) selections.generic = {};
+                if (!selections.generic[stepKey]) selections.generic[stepKey] = {};
+                var sel = selections.generic[stepKey];
+                var max = Number(curStep.max) || 1;
+                var total = Object.keys(sel).reduce(function (a, k) { return a + (sel[k] || 0); }, 0);
+                if (sel[id]) {
+                    delete sel[id]; // tap-deselect
+                } else if (max === 1) {
+                    selections.generic[stepKey] = {};
+                    selections.generic[stepKey][id] = 1;
+                } else if (total < max) {
+                    sel[id] = 1;
+                }
+                renderWizard();
+            });
+        });
+        wizardEl.querySelectorAll('.generic-qty').forEach(function (btn) {
+            btn.addEventListener('click', function (ev) {
+                ev.stopPropagation();
+                var stepKey = this.getAttribute('data-step-key');
+                var id = this.getAttribute('data-id');
+                var action = this.getAttribute('data-action');
+                var curStep = (steps || []).find(function (s) { return s.composer_step && s.key === stepKey; });
+                if (!curStep) return;
+                if (!selections.generic) selections.generic = {};
+                if (!selections.generic[stepKey]) selections.generic[stepKey] = {};
+                var sel = selections.generic[stepKey];
+                var max = Number(curStep.max) || 1;
+                var total = Object.keys(sel).reduce(function (a, k) { return a + (sel[k] || 0); }, 0);
+                if (action === 'plus' && total < max) sel[id] = (sel[id] || 0) + 1;
+                if (action === 'minus' && sel[id]) {
+                    sel[id] -= 1;
+                    if (sel[id] <= 0) delete sel[id];
+                }
+                renderWizard();
+            });
+        });
+
         // Viandes supplémentaires +/- buttons (multi-step path, per-viande)
         wizardEl.querySelectorAll('.viande-suppl-btn').forEach(function (btn) {
             btn.addEventListener('click', function () {
@@ -5877,9 +6139,81 @@
         var addBtn = wizardEl.querySelector('[data-action="add-to-cart"]');
         if (addBtn) {
             addBtn.addEventListener('click', function () {
+                // [LOCK-W6] composer min_select gate (builder mandatory pages)
+                var missing = (steps || []).find(function (s) {
+                    if (!s.composer_step || s.type === 'recap') return false;
+                    var min = Number(s.min) || 0;
+                    if (min <= 0) return false;
+                    var sel = (selections.generic && selections.generic[s.key]) || {};
+                    var total = Object.keys(sel).reduce(function (a, k) { return a + (sel[k] || 0); }, 0);
+                    return total < min;
+                });
+                if (missing) {
+                    var section = wizardEl.querySelector('.generic-section[data-step-key="' + missing.key + '"]');
+                    if (section) {
+                        section.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        section.classList.add('shake');
+                        setTimeout(function () { section.classList.remove('shake'); }, 600);
+                    }
+                    return;
+                }
                 syncAndSubmit();
             });
         }
+
+        // [LOCK-W6] Generic composer choices (single-page) — card toggles + steppers
+        wizardEl.querySelectorAll('.wizard-option[data-type="generic"]').forEach(function (opt) {
+            opt.addEventListener('click', function (ev) {
+                if (ev.target.closest('.generic-qty')) return;
+                if (this.getAttribute('data-unavailable') === '1') return;
+                var stepKey = this.getAttribute('data-step-key');
+                var id = this.getAttribute('data-id');
+                var curStep = (steps || []).find(function (s) { return s.composer_step && s.key === stepKey; });
+                if (!curStep) return;
+                if (!selections.generic) selections.generic = {};
+                if (!selections.generic[stepKey]) selections.generic[stepKey] = {};
+                var sel = selections.generic[stepKey];
+                var max = Number(curStep.max) || 1;
+                var total = Object.keys(sel).reduce(function (a, k) { return a + (sel[k] || 0); }, 0);
+                if (sel[id]) {
+                    delete sel[id];
+                } else if (max === 1) {
+                    selections.generic[stepKey] = {};
+                    selections.generic[stepKey][id] = 1;
+                } else if (total < max) {
+                    sel[id] = 1;
+                }
+                refreshWizard();
+            });
+        });
+        wizardEl.querySelectorAll('.generic-qty').forEach(function (btn) {
+            btn.addEventListener('click', function (ev) {
+                ev.stopPropagation();
+                var stepKey = this.getAttribute('data-step-key');
+                var id = this.getAttribute('data-id');
+                var action = this.getAttribute('data-action');
+                var curStep = (steps || []).find(function (s) { return s.composer_step && s.key === stepKey; });
+                if (!curStep) return;
+                if (!selections.generic) selections.generic = {};
+                if (!selections.generic[stepKey]) selections.generic[stepKey] = {};
+                var sel = selections.generic[stepKey];
+                var max = Number(curStep.max) || 1;
+                var total = Object.keys(sel).reduce(function (a, k) { return a + (sel[k] || 0); }, 0);
+                if (action === 'plus' && total < max) sel[id] = (sel[id] || 0) + 1;
+                if (action === 'minus' && sel[id]) {
+                    sel[id] -= 1;
+                    if (sel[id] <= 0) delete sel[id];
+                }
+                refreshWizard();
+            });
+        });
+        wizardEl.querySelectorAll('.generic-voir-plus').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var stepKey = this.getAttribute('data-step-key');
+                genericExpanded[stepKey] = !genericExpanded[stepKey];
+                refreshWizard();
+            });
+        });
 
         // Cancel / close wizard button — dismiss without saving
         var cancelBtn = wizardEl.querySelector('[data-action="cancel-wizard"]');
