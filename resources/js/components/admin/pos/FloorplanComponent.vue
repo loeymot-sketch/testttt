@@ -5,8 +5,9 @@
             <div>
                 <p class="pos-v5-floorplan__eyebrow">Caisse Le Cayenne · Plan de salle</p>
                 <h2 class="pos-v5-floorplan__title">{{ $t('label.floorplan') }}</h2>
+                <!-- [UIUX-W2 G3 2026-06-11] libellés FR (étaient "tables"/"seats" EN bruts) -->
                 <p class="pos-v5-floorplan__meta">
-                    <span class="pos-v5-tabular">{{ tables.length }}</span> tables
+                    <span class="pos-v5-tabular">{{ tables.length }}</span> {{ tables.length > 1 ? 'tables' : 'table' }}
                 </p>
             </div>
             <div class="pos-v5-floorplan__actions">
@@ -31,6 +32,17 @@
             {{ errorMessage }}
         </div>
 
+        <!-- [UIUX-W2 G3 2026-06-11] États explicatifs FR — avant : canvas blanc « 0 tables »
+             sans explication alors que pos_dine_in_enabled=false en V1 (vente à emporter). -->
+        <div v-if="!loading && !dineInEnabled" class="pos-v5-floorplan__empty" data-testid="floorplan-dinein-off">
+            <p class="pos-v5-floorplan__empty-title">Le service en salle est désactivé.</p>
+            <p class="pos-v5-floorplan__empty-hint">Le plan de salle sera disponible lorsque l'option « Sur place » sera activée dans les réglages.</p>
+        </div>
+        <div v-else-if="!loading && tables.length === 0" class="pos-v5-floorplan__empty" data-testid="floorplan-empty">
+            <p class="pos-v5-floorplan__empty-title">Aucune table configurée.</p>
+            <p class="pos-v5-floorplan__empty-hint">Ajoutez des tables pour les voir apparaître sur le plan de salle.</p>
+        </div>
+
         <div class="pos-v5-floorplan-grid floorplan-grid">
             <button
                 v-for="table in tables"
@@ -43,7 +55,7 @@
                 <div class="flex items-start justify-between gap-3">
                     <div>
                         <h3 class="pos-v5-floorplan-table__name">{{ table.name }}</h3>
-                        <p class="pos-v5-floorplan-table__seats">{{ table.size || 0 }} seats</p>
+                        <p class="pos-v5-floorplan-table__seats">{{ table.size || 0 }} {{ (table.size || 0) > 1 ? 'places' : 'place' }}</p>
                     </div>
                     <span class="pos-v5-floorplan-table__status">
                         {{ statusLabel(table.occupancy_status) }}
@@ -116,10 +128,29 @@ export default {
         tables() {
             return this.$store.getters["posFloorplan/tables"];
         },
+        setting() {
+            return this.$store.getters["frontendSetting/lists"];
+        },
+        /**
+         * [UIUX-W2 G3 2026-06-11] POS dine-in feature flag — même lecture stricte
+         * que PosComponent.dineInEnabled (default FALSE si backend vide/régressé).
+         */
+        dineInEnabled() {
+            const s = this.setting || {};
+            const raw = s.pos_dine_in_enabled ?? s['pos.dine_in_enabled'] ?? 0;
+            const t = typeof raw;
+            if (t !== 'boolean' && t !== 'number' && t !== 'string') return false;
+            return String(raw) === '1' || raw === true;
+        },
     },
     mounted() {
         this.fetchState();
         this._pollTimer = setInterval(() => this.fetchState({ silent: true }), 15000);
+        // [UIUX-W2 G3 2026-06-11] Garantit que le flag dine-in est chargé même en
+        // accès direct à /admin/pos/floorplan (store vide → fetch settings).
+        if (!this.setting || typeof this.setting.pos_dine_in_enabled === 'undefined') {
+            this.$store.dispatch('frontendSetting/lists').catch(() => {});
+        }
     },
     beforeUnmount() {
         if (this._pollTimer) {
@@ -382,6 +413,27 @@ export default {
     border-radius: var(--pos-v5-radius-md);
     font-size: var(--pos-v5-text-body);
     font-weight: var(--pos-v5-weight-semibold);
+}
+
+/* [UIUX-W2 G3 2026-06-11] État vide / dine-in désactivé — explicatif neutre. */
+.pos-v5-floorplan__empty {
+    margin-bottom: var(--pos-v5-space-4);
+    padding: var(--pos-v5-space-5) var(--pos-v5-space-4);
+    border: 1px dashed var(--pos-v5-border-strong);
+    background: var(--pos-v5-bg-subtle);
+    border-radius: var(--pos-v5-radius-md);
+    text-align: center;
+}
+.pos-v5-floorplan__empty-title {
+    margin: 0 0 4px;
+    font-size: var(--pos-v5-text-body);
+    font-weight: var(--pos-v5-weight-bold);
+    color: var(--pos-v5-ink);
+}
+.pos-v5-floorplan__empty-hint {
+    margin: 0;
+    font-size: var(--pos-v5-text-caption);
+    color: var(--pos-v5-ink-soft);
 }
 
 .pos-v5-floorplan-grid,

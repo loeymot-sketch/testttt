@@ -45,3 +45,19 @@ describe('G2 — POS a11y: target-size, low-contrast grays, vue-select orphan la
     expect(hist).toMatch(/id="searchPayment"\s*\n\s*:aria-label="\$t\('label\.payment_status'\)"/);
   });
 });
+
+describe('G3 — floorplan: FR labels + explanatory empty/dine-in-off states', () => {
+  it('replaces raw EN "seats" with FR and explains the blank canvas', () => {
+    const floorplan = read('resources/js/components/admin/pos/FloorplanComponent.vue');
+
+    expect(floorplan).not.toMatch(/}}\s*seats/);
+    expect(floorplan).toMatch(/place'/);
+    // dine-in disabled (V1 default) must show an explanatory FR state, not a blank canvas
+    expect(floorplan).toMatch(/data-testid="floorplan-dinein-off"/);
+    expect(floorplan).toMatch(/Le service en salle est désactivé\./);
+    expect(floorplan).toMatch(/data-testid="floorplan-empty"/);
+    expect(floorplan).toMatch(/Aucune table configurée\./);
+    // flag read defensively, same contract as PosComponent.dineInEnabled
+    expect(floorplan).toMatch(/pos_dine_in_enabled/);
+  });
+});
