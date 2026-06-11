@@ -3,7 +3,7 @@
     :is="tag"
     :type="tag === 'button' ? type : null"
     :to="tag === 'router-link' ? to : null"
-    :href="tag === 'a' ? href : null"
+    v-bind="tag === 'a' && href ? { href } : {}"
     :target="tag === 'a' || tag === 'router-link' ? target : null"
     :rel="tag === 'a' && target === '_blank' ? 'noopener' : rel"
     :disabled="(tag === 'button' && (disabled || loading)) || null"
