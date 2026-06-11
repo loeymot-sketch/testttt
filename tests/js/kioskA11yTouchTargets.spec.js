@@ -125,6 +125,28 @@ describe('kiosk A11y — touch targets ≥ 44px', () => {
     assertCssBlockTouchMin(m ? m[1] : '', '.kiosk-top-chip');
   });
 
+  // [UIUX-W4 K7 2026-06-11] axe target-size (WCAG 2.2) : la corbeille
+  // flottante (.kiosk-cart-item-trash, absolute top:-8 right:-8, 36px)
+  // recouvrait le coin haut-droit du bouton qty « + » → plus grand
+  // rectangle libre 22-23px < 24px (risque de tap « − » au lieu de « + »
+  // sur borne). Contrat : les contrôles réservent ≥ 28px de dégagement
+  // vertical (padding-top) au-dessus de la pilule qty.
+  it('KioskCartComponent — qty "+" dégagé de la corbeille flottante (≥ 28px)', () => {
+    const css = readVueStyle('resources/js/components/frontend/kiosk/KioskCartComponent.vue');
+
+    const controls = css.match(/\.kiosk-cart-item-controls\s*\{([^}]+)\}/);
+    expect(controls, '.kiosk-cart-item-controls: bloc CSS manquant').toBeTruthy();
+    const padTop = controls[1].match(/padding-top:\s*([^;]+);?/);
+    expect(padTop, '.kiosk-cart-item-controls: padding-top de dégagement manquant').toBeTruthy();
+    const px = pxValue(padTop[1]);
+    // Corbeille: top -8px + 36px de haut = déborde de 28px dans le bloc.
+    expect(px, '.kiosk-cart-item-controls: dégagement < 28px').toBeGreaterThanOrEqual(28);
+
+    // Et les boutons qty restent ≥ 44px (WCAG 2.5.5).
+    const qtyBtn = css.match(/\.kiosk-qty-btn\s*\{([^}]+)\}/);
+    assertCssBlockTouchMin(qtyBtn ? qtyBtn[1] : '', '.kiosk-qty-btn');
+  });
+
   it('KsChip.vue — .ks-chip__remove (contrat CSS)', () => {
     const css = readVueStyle('resources/js/components/frontend/kiosk/ds/KsChip.vue');
     const m = css.match(/\.ks-chip__remove\s*\{([^}]+)\}/);

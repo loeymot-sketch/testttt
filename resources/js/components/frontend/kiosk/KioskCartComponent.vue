@@ -999,6 +999,12 @@ export default {
   gap: 8px;
   flex-shrink: 0;
   position: relative;
+  /* [UIUX-W4 K7] axe target-size (WCAG 2.2) : la corbeille flottante
+     (absolute top:-8px, 36px de haut) déborde de 28px dans ce bloc et
+     recouvrait le coin du bouton qty « + » (rectangle libre 23px < 24px).
+     Dégagement vertical ≥ 28px pour que la pilule qty démarre sous la
+     corbeille — verrouillé par kioskA11yTouchTargets.spec.js. */
+  padding-top: 30px;
 }
 
 /* FoodKing brand V2 (2026-05-10) — bouton trash explicite à côté du qty stepper */
