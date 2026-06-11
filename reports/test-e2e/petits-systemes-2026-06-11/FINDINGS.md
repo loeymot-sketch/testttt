@@ -34,9 +34,26 @@ Conforme D11 (1 pt/€ round, linéaire 100 pts = 1 €, min 100) — sentinel `
 | PS-02 | P3 | Label **IMAGE \*** marqué requis sur le drawer coupon alors que la création réussit sans image (05c/05d) — astérisque mensonger | `05-coupon-create-FAIL.png` vs `05c-coupon-after-save.png` |
 | PS-03 | — | ~~coupon create/delete cassés~~ **FAUX-POSITIF** : échec du script d'audit, pas du produit. CRUD coupon prouvé fonctionnel bout-en-bout ×2 (05c, 05d) | interact-report + captures |
 
-## Reste à couvrir (vague abuse #14)
-- CRUD réels : offers, messages, ingredients, dining-tables, employees/administrators/chefs, delivery-boys
-- subscribers + push (⚠️ mass-send = confirm dialog, ne PAS envoyer réellement)
-- transactions : filtres + export ; items-report : filtres
-- abuse inputs : valeurs limites (montants négatifs, codes dupliqués, dates inversées)
-- preuve L2 live (bonus) : solde modal POS mis à jour par event sans reload
+## Vague abuse #14 — EXÉCUTÉE (voir `ABUSE_RESULTS.md`, 18/18 OK, 0 FAIL produit)
+Couverture : offers, ingredients (read-only by design), dining-tables, employees, chefs,
+messages, subscribers, push (garde confirm prouvée code, envoi non déclenché), transactions
+(filtre date prouvé au niveau requête), abuse coupons 4/4 (doublon→422 FR, remise −5→422,
+dates inversées→422, cleanup 0 fantôme), historique détail cohérent.
+
+### Findings additionnels (vague #14)
+| ID | Sév. | Finding | Statut |
+|---|---|---|---|
+| AB14-01 | P2 | Module Offres désactivé V1 (403 guard backend intentionnel) mais l'UI exposait le drawer complet et **crashait sur le 403** (TypeError reading 'name') → zéro feedback après saisie complète | ✅ **HEALED** `9d415b8db` — catch blindé (Offer + Coupon), toast FR du message serveur ; vérif visuelle `07-offers-403-toast.png` |
+| AB14-02 | P3 | Horodatage AM/PM sur UI FR (Messages, Transactions) | Root-cause = `TIME_FORMAT="h:i A"` dans `.env` (AppLibrary::datetime). **Data-op owner** sur le `.env` opérant (1 ligne → `H:i`) ; prouvé 24h sur `.env.e2e` (`07-transactions-24h.png`) |
+| AB14-03 | P3 | Messages validator hardcodés EN (CouponRequest ×7, OfferRequest ×4) | ✅ **HEALED** `9d415b8db` — 11 messages FR ; vérif `07-coupon-validation-fr.png` |
+| PS-01 | P3 | Attributs validation non localisés | ✅ **HEALED** `9d415b8db` — 12 alias FR ajoutés `lang/fr/validation.php` |
+| PS-02 | P3 | Astérisque IMAGE mensonger | ✅ **HEALED** `9d415b8db` |
+
+### Preuve L2 bonus (producteur→outbox, live e2e)
+`LoyaltyBalanceChanged::dispatch(1,1,142,17,'earn')` → row `domain_events`
+`channel=["private-branch.1"]`, `broadcast_as=LoyaltyBalanceChanged`,
+`payload={delta:17,reason:earn,user_id:1,branch_id:1,balance_after:142}` (sans PII).
+Côté consommateur : Vitest `posLoyaltyLiveBalance.spec.js` 4/4 (abonnement, dégradation, refresh, unsubscribe).
+
+### Verdict final : **GREEN** — 0 P0/P1 ; 1 P2 + 3 P3 healés même session ; 1 data-op owner documenté (TIME_FORMAT).
+### Hors scope produit : volume disque 100% (29 Go = 30 worktrees `.claude/worktrees/`) — ménage à arbitrer owner.
