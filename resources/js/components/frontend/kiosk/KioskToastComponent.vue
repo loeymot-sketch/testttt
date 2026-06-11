@@ -20,7 +20,7 @@
       <button
         type="button"
         class="kiosk-toast-close"
-        aria-label="Fermer la notification"
+        :aria-label="$t('kiosk.a11y.close')"
         @click.stop="remove(toast.id)"
       >×</button>
     </div>
