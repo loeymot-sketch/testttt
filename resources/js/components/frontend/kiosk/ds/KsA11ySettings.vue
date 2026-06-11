@@ -138,21 +138,12 @@
         </div>
       </section>
 
-      <!-- CV1-KIOSK-VISUAL-REDESIGN-001 V1.4 — Sélection thème (Bold Appétissant) -->
-      <section class="ks-a11y-section" :aria-labelledby="themeHeadingId">
-        <div class="ks-a11y-toggle-row" style="display: flex; flex-direction: column; align-items: stretch; gap: 12px;">
-          <div class="ks-a11y-toggle-copy">
-            <span class="ks-a11y-section-title" :id="themeHeadingId">{{ $t('kiosk.a11y.theme', 'Thème') }}</span>
-            <span class="ks-a11y-toggle-hint">{{ $t('kiosk.a11y.theme_hint', 'Choisis l’apparence claire ou sombre, ou laisse le système décider.') }}</span>
-          </div>
-          <KsThemeToggle
-            :model-value="theme"
-            :aria-label="$t('kiosk.a11y.theme_aria', 'Sélection du thème')"
-            testid="kiosk-a11y-theme-toggle"
-            @update:modelValue="selectTheme"
-          />
-        </div>
-      </section>
+      <!-- [UIUX-W4 K9 2026-06-11] Section THÈME retirée : le kill-switch
+           light-mode (resources/css/kiosk-fallback.css, owner mandate
+           « light 100% borne ») masque .ks-theme-toggle et force les
+           variables light → la section était une zone morte (titre + hint
+           sans contrôle opérant). Réintroduire SEULEMENT si le kill-switch
+           CSS est levé (gate owner). -->
 
       <!-- Footer : reset + close -->
       <div class="ks-a11y-footer">
@@ -202,11 +193,11 @@ const UID = () => 'ks-a11y-' + Math.random().toString(36).slice(2, 10);
 // [ADR-007 / Sprint 3D 2026-05-16] LOCALE_OPTIONS retiré : kiosk runtime
 // FR-immutable. Voir docs/adr/ADR-007-kiosk-fr-lock.md.
 
-import KsThemeToggle from './KsThemeToggle.vue';
+// [UIUX-W4 K9] import KsThemeToggle retiré avec la section THÈME
+// (kill-switch light-mode kiosk-fallback.css — voir commentaire template).
 
 export default {
     name: 'KsA11ySettings',
-    components: { KsThemeToggle },
     props: {
         modelValue: { type: Boolean, default: false },
     },
@@ -223,12 +214,10 @@ export default {
             audioHeadingId: uid + '-audio',
             audioDescHeadingId: uid + '-audio-desc',
             reducedMotionHeadingId: uid + '-reduced-motion',
-            themeHeadingId: uid + '-theme',
         };
     },
     computed: {
         contrast() { return this.$store.state.kioskSettings?.contrast || 'aa'; },
-        theme() { return this.$store.state.kioskSettings?.theme || 'auto'; },
         pmr() { return !!this.$store.state.kioskSettings?.pmr; },
         audio() { return !!this.$store.state.kioskSettings?.audio; },
         audioDescription() { return !!this.$store.state.kioskSettings?.audioDescription; },
@@ -277,13 +266,8 @@ export default {
             this.$store.dispatch('kioskSettings/setReducedMotion', next);
             this.reportEvent('reduced_motion_toggle', { value: next });
         },
-        selectTheme(value) {
-            // CV1-KIOSK-VISUAL-REDESIGN-001 V1.4 — propagation par useKioskTheme
-            // (composable monté à la racine kiosk) qui écoute le store et écrit
-            // data-kiosk-theme sur <html>.
-            this.$store.dispatch('kioskSettings/setTheme', value);
-            this.reportEvent('theme_change', { value });
-        },
+        // [UIUX-W4 K9] selectTheme retiré avec la section THÈME — le store
+        // kioskSettings/setTheme reste disponible si le kill-switch est levé.
         reset() {
             this.$store.dispatch('kioskSettings/reset');
             this.reportEvent('reset');

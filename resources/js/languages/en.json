@@ -2122,7 +2122,7 @@
         "increase_qty": "Increase quantity",
         "quantity_of": "Quantity of {name}",
         "a11y": {
-            "title": "Accessibility & language",
+            "title": "Accessibility",
             "open": "Accessibility settings",
             "close": "Close",
             "done": "Done",

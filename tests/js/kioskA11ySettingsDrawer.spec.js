@@ -113,6 +113,25 @@ describe('KsA11ySettings drawer', () => {
         expect(w.emitted('update:modelValue')[0][0]).toBe(false);
     });
 
+    // [UIUX-W4 K9 2026-06-11] Le kill-switch light-mode
+    // (resources/css/kiosk-fallback.css) masque .ks-theme-toggle et force
+    // les variables light → la section THÈME du drawer était une zone
+    // morte (toggle neutralisé). Elle ne doit plus être rendue.
+    it('[K9] ne rend plus la section THÈME (kill-switch light-mode)', () => {
+        const { w } = mountDrawer();
+        expect(w.find('[data-testid="kiosk-a11y-theme-toggle"]').exists()).toBe(false);
+        expect(w.text()).not.toContain('Thème');
+    });
+
+    // [UIUX-W4 K9] Le sélecteur de langue a été retiré (ADR-007) — le
+    // titre « Accessibilité & langue » mentait sur le contenu du drawer.
+    it('[K9] le titre ne promet plus « & langue » (sélecteur retiré ADR-007)', () => {
+        const { w } = mountDrawer();
+        const title = w.find('[data-testid="kiosk-a11y-title"]');
+        expect(title.exists()).toBe(true);
+        expect(title.text()).toBe('Accessibilité');
+    });
+
     it('bouton Reset dispatche reset (restaure les defaults)', async () => {
         const { w, store } = mountDrawer();
         // [ADR-007] Pas de dispatch UI `setLocale` ici — on mute directement

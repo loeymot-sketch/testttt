@@ -1631,7 +1631,7 @@
         "increase_qty": "Augmenter la quantité",
         "quantity_of": "Quantité de {name}",
         "a11y": {
-            "title": "Accessibilité & langue",
+            "title": "Accessibilité",
             "open": "Paramètres d'accessibilité",
             "close": "Fermer",
             "done": "Terminé",
