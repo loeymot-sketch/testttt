@@ -17,7 +17,7 @@
       :min="min"
       :max="max"
       :readonly="readonly"
-      :aria-label="ariaLabel || 'quantity'"
+      :aria-label="ariaLabel || 'quantité'"
       @keypress="onKeypress"
       @input="onInput"
     />

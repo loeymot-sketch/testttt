@@ -2446,6 +2446,16 @@ export default {
             }
         },
         openCashSessionDialog() {
+            // [UIUX-W2 G7 2026-06-11] Anti-race : re-fetch la session courante AVANT
+            // d'afficher — le store peut être périmé (session ouverte/fermée depuis
+            // un autre onglet ou au boot raté) → le dialog proposait « Ouvrir »
+            // alors qu'une session est déjà OPEN. Le dialog watch `session` et
+            // re-résout son mode à l'arrivée du fetch ; fail-soft sur erreur réseau.
+            try {
+                this.$store.dispatch('cashDrawer/loadCurrentSession', {
+                    branchId: this.cashSessionBranchId,
+                }).catch(() => {});
+            } catch (_e) { /* defensive */ }
             this.cashSessionInitialMode = 'auto';
             this.showCashSessionDialog = true;
         },

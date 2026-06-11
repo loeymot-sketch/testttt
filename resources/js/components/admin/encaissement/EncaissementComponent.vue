@@ -244,7 +244,9 @@ export default {
             if (mins < 60) return mins + ' min';
             const h = Math.floor(mins / 60);
             const m = mins % 60;
-            return h + 'h' + (m < 10 ? '0' + m : m);
+            // [UIUX-W2 G7 2026-06-11] « 22h58 » se lisait comme une heure de la
+            // journée — durée rendue explicite : « attente 22h58min ».
+            return 'attente ' + h + 'h' + (m < 10 ? '0' + m : m) + 'min';
         },
         // [W2.2] Classe "vieillissement" : ambre passé 15 min, rouge passé 30 min,
         // pour signaler visuellement la commande qui attend le plus.

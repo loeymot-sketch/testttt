@@ -335,6 +335,7 @@
         }
     },
     "menu": {
+        "floorplan": "Plan de salle",
         "historique": "Historique",
         "encaissement": "Encaissement",
         "dashboard": "Tableau de bord",

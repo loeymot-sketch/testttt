@@ -122,3 +122,41 @@ describe('G6 — collect modal polish: sticky CTA, FR casing, single back/clear 
     expect(numpad).toMatch(/\.pos-v5-numpad__key--span-2\s*{\s*grid-row:\s*span 2;/);
   });
 });
+
+describe('G7 — mechanical P3s: breadcrumb key, FR aria, date format, wait badge, drawer race', () => {
+  it('resolves the floorplan breadcrumb (menu.floorplan FR + EN parity)', () => {
+    const fr = JSON.parse(read('resources/js/languages/fr.json'));
+    const en = JSON.parse(read('resources/js/languages/en.json'));
+    expect(fr.menu.floorplan).toBe('Plan de salle');
+    expect(en.menu.floorplan).toBeTruthy();
+  });
+
+  it('uses a French aria-label fallback on the qty stepper', () => {
+    const stepper = read('resources/js/components/admin/pos/v5/PosV5QtyStepper.vue');
+    expect(stepper).toMatch(/ariaLabel \|\| 'quantité'/);
+    expect(stepper).not.toMatch(/ariaLabel \|\| 'quantity'/);
+  });
+
+  it('formats the order-show header date as "dd/mm/yyyy à hh:mm" and keeps unknown patterns raw', () => {
+    const fmt = (order) => PosOrderShowComponent.computed.orderDateTimeFr.call({ order });
+    expect(fmt({ order_datetime: '01:41, 10-06-2026' })).toBe('10/06/2026 à 01:41');
+    expect(fmt({ order_datetime: '2026-06-10T01:41:00Z' })).toBe('2026-06-10T01:41:00Z');
+    expect(fmt({})).toBe('');
+
+    const show = read('resources/js/components/admin/posOrders/PosOrderShowComponent.vue');
+    expect(show).toMatch(/orderDateTimeFr/);
+    expect(show).toMatch(/order\.queue_number/); // N° borne surfaced in header
+  });
+
+  it('makes the encaissement wait badge an explicit duration (no clock-time ambiguity)', () => {
+    const enc = read('resources/js/components/admin/encaissement/EncaissementComponent.vue');
+    expect(enc).toMatch(/'attente ' \+ h \+ 'h' \+ \(m < 10 \? '0' \+ m : m\) \+ 'min'/);
+  });
+
+  it('re-fetches the current cash session before showing the drawer dialog (anti-race)', () => {
+    const pos = read('resources/js/components/admin/pos/PosComponent.vue');
+    const fn = pos.match(/openCashSessionDialog\(\)\s*{([\s\S]*?)\n        },/);
+    expect(fn).toBeTruthy();
+    expect(fn[1]).toMatch(/cashDrawer\/loadCurrentSession/);
+  });
+});

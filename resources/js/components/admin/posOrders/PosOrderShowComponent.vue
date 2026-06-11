@@ -10,6 +10,11 @@
                             <span class="text-heading">
                                 #{{ order.order_serial_no }}
                             </span>
+                            <!-- [UIUX-W2 G7 2026-06-11] N° borne (queue_number, ex. A0042) dans
+                                 l'en-tête — même convention N°… que liste/OSS/ticket. -->
+                            <span v-if="order.queue_number" class="text-base font-semibold text-[#6E7191] whitespace-nowrap">
+                                · N°{{ order.queue_number }}
+                            </span>
                         </p>
                         <div class="flex items-center gap-2 mt-1.5">
                             <span
@@ -24,7 +29,9 @@
                     <ul class="flex flex-col gap-2">
                         <li class="flex items-center gap-2">
                             <i class="lab lab-calendar-line lab-font-size-16"></i>
-                            <span class="text-xs">{{ order.order_datetime }}</span>
+                            <!-- [UIUX-W2 G7 2026-06-11] format FR « 10/06/2026 à 01:41 »
+                                 (le backend envoie « 01:41, 10-06-2026 » via TIME_FORMAT/DATE_FORMAT). -->
+                            <span class="text-xs">{{ orderDateTimeFr }}</span>
                         </li>
                         <li class="text-xs">
                             {{ $t('label.payment_type') }}:
@@ -502,6 +509,15 @@ export default {
             const surface = String(this.order && this.order.source_surface || '').toLowerCase();
             const rawName = String(this.orderUser && this.orderUser.name || '');
             return surface === 'kiosk' || /kiosk/i.test(rawName);
+        },
+        // [UIUX-W2 G7 2026-06-11] En-tête date FR : « 01:41, 10-06-2026 » (pattern
+        // backend AppLibrary::datetime = TIME_FORMAT ', ' DATE_FORMAT) reformatté
+        // « 10/06/2026 à 01:41 ». Pattern inattendu → chaîne brute inchangée.
+        orderDateTimeFr: function () {
+            const raw = String(this.order && this.order.order_datetime || '');
+            const m = raw.match(/^(\d{1,2}:\d{2}),\s*(\d{2})-(\d{2})-(\d{4})$/);
+            if (m) return `${m[2]}/${m[3]}/${m[4]} à ${m[1]}`;
+            return raw;
         },
         orderAddress: function () {
             return this.$store.getters['posOrder/orderAddress'];
