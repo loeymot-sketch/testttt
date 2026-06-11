@@ -4,6 +4,7 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
+import PosOrderShowComponent from '../../resources/js/components/admin/posOrders/PosOrderShowComponent.vue';
 
 const root = resolve(process.cwd());
 const read = (rel) => readFileSync(resolve(root, rel), 'utf-8');
@@ -59,5 +60,39 @@ describe('G3 — floorplan: FR labels + explanatory empty/dine-in-off states', (
     expect(floorplan).toMatch(/Aucune table configurée\./);
     // flag read defensively, same contract as PosComponent.dineInEnabled
     expect(floorplan).toMatch(/pos_dine_in_enabled/);
+  });
+});
+
+describe('G4 — order show polish: orphan variations, empty state, kiosk customer masking', () => {
+  const variationsText = PosOrderShowComponent.methods.variationsText;
+
+  it('never renders orphan "name: " or ": value" variation fragments', () => {
+    expect(variationsText({ item_variations: [
+      { variation_name: 'Poulet Mariné', name: '' },
+      { variation_name: 'Algérienne', name: null },
+    ] })).toBe('Poulet Mariné, Algérienne');
+
+    expect(variationsText({ item_variations: [
+      { variation_name: 'Viande', name: 'Poulet Mariné' },
+      { variation_name: '', name: 'Algérienne' },
+    ] })).toBe('Viande: Poulet Mariné, Algérienne');
+
+    expect(variationsText({ item_variations: [{ variation_name: '', name: '' }] })).toBe('');
+    expect(variationsText({ item_variations: [] })).toBe('');
+    expect(variationsText({})).toBe('');
+  });
+
+  it('masks the kiosk machine (admin) account as "Client borne" like the encaissement list', () => {
+    const isKiosk = (order, orderUser) =>
+      PosOrderShowComponent.computed.isKioskCustomer.call({ order, orderUser });
+
+    expect(isKiosk({ source_surface: 'kiosk' }, { name: 'Admin' })).toBe(true);
+    expect(isKiosk({ source_surface: null }, { name: 'soak-kiosk-6a1866ebc6835' })).toBe(true);
+    expect(isKiosk({ source_surface: 'pos' }, { name: 'Jean Dupont' })).toBe(false);
+
+    const show = read('resources/js/components/admin/posOrders/PosOrderShowComponent.vue');
+    expect(show).toMatch(/\$t\('label\.client_borne'\)/);
+    expect(show).toMatch(/data-testid="order-items-empty"/);
+    expect(show).toMatch(/Aucun article dans cette commande\./);
   });
 });

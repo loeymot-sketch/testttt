@@ -221,11 +221,11 @@
                                     class="text-sm font-medium capitalize transition text-heading hover:underline">
                                     {{ item.item_name }}
                                 </a>
-                                <p v-if="item.item_variations.length !== 0" class="capitalize text-xs mb-1.5">
-                                    <span v-for="(variation, index) in item.item_variations">
-                                        {{ variation.variation_name }}: {{ variation.name }}<span
-                                            v-if="index + 1 < item.item_variations.length">,&nbsp;</span>
-                                    </span>
+                                <!-- [UIUX-W2 G4 2026-06-11] variationsText() : plus de « Poulet Mariné: ,
+                                     Algérienne: » orphelins — « nom: valeur » seulement si les deux
+                                     existent, sinon le seul présent, entrées vides filtrées. -->
+                                <p v-if="variationsText(item)" class="capitalize text-xs mb-1.5">
+                                    {{ variationsText(item) }}
                                 </p>
                                 <!-- [WT-D-R1-F4 2026-05-20] Canonical FR EUR via shared `formatPrice()` — `item.total_price` shipped raw by OrderItemResource. -->
                                 <h3 class="text-xs font-semibold">{{ formatPrice(item.total_price) }}</h3>
@@ -248,6 +248,13 @@
                                 <p class="text-xs">{{ item.instruction }}</p>
                             </li>
                         </ul>
+                    </div>
+                    <!-- [UIUX-W2 G4 2026-06-11] État vide FR — avant : zone « Détails
+                         Commande » entièrement blanche quand 0 article. -->
+                    <div v-if="orderItems.length === 0" class="py-8 text-center" data-testid="order-items-empty">
+                        <i class="lab lab-bag-2 lab-font-size-24 text-[#9CA3AF]" aria-hidden="true"></i>
+                        <p class="mt-2 text-sm font-medium text-[#374151]">Aucun article dans cette commande.</p>
+                        <p class="mt-1 text-xs text-[#6E7191]">Les articles apparaîtront ici dès qu'ils seront ajoutés.</p>
                     </div>
                 </div>
             </div>
@@ -316,17 +323,21 @@
                     <div class="db-card-body">
                         <div class="flex items-center gap-3 mb-4">
                             <img class="w-8 rounded-full" :src="orderUser.image" alt="avatar">
+                            <!-- [UIUX-W2 G4 2026-06-11] Commande borne : le compte machine kiosk
+                                 (user ADMIN) fuitait ici — masqué en « Client borne », même
+                                 convention que EncaissementComponent.customerName (source_surface
+                                 primaire + filet /kiosk/i sur le nom brut). -->
                             <h4 class="font-semibold text-sm capitalize text-[#374151]">
-                                {{ isWalkIn ? 'Passager' : textShortener(orderUser.name, 20) }}
+                                {{ isKioskCustomer ? $t('label.client_borne') : (isWalkIn ? 'Passager' : textShortener(orderUser.name, 20)) }}
                             </h4>
                         </div>
                         <ul class="flex flex-col gap-3 py-4 border-[#EFF0F6]"
                             :class="order.order_type === enums.orderTypeEnum.DELIVERY ? 'mb-4 border-y' : 'border-t'">
-                            <li class="flex items-center gap-2.5" v-if="!isWalkIn">
+                            <li class="flex items-center gap-2.5" v-if="!isWalkIn && !isKioskCustomer">
                                 <i class="lab lab-mail lab-font-size-14"></i>
                                 <span class="text-xs">{{ orderUser.email }}</span>
                             </li>
-                            <li class="flex items-center gap-2.5" v-if="!isWalkIn && orderUser.phone">
+                            <li class="flex items-center gap-2.5" v-if="!isWalkIn && !isKioskCustomer && orderUser.phone">
                                 <i class="lab lab-call-calling-linear lab-font-size-14"></i>
                                 <span dir="ltr" class="text-xs">{{ (orderUser.country_code || '') + orderUser.phone
                                     }}</span>
@@ -482,6 +493,15 @@ export default {
         // fake seeded contact (email/phone). Precedent: PosComponent.vue:2588.
         isWalkIn: function () {
             return String(this.orderUser && this.orderUser.email || '').toLowerCase() === 'walkingcustomer@example.com';
+        },
+        // [UIUX-W2 G4 2026-06-11] Commande borne : pas de vrai client — le compte
+        // machine kiosk (ADMIN) ne doit jamais s'afficher. Même convention que
+        // EncaissementComponent.customerName : source_surface primaire + filet
+        // /kiosk/i sur le nom brut (si source_surface est null).
+        isKioskCustomer: function () {
+            const surface = String(this.order && this.order.source_surface || '').toLowerCase();
+            const rawName = String(this.orderUser && this.orderUser.name || '');
+            return surface === 'kiosk' || /kiosk/i.test(rawName);
         },
         orderAddress: function () {
             return this.$store.getters['posOrder/orderAddress'];
@@ -643,6 +663,21 @@ export default {
         },
     },
     methods: {
+        // [UIUX-W2 G4 2026-06-11] Rendu variations sans orphelins : « nom: valeur »
+        // seulement si les deux existent, sinon le seul présent ; entrées
+        // entièrement vides filtrées (plus de « Poulet Mariné: , Algérienne: »).
+        variationsText: function (item) {
+            const variations = Array.isArray(item && item.item_variations) ? item.item_variations : [];
+            return variations
+                .map((variation) => {
+                    const group = String(variation && variation.variation_name || '').trim();
+                    const value = String(variation && variation.name || '').trim();
+                    if (group && value) return `${group}: ${value}`;
+                    return group || value;
+                })
+                .filter(Boolean)
+                .join(', ');
+        },
         // [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19] On successful redemption,
         // refresh the order so subtotal/discount/total + loyalty_customer_code
         // reflect the new state. Then close the modal.
