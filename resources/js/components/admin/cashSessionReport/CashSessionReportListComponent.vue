@@ -16,13 +16,23 @@
             <div class="db-card-body">
                 <!-- Date range filter -->
                 <form class="p-4 sm:p-5 mb-3 flex flex-wrap items-end gap-3" @submit.prevent="loadSessions">
+                    <!-- [UIUX-W2 F2 2026-06-11] Les inputs natifs type="date"
+                         affichaient mm/dd/yyyy (locale navigateur) — remplacés
+                         par le vue-datepicker FR (dd/MM/yyyy), model-type
+                         yyyy-MM-dd pour garder le contrat API intact. -->
                     <div>
-                        <label for="cashFrom" class="db-field-title after:hidden">{{ $t('label.from_date') }}</label>
-                        <input id="cashFrom" v-model="filters.from" type="date" class="db-field-control" />
+                        <label for="dp-input-cashFrom" class="db-field-title after:hidden">{{ $t('label.from_date') }}</label>
+                        <Datepicker uid="cashFrom" name="cashFrom" hideInputIcon autoApply :enableTimePicker="false"
+                            locale="fr" format="dd/MM/yyyy" model-type="yyyy-MM-dd"
+                            select-text="Valider" cancel-text="Annuler"
+                            v-model="filters.from" :aria-labels="{ input: $t('label.from_date') }" />
                     </div>
                     <div>
-                        <label for="cashTo" class="db-field-title after:hidden">{{ $t('label.to_date') }}</label>
-                        <input id="cashTo" v-model="filters.to" type="date" class="db-field-control" />
+                        <label for="dp-input-cashTo" class="db-field-title after:hidden">{{ $t('label.to_date') }}</label>
+                        <Datepicker uid="cashTo" name="cashTo" hideInputIcon autoApply :enableTimePicker="false"
+                            locale="fr" format="dd/MM/yyyy" model-type="yyyy-MM-dd"
+                            select-text="Valider" cancel-text="Annuler"
+                            v-model="filters.to" :aria-labels="{ input: $t('label.to_date') }" />
                     </div>
                     <button type="submit" class="db-btn py-2 text-white bg-primary">
                         <i class="lab lab-search-line lab-font-size-16"></i>
@@ -143,9 +153,12 @@
 
 <script>
 import axios from 'axios';
+import Datepicker from '@vuepic/vue-datepicker';
+import '@vuepic/vue-datepicker/dist/main.css';
 
 export default {
     name: 'CashSessionReportListComponent',
+    components: { Datepicker },
     data() {
         return {
             loading: false,

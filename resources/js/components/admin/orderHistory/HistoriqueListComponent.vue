@@ -74,7 +74,10 @@
 
                         <div class="col-12 sm:col-6 md:col-4 xl:col-3">
                             <label for="dp-input-searchStartDate" class="db-field-title after:hidden">{{ $t('label.date') }}</label>
+                            <!-- [UIUX-W2 F2 2026-06-11] locale + format FR (le défaut
+                                 @vuepic v3 est MM/dd/yyyy EN-US) + textes boutons FR. -->
                             <Datepicker uid="searchStartDate" name="searchStartDate" hideInputIcon autoApply
+                                locale="fr" format="dd/MM/yyyy" select-text="Valider" cancel-text="Annuler"
                                 :enableTimePicker="false" utc="false" @update:modelValue="handleDate"
                                 v-model="props.form.date" range :preset-ranges="presetRanges"
                                 :aria-labels="{ input: $t('label.date') }">
@@ -234,7 +237,8 @@ export default {
             { label: 'Aujourd’hui', range: [new Date(), new Date()] },
             { label: 'Ce mois', range: [startOfMonth(new Date()), endOfMonth(new Date())] },
             { label: 'Mois dernier', range: [startOfMonth(subMonths(new Date(), 1)), endOfMonth(subMonths(new Date(), 1))] },
-            { label: 'Cette année', range: [startOfYear(new Date()), endOfYear(new Date())] },
+            // [UIUX-W2 F2 2026-06-11] dédoublonné : entrée plain « Cette année »
+            // en double avec la version slot #yearly — on garde la version slot.
             { label: 'Cette année', range: [startOfYear(new Date()), endOfYear(new Date())], slot: 'yearly' },
         ]);
         return { date, presetRanges };
