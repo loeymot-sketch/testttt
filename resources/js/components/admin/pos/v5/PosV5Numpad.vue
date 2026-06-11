@@ -24,10 +24,14 @@
  * Réutilisé en : paiement (PaymentComponent), futurs override prix admin.
  *
  * Layout 4×4 :
- *   [1] [2] [3] [⌫]   ← backspace span 1
+ *   [1] [2] [3] [⌫]   ← backspace UNIQUE, grid-row span 2
  *   [4] [5] [6] [⌫]
- *   [7] [8] [9] [C]   ← clear span 1
+ *   [7] [8] [9] [C]   ← clear UNIQUE, grid-row span 2
  *   [00][0] [.] [C]
+ *
+ * [UIUX-W2 G6 2026-06-11] Avant : 2 boutons ⌫ + 2 boutons C empilés (back/back2,
+ * clear/clear2) — doublon visuel avec bordure entre les deux. Dédupliqué en
+ * 1 seule touche de chaque via la classe span-2 existante (grid-row: span 2).
  *
  * Émissions :
  *   - @input(value) — touche numérique pressée (1, 2, ..., '00', '.')
@@ -50,19 +54,17 @@ export default {
                 { id: "1", label: "1", kind: "num", value: "1" },
                 { id: "2", label: "2", kind: "num", value: "2" },
                 { id: "3", label: "3", kind: "num", value: "3" },
-                { id: "back", label: "⌫", kind: "back", aria: "Effacer le dernier chiffre" },
+                { id: "back", label: "⌫", kind: "back", span: 2, aria: "Effacer le dernier chiffre" },
                 { id: "4", label: "4", kind: "num", value: "4" },
                 { id: "5", label: "5", kind: "num", value: "5" },
                 { id: "6", label: "6", kind: "num", value: "6" },
-                { id: "back2", label: "⌫", kind: "back", aria: "Effacer le dernier chiffre" },
                 { id: "7", label: "7", kind: "num", value: "7" },
                 { id: "8", label: "8", kind: "num", value: "8" },
                 { id: "9", label: "9", kind: "num", value: "9" },
-                { id: "clear", label: "C", kind: "clear", aria: "Effacer tout" },
+                { id: "clear", label: "C", kind: "clear", span: 2, aria: "Effacer tout" },
                 { id: "00", label: "00", kind: "num", value: "00" },
                 { id: "0", label: "0", kind: "num", value: "0" },
                 { id: ".", label: this.decimalSeparator, kind: "num", value: this.decimalSeparator },
-                { id: "clear2", label: "C", kind: "clear", aria: "Effacer tout" },
             ];
         },
     },

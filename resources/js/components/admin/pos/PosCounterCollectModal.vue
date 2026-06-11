@@ -643,7 +643,8 @@ export default {
   font-size: 18px;
   font-weight: 800;
   color: var(--pos-v5-text, #1a1a1a);
-  text-transform: capitalize;
+  /* [UIUX-W2 G6 2026-06-11] capitalisation forcée (Title Case) supprimée —
+     pas une convention FR ; on garde la casse naturelle de la chaîne. */
 }
 .cc-modal-close {
   background: transparent;
@@ -705,7 +706,11 @@ export default {
   font-weight: 800;
   font-variant-numeric: tabular-nums;
   color: var(--pos-v5-brand-red, #cf3a3a);
-  font-family: 'Rubik Mono One', 'JetBrains Mono', ui-monospace, monospace;
+  /* [UIUX-W2 G6 2026-06-11] l'ancienne police mono décorative rendait
+     « 3 , 80 € » (virgule et espace pleine chasse) — police standard du modal
+     + tabular-nums : chiffres à chasse fixe (stabilité pendant la saisie)
+     sans casser la virgule. */
+  font-family: var(--pos-v5-font-family, 'Rubik', system-ui, sans-serif);
 }
 @media (max-width: 480px) { .cc-hero-value { font-size: 32px; } }
 
@@ -835,7 +840,16 @@ export default {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
-  margin-top: 4px;
+  /* [UIUX-W2 G6 2026-06-11] CTA « Confirmer & Imprimer ticket » passait sous le
+     fold (<900px de hauteur, .cc-modal max-height 92vh scrollable). Footer
+     sticky dans le scroll du modal — même design, juste l'ancrage : fond =
+     surface du modal, bleed sur le padding latéral/bas via marges négatives. */
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  background: var(--pos-v5-surface, #fff);
+  margin: 4px -24px -24px;
+  padding: 12px 24px 24px;
 }
 .cc-cancel-btn,
 .cc-confirm-btn {

@@ -96,3 +96,29 @@ describe('G4 — order show polish: orphan variations, empty state, kiosk custom
     expect(show).toMatch(/Aucun article dans cette commande\./);
   });
 });
+
+describe('G6 — collect modal polish: sticky CTA, FR casing, single back/clear keys, hero font', () => {
+  it('anchors the footer sticky inside the modal scroll and drops Title Case + mono-hero', () => {
+    const modal = read('resources/js/components/admin/pos/PosCounterCollectModal.vue');
+
+    // CTA must never sit under the fold on <900px-tall screens.
+    expect(modal).toMatch(/\.cc-modal-footer\s*{[^}]*position:\s*sticky/);
+    expect(modal).toMatch(/\.cc-modal-footer\s*{[^}]*bottom:\s*0/);
+    // Title Case is not a French convention.
+    expect(modal).not.toMatch(/\.cc-modal-title\s*{[^}]*text-transform:\s*capitalize/);
+    // 'Rubik Mono One' rendered "3 , 80" with full-width comma/space.
+    expect(modal).not.toMatch(/Rubik Mono One/);
+    expect(modal).toMatch(/\.cc-hero-value\s*{[^}]*tabular-nums/);
+  });
+
+  it('renders exactly ONE backspace and ONE clear key on the shared numpad (span-2, no stacked dupes)', () => {
+    const numpad = read('resources/js/components/admin/pos/v5/PosV5Numpad.vue');
+
+    expect(numpad).not.toMatch(/id:\s*"back2"/);
+    expect(numpad).not.toMatch(/id:\s*"clear2"/);
+    expect(numpad).toMatch(/id:\s*"back",[^}]*span:\s*2/);
+    expect(numpad).toMatch(/id:\s*"clear",[^}]*span:\s*2/);
+    // span-2 grid class must still exist for the tall keys.
+    expect(numpad).toMatch(/\.pos-v5-numpad__key--span-2\s*{\s*grid-row:\s*span 2;/);
+  });
+});
