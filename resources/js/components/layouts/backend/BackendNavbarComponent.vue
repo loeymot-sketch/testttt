@@ -103,7 +103,7 @@
                     ref="profileTrigger"
                     :id="profileMenuTriggerId"
                     :aria-expanded="profileMenuOpen ? 'true' : 'false'"
-                    aria-haspopup="menu"
+                    aria-haspopup="dialog"
                     :aria-controls="profileMenuId"
                     @keydown.escape="closeProfileMenu"
                     @keydown.down.prevent="openProfileMenuAndFocusFirst">
@@ -114,9 +114,14 @@
                             class="block font-semibold text-[#111827] overflow-hidden text-ellipsis whitespace-nowrap max-w-[160px]">{{ authInfo.name }}</b></h3>
                     <i class="lab lab-arrow-down text-xs ml-1.5 lab-font-size-14" aria-hidden="true"></i>
                 </button>
+                <!-- [UIUX-W2 G1 2026-06-11] role="dialog" (was role="menu"): the panel contains a
+                     profile card (figure/avatar/file-input/email) that can never be valid menu
+                     children — axe aria-required-children CRITICAL on every backend page.
+                     Dialog popup pattern keeps trigger aria-expanded/aria-controls semantics
+                     while allowing arbitrary content. Zero visual change. -->
                 <div
                     :id="profileMenuId"
-                    role="menu"
+                    role="dialog"
                     :aria-labelledby="profileMenuTriggerId"
                     ref="profileMenu"
                     @keydown.escape="closeProfileMenu"
@@ -146,38 +151,33 @@
                         <p dir="ltr" class="text-xs">{{ safePhone(authInfo.phone) ? (authInfo.country_code || '') + safePhone(authInfo.phone) : '' }}</p>
                         <h3 class="font-medium text-sm leading-6 capitalize mb-0.5">{{ authInfo.currency_balance }}</h3>
                     </div>
-                    <!-- [UR3-A1 V1.0.2 Wave D1] role="none" makes <nav> transparent to AT so role="menu"
-                         on the outer container correctly owns the role="menuitem" children per ARIA spec
-                         (fixes axe aria-required-children + aria-required-parent). -->
-                    <nav role="none">
+                    <!-- [UIUX-W2 G1 2026-06-11] Plain nav links inside the dialog popup (menu/menuitem
+                         pattern removed — see role="dialog" rationale above). Links/button are natively
+                         tabbable (tabindex="-1" dropped with the roving-focus menu pattern). -->
+                    <nav>
                         <a v-if="isPosV4Shell" href="/admin/profile/edit-profile"
-                            role="menuitem" tabindex="-1"
                             class="paper-link transition w-full flex items-center gap-3.5 py-3 border-b last:border-none border-[#EFF0F6]">
                             <i class="lab lab-edit lab-font-size-17" aria-hidden="true"></i>
                             <span class="text-sm leading-6 capitalize">{{ $t('button.edit_profile') }}</span>
                         </a>
                         <router-link v-else :to="{ name: 'admin.profile.editProfile' }"
-                            role="menuitem" tabindex="-1"
                             class="paper-link transition w-full flex items-center gap-3.5 py-3 border-b last:border-none border-[#EFF0F6]">
                             <i class="lab lab-edit lab-font-size-17" aria-hidden="true"></i>
                             <span class="text-sm leading-6 capitalize">{{ $t('button.edit_profile') }}</span>
                         </router-link>
 
                         <a v-if="isPosV4Shell" href="/admin/profile/change-password"
-                            role="menuitem" tabindex="-1"
                             class="paper-link transition w-full flex items-center gap-3.5 py-3 border-b last:border-none border-[#EFF0F6]">
                             <i class="lab lab-key lab-font-size-17" aria-hidden="true"></i>
                             <span class="text-sm leading-6 capitalize">{{ $t('button.change_password') }}</span>
                         </a>
                         <router-link v-else :to="{ name: 'admin.profile.changePassword' }"
-                            role="menuitem" tabindex="-1"
                             class="paper-link transition w-full flex items-center gap-3.5 py-3 border-b last:border-none border-[#EFF0F6]">
                             <i class="lab lab-key lab-font-size-17" aria-hidden="true"></i>
                             <span class="text-sm leading-6 capitalize">{{ $t('button.change_password') }}</span>
                         </router-link>
 
                         <button @click="logout()"
-                            role="menuitem" tabindex="-1"
                             class="paper-link transition w-full flex items-center gap-3.5 py-3 border-b last:border-none border-[#EFF0F6]">
                             <i class="lab lab-logout lab-font-size-17" aria-hidden="true"></i>
                             <span class="text-sm leading-6 capitalize">{{ $t('button.logout') }}</span>
@@ -427,14 +427,16 @@ export default {
         openProfileMenuAndFocusFirst() {
             // If menu is closed, trigger the document-level click handler in
             // dropdown.js by clicking the trigger (which will also close any other
-            // open dropdown). If already open, just move focus to first menuitem.
+            // open dropdown). If already open, just move focus to first action link.
+            // [UIUX-W2 G1 2026-06-11] selector .paper-link (was [role="menuitem"] —
+            // menu pattern removed in favor of role="dialog" popup).
             if (!this.profileMenuOpen && this.$refs.profileTrigger) {
                 this.$refs.profileTrigger.click();
             }
             this.$nextTick(() => {
                 const menu = this.$refs.profileMenu;
                 if (!menu) return;
-                const items = menu.querySelectorAll('[role="menuitem"]');
+                const items = menu.querySelectorAll('.paper-link');
                 if (items && items.length > 0) {
                     items[0].focus();
                 }
