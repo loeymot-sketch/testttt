@@ -565,12 +565,19 @@ export default {
             return list;
         },
         orderStatusEnumArray: function () {
+            // [UIUX-W2 F3 2026-06-11] Enum complet aligné sur la LISTE (fix
+            // FP-25, PosOrderListComponent) — PENDING/CANCELED/REJECTED
+            // manquaient ici → badge + libellé statut VIDES sur le show
+            // d'une commande pending/annulée/rejetée.
             return {
+                [orderStatusEnum.PENDING]: this.$t("label.pending"),
                 [orderStatusEnum.ACCEPT]: this.$t("label.accept"),
                 [orderStatusEnum.PREPARING]: this.$t("label.preparing"),
                 [orderStatusEnum.PREPARED]: this.$t("label.prepared"),
                 [orderStatusEnum.OUT_FOR_DELIVERY]: this.$t("label.out_for_delivery"),
                 [orderStatusEnum.DELIVERED]: this.$t("label.delivered"),
+                [orderStatusEnum.CANCELED]: this.$t("label.canceled"),
+                [orderStatusEnum.REJECTED]: this.$t("label.rejected"),
                 [orderStatusEnum.RETURNED]: this.$t("label.returned")
             }
         },
