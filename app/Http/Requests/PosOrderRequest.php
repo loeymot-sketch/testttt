@@ -164,17 +164,17 @@ class PosOrderRequest extends FormRequest
             $orderTypeInt = (int) request('order_type', 0);
             if ($orderTypeInt === OrderType::DINING_TABLE
                 && ! (bool) Settings::group('pos')->get('pos_dine_in_enabled', false)) {
-                $validator->errors()->add('order_type', 'Dine-in is disabled for this branch.');
+                $validator->errors()->add('order_type', 'Le service en salle est désactivé pour cette succursale.');
 
                 return;
             }
 
             if ($orderTypeInt === OrderType::DELIVERY && Settings::group('order_setup')->get('order_setup_delivery') == Activity::DISABLE) {
-                $validator->errors()->add('order_type', 'This order type is disabled now you can try another order type right now or call the management.');
+                $validator->errors()->add('order_type', 'Ce type de commande est désactivé pour le moment. Veuillez choisir un autre type de commande ou contacter la direction.');
             } elseif ($orderTypeInt === OrderType::TAKEAWAY && Settings::group('order_setup')->get('order_setup_takeaway') == Activity::DISABLE) {
-                $validator->errors()->add('order_type', 'This order type is disabled now you can try another order type right now or call the management.');
+                $validator->errors()->add('order_type', 'Ce type de commande est désactivé pour le moment. Veuillez choisir un autre type de commande ou contacter la direction.');
             } elseif (blank(request('order_type'))) {
-                $validator->errors()->add('order_type', 'This order type is disabled now you can try another order type right now or call the management.');
+                $validator->errors()->add('order_type', 'Ce type de commande est désactivé pour le moment. Veuillez choisir un autre type de commande ou contacter la direction.');
             }
             // [AUDIT-P1-B] NOTE: This validation uses the client-sent 'total' as a preliminary check.
             // The server recalculates the real total in OrderService::posOrderStore.
@@ -194,7 +194,7 @@ class PosOrderRequest extends FormRequest
                 && request('pos_payment_method') == PosPaymentMethod::CASH
                 && request()->filled('total')
                 && ((float) request('total') > (float) request('pos_received_amount'))) {
-                $validator->errors()->add('pos_received_amount', 'The received amount can not be less than the total amount.');
+                $validator->errors()->add('pos_received_amount', 'Le montant reçu ne peut pas être inférieur au montant total.');
             }
 
             // M-06: this request only performs shape/UX checks. Discount permission
@@ -204,7 +204,7 @@ class PosOrderRequest extends FormRequest
             if ($discount > 0) {
                 $reason = trim((string) request('discount_reason', ''));
                 if (strlen($reason) < 3) {
-                    $validator->errors()->add('discount_reason', 'A reason is required for any POS discount (min 3 characters).');
+                    $validator->errors()->add('discount_reason', 'Un motif est requis pour toute remise caisse (3 caractères minimum).');
 
                     return;
                 }
@@ -231,7 +231,7 @@ class PosOrderRequest extends FormRequest
                 if ($terminalId <= 0) {
                     $validator->errors()->add(
                         "payment_breakdown.{$idx}.terminal_id",
-                        'A valid payment terminal is required for every CARD tranche.'
+                        'Un terminal de paiement valide est requis pour chaque part réglée en carte.'
                     );
                     continue;
                 }
@@ -247,7 +247,7 @@ class PosOrderRequest extends FormRequest
                 if (! $exists) {
                     $validator->errors()->add(
                         "payment_breakdown.{$idx}.terminal_id",
-                        'The selected payment terminal is not available for this branch.'
+                        "Le terminal de paiement sélectionné n'est pas disponible pour cette succursale."
                     );
                 }
             }
@@ -263,11 +263,11 @@ class PosOrderRequest extends FormRequest
     public function messages()
     {
         return [
-            'pos_payment_note.required' => request('pos_payment_method') == PosPaymentMethod::CARD ? 'Last 4 digits of card is required' : (request('pos_payment_method') == PosPaymentMethod::MOBILE_BANKING ? 'Transaction ID field is required' : 'Payment note field is required'),
-            'pos_payment_note.min_digits' => 'The cart must contain at least 4 digits',
-            'pos_payment_note.max_digits' => 'The cart must not contain more than 4 digits',
-            'pos_received_amount.required' => 'The received amount field is required',
-            'dining_table_id.required' => 'The dining table field is required',
+            'pos_payment_note.required' => request('pos_payment_method') == PosPaymentMethod::CARD ? 'Les 4 derniers chiffres de la carte sont requis' : (request('pos_payment_method') == PosPaymentMethod::MOBILE_BANKING ? 'Le numéro de transaction est requis' : 'La note de paiement est requise'),
+            'pos_payment_note.min_digits' => 'Le numéro saisi doit contenir au moins 4 chiffres',
+            'pos_payment_note.max_digits' => 'Le numéro saisi ne doit pas dépasser 4 chiffres',
+            'pos_received_amount.required' => 'Le montant reçu est requis',
+            'dining_table_id.required' => 'La table est requise',
         ];
     }
 }

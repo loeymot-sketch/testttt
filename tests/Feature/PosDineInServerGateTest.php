@@ -113,7 +113,8 @@ class PosDineInServerGateTest extends TestCase
             ->postJson('/api/admin/pos', $this->dineInPayload());
 
         $response->assertStatus(422);
-        $this->assertStringContainsString('Dine-in is disabled',
+        // [UIUX-W2 G5 2026-06-11] message 422 traduit FR (était « Dine-in is disabled »).
+        $this->assertStringContainsString('Le service en salle est désactivé',
             $response->json('message') . ' ' . json_encode($response->json('errors')));
     }
 
