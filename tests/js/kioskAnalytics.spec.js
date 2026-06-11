@@ -84,6 +84,34 @@ describe('kioskAnalytics helper', () => {
         expect(kioskAnalytics._getInternalStateForTest().branchId).toBe(42);
     });
 
+    // [UIUX-W4 K5 2026-06-11] sendBeacon ne peut pas porter le Bearer
+    // Sanctum kiosk → 401 garanti côté /api/frontend/kiosk-event, et
+    // l'ancien `if (ok) return true` perdait l'event silencieusement.
+    it('never uses sendBeacon — even when available — and posts via axios (Bearer)', () => {
+        const beaconSpy = vi.fn(() => true); // beacon "accepté" par le browser
+        Object.defineProperty(navigator, 'sendBeacon', {
+            configurable: true,
+            writable: true,
+            value: beaconSpy,
+        });
+        kioskAnalytics.setConsent(true);
+        const ok = kioskAnalytics.track('add_to_cart', { item_id: 'x', qty: 1, extras_total_cents: 0, line_total_cents: 200, has_menu_upgrade: false });
+        expect(ok).toBe(true);
+        expect(beaconSpy).not.toHaveBeenCalled();
+        expect(postSpy).toHaveBeenCalledTimes(1);
+        expect(postSpy.mock.calls[0][0]).toBe('frontend/kiosk-event');
+    });
+
+    it('re-queues the event instead of losing it when the POST fails (e.g. 401)', async () => {
+        window.axios.post = vi.fn().mockRejectedValue({ response: { status: 401 } });
+        kioskAnalytics.setConsent(true);
+        const ok = kioskAnalytics.track('add_to_cart', { item_id: 'x', qty: 1, extras_total_cents: 0, line_total_cents: 200, has_menu_upgrade: false });
+        expect(ok).toBe(true);
+        // Laisse le .catch() async s'exécuter (macro-task).
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        expect(kioskAnalytics._getInternalStateForTest().queueSize).toBe(1);
+    });
+
     it('revoking consent empties the queue', () => {
         kioskAnalytics.setConsent(true);
         // On force une queue via un scénario où axios jette

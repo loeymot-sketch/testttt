@@ -26,7 +26,8 @@
 
 import axios from 'axios';
 
-const ENDPOINT = '/api/frontend/kiosk-event';
+// [UIUX-W4 K5] ENDPOINT absolu '/api/frontend/kiosk-event' supprimé avec le
+// transport sendBeacon/fetch (incapables de porter le Bearer Sanctum kiosk).
 const KIOSK_EVENT_ENDPOINT = '/frontend/kiosk/event';
 const ANALYTICS_TYPE = 'analytics';
 const MAX_QUEUE = 200;
@@ -199,27 +200,18 @@ function compactPayload(payload) {
 /* ------------------------------------------------------------------ */
 
 function sendNow(envelope) {
-    const bodyStr = JSON.stringify(envelope);
-    // sendBeacon = tolère l'unload, mais pas d'auth header custom.
-    // On l'utilise seulement si la route accepte cookies + CSRF.
-    if (typeof navigator !== 'undefined' && typeof navigator.sendBeacon === 'function') {
-        try {
-            const blob = new Blob([bodyStr], { type: 'application/json' });
-            const ok = navigator.sendBeacon(ENDPOINT, blob);
-            if (ok) return true;
-        } catch (_) {}
-    }
-    if (typeof window !== 'undefined' && window.axios?.post) {
-        window.axios.post('frontend/kiosk-event', envelope).catch(() => enqueue(envelope));
-        return true;
-    }
-    if (typeof fetch === 'function') {
-        fetch(ENDPOINT, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: bodyStr,
-            keepalive: true,
-        }).catch(() => enqueue(envelope));
+    // [UIUX-W4 K5 2026-06-11] sendBeacon retiré : il ne peut PAS porter le
+    // header Authorization (Bearer Sanctum kiosk) → la route API répondait
+    // 401 systématiquement, et `if (ok) return true` (ok = "accepté par le
+    // browser", pas "2xx serveur") perdait l'event silencieusement.
+    // Transport unique : axios (window.axios porte l'intercepteur d'auth
+    // kiosk) — tout échec (réseau OU non-2xx, dont 401) re-file l'event
+    // dans la queue locale au lieu de le perdre.
+    const client = (typeof window !== 'undefined' && window.axios?.post)
+        ? window.axios
+        : (axios?.post ? axios : null);
+    if (client) {
+        client.post('frontend/kiosk-event', envelope).catch(() => enqueue(envelope));
         return true;
     }
     enqueue(envelope);
