@@ -63,18 +63,18 @@ class OfferRequest extends FormRequest
     {
         $validator->after(function ($validator) {
             if (!$this->isNotNull(request('start_date'))) {
-                $validator->errors()->add('start_date', 'The start date field is required');
+                $validator->errors()->add('start_date', 'Le champ date de début est obligatoire.');
             }
 
             if (!$this->isNotNull(request('end_date'))) {
-                $validator->errors()->add('end_date', 'The end date field is required');
+                $validator->errors()->add('end_date', 'Le champ date de fin est obligatoire.');
             }
 
             if ($this->isNotNull(request('start_date')) && strtotime(request('end_date')) < strtotime(request('start_date'))) {
-                $validator->errors()->add('end_date', 'To date can\'t be older than Start date.');
+                $validator->errors()->add('end_date', 'La date de fin ne peut pas être antérieure à la date de début.');
             }
             if ($this->isNotNull(request('start_date')) && $this->checkToDate()) {
-                $validator->errors()->add('end_date', 'To date can\'t be older than now.');
+                $validator->errors()->add('end_date', 'La date de fin ne peut pas être déjà passée.');
             }
         });
     }

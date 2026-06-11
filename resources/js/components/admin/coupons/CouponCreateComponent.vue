@@ -112,7 +112,8 @@
                         }}</small>
                     </div>
                     <div class="form-col-12 sm:form-col-6">
-                        <label class="db-field-title required">{{ $t("label.image") }}</label>
+                        <!-- [PS-02 2026-06-11] image facultative côté serveur (rule nullable) — l'astérisque « required » mentait -->
+                        <label class="db-field-title">{{ $t("label.image") }}</label>
                         <input @change="changeImage" v-bind:class="errors.image ? 'invalid' : ''" id="image" type="file"
                             class="db-field-control" ref="imageProperty" accept="image/png, image/jpeg, image/jpg" />
                         <small class="db-field-alert" v-if="errors.image">{{ errors.image[0] }}</small>
@@ -420,7 +421,13 @@ export default {
                     })
                     .catch((err) => {
                         this.loading.isActive = false;
-                        this.errors = err.response.data.errors;
+                        // [AB14-01 2026-06-11] même blindage que le drawer Offres :
+                        // une réponse sans clé `errors` (403/500) ne doit pas
+                        // crasher le render — toast du message serveur à la place.
+                        this.errors = err.response?.data?.errors ?? {};
+                        if (Object.keys(this.errors).length === 0) {
+                            alertService.error(err.response?.data?.message ?? this.$t("message.something_wrong"));
+                        }
                     });
             } catch (err) {
                 this.loading.isActive = false;

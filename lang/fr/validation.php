@@ -191,6 +191,20 @@ return [
         'status' => 'statut',
         'branch_id' => 'branche',
         'country_code' => 'indicatif pays',
+        // [AUDIT PETITS-SYSTÈMES PS-01 2026-06-11] champs coupons/offres —
+        // sans ces alias, l'UI FR affichait « Le champ start date est obligatoire ».
+        'start_date' => 'date de début',
+        'end_date' => 'date de fin',
+        'minimum_order' => 'montant minimum de commande',
+        'maximum_discount' => 'remise maximale',
+        'discount' => 'remise',
+        'discount_type' => 'type de remise',
+        'limit_per_user' => 'limite par utilisateur',
+        'image' => 'image',
+        'amount' => 'montant',
+        'valid_hours_start' => 'heure de début de validité',
+        'valid_hours_end' => 'heure de fin de validité',
+        'max_uses_global' => 'utilisations max',
     ],
 
     'items_cap_exceeded' => 'Maximum 50 articles par commande',

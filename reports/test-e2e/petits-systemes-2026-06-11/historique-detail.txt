@@ -1,0 +1,74 @@
+Filiale
+Le Cayenne (Principal)
+Le Cayenne (Principal)
+Bonjour
+Admin Le Cayenne
+Admin Le Cayenne
+
+admin@lecayenne.fr
+
++330600000000
+
+2,00 €
+Modifier Le Profil
+Changer Le Mot De Passe
+Déconnexion
+Tableau De Bord
+POS
+Produits & Stock
+Catalogue
+Attribut D’articles
+Ingrédients
+Commandes Caisse
+Historique
+Encaissement
+Vue Caisse Unifiée
+Caisse Livreur
+CAISSE ET COMMANDES
+Écran Cuisine
+Suivi Client
+COMMUNICATIONS
+Notifications Push
+Messages
+Abonnés
+UTILISATEURS
+Administrateurs
+Employés
+Chefs
+COMPTES
+Transactions
+RAPPORTS
+Rapport Des Ventes
+Rapport Articles
+CONFIGURATION
+Paramètres
+Tableau De Bord
+Commandes Caisse
+Voir
+
+N° Commande: #SUP-LOY-1
+
+Non Payé
+Accepter
+11:54 PM, 10-06-2026
+Type de paiement: —
+Type de commande: À emporter
+Non Payé
+Payé
+Non Payé
+Accepter
+Accepter
+En Préparation
+Préparée
+Livré
+Imprimer La Facture
+Détails Commande
+Sous-Total
+8,50 €
+Remise
+1,00 €
+Total
+7,50 €
+Appliquer une réduction fidélité
+Informations Client
+Passager

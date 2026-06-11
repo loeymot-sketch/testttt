@@ -1,0 +1,56 @@
+[
+  {
+    "step": "coupon-create",
+    "ok": false,
+    "error": "Error: coupon not visible in list after save",
+    "console": [
+      "[error] Failed to load resource: the server responded with a status of 422 (Unprocessable Content)"
+    ],
+    "http": [
+      "422 POST /api/admin/coupon"
+    ]
+  },
+  {
+    "step": "coupon-delete",
+    "ok": false,
+    "error": "TimeoutError: locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('tr').filter({ hasText: 'E2EAUDIT11' }).first().locator('button, a').last()\u001b[22m\n",
+    "console": [],
+    "http": []
+  },
+  {
+    "step": "customer-detail",
+    "ok": true,
+    "console": [],
+    "http": []
+  },
+  {
+    "step": "historique-detail",
+    "ok": true,
+    "console": [],
+    "http": []
+  },
+  {
+    "step": "sales-report-filter",
+    "ok": true,
+    "console": [],
+    "http": []
+  },
+  {
+    "step": "push-notification-modal",
+    "ok": true,
+    "console": [],
+    "http": []
+  },
+  {
+    "step": "dbcs-detail",
+    "ok": true,
+    "console": [],
+    "http": []
+  },
+  {
+    "step": "ingredient-detail",
+    "ok": true,
+    "console": [],
+    "http": []
+  }
+]
