@@ -1668,7 +1668,8 @@
             "badge_label": "Offer",
             "code_label": "Code",
             "code_aria": "Promo code {code}",
-            "min_cart": "Minimum {value}"
+            "min_cart": "Minimum {value}",
+            "applied": "Promo code {code} applied (−{amount})"
         },
         "cancel": "Cancel",
         "back": "Back",

@@ -1679,7 +1679,7 @@
             "code_label": "Code",
             "code_aria": "Code promo {code}",
             "min_cart": "À partir de {value}",
-            "applied": "Code promo appliqué",
+            "applied": "Code promo {code} appliqué (−{amount})",
             "apply": "Appliquer",
             "label": "Code promo",
             "loading": "Vérification du code…",
