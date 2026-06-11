@@ -182,6 +182,12 @@
             // [STAFF-ONLY-V1] Feature flags for surface restructuring
             staffOnlyMode: @json((bool) config('features.staff_only_mode')),
             kioskUsePosWizard: @json((bool) env('KIOSK_USE_POS_WIZARD', false)),
+            // [LOCK-W6 2026-06-10] SPA shell parity with admin-pos-v4.blade:109 —
+            // pos-wizard.js reads this flag; without it the composer-aware
+            // path is dead on /admin/pos (SPA).
+            posWizardComposerAware: {
+                enabled: @json((bool) config('catalog_v15.pos_wizard_composer_aware.enabled', false)),
+            },
             // [iter15-mega-fix C-003/A-003 2026-05-10] Expose APP_ENV so the SPA
             // can suppress the "Connexion temps réel perdue" banner in dev/local
             // environments where Pusher/Soketi is not running. Production keeps
@@ -269,7 +275,7 @@
             fritesCheddarPrice: {{ (float) (\Smartisan\Settings\Facades\Settings::group('order_setup')->get('order_setup_frites_cheddar_price') ?? 1.00) }}
         };
     </script>
-    <script src="{{ asset('js/pos-wizard.js') }}?v=9"></script>
+    <script src="{{ asset('js/pos-wizard.js') }}?v=10"></script>
 
     <!-- Masquer Dine-In dans le POS : uniquement Emporter et Livraison -->
     <style>

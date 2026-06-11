@@ -84,21 +84,18 @@ describe('pos-wizard composer-aware path (T-WC-POS-RUNTIME-01)', () => {
         expect(SOURCE).toMatch(/console\.warn[\s\S]{0,200}pos-wizard\.composer[\s\S]{0,80}step skipped/);
     });
 
-    // [T-COMPO-6 2026-06-10] RENDER CONTRACT SENTINEL — comble le trou du string-match.
-    // GAP#1 (ultraplan) : buildStepsFromComposerProfile peut produire internalType
-    // 'generic_choices', mais renderStepContent n'a PAS de branche generic_choices ni
-    // de default → un step composer custom rend VIDE à la caisse. Ce sentinel VERROUILLE
-    // le fait : tout type producible doit avoir une branche de rendu. Tant que la branche
-    // 'generic_choices' n'est pas ajoutée à pos-wizard.js (FROZEN §7 → owner-gate+LOCK
-    // T-COMPO-2), ce test échouera si le flag composer-aware est activé sans le renderer.
-    // GAP DORMANT EN PROD : FK_POS_WIZARD_COMPOSER_AWARE_ENABLED défaut FALSE.
-    describe('T-COMPO-6 render-contract : tout internalType producible a une branche renderStepContent', () => {
-        // types producibles AVEC branche de rendu confirmée (renderStepContent 1131-1152)
+    // [T-COMPO-6 2026-06-10 → MAJ 2026-06-11 GAP#1 FERMÉ] RENDER CONTRACT SENTINEL.
+    // GAP#1 (ultraplan) était : buildStepsFromComposerProfile produit des steps composer
+    // (internalType 'generic_choices'/'taille') que renderStepContent ne rendait PAS → rendu
+    // VIDE à la caisse. T-COMPO-2 (renderer générique, owner-autorisé 2026-06-11 + dispute
+    // adversaire SAFE flag-OFF / READY flag-ON, LOCK_POS_WIZARD_GENERIC_RENDER_2026-06-10) a
+    // FERMÉ le gap : le dispatch route tout step composer (`step.composer_step`) vers
+    // `renderGenericChoicesStep`. Ce sentinel verrouille désormais la CLÔTURE (anti-régression).
+    describe('T-COMPO-6 render-contract : les steps composer ont un renderer (GAP#1 fermé)', () => {
+        // types legacy producibles AVEC leur propre branche de rendu confirmée
         const RENDERED_TYPES = ['pain', 'viande', 'sauce', 'garnitures', 'supplements', 'menu'];
-        // types producibles par les MAPs/fallback SANS branche → GAP#1 (rendu vide caisse)
-        const UNRENDERED_PRODUCIBLE = ['taille', 'generic_choices'];
 
-        it('les types rendus par renderStepContent existent bien (contrat de rendu)', () => {
+        it('les types legacy rendus par renderStepContent existent bien (contrat de rendu)', () => {
             for (const t of RENDERED_TYPES) {
                 expect(SOURCE, `renderStepContent doit gérer step.type === '${t}'`).toMatch(
                     new RegExp(`step\\.type === ['"]${t}['"]`)
@@ -106,18 +103,16 @@ describe('pos-wizard composer-aware path (T-WC-POS-RUNTIME-01)', () => {
             }
         });
 
-        it('GAP#1 DOCUMENTÉ : taille + generic_choices produits mais SANS branche (gated T-COMPO-2 frozen)', () => {
-            // 'taille' est mappé (COMPOSER_STEP_KEY_MAP taille:'taille') et 'generic_choices'
-            // est le fallback — AUCUN des deux n'a de branche dans renderStepContent → rend
-            // VIDE à la caisse (gap dormant : flag composer-aware OFF par défaut). Le vrai fix
-            // = ajouter ces branches dans pos-wizard.js (FROZEN §7 → owner-gate + LOCK T-COMPO-2).
+        it('GAP#1 FERMÉ : le dispatch route tout step composer vers renderGenericChoicesStep', () => {
+            // le fallback generic_choices est toujours produit côté buildStepsFromComposerProfile…
             expect(/internalType\s*=\s*['"]generic_choices['"]/.test(SOURCE),
                 'le fallback generic_choices est produit').toBe(true);
-            for (const t of UNRENDERED_PRODUCIBLE) {
-                const hasBranch = new RegExp(`step\\.type === ['"]${t}['"]`).test(SOURCE);
-                expect(hasBranch,
-                    `GAP#1 : '${t}' attendu SANS branche (frozen, gate T-COMPO-2) — si une branche apparaît, fermer le gap + MAJ sentinel`).toBe(false);
-            }
+            // …et MAINTENANT renderStepContent a la fonction + la branche de dispatch composer_step
+            // (renderer T-COMPO-2). Plus de rendu vide à la caisse pour un step composer custom.
+            expect(/function\s+renderGenericChoicesStep\s*\(/.test(SOURCE),
+                'renderGenericChoicesStep doit exister (renderer générique)').toBe(true);
+            expect(/step\.composer_step\b[\s\S]{0,80}renderGenericChoicesStep\(step\)/.test(SOURCE),
+                'le dispatch doit router step.composer_step → renderGenericChoicesStep').toBe(true);
         });
     });
 });
