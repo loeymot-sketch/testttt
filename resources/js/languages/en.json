@@ -567,6 +567,7 @@
         "encaisser_terminal_ref_placeholder": "TPE / SumUp transaction ref",
         "encaisser_success": "Order N°{order} collected",
         "encaisser_failed": "Counter-collect failed",
+        "error": "An error occurred",
         "cash_drawer_opened_simulation": "Drawer opened (simulation) — Order N°{order} collected",
         "tpe_validated_simulation": "Card payment validated (simulation) — Order N°{order} collected",
         "cc_source_kiosk": "Kiosk",

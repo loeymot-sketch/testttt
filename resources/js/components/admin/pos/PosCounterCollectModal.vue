@@ -586,6 +586,16 @@ export default {
           this.$emit('cancel');
           return;
         }
+        // [UIUX-W2 F6 2026-06-11] 429 rate-limit : le message backend brut
+        // est l'anglais « Too Many Attempts. » ET l'intercepteur axios global
+        // (bootstrap.js, bucket 'rl') toaste DÉJÀ un message FR avec le vrai
+        // Retry-After (« Trop de requêtes — patientez Xs… »). On supprime
+        // donc le second toast local (doublon EN brut) et on libère juste
+        // le bouton pour un nouvel essai.
+        if (err?.response?.status === 429) {
+          this.submitting = false;
+          return;
+        }
         const msg = err?.response?.data?.message || this.$t('label.encaisser_failed');
         alertService.error(msg);
         this.submitting = false;

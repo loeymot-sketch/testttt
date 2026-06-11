@@ -93,7 +93,6 @@ import LoadingComponent from "../components/LoadingComponent";
 import BreadcrumbComponent from "../components/BreadcrumbComponent";
 import PosCounterCollectModal from "../pos/PosCounterCollectModal.vue";
 import appService from "../../../services/appService";
-import alertService from "../../../services/alertService";
 import orderTypeEnum from "../../../enums/modules/orderTypeEnum";
 import { adminPriceMixin } from "../../../helpers/formatPrice";
 import { onEvents } from "../../../services/eventContract";
@@ -269,7 +268,10 @@ export default {
         },
         onEncaisseConfirmed() {
             this.encaisseOrder = null;
-            alertService.success(this.$t('label.encaisser_success', { order: '' }));
+            // [UIUX-W2 F6 2026-06-11] Toast succès supprimé ici : il
+            // doublonnait celui de PosCounterCollectModal (qui porte le VRAI
+            // numéro de commande) avec un numéro VIDE (« Commande N°
+            // encaissée »). On garde uniquement le refresh de la file.
             this.fetchPending();
         },
     },

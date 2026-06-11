@@ -598,6 +598,7 @@
         "encaisser_terminal_ref_placeholder": "Réf. transaction TPE / SumUp",
         "encaisser_success": "Commande N°{order} encaissée",
         "encaisser_failed": "Erreur lors de l'encaissement",
+        "error": "Une erreur est survenue",
         "cash_drawer_opened_simulation": "Tiroir ouvert (simulation) — Commande N°{order} encaissée",
         "tpe_validated_simulation": "Paiement TPE validé (simulation) — Commande N°{order} encaissée",
         "cc_source_kiosk": "Borne",
