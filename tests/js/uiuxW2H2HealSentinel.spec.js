@@ -23,3 +23,25 @@ describe('G1 — navbar profile popup is a valid ARIA dialog (no invalid menu ch
     expect(navbar).toMatch(/querySelectorAll\('\.paper-link'\)/);
   });
 });
+
+describe('G2 — POS a11y: target-size, low-contrast grays, vue-select orphan labels', () => {
+  it('gives the vue-select search input a >=24px hit target and fixes the 2.81:1 refresh gray', () => {
+    const pos = read('resources/js/components/admin/pos/PosComponent.vue');
+
+    expect(pos).toMatch(/:deep\(\.db-field-control \.vue-input input\)\s*{\s*min-height:\s*24px;/);
+    // #9a9a9a on white = 2.81:1 — must not come back on the refresh label.
+    expect(pos).not.toMatch(/\.pos-shortcuts__refresh\s*{[^}]*#9a9a9a/);
+    expect(pos).toMatch(/\.pos-shortcuts__refresh\s*{[^}]*var\(--pos-v5-muted, #6b6b6b\)/);
+  });
+
+  it('names every filter combobox via aria-label (vue-next-select overrides the passed id)', () => {
+    const list = read('resources/js/components/admin/posOrders/PosOrderListComponent.vue');
+    const hist = read('resources/js/components/admin/orderHistory/HistoriqueListComponent.vue');
+
+    expect(list).toMatch(/id="searchStatus"\s*\n\s*:aria-label="\$t\('label\.status'\)"/);
+    expect(list).toMatch(/id="user_id"\s*\n\s*:aria-label="\$t\('label\.customer'\)"/);
+    expect(hist).toMatch(/id="searchOrigin"\s*\n\s*:aria-label="\$t\('label\.origin'\)"/);
+    expect(hist).toMatch(/id="searchStatus"\s*\n\s*:aria-label="\$t\('label\.status'\)"/);
+    expect(hist).toMatch(/id="searchPayment"\s*\n\s*:aria-label="\$t\('label\.payment_status'\)"/);
+  });
+});

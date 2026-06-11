@@ -4688,6 +4688,14 @@ export default {
    :deep() overrides ici pour éviter une bataille de spécificité avec le
    composant enfant — single source of truth = ItemComponent.vue. */
 
+/* [UIUX-W2 G2 2026-06-11] a11y target-size : l'input de recherche rendu par
+   vue-next-select dans .db-field-control fait 19.5px de haut (la lib reset
+   padding + font 0.8rem) → min-height 24px (WCAG 2.5.8 minimum). L'enveloppe
+   .db-field-control reste à h-10 (40px) : aucun layout shift visible. */
+:deep(.db-field-control .vue-input input) {
+  min-height: 24px;
+}
+
 /* === 7. RESPONSIVE === */
 @media (max-width: 767px) {
   .fk-pos-v4.pos-v5-shell {
@@ -4850,7 +4858,10 @@ export default {
 .pos-shortcuts__refresh {
   margin: 4px 0 0 0;
   font-size: 11px;
-  color: var(--pos-v5-muted-2, #9a9a9a);
+  /* [UIUX-W2 G2 2026-06-11] l'ancien gris 9a9a9a sur blanc = 2.81:1 (axe contrast fail).
+     Aligné sur le gris muted du sibling .pos-shortcuts__empty : #6b6b6b ≈ 5.3:1.
+     (--pos-v5-muted-2 n'est défini nulle part — le fallback EST la couleur rendue.) */
+  color: var(--pos-v5-muted, #6b6b6b);
   text-align: center;
   font-variant-numeric: tabular-nums;
 }

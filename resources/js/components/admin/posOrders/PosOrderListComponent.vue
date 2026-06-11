@@ -31,7 +31,11 @@
                             <label for="searchStatus" class="db-field-title after:hidden">
                                 {{ $t('label.status') }}
                             </label>
+                            <!-- [UIUX-W2 G2 2026-06-11] vue-next-select écrase l'id passé (id interne
+                                 vsN-combobox) → label[for] orphelin ; aria-label tombe sur le div
+                                 role="combobox" via $attrs et nomme réellement le champ. -->
                             <vue-select class="db-field-control f-b-custom-select" id="searchStatus"
+                                :aria-label="$t('label.status')"
                                 v-model="props.search.status" :options="[
                                     { id: enums.orderStatusEnum.PENDING, name: $t('label.pending') },
                                     { id: enums.orderStatusEnum.ACCEPT, name: $t('label.accept') },
@@ -51,6 +55,7 @@
                                 {{ $t("label.customer") }}
                             </label>
                             <vue-select class="db-field-control f-b-custom-select" id="user_id"
+                                :aria-label="$t('label.customer')"
                                 v-model="props.search.user_id" :options="customers" label-by="name" value-by="id"
                                 :closeOnSelect="true" :searchable="true" :clearOnClose="true" placeholder="--"
                                 search-placeholder="--" />

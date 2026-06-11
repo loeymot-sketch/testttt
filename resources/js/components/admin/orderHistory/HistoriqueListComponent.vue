@@ -42,7 +42,10 @@
 
                         <div class="col-12 sm:col-6 md:col-4 xl:col-3">
                             <label for="searchOrigin" class="db-field-title after:hidden">{{ $t('label.origin') }}</label>
+                            <!-- [UIUX-W2 G2 2026-06-11] vue-next-select écrase l'id passé → label[for]
+                                 orphelin ; aria-label via $attrs nomme le combobox (idem ×3 ci-dessous). -->
                             <vue-select class="db-field-control f-b-custom-select" id="searchOrigin"
+                                :aria-label="$t('label.origin')"
                                 v-model="props.origin" :options="originOptions" label-by="name" value-by="id"
                                 :closeOnSelect="true" :searchable="false" :clearOnClose="true" placeholder="--"
                                 search-placeholder="--" />
@@ -51,6 +54,7 @@
                         <div class="col-12 sm:col-6 md:col-4 xl:col-3">
                             <label for="searchStatus" class="db-field-title after:hidden">{{ $t('label.status') }}</label>
                             <vue-select class="db-field-control f-b-custom-select" id="searchStatus"
+                                :aria-label="$t('label.status')"
                                 v-model="props.search.status" :options="[
                                     { id: enums.orderStatusEnum.ACCEPT, name: $t('label.accept') },
                                     { id: enums.orderStatusEnum.PREPARING, name: $t('label.preparing') },
@@ -63,6 +67,7 @@
                         <div class="col-12 sm:col-6 md:col-4 xl:col-3">
                             <label for="searchPayment" class="db-field-title after:hidden">{{ $t('label.payment_status') }}</label>
                             <vue-select class="db-field-control f-b-custom-select" id="searchPayment"
+                                :aria-label="$t('label.payment_status')"
                                 v-model="props.search.payment_status" :options="[
                                     { id: enums.paymentStatusEnum.PAID, name: $t('label.paid') },
                                     { id: enums.paymentStatusEnum.UNPAID, name: $t('label.unpaid') },
