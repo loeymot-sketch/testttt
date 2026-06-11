@@ -1693,7 +1693,7 @@
             "placeholder_phone": "06 12 34 56 78",
             "label_phone": "الهاتف *",
             "label_email": "البريد (اختياري)",
-            "placeholder_email": "you@example.com",
+            "placeholder_email": "you{'@'}example.com",
             "register_submit": "إنشاء حسابي",
             "back": "رجوع",
             "member_badge": "عضو ولاء",

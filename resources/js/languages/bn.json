@@ -1406,7 +1406,7 @@
             "placeholder_phone": "06 12 34 56 78",
             "label_phone": "Téléphone *",
             "label_email": "E-mail (facultatif)",
-            "placeholder_email": "vous@exemple.fr",
+            "placeholder_email": "vous{'@'}exemple.fr",
             "register_submit": "Créer mon compte",
             "back": "Retour",
             "member_badge": "Membre fidélité",
