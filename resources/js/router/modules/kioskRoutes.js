@@ -19,10 +19,12 @@ const KioskWaitingComponent      = () => import(/* webpackChunkName: "kiosk-shel
 const KioskConfirmationComponent = () => import(/* webpackChunkName: "kiosk-shell" */ "../../components/frontend/kiosk/KioskConfirmationComponent.vue");
 // [KIOSK-DS V1 Phase 3] Écrans UX critiques (cash + erreurs globales).
 const KioskCashInstructionComponent      = () => import(/* webpackChunkName: "kiosk-shell" */ "../../components/frontend/kiosk/KioskCashInstructionComponent.vue");
-const KioskErrorNetworkComponent         = () => import(/* webpackChunkName: "kiosk-errors" */ "../../components/frontend/kiosk/KioskErrorNetworkComponent.vue");
-const KioskErrorMenuUnavailableComponent = () => import(/* webpackChunkName: "kiosk-errors" */ "../../components/frontend/kiosk/KioskErrorMenuUnavailableComponent.vue");
-const KioskErrorProductRemovedComponent  = () => import(/* webpackChunkName: "kiosk-errors" */ "../../components/frontend/kiosk/KioskErrorProductRemovedComponent.vue");
-const KioskErrorPaymentRefusedComponent  = () => import(/* webpackChunkName: "kiosk-errors" */ "../../components/frontend/kiosk/KioskErrorPaymentRefusedComponent.vue");
+// webpackPrefetch: le chunk d'erreurs doit être en cache navigateur AVANT une coupure
+// réseau, sinon l'écran « Connexion perdue » est lui-même injoignable hors-ligne (W4-N1).
+const KioskErrorNetworkComponent         = () => import(/* webpackChunkName: "kiosk-errors", webpackPrefetch: true */ "../../components/frontend/kiosk/KioskErrorNetworkComponent.vue");
+const KioskErrorMenuUnavailableComponent = () => import(/* webpackChunkName: "kiosk-errors", webpackPrefetch: true */ "../../components/frontend/kiosk/KioskErrorMenuUnavailableComponent.vue");
+const KioskErrorProductRemovedComponent  = () => import(/* webpackChunkName: "kiosk-errors", webpackPrefetch: true */ "../../components/frontend/kiosk/KioskErrorProductRemovedComponent.vue");
+const KioskErrorPaymentRefusedComponent  = () => import(/* webpackChunkName: "kiosk-errors", webpackPrefetch: true */ "../../components/frontend/kiosk/KioskErrorPaymentRefusedComponent.vue");
 
 function getKioskAutoCredentials() {
     if (typeof window === 'undefined') return null;
