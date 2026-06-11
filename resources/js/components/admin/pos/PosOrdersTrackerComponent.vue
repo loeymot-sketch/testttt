@@ -551,7 +551,11 @@ export default {
                 // filter on status alone — same approach as the other lanes —
                 // so any order arriving at this status surfaces here.
                 else if (s === orderStatusEnum.OUT_FOR_DELIVERY) buckets.onTheWay.push(o);
-                else if (s === orderStatusEnum.DELIVERED) buckets.delivered.push(o);
+                // [UIUX-W2 F4 2026-06-11] La fenêtre de fetch couvre 48h pour
+                // garder les ACTIVES d'hier soir après minuit ; la lane
+                // « Terminées » conserve sa sémantique JOUR (les livrées
+                // d'hier n'inondent pas le board).
+                else if (s === orderStatusEnum.DELIVERED && this._isCreatedToday(o)) buckets.delivered.push(o);
             }
             // Sort each bucket: oldest first for active queues, newest first for delivered.
             buckets.accept.sort((a, b) => this._tsOf(a) - this._tsOf(b));
@@ -756,11 +760,17 @@ export default {
         async fetchOrders() {
             this.loading = this.orders.length === 0;
             try {
-                const today = this._todayRange();
+                // [UIUX-W2 F4 2026-06-11] Fenêtre 48h (était _todayRange =
+                // jour courant strict) : une commande ACTIVE créée hier soir
+                // disparaissait du kanban à minuit alors que la cuisine la
+                // traitait encore. La lane « Terminées » reste scoppée au
+                // jour côté client (cf. ordersByStatus) pour ne pas inonder
+                // le board avec les livrées d'hier.
+                const window = this._activeWindowRange();
                 const res = await this.$store.dispatch('posOrder/lists', {
                     per_page: 100,
-                    from_date: today.from,
-                    to_date: today.to,
+                    from_date: window.from,
+                    to_date: window.to,
                     vuex: false,
                 });
                 const data = res?.data?.data || [];
@@ -771,12 +781,28 @@ export default {
                 this.loading = false;
             }
         },
-        _todayRange() {
-            const d = new Date();
+        _localYmd(d) {
             const y = d.getFullYear();
             const m = String(d.getMonth() + 1).padStart(2, '0');
             const day = String(d.getDate()).padStart(2, '0');
-            return { from: `${y}-${m}-${day}`, to: `${y}-${m}-${day}` };
+            return `${y}-${m}-${day}`;
+        },
+        // [UIUX-W2 F4] from = J-1, to = J — couvre le service du soir qui
+        // chevauche minuit. Le backend liste newest-first avec per_page=100 :
+        // les actives (récentes) restent servies en priorité même un jour
+        // chargé.
+        _activeWindowRange() {
+            const now = new Date();
+            const yesterday = new Date(now.getTime() - 24 * 3600 * 1000);
+            return { from: this._localYmd(yesterday), to: this._localYmd(now) };
+        },
+        // [UIUX-W2 F4] Sémantique JOUR de la lane « Terminées ».
+        _isCreatedToday(o) {
+            const t = o ? (o.created_at || o.updated_at) : null;
+            if (!t) return false;
+            const d = new Date(t);
+            if (!Number.isFinite(d.getTime())) return false;
+            return this._localYmd(d) === this._localYmd(new Date());
         },
         async markDelivered(order) {
             if (!order || order._delivering) return;
