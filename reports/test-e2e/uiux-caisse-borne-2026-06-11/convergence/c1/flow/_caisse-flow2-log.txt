@@ -1,0 +1,20 @@
+session caisse: modal encore visible=false
+wizard Coca ajouté
+mini-commande: 1 ligne(s), total="Total1,50 €"
+modal encaisse: hero="BM T2 Admin" vh=900
+  btn "Déconnexion" bottom=59 VISIBLE
+  btn "" bottom=40 VISIBLE
+  btn "🇫🇷 +33" bottom=125 VISIBLE
+  btn "Ajouter un client" bottom=309 VISIBLE
+  btn "✕" bottom=53 VISIBLE
+  btn "💵Espèces" bottom=315 VISIBLE
+  btn "💳Carte (TPE)" bottom=315 VISIBLE
+  btn "🔀Multi-paiement" bottom=315 VISIBLE
+  btn "1" bottom=501 VISIBLE
+  btn "2" bottom=501 VISIBLE
+  btn "3" bottom=501 VISIBLE
+  btn "⌫" bottom=565 VISIBLE
+  btn "4" bottom=565 VISIBLE
+  btn "5" bottom=565 VISIBLE
+clic validation encaissement
+post-encaisse messages: ["Encaissement","encaisser","ENCAISSER BORNE (50)"]

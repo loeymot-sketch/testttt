@@ -624,9 +624,14 @@ export default {
             ];
         },
         paymentStatusEnumArray: function () {
+            // [W6-B1 2026-06-11] PENDING_COUNTER(15)/REFUNDED(20) manquaient →
+            // badge + libellé paiement VIDES sur le show des commandes borne à
+            // encaisser / remboursées. Miroir HistoriqueListComponent:392-395.
             return {
                 [paymentStatusEnum.PAID]: this.$t("label.paid"),
-                [paymentStatusEnum.UNPAID]: this.$t("label.unpaid")
+                [paymentStatusEnum.UNPAID]: this.$t("label.unpaid"),
+                [paymentStatusEnum.PENDING_COUNTER]: this.$t("label.pending_counter"),
+                [paymentStatusEnum.REFUNDED]: this.$t("label.refunded")
             }
         },
         posPaymentMethodEnumArray: function () {

@@ -1,0 +1,28 @@
+HTTP 401 http://127.0.0.1:8768/api/login
+CONSOLE-ERR /kiosk/idle :: Failed to load resource: the server responded with a status of 401 (Unauthorized)
+kioskBoot: token OK (try 1)
+start → /kiosk/categories?cat=1
+PRICE-OK categories (aucun format EN détecté)
+simple ajouté kiosk-product-add-49 (cat=9) 0→1
+composé ajouté kiosk-product-add-38 (cat=4) 21→22
+addProducts: simple=true composed=true cart=22
+cart: 22 lignes, total="39,90 €"
+PRICE-OK cart (aucun format EN détecté)
+loyalty → /kiosk/loyalty
+loyalty input apres numpad="0699999999"
+HTTP 429 http://127.0.0.1:8768/api/frontend/loyalty/check
+CONSOLE-ERR /kiosk/loyalty :: Failed to load resource: the server responded with a status of 429 (Too Many Requests)
+loyalty verify inconnu → message="Trop de tentatives, patientez quelques secondes."
+PRICE-OK loyalty-input (aucun format EN détecté)
+loyalty register rend: true
+PRICE-OK loyalty-register (aucun format EN détecté)
+après loyalty → /kiosk/cart
+après checkout → /kiosk/upsell
+PRICE-OK upsell (aucun format EN détecté)
+upsell passé → /kiosk/payment
+PRICE-OK payment (aucun format EN détecté)
+payment: title="PAIEMENT À LA CAISSE" total="TOTAL À RÉGLER : 39,90 €"
+ORDER-POST 201 id=4512 queue=A0001 total=39.9
+après confirm → /kiosk/cash-instruction?number=A0001&total=39.9&timeout=45
+PRICE-OK cash-instruction (aucun format EN détecté)
+cash-instruction: numéro="#A0001" montant="39,90 €"

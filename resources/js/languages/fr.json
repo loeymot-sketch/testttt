@@ -1202,7 +1202,7 @@
         "drawer_opened_at": "Caisse ouverte à",
         "expected_cash": "Espèces attendues",
         "cash_collected": "Espèces encaissées",
-        "cash_collected_today": "Espèces encaissées aujourd'hui",
+        "cash_collected_today": "Espèces encaissées (session en cours)",
         "expected_in_drawer": "Espèces attendues au tiroir",
         "cash_drawer_count_pending_note": "Pour calculer l'écart, saisir le comptage physique du tiroir (à venir).",
         "cash_diff": "Écart caisse",
