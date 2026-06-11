@@ -1260,6 +1260,7 @@
         },
         "pay_screen": {
             "offline_queued_title": "Bestellung offline gespeichert",
+            "network_lost": "Connexion perdue. Votre commande n’a pas été envoyée.",
             "offline_queued_sub": "Sie wird an die Kasse übermittelt, sobald die Verbindung wieder besteht. Bitte gehen Sie zur Theke — das Personal schließt Ihre Bestellung ab.",
             "title": "Choisissez votre paiement",
             "total_prefix": "Total à régler :",

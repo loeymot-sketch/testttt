@@ -1824,6 +1824,7 @@
         },
         "pay_screen": {
             "offline_queued_title": "Order saved offline",
+            "network_lost": "Connection lost. Your order was not sent.",
             "offline_queued_sub": "It will be sent to the counter once the connection is back. Please go to the counter — staff will complete your order.",
             "title": "Choose how to pay",
             "total_prefix": "Amount to pay:",

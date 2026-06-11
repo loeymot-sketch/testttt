@@ -555,10 +555,17 @@ export default {
       } catch (err) {
         this.tpeWaiting = false;
         this.tpeCanCancel = false;
+        // [UIUX-W4 K10 2026-06-11] Coupure réseau pendant l'envoi de la
+        // commande (axios: request émis mais aucune response, ou
+        // ERR_NETWORK) → ne JAMAIS afficher le « Network Error » brut (EN).
+        const isNetworkError = !err?.response
+          && (err?.code === 'ERR_NETWORK' || err?.message === 'Network Error' || !!err?.request);
         // [AUDIT-52-BUG7] Specific user-friendly message for TPE timeout
         let msg;
         if (err?.message === 'TPE_TIMEOUT') {
           msg = this.$t('kiosk.payment.tpe_timeout_message');
+        } else if (isNetworkError) {
+          msg = this.$t('kiosk.pay_screen.network_lost');
         } else {
           msg = err?.response?.data?.errors
             ? Object.values(err.response.data.errors).flat().join(' ')
@@ -576,6 +583,17 @@ export default {
             { key: 'kiosk.pay_screen.speech_error' },
           ).catch(() => {});
         } catch (_) {}
+
+        // [UIUX-W4 K10] Erreur réseau ≠ refus TPE : router vers l'écran
+        // réseau dédié (/kiosk/error/network — CTA Réessayer + appel
+        // staff, AUCUN reset panier) au lieu d'empiler le compteur de
+        // refus paiement.
+        if (isNetworkError) {
+          try {
+            this.$router.push({ name: 'kiosk.error.network' });
+          } catch (_) { /* navigation guard hors dispo (tests) → no-op */ }
+          return;
+        }
 
         // Kiosk Phase 9.1.11 — au-delà de MAX_PAYMENT_FAILURES refus TPE
         // consécutifs, on route vers l'écran d'erreur dédié qui offre des

@@ -1260,6 +1260,7 @@
         },
         "pay_screen": {
             "offline_queued_title": "অর্ডার অফলাইনে সংরক্ষিত হয়েছে",
+            "network_lost": "Connexion perdue. Votre commande n’a pas été envoyée.",
             "offline_queued_sub": "সংযোগ ফিরে এলে এটি কাউন্টারে পাঠানো হবে। অনুগ্রহ করে কাউন্টারে যান — কর্মীরা আপনার অর্ডার সম্পন্ন করবেন।",
             "title": "Choisissez votre paiement",
             "total_prefix": "Total à régler :",
