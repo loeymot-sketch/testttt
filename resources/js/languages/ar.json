@@ -1696,6 +1696,8 @@
             "label_phone": "الهاتف *",
             "label_email": "البريد (اختياري)",
             "placeholder_email": "you{'@'}example.com",
+            "too_many_attempts": "محاولات كثيرة جداً، يرجى الانتظار بضع ثوانٍ.",
+            "numpad_del_aria": "مسح آخر رقم",
             "register_submit": "إنشاء حسابي",
             "back": "رجوع",
             "member_badge": "عضو ولاء",

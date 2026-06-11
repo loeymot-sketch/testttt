@@ -3,7 +3,8 @@
 
     <!-- Header -->
     <div class="kiosk-loyalty-header">
-      <button type="button" class="kiosk-back-btn" @click="goBack">
+      <!-- [UIUX-W4 K6] bouton SVG-only → aria-label FR -->
+      <button type="button" class="kiosk-back-btn" :aria-label="$t('kiosk.loyalty_screen.back')" @click="goBack">
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
           <path d="M19 12H5M12 5l-7 7 7 7" stroke="currentColor" stroke-width="2.5"
             stroke-linecap="round" stroke-linejoin="round"/>
@@ -43,6 +44,7 @@
             :key="key"
             class="kiosk-numpad-btn"
             :class="{ wide: key === 'del', zero: key === '0' }"
+            :aria-label="key === 'del' ? $t('kiosk.loyalty_screen.numpad_del_aria') : null"
             @click="handleNumpad(key)"
           >
             <template v-if="key === 'del'">
@@ -501,6 +503,10 @@ export default {
       } catch (err) {
         if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
           this.error = this.$t('kiosk.loyalty_screen.request_timeout');
+        } else if (err.response?.status === 429) {
+          // [UIUX-W4 K6] throttle Laravel : ne pas afficher le
+          // « Too Many Attempts. » brut (EN) au client borne.
+          this.error = this.$t('kiosk.loyalty_screen.too_many_attempts');
         } else {
           const msg = err.response?.data?.message || err.response?.data?.errors?.code?.[0];
           this.error = msg || this.$t('kiosk.loyalty_screen.error_not_found');
@@ -589,7 +595,10 @@ export default {
         // [PHASE-6.4] Analytics : registration réussie (anonyme — pas de phone/email ici).
         try { kioskAnalytics.track('loyalty_scanned', { registration: true }); } catch (_) {}
       } catch (err) {
-        const msg = err.response?.data?.message || this.$t('kiosk.loyalty_screen.register_error_generic');
+        // [UIUX-W4 K6] même hygiène 429 que la vérification de code.
+        const msg = err.response?.status === 429
+          ? this.$t('kiosk.loyalty_screen.too_many_attempts')
+          : (err.response?.data?.message || this.$t('kiosk.loyalty_screen.register_error_generic'));
         this.registerError = msg;
       } finally {
         this.registerLoading = false;

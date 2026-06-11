@@ -1899,6 +1899,8 @@
             "label_phone": "Phone *",
             "label_email": "Email (optional)",
             "placeholder_email": "you{'@'}example.com",
+            "too_many_attempts": "Too many attempts, please wait a few seconds.",
+            "numpad_del_aria": "Delete the last digit",
             "register_submit": "Create my account",
             "back": "Back",
             "member_badge": "Loyalty member",

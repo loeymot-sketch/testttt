@@ -1916,6 +1916,8 @@
             "label_phone": "Téléphone *",
             "label_email": "E-mail (facultatif)",
             "placeholder_email": "vous{'@'}exemple.fr",
+            "too_many_attempts": "Trop de tentatives, patientez quelques secondes.",
+            "numpad_del_aria": "Effacer le dernier chiffre",
             "register_submit": "Créer mon compte",
             "back": "Retour",
             "member_badge": "Membre fidélité",
