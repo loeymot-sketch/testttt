@@ -1,0 +1,26 @@
+LOGIN admin → /admin/dashboard
+OK   pos-orders  /admin/pos-orders  → final=/admin/pos-orders
+OK   pos-orders-show  /admin/pos-orders/show/4511  → final=/admin/pos-orders/show/4511
+OK   pos-orders-tracker  /admin/pos-orders-tracker  → final=/admin/pos-orders-tracker
+OK   encaissement  /admin/encaissement  → final=/admin/encaissement
+OK   cash-overview  /admin/cash-overview  → final=/admin/cash-overview
+OK   cash-sessions-report  /admin/cash-sessions-report  → final=/admin/cash-sessions-report
+OK   historique  /admin/historique  → final=/admin/historique
+OK   pos-main  /admin/pos  → final=/admin/pos
+OK   pos-floorplan  /admin/pos/floorplan  → final=/admin/pos/floorplan
+OK   kiosk-login  /kiosk/login  → final=/kiosk/idle
+OK   kiosk-idle  /kiosk/idle  → final=/kiosk/idle
+OK   kiosk-categories  /kiosk/categories  → final=/kiosk/idle
+OK   kiosk-products-sandwich  /kiosk/products/1  → final=/kiosk/idle
+OK   kiosk-products-tacos  /kiosk/products/21  → final=/kiosk/idle
+OK   kiosk-cart-empty  /kiosk/cart  → final=/kiosk/cart
+OK   kiosk-loyalty  /kiosk/loyalty  → final=/kiosk/cart
+OK   kiosk-upsell  /kiosk/upsell  → final=/kiosk/cart
+OK   kiosk-payment  /kiosk/payment  → final=/kiosk/cart
+OK   kiosk-cash-instruction  /kiosk/cash-instruction  → final=/kiosk/cash-instruction
+OK   kiosk-confirmation  /kiosk/confirmation  → final=/kiosk/idle
+OK   kiosk-admin  /kiosk/admin  → final=/kiosk/idle
+OK   kiosk-error-network  /kiosk/error/network  → final=/kiosk/error/network
+OK   kiosk-error-menu-unavailable  /kiosk/error/menu-unavailable  → final=/kiosk/error/menu-unavailable
+OK   kiosk-error-product-removed  /kiosk/error/product-removed  → final=/kiosk/error/product-removed
+OK   kiosk-error-payment-refused  /kiosk/error/payment-refused  → final=/kiosk/error/payment-refused
