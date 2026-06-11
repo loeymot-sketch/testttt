@@ -14,6 +14,27 @@
  */
 
 /**
+ * [UIUX-W4 K1 2026-06-11] Normalise la position du symbole monétaire.
+ *
+ * Le backend expose l'enum `App\Enums\CurrencyPosition` (LEFT=5, RIGHT=10)
+ * dans `globalState.lists.site_currency_position` — PAS la chaîne
+ * 'left'/'right'. L'ancien comparateur strict `position === 'right'`
+ * tombait donc toujours dans la branche "left" → « €2,00 » au lieu de
+ * « 2,00 € » sur toutes les surfaces borne.
+ *
+ * Tolère l'enum numérique (5/10), sa forme string ('5'/'10') et les
+ * chaînes legacy ('left'/'right'). Défaut FR : symbole à droite.
+ *
+ * @param {number|string} position
+ * @returns {'left'|'right'}
+ */
+export function normalizeCurrencyPosition(position) {
+    if (position === 5 || position === '5' || position === 'left') return 'left';
+    if (position === 10 || position === '10' || position === 'right') return 'right';
+    return 'right';
+}
+
+/**
  * Format a price value using the configured currency and locale.
  *
  * @param {number|string} value - The price to format
@@ -34,7 +55,7 @@ export function formatKioskPrice(value, options = {}) {
     // If we have a direct currency symbol (from settings), use manual formatting
     if (options.currencySymbol) {
         const formatted = num.toFixed(digits).replace('.', ',');
-        if (options.position === 'right') {
+        if (normalizeCurrencyPosition(options.position) === 'right') {
             return `${formatted} ${options.currencySymbol}`;
         }
         return `${options.currencySymbol}${formatted}`;
@@ -63,7 +84,8 @@ export function getPriceOptionsFromStore(lists) {
     if (!lists) return {};
     return {
         currencySymbol: lists.site_default_currency_symbol || '€',
-        position: lists.site_currency_position || 'right',
+        // [UIUX-W4 K1] enum numérique CurrencyPosition (5/10) → 'left'/'right'
+        position: normalizeCurrencyPosition(lists.site_currency_position),
         digits: parseInt(lists.site_digit_after_decimal_point, 10) || 2,
     };
 }
