@@ -32,21 +32,22 @@
         </p>
 
         <div class="kiosk-inactivity-actions">
+          <!-- [UIUX-W4 K3 2026-06-11] KsButton n'a pas de prop `label`
+               (slot-only, cf. ds/KsButton.vue) — l'ancien `:label=` rendait
+               des boutons VIDES. Texte passé en slot. -->
           <KsButton
             variant="primary"
             size="lg"
-            :label="$t('kiosk.inactivity.stay') || 'Je suis là'"
             data-testid="kiosk-inactivity-stay"
             @click="onStay"
             ref="stayBtn"
-          />
+          >{{ $t('kiosk.inactivity.stay') || 'Je suis là' }}</KsButton>
           <KsButton
             variant="ghost"
             size="lg"
-            :label="$t('kiosk.inactivity.leave') || 'Abandonner'"
             data-testid="kiosk-inactivity-leave"
             @click="onLeave"
-          />
+          >{{ $t('kiosk.inactivity.leave') || 'Abandonner' }}</KsButton>
         </div>
       </div>
     </div>
