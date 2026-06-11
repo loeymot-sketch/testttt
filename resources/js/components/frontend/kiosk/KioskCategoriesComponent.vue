@@ -142,7 +142,29 @@
                 </p>
               </div>
 
-              <div class="kiosk-product-grid" role="list">
+              <!-- [UIUX-W4 K4 2026-06-11] Défense front : catégorie sans
+                   produit (le backend les filtre désormais, mais un cache
+                   menu stale peut encore en servir une) → état vide FR +
+                   CTA retour vers une catégorie peuplée, au lieu d'une
+                   grille blanche cul-de-sac. -->
+              <div
+                v-if="catalogProducts.length === 0"
+                class="kiosk-product-zone-empty"
+                role="status"
+                data-testid="kiosk-products-empty"
+              >
+                <span class="kiosk-product-zone-empty-icon" aria-hidden="true">🍽️</span>
+                <p class="kiosk-product-zone-empty-text">{{ $t('kiosk.catalog.category_empty') }}</p>
+                <button
+                  v-if="firstPopulatedCategory"
+                  type="button"
+                  class="kiosk-catalogue-retry-btn"
+                  data-testid="kiosk-products-empty-back"
+                  @click="selectCategory(firstPopulatedCategory)"
+                >{{ $t('kiosk.catalog.category_empty_cta') }}</button>
+              </div>
+
+              <div v-else class="kiosk-product-grid" role="list">
                 <div
                   v-for="product in catalogProducts"
                   :key="product.id"
@@ -387,6 +409,21 @@ export default {
     },
     filteredProductCount() {
       return this.catalogProducts.length;
+    },
+    /**
+     * [UIUX-W4 K4] Première catégorie de la sidebar ayant au moins un
+     * produit — cible du CTA « Voir les autres catégories » de l'état
+     * vide (défense contre un cache menu stale servant une catégorie
+     * vidée côté backend).
+     */
+    firstPopulatedCategory() {
+      const items = this.allItems || [];
+      return (this.sidebarCategories || []).find((cat) =>
+        items.some(
+          (it) =>
+            parseInt(it.category_id ?? it.item_category_id, 10) === parseInt(cat.id, 10),
+        ),
+      ) || null;
     },
     customerAllergenCodes() {
       // Alimenté par scan loyalty — sinon vide. Lu depuis le store kioskSettings.
@@ -1102,6 +1139,29 @@ export default {
   margin: 4px 0 0;
   font-size: 14px;
   color: var(--kiosk-text-mute);
+}
+
+/* [UIUX-W4 K4] État vide d'une catégorie sans produit (défense front) */
+.kiosk-product-zone-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 64px 24px;
+  text-align: center;
+}
+
+.kiosk-product-zone-empty-icon {
+  font-size: 56px;
+  line-height: 1;
+}
+
+.kiosk-product-zone-empty-text {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--kiosk-text-muted);
+  margin: 0;
 }
 
 .kiosk-product-grid {

@@ -1744,6 +1744,8 @@
             "loading_menu": "Loading menu…",
             "load_error_title": "Unable to load the menu.",
             "no_categories": "No categories available right now.",
+            "category_empty": "No products available in this category right now.",
+            "category_empty_cta": "Browse other categories",
             "product_one": "product",
             "product_many": "products",
             "abandon_order": "Cancel my order",

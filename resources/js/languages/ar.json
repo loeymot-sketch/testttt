@@ -1541,6 +1541,8 @@
             "loading_menu": "جاري تحميل القائمة…",
             "load_error_title": "تعذّر تحميل القائمة.",
             "no_categories": "لا توجد فئات متاحة حالياً.",
+            "category_empty": "لا توجد منتجات متاحة في هذه الفئة حالياً.",
+            "category_empty_cta": "تصفح الفئات الأخرى",
             "product_one": "منتج",
             "product_many": "منتجات",
             "abandon_order": "إلغاء طلبي",

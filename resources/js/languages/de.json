@@ -1183,6 +1183,8 @@
             "loading_menu": "Chargement du menu…",
             "load_error_title": "Impossible de charger le menu.",
             "no_categories": "Aucune catégorie disponible pour le moment.",
+            "category_empty": "Aucun produit disponible dans cette catégorie pour le moment.",
+            "category_empty_cta": "Voir les autres catégories",
             "product_one": "produit",
             "product_many": "produits",
             "abandon_order": "Abandonner ma commande",

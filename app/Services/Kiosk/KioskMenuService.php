@@ -109,6 +109,33 @@ final class KioskMenuService
             ->filter(fn (Item $it): bool => $it->isVisibleOn(self::CHANNEL))
             ->values();
 
+        // -- [UIUX-W4 K4 2026-06-11] Catégories sans item visible ----------
+        // Une catégorie active mais vide (ex. « Tacos Signature » dont
+        // l'unique item est soft-deleted) créait un cul-de-sac écran blanc
+        // sur la borne (sidebar → grille produits vide, aucune issue).
+        // On exclut du payload toute catégorie sans item visible, en
+        // conservant les parents dont au moins un enfant visible est peuplé
+        // (hiérarchie sidebar intacte). Verrouillé par
+        // tests/Feature/Kiosk/KioskMenuEmptyCategoryTest.php.
+        $categoryIdsWithItems = $visibleItems
+            ->map(fn (Item $it): int => (int) $it->item_category_id)
+            ->unique()
+            ->flip();
+
+        $visibleCategories = $visibleCategories
+            ->filter(function (ItemCategory $cat) use ($visibleCategories, $categoryIdsWithItems): bool {
+                if (isset($categoryIdsWithItems[(int) $cat->id])) {
+                    return true;
+                }
+
+                // Parent sans item direct : gardé si un enfant visible est peuplé.
+                return $visibleCategories->contains(
+                    fn (ItemCategory $child): bool => (int) $child->parent_id === (int) $cat->id
+                        && isset($categoryIdsWithItems[(int) $child->id])
+                );
+            })
+            ->values();
+
         // -- Upsell rules actives pour la branche --------------------------
         $upsellRules = UpsellRule::query()
             ->activeForBranch($branchId)
