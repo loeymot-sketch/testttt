@@ -142,10 +142,24 @@ class PaymentService
                 'type'           => 'cash_back'
             ]);
 
+            // [HEAL dispute-r1 E-ADV-3 2026-06-12] Wallet guard. Kiosk orders
+            // carry the MACHINE account on user_id — pre-fix, every borne
+            // refund credited the ADMIN/staff wallet (observed live: admin
+            // balance 2,00 → 5,80 after a 3,80 borne refund) while the real
+            // money already left the DRAWER (cash_movements OUT) = phantom
+            // liability double-counting the refund. The wallet credit is for
+            // REAL customer accounts only; kiosk-machine / staff / walk-in
+            // identities never receive it (the refund is cash at the counter).
+            // The cash_back Transaction + NF525 audit row below are unchanged.
             $user = User::find($order->user_id);
-            if ($user) {
+            if ($user && $this->isWalletCreditableCustomer($user)) {
                 $user->balance = ($user->balance + $order->total);
                 $user->save();
+            } elseif ($user) {
+                Log::info('[cashBack] wallet credit skipped — kiosk-machine/staff/walk-in identity', [
+                    'order_id' => (int) $order->id,
+                    'user_id' => (int) $user->id,
+                ]);
             }
 
             // [POS-9.4.BL.2] NF525 audit trail on cash back. A cash back is
@@ -813,6 +827,41 @@ class PaymentService
         if (! $isCounterDeferred) {
             throw new \InvalidArgumentException('This order is not a pending counter payment.', 422);
         }
+    }
+
+    /**
+     * [HEAL dispute-r1 E-ADV-3] A refund wallet credit may only target a REAL
+     * customer account — never a kiosk machine account, a staff member, or
+     * the walk-in/counter placeholder (their "refund" is physical cash at the
+     * drawer; crediting their wallet double-counts the drawer OUT and, for
+     * the machine account, inflates the ADMIN balance).
+     */
+    private function isWalletCreditableCustomer(User $user): bool
+    {
+        if (\App\Models\KioskMachine::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
+            ->where('user_id', $user->id)
+            ->exists()) {
+            return false;
+        }
+
+        $email = strtolower((string) $user->email);
+        if (in_array($email, [
+            \App\Services\Pos\WalkInCustomerResolver::EMAIL,
+            'walkingcustomer@example.com',
+        ], true)) {
+            return false;
+        }
+
+        try {
+            if (method_exists($user, 'hasAnyRole')
+                && $user->hasAnyRole(['Admin', 'Branch Manager', 'POS Operator', 'Chef', 'Stuff', 'Waiter'])) {
+                return false;
+            }
+        } catch (\Throwable) {
+            // Roles unseeded in narrow bootstrap contexts — fall through.
+        }
+
+        return true;
     }
 
     private function counterPaymentMethodLabel(int $mode): string

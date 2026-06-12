@@ -71,7 +71,16 @@ class SimpleOrderResource extends JsonResource
             'parent_order_id'              => $this->parent_order_id,
             'status'                       => $this->status,
             'status_name'                  => trans('orderStatus.' . $this->status),
-            'customer_name'                => $this->user?->name,
+            // [HEAL dispute-r1 E-ADV-3 2026-06-12] Kiosk orders carry the
+            // MACHINE account on user_id (plumbing identity — ownership checks
+            // + finalizePaidKioskOrder depend on it). Surfacing that account's
+            // name (« Admin Le Cayenne ») as the CLIENT on historique/tracker
+            // leaked the machine identity and contradicted the encaissement/
+            // show surfaces (« Client borne »). Cheap column check (no N+1):
+            // kiosk-surface orders display the unified walk-in label.
+            'customer_name'                => str_contains(strtolower((string) ($this->source_surface ?? '')), 'kiosk')
+                ? 'Client borne'
+                : $this->user?->name,
             // [Wave S-4 P-OWNER 2026-05-20] Suivi commandes "À ENCAISSER"
             // column filter. Pure projection — no business rule changes here:
             // upstream FrontendOrderService stamps the canonical signals at
