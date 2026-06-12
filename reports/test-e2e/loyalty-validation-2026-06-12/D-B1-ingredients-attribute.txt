@@ -1,0 +1,103 @@
+Filiale
+Le Cayenne (Principal)
+Le Cayenne (Principal)
+Bonjour
+Admin Le Cayenne
+Admin Le Cayenne
+
+admin@lecayenne.fr
+
++330600000000
+
+2,00 €
+Modifier Le Profil
+Changer Le Mot De Passe
+Déconnexion
+Tableau De Bord
+POS
+Produits & Stock
+Catalogue
+Attribut D’articles
+Ingrédients
+Commandes Caisse
+Historique
+Encaissement
+Vue Caisse Unifiée
+Caisse Livreur
+CAISSE ET COMMANDES
+Écran Cuisine
+Suivi Client
+COMMUNICATIONS
+Notifications Push
+Messages
+Abonnés
+UTILISATEURS
+Administrateurs
+Employés
+Chefs
+COMPTES
+Transactions
+RAPPORTS
+Rapport Des Ventes
+Rapport Articles
+CONFIGURATION
+Paramètres
+
+FOODKING V1
+
+Ingrédients
+
+Gestion des viandes, sauces, suppléments et add-ons
+
+9
+Tous
+Viandes & Attributs
+Suppléments
+Add-ons
+Liste des ingrédients avec leur statut de disponibilité
+NOM	TYPE	UTILISATION	ACTIONS
+
+
+Viande 1
+
+	Viandes & Attributs	Non utilisé	Voir les détails
+
+
+Viande 2
+
+	Viandes & Attributs	Non utilisé	Voir les détails
+
+
+Viande 3
+
+	Viandes & Attributs	Non utilisé	Voir les détails
+
+
+Viande 4
+
+	Viandes & Attributs	Non utilisé	Voir les détails
+
+
+Sauce (1ère Gratuite)
+
+	Viandes & Attributs	Non utilisé	Voir les détails
+
+
+Type de Pain
+
+	Viandes & Attributs	Non utilisé	Voir les détails
+
+
+Base bol
+
+	Viandes & Attributs	Non utilisé	Voir les détails
+
+
+Sauce bol
+
+	Viandes & Attributs	Utilisé dans 7 produit(s)	Voir les détails
+
+
+Style frites
+
+	Viandes & Attributs	Utilisé dans 2 produit(s)	Voir les détails

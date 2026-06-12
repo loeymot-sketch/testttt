@@ -141,11 +141,16 @@ final class PosRedemptionService
             }
 
             // [LOCK §6.7] Discount cannot exceed subtotal.
+            // [F2-01 GOAL 2026-06-12] comparé au RESTANT (sous-total − remises
+            // déjà posées), pas au brut : sinon une commande déjà remisée
+            // acceptait une sur-remise au-delà de 0€ — total écrasé/négatif et
+            // points client détruits pour rien.
             $subtotal = (float) ($order->subtotal ?? 0);
-            if ($discountEur > $subtotal) {
+            $remaining = $subtotal - (float) ($order->discount ?? 0);
+            if ($discountEur > $remaining) {
                 throw new PosRedemptionException(
                     'DISCOUNT_EXCEEDS_SUBTOTAL',
-                    "Reduction {$discountEur} EUR > sous-total {$subtotal} EUR",
+                    "Reduction {$discountEur} EUR > restant remisable {$remaining} EUR (sous-total {$subtotal} − remises existantes)",
                     422
                 );
             }
@@ -198,6 +203,16 @@ final class PosRedemptionService
                 }
                 throw $e;
             }
+
+            // [L2 LOYALTY-SYNC 2026-06-11] push the new balance to the bus
+            // (after-commit; replay-safe — idempotency keyed in the outbox).
+            \App\Events\LoyaltyBalanceChanged::dispatch(
+                (int) $customer->id,
+                (int) ($order->branch_id ?? 1),
+                (int) $balanceAfter,
+                -$points,
+                'redeem'
+            );
 
             // [LOCK §3 step 2] Update order totals + link loyalty code.
             $currentDiscount = (float) ($order->discount ?? 0);
@@ -260,6 +275,10 @@ final class PosRedemptionService
                 'transaction'   => $txn,
                 'discount_eur'  => $discountEur,
                 'balance_after' => $balanceAfter,
+                // [F3-04 2026-06-12] id interne du client — permet au modal POS
+                // de filtrer les events LoyaltyBalanceChanged (payload PII-free,
+                // user_id = seul identifiant commun) sur LE client affiché.
+                'customer_user_id' => (int) $customer->id,
             ];
         });
     }

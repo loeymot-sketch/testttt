@@ -49,7 +49,7 @@
     // [GATE-LOYALTY-1 2026-06-09 owner decision: canonical rate = 1 pt/€] Unifies the advertised
     // rate (this value, shown on the loyalty banner) with the credited rate (the earn sites all use
     // Math.round(total) = 1 pt/€). Was 10 here while credit did 1 → a 10× display-vs-credit divergence.
-    // On backend wireup, route every earn computation through computeEarnedPoints() below so the
+    // On backend wireup, route every earn computation through pointsFor() below so the
     // displayed rate can never drift from the credited rate again.
     earn_ratio: 1,               // 1 € spent = 1 point (owner-canonical; admin-editable on wireup)
     redeem_ratio: 100,           // 100 points = 1 € discount (backend default)
@@ -152,7 +152,7 @@
   // Removed fictional refs: Box Nashville, Wrap Poulet, Smash Cheese, Le Gourmet,
   // "Box Nashville −50%".
   const DEFAULT_HISTORY = [
-    { id: 1001, date: '2026-05-08', type: 'earn',       points: +30,  description: 'Big Cayenne · Tacos L · Bowl Frites',  order_id: 'C-1234', source_surface: 'mobile' },
+    { id: 1001, date: '2026-05-08', type: 'earn',       points: +31,  description: 'Big Cayenne · Tacos L · Bowl Frites',  order_id: 'C-1234', source_surface: 'mobile' }, // [F7 cascade] pointsFor(30.80)=31
     { id: 1002, date: '2026-05-05', type: 'earn',       points: +13,  description: 'Sandwich Cayenne · Grande Frites',     order_id: 'C-1212', source_surface: 'mobile' },
     { id: 1003, date: '2026-05-02', type: 'redeem',     points: -1000, description: 'Burger gratuit (Big Chicken)',         order_id: null,     source_surface: 'mobile', reward_id: 5 },
     { id: 1004, date: '2026-04-30', type: 'earn',       points: +17,  description: 'Galette Cayenne · Bowl Riz',           order_id: 'C-1190', source_surface: 'kiosk' },
@@ -219,11 +219,27 @@
     return points / CONFIG.redeem_ratio;
   }
 
-  // [GATE-LOYALTY-1] Single source of truth for "points earned for a spend". Every earn-display
-  // surface should call this so the credited amount is ALWAYS config-driven and can never diverge
-  // from the advertised earn_ratio again. At earn_ratio=1 this equals Math.round(total) (the V0
-  // credit logic), so adopting it is behaviour-preserving today and drift-proof on wireup.
-  function computeEarnedPoints(total) {
+  // [B1-M 2026-06-10] SSOT for the € value of a REDEMPTION — canonical model A:
+  // 100 pts = 1 €, minimum redeemable = 100 pts (CONFIG.min_redeem_points).
+  // Below the minimum the redemption is worth 0 € (not redeemable at all) —
+  // matches the reward catalog whose cheapest entries cost exactly 100 pts.
+  // Conversion is LINEAR (no floor): 250 pts = 2,50 € — this is the existing
+  // barème (reward id 3 '−2,50 € sur ta commande' = 250 pts). NO rate change.
+  // pointsToDiscount() above stays as the raw ungated converter used for
+  // balance-value display ("ta cagnotte vaut X €").
+  function redeemValueEuros(points) {
+    const p = Number(points) || 0;
+    if (p < CONFIG.min_redeem_points) return 0;
+    return p / CONFIG.redeem_ratio;
+  }
+
+  // [LOY P0 heal 2026-06-08] SSOT for points EARNED on a spend. Every earn surface
+  // (cart preview, gain modal, order detail, order history) routes through this so the
+  // rate can never drift between screens again. Honours CONFIG.earn_ratio (currently 1 pt/€,
+  // matching all authored seed + onboarding + the web app). Owner economics gate: to switch
+  // to a 10 pt/€ gamified mobile economy, edit CONFIG.earn_ratio AND re-baseline the seed
+  // (DEFAULT_HISTORY earn rows, orders.js points_earned, account.balance) so they reconcile.
+  function pointsFor(total) {
     return Math.round((Number(total) || 0) * CONFIG.earn_ratio);
   }
 
@@ -301,7 +317,8 @@
     nextRewardForBalance,
     unlockedRewards,
     pointsToDiscount,
-    computeEarnedPoints,
+    redeemValueEuros,
+    pointsFor,
     progressToNext,
   };
 

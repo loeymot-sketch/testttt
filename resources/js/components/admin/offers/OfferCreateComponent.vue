@@ -213,7 +213,14 @@ export default {
                     })
                     .catch((err) => {
                         this.loading.isActive = false;
-                        this.errors = err.response.data.errors;
+                        // [AB14-01 2026-06-11] un 403 (module Offres désactivé V1,
+                        // guard OfferController) n'a pas de clé `errors` — l'accès
+                        // direct crashait le render (TypeError reading 'name') et
+                        // l'utilisateur n'avait AUCUN feedback après saisie complète.
+                        this.errors = err.response?.data?.errors ?? {};
+                        if (Object.keys(this.errors).length === 0) {
+                            alertService.error(err.response?.data?.message ?? this.$t("message.something_wrong"));
+                        }
                     });
             } catch (err) {
                 this.loading.isActive = false;

@@ -1,0 +1,24 @@
+import { chromium } from 'playwright';
+const OUT='/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/.claude/worktrees/cms-gestion-2026-06-10/reports/test-e2e/loyalty-global-2026-06-10';
+const b = await chromium.launch();
+const p = await (await b.newContext({viewport:{width:1440,height:900}})).newPage();
+await p.goto('http://127.0.0.1:8096/',{waitUntil:'networkidle'});
+await p.waitForTimeout(2500);
+await p.locator('button').filter({hasText:/Se connecter/}).first().click();
+await p.waitForTimeout(1500);
+await p.locator('input[type=email]').fill('ikyes@example.com');
+await p.locator('input[type=password]').fill('motdepasse123');
+const sub = p.locator('button[type=submit]').last();
+console.log('submit count=', await p.locator('button[type=submit]').count());
+await sub.click({force:true});
+await p.waitForTimeout(2500);
+const t = await p.evaluate(()=>document.body.innerText);
+console.log('HEADER AREA:', t.slice(0,250).replace(/\n+/g,' | '));
+console.log('HAS ERROR?:', /incorrect|invalide|erreur/i.test(t) ? t.match(/.{0,80}(incorrect|invalide|erreur).{0,80}/i)?.[0] : 'no');
+await p.screenshot({path:OUT+'/L-B8-web-after-login.png'});
+// fidelite
+await p.locator('a,button').filter({hasText:/^Fidélité$/}).first().click();
+await p.waitForTimeout(2500);
+await p.screenshot({path:OUT+'/L-B8-web-loyalty-connected.png',fullPage:true});
+console.log('LOYALTY:', (await p.evaluate(()=>document.body.innerText.slice(0,2400))).replace(/\n+/g,' | '));
+await b.close();

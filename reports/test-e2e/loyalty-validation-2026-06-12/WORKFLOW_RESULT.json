@@ -1,0 +1,378 @@
+{
+ "lanes": [
+  {
+   "lane": "F1-ledger-earn",
+   "steps": 6,
+   "coverage": "LANE F.1 complète, 6/6 étapes, 0 P0/P1/P2 produit. Journal détaillé: reports/test-e2e/loyalty-validation-2026-06-12/F1-ledger-earn.md. (1) Ledger↔solde: invariant produit TENU — 8 writers de loyalty_points énumérés (grep app/), tous écrivent le ledger en transaction; les 2 mismatches DB = seeds direct-DB de fixtures de test (users 44 et 61, chaînes balance_after internes cohérentes). (2) Solde négatif impossible via PosRedemptionService: redeem 200>165 → INSUFFICIENT_BALANCE 422, 100000 → 422, -100/0 → INVALID_POINTS 422 (PosRedemptionService.php:85-87,134-141), solde et ledger intacts. (3) Earn réel chemin complet HTTP :8767: customer status=5 phone-keyed (user 67) → mint code via /loyalty/balance → POST /api/admin/pos/quote + /api/admin/pos avec customer_id SEUL → dérivation loyalty_customer_code prouvée server-side → change-status 13 → earn +90 = round(9,00€×10) source 'pos', sentinel loyalty_points_awarded=90 ; rejeu du MÊME OrderStatusChanged 2× via listener réel + re-POST HTTP → toujours 1 seule ligne earn (sentinel atomique AwardLoyaltyPointsOnDelivery.php:52-60). (4) Welcome: /register 2× même phone (espacés, throttle 5/min) → 1 seule ligne 'Bonus de bienvenue' +25 (LoyaltyController.php:194 idempotent par !loyalty_code). (5) Arrondi: round() half-up prouvé empiriquement au taux live 10pts/€ via listener réel sur orders craftés (8,49→85 ≠ floor 84 ; 8,45→85 ; 8,44→84) — AwardLoyaltyPointsOnDelivery.php:103 ; le flip in-process à rate=1 n'a pas pris (cache Settings in-process) mais le cas 8,49 discrimine round/floor indépendamment du taux ; setting DB vérifié intact après coup. (6) PHPUnit --filter \\\"PosLoyaltyAccrualRealPath|PosCustomerActiveStatus5|LoyaltyBalanceThrottleParity\\\" → OK (6 tests, 37 assertions, 1.5s). LIMITES: pas de test de course concurrente réelle (2 process simultanés) sur l'accrual — sentinel atomique vérifié séquentiellement seulement ; redeem kiosk/web (LoyaltyController::redeem, FrontendOrderService) couvert en lecture de code mais pas exercé live (autres lanes) ; DELIVERED→DELIVERED en change-status répond 200 sans effet comptable (hors scope, signalé) ; DB opérante foodking jamais touchée (interdite). Artefacts laissés sur clone jetable: users 67/70, orders 4520+4525-4530 (clones sans fiscal_sequence_no), token sanctum 'f1-lane-2026-06-12', /tmp/f1-*.txt."
+  },
+  {
+   "lane": "F2-redeem-reversal",
+   "steps": 6,
+   "coverage": "Lane F.2 complet, 6/6 étapes, journal au fil de l'eau dans reports/test-e2e/loyalty-validation-2026-06-12/F2-redeem-reversal.md. (1) Redeem POS live :8767 (cust 61 F2LOYAL1, orders 4512/4513/4514/4517/4534): 50 pts→422 POINTS_NOT_MULTIPLE (min 100 implicite via multiple-de-rate L100); 600>solde→422 INSUFFICIENT_BALANCE; redeem>total commande→**REFUS 422 DISCOUNT_EXCEEDS_SUBTOTAL, PAS plafonné** (L145, strict >, égalité=commande gratuite OK) confirmé code ET cas réel; 100 pts exact→200 −100pts/−1,00€ (25→24, txn ledger pos_session_id=19). (2) Double-redeem: race 2 POST parallèles clés distinctes→1×200+1×409 ALREADY_REDEEMED (UNIQUE user_id+order_id+type, décrément rollbacké car même DB::transaction); même clé idempotency ×2→réponse 200 identique rejouée (même transaction_id), 1 seul row/ordre, balance exacte. (3) UI /admin/historique: liste OK (rows F2-RDM-*, montant remisé 24,00€), détail 4512 = Sous-Total 25,00 − Remise 1,00 = Total 24,00 ✅ FR, 0 console/HTTP errors — captures F2-historique-redeem.png + F2-historique-list.png ANALYSÉES (bloc items vide = artefact fixture sans order_items, pas un bug). (4) Reversal: cancel HTTP status=16 → +100 UNE fois (manual_add, OrderService:2067); replay cancel + replay direct refundPoints → NOOP (pre-check LoyaltyService:71-82). Clawback earned: chaîne réelle cancel PAID→cashBack (PaymentService:199 RefundCreated)→ClawbackLoyaltyPointsOnRefund→manual_deduct −25 UNE fois; replay event + direct → NOOP (LoyaltyService:156-167). Arithmétique ledger exacte à chaque étape. (5) NF525: remise = incrément order.discount + recompute total serveur (PosRedemptionService:213-237, writes limités L245-252); entrées client = points+loyalty_code uniquement; **aucune écriture de prix client = pas de P0**. (6) PHPUnit filter demandé: **OK 27 tests / 112 assertions** (sqlite :memory:). NON couvert: refund-with-counter-entry en live HTTP (exige parent sealed sous Z clôturé — couvert par RefundWithCounterEntryRefundsLoyaltyPointsTest dans les 27 verts); throttle pos-order-update non poussé à la limite. Fixtures via Order::factory (sans order_items) — chemins testés (redeem/cancel/refund ledger) n'en dépendent pas. DB foodking_e2e uniquement, 0 fichier repo modifié, 0 git."
+  },
+  {
+   "lane": "F3-sync-setup",
+   "steps": 6,
+   "coverage": "Étapes 6/6 faites. (1) Outbox PASS: tinker dispatch(1,1,500,10,'earn') → row 9144 channel [\"private-branch.1\"], broadcast_as LoyaltyBalanceChanged, payload {user_id,branch_id,balance_after,delta,reason} SANS nom/téléphone/loyalty_code ; EventType.php:23 const + présente dans all(). (2) Idempotency PASS: même tuple+correlation ×2 → 1 row ; balance différente → 2e row ; formule sha1('type|user|balance|reason|correlation') vérifiée exactement (PersistLoyaltyBalanceChangedToOutbox.php:30-38). (3) 7 sites dispatch grep-confirmés couvrant welcome/addPoints/redeem-frontend/earn-delivery/refund/clawback/redeem-POS ; 1 orphelin = F3-02. (4) Round-trip setup PASS avec captures avant/après/restored (F3-setup-*.png lus visuellement: toast FR, aperçu recalculé) ; vérifs tinker+API à 2 puis retour 1 ; ⚠️ baseline observée 10pt/€ (pas 1) au départ = contamination cross-lane probable (lane F4 parallèle, F4-setup-rates.png 02:34) — restauré à 1 (tinker+API+UI fresh = 1) ; un 401 mid-script (token tué par relogin d'une lane parallèle, revocation old-tokens documentée) = artefact harnais, restore refait via curl. (5) Dégradation: no-Echo/branchId falsy → no-op subscribe (eventContract.js:349-355, modal :203-204), try/catch subscribe, unsubscribe ciblé par rawHandler (eventContract.js:396-410), parse invalide → warn sans handler ; MAIS shape mismatch F3-01 = le « garde payload invalide » avale aussi tous les events VALIDES. (6) PHPUnit LoyaltyBalanceChangedOutbox|EventContract = OK 25 tests/81 assertions ; vitest posLoyaltyLiveBalance.spec.js = 5/5 — vert-sur-mauvais-contrat (onEvents mocké, payloads plats). NON couvert: push websocket réel soketi→navigateur (pas de worker/ws garanti sur :8767) — la chaîne est prouvée jusqu'à l'envelope validée (buildEnvelope+assertEnvelopeValid) ; F3-02 prouvé par code+reachability, pas exécuté live (nécessite commande API complète). Aucun fichier repo modifié (lane read-only, scripts/rapports dans reports/test-e2e/loyalty-validation-2026-06-12/ uniquement) ; DB foodking_e2e seule touchée (3 rows domain_events test + settings remis à 1). Log détaillé: reports/test-e2e/loyalty-validation-2026-06-12/F3-sync-setup.md."
+  },
+  {
+   "lane": "F4-qr-parity-consent",
+   "steps": 6,
+   "coverage": "Lane F4 — 6/6 étapes exécutées sur :8767 / foodking_e2e (vérifié env=e2e db=foodking_e2e). ÉTAPE 1 QR signé: 6/6 PASS — mint POST /loyalty/qr, scan OK (200, ok=true, customer_token lt_<64hex>, display_name prénom seul, header X-Loyalty-QR-Status:signed), REPLAY->qr_replay, TAMPER 1 char->qr_invalid_signature, TTL forgé -600s->qr_expired, plaintext FK:/bare/phone->qr_legacy_rejected (accept_legacy_plaintext=false confirmé config e2e réelle via tinker). Aucun PII sur rejet. ÉTAPE 2 throttle: burst 25× /loyalty/scan -> 200×20 puis 429×5 (Retry-After:59, X-RateLimit-Limit:20), limite 20/min prouvée ; check/balance 10/min cités. ÉTAPE 3 parité: suite OK 18/86 MAIS drift DATA 10/100/50 à l'écran (finding F4-DATA-01). ÉTAPE 4 consentement: gaps (finding F4-CONSENT-01) — opt-in OK, register bypass, pas d'opt-out. ÉTAPE 5 PII/IDOR: défense fail-closed PROUVÉE avec vrai attaquant non-kiosk (id=65, hasKM=false/hasRole=false): /loyalty/check phone+code victime->404 'Non trouvé', token kiosk:order-only sans KioskMachine->404, scan QR victime valide->403 AVANT vérif token, code inexistant->404 (pas d'oracle), non-auth->401. FAUX-POSITIF initial écarté: mon 1er 'attacker' id=53 était une vraie machine kiosk (KioskMachine.user_id) -> 200+PII = comportement borne légitime. ÉTAPE 6 consentement suite: OK 19/56. Captures+scripts dans reports/test-e2e/loyalty-validation-2026-06-12/ (F4-setup-rates.png analysée, f4_settings.cjs, F4-qr-parity-consent.md détaillé). NON testé/hors-scope: foodking prod (interdit) -> attribution DATA-01 prod-vs-e2e non prouvable."
+  },
+  {
+   "lane": "D-B1-coeur-gestion",
+   "steps": 7,
+   "coverage": "Batch D-B1 7/7 pages auditées sur :8767 (e2e) en 7 passes Playwright (Chrome system, 1280x900), login UI réel + token forcé minté tinker. LENTILLE COUVERTE: ① console/réseau clean au load sur les 7 pages (les seuls ≥400 = 401 token-kill concurrent [flake harnais, lanes parallèles relogin admin → revoke, prouvé 2×] et 2× 422 POST /api/admin/item auto-infligés par mon script via l'id dupliqué D-B1-05) ; ② pagination/recherche/filtres PROUVÉS fonctionnels avec changement de données réel (items: search Tacos→[Big Tacos,Tacos], page2→'11 à 20 sur 45' first=Glace, limite 25 ; ingredients: 4 tabs role=tab 38/9/26/3 = counts API/DB exacts ; stock: search client-side filtre + vide FR) — AUCUN tri proposé sur la table items (0 affordance, gap design non compté en finding) ; ③ empty-states FR propres (items 'Aucune donnée disponible.', stock 'Aucun produit ne correspond à votre recherche.') ; error-state non provoqué (pas de coupure serveur sur harnais partagé) ; ④ latence: API 37-42ms, data-visible full-reload 3,3-5,2s mesuré MAIS sous loadavg ~8 (lanes parallèles) → D-B1-02 avec caveat explicite ; ⑤ i18n: zéro Label.x/0undefined/NaN ; EN résiduel = datepickers dashboard (D-B1-03) + 'Add-ons' (vocabulaire assumé, non compté) ; ⑥ boutons morts: aucun trouvé (KPI metrics items sont des filtres actifs, 'Voir les détails' ouvre le drawer) ; ⑦ formats FR OK partout (€ virgule, Z '10/06/2026 07:06:45' 24h, zéro AM/PM) sauf datepicker US m/d/Y (D-B1-03) ; ⑧ a11y: tabs ingrédients exemplaires (role=tab/aria-selected/clavier), stock search aria-label ; id dupliqué + drawer non-inerte = D-B1-05 ; ⑨ véracité: KPI items 45/12/45/0 = DB EXACT (tinker, hors soft-deleted), counts ingrédients = DB, orders 2383 affiché vs 2407 live = drift d'écritures concurrentes des autres lanes (plausible, non compté), 'Meilleurs Clients' 0-commande = D-B1-06. FAUX-POSITIFS AUTO-RÉFUTÉS (non remontés): /admin/ingredients/addon 'page blanche' (race de capture pendant boot SPA — réfuté pass-5: 3 rows à 3,9s) ; 401 stock/rupture pass-1 (token-kill harnais). DEDUP: rien retrouvé des lots connus (variantes-500, sous-facturation frites, promo borne, changePaymentStatus) sur ces 7 pages ; D-B1-03 marqué DEDUP-suspect vs dashboard-deep 06-08 (autre branche). 16 captures D-B1-*.png + dumps texte + logs pass1-7 + fil de l'eau dans reports/test-e2e/loyalty-validation-2026-06-12/ (lane file D-B1-coeur-gestion.md). Mutations e2e: 2 POST création item rejetés 422 (aucune row créée), 1 token sanctum ajouté (2584, à purger éventuellement)."
+  },
+  {
+   "lane": "D-B2-commandes-argent",
+   "steps": 10,
+   "coverage": "Lane D-B2 sur :8767/foodking_e2e, token tinker 'audit-lane-db2' (le token orchestrateur était undefined ; piège vérifié : LoginController.php:155 supprime les tokens name='auth_token' à chaque login → tout token de login meurt dès qu'une lane fait uiLogin — utiliser createToken avec un autre nom). 10/10 pages auditées avec la lentille complète, 28 captures lues/analysées, journal au fil de l'eau D-B2-commandes-argent.md + raw JSONL + 3 scripts dans reports/test-e2e/loyalty-validation-2026-06-12/. RÉSULTATS PAR AXE — ① 0 console error, 0 HTTP≥400 sur les 10 pages au load ET après interactions (pagination, filtres, modal, recherche, refresh). ② Pagination page-2 prouvée fonctionnelle (data change + compteur) sur pos-orders/online-orders/historique/transactions ; tri par th = pas d'affordance (pas de no-op trompeur) ; recherche tracker filtre réellement (12 actives→0) ; filtres pos-orders/cash-overview/cash-sessions fonctionnels (recherche plage 626 ms) ; export dropdown Imprimer/XLS s'ouvre. ③ Empty-states FR propres (table-orders illustration + \\\"Aucune donnée disponible.\\\", tracker buckets, cash-overview \\\"Aucune transaction trouvée...\\\"). ④ latence → finding DB2-04. ⑤ 0 raw label, 0 0undefined/NaN, 0 mot EN résiduel détecté ; reliquats FR mineurs → DB2-01/02. ⑥ 0 bouton mort ; touches ⌫/C doublées du pavé encaissement = span émulé INTENTIONNEL avec aria (PosV5Numpad.vue:27-28,53-65) — écarté. ⑦ Formats FR corrects partout (virgule+€, d-m-Y, 24h, zéro AM/PM) SAUF DB2-01 ; inputs date \\\"mm/dd/yyyy\\\" sur cash-overview/cash-sessions = artefact harnais (input natif type=date, Chrome headless locale en-US) PAS un bug produit. ⑧ a11y : labels visibles sur tous les champs de filtre, aria sur le pavé numérique — inspection visuelle seulement, pas d'axe-core (limite de couverture). ⑨ VÉRACITÉ TOUTE VERTE en même-seconde malgré les lanes parallèles qui écrivent en continu : tracker \\\"19 aujourd'hui\\\"=DB 19 ; encaissement badge 55=API 55=DB 55 et somme 272,50 €=DB 272,50 ; credit-balance 3=3 customers ; cash-overview GRAND TOTAL recoupe Σ transactions de la plage (17 563,90+59 de delta parallèle=17 622,90 DB) et la répartition par mode somme exactement (584 tx/17 563,90 €) ; transactions \\\"744 sur 748 DB\\\" expliqué = 4 transactions orphelines (orders 4284-4287 purgés le 08-06, pollution data e2e) exclues par whereHas('order') TransactionService.php:36-41 — comptage honnête pour son filtre, noté hors-finding. Cross-surface tracker \\\"À ENCAISSER 0\\\" vs encaissement 51-55 = différence de scope VOULUE (tracker today-only : PosOrdersTrackerComponent.vue:651+759 _todayRange ; encaissement all-time : routes/api.php:811-848) — pas un bug, la page dédiée montre la vérité. Widget rouge \\\"488 encaissements sans session / 16 631 €\\\" = surfacing correct de la pollution e2e (bon comportement). DEDUP : \\\"tracker skeleton\\\" P3 connu NON reproduit (tracker pleinement fonctionnel) ; aucun recoupement avec les lots A-H connus (variantes-500, frites, promo borne, changePaymentStatus non re-creusés). NON COUVERT : actions mutantes risquées pour les lanes loyalty parallèles (confirmation d'encaissement, changement de statut commande, exports téléchargés) — modal ouvert/fermé sans confirmer ; détail commande (PosOrderShow/OnlineOrderShow) hors périmètre batch."
+  },
+  {
+   "lane": "D-B3-rapports-equipe",
+   "steps": 30,
+   "coverage": "9/9 pages auditées sur :8767/foodking_e2e (clone jetable), login UI + token Sanctum forcé. Détail: reports/test-e2e/loyalty-validation-2026-06-12/D-B3-rapports-equipe.md + d-b3-report.json + 9 captures D-B3-*.png (8 lues/analysées visuellement). ① 0 erreur console et 0 HTTP≥400 sur les 9 pages, load + toutes interactions (filtre, recherche, clear, pagination p2, per-page 25, dropdown export). ② Recherche/pagination/per-page PROUVÉS non-no-op (rows et 1re ligne changent réellement: sales-report p1 F2-RDM-4→p2 1006264505; employees 10→18 rows en per-page 25; recherche bidon→0 puis clear→restore exact sur 6 pages). Tri: aucune colonne triable dans ce pattern UI (affordance absente, pas un bouton mort; tri serveur sanitizé). ③ Empty-states FR propres («Aucune donnée disponible.» + illustration, waiters au load + recherche bidon partout). Error-state non forcé (pas d'injection de panne sur harnais partagé). ④ Latence max 720 ms — aucun P2. ⑤ 0 raw label, 0 résiduel EN, 0 AM/PM (TIME_FORMAT H:i e2e tient; AM/PM opérant = DEDUP AB14-02 data-op owner). ⑥ 0 bouton mort (Filtrer 8/8, Exporter 8/8 ouvrent; DBCS Voir = DEDUP ✅ 06-11). ⑦ € virgule + d-m-Y + 24h partout (DBCS date compacte fr-FR sans année = choix volontaire formatTimestamp:266, non compté). ⑧ 1 finding a11y (datepicker). ⑨ VÉRACITÉ TOUT EXACT vérifié API-vs-tinker au même instant: sales-report total = orders non-soft-deleted exact (2395=2395; écart initial 2389 vs 2398 = soft-deletes + lanes concurrentes écrivant pendant l'audit); cartes overview 34 797,37 €/4,00 €/5,00 € = sommes realizedRevenue exactes; employees 18 = 17 POS Operator + 1 Branch Manager; items-report 45 = 45 items actifs (SSOT V1); units_sold = somme realizedRevenue (10814≈10816 dérive concurrente); ligne Total = full-dataset (REP-ITEMS-TOTAL-03 tient); DBCS #7 écart −2,50 € = 140,00 attendu − 137,50 compté exact. Observation data non-UI: rôle Spatie «Branch Manager» dupliqué cross-guard (id6 sanctum/id9 web) en DB e2e. DEDUP non creusés: sales-report filter/export panels, dbcs-detail, customer-detail (petits-systèmes 06-11 ✅). Limites: pas de test des CRUD create/edit/delete (hors lentille, et déjà couverts ailleurs); export Excel/PDF non téléchargés (dropdown seulement — REP-EXP-01 déjà healé 06-06)."
+  },
+  {
+   "lane": "D-B4-settings",
+   "steps": 9,
+   "coverage": "Périmètre couvert (16 onglets, captures D-B4-settings-*.png + fil reports/test-e2e/loyalty-validation-2026-06-12/D-B4-settings.md + logs db4-*): menu réel = 7 onglets VISIBLES seulement (Entreprise, Site, Filiales, Bornes, Config Des Commandes, Config Borne, Devises) — Fidélité/Mail/Notification/Licence/Langues/Cookies/Analytics nommés par l'orchestrateur sont CACHÉS V1 par design (v1-hidden-modules.js) et ont été audités par URL directe (+ notification-alert, payment-terminals). Lentille: ① console/réseau 0 erreur sur les 16 onglets (hors tempêtes 401 = artefact harnais: relogins concurrents d'autres lanes revoquant le token Sanctum partagé admin — a tué 3 runs, contourné par retries) ; ② pagination/tri/recherche: AUCUN contrôle présent sur ces listes (1-10 entrées page unique) → no-op non testable ; véracité counts UI=DB (branches 1/1, bornes 10/10, devises 1/1, langues 2/2, analytics 0 « Aucune donnée », TPE 0 « Aucune donnée ») ; ③ empty-states FR propres (analytics, payment-terminals), error-state défaillant = F5 ; ④ latence: sweep isolé toutes pages <1s réelle (mesures phase2-5 4-10s NON imputables au produit: serveur partagé sous charge de lanes parallèles + boots SPA complets) ; ⑤ i18n: F1/F2/F6/F7 ; ⑥ boutons: save Entreprise idempotent OK (toast FR, DB intacte), modals Devises/Bornes s'ouvrent (F4), Voir filiale OK (DEDUP DrawingManager) ; ⑦ formats FR: aucun AM/PM rendu, montants € corrects, sauf point décimal preview fidélité (couvert par F3) ; ⑧ a11y: 1 input non-labellisé détecté sur Filiales (compteur heuristique, non investigué file:line — non remonté comme finding per règle anti-hallucination) ; ⑨ véracité OK partout. NON couvert: submits Site/Order-setup/Kiosk-setup (mutation globale évitée pour ne pas perturber les lanes parallèles), sous-pages show/list Analytics/Slider/Pages/Role/Taxes/etc. (hiddenV1 non nommés), bouton Supprimer bornes (destructif, machines utilisées par d'autres lanes), bouton Déconnexion borne KIOSK-LC-001 (token kiosk partagé). Données: 2 tokens admin de test créés (db4-audit/db4b) + 1 save idempotent Entreprise sur foodking_e2e (autorisé, vérifié sans dérive). Note inter-lanes: la ligne settings DUPLIQUÉE sans groupe loyalty_points_per_euro=10 (id 76, 02:34:40) présente en DB e2e vient d'une lane W2 concurrente (aucun code prod n'écrit cette clé hors groupe — grep) ; les lecteurs prod (LoyaltyController.php:511, AwardLoyaltyPointsOnDelivery.php:84) lisent via group → 1 pt/€, pas d'impact runtime, mais à signaler à la lane W2 qui l'a créée."
+  },
+  {
+   "lane": "D-B5-divers",
+   "steps": 14,
+   "coverage": "BATCH D-B5-divers — 9/9 pages couvertes en 5 passes (stage1 load+console+réseau+i18n, stage2 interactions, stage3 timelines+fonctionnel, stage4 triple-load+redirect, stage4b pagination). Rapport fil-de-l'eau: reports/test-e2e/loyalty-validation-2026-06-12/D-B5-divers.md + 20 captures D-B5-divers-*.png. PASS confirmés: observability redirect → /outbox (URL réécrite après settle); outbox véracité EXACTE (UI '(8405)' == SQL pending dispatched_at NULL = 8405) + Rafraîchir OK; profile-edit labels 6/6 + save toast FR; change-password 422 FR propre (min 12 chars); coupons recherche name → 1 row exacte + pagination FR 'Précédent 1 2 Suivant' p2 prouvée (rows 02/01, 'Affichage de 11 à 12 sur 12') + types Fixe/Pourcentage FR + dates 24h d-m-Y; offers/subscribers/push empty-states FR propres ('Aucune donnée disponible.'); messages 3 conversations + thread + timestamps 24h '23:23, 10-06-2026'; console 0 erreur partout, aucun ≥400 produit. DEDUP notés: AB14-02 TIME_FORMAT data-op owner (adjacent à DB5-02/03 mais distinct), push confirm guard (heal 9d415b8db), tri par colonne absent = design template (pas de header sortable sur ces listes). 5 faux positifs auto-rétractés documentés (troncature 'Fixe', search-locator modal caché, .pagination selector, capture trop précoce, 401 = token-kill concurrent LoginController.php:155 entre lanes parallèles). Hygiène: 12 coupons seed E2E-D5 supprimés, token e2e-d-b5-divers révoqué, zéro écriture hors foodking_e2e. Limites: pas de test d'envoi réel push/email/message (mutations à effets de bord cross-lane), tri/recherche offers non re-stressés (dedup petits-systèmes 06-11), Purge non déclenché avec failed_jobs>0 (0 échec dispo, evidence code-trace)."
+  }
+ ],
+ "confirmed": [
+  {
+   "lane": "F1-ledger-earn",
+   "id": "F1-01",
+   "sev": "P3",
+   "title": "Clone e2e seedé à 10 pts/€ alors que mandat owner gate-D1/L1 = 1 pt/€ (défaut code = 1) — à vérifier sur la DB opérante (hors scope lane)",
+   "file_line": "app/Listeners/AwardLoyaltyPointsOnDelivery.php:84 (Settings::group('loyalty_setup')->get('loyalty_points_per_euro', 1)) ; DB foodking_e2e settings row id=73 payload {\"$value\": 10}, seedé 2026-06-10 23:09:07",
+   "repro": "APP_ENV=e2e php artisan tinker --execute=\"echo DB::table('settings')->where('group','loyalty_setup')->where('key','loyalty_points_per_euro')->value('payload');\" → {\"$cast\": null, \"$value\": 10}",
+   "evidence": "Earn réel order 4520 total 9,00€ → +90 pts (= round(9×10)), pas +9. Mémoire projet: gate-D1 convergé 1pt/€ (commit 342a0ab80) + L1 « 1pt/€ seedé ». Le clone diverge — soit clone antérieur au seed, soit seed d'audit. DATA flag, pas code.",
+   "recommendation": "Orchestrateur: faire vérifier la valeur loyalty_points_per_euro sur la DB opérante foodking par la voie autorisée (owner/data-op). Si 10 en prod → P2 data (clients crédités 10× la promesse).",
+   "kept": true,
+   "votes": "CONFIRMÉ, pas réfuté. (1) file:line VÉRIFIÉ: app/Listeners/AwardLoyaltyPointsOnDelivery.php:84 = `$rate = (int) Settings::group('loyalty_setup')->get('loyalty_points_per_euro', 1);` (grep exact, défaut code=1). (2) Repro littérale périmée mais pas fausse: settings row id=73 retourne maintenant {\"$value\": 1} avec created_at=updated_at=2026-06-12 02:40:05 — les 3 rows loyalty_setup (73/74/75: 1/100/50) ont été réécrites en bulk à 02:40:05 (signature delete+insert de Settings::set, = SetLoyaltyRatesCommand) EN COURS DE RUN, APRÈS le finding, par une autre lane/heal. (3) Preuve résiduelle IMMUABLE que le taux 10 était actif: ledger loyalty_transactions — tx#10 (2026-06-10 23:27:38) order 4489 total 1,50€ → +15 pts; tx#18 (2026-06-12 02:31:50) order 4520 total 9,00€ → +90 pts (orders.loyalty_points_awarded=90, exactement l'évidence du finding, reproduite); tx#22-27 (02:34:40) ~8,5€ → 85 pts. Hypothèse du finding « clone antérieur au seed » validée (clone 06-10, seed L1 1pt/€ daté 06-11). DATA flag pas code; pas un dedup (lots A-H/dashboard-deep = code, ici = état data du clone d'audit). État courant du clone DÉJÀ guéri (rate effectif=1 vérifié via facade) — nuance à logger. Reco de vérifier la DB opérante foodking par voie autorisée reste valide. Détail: reports/test-e2e/loyalty-validation-2026-06-12/refuter1-F1-01.md",
+   "final_sev": "P3"
+  },
+  {
+   "lane": "F1-ledger-earn",
+   "id": "F1-02",
+   "sev": "P3",
+   "title": "Asymétrie bonus de bienvenue: lazy-mint du loyalty_code via GET /loyalty/balance crée le compte fidélité SANS le +25, seul POST /loyalty/register le donne",
+   "file_line": "app/Http/Controllers/Frontend/LoyaltyController.php:194-224 (welcome uniquement dans register()) ; routes/api.php:1443-1444 (/balance lazy-mints un code)",
+   "repro": "Customer status=5 sans code (user 67) → GET /api/frontend/loyalty/balance?code=0699111222 (Bearer+x-api-key) → 200 {loyalty_code:'4ECBF18B', points:0}. Vs POST /api/frontend/loyalty/register {phone:'0699333444'} → 200 {points:25} + ledger 'Bonus de bienvenue'.",
+   "evidence": "Sorties HTTP réelles :8767 ci-dessus ; ledger user 67 ne contient aucune ligne 'Bonus de bienvenue' (1ère ligne = earn +90 commande 4520), ledger user 70 en contient exactement 1 (+25).",
+   "recommendation": "Décision produit: soit le client enrôlé au comptoir (mint via balance lookup) mérite aussi le bonus promis « +25 à l'inscription », soit documenter que le bonus est réservé à l'inscription kiosk/web. Pas un défaut comptable (ledger cohérent dans les 2 cas).",
+   "kept": true,
+   "votes": "CONFIRMÉ par reproduction indépendante avec fixtures fraîches (pas celles du rapporteur). (1) file:line exacts: welcome bonus UNIQUEMENT dans register() à LoyaltyController.php:194-224 ($isNewLoyaltyAccount :194, Settings loyalty_welcome_points défaut 25 :204, ledger 'Bonus de bienvenue' :210-219) ; balance() = pur délégué à check() (:439-442) dont le lazy-mint :108-112 ne crée NI bonus NI ligne ledger ; route /balance = routes/api.php:1443 (le commentaire route :1440-1442 admet lui-même le lazy-mint). (2) Repro live :8767/foodking_e2e: user 72 neuf (status=5, phone 0699888777, code NULL) → GET /api/frontend/loyalty/balance?code=0699888777 (Bearer owner + x-api-key) → 200 {points:0, loyalty_code:'6D267EFF'}, ledger VIDE en DB ; POST /api/frontend/loyalty/register {phone:'0699888999'} → 200 {points:25, loyalty_code:'C3497AA4'}, ledger = exactement 1 ligne earn +25 'Bonus de bienvenue' (id 38). Asymétrie identique à celle rapportée. (3) Nuance du rapporteur exacte: pas de défaut comptable (sum(ledger)==balance dans les 2 cas: 0==0 et 25==25), zéro impact fiscal/NF525. (4) Sévérité P3 juste: décision produit (client enrôlé au comptoir rate le « +25 à l'inscription » promis par les apps clientes) sans impact argent — ni sur-cotée (pas un finding cloud/multi-tenant), ni P2. (5) Pas un dedup des lots connus (release/v1 A-H, dashboard-deep 06-08) ; le welcome +25 date du GOAL Loyalty L1 T-L1.4 2026-06-11 et son commentaire ne couvre que register(). Evidence: reports/test-e2e/loyalty-validation-2026-06-12/refuter1-F1-02.md ; artefacts clone jetable users 72/73.",
+   "final_sev": "P3"
+  },
+  {
+   "lane": "F1-ledger-earn",
+   "id": "F1-03",
+   "sev": "P3",
+   "title": "addPoints: garde Schema::hasTable('loyalty_transactions') permettrait théoriquement un crédit de solde SANS ligne ledger si la table manquait",
+   "file_line": "app/Http/Controllers/Frontend/LoyaltyController.php:278 (if (Schema::hasTable('loyalty_transactions')) { ... insert ledger ... }) après increment :273",
+   "repro": "Lecture code (grep confirmé). Non reproductible en l'état: la table existe sur tous les environnements migrés.",
+   "evidence": "L'increment users.loyalty_points (:273) est inconditionnel, l'écriture ledger (:279-291) est conditionnelle à l'existence de la table — c'est le SEUL writer produit avec un ledger optionnel; tous les autres (earn :126-137 listener, redeem PosRedemptionService:180-190, kiosk FrontendOrderService:907+, refund LoyaltyService:99-108, clawback :188-197, welcome :210-219) écrivent le ledger dans la même transaction sans condition.",
+   "recommendation": "Retirer la garde hasTable (héritage défensif) pour rendre l'invariant ledger==solde structurel sur tous les chemins.",
+   "kept": true,
+   "votes": "CONFIRMÉ et RENFORCÉ — repro empirique obtenue là où le finding original n'avait qu'une lecture de code. (1) file:line exact vérifié par Read: increment inconditionnel LoyaltyController.php:273, garde Schema::hasTable :278, insert ledger conditionnel :279-290 (l'autre hasTable :575 est un read-path history, pas un writer). (2) Claim 'seul writer à ledger optionnel' vérifié par grep: AwardLoyaltyPointsOnDelivery:126, LoyaltyController:211/:402, LoyaltyService:99/:188, PosRedemptionService:180, FrontendOrderService:920 écrivent tous le ledger sans condition dans la même transaction. (3) Repro live sur foodking_e2e :8767: contrôle table présente = POST /api/frontend/loyalty/add-points → 200, pts 165→170, +1 ligne manual_add; puis RENAME TABLE loyalty_transactions → hasTable=false → même POST = HTTP 200 '7 points ajoutés', pts 170→177, ZÉRO ligne ledger (table bak inchangée) — crédit de solde silencieux sans trace, exactement le mécanisme décrit. État restauré ensuite (table renommée en place, pts=165, ligne test supprimée, token révoqué). (4) Pas un dedup: K6 hasTable = sentinel BranchScope sans rapport; F1-ledger-earn.md = lane d'origine du même run. (5) Sévérité P3 juste: précondition (table absente) inexistante sur tout environnement migré (migration 2026_03_26_075918 dans le repo, table présente partout), pas NF525 (ledger fidélité produit, pas audit_logs), V1 LOCAL mono-poste — hygiène d'invariant, recommendation (retirer la garde héritée) valide. Evidence: reports/test-e2e/loyalty-validation-2026-06-12/refuter1-F1-03.md",
+   "final_sev": "P3"
+  },
+  {
+   "lane": "F1-ledger-earn",
+   "id": "F1-04",
+   "sev": "P3",
+   "title": "2 écarts ledger↔solde observés sur foodking_e2e = artefacts de seeds direct-DB de sessions de test (PAS des bugs produit) — invariant produit prouvé tenu",
+   "file_line": "DB foodking_e2e: users 44 (Victim Secret/VICT1234, bal=165 vs sum=-85, ouverture 250 hors-ledger, créé 2026-06-08) et 61 (F2 Lane Customer/F2LOYAL1, bal=200 vs sum=-300, ouverture 500 hors-ledger, créé 2026-06-12 02:28 par la lane F.2 concurrente)",
+   "repro": "APP_ENV=e2e tinker: GROUP BY user_id SUM(points) vs users.loyalty_points sur tous les users avec points>0 OU transactions → 2 mismatches, tous deux avec chaîne balance_after interne cohérente (user 44: 265→165 depuis 250 ; user 61: 400→300→200 depuis 500) et last balance_after == solde courant.",
+   "evidence": "Étape 1+re-check final dans F1-ledger-earn.md. Enumération exhaustive des writers de loyalty_points (grep app/): 8 chemins, tous ledgerisés en transaction. Mes propres mutations (users 67: 599==599, 70: 25==25) restent cohérentes à la clôture.",
+   "recommendation": "Aucun fix code. Si les lanes futures veulent un invariant SUM(ledger)==solde strict sur e2e, seeder les fixtures via addPoints/register plutôt qu'en direct-DB.",
+   "kept": true,
+   "votes": "CONFIRMÉ après tentative de réfutation indépendante. (1) Repro exacte: requête tinker GROUP BY SUM(loyalty_transactions.points) vs users.loyalty_points sur foodking_e2e → TOTAL_MISMATCH=2, exactement users 44 et 61. User 44 identique au finding (bal=165, sum=-85, chaîne tx#10 +15→265 / tx#11 -100→165 = ouverture 250 hors-ledger, last balance_after==solde, created 2026-06-08 antérieur aux lanes). User 61: chiffres du finding périmés (maintenant bal=400/sum=-800, 7 tx, lane F.2 concurrente a continué) mais la substance tient — la discontinuité tx#30→#31 (300→-600→400) est un 2e reset direct-DB à 1000 DOCUMENTÉ dans F2-redeem-reversal.md:52. (2) Cause \"seed direct-DB\" PROUVÉE: reports/test-e2e/loyalty-validation-2026-06-12/f2-setup.php contient littéralement DB::table('users')->update(['loyalty_points'=>500]) sans ligne ledger. (3) Invariant produit vérifié moi-même par grep+Read: 8 writers de users.loyalty_points dans app/ (LoyaltyController.php:197/206 welcome, :273 addPoints, :397 redeem web/kiosk; AwardLoyaltyPointsOnDelivery.php:118; LoyaltyService.php:86 refund + :186 clawback; FrontendOrderService.php:902; PosRedemptionService.php:172) — TOUS écrivent une LoyaltyTransaction adjacente/en transaction; users mutés par produit restent cohérents (67: 599==599, 70: 25==25). Aucun chemin produit ne mute le solde sans ledger → impossible de réfuter \"pas un bug produit\". (4) Sévérité P3 juste: note d'hygiène data e2e + recommandation seed-via-addPoints, aucune surcote SaaS/cloud, pas un dedup A-H ni dashboard-deep. Pas de fix code requis. Détail complet: reports/test-e2e/loyalty-validation-2026-06-12/refuter1-F1-04.md",
+   "final_sev": "P3"
+  },
+  {
+   "lane": "F2-redeem-reversal",
+   "id": "F2-01",
+   "sev": "P2",
+   "title": "Redeem POS: plafond comparé au sous-total BRUT (pas net des remises existantes) → sur-remise au-delà de 0€ acceptée, points client détruits + ligne Remise > Sous-Total",
+   "file_line": "app/Services/Loyalty/PosRedemptionService.php:144-150 (guard `$discountEur > $subtotal`) + :233-237 (clamp `max(0, subtotal - newDiscount + delivery)`)",
+   "repro": "Order e2e 4534 (subtotal 25,00€, discount préexistant 20,00€, total 5,00€, UNPAID/PENDING) ; POST /api/admin/pos-order/4534/redeem-loyalty {points:600, loyalty_code:F2LOYAL1} (Bearer admin + x-api-key + X-Idempotency-Key) → HTTP 200",
+   "evidence": "Réponse live: {discount_eur:6, order:{subtotal:25, discount:26, total:0}} ; DB: orders 4534 discount=26.000000 > subtotal=25.000000, total=0 ; ledger txn 31 redeem -600 alors que la valeur effectivement rendue = 5€ (1€/100pts du client silencieusement détruit). Le cas C (remise seule > sous-total) est lui bien refusé 422 DISCOUNT_EXCEEDS_SUBTOTAL — le trou n'existe qu'en présence d'une remise préexistante (coupon/manuelle).",
+   "recommendation": "Comparer au reste-remisable: `if ($discountEur > $subtotal - $currentDiscount)` (ou plafonner les points au multiple de rate couvrant le net) ; ajouter un test PosLoyaltyRedeemTest stacked-discount.",
+   "kept": true,
+   "votes": "CONFIRMÉ par reproduction indépendante de zéro (pas l'order 4534 du rapporteur). file:line exact: PosRedemptionService.php:144-151 guard `$discountEur > $subtotal` ignore le discount préexistant; :216 empile `$currentDiscount + $discountEur`; :233-237 `max(0,…)` masque le dépassement. Repro à moi: user 74 REFUT201 1000pts + order e2e 4549 (subtotal 25, discount préexistant 20, total 5, PENDING/UNPAID) → POST /api/admin/pos-order/4549/redeem-loyalty {points:600} = HTTP 200 {discount_eur:6, order:{subtotal:25, discount:26, total:0}}; DB: discount=26.000000 > subtotal=25.000000, total=0; ledger txn 39 redeem -600 (6€ débités pour 5€ rendus = 1€ points client détruit). Contrôle order 4550 (discount 0, redeem 26€) → 422 DISCOUNT_EXCEEDS_SUBTOTAL: le trou n'existe qu'avec remise préexistante, exactement la thèse. Atteignable V1 LOCAL (pos.manual_discount_enabled défaut TRUE config/pos.php:172, rate 100pts/€). Pas un dedup des lots A-H/dashboard-deep/abuse-loyalty 06-11 (qui couvraient le case C, pas le stacking). P2 juste: pas P1 (exige empilement + sur-redeem délibéré, dégâts bornés, pas de gap fiscal de séquence), pas P3 (destruction silencieuse de valeur client + row discount>subtotal entrant dans les agrégats Z). Evidence: reports/test-e2e/loyalty-validation-2026-06-12/refuter1-F2-01.md + refuter1-F2-01-curl.txt.",
+   "final_sev": "P2"
+  },
+  {
+   "lane": "F2-redeem-reversal",
+   "id": "F2-02",
+   "sev": "P3",
+   "title": "Tout admin authentifié par token Sanctum ['*'] est classé « kiosk machine » par OrderStatusRequest → reason libre refusée sur cancel/reject/return (back-compat free-text documentée morte)",
+   "file_line": "app/Http/Requests/OrderStatusRequest.php:93 (`tokenCan('kiosk:order')` vrai pour ability '*') + :75 (erreur whitelist) + :43-44 (commentaire promettant free-text admin) ; app/Http/Controllers/Auth/LoginController.php:157-161 (tokens login = abilities ['*'])",
+   "repro": "POST /api/admin/pos-order/change-status/4512 {status:16, reason:\"F2 lane reversal test\"} avec Bearer token admin (créé createToken → abilities ['*'])",
+   "evidence": "Live: reason libre → 422 {\"reason\":[\"Reason code is not whitelisted for kiosk-originated transitions.\"]} ; même requête avec reason='customer_request' (enum OrderCancelReason) → 200. Sanctum '*' satisfait tokenCan() ⇒ actorIsKioskMachine() vrai pour tous les admins SPA. Impact faible (l'UI envoie des codes enum) mais la dimension analytics « kiosk-originated » est polluée et le free-text admin promis est inaccessible.",
+   "recommendation": "Tester l'ability explicitement: `$user->tokenCan('kiosk:order') && !$user->tokenCan('*')` ou discriminer par rôle kiosk-machine, pas par ability.",
+   "kept": true,
+   "votes": "CONFIRMÉ — repro 1:1 sur :8767/foodking_e2e. (1) file:line tous vérifiés par grep/Read: OrderStatusRequest.php:93 `return (bool) $user->tokenCan('kiosk:order')` dans actorIsKioskMachine(); :75 message whitelist exact; :43-44 commentaire [AUDIT-F-004] promettant free-text admin; LoginController.php:157-161 `createToken('auth_token', ['*'], ...)`. Mécanisme confirmé au niveau lib: vendor/laravel/sanctum/src/PersonalAccessToken.php::can() = `in_array('*', $this->abilities) || ...` ⇒ token ['*'] satisfait tokenCan('kiosk:order'). (2) Repro live: token admin ['*'] créé via tinker (admin@lecayenne.fr id=1), POST /api/admin/pos-order/change-status/4547 (status non-terminal=4, header x-api-key requis) avec {\"status\":16,\"reason\":\"F2 refuter free-text reversal test\"} → HTTP 422 {\"reason\":[\"Reason code is not whitelisted for kiosk-originated transitions.\"]}; même requête avec reason=\"customer_request\" → HTTP 200 (order annulé). Exactement l'évidence du finding. (3) Dedup: grep \"not whitelisted for kiosk\" dans reports/ → seul antécédent = pos-kds-sync-2026-05-10 E-001, qui a observé la MÊME 422 live mais l'a filée comme P0 silent-error UI (fermée par banner persistant, commit 7e3c8069b) sans jamais diagnostiquer la cause racine (ability '*' ⇒ admins classés kiosk, free-text mort) — donc PAS un duplicate; absent des lots release/v1 A-H et dashboard-deep 06-08. (4) Sévérité P3 juste pour V1 LOCAL: comportement plus restrictif (pas de faille sécu/NF525), UI envoie des codes enum et la 422 est affichée — impact réel = commentaire mensonger + dimension analytics \"kiosk-originated\" polluée. Nuance non revendiquée par le finding (hors scope): en session stateful Sanctum, TransientToken::can() retourne aussi true, donc le commentaire :88-89 sur les session-auth admins est probablement faux lui aussi. Evidence/log: reports/test-e2e/loyalty-validation-2026-06-12/refuter1-F2-02.md. Cleanup fait (token supprimé; order 4547 annulé dans le clone jetable).",
+   "final_sev": "P3"
+  },
+  {
+   "lane": "F3-sync-setup",
+   "id": "F3-01",
+   "sev": "P1",
+   "title": "Solde-live L2 du modal redeem POS = NO-OP total : le handler lit event.balance_after mais le contrat livre event.payload.balance_after (spec vitest verte sur le mauvais contrat)",
+   "file_line": "resources/js/components/admin/pos/PosLoyaltyRedeemModal.vue:212 (Number(event?.balance_after)) vs resources/js/services/eventContract.js:62-77 (parseEvent retourne {…, payload}) + :385 (handler(parsed)); convention frère: resources/js/components/admin/pos/PosOrdersTrackerComponent.vue:705 (event?.payload || {})",
+   "repro": "node reports/test-e2e/loyalty-validation-2026-06-12/F3-repro-payload-shape.cjs (logique handler+parseEvent VERBATIM, nourrie de l'envelope wire EXACTE produite par EventContract::buildEnvelope(DomainEvent#9144) sur foodking_e2e, assertEnvelopeValid=YES)",
+   "evidence": "Sortie repro: A) REAL wire event through real contract -> customerBalance = 490 (STALE — event silently ignored) ; B) FLAT object as fed by the vitest mock -> 500 ; C) event.payload.balance_after -> 500. Le garde Number.isFinite (Vue :213) avale CHAQUE event réel (balance_after=undefined→NaN). tests/js/posLoyaltyLiveBalance.spec.js:9-12 MOCK onEvents et :45-54 nourrit des objets PLATS {balance_after:999} → 5/5 vert sans jamais exercer le vrai parse. La raison d'être du GOAL L2 (solde live dans le modal) est morte de bout en bout côté client.",
+   "recommendation": "Lire const after = Number(event?.payload?.balance_after) dans le handler + réécrire le spec pour nourrir l'envelope parsée réelle {payload:{balance_after}} (ou tester via le vrai onEvents non mocké). Ajouter un filtre user_id en même temps (cf. F3-04).",
+   "kept": true,
+   "votes": "CONFIRMED — could not refute; every cited element verified independently from source + executed repro. (1) file:line exact: resources/js/components/admin/pos/PosLoyaltyRedeemModal.vue:212 reads `Number(event?.balance_after)` (top-level); resources/js/services/eventContract.js parseEvent (:62-77) returns {version,type,aggregateId,branchId,occurredAt,correlationId,payload} with balance_after NESTED in payload, and dispatch calls handler(parsed); sibling convention PosOrdersTrackerComponent.vue:705 uses `event?.payload || {}` as claimed. (2) Wire shape verified independently of the repro's hard-coded envelope: app/Listeners/PersistLoyaltyBalanceChangedToOutbox.php:45-49 nests balance_after inside 'payload'; app/Domain/Events/EventContract.php:81-93 buildEnvelope keeps it nested; app/Jobs/DispatchDomainEventsJob.php:107-116 broadcasts the envelope AS-IS — no layer flattens it. (3) Repro executed (node F3-repro-payload-shape.cjs): A) real wire through real contract → customerBalance=490 STALE (Number(undefined)=NaN swallowed by Number.isFinite guard at Vue:213); B) flat vitest-mock shape → 500; C) event.payload.balance_after → 500. (4) Masking spec confirmed: tests/js/posLoyaltyLiveBalance.spec.js:9-12 mocks onEvents entirely and :45-54 feeds FLAT {balance_after} objects → 5/5 green without ever exercising parseEvent. Severity P1 is fair, not over-coded: this is a pure V1-local feature (no SaaS/scale framing); the entire client-side deliverable of GOAL Loyalty-Sync L2 (converged 2026-06-11) is a total no-op hidden behind a green test, and two prior commits (2b4eb2596 EventType::all(), ba299a657 missing bundle) already resurrected the SAME pipeline server-side — this third, distinct client-side break was never listed (not a dedup of release/v1 lots A-H nor dashboard-deep 06-08). Not P0: no NF525/money impact — redeem is server-revalidated, degradation = stale-until-next-lookup. Verdict appended to reports/test-e2e/loyalty-validation-2026-06-12/F3-01-refuter1.md. || CONFIRMED via fully independent reproduction. (1) file:line all real (grep): PosLoyaltyRedeemModal.vue:212 = `const after = Number(event?.balance_after);`; eventContract.js:62-77 parseEvent returns nested `payload` and :385 calls `handler(parsed)`; sibling PosOrdersTrackerComponent.vue:705 uses `event?.payload || {}`. (2) Independent backend wire check (NOT the original agent's embedded envelope): tinker on foodking_e2e with a DIFFERENT event (DomainEvent#9199) → buildEnvelope+assertEnvelopeValid OK, top-level balance_after=false, payload.balance_after=200; DispatchDomainEventsJob.php:107-116 broadcasts the whole envelope, so the handler receives the nested shape → Number(undefined)=NaN → Number.isFinite swallows EVERY real event = total client-side NO-OP. (3) Repro script runs and outputs exactly as claimed (A=490 STALE, B=500, C=500). (4) False-green confirmed by actually running `npx vitest run tests/js/posLoyaltyLiveBalance.spec.js` → 5/5 green while the spec mocks onEvents (lines 9-12) and feeds FLAT objects {balance_after:999} (lines 45-56), never exercising the real parse. (5) Impact is LIVE, not source-only: served bundles public/js/pos-shell.js and public/js/admin-shell.js contain the compiled broken pattern `Number(null==t?void 0:t.balance_after)`. NOT a dedup (release/v1 A-H and dashboard-deep 06-08 don't cover it; GOAL L2 2026-06-11 fixed only the backend side — EventType::all() 2b4eb2596 + bundle rebuild ba299a657 — the client shape mismatch was never reported). Severity P1 is correctly calibrated for V1 LOCAL mono-poste: the cross-surface scenario (kiosk earn while POS redeem modal open) exists on the single box, the entire raison d'être of the L2 deliverable is silently dead and masked by a green test on the wrong contract; degradation is stale-until-next-lookup (pre-L2 behavior, no data corruption) so P1 not P0. Evidence appended to reports/test-e2e/loyalty-validation-2026-06-12/F3-01-refuter2.md.",
+   "final_sev": "P1"
+  },
+  {
+   "lane": "F3-sync-setup",
+   "id": "F3-02",
+   "sev": "P1",
+   "title": "Mutation de points SANS event : décrément inline fidélité à la création de commande kiosk (fallback sans pendingRedeem) ne dispatch jamais LoyaltyBalanceChanged",
+   "file_line": "app/Services/FrontendOrderService.php:899-904 (DB::table('users')->update(['loyalty_points'=>$balanceAfter])) — grep 'LoyaltyBalanceChanged' dans ce fichier = 0 hit ; appelé depuis :485 (myOrderStore, dans la TX) via applyKioskLoyaltyDiscount :815",
+   "repro": "POST commande frontend avec loyalty_code + discount>0 sans appel préalable /api/frontend/loyalty/redeem (<10min) et sans coupon, avec pos.manual_discount_enabled=true (config/pos.php:172, =true sur le harnais) → branche sans pendingRedeem :877 → décrément :899 + ledger :906, aucun event",
+   "evidence": "Les 7 autres sites d'écriture users.loyalty_points dispatchent tous (LoyaltyController.php:197/206→221, :273→294, :397→416 ; AwardLoyaltyPointsOnDelivery.php:118→145 ; LoyaltyService.php:86→91, :186→200 ; PosRedemptionService.php:172→204). Celui-ci est le SEUL orphelin. Atténuation: chemin dormant en données réelles — 0 ligne ledger 'Reduction fidelite appliquee sur commande kiosk' dans foodking_e2e (le flux borne passe par /loyalty/redeem qui dispatch) ; reste atteignable (session borne >10min entre redeem et commande, ou commande API directe).",
+   "recommendation": "Ajouter \\App\\Events\\LoyaltyBalanceChanged::dispatch($loyaltyUser->id, (int)($this->frontendOrder->branch_id ?? 1), $balanceAfter, -$pointsRequired, 'redeem') juste après la création du ledger (:906) — DispatchableAfterCommit gère la TX.",
+   "kept": true,
+   "votes": "NOT refuted — finding REPRODUCED with executed proof. (1) file:line verified: grep 'LoyaltyBalanceChanged' in app/Services/FrontendOrderService.php = 0 hit; inline decrement at :899-905 (DB::table('users')->update loyalty_points), ledger at :906, called from myOrderStore :485 via applyKioskLoyaltyDiscount :815; pendingRedeem branch starts at :864 (finding's :877 = the if-block, same branch). All 7 other write sites do dispatch (LoyaltyController:221/294/416, AwardLoyaltyPointsOnDelivery:145, LoyaltyService:91/200, PosRedemptionService:204) — this is the sole orphan, violating the event's own docblock contract ('Emitted whenever a customer's loyalty balance changes ... kiosk/frontend redeem'). (2) Repro executed: reports/test-e2e/loyalty-validation-2026-06-12/F302RefuterRepro2Test.php (mirrors canonical tests/Feature/KioskLoyaltyLedgerAtomicTest.php, real route POST /api/frontend/order, no prior redeem, no coupon, manual_discount_enabled=true) → OK 2 tests/7 assertions: points 500→400 + fallback ledger row ('Reduction fidelite appliquee sur commande kiosk', points=-100, balance_after=400) with domain_events count(loyalty.balance_changed)=0; positive control proved a dispatch inside an identical DB::transaction DOES persist 1 outbox row (no false negative in detection). (3) No dedup found in reports/test-e2e/cms-e2e-2026-06-10 or reports/audit; L2 GOAL commits (2b4eb2596/ba299a657) fixed EventType::all()+bundles, not this site. SEVERITY DOWNGRADE P1→P2: path is dormant in the real kiosk flow (borne calls /loyalty/redeem first which dispatches, then order attaches pendingRedeem without 2nd deduction; fallback needs >10min gap or direct API order — finding's own evidence: 0 fallback ledger rows in foodking_e2e); when triggered, points+ledger remain correct and atomic (no data loss, no NF525/fiscal impact) — only the L2 live push is missed → transient stale balance display on cashier modal, self-corrected on next fetch. Real local contract gap, but display-only consequence on a dormant path = P2, not P1. Recommended fix (dispatch after :906, DispatchableAfterCommit) is validated by the positive control. Evidence: reports/test-e2e/loyalty-validation-2026-06-12/{refuter2-F3-02.md, F302RefuterRepro2Test.php}.",
+   "final_sev": "P2"
+  },
+  {
+   "lane": "F3-sync-setup",
+   "id": "F3-03",
+   "sev": "P2",
+   "title": "Changement du barème fidélité (admin) jamais propagé en temps réel : LoyaltySetupService ne dispatch pas SettingsUpdated (0 row settings.updated après 6 saves)",
+   "file_line": "app/Services/LoyaltySetupService.php:32 (Settings::group('loyalty_setup')->set(...) sans event) vs pattern app/Http/Controllers/Admin/OrderSetupController.php:37, CurrencyController.php:38, CompanyController.php:36, TaxController.php:39, SiteController.php:40 (tous SettingsUpdated::dispatch)",
+   "repro": "PUT /api/admin/setting/loyalty-setup (UI Enregistrer ou curl) → tinker: DomainEvent::where('event_type','settings.updated')->where('occurred_at','>=',now()->subHours(1))->get() = []",
+   "evidence": "6 saves effectués pendant la lane (2 UI + 4 curl, tous 200) → 0 domain_events settings.updated. Borne (splash /api/frontend/loyalty/config) et POS gardent l'ancien taux jusqu'à reload de page — l'admin du barème échappe au bus alors que currency/tax/site/company/order_setup y sont.",
+   "recommendation": "SettingsUpdated::dispatch(['loyalty_setup']) dans LoyaltySetupService::update après set(), aligné sur le pattern Wave 5G R9.",
+   "kept": true,
+   "votes": "NON RÉFUTÉ — reproduit indépendamment avec contrôle positif. (1) Code confirmé par Read: app/Services/LoyaltySetupService.php::update fait Settings::group('loyalty_setup')->set() sans aucun SettingsUpdated::dispatch (ni import), et LoyaltySetupController::update ne le fait pas non plus; pattern frère confirmé par grep (OrderSetupController:37, CurrencyController:38/50/62, CompanyController:36, TaxController:39/51/63, SiteController:40 — tous dispatchent, Wave 5G R9). (2) Repro live :8767/foodking_e2e: baseline domain_events settings.updated=18 → PUT /api/admin/setting/loyalty-setup HTTP 200 → toujours 18 (0 row). Contrôle positif: PUT /api/admin/setting/order-setup HTTP 200 → 19, row id 9206 payload {branch_id:1,changed_keys:[\"order_setup\"]} — le bus outbox est vivant dans ce harnais, loyalty y échappe bien (pas un flake). (3) Dedup: absent des lots connus (release/v1 A-H, dashboard-deep 06-08, K6/SYS-G ne citent pas ce gap) — seule mention = la lane F3 de cette campagne. (4) MAIS sévérité sur-cotée: le backend lit Settings frais à CHAQUE requête (LoyaltyController:204,383,511-514,1007) donc accrual/redeem/min_redeem sont corrects dès le save — aucun point/euro faux; KioskLoyaltyComponent.vue:420-431 refetch la config à chaque mounted() (pas seulement au boot); seule surface vraiment reload-bound = l'aperçu points de KioskConfirmationComponent.vue:211 (lists boot-cachées). Impact V1 LOCAL = affichage périmé auto-guéri au remount sur une op admin rare → P3 polish/cohérence, pas P2. Evidence: reports/test-e2e/loyalty-validation-2026-06-12/refuter1-F3-03.md",
+   "final_sev": "P3"
+  },
+  {
+   "lane": "F3-sync-setup",
+   "id": "F3-04",
+   "sev": "P2",
+   "title": "Handler live du modal POS sans filtre user_id : un mouvement de N'IMPORTE QUEL client de la branche écraserait le solde affiché du client lookupé",
+   "file_line": "resources/js/components/admin/pos/PosLoyaltyRedeemModal.vue:209-216 (aucune comparaison event.payload.user_id ; le modal ne stocke d'ailleurs jamais le user_id du client — la réponse redeem POS PosRedemptionService.php ne l'expose pas)",
+   "repro": "Caisse: modal redeem ouvert post-redeem client A (customerBalance affiché) ; borne: earn client B même branche → event LoyaltyBalanceChanged(B) → handler écrirait balance de B dans l'affichage de A (latent aujourd'hui car F3-01 rend le handler inopérant — les deux bugs se masquent)",
+   "evidence": "Payload wire contient user_id (vérifié envelope DomainEvent#9144: payload.user_id=1) mais le handler ne lit que balance_after. Display-only (le serveur revalide INSUFFICIENT_BALANCE au redeem), V1 mono-branche = toute la clientèle sur private-branch.1.",
+   "recommendation": "Exposer customer user_id dans la réponse redeem POS (pas de PII) + garder if (Number(event?.payload?.user_id) !== this.customerUserId) return; à corriger ENSEMBLE avec F3-01 sinon le fix F3-01 active ce bug.",
+   "kept": true,
+   "votes": "CONFIRMÉ par vérification indépendante complète. (1) file:line exact: PosLoyaltyRedeemModal.vue:209-216 lu — handler lit uniquement `Number(event?.balance_after)`, zéro comparaison user_id; data() (l.229-240) n'a aucun champ customerUserId. (2) Réponse redeem POS vérifiée (PosLoyaltyController.php:66-80): data={discount_eur, balance_after, order{...}, transaction_id} — pas de customer user_id, comme affirmé. (3) Payload wire vérifié à la fois dans le code (PersistLoyaltyBalanceChangedToOutbox.php:47-49) et en DB live foodking_e2e (domain_events #9205: {\"user_id\":44,\"balance_after\":177,...}) — user_id bien présent sur le wire, jamais lu. (4) Masquage F3-01 vérifié: eventContract.js parseEvent (:62-76) livre l'enveloppe avec payload IMBRIQUÉ à handler(parsed) (:385) → event.balance_after=undefined → handler inopérant aujourd'hui = F3-04 latent, exactement comme décrit. (5) Abonnement réel: PosOrderShowComponent.vue:354-357 passe :branch-id → mounted() s'abonne (pas doublement latent). (6) Repro empirique déterministe (script refuter1-f3-04-sim.cjs, enveloppe réelle #9205 client B=44 contre modal affichant client A=500 pts): as-written → 500 inchangé (latent); avec F3-01 corrigé naïvement → balance écrasée à 177 (solde du client B) = bug activé, infiltrable faute de customerUserId côté modal. Sévérité P2 juste: pas un finding multi-tenant sur-coté — mono-branche V1 aggrave (tous les earns borne sur private-branch.1 collisionnent avec un modal ouvert); display-only + latent plaiderait P3, mais le couplage de fix est certain (heal de F3-01 seul ACTIVE ce bug) → P2 maintenue pour forcer le fix conjoint. DEDUP: ce finding = F3-02 déjà loggé dans cette MÊME campagne (F3-sync-setup.md:39, même file:line/même masquage/même P2) → à FUSIONNER F3-02/F3-04; PAS un dedup release/v1 A-H ni dashboard-deep 06-08 (code introduit par e784f9353 loyalty L2 2026-06-11, postérieur). Evidence: reports/test-e2e/loyalty-validation-2026-06-12/refuter1-F3-04.md + refuter1-f3-04-sim.cjs.",
+   "final_sev": "P2"
+  },
+  {
+   "lane": "F3-sync-setup",
+   "id": "F3-05",
+   "sev": "P3",
+   "title": "Validation barème semi-FR : nom d'attribut brut EN « loyalty points per euro » dans les messages 422, et -1 bloqué par bulle native navigateur EN (jamais d'XHR)",
+   "file_line": "app/Http/Requests/LoyaltySetupRequest.php:17-19 (rules sans attributes() FR, aucune entrée lang/fr pour loyalty_points_per_euro — grep 0 hit) ; resources/js/components/admin/settings/LoyaltySetup/LoyaltySetupComponent.vue:24 (input min=\"0\" → validation HTML5 native pré-submit)",
+   "repro": "UI: saisir -1 → Enregistrer → aucun XHR (sniffer=false), checkValidity=false, validationMessage='Value must be greater than or equal to 0.' (EN, locale navigateur). Saisir vide → 422 « Le champ loyalty points per euro est obligatoire. » inline. API directe: -1→« La valeur de loyalty points per euro doit être supérieure ou égale à 0. », 'abc'→« …doit être un entier. », 1001→« …pas supérieure à 1000. »",
+   "evidence": "Captures F3-setup-validation-minus1.png / F3-setup-validation-empty.png + sorties curl dans F3-sync-setup.md. Phrases FR correctes mais attribut non traduit (même classe que PS-01 healé ailleurs). Note annexe: défaut UI data() per_euro=10 (LoyaltySetupComponent.vue:96) vs défaut backend 1 (LoyaltySetupResource.php:20) — divergence de fallback cosmétique. 0 accepté = by-design (min:0, désactive l'accrual).",
+   "recommendation": "attributes() FR dans LoyaltySetupRequest (« points par euro », etc.) ; optionnel: novalidate sur le form pour unifier l'UX d'erreur côté serveur FR.",
+   "kept": true,
+   "votes": "F3-05 CONFIRMÉ à 100% par reproduction indépendante — impossible à réfuter. (1) file:line tous exacts: app/Http/Requests/LoyaltySetupRequest.php:17-19 contient les rules sans attributes() ni messages() (fichier entier = 23 lignes, lu); grep loyalty_points_per_euro dans lang/ = 0 hit alors que lang/fr/validation.php:180 a un bloc 'attributes' sans entrée loyalty; LoyaltySetupComponent.vue:24 = min=\"0\" sur input type=number, form @submit.prevent sans novalidate. (2) Repro API exacte (PUT /api/admin/setting/loyalty-setup, locale fr): -1 → 422 « La valeur de loyalty points per euro doit être supérieure ou égale à 0. »; 'abc' → « …doit être un entier. »; 1001 → « …ne doit pas être supérieure à 1000. »; absent → « Le champ loyalty points per euro est obligatoire. » — verbatim identique au finding, attribut brut EN dans phrases FR. (3) Repro UI Playwright: -1 + Enregistrer → xhrSeen=false, checkValidity=false, validationMessage='Value must be greater than or equal to 0.' (bulle native EN capturée refuter1-F3-05-minus1.png, sous le label FR « POINTS PAR € »); champ vide → XHR 422 + inline FR avec attribut EN (refuter1-F3-05-empty.png). (4) Annexe vérifiée: Vue data() l.96 default 10 vs LoyaltySetupResource.php:20 default ??1 — divergence réelle, cosmétique. (5) PAS un dedup: 9d415b8db (PS-01) n'a touché que CouponRequest+OfferRequest, jamais LoyaltySetupRequest. (6) Sévérité P3 juste: admin-only (permission:settings), rejet serveur correct, zéro impact fonctionnel/NF525, pur i18n FR (légitime sous mandat ADR-007 FR mais mineur). Evidence: reports/test-e2e/loyalty-validation-2026-06-12/{refuter1-F3-05.md, refuter1-F3-05-minus1.png, refuter1-F3-05-empty.png, refuter1-f3-05.cjs}.",
+   "final_sev": "P3"
+  },
+  {
+   "lane": "F4-qr-parity-consent",
+   "id": "F4-CONSENT-01",
+   "sev": "P2",
+   "title": "RGPD: register() crée compte+points SANS capture de consentement, accrual sans gate consentement, et AUCUNE route opt-out/retrait n'existe",
+   "file_line": "app/Http/Controllers/Frontend/LoyaltyController.php register() L138-237 (route publique non-auth routes/api.php:1428) ; app/Listeners/AwardLoyaltyPointsOnDelivery.php:25-175 (zéro réf consentement) ; app/Http/Requests/Kiosk/LoyaltyOptInRequest.php:37-38 (opt-in OK) ; tests/Feature/KioskPhase1/LoyaltyConsentTest.php (teste seulement hashIdentifier)",
+   "repro": "POST http://127.0.0.1:8767/api/frontend/loyalty/register -H 'x-api-key: <e2e key>' -d '{\"name\":\"NoConsent Test\",\"phone\":\"0781224314\"}' -> 200 {loyalty_code:1EA65006, points:25}. tinker: User id=69 -> loyalty_consents rows=0, earn txns=1. grep routes/api.php+web.php+Controllers pour opt-out|withdraw|optOut = AUCUN match (seul /loyalty/opt-in existe).",
+   "evidence": "Chemin opt-in correct & RGPD (consent_accepted required|accepted + privacy_notice_version + ligne loyalty_consents IP/UA hashés). MAIS register() public bypasse entièrement le consentement: live, un compte + loyalty_code + 25 pts bienvenue + ledger earn créés avec 0 ligne loyalty_consents (prouvé). Le listener d'accrual sur commande n'a aucune vérif consentement (crédite dès loyalty_code présent, L66-74). Aucune route de retrait => droit de retrait RGPD art.7.3 absent côté API. LoyaltyConsentTest ne couvre que le hashing PII, pas le gating.",
+   "recommendation": "V1-personnel Le Cayenne = urgence réduite (client présente son code = acte affirmatif). Pour conformité: (1) router register()/lazy-mint via le même gate consentement que opt-in OU marquer ces comptes consent_pending, (2) ajouter une route POST /loyalty/opt-out (auth) qui pose un flag stoppant l'accrual et que le listener consulte, (3) étendre LoyaltyConsentTest au gating accrual/retrait.",
+   "sev_rationale": "P2: gap de gouvernance RGPD réel (consentement incohérent + pas de retrait) mais pas un exploit ; contexte V1 mono-resto perso le rend deferrable, pas un blocker V1.",
+   "kept": true,
+   "votes": "NON RÉFUTÉ — toutes les claims vérifiées indépendamment. (1) file:line exacts: register() à app/Http/Controllers/Frontend/LoyaltyController.php:138-237 sans aucune réf consentement (seul optIn L447+ en a); route publique throttle-only routes/api.php:1428; AwardLoyaltyPointsOnDelivery.php = 175 lignes, grep consent = 0 match, résolution par loyalty_code L66-74; LoyaltyOptInRequest.php:37-38 consent_accepted required|accepted; LoyaltyConsentTest.php = 5 tests hashIdentifier-only; grep opt-out/withdraw/revokeConsent routes+controllers = 0 match (LoyaltyConsent::create appelé UNIQUEMENT depuis optIn L484). (2) Repro indépendante réussie avec téléphone neuf: POST /api/frontend/loyalty/register {name,phone} → 200 {loyalty_code:D9CFB657, points:25}; tinker foodking_e2e: user_id=75, loyalty_consents=0 (table entière=0), earn_txns=1. (3) Nuance matérielle non citée par le finder: le parcours borne réel gate l'appel derrière KsConsentModal (KioskLoyaltyComponent.vue L530-567) — MAIS le consentement n'est jamais transmis ni persisté serveur (payload = name/phone/email seulement) donc art. 7.1 accountability non démontrable, endpoint bypassable, accrual non gaté, opt-out absent → atténuant, pas réfutant. (4) Pas un dedup (aucun match release/v1 A-H / dashboard-deep / system-b / pos-box). Sévérité P2 juste: RGPD/CNIL s'applique même mono-resto FR et le projet a son propre standard opt-in que register bypasse, mais pas d'exploit, retrait exerçable manuellement par le gérant, UI déjà opt-in explicite → deferrable, pas blocker V1. Evidence: reports/test-e2e/loyalty-validation-2026-06-12/refuter1-F4-CONSENT-01.md",
+   "final_sev": "P2"
+  }
+ ],
+ "rejected": [
+  {
+   "lane": "F4-qr-parity-consent",
+   "id": "F4-DATA-01",
+   "title": "Barème fidélité LIVE = 10 pts/€ + redeem dès 50 pts (canon 1/100/100) ; sentinel de parité AVEUGLE à la valeur Settings stockée en DB",
+   "votes": ""
+  },
+  {
+   "lane": "D-B1-coeur-gestion",
+   "id": "D-B1-01",
+   "title": "Ingrédients: drawer 'Utilisation de l'ingrédient' contredit la liste pour les suppléments sans group_label (liste 'Utilisé dans 8 produit(s)' vs drawer 'Non utilisé / Aucun produit…')",
+   "votes": ""
+  },
+  {
+   "lane": "D-B1-coeur-gestion",
+   "id": "D-B1-02",
+   "title": "Latence data-visible 3,3-5,2s en full-reload sur items/ingredients/stock (boot SPA ~3,2s avant le 1er appel API ; API serveur 37-42ms)",
+   "votes": ""
+  },
+  {
+   "lane": "D-B1-coeur-gestion",
+   "id": "D-B1-03",
+   "title": "Dashboard: 4 datepickers @vuepic/vue-datepicker en ANGLAIS ('Jun', 'Mo Tu We Th Fr Sa Su') et format US m/d/Y ('06/12/2026' pour le 12 juin) — viole FR d-m-Y",
+   "votes": ""
+  },
+  {
+   "lane": "D-B1-coeur-gestion",
+   "id": "D-B1-04",
+   "title": "Items: KPI 'INDISPONIBLES' tronqué en 'INDISPONIB' au viewport 1280 (pas de gestion overflow)",
+   "votes": ""
+  },
+  {
+   "lane": "D-B1-coeur-gestion",
+   "id": "D-B1-05",
+   "title": "Items: id=\"name\" dupliqué (drawer création + panneau filtre) et formulaire de création hors-écran focusable/soumissible quand fermé",
+   "votes": ""
+  },
+  {
+   "lane": "D-B1-coeur-gestion",
+   "id": "D-B1-06",
+   "title": "Dashboard 'Meilleurs Clients': liste des clients à 0 commande ('E2E Client EDIT — 0 Commandes' ×2)",
+   "votes": ""
+  },
+  {
+   "lane": "D-B1-coeur-gestion",
+   "id": "D-B1-07",
+   "title": "Dashboard 'Statistiques Des Commandes': libellé de statut 'Accepter' (infinitif) incohérent avec les autres ('En Attente', 'Livré', 'Annulé', 'Retournée')",
+   "votes": ""
+  },
+  {
+   "lane": "D-B2-commandes-argent",
+   "id": "DB2-01",
+   "title": "online-orders : colonne MONTANT en format US brut \"7.00\" sans € ni virgule (heal WT-D-R1-F4 appliqué au POS mais pas à la liste online)",
+   "votes": ""
+  },
+  {
+   "lane": "D-B2-commandes-argent",
+   "id": "DB2-02",
+   "title": "online-orders : badge STATUT \"Accepter\" (verbe infinitif au lieu de \"Acceptée\") — clé i18n partagée bouton/statut",
+   "votes": ""
+  },
+  {
+   "lane": "D-B2-commandes-argent",
+   "id": "DB2-03",
+   "title": "cash-overview : label \"Espèces encaissées aujourd'hui\" inexact — la valeur est scoped SESSION ouverte (multi-jours), pas calendaire ; calcul correct, label périmé",
+   "votes": ""
+  },
+  {
+   "lane": "D-B2-commandes-argent",
+   "id": "DB2-04",
+   "title": "Hard-load ~4 s sur toutes les pages admin (bundle SPA 2,2 Mo) — in-SPA 16 ms et API <150 ms",
+   "votes": ""
+  },
+  {
+   "lane": "D-B3-rapports-equipe",
+   "id": "D-B3-01",
+   "title": "Caisses Livreur (liste + détail) affiche les IDs bruts au lieu des noms — colonne LIVREUR = «10», FILIALE = «1»",
+   "votes": ""
+  },
+  {
+   "lane": "D-B3-rapports-equipe",
+   "id": "D-B3-02",
+   "title": "A11y: label Date orphelin sur les filtres sales-report et items-report — l'input vue-datepicker n'a ni id `searchStartDate` ni aria-label ni placeholder",
+   "votes": ""
+  },
+  {
+   "lane": "D-B3-rapports-equipe",
+   "id": "D-B3-03",
+   "title": "Format téléphone FR invalide et incohérent dans les listes utilisateurs: «+330600000003» (concat naïve country_code+phone gardant le 0 national) vs employees sans préfixe «0603025505»",
+   "votes": ""
+  },
+  {
+   "lane": "D-B4-settings",
+   "id": "DB4-F3",
+   "title": "Admin Fidélité: default/fallback Vue = 10 pts/€ (le 10x cashback éradiqué par L1) affiché live + enregistrable, échec de chargement avalé en silence",
+   "votes": ""
+  },
+  {
+   "lane": "D-B4-settings",
+   "id": "DB4-F1",
+   "title": "Site (onglet VISIBLE): libellé « IOS APPLICATION LIEN » — ordre des mots cassé",
+   "votes": ""
+  },
+  {
+   "lane": "D-B4-settings",
+   "id": "DB4-F2",
+   "title": "Site (VISIBLE): radio position devise « (€) Left » — EN résiduel",
+   "votes": ""
+  },
+  {
+   "lane": "D-B4-settings",
+   "id": "DB4-F7",
+   "title": "Site (VISIBLE): options FORMAT HORAIRE « 12 Hour »/« 24 Hour » hard-codées EN + minutes non paddées",
+   "votes": ""
+  },
+  {
+   "lane": "D-B4-settings",
+   "id": "DB4-F4",
+   "title": "Bornes > Modifier: TypeError console (vue-select) + UTILISATEUR « -- » non présélectionné pour machines dont l'user est sans rôle",
+   "votes": ""
+  },
+  {
+   "lane": "D-B4-settings",
+   "id": "DB4-F5",
+   "title": "Error-state listes settings: fetch échoué avalé → table vide + « Affichage de à sur entrées » (texte pagination sans nombres), aucun message d'erreur",
+   "votes": ""
+  },
+  {
+   "lane": "D-B4-settings",
+   "id": "DB4-F6",
+   "title": "notification-alert (page CACHÉE V1, URL directe): contenu massivement EN (labels « Mail Notification Messages », « Order Pending Message », data seed « Your order is successfully placed. »)",
+   "votes": ""
+  },
+  {
+   "lane": "D-B4-settings",
+   "id": "DB4-DEDUP-1",
+   "title": "DEDUP-suspect: Filiales > Voir (branches/show/1) pageerror Google Maps DrawingManager retiré (v3.65) — finding CONNU dashboard-deep 2026-06-08 (delivery-zone map, owner-scope)",
+   "votes": ""
+  },
+  {
+   "lane": "D-B5-divers",
+   "id": "DB5-01",
+   "title": "Full reload: premier contenu ~3,5-4,0s sur toutes les pages auditées (boot SPA, bundle 3,2 Mo)",
+   "votes": ""
+  },
+  {
+   "lane": "D-B5-divers",
+   "id": "DB5-02",
+   "title": "Datepickers hardcodés 12h AM/PM (:is24=\"false\") sur UI FR — coupons + offres (filtres et création)",
+   "votes": ""
+  },
+  {
+   "lane": "D-B5-divers",
+   "id": "DB5-03",
+   "title": "Outbox observability: timestamps via toLocaleString() sans locale → 'Généré à 6/12/2026, 2:56:01 AM' et col CRÉÉ LE en EN/AM-PM",
+   "votes": ""
+  },
+  {
+   "lane": "D-B5-divers",
+   "id": "DB5-04",
+   "title": "Bouton 'Purger Échecs > 24h' (outbox) déclenche le POST drain-failed sans dialogue de confirmation",
+   "votes": ""
+  },
+  {
+   "lane": "D-B5-divers",
+   "id": "DB5-05",
+   "title": "Colonne REMISE de la liste coupons affiche '12.00' — point décimal, sans unité €/% selon le type",
+   "votes": ""
+  }
+ ]
+}

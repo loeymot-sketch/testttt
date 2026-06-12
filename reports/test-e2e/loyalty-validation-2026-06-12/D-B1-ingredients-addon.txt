@@ -1,0 +1,73 @@
+Filiale
+Le Cayenne (Principal)
+Le Cayenne (Principal)
+Bonjour
+Admin Le Cayenne
+Admin Le Cayenne
+
+admin@lecayenne.fr
+
++330600000000
+
+5,80 €
+Modifier Le Profil
+Changer Le Mot De Passe
+Déconnexion
+Tableau De Bord
+POS
+Produits & Stock
+Catalogue
+Attribut D’articles
+Ingrédients
+Commandes Caisse
+Historique
+Encaissement
+Vue Caisse Unifiée
+Caisse Livreur
+CAISSE ET COMMANDES
+Écran Cuisine
+Suivi Client
+COMMUNICATIONS
+Notifications Push
+Messages
+Abonnés
+UTILISATEURS
+Administrateurs
+Employés
+Chefs
+COMPTES
+Transactions
+RAPPORTS
+Rapport Des Ventes
+Rapport Articles
+CONFIGURATION
+Paramètres
+
+FOODKING V1
+
+Ingrédients
+
+Gestion des viandes, sauces, suppléments et add-ons
+
+3
+Tous
+Viandes & Attributs
+Suppléments
+Add-ons
+Liste des ingrédients avec leur statut de disponibilité
+NOM	TYPE	UTILISATION	ACTIONS
+
+
+Menu (Frites + Boisson)
+
+	Add-ons	Utilisé dans 18 produit(s)	Voir les détails
+
+
+Frites Seules
+
+	Add-ons	Utilisé dans 18 produit(s)	Voir les détails
+
+
+Boisson Seule
+
+	Add-ons	Utilisé dans 31 produit(s)	Voir les détails

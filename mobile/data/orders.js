@@ -33,7 +33,7 @@
       branch_id: 1,
       branch_name: 'Le Cayenne',
       branch_city: 'Hénin-Beaumont',
-      total: 29.80,                   // 9.50 + 7.90 + 10.90 + 1.50
+      total: 30.80,                   // [T-4.1 G3] 9.50 + 8.90 + 10.90 + 1.50 (Tacos L = 8.90 SSOT)
       payment_status: 'pending',      // pending | paid
       payment_method: 'cash_at_counter', // cash_at_counter | card_at_counter | stripe
       pickup_code: 'C-1234',
@@ -41,11 +41,11 @@
       items_summary: 'Big Cayenne · Tacos L · Bowl Frites Curry · Coca-Cola',
       items: [
         { id: 1, item_id: 102,  name: 'Big Cayenne',              qty: 1, line_total: 9.50,  extras_summary: 'Cheddar · Œuf · Jambon' },
-        { id: 2, item_id: 502,  name: 'Tacos L',                  qty: 1, line_total: 7.90,  extras_summary: '2 viandes · Sauce fromagère' },
+        { id: 2, item_id: 502,  name: 'Tacos L',                  qty: 1, line_total: 8.90,  extras_summary: '2 viandes · Sauce fromagère' },
         { id: 3, item_id: 602,  name: 'Bowl Frites Poulet curry', qty: 1, line_total: 10.90, extras_summary: 'Boule gratinée +2,00 €' },
         { id: 4, item_id: 1001, name: 'Coca-Cola 33cl',           qty: 1, line_total: 1.50,  extras_summary: '' },
       ],
-      points_earned_estimate: 33,
+      points_earned_estimate: 31,  // [F7 cascade 2026-06-10] = pointsFor(30.80) = round(30.80) at 1 pt/€ (total re-baselined 29.80→30.80 by F7 Tacos L 8,90 — invariant carte==détail==pointsFor)
     },
   ];
 
@@ -110,7 +110,7 @@
         { id: 1, item_id: 302, name: 'Big Classique', qty: 1, line_total: 9.00, extras_summary: 'Poulet crispy · Sauce algérienne · Cheddar + Œuf + Jambon inclus' },
         { id: 2, item_id: 902, name: 'Tarte Daim',    qty: 1, line_total: 3.80, extras_summary: '' },
       ],
-      points_earned: 38,  // 13 + welcome bonus 25
+      points_earned: 13,  // [E2E drift fix 2026-06-09] was 38 (=13 + welcome 25) but the +25 welcome is its OWN loyalty ledger row (loyalty.js), so 38 double-counted it AND drifted from the order-detail which shows pointsFor(12.80)=13. Now seed == pointsFor(total) for every order → history card == detail.
     },
   ];
 

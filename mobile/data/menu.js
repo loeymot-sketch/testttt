@@ -172,11 +172,15 @@
   ];
 
   // Suppléments spécifiques aux bols (heal-light v2 2026-05-14 — gratiné +2€ bol-specific)
+  // [T-3.1 F4] allergens field added per FIC 1169/2011 — the bol recap aggregation
+  // reads s.allergens; without this field bol supplements were silently dropped from
+  // the legal disclosure. Boule gratinée = gratinated cheese → lactose (unambiguous).
+  // Owner gate G4 confirms completeness of these sets against the official recipe.
   const SUPPLEMENTS_BOLS = [
-    { id: 'sb-oignon-frais',   name: 'Oignon frais',    price: 0.90, image: ASSET_BASE + 'oignons-frits.png' },
-    { id: 'sb-jambon',         name: 'Jambon',          price: 0.90, image: ASSET_BASE + 'jambon-dinde.png' },
-    { id: 'sb-champignons',    name: 'Champignons',     price: 0.90, image: ASSET_BASE + 'champignons.png' },
-    { id: 'sb-boule-gratinee', name: 'Boule gratinée',  price: 2.00, image: ASSET_BASE + 'bol-frites-gratine.png' },
+    { id: 'sb-oignon-frais',   name: 'Oignon frais',    price: 0.90, image: ASSET_BASE + 'oignons-frits.png',     allergens: [] },
+    { id: 'sb-jambon',         name: 'Jambon',          price: 0.90, image: ASSET_BASE + 'jambon-dinde.png',      allergens: [] },
+    { id: 'sb-champignons',    name: 'Champignons',     price: 0.90, image: ASSET_BASE + 'champignons.png',       allergens: [] },
+    { id: 'sb-boule-gratinee', name: 'Boule gratinée',  price: 2.00, image: ASSET_BASE + 'bol-frites-gratine.png', allergens: ['lactose'] },
   ];
 
   // Formules menu (heal-light v2 2026-05-14 — menu addon 3.00 → 2.50€)

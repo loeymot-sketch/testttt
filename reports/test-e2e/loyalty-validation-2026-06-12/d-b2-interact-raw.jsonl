@@ -1,0 +1,18 @@
+{"step":"pos-orders.page2","before":"1206264522\tN°A0005\tÀ Emporter\tClient passage\t4,50 €\t02:33, 12-06-2026\tEn préparation\t","after":"1006264500\tN°A0142\tÀ Emporter\tClient passage\t11,50 €\t23:01, 10-06-2026\tEn préparation\t","showBefore":"Affichage de 1 à 10 sur 61 entrées","showAfter":"Affichage de 11 à 20 sur 61 entrées","sink":{"console":[],"http":[]}}
+{"step":"pos-orders.filterOpen","filterPanelText":"10 | 10 | 25 | 50 | 100 | 500 | 1000 | Filtrer | Exporter | Imprimer | XLS","sink":{"console":[],"http":[]}}
+{"step":"online-orders.page2","before":"1206264531\tÀ Emporter\tAdmin Le Cayenne\t10.00\t02:35, 12-06-2026\tAccepter\t","after":"1206264516\tÀ Emporter\tAdmin Le Cayenne\t3.80\t02:30, 12-06-2026\tAccepter\t","sink":{"console":[],"http":[]}}
+{"step":"historique.page2","before":"1206264531\tBorne\tN°A0006\tAdmin Le Cayenne\t10,00 €\tÀ encaisser\t—\t02:35, 12-06-2026\tAccepter\t","after":"1206264519\tBorne\tN°A0003\tAdmin Le Cayenne\t3,80 €\tÀ encaisser\t—\t02:30, 12-06-2026\tAccepter\t","sink":{"console":[],"http":[]}}
+{"step":"transactions.page2","before":"F2-PAY-4515\t02:38, 12-06-2026\tEspèces\tF2-RDM-4\t+ 25,00 €","after":"COUNTER-4320-20260610070546\t07:05, 10-06-2026\tEspèces\t1006264320\t+ 1,00 €","showBefore":"Affichage de 1 à 10 sur 747 entrées","showAfter":"Affichage de 11 à 20 sur 747 entrées","sink":{"console":[],"http":[]}}
+{"step":"transactions.limit","note":"no select found"}
+{"step":"tracker.todayCount","uiActivesToday":["12","19"],"dbOrdersToday":"19","sink":{"console":[],"http":[]}}
+{"step":"tracker.search","note":"filled A0009","sink":{"console":[],"http":[]}}
+{"step":"tracker.tabBorne","sink":{"console":[],"http":[]}}
+{"step":"encaissement.veracity","encHeader":{"badge":"Commandes en attente d’encaissement  53 Actualiser Total en attente d’encai","total":"265,70 €"},"badgeNum":"53","dbPending":"TINKER_ERR Error: Command failed: cd /Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/.claude/worktrees/cms-gestion-20","sink":{"console":[],"http":[]}}
+{"step":"encaissement.actualiser","sink":{"console":[],"http":[]}}
+{"step":"encaissement.modalOpen","modalTxt":"💳 Encaisser La Commande Borne | ✕ |  | N° A0011 | BORNE |  | MONTANT TOTAL |  | 1,00 € |  | CHOISIR LE PAIEMENT |  | 💶 | Espèces | Ouvre le tiroir (simulation) | 💳 | Terminal (manuel) | SumUp — saisir la référence | 📱 | Mobile | 🎟️ | Ticket restaurant | MONTANT REÇU | 1 | 2 | 3 | ⌫ | 4 | 5 | 6 | ⌫ | 7 | 8 | 9 | C | 00 | 0 | , | C | Annuler | ✓ | Confirmer & Imprimer ticket","sink":{"console":[],"http":[]}}
+{"step":"encaissement.modalClose","sink":{"console":[],"http":[]}}
+{"step":"cash-overview.search","ms":626,"ovw":{"grandTotal":"17 563,90 €","txCount":"584","hasTable":true},"sink":{"console":[],"http":[]}}
+{"step":"cash-sessions.range","groups":"5 tables; days: vendredi 12 juin 2026, mercredi 10 juin 2026, mardi 9 juin 2026, lundi 8 juin 2026, dimanche 7 juin 2026","sink":{"console":[],"http":[]}}
+{"step":"credit-balance.filterOpen","dbCustomers":"3","sink":{"console":[],"http":[]}}
+{"step":"table-orders.exportOpen","sink":{"console":[],"http":[]}}
+{"step":"DONE"}

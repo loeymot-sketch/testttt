@@ -191,11 +191,37 @@ class LoyaltyController extends Controller
             }
 
             // Génération d'un code de fidélité s'il n'en a pas
-            if (!$user->loyalty_code) {
+            $isNewLoyaltyAccount = !$user->loyalty_code;
+            if ($isNewLoyaltyAccount) {
                 $user->loyalty_code = strtoupper(substr(md5(uniqid()), 0, 8)); // ex: A1B2C3D4
                 $user->loyalty_points = 0;
             }
+
+            // [GOAL LOYALTY L1 T-L1.4 2026-06-11] Welcome bonus — the client
+            // apps promise "+25 pts à l'inscription" but no backend ever
+            // awarded it (phantom promise, e2e F-LOY-3). Awarded ONCE at
+            // loyalty-account creation (idempotent by construction), ledgered.
+            $welcomePoints = (int) Settings::group('loyalty_setup')->get('loyalty_welcome_points', 25);
+            if ($isNewLoyaltyAccount && $welcomePoints > 0) {
+                $user->loyalty_points = $welcomePoints;
+            }
             $user->save();
+
+            if ($isNewLoyaltyAccount && $welcomePoints > 0) {
+                \App\Models\LoyaltyTransaction::create([
+                    'user_id'        => $user->id,
+                    'loyalty_code'   => $user->loyalty_code,
+                    'type'           => 'earn',
+                    'points'         => $welcomePoints,
+                    'balance_after'  => (int) $user->loyalty_points,
+                    'source_surface' => 'kiosk',
+                    'description'    => 'Bonus de bienvenue',
+                ]);
+                // [L2 LOYALTY-SYNC]
+                \App\Events\LoyaltyBalanceChanged::dispatch(
+                    (int) $user->id, 1, (int) $user->loyalty_points, $welcomePoints, 'welcome'
+                );
+            }
 
             return response()->json([
                 'status' => true,
@@ -263,6 +289,11 @@ class LoyaltyController extends Controller
                         'updated_at'     => now(),
                     ]);
                 }
+
+                // [L2 LOYALTY-SYNC] push new balance (after-commit)
+                \App\Events\LoyaltyBalanceChanged::dispatch(
+                    (int) $user->id, 1, $balance, $pointsToAdd, 'earn'
+                );
                 return $balance;
             });
 
@@ -381,6 +412,11 @@ class LoyaltyController extends Controller
 
                 Log::info("Loyalty redeem: {$pointsToRedeem} pts redeemed from user #{$user->id}");
 
+                // [L2 LOYALTY-SYNC] push new balance (after-commit)
+                \App\Events\LoyaltyBalanceChanged::dispatch(
+                    (int) $user->id, 1, (int) $balanceAfter, -$pointsToRedeem, 'redeem'
+                );
+
                 return ['points' => $user->loyalty_points - $pointsToRedeem, 'user_id' => $user->id];
             });
 
@@ -472,9 +508,9 @@ class LoyaltyController extends Controller
     public function config(Request $request)
     {
         try {
-            $pointsPerEuro  = (int)   Settings::group('loyalty_setup')->get('loyalty_points_per_euro', 10);
+            $pointsPerEuro  = (int)   Settings::group('loyalty_setup')->get('loyalty_points_per_euro', 1);
             $pointsFor1Euro = (int)   Settings::group('loyalty_setup')->get('loyalty_points_for_1_euro_discount', 100);
-            $minRedeem      = (int)   Settings::group('loyalty_setup')->get('loyalty_min_redeem_points', 50);
+            $minRedeem      = (int)   Settings::group('loyalty_setup')->get('loyalty_min_redeem_points', 100);
             $rawTiers       = Settings::group('loyalty_setup')->get('loyalty_tiers', '100,250,500,1000,2000');
 
             if (is_string($rawTiers)) {

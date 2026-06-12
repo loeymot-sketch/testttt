@@ -58,7 +58,7 @@ function AllergenBadge({ allergens, size = 'sm' }) {
   const isLg = size === 'lg';
   return (
     <div
-      role="region"
+      role="img"
       aria-label={`Allergènes : ${allergens.map(k => (ALLERGEN_META[k]?.label || k)).join(', ')}`}
       style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: isLg ? '6px 10px' : '2px 6px', background: 'var(--cream)', borderRadius: 999, fontSize: isLg ? 11 : 9, color: 'var(--gray-4)', fontWeight: 600 }}
     >
@@ -78,6 +78,10 @@ function AllergenBadge({ allergens, size = 'sm' }) {
 
 // HOME
 function ScreenHome({ go, name = 'Ikyes' }) {
+  // [A11y heal button-name 2026-06-08] Featured-rail hearts were icon-only buttons with no
+  // accessible name AND no handler (clicks bubbled to open the item — a fake "favourite").
+  // Now a real local toggle with aria-label + aria-pressed + stopPropagation + toast.
+  const [favs, setFavs] = React.useState({});
   return (
     <div data-screen-label="07 Home" style={{ position: 'absolute', inset: 0, background: '#fff', overflow: 'hidden' }}>
       <div className="lc-screen" style={{ paddingBottom: 96, paddingTop: 'calc(var(--ios-safe-top) + 8px)' }}>
@@ -106,7 +110,9 @@ function ScreenHome({ go, name = 'Ikyes' }) {
         <div style={{ padding: '20px 20px 0' }}>
           {(() => {
             // Featured card pointing to a real Le Cayenne signature item.
-            const featured = window.LC.menu.findItem('tacos-xxl') || window.LC.menu.items[0];
+            // [T-4.3 F8] point at a real signature tacos ('tacos-xxl' was fictional →
+            // silent fallback to items[0] = Sandwich Cayenne).
+            const featured = window.LC.menu.findItem('big-tacos-2-viandes') || window.LC.menu.items[0];
             return (
               <div onClick={() => go('item', featured.slug)} style={{ borderRadius: 24, overflow: 'hidden', background: 'var(--yellow)', position: 'relative', height: 220, display: 'flex', cursor: 'pointer', boxShadow: '6px 6px 0 var(--ink)' }}>
                 <div style={{ flex: 1, padding: 20, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
@@ -154,8 +160,12 @@ function ScreenHome({ go, name = 'Ikyes' }) {
               <div key={it.id} onClick={() => go('item', it.id)} style={{ flex: '0 0 160px', cursor: 'pointer' }}>
                 <div style={{ position: 'relative', height: 160, borderRadius: 16, overflow: 'hidden', background: 'var(--cream)' }}>
                   <Slot id={it.slot} h="100%" radius={0} placeholder={it.name} src={it.image} alt={it.name}/>
-                  <button type="button" aria-label={`Ajouter ${it.name} aux favoris`} onClick={e => { e.stopPropagation(); go('toast', { msg: 'Favoris — bientôt disponibles', kind: 'info' }); }} style={{ position: 'absolute', top: 8, right: 8, width: 32, height: 32, borderRadius: 999, background: '#fff', border: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-                    <I.Heart size={16}/>
+                  <button
+                    onClick={e => { e.stopPropagation(); const next = !favs[it.id]; setFavs(f => ({ ...f, [it.id]: next })); go('toast', { msg: next ? `${it.name} ajouté aux favoris` : `${it.name} retiré des favoris`, kind: 'success' }); }}
+                    aria-label={favs[it.id] ? `Retirer ${it.name} des favoris` : `Ajouter ${it.name} aux favoris`}
+                    aria-pressed={!!favs[it.id]}
+                    style={{ position: 'absolute', top: 8, right: 8, width: 32, height: 32, borderRadius: 999, background: favs[it.id] ? 'var(--orange)' : '#fff', border: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 2 }}>
+                    <I.Heart size={16} stroke={favs[it.id] ? '#fff' : undefined}/>
                   </button>
                   {it.tags[0] && <div style={{ position: 'absolute', top: 8, left: 8 }}><Tag t={it.tags[0]}/></div>}
                 </div>
@@ -241,14 +251,11 @@ function ScreenMenu({ go, cart, addToCart }) {
               </div>
               <div style={{ padding: '0 20px', display: 'grid', gap: 10 }}>
                 {items.map(it => (
-                  /* [W3 HEAL P1-A11Y-2 2026-06-06] nested-interactive (axe serious ×41):
-                     mirror web ItemCard (HEAL T1-09). Outer container drops
-                     role/tabIndex/aria-label/onKeyDown — a plain <div onClick> is NOT
-                     an interactive ARIA node, so the inner +/personnalise <button> is no
-                     longer nested. Whole-card tap survives (onClick kept). The item NAME
-                     becomes the real focusable control (button reset to look like the div),
-                     so keyboard users can reach the detail view. */
-                  <div key={it.id} onClick={() => go('item', it.id)} style={{ display: 'flex', gap: 14, padding: 12, background: 'var(--cream)', borderRadius: 16, cursor: 'pointer', alignItems: 'center' }}>
+                  <div key={it.id} className="lc-card-row" style={{ position: 'relative', display: 'flex', gap: 14, padding: 12, background: 'var(--cream)', borderRadius: 16, alignItems: 'center' }}>
+                    {/* [A11y heal nested-interactive 2026-06-08] Whole-card tap = ONE stretched overlay
+                        button (keyboard-focusable, native Enter/Space). The +/→ action button is a sibling
+                        painted above (zIndex 2) — no button nested in an interactive element → axe nested-interactive 0. */}
+                    <button type="button" onClick={() => go('item', it.id)} aria-label={`Voir ${it.name} — ${it.price.toFixed(2).replace('.', ',')} €`} style={{ position: 'absolute', inset: 0, border: 0, background: 'transparent', cursor: 'pointer', zIndex: 1, padding: 0, margin: 0 }}/>
                     <div style={{ width: 84, height: 84, borderRadius: 12, overflow: 'hidden', flexShrink: 0, background: '#0A0A0A' }}>
                       <Slot id={it.slot} h="100%" radius={0} placeholder={it.name} src={it.image} alt={it.name}/>
                     </div>
@@ -266,8 +273,8 @@ function ScreenMenu({ go, cart, addToCart }) {
                         {/* [Owner re-cadrage 2026-05-11 D3] Quick-add "+" : si item personnalisable (viandes / sauce / suppléments / menu_addon / frites_style),
                             ouvrir le wizard au lieu d'ajouter direct au panier avec composition vide. Pour desserts/boissons/items direct, garder add direct. */}
                         {(it.viandes > 0 || it.has_sauce || it.has_supplements !== false || it.has_menu_addon || it.has_frites_style)
-                          ? <button onClick={e => { e.stopPropagation(); go('item', it.id); }} aria-label={`Personnaliser ${it.name}`} style={{ width: 32, height: 32, borderRadius: 999, background: 'var(--orange)', color: '#fff', border: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><I.Arrow size={14} stroke="#fff" sw={2.4}/></button>
-                          : <button onClick={e => { e.stopPropagation(); addToCart(it); }} aria-label={`Ajouter ${it.name} au panier`} style={{ width: 32, height: 32, borderRadius: 999, background: 'var(--ink)', color: 'var(--yellow)', border: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><I.Plus size={16}/></button>}
+                          ? <button onClick={e => { e.stopPropagation(); go('item', it.id); }} aria-label={`Personnaliser ${it.name}`} style={{ position: 'relative', zIndex: 2, width: 32, height: 32, borderRadius: 999, background: 'var(--orange-text)', color: '#fff', border: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><I.Arrow size={14} stroke="#fff" sw={2.4}/></button>
+                          : <button onClick={e => { e.stopPropagation(); addToCart(it); }} aria-label={`Ajouter ${it.name} au panier`} style={{ position: 'relative', zIndex: 2, width: 32, height: 32, borderRadius: 999, background: 'var(--ink)', color: 'var(--yellow)', border: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><I.Plus size={16}/></button>}
                       </div>
                     </div>
                   </div>
@@ -280,8 +287,7 @@ function ScreenMenu({ go, cart, addToCart }) {
       {/* sticky cart bar */}
       {cart.length > 0 && (
         <div style={{ position: 'absolute', left: 16, right: 16, bottom: 96, zIndex: 8 }}>
-          {/* [W3 HEAL r2 P1-A11Y contrast] white-on-orange fill ≈3.1:1 (fail) → ink text (6.35:1); badge stays orange-text on white circle. */}
-          <button onClick={() => go('cart')} className="lc-btn" style={{ background: 'var(--orange)', color: 'var(--ink)', width: '100%', height: 56, justifyContent: 'space-between', padding: '0 20px' }}>
+          <button onClick={() => go('cart')} className="lc-btn" style={{ background: 'var(--orange-text)', color: '#fff', width: '100%', height: 56, justifyContent: 'space-between', padding: '0 20px' }}>
             <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <span style={{ background: '#fff', color: 'var(--orange-text)', width: 24, height: 24, borderRadius: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700 }}>{cart.length}</span>
               Voir le panier
@@ -536,7 +542,7 @@ function ScreenItem({ go, itemId, addToCart }) {
             <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
               <button onClick={() => setQty(q => Math.max(1, q-1))} style={{ width: 32, height: 32, borderRadius: 999, background: 'rgba(255,255,255,0.15)', border: 0, color: '#fff', cursor: 'pointer' }}><I.Minus size={14} stroke="#fff"/></button>
               <span style={{ color: 'var(--orange)', fontFamily: 'var(--font-display)', fontSize: 24, minWidth: 24, textAlign: 'center' }}>{qty}</span>
-              <button onClick={() => setQty(q => q+1)} style={{ width: 32, height: 32, borderRadius: 999, background: 'var(--orange)', border: 0, color: '#fff', cursor: 'pointer' }}><I.Plus size={14} stroke="#fff"/></button>
+              <button onClick={() => setQty(q => q+1)} style={{ width: 32, height: 32, borderRadius: 999, background: 'var(--orange-text)', border: 0, color: '#fff', cursor: 'pointer' }}><I.Plus size={14} stroke="#fff"/></button>
             </div>
           </div>
         </div>
@@ -599,12 +605,14 @@ function ScreenItem({ go, itemId, addToCart }) {
 }
 
 // CART
-function ScreenCart({ go, cart, setCart }) {
-  // [Adversarial cluster-7 P1 fix] Promo discount wired — banner appliqué applique vraiment
-  // une réduction (V0 mock : WELCOME10/CAYENNE = -10%). Avant : banner cosmetic-only,
-  // user pensait avoir -10% mais payait full price → mauvaise UX + risque légal.
-  const [promoCode, setPromoCode] = uS(null); // null | 'WELCOME10' | 'CAYENNE'
-  const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
+function ScreenCart({ go, cart, setCart, promoCode, setPromoCode }) {
+  // [T-1.1 G1] promo is now App-level state (passed in) so the -10% reaches the
+  // actual charge via snapshotOrder / pay modal / Stripe / confirm. Previously this
+  // was local useState → the discount was displayed but never billed (risque légal).
+  // [T-1.1 RED-fix] use price*qty (unit price × current qty), NOT the stale
+  // lineTotal captured at add-time — updateQty mutates qty only, so lineTotal would
+  // undercharge after a qty change and mismatch the per-line display (price*qty).
+  const subtotal = cart.reduce((s, i) => s + (i.price * i.qty), 0);
   const discount = promoCode ? Math.round(subtotal * 10) / 100 : 0; // -10%, arrondi 2 décimales
   const total = Math.max(0, subtotal - discount);
   const updateQty = (idx, d) => setCart(c => c.map((it, i) => i === idx ? { ...it, qty: Math.max(1, it.qty + d) } : it));
@@ -615,7 +623,7 @@ function ScreenCart({ go, cart, setCart }) {
         <ScreenHeader left={<IconBtn onClick={() => go('back')} ariaLabel="Retour"><I.Back size={20}/></IconBtn>} center={<div style={{ fontSize: 13, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase' }}>PANIER</div>}/>
         <div style={{ padding: '8px 20px 0' }}>
           <h1 className="lc-display" style={{ margin: 0, fontSize: 52, lineHeight: 0.9 }}>Ta<br/>commande</h1>
-          <div style={{ marginTop: 8, fontSize: 13, color: 'var(--gray-3)' }}>{cart.length} article{cart.length>1?'s':''} · prêt dans ~12 min</div>
+          <div style={{ marginTop: 8, fontSize: 13, color: 'var(--gray-3)' }}>{cart.length} article{cart.length>1?'s':''}{cart.length>0 ? ' · prêt dans ~12 min' : ''}</div>
         </div>
         {/* items */}
         <div style={{ padding: '20px 20px 0', display: 'grid', gap: 12 }}>
@@ -662,14 +670,16 @@ function ScreenCart({ go, cart, setCart }) {
             </div>
           ))}
         </div>
-        {/* loyalty banner */}
+        {/* loyalty banner — only when the cart has items (P3-B: previously showed "+0 pts" on empty cart) */}
+        {cart.length > 0 && (
         <div style={{ margin: '20px 20px 0', padding: 16, background: 'var(--yellow)', borderRadius: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ width: 40, height: 40, borderRadius: 10, background: 'var(--ink)', color: 'var(--orange)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><I.Gift size={20}/></div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 13, fontWeight: 700 }}>+{Math.round(total || 0)} pts gagnés sur cette commande</div>
-            <div style={{ fontSize: 11, color: 'var(--gray-4)', marginTop: 2 }}>Plus que 153 pts pour ton burger gratuit</div>
+            <div style={{ fontSize: 13, fontWeight: 700 }}>+{window.LC.loyalty.pointsFor(total)} pts gagnés sur cette commande</div>
+            <div style={{ fontSize: 11, color: 'var(--gray-4)', marginTop: 2 }}>{(() => { const p = window.LC.loyalty.progressToNext(window.LC.loyalty.account.balance); return p && p.remaining > 0 ? `Plus que ${p.remaining} pts pour ${p.target.name} ${p.target.icon}` : 'Tu peux déjà utiliser une récompense 🎉'; })()}</div>
           </div>
         </div>
+        )}
         {/* upsell */}
         <div style={{ marginTop: 24 }}>
           <div className="lc-sec-title">
@@ -677,7 +687,8 @@ function ScreenCart({ go, cart, setCart }) {
             <span className="more">Notre conseil</span>
           </div>
           <div style={{ display: 'flex', gap: 10, padding: '0 20px', overflowX: 'auto' }}>
-            {ITEMS.filter(i => i.cat === 'sides' || i.cat === 'drinks' || i.cat === 'desserts').slice(0, 5).map(it => (
+            {/* [T-4.2 F5] canonical category slugs ('sides'/'drinks' matched nothing → only desserts showed) */}
+            {ITEMS.filter(i => i.cat === 'frites' || i.cat === 'boissons' || i.cat === 'desserts').slice(0, 5).map(it => (
               <div key={it.id} onClick={() => go('item', it.id)} style={{ flex: '0 0 130px', background: 'var(--cream)', borderRadius: 12, padding: 8, cursor: 'pointer' }}>
                 <div style={{ height: 80, borderRadius: 8, overflow: 'hidden', background: 'var(--ink)' }}>
                   <Slot id={it.slot} h="100%" radius={0} placeholder={it.name} src={it.image} alt={it.name} fit="contain"/>
@@ -685,7 +696,7 @@ function ScreenCart({ go, cart, setCart }) {
                 <div style={{ marginTop: 6, fontSize: 12, fontWeight: 700, lineHeight: 1.2 }}>{it.name}</div>
                 <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <span style={{ fontSize: 11, fontWeight: 700, fontFamily: 'var(--font-mono)' }}>{it.price.toFixed(2).replace('.', ',')} €</span>
-                  <button onClick={(e) => { e.stopPropagation(); go('item', it.id); }} style={{ width: 26, height: 26, borderRadius: 999, background: 'var(--orange)', color: '#fff', border: 0, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>+</button>
+                  <button onClick={(e) => { e.stopPropagation(); go('item', it.id); }} aria-label={`Ajouter ${it.name} — ${it.price.toFixed(2).replace('.', ',')} €`} style={{ width: 26, height: 26, borderRadius: 999, background: 'var(--orange-text)', color: '#fff', border: 0, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>+</button>
                 </div>
               </div>
             ))}
@@ -694,7 +705,7 @@ function ScreenCart({ go, cart, setCart }) {
       </div>
       {/* sticky checkout */}
       {cart.length > 0 && (
-        <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, background: '#fff', padding: '14px 20px 36px', borderTop: '1px solid var(--gray-1)' }}>
+        <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, zIndex: 20, background: '#fff', padding: '14px 20px 36px', borderTop: '1px solid var(--gray-1)' }}>
           {/* [D6 + Adversarial cluster-7 P1 fix] Promo code input + REAL discount mock V0 */}
           <PromoCodeRow onApply={setPromoCode}/>
           {/* Total breakdown : sous-total / réduction / TOTAL */}
@@ -702,7 +713,7 @@ function ScreenCart({ go, cart, setCart }) {
             <div>
               <div style={{ fontSize: 11, color: 'var(--gray-3)', fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase' }}>Total</div>
               {discount > 0 && (
-                <div data-testid="cart-subtotal-strike" style={{ fontSize: 14, color: 'var(--gray-3)', textDecoration: 'line-through', fontFamily: 'var(--font-mono)' }}>{subtotal.toFixed(2).replace('.', ',')} €</div>
+                <div data-testid="cart-subtotal-strike" style={{ fontSize: 14, color: 'var(--gray-4)', textDecoration: 'line-through', fontFamily: 'var(--font-mono)' }}>{subtotal.toFixed(2).replace('.', ',')} €</div>
               )}
               <div className="lc-display" style={{ fontSize: 36, lineHeight: 1 }}>{total.toFixed(2).replace('.', ',')} €</div>
               {discount > 0 && (
@@ -713,11 +724,8 @@ function ScreenCart({ go, cart, setCart }) {
             </div>
             <span style={{ fontSize: 11, color: 'var(--gray-3)' }}>TVA incluse</span>
           </div>
-          {/* [W3 HEAL P1-A11Y contrast 2026-06-06] white-on-orange fill = ~3:1 (fail).
-              Keep brand orange fill, switch label/arrow to ink (#0A0A0A on orange ≈ 6.5:1).
-              Mirrors the existing dark-on-bright pattern of .lc-btn--yellow. */}
-          <button onClick={() => go('confirm')} className="lc-btn" style={{ marginTop: 10, background: 'var(--orange)', color: 'var(--ink)', width: '100%', height: 60, justifyContent: 'space-between', padding: '0 24px' }}>
-            Valider ma commande <I.Arrow size={18} stroke="var(--ink)"/>
+          <button onClick={() => go('confirm')} className="lc-btn" style={{ marginTop: 10, background: 'var(--orange-text)', color: '#fff', width: '100%', height: 60, justifyContent: 'space-between', padding: '0 24px' }}>
+            Valider ma commande <I.Arrow size={18}/>
           </button>
         </div>
       )}
@@ -785,7 +793,7 @@ function ScreenConfirm({ go, order }) {
         </div>
         <div style={{ marginTop: 'auto', display: 'flex', gap: 8, paddingTop: 10 }}>
           <button onClick={() => go('home')} style={{ flex: 1, background: 'var(--ink)', color: '#fff', border: 0, height: 50, borderRadius: 999, fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', cursor: 'pointer' }}>Accueil</button>
-          <button onClick={() => go('orders')} className="lc-btn" style={{ background: 'var(--orange)', color: 'var(--ink)', flex: 1.6, height: 50, fontSize: 12 }}>Suivre →</button>
+          <button onClick={() => go('orders')} className="lc-btn" style={{ background: 'var(--orange-text)', color: '#fff', flex: 1.6, height: 50, fontSize: 12 }}>Suivre →</button>
         </div>
       </div>
     </div>
@@ -850,9 +858,7 @@ function ScreenOrders({ go }) {
                 <div key={o.id} role="button" tabIndex={0} aria-label={`Commande ${o.id} en cours — voir détails`} className="lc-tap" onClick={() => go('orderDetail', o.id)} onKeyDown={window.lcTapKey(() => go('orderDetail', o.id))} style={{ background: 'var(--ink)', color: '#fff', borderRadius: 20, padding: 20, position: 'relative', overflow: 'hidden', cursor: 'pointer', marginBottom: 12 }}>
                   <div style={{ position: 'absolute', top: -20, right: -20, width: 140, height: 140, opacity: 0.06 }}><I.Pepper size={140} stroke="#FF5A1F"/></div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    {/* [W3 HEAL P1-A11Y contrast 2026-06-06] white-on-orange pill ≈ 3:1 (fail).
-                        Keep brand orange fill, switch label+dot to ink (≈ 6.5:1). */}
-                    <span className="lc-pill" style={{ background: 'var(--orange)', color: 'var(--ink)' }}><span className="lc-status-dot" style={{ background: 'var(--ink)' }}/> {statusLabel}</span>
+                    <span className="lc-pill" style={{ background: 'var(--orange-text)', color: '#fff' }}><span className="lc-status-dot" style={{ background: '#fff' }}/> {statusLabel}</span>
                     <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'rgba(255,255,255,0.6)' }}>#{o.id}</span>
                   </div>
                   <div className="lc-display" style={{ fontSize: 36, marginTop: 14, color: 'var(--yellow)' }}>~{eta} MIN</div>
@@ -878,8 +884,8 @@ function ScreenOrders({ go }) {
                 <div style={{ fontSize: 10, color: 'var(--yellow)', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase' }}>Commandes</div>
                 <div data-testid="orders-stat-count" className="lc-display" style={{ fontSize: 26, color: '#fff' }}>{history.length}</div>
               </div>
-              <div style={{ flex: 1, background: 'var(--orange)', color: '#fff', borderRadius: 14, padding: '12px 14px' }}>
-                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.85)', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase' }}>Dépensé</div>
+              <div style={{ flex: 1, background: 'var(--orange-text)', color: '#fff', borderRadius: 14, padding: '12px 14px' }}>
+                <div style={{ fontSize: 10, color: '#fff', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase' }}>Dépensé</div>
                 <div data-testid="orders-stat-total" className="lc-display" style={{ fontSize: 26 }}>{Math.round(histTotal)}€</div>
               </div>
               <div style={{ flex: 1, background: 'var(--yellow)', color: 'var(--ink)', borderRadius: 14, padding: '12px 14px' }}>
@@ -898,7 +904,7 @@ function ScreenOrders({ go }) {
                 <div style={{ display: 'grid', gap: 8 }}>
                   {g.items.map(o => {
                     const summary = o.items_summary || (Array.isArray(o.items) ? o.items.map(i => i.name).join(' · ') : '');
-                    const points = Number(o.points_earned) || Math.round(Number(o.total) || 0);
+                    const points = Number(o.points_earned) || window.LC.loyalty.pointsFor(o.total);
                     const statusLabel = o.status_label || 'Récupérée';
                     return (
                       <div key={o.id} data-testid={'orders-history-card-' + o.id} onClick={() => go('orderDetail', o.id)} style={{ background: 'var(--cream)', borderRadius: 14, padding: 14, position: 'relative', cursor: 'pointer' }}>
@@ -932,6 +938,22 @@ function ScreenOrders({ go }) {
 
 // PROFILE
 function ScreenProfile({ go }) {
+  // [B3-M PWA 2026-06-10] "Installer l'app" — only shown when the browser fired
+  // beforeinstallprompt (captured pre-mount in index.html → window.LC.pwa).
+  const [canInstall, setCanInstall] = uS(!!(window.LC.pwa && window.LC.pwa.canInstall));
+  uE(() => {
+    const handler = (e) => setCanInstall(!!(e.detail && e.detail.canInstall));
+    window.addEventListener('lc:pwa-can-install', handler);
+    return () => window.removeEventListener('lc:pwa-can-install', handler);
+  }, []);
+  const onInstall = () => {
+    if (!(window.LC.pwa && window.LC.pwa.promptInstall)) return;
+    window.LC.pwa.promptInstall().then((choice) => {
+      if (choice && choice.outcome === 'accepted') {
+        go('toast', { msg: 'Le Cayenne s\'installe sur ton écran d\'accueil 🎉', kind: 'success' });
+      }
+    });
+  };
   return (
     <div data-screen-label="13 Profile" style={{ position: 'absolute', inset: 0, background: '#fff' }}>
       <div className="lc-screen" style={{ paddingBottom: 100 }}>
@@ -941,7 +963,7 @@ function ScreenProfile({ go }) {
         {/* user card */}
         <div style={{ padding: '20px 20px 0' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: 16, background: 'var(--cream)', borderRadius: 16 }}>
-            <div style={{ width: 56, height: 56, borderRadius: 999, background: 'var(--orange)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-display)', fontSize: 24 }}>IB</div>
+            <div style={{ width: 56, height: 56, borderRadius: 999, background: 'var(--orange-text)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-display)', fontSize: 24 }}>IB</div>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 17, fontWeight: 700 }}>Ikyes B.</div>
               <div style={{ fontSize: 12, color: 'var(--gray-3)', fontFamily: 'var(--font-mono)' }}>+33 6 42 79 98 84</div>
@@ -1004,7 +1026,25 @@ function ScreenProfile({ go }) {
               </div>
             ))}
           </div>
-          <button onClick={() => go('logout')} style={{ width: '100%', marginTop: 12, background: 'transparent', border: 0, padding: 16, fontSize: 13, fontWeight: 700, color: 'var(--red)', textTransform: 'uppercase', letterSpacing: '0.1em', cursor: 'pointer' }}>Se déconnecter</button>
+          {/* [B3-M PWA 2026-06-10] discrete install CTA — palette noir/orange/jaune, hidden unless installable */}
+          {canInstall && (
+            <button
+              data-testid="pwa-install-btn"
+              aria-label="Installer l'application Le Cayenne sur ton téléphone"
+              onClick={onInstall}
+              style={{ width: '100%', marginTop: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: 'var(--ink)', color: 'var(--yellow)', border: 0, padding: 16, borderRadius: 16, fontSize: 13, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer' }}
+            >
+              <span aria-hidden="true" style={{ color: 'var(--orange)' }}>↓</span> Installer l'app
+            </button>
+          )}
+          {/* [heal ADV P2-2] iOS Safari ne tire jamais beforeinstallprompt :
+              hint statique « Ajouter à l'écran d'accueil » (hors standalone). */}
+          {!canInstall && /iP(hone|ad|od)/.test(navigator.userAgent) && !window.matchMedia('(display-mode: standalone)').matches && !navigator.standalone && (
+            <p data-testid="pwa-ios-hint" style={{ marginTop: 14, fontSize: 12, lineHeight: 1.5, color: 'var(--sub-text, #B9B9B9)' }}>
+              📲 Pour installer l'app : bouton <strong>Partager</strong> de Safari → « <strong>Sur l'écran d'accueil</strong> ».
+            </p>
+          )}
+          <button onClick={() => go('logout')} style={{ width: '100%', marginTop: 12, background: 'transparent', border: 0, padding: 16, fontSize: 13, fontWeight: 700, color: 'var(--red-text)', textTransform: 'uppercase', letterSpacing: '0.1em', cursor: 'pointer' }}>Se déconnecter</button>
         </div>
       </div>
     </div>
@@ -1226,7 +1266,8 @@ function ScreenLoyalty({ go }) {
             {tab === 'points' && !isEmpty && (
               <div id="loyalty-tabpanel-points" role="tabpanel" style={{ display: 'grid', gap: 8 }}>
                 {config.tiers.map(tier => {
-                  const matchingReward = rewards.find(r => r.points_cost === tier) || { name: '−' + (tier / config.redeem_ratio).toFixed(2).replace('.', ',') + ' €', icon: '🎁', points_cost: tier };
+                  // [B1-M 2026-06-10] fallback € label routes through the redeemValueEuros SSOT (was inline tier/redeem_ratio)
+                  const matchingReward = rewards.find(r => r.points_cost === tier) || { name: '−' + window.LC.loyalty.redeemValueEuros(tier).toFixed(2).replace('.', ',') + ' €', icon: '🎁', points_cost: tier };
                   const unlocked = balance >= tier;
                   const missing = unlocked ? 0 : tier - balance;
                   return (
@@ -1314,7 +1355,7 @@ function ScreenLoyalty({ go }) {
                     const positive = h.points > 0;
                     return (
                       <div key={h.id} className="rdl-hist" data-testid={'history-entry-' + h.id}>
-                        <div className={'rdl-hist-dot rdl-hist-dot--' + (positive ? 'earn' : 'spend')} data-testid="history-source-icon" data-source-surface={h.source_surface || 'unknown'} aria-label={'Source : ' + (h.source_surface || 'inconnu')}/>
+                        <div role="img" className={'rdl-hist-dot rdl-hist-dot--' + (positive ? 'earn' : 'spend')} data-testid="history-source-icon" data-source-surface={h.source_surface || 'unknown'} aria-label={'Source : ' + (h.source_surface || 'inconnu')}/>
                         <div className="rdl-hist-body">
                           <div className="rdl-hist-title">{h.description}</div>
                           <div className="rdl-hist-date">{h.date} · {h.source_surface || '—'}</div>
@@ -1334,7 +1375,7 @@ function ScreenLoyalty({ go }) {
           <div style={{ padding: '24px 20px 0' }}>
             <div className="lc-eyebrow" style={{ color: 'var(--gray-4)', marginBottom: 8 }}>Programme fidélité</div>
             <div style={{ background: 'var(--cream)', borderRadius: 14, padding: 14, fontSize: 12, color: 'var(--ink)', marginBottom: 8 }}>
-              {config.earn_ratio} pt par € dépensé · {config.redeem_ratio} pts = 1 € de réduction · Validité {config.expires_after_days} jours
+              {config.earn_ratio} pt{config.earn_ratio > 1 ? 's' : ''} par € dépensé · {config.redeem_ratio} pts = 1 € de réduction · Validité {config.expires_after_days} jours
             </div>
             <button
               data-testid="loyalty-opt-out-btn"
@@ -1399,7 +1440,7 @@ function PromoCodeRow({ onApply }) {
         <button onClick={apply} disabled={!code.trim()} aria-label="Appliquer le code promo" style={{ padding: '0 16px', fontSize: 12, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', background: code.trim() ? 'var(--ink)' : 'var(--gray-1)', color: code.trim() ? 'var(--yellow)' : 'var(--gray-3)', border: 0, borderRadius: 10, cursor: code.trim() ? 'pointer' : 'not-allowed' }}>Appliquer</button>
       </div>
       {status === 'invalid' && (
-        <div role="alert" aria-live="assertive" style={{ marginTop: 4, fontSize: 11, color: 'var(--red)', fontWeight: 600 }}>Code invalide</div>
+        <div role="alert" aria-live="assertive" style={{ marginTop: 4, fontSize: 11, color: 'var(--red-text)', fontWeight: 600 }}>Code invalide</div>
       )}
     </div>
   );

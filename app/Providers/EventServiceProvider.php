@@ -30,6 +30,8 @@ use App\Events\OrderTableChanged;
 // [Heal-5 / PROPOSAL KDS Archive Undo 2026-05-25 — Path B compensating action]
 use App\Events\KdsOrderRecalled;
 use App\Listeners\PersistKdsOrderRecalledToOutbox;
+use App\Events\LoyaltyBalanceChanged;
+use App\Listeners\PersistLoyaltyBalanceChangedToOutbox;
 // [HEAL B.2 2026-05-19] OutboxBroadcastSwallowedEvent listener registration —
 // closes RED-Z3 finding B-3 P1 (alarm void on outbox swallow).
 use App\Events\OutboxBroadcastSwallowedEvent;
@@ -164,6 +166,9 @@ class EventServiceProvider extends ServiceProvider
         // is read-only. The single outbox listener fans the event to KDS
         // boards via `private-branch.{branchId}` for visual re-injection
         // with the RAPPELÉ badge.
+        LoyaltyBalanceChanged::class => [
+            PersistLoyaltyBalanceChangedToOutbox::class,
+        ],
         KdsOrderRecalled::class => [
             PersistKdsOrderRecalledToOutbox::class,
         ],

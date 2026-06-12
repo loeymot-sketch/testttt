@@ -13,7 +13,11 @@ export default [
         path: "/admin/pos-orders",
         component: PosOrderComponent,
         name: "admin.pos-orders",
-        redirect: { name: "admin.pos.orders.list" },
+        // [GOAL 2026-06-12] le nom cible était « admin.pos.orders.list » (points),
+        // route inexistante → Vue Router avalait l'erreur → « Commandes Caisse »
+        // rendait une page BLANCHE sans erreur console. Sentinel :
+        // tests/js/routerRedirectIntegrity.spec.js
+        redirect: { name: "admin.pos-orders.list" },
         meta: {
             isFrontend: false,
             auth: true,

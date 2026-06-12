@@ -1,0 +1,14 @@
+{
+  "W0 smoke: authed boot lands on Home": [],
+  "W0 fresh boot lands on Splash": [],
+  "W0 nav: Menu / Orders / Profile via TabBar": [],
+  "W0 item wizard opens from Menu": [],
+  "A0 billing: promo -10% reaches the charge across cart/pay/confirm": [],
+  "Loyalty: seeded balance renders on the loyalty screen": [],
+  "Coverage: onboarding -> Login -> OTP": [],
+  "Coverage: Stripe payment screen": [],
+  "Coverage: Order detail screen": [],
+  "T-4.1 parity probe (report; assertion pending G3)": [],
+  "B-local: cart + loyalty balance persist across reload": [],
+  "B-local: redeem idempotency — same key never double-debits": []
+}

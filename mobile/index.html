@@ -4,10 +4,16 @@
 <meta charset="UTF-8">
 <title>Le Cayenne — App mobile</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#FFD93D">
+<!-- [B3-M PWA 2026-06-10] theme-color aligned on the manifest (#FF5A1F orange brand) -->
+<meta name="theme-color" content="#FF5A1F">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Le Cayenne">
+
+<!-- [B3-M PWA 2026-06-10] installable PWA: manifest + iOS home-screen icon -->
+<link rel="icon" type="image/png" href="assets/icons/icon-192.png">
+    <link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="assets/icons/icon-192.png">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -60,6 +66,56 @@
 </head>
 <body>
 <div id="root"></div>
+
+<!-- [B3-M PWA 2026-06-10] service worker + install prompt (vanilla, pre-data-layer).
+     SW requires http(s) — silently skipped on file:// preview. beforeinstallprompt
+     is captured here (it can fire before React mounts) and exposed on window.LC.pwa;
+     ScreenProfile listens for 'lc:pwa-can-install' to reveal the install button. -->
+<script>
+(function () {
+  'use strict';
+  window.LC = window.LC || {};
+  window.LC.pwa = {
+    deferredPrompt: null,
+    canInstall: false,
+    installed: false,
+    // Called by the "Installer l'app" button (ScreenProfile).
+    promptInstall: function () {
+      var dp = window.LC.pwa.deferredPrompt;
+      if (!dp) return Promise.resolve({ outcome: 'unavailable' });
+      dp.prompt();
+      return dp.userChoice.then(function (choice) {
+        window.LC.pwa.deferredPrompt = null;
+        window.LC.pwa.canInstall = false;
+        window.dispatchEvent(new CustomEvent('lc:pwa-can-install', { detail: { canInstall: false } }));
+        return choice;
+      });
+    },
+  };
+
+  if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('sw.js').catch(function (err) {
+        console.warn('[LC PWA] SW registration failed:', err);
+      });
+    });
+  }
+
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault(); // keep the mini-infobar away; we surface our own button
+    window.LC.pwa.deferredPrompt = e;
+    window.LC.pwa.canInstall = true;
+    window.dispatchEvent(new CustomEvent('lc:pwa-can-install', { detail: { canInstall: true } }));
+  });
+
+  window.addEventListener('appinstalled', function () {
+    window.LC.pwa.installed = true;
+    window.LC.pwa.deferredPrompt = null;
+    window.LC.pwa.canInstall = false;
+    window.dispatchEvent(new CustomEvent('lc:pwa-can-install', { detail: { canInstall: false } }));
+  });
+})();
+</script>
 
 <!-- Data layer (vanilla JS, attaches to window.LC.*) -->
 <!-- storage.js first: loyalty.js hydrates from LC.storage.getLoyalty(). -->
@@ -123,14 +179,27 @@ function App() {
   const [toast, setToast] = useState(null);
   // [test-e2e fix C-001 round-2 2026-05-11] bind to cart order — last placed order snapshot
   const [lastOrder, setLastOrder] = useState(null);
+  // [T-1.1 G1] promo lifted to App so the -10% actually reaches the charge
+  // (was local to ScreenCart → shown but never billed).
+  const [promoCode, setPromoCode] = useState(null);
 
   // Persist cart on change
   useEffect(() => { storage.setCart(cart); }, [cart]);
 
   // [test-e2e fix C-001 round-2 2026-05-11] bind to cart order — snapshot cart at pay time
   const snapshotOrder = () => {
-    const id = 'C-' + Math.floor(1000 + Math.random() * 9000);
-    const total = cart.reduce((s, i) => s + (i.lineTotal || i.price * i.qty), 0);
+    // [T-1.3 F10] guard the generated id against the seeded order space so a
+    // random collision (e.g. the active order C-1234) can't make findById resolve
+    // the wrong order on the detail screen.
+    const taken = new Set([
+      ...((window.LC.orders && window.LC.orders.active) || []),
+      ...((window.LC.orders && window.LC.orders.history) || []),
+    ].map(o => o.id));
+    let id;
+    do { id = 'C-' + Math.floor(1000 + Math.random() * 9000); } while (taken.has(id));
+    const subtotal = cart.reduce((s, i) => s + (i.price * i.qty), 0);
+    const discount = promoCode ? Math.round(subtotal * 10) / 100 : 0; // [T-1.1 G1] real -10% reaches the charge
+    const total = Math.max(0, subtotal - discount);
     const eta = new Date(Date.now() + 12 * 60 * 1000).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }).replace(':', 'h');
     const order = { id, total, eta, items: cart };
     setLastOrder(order);
@@ -177,6 +246,12 @@ function App() {
     storage.markOnboardingSeen();
   };
 
+  // [T-1.1 G1] cart totals incl. promo discount — shared by stripe, pay modal,
+  // points-gain and snapshotOrder so the discount reaches the actual charge.
+  const cartSubtotal = cart.reduce((s, i) => s + (i.price * i.qty), 0);
+  const cartDiscount = promoCode ? Math.round(cartSubtotal * 10) / 100 : 0;
+  const total = Math.max(0, cartSubtotal - cartDiscount);
+
   const showTab = !NO_TAB_SCREENS.includes(screen);
   const activeTab = TAB_FOR[screen] || 'home';
 
@@ -192,8 +267,8 @@ function App() {
     case 'home':    body = <ScreenHome go={go} name={(window.LC.user.current.first_name)}/>; break;
     case 'menu':    body = <ScreenMenu go={go} cart={cart} addToCart={addToCart}/>; break;
     case 'item':    body = <ScreenItem go={go} itemId={itemId} addToCart={addToCart}/>; break;
-    case 'cart':    body = <ScreenCart go={(s)=> s==='confirm' ? go('pay') : go(s)} cart={cart} setCart={setCart}/>; break;
-    case 'stripe':  body = <ScreenStripe go={go} total={cart.reduce((s,i)=>s+i.price*i.qty,0)}/>; break;
+    case 'cart':    body = <ScreenCart go={(s, ext)=> s==='confirm' ? go('pay') : go(s, ext)} cart={cart} setCart={setCart} promoCode={promoCode} setPromoCode={setPromoCode}/>; break;
+    case 'stripe':  body = <ScreenStripe go={go} total={total}/>; break;
     case 'confirm': body = <ScreenConfirm go={go} order={lastOrder}/>; break;
     case 'orders':  body = <ScreenOrders go={go}/>; break;
     case 'orderDetail': body = <ScreenOrderDetail go={go} orderId={itemId || 'C-1234'}/>; break;
@@ -202,20 +277,20 @@ function App() {
     default: body = <ScreenHome go={go}/>;
   }
 
-  const total = cart.reduce((s,i) => s + i.price * i.qty, 0);
-
   return (
     <div className="lc-device">
-      {body}
+      {/* [a11y P2-B 2026-06-08] main-content landmark — positioned identically to the previous
+          bare body layer so the absolute-inset screens are visually unchanged. */}
+      <main style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>{body}</main>
       {showTab && <TabBar active={activeTab} onChange={(t) => go(t)}/>}
-      {modal === 'pay' && <ModalPayChoice total={total} onClose={()=>setModal(null)} onPickCounter={()=>{ setModal(null); setHistory(h=>[...h,'confirm']); setScreen('confirm'); setCart([]); setTimeout(()=>setModal('gain'), 900); }} onPickCard={()=>{ setModal(null); setHistory(h=>[...h,'stripe']); setScreen('stripe'); }}/>}
+      {modal === 'pay' && <ModalPayChoice total={total} onClose={()=>setModal(null)} onPickCounter={()=>{ setModal(null); setHistory(h=>[...h,'confirm']); setScreen('confirm'); setCart([]); setPromoCode(null); setTimeout(()=>setModal('gain'), 900); }} onPickCard={()=>{ setModal(null); setHistory(h=>[...h,'stripe']); setScreen('stripe'); }}/>}
       {/* [test-e2e fix C-003 round-2 2026-05-11] derive pointsEarned from the snapshotted
           order total (1 pt / €, Math.round to match ScreenCart loyalty preview line 586
           "+{Math.round(total)} pts gagnés sur cette commande"). Replaces the previous
           hardcoded "+25 pts" literal. Falls back to 25 only if no order was snapshotted
           (defensive — should never happen in the pay flow but keeps the welcome bonus
           default for the modal's standalone story rendering). */}
-      {modal === 'gain' && <ModalPointsGain gain={lastOrder ? Math.round(lastOrder.total) : 25} onClose={()=>setModal(null)} onSee={()=>{ setModal(null); setHistory(h=>[...h,'loyalty']); setScreen('loyalty'); }}/>}
+      {modal === 'gain' && <ModalPointsGain gain={lastOrder ? window.LC.loyalty.pointsFor(lastOrder.total) : 25} onClose={()=>setModal(null)} onSee={()=>{ setModal(null); setHistory(h=>[...h,'loyalty']); setScreen('loyalty'); }}/>}
       {modal === 'redeem' && <WizardRedeem ctx={modalCtx} onClose={()=>{ setModal(null); setModalCtx(null); }} onSuccess={(r)=>{ /* WizardRedeem handles toast internally via step3 success state */ }}/>}
       {modal === 'optOut' && <ModalOptOutConfirm onClose={()=>setModal(null)} onConfirm={()=>{
         setModal(null);

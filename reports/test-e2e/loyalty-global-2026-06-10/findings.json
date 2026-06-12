@@ -1,0 +1,80 @@
+{
+  "run": "loyalty-global-2026-06-10",
+  "supervisor": "adversarial team 2",
+  "date": "2026-06-10",
+  "disputes": [
+    {
+      "id": "F-LOY-1",
+      "pilot_severity": "P1",
+      "final_severity": "P1-OWNER-GATE",
+      "dispute": "Severity held but ATTRIBUTION corrected + resolution reclassified. (1) Source of '10' is NOT a seeded settings row: operating DB foodking has ZERO loyalty_setup rows — the e2e rows id 73-75 (10/100/50) were written by the pilot's own admin save during the run. The live rate comes from hard-coded fallbacks: app/Http/Resources/LoyaltySetupResource.php:20 (?? 10), app/Http/Controllers/Frontend/LoyaltyController.php:475 (get(...,10)), app/Listeners/AwardLoyaltyPointsOnDelivery.php:84 (get(...,10)). (2) GATE-LOYALTY-1 (gate-D1, 2026-06-09) is recorded in mobile/data/loyalty.js:49-54 — it unified the CLIENTS' advertised-vs-credited rate at 1pt/EUR ('owner-canonical; admin-editable on wireup'); it never touched the backend default. (3) In the V1 LOCAL envelope the backend is internally consistent: KioskConfirmationComponent.vue:211 displays the same settings rate it credits, so no customer sees a contradiction today. BUT the kiosk earn path is LIVE at 10pt/EUR + 100pts=1EUR = 10% cash-back funded by the restaurant (admin Apercu literally renders '10EUR d'achat = 100pts -> 1,00EUR de reduction'), 10x the owner-logged canonical economics. Resolution = OWNER DECISION (one admin field /admin/settings/loyalty-setup, or align the 3 code defaults to 1) — NOT an autonomous code heal."
+    },
+    {
+      "id": "F-LOY-2",
+      "pilot_severity": "unrated",
+      "final_severity": "P3-OWNER",
+      "dispute": "Min redeem 50 (backend code default, e2e settings) vs 100 (clients). Drift is ALREADY documented in mobile/data/loyalty.js:56 ('backend kiosk default; controller default is 50 (drift documented)'). Clients are standalone/unpublished; backend min is what real customers experience. Owner bareme decision at wireup; no V1 harm."
+    },
+    {
+      "id": "F-LOY-3",
+      "pilot_severity": "unrated",
+      "final_severity": "P3-OWNER-ROADMAP",
+      "dispute": "+25 welcome bonus is a documented V0 mock (mobile/data/loyalty.js:59 'backend has no granting trigger yet', tracked as B-13). Web labels redeem 'DEMO V1 — non synchronise avec la caisse'. Becomes P1 false-advertising ONLY if clients publish before a backend grant trigger exists — publication gate, not a V1 defect."
+    },
+    {
+      "id": "F-LOY-4",
+      "pilot_severity": "unrated",
+      "final_severity": "P2-AUTONOMOUS-HEAL",
+      "dispute": "CONFIRMED visually (L-B8-web-loyalty-after-use.png): hero card '347 pts / utilisable 3,47 EUR' + unchanged progress bar while panel below says '-3,47 EUR appliques - 347 pts deduits - Solde restant : 0 pts'. Web standalone client state bug, non-frozen, non-business — safe autonomous heal."
+    }
+  ],
+  "confirmed": [
+    {
+      "id": "S-LOY-POS-REDEEM-A-Z",
+      "type": "positive-evidence",
+      "detail": "Gap closed by supervisor: POS redeem exercised LIVE end-to-end on :8767/foodking_e2e (server started APP_ENV=e2e). Created open UNPAID POS order 4511 (clone of 4510, status=1 payment_status=10). POST /api/admin/pos-order/4511/redeem-loyalty (route routes/api.php:1020, middleware throttle:pos-order-update + idempotency) with points=100 code=VICT1234 -> {discount_eur:1, balance 265->165, order total 8.50->7.50, loyalty_transactions id 11 type=redeem -100, loyalty_customer_code set}. Idempotency REPLAY same X-Idempotency-Key -> identical cached body, NO double debit (balance stayed 165, single tx). Replay NEW key -> 409 ALREADY_REDEEMED (UNIQUE user+order+type). PHPUnit PosLoyaltyRedeemTest 7/7 on foodking_test (DEVDB-GUARD verified, .env.testing DB=foodking_test). Note: V1 dormancy gate pos.manual_discount_enabled defaults TRUE (config/pos.php:172, reactivated post-F1-fix) — redeem is live in prod config."
+    },
+    {
+      "id": "S-LOY-CLAWBACK",
+      "type": "coverage-confirmed",
+      "detail": "Both directions covered with tests: EARN clawback on refund via ClawbackLoyaltyPointsOnRefund (full awarded amount, cascade-isolated try/catch) + tests/Feature/Loyalty/LoyaltyClawbackOnRefundSentinelTest.php + RefundLoyaltyTryCatchHardenedSentinelTest + StripeChargeRefundedCascadeSentinelTest; REDEEM reversal on cancel via LoyaltyService::refundPoints called at OrderService.php:2067,2203 and RefundWithCounterEntryService.php:367+. Residual hole (minor): pro-rated clawback on PARTIAL refund explicitly deferred (ClawbackLoyaltyPointsOnRefund.php:33 — full reversal only). P3 backlog."
+    },
+    {
+      "id": "S-LOY-SECURITY",
+      "type": "coverage-confirmed",
+      "detail": "GREEN. Phone enumeration: /loyalty/check auth:sanctum+throttle:10,1; /loyalty/register throttle:5,1; /loyalty/balance throttle:10,1 (CENTRAL-03 — also stops lazy-mint spam); /loyalty/qr throttle:30,1. PII flag config/loyalty.php accept_legacy_plaintext default FALSE (GOAL-J2-HEAL-03 — blocks customer_token/PII harvest via plaintext scan). Redeem idempotency: kiosk /loyalty/redeem middleware idempotency (LCS-S-002) + POS route idempotency (proven live above). No new security finding."
+    }
+  ],
+  "new_findings": [
+    {
+      "id": "F-LOY-5",
+      "severity": "P3-V1 / P1-AT-WIREUP",
+      "title": "Mobile QR fallback is plaintext FK:<code> which backend rejects by default",
+      "detail": "mobile/components/LoyaltyQR.jsx:51 — payload = qr ? qr.payload : 'FK:'+loyaltyCode; in standalone V1 qr is always null (no backend mint), so the mobile app renders plaintext FK:VICT1234. Backend scan path only accepts signed lqr.<payload>.<hmac> tokens since accept_legacy_plaintext flipped to FALSE (config/loyalty.php, GOAL-J2-HEAL-03). A customer presenting the mobile QR at borne/caisse scan will be REJECTED. Workaround exists and is proven: cashier manual entry of loyalty_code/phone (POS redeem live-proven). Fix at wireup = mobile calls POST /api/frontend/loyalty/qr (signed, throttle 30,1) — do NOT re-enable legacy plaintext (PII harvest vector)."
+    },
+    {
+      "id": "F-LOY-6",
+      "severity": "P3-V1-DEMO",
+      "title": "Mobile reward code LCY-XXXXXX 'a presenter a la caisse' has no backend counterpart",
+      "detail": "Redeem wizard step3 issues 'CODE A PRESENTER LCY-968546' (L-B7-mobile-redeem-step3.png) but no backend table/endpoint can validate or consume an LCY code — PosLoyaltyController takes loyalty_code/phone + points, not reward codes. Pure demo today; at publication this is a guaranteed counter-side UX dead-end (customer shows code, cashier has nowhere to enter it). Must be resolved before mobile publication (either kill the code UX or build redemption-voucher backend)."
+    },
+    {
+      "id": "F-LOY-7",
+      "severity": "P3-ARTIFACT",
+      "title": "Admin setup capture taken mid-loading overlay",
+      "detail": "L-A2-admin-loyalty-setup.png is dimmed by a spinner overlay; fields 10/100/50 and Apercu legible but evidence quality is degraded. Pilot process nit, not a product defect. The Apercu line ('10EUR d'achat = ... -> 1,00EUR de reduction') is itself useful owner-facing evidence for F-LOY-1 economics."
+    }
+  ],
+  "verdict": {
+    "autonomous_heals": [
+      "F-LOY-4 web hero/panel balance desync after Utiliser (standalone web client, non-frozen)",
+      "F-LOY-1 attribution hygiene ONLY IF owner confirms rate: align the 3 hard-coded '10' fallbacks to the owner value and/or seed an explicit loyalty_setup row so prod stops running on silent code defaults (mechanical once the number is decided)"
+    ],
+    "owner_decisions": [
+      "F-LOY-1 bareme: 1 vs 10 pts/EUR — live kiosk earn currently grants 10% cash-back equivalent, 10x the gate-D1 client-canonical economics; one admin field",
+      "F-LOY-2 min redeem 50 vs 100",
+      "F-LOY-3 welcome +25 (build backend trigger or strip from clients before publication)",
+      "F-LOY-5/F-LOY-6 mobile wireup scope (signed QR mint + reward-code model) — publication gate"
+    ]
+  }
+}

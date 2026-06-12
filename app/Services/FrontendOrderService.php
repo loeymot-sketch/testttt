@@ -1051,6 +1051,24 @@ class FrontendOrderService
 
         $this->createKioskLoyaltyRedeemLedger($loyaltyUser, $pointsRequired, $balanceAfter);
 
+        // [F3-02 GOAL 2026-06-12] 8e site d'écriture de points : ce fallback
+        // inline (création de commande kiosk sans pendingRedeem <10min) était
+        // le SEUL chemin de mutation sans LoyaltyBalanceChanged — un modal POS
+        // ouvert gardait un solde périmé sur ce chemin. Pattern identique aux
+        // 7 autres sites (event plain DispatchableAfterCommit → outbox).
+        // [W-INT 2026-06-12] union §0.4 primauté spine dispute-r1 C-RED-02 :
+        // dispatch conservé dans le consumer déféré ; les lignes clients-next
+        // `$calculatedDiscount += …` / `loyaltyApplied = true` sont REJETÉES
+        // ici (déjà appliquées en phase pending — les reprendre = double
+        // application + variable locale indéfinie).
+        \App\Events\LoyaltyBalanceChanged::dispatch(
+            (int) $loyaltyUser->id,
+            (int) ($this->frontendOrder->branch_id ?? 1),
+            $balanceAfter,
+            -$pointsRequired,
+            'redeem'
+        );
+
         Log::info("[Loyalty] {$pointsRequired} pts redeemed for user #{$loyaltyUser->id} (-{$maxDiscount} EUR)");
     }
 

@@ -174,7 +174,9 @@
 import axios from 'axios';
 // [UIUX-W2 F1 2026-06-11] FR money formatting only (modal design-LOCKED —
 // zero layout change) : "−2.50 €" → "−2,50 €" via the canonical admin helper.
+// [W-INT 2026-06-12] union §0.4 : les deux imports (spine F1 + clients-next L2).
 import { formatPrice } from '../../../helpers/formatPrice';
+import { onEvents } from '../../../services/eventContract';
 
 export default {
     name: 'PosLoyaltyRedeemModal',
@@ -191,8 +193,25 @@ export default {
             type: Number,
             default: 100,
         },
+        // [GOAL LOYALTY-SYNC L2 2026-06-11] live balance subscription scope.
+        branchId: {
+            type: [Number, String],
+            default: 0,
+        },
     },
     emits: ['close', 'applied'],
+    mounted() {
+        // [L2] Subscribe to balance movements: another surface (kiosk earn,
+        // refund clawback, other till) changing the customer's points updates
+        // THIS open modal instead of leaving a stale balance.
+        this.subscribeLoyaltyLive();
+    },
+    beforeUnmount() {
+        this._destroyed = true;
+        if (this._loyaltySub && typeof this._loyaltySub.unsubscribe === 'function') {
+            this._loyaltySub.unsubscribe();
+        }
+    },
     data() {
         return {
             loyaltyCode: '',
@@ -201,6 +220,9 @@ export default {
             errorMessage: '',
             successMessage: '',
             customerBalance: null,
+            // [F3-04] id interne du client lookupé — clé du filtre live (le
+            // payload L2 est PII-free : user_id est le seul identifiant commun).
+            customerUserId: null,
             // Server response payload kept around for the parent emit.
             lastResponse: null,
         };
@@ -225,6 +247,16 @@ export default {
         },
     },
     watch: {
+        // [GOAL 2026-06-12] la branche peut arriver APRÈS le mount : sur
+        // PosOrderShow elle dérive de la COMMANDE chargée en async (et un
+        // admin a auth branch 0) — sans ce watcher, branchId valait 0 au
+        // mount → jamais abonné → live mort précisément sur la surface
+        // canonique. Re-souscrit dès que la branche devient connue/change.
+        // (NE PAS recréer un 2e bloc `watch:` — clé dupliquée = silencieusement
+        // écrasée, c'est exactement le bug qu'on vient d'avoir.)
+        branchId() {
+            this.subscribeLoyaltyLive();
+        },
         open(newVal) {
             if (newVal) {
                 // Reset state on each fresh open.
@@ -249,6 +281,48 @@ export default {
         formatPriceFr(value) {
             return formatPrice(value);
         },
+        // [W-INT 2026-06-12] union §0.4 : méthode clients-next L2 conservée
+        // aux côtés du helper spine F1 (deux ajouts disjoints même ancre).
+        subscribeLoyaltyLive() {
+            const branchId = Number(this.branchId) || 0;
+            if (this._destroyed || branchId <= 0) return;
+            // Idempotent : détache l'abonnement précédent avant de re-souscrire
+            // (changement de branche ou watcher refiré).
+            if (this._loyaltySub && typeof this._loyaltySub.unsubscribe === 'function') {
+                this._loyaltySub.unsubscribe();
+                this._loyaltySub = null;
+            }
+            try {
+                this._loyaltySub = onEvents(branchId, [
+                    {
+                        broadcastAs: 'LoyaltyBalanceChanged',
+                        handler: (event) => {
+                            if (this._destroyed) return;
+                            if (this.customerBalance === null) return; // no lookup yet
+                            // [F3-01 2026-06-12] le contrat livre une envelope parsée :
+                            // les données vivent sous event.payload (l'ancien accès plat
+                            // event.balance_after était un NO-OP total — solde jamais
+                            // rafraîchi). Fallback plat gardé par défense.
+                            const payload = event?.payload ?? event ?? {};
+                            // [F3-04] ne rafraîchir QUE le client affiché : un mouvement
+                            // d'un AUTRE client de la branche ne doit pas écraser le solde
+                            // lookupé. Sans user_id fiable des deux côtés → ignorer.
+                            const eventUserId = Number(payload.user_id);
+                            const knownUserId = Number(this.customerUserId);
+                            if (!Number.isFinite(eventUserId) || !Number.isFinite(knownUserId) || eventUserId !== knownUserId) {
+                                return;
+                            }
+                            const after = Number(payload.balance_after);
+                            if (Number.isFinite(after)) {
+                                this.customerBalance = after;
+                            }
+                        },
+                    },
+                ]);
+            } catch (subscribeError) {
+                // Degradation = stale-until-next-lookup (polling invariant §7).
+            }
+        },
         emitClose() {
             this.$emit('close');
         },
@@ -261,6 +335,7 @@ export default {
             if (this.customerBalance !== null) {
                 this.customerBalance = null;
             }
+            this.customerUserId = null;
             this.errorMessage = '';
         },
         /**
@@ -314,6 +389,10 @@ export default {
                     const data = res.data.data || {};
                     this.customerBalance = Number.isFinite(data.balance_after)
                         ? data.balance_after
+                        : null;
+                    // [F3-04] mémorise le client affiché pour filtrer le live L2.
+                    this.customerUserId = Number.isFinite(Number(data.customer_user_id))
+                        ? Number(data.customer_user_id)
                         : null;
                     const eur = Number(data.discount_eur) || 0;
                     this.successMessage = this.$t('pos.loyalty.redeem.success', {

@@ -24,6 +24,18 @@
   --dur-base:        220ms;
   --dur-slow:        360ms;
   --ios-safe-bottom: 28px;
+
+  /* [TOKEN-GATE heal 2026-06-10] previously REFERENCED but never DEFINED — sizes
+     silently fell back to inherited values and shadows to none (the axe-blind
+     fallback trap caught by the plan adversary). Scale matches styles.css usage. */
+  --fs-base:         15px;   /* body default (matches styles.css body 15px) */
+  --fs-body:         14px;   /* secondary body/labels */
+  --fs-caption:      12px;   /* captions/hints */
+  --fs-micro:        10px;   /* badges/eyebrows */
+  --fs-h3:           18px;   /* card/section titles */
+  --green-light:     #E7F6EC; /* light green tint bg (pairs with --green-text text) */
+  --shadow-1:        0 2px 8px rgba(10,10,10,0.06), 0 8px 20px -8px rgba(10,10,10,0.08);
+  --shadow-selected: 0 0 0 2px var(--orange), 0 8px 20px -6px rgba(255,90,31,0.35);
 }
 
 
@@ -578,7 +590,10 @@
   box-shadow: var(--shadow-1);
   transition: transform var(--dur-fast) var(--ease-spring);
 }
-.rdl-reward.is-locked { opacity: 0.55; filter: saturate(0.6); }
+/* [a11y E2E 2026-06-09] Locked rewards previously dimmed the WHOLE row to opacity 0.55,
+   which tanked the reward-name (--ink) and "pts manquants" (--gray-3) text contrast below AA.
+   Keep the muted/locked feel via desaturation + a dimmed thumb only; text stays legible. */
+.rdl-reward.is-locked { filter: saturate(0.6); }
 .rdl-reward-thumb {
   width: 44px; height: 44px;
   border-radius: 12px;
@@ -587,7 +602,7 @@
   font-size: 22px;
   flex-shrink: 0;
 }
-.rdl-reward.is-locked .rdl-reward-thumb { background: var(--gray-1); }
+.rdl-reward.is-locked .rdl-reward-thumb { background: var(--gray-1); opacity: 0.6; }
 .rdl-reward-body { flex: 1; min-width: 0; }
 .rdl-reward-name {
   font-weight: 700;
@@ -641,8 +656,8 @@
   font-weight: 700;
   font-size: 14px;
 }
-.rdl-hist-pts.earn  { color: var(--green-text); } /* W3-r2 AA: green-as-small-text (was --green 3.16:1 fail) */
-.rdl-hist-pts.spend { color: var(--red); }
+.rdl-hist-pts.earn  { color: var(--green-text); } /* [E2E a11y 2026-06-09] --green/--red (3.x:1) -> AA text tokens */
+.rdl-hist-pts.spend { color: var(--red-text); }
 
 
 /* ======================================================

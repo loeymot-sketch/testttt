@@ -1124,6 +1124,7 @@
     <PosLoyaltyRedeemModal
         :open="loyaltyRedeemMainOpen"
         :order-id="currentLoyaltyOrder ? currentLoyaltyOrder.id : null"
+        :branch-id="authBranchId()"
         @close="closeLoyaltyMainModal"
         @applied="onLoyaltyMainApplied"
     />
@@ -2551,7 +2552,9 @@ export default {
          * the operator-bar CTA is the only UI surface on this page.
          */
         onLoyaltyMainApplied(payload) {
-            this.loyaltyRedeemMainOpen = false;
+            // [GOAL 2026-06-12] même décision que PosOrderShow : pas d'auto-
+            // fermeture sur succès (succès + solde restant + fenêtre live L2
+            // visibles ; fermeture manuelle).
             if (!payload || typeof payload !== 'object') return;
             const refreshed = payload.order;
             if (refreshed && refreshed.id != null) {

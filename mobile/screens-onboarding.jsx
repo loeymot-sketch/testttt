@@ -142,7 +142,7 @@ function ScreenOnb3({ onNext, onSkip }) {
       hero={hero}
       onNext={onNext}
       onSkip={onSkip}
-      eyebrow="03 — Pickup"
+      eyebrow="03 — Retrait"
       title="Ta commande t'attend"
       body="Pas de file, pas d'attente. Cash ou CB sur place. Ton sac est prêt quand tu pousses la porte."
       accent="var(--orange)"
@@ -203,7 +203,7 @@ function ScreenLogin({ onNext, onBack }) {
     <div data-screen-label="05 Login" style={{ position: 'absolute', inset: 0, background: '#FFFFFF', display: 'flex', flexDirection: 'column', paddingTop: 'var(--ios-safe-top)' }}>
       <ScreenHeader left={<IconBtn onClick={onBack} ariaLabel="Retour"><I.Back size={20}/></IconBtn>} center={<Logo size={14}/>}/>
       <div style={{ flex: 1, padding: '12px 28px', position: 'relative' }}>
-        <div className="lc-eyebrow" style={{ color: 'var(--orange)', marginBottom: 10 }}>// Étape 1 sur 2</div>
+        <div className="lc-eyebrow" style={{ color: 'var(--orange-text)', marginBottom: 10 }}>// Étape 1 sur 2</div>
         <h1 className="lc-display" style={{ margin: 0, fontSize: 52, lineHeight: 0.92, color: 'var(--ink)' }}>Ton<br/>numéro,<br/>chef.</h1>
         <p style={{ marginTop: 14, fontSize: 14, lineHeight: 1.55, color: 'var(--gray-4)' }}>Pas de spam, promis. On t'envoie juste un code par SMS pour confirmer que c'est bien toi.</p>
         {/* phone field */}
@@ -233,7 +233,7 @@ function ScreenLogin({ onNext, onBack }) {
       </div>
       {/* Sticky CTA */}
       <div style={{ padding: '12px 24px 32px' }}>
-        <button onClick={onNext} className="lc-btn" style={{ background: 'var(--ink)', color: '#fff', width: '100%', height: 60, fontSize: 14 }}>
+        <button onClick={() => valid && onNext()} disabled={!valid} aria-disabled={!valid} className="lc-btn" style={{ background: 'var(--ink)', color: '#fff', width: '100%', height: 60, fontSize: 14, opacity: valid ? 1 : 0.45, cursor: valid ? 'pointer' : 'not-allowed' }}>
           Recevoir le code <I.Arrow size={18} stroke="var(--orange)"/>
         </button>
         <div style={{ marginTop: 12, textAlign: 'center', fontSize: 11, color: 'var(--gray-3)' }}>En continuant, tu acceptes nos <u>CGU</u> · <u>Confidentialité</u></div>
@@ -258,9 +258,9 @@ function ScreenOTP({ onNext, onBack }) {
     <div data-screen-label="06 OTP" style={{ position: 'absolute', inset: 0, background: '#FFFFFF', display: 'flex', flexDirection: 'column', paddingTop: 'var(--ios-safe-top)' }}>
       <ScreenHeader left={<IconBtn onClick={onBack} ariaLabel="Retour"><I.Back size={20}/></IconBtn>} center={<Logo size={14}/>}/>
       <div style={{ flex: 1, padding: '12px 28px' }}>
-        <div className="lc-eyebrow" style={{ color: 'var(--orange)', marginBottom: 10 }}>// Étape 2 sur 2</div>
+        <div className="lc-eyebrow" style={{ color: 'var(--orange-text)', marginBottom: 10 }}>// Étape 2 sur 2</div>
         <h1 className="lc-display" style={{ margin: 0, fontSize: 52, lineHeight: 0.92 }}>Entre<br/>ton code.</h1>
-        <p style={{ marginTop: 14, fontSize: 14, lineHeight: 1.55, color: 'var(--gray-4)' }}>Code envoyé au <b style={{ color: 'var(--ink)' }}>+33 6 12 34 56 78</b> · <span style={{ color: 'var(--orange)' }}>Modifier</span></p>
+        <p style={{ marginTop: 14, fontSize: 14, lineHeight: 1.55, color: 'var(--gray-4)' }}>Code envoyé au <b style={{ color: 'var(--ink)' }}>+33 6 12 34 56 78</b> · <span style={{ color: 'var(--orange-text)' }}>Modifier</span></p>
         {/* code boxes — A11-005 P1 round-2 2026-05-11 : fieldset+legend
             group + per-input aria-label so screen-readers can identify
             which digit position the user is on. */}

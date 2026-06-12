@@ -106,10 +106,15 @@ function Slot({ id, w, h, radius = 14, placeholder = 'photo', shape, style = {},
             height: '100%',
             objectFit: fit,
             objectPosition: '50% 50%',
+            position: 'relative',
+            zIndex: 1,
           }}
         />
+        {/* [T-5.2 F12] visible emoji fallback BEHIND the img (zIndex 0): the loaded
+            opaque photo covers it; on img error (display:none) it shows through.
+            Previously opacity:0.001 made it permanently invisible. */}
         {fallbackEmoji && (
-          <span aria-hidden="true" style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32, pointerEvents: 'none', opacity: 0.001 }}>{fallbackEmoji}</span>
+          <span aria-hidden="true" style={{ position: 'absolute', inset: 0, zIndex: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32, pointerEvents: 'none' }}>{fallbackEmoji}</span>
         )}
       </div>
     );

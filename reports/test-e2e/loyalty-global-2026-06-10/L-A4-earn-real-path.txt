@@ -1,0 +1,17 @@
+BALANCE_BEFORE=250
+ORDER id=4489 type=10 total=1.500000 amt= awarded=NULL
+
+  <warning> DEPRECATED </warning> Using ${var} in strings is deprecated, use {$var} instead in vendor/smartisan/laravel-settings/src/Settings.php on line 185.
+
+
+  <warning> DEPRECATED </warning> Using ${var} in strings is deprecated, use {$var} instead in vendor/smartisan/laravel-settings/src/Settings.php on line 185.
+
+
+  <warning> DEPRECATED </warning> Using ${var} in strings is deprecated, use {$var} instead in vendor/smartisan/laravel-settings/src/Settings.php on line 185.
+
+
+  <warning> DEPRECATED </warning> Using ${var} in strings is deprecated, use {$var} instead in vendor/smartisan/laravel-settings/src/Settings.php on line 185.
+
+BALANCE_AFTER=265
+TX={"id":10,"user_id":44,"loyalty_code":"VICT1234","order_id":4489,"type":"earn","points":15,"balance_after":265,"source_surface":"kiosk","pos_session_id":null,"description":"Commande #1006264489","created_at":"2026-06-10 23:27:38","updated_at":"2026-06-10 23:27:38"}
+ORDER.loyalty_points_awarded=15
