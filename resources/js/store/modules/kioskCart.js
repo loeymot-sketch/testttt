@@ -596,7 +596,22 @@ export const kioskCart = {
                 commit('SET_PROMO_ERROR', res?.data?.message || 'kiosk.promo.error.invalid');
                 return { valid: false, message: res?.data?.message || null };
             } catch (err) {
-                const message = err?.response?.data?.message || 'kiosk.promo.error.network';
+                // [dispute-r1 C-ADV-01 2026-06-12] Les exceptions HTTP (429
+                // throttle, 5xx) portent des messages framework EN
+                // (« Too Many Attempts. ») qui fuyaient verbatim dans l'inline
+                // sous le champ promo (rendu `$te(promoError) ? $t : raw` côté
+                // KioskCartComponent). On mappe désormais vers des clefs i18n
+                // FR ; seul le chemin métier non-exception (status:false →
+                // res.data.message, localisé serveur) reste verbatim.
+                const status = Number(err?.response?.status) || 0;
+                let message;
+                if (status === 429) {
+                    message = 'kiosk.promo.error.too_many';
+                } else if (!err?.response) {
+                    message = 'kiosk.promo.error.network';
+                } else {
+                    message = 'kiosk.promo.error.server';
+                }
                 commit('SET_PROMO_ERROR', message);
                 return { valid: false, message };
             } finally {

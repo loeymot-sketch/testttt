@@ -703,9 +703,27 @@ export default {
         }
         this.$router.push({ name: 'kiosk.upsell' });
       } catch (err) {
-        const message = err?.response?.data?.message
-          || err?.message
-          || this.$t('kiosk.pay_screen.invalid_order_response');
+        // [dispute-r1 D-002 2026-06-12] Coupure réseau au checkout panier :
+        // l'axios « Network Error » brut (EN) fuyait en toast + inline alors
+        // que le même cas était déjà mappé FR sur l'écran paiement (K10).
+        // Même détection que KioskPaymentComponent.confirmPayment : pas de
+        // response + (ERR_NETWORK | 'Network Error' | request émis). Le panier
+        // est intégralement conservé (aucun reset sur ce chemin).
+        const isNetworkError = !err?.response
+          && (err?.code === 'ERR_NETWORK' || err?.message === 'Network Error' || !!err?.request);
+        const status = Number(err?.response?.status) || 0;
+        let message;
+        if (isNetworkError) {
+          message = this.$t('kiosk.network_lost_cart');
+        } else if (status === 429) {
+          // [dispute-r1 C-ADV-01 même classe] « Too Many Attempts. » EN sur le
+          // quote → copie FR kiosk dédiée (déjà utilisée par kioskCart.quoteOrder).
+          message = this.$t('error.kiosk_rate_limited');
+        } else {
+          message = err?.response?.data?.message
+            || err?.message
+            || this.$t('kiosk.pay_screen.invalid_order_response');
+        }
         this.quoteError = message;
         this.showToast(message, 'error', 6000);
       } finally {

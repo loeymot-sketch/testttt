@@ -1669,8 +1669,16 @@
             "code_label": "Code",
             "code_aria": "Promo code {code}",
             "min_cart": "Minimum {value}",
-            "applied": "Promo code {code} applied (−{amount})"
+            "applied": "Promo code {code} applied (−{amount})",
+            "error": {
+                "empty": "Enter a promo code.",
+                "invalid": "Invalid or expired promo code.",
+                "network": "Connection lost. Check the network and try again.",
+                "too_many": "Too many attempts — please wait a few seconds.",
+                "server": "Service temporarily unavailable. Please try again shortly."
+            }
         },
+        "network_lost_cart": "Connection lost. Your cart is saved — try again in a moment.",
         "cancel": "Cancel",
         "back": "Back",
         "loyalty_card": "Loyalty card",

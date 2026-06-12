@@ -1684,8 +1684,16 @@
             "label": "Code promo",
             "loading": "Vérification du code…",
             "placeholder": "Saisir un code promo…",
-            "remove": "Retirer le code"
+            "remove": "Retirer le code",
+            "error": {
+                "empty": "Saisissez un code promo.",
+                "invalid": "Code promo invalide ou expiré.",
+                "network": "Connexion perdue. Vérifiez le réseau puis réessayez.",
+                "too_many": "Trop de tentatives, patientez quelques secondes.",
+                "server": "Service momentanément indisponible. Réessayez dans un instant."
+            }
         },
+        "network_lost_cart": "Connexion perdue. Votre panier est conservé — réessayez dans un instant.",
         "empty_cart": "Votre panier est vide",
         "empty_cart_hint": "Parcourez le menu et ajoutez des articles !",
         "clear_cart": "Vider le panier",
