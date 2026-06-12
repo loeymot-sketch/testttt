@@ -24,8 +24,12 @@
                 <!-- [W3.5 COCKPIT 2026-06-08] Fiscal-correct copy: the generic
                      "Voir toutes" (view_all_alerts) belonged to the stock-alerts
                      widget. A "Dernier Z" widget links to the fiscal closures.
-                     Router target (transactions list) unchanged. -->
-                <router-link :to="{ name: 'admin.transactions.list' }" class="text-sm font-medium text-orange-700"
+                     [dispute-r3 B-R1-16 2026-06-12] Router target FIXED: the
+                     link landed on /admin/transactions (0 Z displayed). It now
+                     targets the real read-only Z closures page /admin/z-reports
+                     (zReportRoutes — created in the same heal, arbitrage with
+                     B-R1-18 which had left the admin with NO Z UI at all). -->
+                <router-link :to="{ name: 'admin.zReports.list' }" class="text-sm font-medium text-orange-700"
                     data-testid="last-z-report-link">
                     {{ $t('label.view_z_reports') }}
                 </router-link>
