@@ -23,7 +23,18 @@ class PaymentGatewayController extends AdminController
         // via GatewayOptionsResource. Only the settings component consumes this read, so
         // gating index does not break any non-settings surface. Mirrors Mail (SET-02) /
         // KioskSetup / LoyaltySetup ->only('index','update').
-        $this->middleware(['permission:settings'])->only('index', 'update');
+        //
+        // [HEAL dispute-r1 B-R1-19 2026-06-12] The /admin/transactions « Mode
+        // de paiement » filter ALSO consumes this read — the SET-01 gate made
+        // every Branch Manager visit 403 + uncaught AxiosError. index now
+        // accepts settings OR transactions; the SET-01 secret-leak intent is
+        // preserved at the RESOURCE level: PaymentGatewayResource strips the
+        // option values unless the caller holds `settings`. update stays
+        // settings-only (write gate unchanged, both middlewares stack on it).
+        // Sentinels: GatewaySecretIndexAuthzSentinelTest (structural) +
+        // PaymentGatewayIndexBranchManagerAccessTest (behavioral).
+        $this->middleware(['permission:settings|transactions'])->only('index', 'update');
+        $this->middleware(['permission:settings'])->only('update');
     }
 
     public function index(

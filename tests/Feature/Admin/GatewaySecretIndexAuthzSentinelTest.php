@@ -48,32 +48,58 @@ class GatewaySecretIndexAuthzSentinelTest extends TestCase
         );
     }
 
+    /**
+     * [HEAL dispute-r1 B-R1-19 2026-06-12] Sentinel invariant RESTATED (not
+     * weakened):
+     *  1. `index` MUST be gated by a permission middleware whose permission
+     *     set INCLUDES `settings` (an OR-combination like
+     *     `permission:settings|transactions` is allowed — the secret VALUES
+     *     are stripped at the resource level for non-settings callers, see
+     *     PaymentGatewayResource + behavioral test
+     *     PaymentGatewayIndexBranchManagerAccessTest).
+     *  2. `update` MUST be gated by a STRICT `permission:settings` middleware
+     *     (no OR-widening of the write gate, ever).
+     */
     private function assertIndexGatedBySettings(object $controller, string $name): void
     {
         $middleware = $controller->getMiddleware();
-        $found = false;
+        $indexGated = false;
+        $updateStrictlyGated = false;
 
         foreach ($middleware as $entry) {
             $mw = $entry['middleware'] ?? null;
-            $isPermissionSettings = $mw === 'permission:settings'
-                || (is_string($mw) && str_contains($mw, 'permission:settings'))
-                || (is_array($mw) && in_array('permission:settings', $mw, true));
-            if (! $isPermissionSettings) {
+            $mwString = is_array($mw) ? implode(',', $mw) : (string) $mw;
+            if (! str_contains($mwString, 'permission:')) {
                 continue;
             }
-            $found = true;
 
-            $only = $entry['options']['only'] ?? null;
-            $this->assertTrue(
-                empty($only) || in_array('index', (array) $only, true),
-                "{$name}.middleware(permission:settings) must gate `index` (SET-01 secret leak). "
-                . 'Currently only=[' . implode(',', (array) $only) . '] — secrets reachable by non-settings staff.'
-            );
+            $only = (array) ($entry['options']['only'] ?? []);
+            $coversIndex = empty($only) || in_array('index', $only, true);
+            $coversUpdate = empty($only) || in_array('update', $only, true);
+
+            // Permission set of this entry, e.g. 'permission:settings|transactions'.
+            $perms = [];
+            if (preg_match('/permission:([a-z0-9_.|-]+)/i', $mwString, $m)) {
+                $perms = explode('|', $m[1]);
+            }
+
+            if ($coversIndex && in_array('settings', $perms, true)) {
+                $indexGated = true;
+            }
+            if ($coversUpdate && $perms === ['settings']) {
+                $updateStrictlyGated = true;
+            }
         }
 
         $this->assertTrue(
-            $found,
-            "{$name} must declare middleware `permission:settings` gating index + update."
+            $indexGated,
+            "{$name} must gate `index` with a permission middleware including `settings` "
+            . '(SET-01 secret leak — secrets reachable by unprivileged staff).'
+        );
+        $this->assertTrue(
+            $updateStrictlyGated,
+            "{$name} must gate `update` with a STRICT `permission:settings` middleware "
+            . '(write gate must never be OR-widened).'
         );
     }
 }
