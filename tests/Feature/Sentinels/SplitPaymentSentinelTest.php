@@ -197,7 +197,17 @@ class SplitPaymentSentinelTest extends TestCase
             ->postJson('/api/admin/pos', $this->payloadWithPosQuote($this->cashierA, $payload));
 
         $response->assertStatus(201);
-        $this->assertSame(0, OrderPayment::count(),
-            'Sentinel: flag OFF → champ payment_breakdown silencieusement ignoré, aucune tranche persistée.');
+
+        // [W-INT 2026-06-12] Contrat mis à jour pour E-ADV-9 (heal spine
+        // dispute-r1 36147531b) : la création POS inline-paid mint désormais
+        // UNE OrderPayment mono-mode (ventilation Z par TPE) même flag OFF.
+        // L'intent du sentinel est préservé : le payment_breakdown CASSÉ
+        // (5.00 < total) doit rester ignoré — donc AUCUNE tranche issue du
+        // breakdown (amount=5.00), une seule row mono-mode au montant PLEIN.
+        $rows = OrderPayment::all();
+        $this->assertCount(1, $rows,
+            'Sentinel: flag OFF → une seule row mono-mode E-ADV-9, jamais les tranches du breakdown.');
+        $this->assertNotEquals(5.00, (float) $rows[0]->amount,
+            'Sentinel: la tranche cassée du breakdown (5.00) ne doit JAMAIS être persistée.');
     }
 }
