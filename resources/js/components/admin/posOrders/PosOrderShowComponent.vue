@@ -354,6 +354,7 @@
     <PosLoyaltyRedeemModal
         :open="loyaltyRedeemOpen"
         :order-id="order.id"
+        :branch-id="loyaltyBranchId"
         @close="loyaltyRedeemOpen = false"
         @applied="onLoyaltyRedeemApplied"
     />
@@ -470,6 +471,29 @@ export default {
     computed: {
         order: function () {
             return this.$store.getters['posOrder/show'];
+        },
+        // [GOAL 2026-06-12 T-F.3] Branche pour le subscribe live du modal
+        // fidélité (LoyaltyBalanceChanged). Sans cette prop, branchId restait
+        // au défaut 0 → onEvents jamais armé → solde périmé sur la surface
+        // CANONIQUE alors que la surface PosComponent était live.
+        // Source primaire = la branche de la COMMANDE (les events loyalty sont
+        // émis sur order->branch_id — OrderDetailsResource:115 expose order.branch) ;
+        // fallback auth-store (cassière branch-bound) si payload pas encore chargé.
+        // Un admin branch 0 hérite ainsi quand même du canal correct de l'ordre.
+        loyaltyBranchId: function () {
+            const authInfo = this.$store.getters['auth/authInfo'] || {};
+            const candidates = [
+                this.order?.branch?.id,
+                this.$store.getters['auth/authBranchId'],
+                authInfo.branch_id,
+            ];
+            for (const candidate of candidates) {
+                const value = parseInt(candidate, 10);
+                if (Number.isFinite(value) && value > 0) {
+                    return value;
+                }
+            }
+            return 0;
         },
         orderItems: function () {
             return this.$store.getters['posOrder/orderItems'];

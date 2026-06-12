@@ -62,4 +62,24 @@ describe('PosLoyaltyRedeemModal — solde live (L2)', () => {
         wrapper.unmount();
         expect(unsub).toHaveBeenCalled();
     });
+
+    // [GOAL 2026-06-12 T-F.3] Sentinel de câblage : les DEUX surfaces qui montent
+    // le modal doivent passer :branch-id, sinon la prop reste au défaut 0 et le
+    // subscribe L2 ne s'arme jamais (solde live silencieusement mort — c'était
+    // le cas de la surface CANONIQUE PosOrderShowComponent).
+    it('chaque surface hôte passe :branch-id au modal (sinon le live est mort-né)', () => {
+        const fs = require('fs');
+        const path = require('path');
+        const hosts = [
+            '../../resources/js/components/admin/pos/PosComponent.vue',
+            '../../resources/js/components/admin/posOrders/PosOrderShowComponent.vue',
+        ];
+        for (const rel of hosts) {
+            const src = fs.readFileSync(path.resolve(__dirname, rel), 'utf8');
+            const idx = src.indexOf('<PosLoyaltyRedeemModal');
+            expect(idx, `${rel} doit monter PosLoyaltyRedeemModal`).toBeGreaterThan(-1);
+            const block = src.slice(idx, src.indexOf('/>', idx) + 2);
+            expect(block, `${rel} doit lier :branch-id sur le modal`).toMatch(/:branch-id=/);
+        }
+    });
 });
