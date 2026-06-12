@@ -102,7 +102,11 @@
                                     <th scope="col"
                                         class="py-1 font-normal text-xs capitalize flex items-center justify-between text-heading">
                                         <span>{{ $t('label.item_description') }}</span>
-                                        <span>{{ $t('label.price') }}</span>
+                                        <!-- [DISPUTE-R1 A-RED-6 2026-06-12] Les lignes affichent le
+                                             prix HORS TAXE (total_without_tax_currency_price) alors
+                                             que le show affiche TTC — marqueur « HT » explicite,
+                                             aucun calcul changé. -->
+                                        <span>{{ $t('label.price') }} HT</span>
                                     </th>
                                 </tr>
                             </thead>
@@ -168,7 +172,8 @@
                             <table class="w-full">
                                 <tbody>
                                     <tr>
-                                        <td class="text-xs text-left py-0.5 uppercase text-heading">{{ $t('label.subtotal') }}:
+                                        <!-- [DISPUTE-R1 A-RED-6] Sous-total HORS TAXE → marqueur HT. -->
+                                        <td class="text-xs text-left py-0.5 uppercase text-heading">{{ $t('label.subtotal') }} HT:
                                         </td>
                                         <td class="text-xs text-right py-0.5 text-heading">{{
                                             order.subtotal_without_tax_currency_price
