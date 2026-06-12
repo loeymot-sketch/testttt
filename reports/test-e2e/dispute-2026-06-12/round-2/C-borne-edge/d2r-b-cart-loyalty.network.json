@@ -1,0 +1,32 @@
+[
+ {
+  "ts": 1781273271661,
+  "status": 401,
+  "method": "POST",
+  "url": "http://127.0.0.1:8768/api/frontend/kiosk-event"
+ },
+ {
+  "ts": 1781273272225,
+  "status": 401,
+  "method": "GET",
+  "url": "http://127.0.0.1:8768/api/frontend/menu"
+ },
+ {
+  "ts": 1781273272566,
+  "status": 401,
+  "method": "GET",
+  "url": "http://127.0.0.1:8768/api/login"
+ },
+ {
+  "ts": 1781273274956,
+  "status": 429,
+  "method": "POST",
+  "url": "http://127.0.0.1:8768/api/frontend/loyalty/check"
+ },
+ {
+  "ts": 1781273302926,
+  "status": 401,
+  "method": "POST",
+  "url": "http://127.0.0.1:8768/api/frontend/loyalty/check"
+ }
+]

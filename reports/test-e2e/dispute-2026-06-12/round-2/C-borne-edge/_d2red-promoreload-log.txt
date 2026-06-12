@@ -1,0 +1,4 @@
+[14:13:55] add Galette(23): {"ok":true,"before":0,"after":1}
+[14:14:00] T1 promo appliquée: {"subtotal":"6,50 €","loyalty":null,"promo":"-5,00 €","total":"1,50 €"}
+[14:14:05] T2 après reload: {"subtotal":"6,50 €","loyalty":null,"promo":"-5,00 €","total":"1,50 €"}
+[14:14:05] C-ADV-02 FERMÉ (promo restaurée)

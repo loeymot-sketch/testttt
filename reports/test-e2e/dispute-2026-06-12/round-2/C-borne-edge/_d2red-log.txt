@@ -1,0 +1,22 @@
+[14:07:21] A add Galette(23): {"ok":true,"before":0,"after":1}
+[14:07:25] A T0: {"subtotal":"6,50 €","loyalty":null,"promo":null,"total":"6,50 €"}
+[14:07:28] A promo: {"ok":true,"totals":{"subtotal":"6,50 €","loyalty":null,"promo":"-5,00 €","total":"1,50 €"},"attempt":1}
+[14:07:31] a PAYMENT affiche: TOTAL À RÉGLER : | 1,50 €
+[14:07:35] a CASH: numero="#A0022" montant="1,50 €" toast="null"
+[14:07:51] B add Galette(23): {"ok":true,"before":0,"after":1}
+[14:07:57] B loyalty essai 1 échec: "Trop de tentatives, patientez quelques secondes." — attente 25s
+[14:08:25] B loyalty balance (essai 2): 165 points disponibles = 1,65 € de réduction sur cette commande
+[14:08:31] B panier post-fidélité: {"subtotal":"6,50 €","loyalty":"-1,65 €","promo":null,"total":"4,85 €"}
+[14:08:34] b PAYMENT affiche: TOTAL À RÉGLER : | 4,85 €
+[14:08:38] b CASH: numero="#A0023" montant="6,50 €" toast="⚠ Votre réduction fidélité n'a pas pu être appliquée (points insuffisants au moment du paiement). Votre commande a été validée sans réduction. ×"
+[14:08:53] C add Coca(52): {"ok":true,"before":0,"after":1}
+[14:08:56] C arrivée payment: /kiosk/payment
+[14:09:02] C overlay payment vu à ~6s
+[14:09:07] C quitte payment à ~10s → /kiosk/idle
+[14:09:07] C RÉSULTAT: overlay=6s leave=10s url=/kiosk/idle
+[14:09:07] C panier après leave (lignes persistées): 0
+[14:09:17] D add Coca(52): {"ok":true,"before":0,"after":1}
+[14:09:27] D inline après burst: null
+[14:09:27] D network 429 promo/validate observé: false
+[14:09:27] E kiosk-upsell API: {"status":400,"body":"\"Cl\\u00e9 API invalide.\""}
+[14:09:27] ORDERS: [{"ts":1781273251519,"status":201,"id":4536,"queue":"A0022","total":1.5,"discount":5,"subtotal":6.5},{"ts":1781273314328,"status":201,"id":4537,"queue":"A0023","total":6.5,"discount":0,"subtotal":6.5}]

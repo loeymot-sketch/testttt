@@ -151,3 +151,24 @@ vs R1 : GAP-05 (marqueur produit n°1, M mécanique) → GAP-14 (légal EAA, M) 
 commun, M) → GAP-12 (S) → GAP-08 (S) → GAP-03-reste+GAP-09-reste (S) → GAP-15 (S) → GAP-06 (L) →
 GAP-13 (M) → GAP-01-résiduel attract-screen (M, le plus « vendeur » côté client).
 + combler les 4 trous normatifs POLICY (ADV-F-P2-15) pour que les sweeps aient une règle écrite à citer.
+
+---
+
+## CONTRESEING ADVERSARIAL (superviseur R2, 2026-06-12 — remplace le red:F mort)
+
+Doc audité gap par gap contre mes propres lectures PNG/DOM/DB (voir `ADVERSARIAL_VERDICT.md` §5).
+**15/15 mappés, bilan 4 fermés / 3 partiels / 8 ouverts CONFIRMÉ, « 0 nouveau gap design » CONFIRMÉ.**
+3 corrections à intégrer à la planification :
+
+1. **GAP-13, « MITIGÉ par les data » → NON.** La cohérence réconciliation de F2-09 est de façade :
+   les `cash_movements` des ventes espèces du jour (A0012/A0013, ids 222/223) sont attachés à la
+   **session zombie 20 du 10/06** (encore OPEN, comme la 19), pas à la session 21 affichée par le
+   panneau. Write-side corrompu (`expected_closing_amount` de toutes les sessions), pas seulement
+   l'affichage. → dossier gate E-ADV-7 à enrichir (clôture/purge zombies + résolution de session
+   unifiée writer/reader) — preuve DB dans ADVERSARIAL_VERDICT.md §5.1.
+2. **GAP-01, traçabilité** : le gradient light servi vient de `tokens-bold.css:259` (pré-existant
+   `04a3a9b3d`) ; le heal `dcf675617` a retiré overlay/scrim. Le sentinel `kioskIdleLightMode.spec.js`
+   ne couvre QUE le composant → un refactor tokens-bold peut ré-assombrir l'idle sans le casser.
+   Au sweep GAP-05/attract-screen : ajouter une assertion sur `--kiosk-idle-bg`.
+3. **Priorisation** : ordre de valeur du doc validé tel quel (GAP-05 → GAP-14 → GAP-10/11 → …),
+   + les 4 trous normatifs POLICY (ADV-F-P2-15) AVANT les sweeps pour qu'ils aient une règle citables.

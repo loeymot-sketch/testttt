@@ -1,0 +1,74 @@
+[
+ {
+  "ts": 1781273359405,
+  "status": 422,
+  "method": "POST",
+  "url": "http://127.0.0.1:8768/api/frontend/promo/validate"
+ },
+ {
+  "ts": 1781273360087,
+  "status": 422,
+  "method": "POST",
+  "url": "http://127.0.0.1:8768/api/frontend/promo/validate"
+ },
+ {
+  "ts": 1781273361177,
+  "status": 422,
+  "method": "POST",
+  "url": "http://127.0.0.1:8768/api/frontend/promo/validate"
+ },
+ {
+  "ts": 1781273361448,
+  "status": 422,
+  "method": "POST",
+  "url": "http://127.0.0.1:8768/api/frontend/promo/validate"
+ },
+ {
+  "ts": 1781273362130,
+  "status": 422,
+  "method": "POST",
+  "url": "http://127.0.0.1:8768/api/frontend/promo/validate"
+ },
+ {
+  "ts": 1781273362813,
+  "status": 422,
+  "method": "POST",
+  "url": "http://127.0.0.1:8768/api/frontend/promo/validate"
+ },
+ {
+  "ts": 1781273363494,
+  "status": 422,
+  "method": "POST",
+  "url": "http://127.0.0.1:8768/api/frontend/promo/validate"
+ },
+ {
+  "ts": 1781273364191,
+  "status": 422,
+  "method": "POST",
+  "url": "http://127.0.0.1:8768/api/frontend/promo/validate"
+ },
+ {
+  "ts": 1781273364873,
+  "status": 422,
+  "method": "POST",
+  "url": "http://127.0.0.1:8768/api/frontend/promo/validate"
+ },
+ {
+  "ts": 1781273365548,
+  "status": 422,
+  "method": "POST",
+  "url": "http://127.0.0.1:8768/api/frontend/promo/validate"
+ },
+ {
+  "ts": 1781273366252,
+  "status": 422,
+  "method": "POST",
+  "url": "http://127.0.0.1:8768/api/frontend/promo/validate"
+ },
+ {
+  "ts": 1781273366909,
+  "status": 422,
+  "method": "POST",
+  "url": "http://127.0.0.1:8768/api/frontend/promo/validate"
+ }
+]

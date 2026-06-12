@@ -1,0 +1,4 @@
+[14:16:38] login(bm.t2admin@lecayenne.fr) → /admin/dashboard
+[14:16:46] fullpage encaissement OK
+[14:16:53] fullpage overview OK
+[14:16:53] DONE

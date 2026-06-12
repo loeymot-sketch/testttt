@@ -1,0 +1,4 @@
+[14:11:40] add Coca: {"ok":true,"before":0,"after":1}
+[14:11:42] burst: {"last":429,"n429":2,"hadToken":true}
+[14:11:44] inline UI post-429: "Trop de tentatives, patientez quelques secondes."
+[14:11:44] network 429 promo/validate (XHR app): 3

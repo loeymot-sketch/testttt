@@ -1,0 +1,9 @@
+[14:17:41] kiosk token found: 2726|nhcvhZx…
+[14:17:41] P4 QUOTE loyalty+promo (status=5): 200 {"status":true,"data":{"quote_token":"ec92356d-0a53-43ba-837f-53fc4be1b565","signature":"7872280df63437dac80be6b629718f7248865608fda18931771337b69ca8478a","expires_at":"2026-06-12T16:22:41+02:00","ttl_seconds":299,"subtotal":10,"discount":5,"total_tax":0.91,"delivery_charge":0,"total_ttc":5,"currency":"EUR","consumed_at":null}}
+[14:17:41] P2 REPLAY quote consommé 4520 → 410 {"status":false,"message":"Order quote expired."}
+[14:17:41] P3a QUOTE frais: 200 {"status":true,"data":{"quote_token":"bff387b5-b88f-4c46-a72f-e4d3b817619e","signature":"d228bbd7b7dda9104e396f72d9bb3b9bb44c0b1af47e87ce6021f765a073e926","expires_at":"2026-06-12T16:22:41+02:00","ttl_seconds":299,"subtotal":10,"discount":5,"total_tax":0.91,"delivery_charge":0,"total_ttc":5,"currency":"EUR","consumed_at":null}}
+[14:17:41] P3b ORDER items tamperés sur quote frais → 409 {"status":false,"message":"Order quote intent mismatch."}
+[14:17:47] login admin OK
+[14:17:57] FACTURE 4520 LIVE:
+
+[14:17:57] E-RED2 done

@@ -1,0 +1,39 @@
+[error] http://127.0.0.1:8768/kiosk/idle :: Failed to load resource: the server responded with a status of 401 (Unauthorized)
+[error] http://127.0.0.1:8768/kiosk/categories?cat=9 :: Failed to load resource: the server responded with a status of 401 (Unauthorized)
+[error] http://127.0.0.1:8768/kiosk/categories?cat=9 :: Failed to load resource: the server responded with a status of 401 (Unauthorized)
+[error] http://127.0.0.1:8768/kiosk/categories?cat=9 :: Failed to load resource: the server responded with a status of 401 (Unauthorized)
+[error] http://127.0.0.1:8768/kiosk/categories?cat=9 :: Failed to load resource: the server responded with a status of 401 (Unauthorized)
+[error] http://127.0.0.1:8768/kiosk/categories?cat=9 :: Failed to load resource: net::ERR_INTERNET_DISCONNECTED
+[error] http://127.0.0.1:8768/kiosk/categories?cat=9 :: Failed to load resource: net::ERR_INTERNET_DISCONNECTED
+[error] http://127.0.0.1:8768/kiosk/categories?cat=9 :: Failed to load resource: net::ERR_INTERNET_DISCONNECTED
+[error] http://127.0.0.1:8768/kiosk/categories?cat=9 :: Failed to load resource: net::ERR_INTERNET_DISCONNECTED
+[error] http://127.0.0.1:8768/kiosk/categories?cat=9 :: Failed to load resource: net::ERR_INTERNET_DISCONNECTED
+[error] http://127.0.0.1:8768/kiosk/categories?cat=9 :: Failed to load resource: net::ERR_INTERNET_DISCONNECTED
+[error] http://127.0.0.1:8768/kiosk/categories?cat=9 :: Failed to load resource: net::ERR_INTERNET_DISCONNECTED
+[error] http://127.0.0.1:8768/kiosk/categories?cat=9 :: Failed to load resource: net::ERR_INTERNET_DISCONNECTED
+[error] http://127.0.0.1:8768/kiosk/categories?cat=9 :: Failed to load resource: net::ERR_INTERNET_DISCONNECTED
+[error] http://127.0.0.1:8768/kiosk/categories?cat=9 :: Failed to load resource: net::ERR_INTERNET_DISCONNECTED
+[error] http://127.0.0.1:8768/kiosk/categories?cat=9 :: Failed to load resource: net::ERR_INTERNET_DISCONNECTED
+[error] http://127.0.0.1:8768/kiosk/categories?cat=9 :: Failed to load resource: net::ERR_INTERNET_DISCONNECTED
+[error] http://127.0.0.1:8768/kiosk/categories?cat=9 :: Failed to load resource: net::ERR_INTERNET_DISCONNECTED
+[error] http://127.0.0.1:8768/kiosk/categories?cat=9 :: Failed to load resource: net::ERR_INTERNET_DISCONNECTED
+[error] http://127.0.0.1:8768/kiosk/categories?cat=9 :: Failed to load resource: net::ERR_INTERNET_DISCONNECTED
+[error] http://127.0.0.1:8768/kiosk/categories?cat=9 :: Failed to load resource: net::ERR_INTERNET_DISCONNECTED
+[error] http://127.0.0.1:8768/kiosk/categories?cat=9 :: Failed to load resource: net::ERR_INTERNET_DISCONNECTED
+[error] http://127.0.0.1:8768/kiosk/categories?cat=9 :: Failed to load resource: net::ERR_INTERNET_DISCONNECTED
+[error] http://127.0.0.1:8768/kiosk/categories?cat=9 :: Failed to load resource: net::ERR_INTERNET_DISCONNECTED
+[error] http://127.0.0.1:8768/kiosk/categories?cat=9 :: Failed to load resource: net::ERR_INTERNET_DISCONNECTED
+[error] http://127.0.0.1:8768/kiosk/categories?cat=9 :: ChunkLoadError: Loading chunk 161 failed.
+(error: http://127.0.0.1:8768/js/kiosk-shell.js)
+    at n.f.j (http://127.0.0.1:8768/js/manifest.js?id=f7693306fe59637a614b1a5be8183edd:1:2352)
+    at http://127.0.0.1:8768/js/manifest.js?id=f7693306fe59637a614b1a5be8183edd:1:768
+    at Array.reduce (<anonymous>)
+    at n.e (http://127.0.0.1:8768/js/manifest.js?id=f7693306fe59637a614b1a5be8183edd:1:747)
+  
+[error] http://127.0.0.1:8768/kiosk/categories?cat=9 :: WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_INTERNET_DISCONNECTED
+[error] http://127.0.0.1:8768/kiosk/categories?cat=9 :: WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_INTERNET_DISCONNECTED
+[error] http://127.0.0.1:8768/kiosk/categories?cat=9 :: WebSocket connection to 'wss://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_INTERNET_DISCONNECTED
+[error] http://127.0.0.1:8768/kiosk/categories?cat=9 :: WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_INTERNET_DISCONNECTED
+[error] http://127.0.0.1:8768/kiosk/categories?cat=9 :: WebSocket connection to 'wss://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_INTERNET_DISCONNECTED
+[error] http://127.0.0.1:8768/kiosk/categories?cat=9 :: Failed to load resource: net::ERR_INTERNET_DISCONNECTED
+[error] http://127.0.0.1:8768/kiosk/categories?cat=9 :: Failed to load resource: net::ERR_INTERNET_DISCONNECTED

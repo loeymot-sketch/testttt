@@ -1,0 +1,6 @@
+{
+ "found": true,
+ "lines": [
+  "SIRET: 10417050100019TVA intra: FR19104170501Opérateur: Admin Le CayenneLe Cayenne437 Rue Élie Gruyelle, 62110 Hénin-BeaumontTel: +33600000000Commande #120626452012-06-202613:20QtéArticle DescriptionPrix1Tacos7,73 €Viandes : Poulet mariné ×11Coca-Cola 33cl1,36 €Sous-total: 4,54 €Total taxes: 0,46 €VAT  (10%) · Base HT 4,54 €0,46 €Remise: 5,00 €Total: 5,00 €Type de commande: À emporterType de paiement: CarteN°A0009N° ticket NF525: 2171Empreinte audit: 3fb09271f811Mentions légales: TVA intracommunautaire - Merci de votre visiteMerciÀ très bientôt !Propulsé parLe Cayenne"
+ ]
+}

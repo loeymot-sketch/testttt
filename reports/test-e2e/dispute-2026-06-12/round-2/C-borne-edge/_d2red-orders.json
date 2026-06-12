@@ -1,0 +1,20 @@
+[
+  {
+    "ts": 1781273251519,
+    "status": 201,
+    "id": 4536,
+    "queue": "A0022",
+    "total": 1.5,
+    "discount": 5,
+    "subtotal": 6.5
+  },
+  {
+    "ts": 1781273314328,
+    "status": 201,
+    "id": 4537,
+    "queue": "A0023",
+    "total": 6.5,
+    "discount": 0,
+    "subtotal": 6.5
+  }
+]

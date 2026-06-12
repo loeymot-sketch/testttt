@@ -1,0 +1,182 @@
+[
+ {
+  "ts": 1781273491205,
+  "status": 401,
+  "method": "GET",
+  "url": "http://127.0.0.1:8768/api/login"
+ },
+ {
+  "ts": 1781273501684,
+  "status": 400,
+  "method": "POST",
+  "url": "http://127.0.0.1:8768/api/frontend/promo/validate"
+ },
+ {
+  "ts": 1781273501709,
+  "status": 400,
+  "method": "POST",
+  "url": "http://127.0.0.1:8768/api/frontend/promo/validate"
+ },
+ {
+  "ts": 1781273501728,
+  "status": 400,
+  "method": "POST",
+  "url": "http://127.0.0.1:8768/api/frontend/promo/validate"
+ },
+ {
+  "ts": 1781273501746,
+  "status": 400,
+  "method": "POST",
+  "url": "http://127.0.0.1:8768/api/frontend/promo/validate"
+ },
+ {
+  "ts": 1781273501764,
+  "status": 400,
+  "method": "POST",
+  "url": "http://127.0.0.1:8768/api/frontend/promo/validate"
+ },
+ {
+  "ts": 1781273501780,
+  "status": 400,
+  "method": "POST",
+  "url": "http://127.0.0.1:8768/api/frontend/promo/validate"
+ },
+ {
+  "ts": 1781273501798,
+  "status": 400,
+  "method": "POST",
+  "url": "http://127.0.0.1:8768/api/frontend/promo/validate"
+ },
+ {
+  "ts": 1781273501815,
+  "status": 400,
+  "method": "POST",
+  "url": "http://127.0.0.1:8768/api/frontend/promo/validate"
+ },
+ {
+  "ts": 1781273501832,
+  "status": 400,
+  "method": "POST",
+  "url": "http://127.0.0.1:8768/api/frontend/promo/validate"
+ },
+ {
+  "ts": 1781273501849,
+  "status": 400,
+  "method": "POST",
+  "url": "http://127.0.0.1:8768/api/frontend/promo/validate"
+ },
+ {
+  "ts": 1781273501866,
+  "status": 400,
+  "method": "POST",
+  "url": "http://127.0.0.1:8768/api/frontend/promo/validate"
+ },
+ {
+  "ts": 1781273501884,
+  "status": 400,
+  "method": "POST",
+  "url": "http://127.0.0.1:8768/api/frontend/promo/validate"
+ },
+ {
+  "ts": 1781273501903,
+  "status": 400,
+  "method": "POST",
+  "url": "http://127.0.0.1:8768/api/frontend/promo/validate"
+ },
+ {
+  "ts": 1781273501921,
+  "status": 400,
+  "method": "POST",
+  "url": "http://127.0.0.1:8768/api/frontend/promo/validate"
+ },
+ {
+  "ts": 1781273501939,
+  "status": 400,
+  "method": "POST",
+  "url": "http://127.0.0.1:8768/api/frontend/promo/validate"
+ },
+ {
+  "ts": 1781273501957,
+  "status": 400,
+  "method": "POST",
+  "url": "http://127.0.0.1:8768/api/frontend/promo/validate"
+ },
+ {
+  "ts": 1781273501974,
+  "status": 400,
+  "method": "POST",
+  "url": "http://127.0.0.1:8768/api/frontend/promo/validate"
+ },
+ {
+  "ts": 1781273501991,
+  "status": 400,
+  "method": "POST",
+  "url": "http://127.0.0.1:8768/api/frontend/promo/validate"
+ },
+ {
+  "ts": 1781273502011,
+  "status": 400,
+  "method": "POST",
+  "url": "http://127.0.0.1:8768/api/frontend/promo/validate"
+ },
+ {
+  "ts": 1781273502028,
+  "status": 400,
+  "method": "POST",
+  "url": "http://127.0.0.1:8768/api/frontend/promo/validate"
+ },
+ {
+  "ts": 1781273502046,
+  "status": 400,
+  "method": "POST",
+  "url": "http://127.0.0.1:8768/api/frontend/promo/validate"
+ },
+ {
+  "ts": 1781273502063,
+  "status": 400,
+  "method": "POST",
+  "url": "http://127.0.0.1:8768/api/frontend/promo/validate"
+ },
+ {
+  "ts": 1781273502081,
+  "status": 400,
+  "method": "POST",
+  "url": "http://127.0.0.1:8768/api/frontend/promo/validate"
+ },
+ {
+  "ts": 1781273502099,
+  "status": 400,
+  "method": "POST",
+  "url": "http://127.0.0.1:8768/api/frontend/promo/validate"
+ },
+ {
+  "ts": 1781273502117,
+  "status": 400,
+  "method": "POST",
+  "url": "http://127.0.0.1:8768/api/frontend/promo/validate"
+ },
+ {
+  "ts": 1781273502135,
+  "status": 400,
+  "method": "POST",
+  "url": "http://127.0.0.1:8768/api/frontend/promo/validate"
+ },
+ {
+  "ts": 1781273502152,
+  "status": 429,
+  "method": "POST",
+  "url": "http://127.0.0.1:8768/api/frontend/promo/validate"
+ },
+ {
+  "ts": 1781273502169,
+  "status": 429,
+  "method": "POST",
+  "url": "http://127.0.0.1:8768/api/frontend/promo/validate"
+ },
+ {
+  "ts": 1781273502223,
+  "status": 429,
+  "method": "POST",
+  "url": "http://127.0.0.1:8768/api/frontend/promo/validate"
+ }
+]

@@ -1,0 +1,14 @@
+A) OFFLINE direct-route → url=/kiosk/error/network rend="Connexion perdue"=true retry=true
+A) ChunkLoadError dans console: 0 | pageerror: 0
+B) produit ajouté: kiosk-product-add-49 cart={"items":[{"name":"Glace","qty":1}],"promoCode":null,"promoDiscount":null,"loyaltyDiscount":0,"idemKey":null}
+B) payment: /kiosk/payment
+B) bouton « Retour au panier » visible sur payment Plan B: true
+B) après confirm → /kiosk/cash-instruction?number=A0020&total=3.8&timeout=45 ORDER-POST=201 cash-instruction=true
+B) PANIER POST-COMMANDE: items=0 idemKey=null promo=null
+B) CTA retour accueil présent: true
+B) après CTA → /kiosk/idle
+C) confirm offline → /kiosk/error/network
+C) après RÉESSAYER online (+9 s): url=/kiosk/error/network écran erreur re-rendu=true
+C) après 2e RÉESSAYER: url=/kiosk/error/network erreur=true → BOUCLE=true
+C) chip « Mon panier » visible: true
+C) après clic chip → /kiosk/cart cart items=1

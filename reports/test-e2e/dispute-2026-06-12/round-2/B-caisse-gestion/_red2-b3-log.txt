@@ -1,0 +1,4 @@
+[14:17:45] login(bm.t2admin@lecayenne.fr) → /admin/dashboard
+[14:17:52] scroller encaissement: {"tag":"MAIN","cls":"db-main velmld-parent","sh":3486,"ch":900}
+[14:18:01] scroller overview: {"tag":"MAIN","cls":"db-main","sh":1324,"ch":900}
+[14:18:02] DONE

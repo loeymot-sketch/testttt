@@ -1,0 +1,15 @@
+[14:07:40] login(bm.t2admin@lecayenne.fr) → /admin/dashboard
+[14:07:47] GATEWAY 200 /api/admin/setting/payment-gateway?order_column=id&order_type=asc&status=5&excepts=1 bytes=75 secret=none body={"data":[{"id":2,"name":"Credit","slug":"credit","status":5,"options":[]}]}
+[14:07:47] console errors (hors WS): 0 []
+[14:07:47] network >=400: 0 []
+[14:07:55] badges file: count=48 visible=48 texts=["10/06"]
+[14:07:55] ordre file (20 prem.): ["A0002[today]","A0004[today]","A0006[today]","A0007[today]","A0008[today]","A0011[today]","A0014[today]","A0016[today]","A0019[today]","A0020[today]","A0022[today]","A0009[10/06]","A0010[10/06]","A0011[10/06]","A0012[10/06]","A0013[10/06]","A0014[10/06]","A0017[10/06]","A0018[10/06]","A0019[10/06]"]
+[14:07:55] ordre file (5 dern.): ["A0136[10/06]","A0137[10/06]","A0138[10/06]","A0139[10/06]","A0141[10/06]"]
+[14:08:44] POST /admin/pos → 201 id=4538 serial=1206264538 total=1.5
+[14:08:54] transactions top5: ["POS-4538-20260612160844 16:08, 12-06-2026 Espèces 1206264538 + 1,50 €","POS-4534-20260612160559 16:05, 12-06-2026 Espèces 1206264534 + 7,02 €","TXN-oRfs9bDD6gmD 13:34, 12-06-2026 Espèces 1006264334 - 6,90 €","TXN-NFHlHjxEOLCK 13:34, 12-06-2026 Espèces 1206264531 - 1,50 €","TXN-mINjwpPQfOH5 13:33, 12-06-2026 Espèces 1206264516 - 5,00 €"]
+[14:08:54] VENTE 1206264538 DANS TRANSACTIONS: OUI
+[14:09:01] carte CAISSE: 42,26 € / 10 tx
+[14:09:01] overview lignes caisse échantillon: ["Commandes Caisse","Vue Caisse Unifiée","Caisse Livreur","Vue Caisse Unifiée","Caisse","Caisse ouverte à:13:41","Espèces encaissées (session en cours):1,50 €","Espèces attendues au tiroir:51,50 €","16:08\tN°A0024\tCaisse\tEspèces\t—\t1,50 €","16:05\tN°A0021\tCaisse\tEspèces\t—\t7,02 €","13:31\tN°A0018\tCaisse\tEspèces\t—\t1,50 €","13:30\tN°A0017\tCaisse\tEspèces\t—\t4,80 €"]
+[14:09:39] fallback search fill: false
+[14:10:12] historique recherche 4335: ["1206264538 Caisse N°A0024 Client passage 1,50 € Payé 2180 16:08, 12-06-2026 En préparation","1206264537 Borne N°A0023 Client borne 6,50 € À encaisser — 16:08, 12-06-2026 Accepter","1206264536 Borne N°A0022 Client borne 1,50 € À encaisser — 16:07, 12-06-2026 Accepter","1206264534 Caisse N°A0021 Client passage 7,02 € Payé 2179 16:05, 12-06-2026 En préparation"]
+[14:10:12] DONE

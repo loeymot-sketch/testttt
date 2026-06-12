@@ -1,0 +1,1 @@
+D-004 probe: OFFLINE browse+add → indicateur=null toast="" cart={"items":[{"name":"Glace","qty":1}],"promoCode":null,"promoDiscount":null,"loyaltyDiscount":0,"idemKey":null}

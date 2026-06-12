@@ -1,0 +1,13 @@
+WARNING /admin/pos-orders/show/4520 :: WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: WebSocket is closed before the connection is established.
+WARNING /admin/pos-orders/show/4520 :: Failed to decode downloaded font: http://127.0.0.1:8768/admin/pos-orders/show/Rubik-Regular.ttf
+WARNING /admin/pos-orders/show/4520 :: OTS parsing error: invalid sfntVersion: 1008813135
+WARNING /admin/pos-orders/show/4520 :: Failed to decode downloaded font: http://127.0.0.1:8768/admin/pos-orders/show/Rubik-Regular.ttf
+WARNING /admin/pos-orders/show/4520 :: OTS parsing error: invalid sfntVersion: 1008813135
+WARNING /admin/pos-orders/show/4520 :: Failed to decode downloaded font: http://127.0.0.1:8768/admin/pos-orders/show/Rubik-Bold.ttf
+WARNING /admin/pos-orders/show/4520 :: OTS parsing error: invalid sfntVersion: 1008813135
+WARNING /admin/pos-orders/show/4520 :: Failed to decode downloaded font: http://127.0.0.1:8768/admin/pos-orders/show/Rubik-Bold.ttf
+WARNING /admin/pos-orders/show/4520 :: OTS parsing error: invalid sfntVersion: 1008813135
+WARNING /admin/pos-orders/show/4520 :: Failed to decode downloaded font: http://127.0.0.1:8768/admin/pos-orders/show/Rubik-SemiBold.ttf
+WARNING /admin/pos-orders/show/4520 :: OTS parsing error: invalid sfntVersion: 1008813135
+WARNING /admin/pos-orders/show/4520 :: Failed to decode downloaded font: http://127.0.0.1:8768/admin/pos-orders/show/Rubik-SemiBold.ttf
+WARNING /admin/pos-orders/show/4520 :: OTS parsing error: invalid sfntVersion: 1008813135

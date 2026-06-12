@@ -1,0 +1,27 @@
+401 GET http://127.0.0.1:8768/api/login
+401 GET http://127.0.0.1:8768/api/frontend/menu
+401 POST http://127.0.0.1:8768/api/frontend/kiosk-event
+401 GET http://127.0.0.1:8768/api/frontend/menu
+401 GET http://127.0.0.1:8768/api/login
+FAILED GET http://127.0.0.1:8768/images/menu/cat-sandwich-cayenne.png?v=1781098616 :: net::ERR_INTERNET_DISCONNECTED
+FAILED GET http://127.0.0.1:8768/images/menu/cat-galette.png?v=1781098616 :: net::ERR_INTERNET_DISCONNECTED
+FAILED GET http://127.0.0.1:8768/images/menu/cat-sandwich-classique.png?v=1781098616 :: net::ERR_INTERNET_DISCONNECTED
+FAILED GET http://127.0.0.1:8768/images/menu/cat-burgers.png?v=1781098616 :: net::ERR_INTERNET_DISCONNECTED
+FAILED GET http://127.0.0.1:8768/images/menu/cat-tacos.png?v=1781098616 :: net::ERR_INTERNET_DISCONNECTED
+FAILED GET http://127.0.0.1:8768/images/menu/cat-bols-gourmands.png?v=1781098616 :: net::ERR_INTERNET_DISCONNECTED
+FAILED GET http://127.0.0.1:8768/images/menu/cat-menu-enfant.png?v=1781098616 :: net::ERR_INTERNET_DISCONNECTED
+FAILED GET http://127.0.0.1:8768/images/menu/cat-frites.png?v=1781098616 :: net::ERR_INTERNET_DISCONNECTED
+FAILED GET http://127.0.0.1:8768/images/menu/cat-supplements.png?v=1781098616 :: net::ERR_INTERNET_DISCONNECTED
+FAILED GET http://127.0.0.1:8768/images/menu/cat-desserts.png?v=1781098616 :: net::ERR_INTERNET_DISCONNECTED
+FAILED GET http://127.0.0.1:8768/images/menu/cat-boissons.png?v=1781098616 :: net::ERR_INTERNET_DISCONNECTED
+FAILED GET http://127.0.0.1:8768/images/menu/sandwich-cayenne.png?v=1781098616 :: net::ERR_INTERNET_DISCONNECTED
+FAILED GET http://127.0.0.1:8768/images/menu/sandwich-cayenne-maxi.png?v=1781098616 :: net::ERR_INTERNET_DISCONNECTED
+FAILED GET http://127.0.0.1:8768/images/menu/ben-jerrys.png?v=1781098616 :: net::ERR_INTERNET_DISCONNECTED
+FAILED GET http://127.0.0.1:8768/images/menu/tarte.png?v=1781098616 :: net::ERR_INTERNET_DISCONNECTED
+FAILED GET http://127.0.0.1:8768/images/menu/tiramisu.png?v=1781098616 :: net::ERR_INTERNET_DISCONNECTED
+FAILED GET http://127.0.0.1:8768/api/frontend/menu :: net::ERR_INTERNET_DISCONNECTED
+FAILED GET http://127.0.0.1:8768/api/frontend/item-category?paginate=0&status=5&surface=kiosk&order_column=sort&order_type=asc&branch_id=1 :: net::ERR_INTERNET_DISCONNECTED
+FAILED GET http://127.0.0.1:8768/api/frontend/item?paginate=0&status=5&surface=kiosk&branch_id=1 :: net::ERR_INTERNET_DISCONNECTED
+FAILED GET http://127.0.0.1:8768/js/kiosk-shell.js :: net::ERR_INTERNET_DISCONNECTED
+FAILED GET http://127.0.0.1:8768/api/frontend/item/details/49?surface=kiosk :: net::ERR_INTERNET_DISCONNECTED
+FAILED GET http://127.0.0.1:8768/images/menu/ben-jerrys.png?v=1781098616 :: net::ERR_INTERNET_DISCONNECTED

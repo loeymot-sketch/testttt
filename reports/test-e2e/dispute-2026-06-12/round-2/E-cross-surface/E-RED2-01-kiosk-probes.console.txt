@@ -1,0 +1,3 @@
+ERROR /kiosk/idle :: Failed to load resource: the server responded with a status of 401 (Unauthorized)
+ERROR /kiosk/idle :: Failed to load resource: the server responded with a status of 410 (Gone)
+ERROR /kiosk/idle :: Failed to load resource: the server responded with a status of 409 (Conflict)
