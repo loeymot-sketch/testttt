@@ -32,7 +32,8 @@ class PosOrderController extends AdminController
             'changePaymentStatus',
             'selectDeliveryBoy',
             'reorderItems', // [P2-3 FIX] Explicit permission guard for reorder
-            'refundWithCounterEntry' // [P11-FZH] NF525 counter-entry refund
+            'refundWithCounterEntry', // [P11-FZH] NF525 counter-entry refund
+            'refundMode' // [dispute-r3 B-R1-06] read-only refund-mode probe
         );
         $this->middleware(['permission:pos-orders|pos'])->only('index', 'show');
     }
@@ -193,6 +194,39 @@ class PosOrderController extends AdminController
                 'message' => 'Failed to create counter-entry refund: ' . $t->getMessage(),
             ], 500);
         }
+    }
+
+    /**
+     * [HEAL dispute-r3 B-R1-06 2026-06-12] Read-only probe: which refund path
+     * would this order take RIGHT NOW? Mirrors EXACTLY the path-selection of
+     * refundWithCounterEntry (SealedOrderGuard::isSealed — the server-side
+     * SSOT, never duplicated on the client). PosRefundModal calls this on
+     * open so the irreversibility warning tells the truth:
+     *   - pre_z         → marked RETURNED in the open Z, cash back, NO mirror
+     *   - counter_entry → NF525 mirror order + refund ticket
+     * Same gates as the mutating endpoint (pos-refund + cross-branch), zero
+     * writes, zero fiscal interaction.
+     */
+    public function refundMode(Order $order): \Illuminate\Http\JsonResponse
+    {
+        abort_unless(
+            \Illuminate\Support\Facades\Auth::user()?->can('pos-refund') ?? false,
+            403,
+            'Insufficient permission to issue refund.'
+        );
+
+        $authUser = \Illuminate\Support\Facades\Auth::user();
+        if ($authUser && !$authUser->hasRole('Admin')
+            && (int) ($authUser->branch_id ?? 0) !== (int) $order->branch_id) {
+            abort(403, 'Cross-branch refund denied.');
+        }
+
+        $isSealed = app(\App\Services\Order\SealedOrderGuard::class)->isSealed($order);
+
+        return response()->json([
+            'success' => true,
+            'mode'    => $isSealed ? 'counter_entry' : 'pre_z',
+        ]);
     }
 
     /**

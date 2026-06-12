@@ -97,15 +97,20 @@
           </dl>
         </section>
 
-        <!-- NF525 warning banner — non-dismissible mandatory acknowledgement -->
+        <!-- NF525 warning banner — non-dismissible mandatory acknowledgement.
+             [dispute-r3 B-R1-06 2026-06-12] Copy CONDITIONNELLE au mode réel
+             (probe GET refund-mode, prédicat sealed serveur) : la version
+             inconditionnelle promettait un « miroir NF525 » inexistant sur la
+             voie pre-Z — copy mensongère au moment du consentement. -->
         <div
           class="refund-warning"
           role="status"
           aria-live="polite"
           data-testid="pos-refund-modal-warning"
+          :data-refund-mode="refundMode || 'unknown'"
         >
           <span class="refund-warning-icon" aria-hidden="true">⚠️</span>
-          <span class="refund-warning-text">{{ $t('pos.refund.warning') }}</span>
+          <span class="refund-warning-text">{{ $t(warningKey) }}</span>
         </div>
 
         <!-- Reason textarea (required min 5 chars per sentinel) -->
@@ -239,6 +244,10 @@ export default {
       // Frozen idempotency key — minted on modal open, reused across
       // double-clicks within the same session. Cleared on close().
       idempotencyKey: null,
+      // [dispute-r3 B-R1-06] Mode de refund sondé à l'ouverture
+      // ('pre_z' | 'counter_entry' | null tant que la probe n'a pas répondu).
+      // null = warning générique honnête (décrit les 2 voies).
+      refundMode: null,
     };
   },
   computed: {
@@ -276,6 +285,15 @@ export default {
       };
       return map[pm] || (typeof pm === 'string' ? pm : '');
     },
+    // [dispute-r3 B-R1-06] Clef du warning selon le mode réel :
+    //   pre_z         → pas de miroir (RETURNED + sortie de caisse, Z ouvert)
+    //   counter_entry → miroir NF525 + ticket de remboursement
+    //   null          → fallback générique décrivant les 2 voies (probe KO)
+    warningKey() {
+      if (this.refundMode === 'pre_z') return 'pos.refund.warning_pre_z';
+      if (this.refundMode === 'counter_entry') return 'pos.refund.warning_post_z';
+      return 'pos.refund.warning';
+    },
   },
   watch: {
     order: {
@@ -288,6 +306,10 @@ export default {
           this.reason = '';
           this.errorMessage = '';
           this.submitting = false;
+          // [dispute-r3 B-R1-06] Probe du mode réel — best-effort, le
+          // fallback générique reste honnête si la probe échoue.
+          this.refundMode = null;
+          this.fetchRefundMode(newOrder.id);
           this.$nextTick(() => {
             if (this.$refs.reasonInput) {
               this.$refs.reasonInput.focus();
@@ -313,6 +335,34 @@ export default {
       this.errorMessage = '';
       this.$emit('close');
     },
+    /**
+     * [dispute-r3 B-R1-06] Probe lecture-seule du mode de refund — le
+     * prédicat « sealed? » vit côté serveur (SealedOrderGuard SSOT, jamais
+     * dupliqué client). Best-effort : tout échec laisse refundMode=null →
+     * warning générique honnête. Garde anti-stale : n'applique la réponse
+     * que si le modal montre toujours le même order.
+     */
+    async fetchRefundMode(orderId) {
+      try {
+        const res = await axios.get(`admin/pos-order/${orderId}/refund-mode`);
+        if (this.order?.id !== orderId) return; // stale response
+        const mode = res?.data?.mode;
+        this.refundMode = (mode === 'pre_z' || mode === 'counter_entry') ? mode : null;
+      } catch (_) {
+        if (this.order?.id === orderId) {
+          this.refundMode = null;
+        }
+      }
+    },
+    /**
+     * [dispute-r3 B-R1-06] Toast succès conditionnel au mode renvoyé par le
+     * POST (vérité du serveur, pas la probe).
+     */
+    successMessageKey(mode) {
+      if (mode === 'pre_z') return 'pos.refund.success_pre_z';
+      if (mode === 'counter_entry') return 'pos.refund.success_post_z';
+      return 'pos.refund.success';
+    },
     async onConfirm() {
       if (!this.canConfirm || this.submitting || !this.order?.id) return;
       this.errorMessage = '';
@@ -331,7 +381,9 @@ export default {
 
         const data = response?.data?.data || null;
         const meta = response?.data?.meta || {};
-        alertService.success(this.$t('pos.refund.success'));
+        // [dispute-r3 B-R1-06] Le POST renvoie mode='pre_z'|'counter_entry' —
+        // le toast succès dit la vérité de la voie réellement empruntée.
+        alertService.success(this.$t(this.successMessageKey(response?.data?.mode)));
 
         this.$emit('refunded', {
           mirrorOrder: data,

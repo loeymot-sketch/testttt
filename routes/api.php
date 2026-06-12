@@ -1019,6 +1019,13 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
         Route::post('/{order}/refund-with-counter-entry', [PosOrderController::class, 'refundWithCounterEntry'])
             ->middleware(['throttle:pos-order-update', 'idempotency'])
             ->name('refundWithCounterEntry');
+        // [HEAL dispute-r3 B-R1-06 2026-06-12] Probe lecture-seule du mode de
+        // refund (pre_z | counter_entry) — le prédicat « sealed? » reste
+        // serveur (SealedOrderGuard), le modal PosRefundModal s'en sert pour
+        // afficher une copy honnête AVANT confirmation (le warning promettait
+        // un « miroir NF525 » inexistant sur la voie pre-Z).
+        Route::get('/{order}/refund-mode', [PosOrderController::class, 'refundMode'])
+            ->name('refundMode');
         // [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19] V1 cashier loyalty redeem
         // (Option B per plans/LOCK_POS_LOYALTY_REDEEM_UI_2026-05-18.md). New
         // standalone controller (PosController.php is DIRTY — observe-only).
