@@ -565,6 +565,12 @@ export default {
   display: flex;
   gap: 8px;
   align-items: baseline;
+  /* [W-REM T-R3.1c 2026-06-12] La base Tailwind globale (h1..h6 { color:
+     #1F1F39 }, resources/css/app.css + tailwind.config.js:32) pose une règle
+     DIRECTE sur h2 qui bat l'héritage du blanc du __header → titre quasi
+     invisible sur #111111 (≈1,16:1). Couleur explicite : #fff sur #111111
+     = 18,9:1 (AA/AAA). Sentinel: tests/js/kdsHistoryDrawerTitleContrast.spec.js */
+  color: #ffffff;
 }
 
 .kds-history-drawer__count {
