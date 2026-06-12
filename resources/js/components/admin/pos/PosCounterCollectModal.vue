@@ -605,6 +605,23 @@ export default {
           this.submitting = false;
           return;
         }
+        // [DISPUTE-R1 E-ADV-8 2026-06-12] 401 mid-confirm (token expiré,
+        // TTL 480 min) : le message backend brut est l'anglais
+        // « Unauthenticated. » et l'intercepteur global app.js déconnecte +
+        // redirige (le toast EN courait la course avec la navigation). Le
+        // caissier qui a déjà accepté les espèces doit lire SANS AMBIGUÏTÉ
+        // que la commande n'est PAS encaissée et qu'elle reste dans la file
+        // après reconnexion. (Clé i18n dédiée → backlog H2 ; FR hardcodé
+        // assumé, précédent : messages 409/cash_movement_skipped ci-dessus.)
+        if (err?.response?.status === 401) {
+          alertService.error(
+            this.$t('label.encaisser_failed')
+            + " — session expirée : la commande n'a PAS été encaissée."
+            + ' Reconnectez-vous puis réessayez depuis la file d\'encaissement.'
+          );
+          this.submitting = false;
+          return;
+        }
         const msg = err?.response?.data?.message || this.$t('label.encaisser_failed');
         alertService.error(msg);
         this.submitting = false;
