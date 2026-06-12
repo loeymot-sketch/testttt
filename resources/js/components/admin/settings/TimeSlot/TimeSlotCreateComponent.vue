@@ -26,7 +26,7 @@
                             </label>
 
                             <Datepicker hideInputIcon @update:modelValue="handleOpeningTime" v-model="opening_time"
-                                :input-class-name="errors.opening_time ? 'invalid' : ''" time-picker />
+                                :input-class-name="errors.opening_time ? 'invalid' : ''" time-picker locale="fr" :is24="true" format="HH:mm" />
 
                             <small class="db-field-alert" v-if="errors.opening_time">
                                 {{ errors.opening_time[0] }}
@@ -38,7 +38,7 @@
                             </label>
 
                             <Datepicker hideInputIcon @update:modelValue="handleClosingTime" v-model="closing_time"
-                                :input-class-name="errors.opening_time ? 'invalid' : ''" time-picker />
+                                :input-class-name="errors.opening_time ? 'invalid' : ''" time-picker locale="fr" :is24="true" format="HH:mm" />
                             <small class="db-field-alert" v-if="errors.closing_time">
                                 {{ errors.closing_time[0] }}
                             </small>

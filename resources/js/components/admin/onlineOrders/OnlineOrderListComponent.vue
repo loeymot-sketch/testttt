@@ -61,7 +61,7 @@
                                 {{ $t('label.date') }}
                             </label>
                             <label for="dp-input-onlineOrderSearchDate" class="sr-only">{{ $t('label.date') }}</label>
-                            <Datepicker uid="onlineOrderSearchDate" name="onlineOrderSearchDate" hideInputIcon autoApply :enableTimePicker="false" utc="false"
+                            <Datepicker uid="onlineOrderSearchDate" name="onlineOrderSearchDate" hideInputIcon autoApply :enableTimePicker="false" locale="fr" format="dd/MM/yyyy" utc="false"
                                 @update:modelValue="handleDate" v-model="props.form.date" range
                                 :preset-ranges="presetRanges" :aria-labels="{ input: $t('label.date') }">
                                 <template #yearly="{ label, range, presetDateRange }">

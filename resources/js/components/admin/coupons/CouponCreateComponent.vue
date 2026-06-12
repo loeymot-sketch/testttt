@@ -64,7 +64,7 @@
                     <div class="form-col-12 sm:form-col-6">
                         <label for="start_date" class="db-field-title required">{{ $t("label.start_date") }}</label>
                         <Datepicker hideInputIcon autoApply v-model="props.form.start_date" :enableTimePicker="true"
-                            :is24="false" :monthChangeOnScroll="false" utc="false"
+                            :is24="true" locale="fr" format="dd/MM/yyyy HH:mm" :monthChangeOnScroll="false" utc="false"
                             :input-class-name="errors.start_date ? 'invalid' : ''">
                             <template #am-pm-button="{ toggle, value }">
                                 <button @click="toggle">{{ value }}</button>
@@ -75,7 +75,7 @@
                     <div class="form-col-12 sm:form-col-6">
                         <label for="end_date" class="db-field-title required">{{ $t("label.end_date") }}</label>
                         <Datepicker hideInputIcon autoApply v-model="props.form.end_date" :enableTimePicker="true"
-                            :is24="false" :monthChangeOnScroll="false" utc="false"
+                            :is24="true" locale="fr" format="dd/MM/yyyy HH:mm" :monthChangeOnScroll="false" utc="false"
                             :input-class-name="errors.end_date ? 'invalid' : ''">
                             <template #am-pm-button="{ toggle, value }">
                                 <button @click="toggle">{{ value }}</button>

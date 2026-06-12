@@ -4,7 +4,7 @@
         <h4 class="font-semibold text-[22px] leading-[34px] mb-3 capitalize">{{ $t('menu.order_statistics') }}</h4>
         <div class="relative cursor-pointer custom-datepicker">
             <label for="dp-input-orderStatisticsDate" class="sr-only">{{ $t('label.date') }}</label>
-            <Datepicker uid="orderStatisticsDate" name="orderStatisticsDate" hideInputIcon autoApply :enableTimePicker="false" utc="false" @update:modelValue="handleDate"
+            <Datepicker uid="orderStatisticsDate" name="orderStatisticsDate" hideInputIcon autoApply :enableTimePicker="false" locale="fr" format="dd/MM/yyyy" utc="false" @update:modelValue="handleDate"
                 v-model="date" range :preset-ranges="presetRanges" :aria-labels="{ input: $t('label.date') }">
                 <template #yearly="{ label, range, presetDateRange }">
                     <span @click="presetDateRange(range)">{{ label }}</span>

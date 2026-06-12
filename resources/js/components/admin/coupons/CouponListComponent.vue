@@ -53,7 +53,7 @@
                                 $t('label.start_date')
                                 }}</label>
                             <Datepicker hideInputIcon autoApply v-model="props.search.start_date"
-                                :enableTimePicker="true" :is24="false" :monthChangeOnScroll="false" utc="false">
+                                :enableTimePicker="true" :is24="true" locale="fr" format="dd/MM/yyyy HH:mm" :monthChangeOnScroll="false" utc="false">
                                 <template #am-pm-button="{ toggle, value }">
                                     <button @click="toggle">{{ value }}</button>
                                 </template>
@@ -64,7 +64,7 @@
                                 $t('label.end_date')
                                 }}</label>
                             <Datepicker hideInputIcon autoApply v-model="props.search.end_date" :enableTimePicker="true"
-                                :is24="false" :monthChangeOnScroll="false" utc="false">
+                                :is24="true" locale="fr" format="dd/MM/yyyy HH:mm" :monthChangeOnScroll="false" utc="false">
                                 <template #am-pm-button="{ toggle, value }">
                                     <button @click="toggle">{{ value }}</button>
                                 </template>

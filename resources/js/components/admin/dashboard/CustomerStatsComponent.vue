@@ -6,7 +6,7 @@
         <h3 class="db-card-title">{{ $t('label.customer_stats') }}</h3>
         <div id="customer-range" class="cursor-pointer flex items-center gap-3 custom-datepicker">
           <label for="dp-input-customerStatsDate" class="sr-only">{{ $t('label.date') }}</label>
-          <Datepicker uid="customerStatsDate" name="customerStatsDate" hideInputIcon autoApply :enableTimePicker="false" utc="false" @update:modelValue="customerStates"
+          <Datepicker uid="customerStatsDate" name="customerStatsDate" hideInputIcon autoApply :enableTimePicker="false" locale="fr" format="dd/MM/yyyy" utc="false" @update:modelValue="customerStates"
             v-model="date" range :preset-ranges="presetRanges" :aria-labels="{ input: $t('label.date') }">
             <template #yearly="{ label, range, presetDateRange }">
               <span @click="presetDateRange(range)">{{ label }}</span>

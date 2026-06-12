@@ -60,7 +60,7 @@
                                 <label for="searchStartDate" class="db-field-title after:hidden">{{
                                     $t('label.date')
                                 }}</label>
-                                <Datepicker hideInputIcon autoApply :enableTimePicker="false" utc="false"
+                                <Datepicker hideInputIcon autoApply :enableTimePicker="false" locale="fr" format="dd/MM/yyyy" utc="false"
                                     @update:modelValue="handleDate" v-model="props.form.date" range
                                     :preset-ranges="presetRanges">
                                     <template #yearly="{ label, range, presetDateRange }">
