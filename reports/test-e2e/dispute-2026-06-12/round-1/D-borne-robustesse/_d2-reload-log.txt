@@ -1,0 +1,14 @@
+produit ajouté avant F5: kiosk-product-add-49 cart={"items":[{"name":"Glace","qty":1}],"orderType":10}
+F5 catalogue → url=/kiosk/categories?cat=9 cart={"items":[{"name":"Glace","qty":1}],"orderType":10}
+wizard ouvert: kiosk-product-add-3
+F5 wizard → url=/kiosk/categories?cat=1 overlay=false cart={"items":[{"name":"Glace","qty":1}],"orderType":10}
+F5 panier → url=/kiosk/cart avant={"items":[{"name":"Glace","qty":1}],"orderType":10} après={"items":[{"name":"Glace","qty":1}],"orderType":10}
+F5 panier rendu: 1 lignes visibles, total="3,80 €"
+loyalty atteint: /kiosk/loyalty
+F5 loyalty → url=/kiosk/loyalty cart={"items":[{"name":"Glace","qty":1}],"orderType":10}
+F5 upsell → url=/kiosk/upsell cart={"items":[{"name":"Glace","qty":1}],"orderType":10}
+F5 payment → url=/kiosk/payment cart={"items":[{"name":"Glace","qty":1}],"orderType":10}
+payment total après F5: "TOTAL À RÉGLER : 3,80 €"
+après confirm → /kiosk/cash-instruction?number=A0007&total=3.8&timeout=45
+cash-instruction avant F5: numéro="#A0007" montant="3,80 €"
+F5 cash-instruction → url=/kiosk/cash-instruction?number=A0007&total=3.8&timeout=45 numéro="#A0007" montant="3,80 €" cart={"items":[{"name":"Glace","qty":1}],"orderType":10}

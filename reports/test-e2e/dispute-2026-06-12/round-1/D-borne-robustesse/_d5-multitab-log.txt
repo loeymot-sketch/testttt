@@ -1,0 +1,11 @@
+TAB A: cart={"items":[{"name":"Glace","qty":1}],"orderType":10}
+TAB A token: 2782|mu0iAAsodGniI…
+TAB B token: 2782|mu0iAAsodGniI… (identique A: true)
+TAB B cart au boot: {"items":[]}
+TAB B panier rendu: 0 lignes — vuex in-memory B voit-il le panier de A ? cart={"items":[],"orderType":10}
+TAB B après ajout: cart={"items":[{"name":"Tarte Daim","qty":1}],"orderType":10}
+TAB A items VUEX in-memory: ["Glace"]
+TAB A localStorage (partagé): {"items":[{"name":"Tarte Daim","qty":1}],"orderType":10}
+TAB A après son ajout: localStorage={"items":[{"name":"Tarte Daim","qty":1},{"name":"Tiramisu","qty":1}],"orderType":10}
+TAB B items VUEX in-memory (après action A): ["Tarte Daim"]
+TAB B panier final affiché: 2 lignes total="7,60 €"

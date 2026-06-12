@@ -1,0 +1,12 @@
+401 GET http://127.0.0.1:8768/api/login
+FAILED GET http://127.0.0.1:8768/js/kiosk-errors.js :: net::ERR_INTERNET_DISCONNECTED
+FAILED GET http://127.0.0.1:8768/api/frontend/item/details/49?surface=kiosk :: net::ERR_INTERNET_DISCONNECTED
+401 GET http://127.0.0.1:8768/api/login
+401 GET http://127.0.0.1:8768/api/frontend/menu
+401 POST http://127.0.0.1:8768/api/frontend/kiosk-event
+401 GET http://127.0.0.1:8768/api/frontend/menu
+401 GET http://127.0.0.1:8768/api/login
+FAILED GET http://127.0.0.1:8768/storage/8/coca.png :: net::ERR_INTERNET_DISCONNECTED
+401 GET http://127.0.0.1:8768/api/login
+401 POST http://127.0.0.1:8768/api/frontend/kiosk-event
+FAILED POST http://127.0.0.1:8768/api/frontend/order/quote :: net::ERR_INTERNET_DISCONNECTED

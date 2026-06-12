@@ -1,0 +1,22 @@
+[
+ {
+  "ts": 1781226125002,
+  "level": "error",
+  "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+ },
+ {
+  "ts": 1781226125299,
+  "level": "error",
+  "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+ },
+ {
+  "ts": 1781226215626,
+  "level": "error",
+  "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+ },
+ {
+  "ts": 1781226305612,
+  "level": "error",
+  "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+ }
+]

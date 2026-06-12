@@ -1,0 +1,66 @@
+WIZ[Tiramisu] round0: [{"i":0,"head":"📝 Instruction spéciale","mandatory":false,"selected":0}]
+ADD Tiramisu: cart 0 -> 1
+WIZ[Grande Frites] round0: [{"i":0,"head":"Choix du style","mandatory":true,"selected":0},{"i":1,"head":"📝 Instruction spéciale","mandatory":false,"selected":0}]
+ADD Grande Frites: cart 1 -> 2
+CART-C avant remise: {
+ "items": [
+  "Tiramisu ✎ 3,80 € 🗑 +",
+  "Grande Frites ✎ 1× Nature 4,00 € 🗑 +"
+ ],
+ "totals": [
+  "Sous-total 7,80 €",
+  "Sous-total",
+  "7,80 €",
+  "7,80 €",
+  "Total 7,80 €",
+  "Total",
+  "7,80 €",
+  "7,80 €"
+ ],
+ "payLabel": "💳 Commande · 7,80 €"
+}
+QUARTET c01-cart-2items
+REMISE-SANS-MOTIF: applyDisabled= [33mtrue[39m {"reasonFlag":true,"flagText":"(obligatoire)"}
+QUARTET c02-remise-sans-motif-gate
+CART-C après remise 10%: {
+ "items": [
+  "Tiramisu ✎ 3,80 € 🗑 +",
+  "Grande Frites ✎ 1× Nature 4,00 € 🗑 +"
+ ],
+ "totals": [
+  "Sous-total 7,80 €",
+  "Sous-total",
+  "7,80 €",
+  "7,80 €",
+  "Remise - 0,78 €",
+  "Remise",
+  "- 0,78 €",
+  "-",
+  "0,78 €",
+  "Total 7,02 €",
+  "Total",
+  "7,02 €",
+  "7,02 €"
+ ],
+ "payLabel": "💳 Commande · 7,02 €"
+}
+QUARTET c03-remise-10pct-appliquee
+PAYMENT-MODAL-TOTAL: "7,02 €"
+TERMINAL-SELECT: {"value":"1","options":["Sélectionnez un TPE","TPE Le Cayenne #1 · simulation"]}
+QUARTET c04-payment-card
+ORDER-POST attempt [33m1[39m : [33m401[39m
+NET>=400: ["[00:57:50] HTTP 401 POST http://127.0.0.1:8768/api/admin/pos","[00:57:50] HTTP 401 POST http://127.0.0.1:8768/api/auth/logout"]
+node:internal/process/esm_loader:40
+      internalBinding('errors').triggerUncaughtException(
+                                ^
+
+page.waitForSelector: Timeout 15000ms exceeded.
+Call log:
+[2m  - waiting for locator('input[autocomplete="email"]') to be visible[22m
+
+    at login [90m(/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/.claude/worktrees/release-v1-2026-06-10/[39mtests/e2e/_d1-A-lib.mjs:32:14[90m)[39m
+    at async [90mfile:///Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/.claude/worktrees/release-v1-2026-06-10/[39mtests/e2e/_d1-A-31-discount-card.mjs:90:7 {
+  name: [32m'TimeoutError'[39m
+}
+
+Node.js v18.20.7

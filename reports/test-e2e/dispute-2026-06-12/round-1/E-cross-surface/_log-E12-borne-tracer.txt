@@ -1,0 +1,24 @@
+[00:34:06] wizard step "QUELLE VIANDE ?" → choisi "POULET MARINÉ CHOISIR"
+[00:34:07]   avancé via "SUIVANT"
+[00:34:08] wizard step "QUELLE SAUCE ?" → choisi "ALGÉRIENNE +"
+[00:34:09]   avancé via "SUIVANT"
+[00:34:10] wizard step "QUEL MENU ?" → choisi "🚫 SANS MENU Article seul +"
+[00:34:11]   avancé via "SUIVANT"
+[00:34:12] wizard step "RÉCAPITULATIF DE VOTRE COMMANDE" → choisi "null"
+[00:34:13]   avancé via "AJOUTER AU PANIER"
+[00:34:14] Tacos: wizard fermé=true cartCount=1 choix=["QUELLE VIANDE ?: POULET MARINÉ CHOISIR","QUELLE SAUCE ?: ALGÉRIENNE +","QUEL MENU ?: 🚫 SANS MENU Article seul +"]
+[00:34:18] Coca ajouté: cartCount=2
+[00:34:20] CART AVANT PROMO: {"names":["Tacos","Coca-Cola 33cl"],"options":["Poulet mariné, Algérienne"],"lineTotals":["8,50 €","1,50 €"],"subtotal":"10,00 €","promoDiscount":null,"total":"10,00 €"}
+[00:34:53] PROMO-APPLIED: "✓\nCode promo BORNEAUDIT5 appliqué (−5,00 €)\nRetirer le code"
+[00:34:53] CART APRES PROMO: {"names":["Tacos","Coca-Cola 33cl"],"options":["Poulet mariné, Algérienne"],"lineTotals":["8,50 €","1,50 €"],"subtotal":"10,00 €","promoDiscount":"-5,00 €","total":"5,00 €"}
+[00:34:53] POST 401 QUOTE tend/order/quote
+[00:34:53] POST 200 QUOTE tend/order/quote
+[00:34:59] → /kiosk/payment
+[00:35:00] PAYMENT PLAN B: {"title":"PAIEMENT À LA CAISSE","total":"TOTAL À RÉGLER : 5,00 €"}
+[00:35:00] POST 401 QUOTE tend/order/quote
+[00:35:01] POST 200 QUOTE tend/order/quote
+[00:35:01] POST 201 ORDER tend/order
+[00:35:04] CASH-INSTRUCTION: {"url":"/kiosk/cash-instruction?number=A0006&total=10&timeout=45","number":"#A0006","amount":"10,00 €"}
+[00:35:04] ORDER FINAL: id=4531 queue=A0006 total=10
+[00:35:04] REQUEST BODY keys: order_type,loyalty_code,kiosk_promo_code,is_advance_order,source,payment_method,items,quote_token,quote_signature,subtotal,discount,delivery_charge,total
+[00:35:04] REQUEST BODY promo fields: {"loyalty_code":null,"kiosk_promo_code":"BORNEAUDIT5","discount":0}

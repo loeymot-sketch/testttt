@@ -1,0 +1,3 @@
+401 GET http://127.0.0.1:8768/api/login
+401 POST http://127.0.0.1:8768/api/frontend/kiosk-event
+401 POST http://127.0.0.1:8768/api/frontend/kiosk-event

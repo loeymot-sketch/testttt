@@ -1,0 +1,25 @@
+PREFETCH-LINKS idle (1): ["prefetch http://127.0.0.1:8768/js/kiosk-errors.js"]
+PREFETCH kiosk-errors présent: true → ["prefetch http://127.0.0.1:8768/js/kiosk-errors.js"]
+OFFLINE=true (depuis idle)
+router.push(kiosk.error.network) offline → PUSHED
+URL après push offline: /kiosk/idle
+TEXTE écran erreur offline: "🌮 | 🍔 | 🍟 | Bienvenue ! | Commandez en quelques touches | À emporter | Je récupère ma commande | CHOISISSEZ UNE OPTION POUR COMMENCER"
+OFFLINE=false — retour idle
+OFFLINE=true (catalogue) — clic catégorie + tentative ajout produit
+URL catalogue offline: /kiosk/categories?cat=9 cart=1
+OFFLINE=false (catalogue) — récupération
+cart après recovery: {"items":[{"name":"Glace","qty":1}],"orderType":10}
+OFFLINE=true (wizard ouvert) — clic option + next
+wizard offline: overlay=false url=/kiosk/categories?cat=1
+OFFLINE=false (wizard) — état post-retour
+produit simple ajouté: kiosk-product-add-50 cart={"items":[{"name":"Glace","qty":2},{"name":"Boisson Seule","qty":1},{"name":"Tarte Daim","qty":1}],"orderType":10}
+CART avant offline: {"items":[{"name":"Glace","qty":2},{"name":"Boisson Seule","qty":1},{"name":"Tarte Daim","qty":1}],"orderType":10}
+OFFLINE=true (panier) — tentative checkout
+après checkout offline → /kiosk/cart
+TEXTE: "VOTRE PANIER | 4 articles | Vider le panier | 🥡 | À emporter | Glace | 3,80 € par unité | 2 | 7,60 € | Boisson Seule | 2,00 € par unité | 1 | 2,00 € | Tarte Daim | 3,80 € par unité | 1 | 3,80 € | Sous-total | 13,40 € | Total | 13,40 € | Code promo | Appliquer | ★ | Avez-vous une carte fidélité ? | › | Valider ma commande | 13,40 € | Network Error | + Ajouter des articles | ✕ | Network Error | ×"
+OFFLINE=false (panier) — url=/kiosk/cart cart={"items":[{"name":"Glace","qty":2},{"name":"Boisson Seule","qty":1},{"name":"Tarte Daim","qty":1}],"orderType":10}
+étape payment atteinte: /kiosk/payment
+OFFLINE=true (payment) — clic confirmer
+après confirm offline → /kiosk/payment
+TEXTE: "PAIEMENT À LA CAISSE | Veuillez payer à la caisse | TOTAL À RÉGLER : | 13,40 € | Connexion perdue. Votre commande n’a pas été envoyée. | Confirmer ma commande | ✕ | Connexion perdue. Votre commande n’a pas été envoyée. | ×"
+OFFLINE=false (payment) — url=/kiosk/payment cart={"items":[{"name":"Glace","qty":2},{"name":"Boisson Seule","qty":1},{"name":"Tarte Daim","qty":1}],"orderType":10}

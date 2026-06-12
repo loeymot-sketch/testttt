@@ -1,0 +1,17 @@
+[error] http://127.0.0.1:8768/kiosk/idle :: Failed to load resource: the server responded with a status of 401 (Unauthorized)
+[error] http://127.0.0.1:8768/kiosk/categories?cat=9 :: Failed to load resource: the server responded with a status of 401 (Unauthorized)
+[error] http://127.0.0.1:8768/kiosk/categories?cat=9 :: Failed to load resource: the server responded with a status of 401 (Unauthorized)
+[error] http://127.0.0.1:8768/kiosk/categories?cat=9 :: Failed to load resource: the server responded with a status of 401 (Unauthorized)
+[error] http://127.0.0.1:8768/kiosk/categories?cat=9 :: Failed to load resource: the server responded with a status of 401 (Unauthorized)
+[error] http://127.0.0.1:8768/kiosk/categories?cat=1 :: Failed to load resource: the server responded with a status of 401 (Unauthorized)
+[error] http://127.0.0.1:8768/kiosk/categories?cat=1 :: Failed to load resource: the server responded with a status of 401 (Unauthorized)
+[error] http://127.0.0.1:8768/kiosk/categories?cat=1 :: Failed to load resource: the server responded with a status of 401 (Unauthorized)
+[error] http://127.0.0.1:8768/kiosk/categories?cat=1 :: Failed to load resource: the server responded with a status of 401 (Unauthorized)
+[warning] http://127.0.0.1:8768/kiosk/categories?cat=1 :: [kiosk-wizard.composer] step skipped (no kind match + no choices) {step_key: viande_2, label: Viande 2, source_type: item_attribute}
+[warning] http://127.0.0.1:8768/kiosk/categories?cat=1 :: [kiosk-wizard.composer] step skipped (no kind match + no choices) {step_key: viande_2, label: Viande 2, source_type: item_attribute}
+[warning] http://127.0.0.1:8768/kiosk/categories?cat=1 :: [kiosk-wizard.composer] step skipped (no kind match + no choices) {step_key: viande_2, label: Viande 2, source_type: item_attribute}
+[warning] http://127.0.0.1:8768/kiosk/categories?cat=1 :: [kiosk-wizard.composer] step skipped (no kind match + no choices) {step_key: viande_2, label: Viande 2, source_type: item_attribute}
+[warning] http://127.0.0.1:8768/kiosk/categories?cat=1 :: [kiosk-wizard.composer] step skipped (no kind match + no choices) {step_key: viande_2, label: Viande 2, source_type: item_attribute}
+[warning] http://127.0.0.1:8768/kiosk/categories?cat=1 :: [kiosk-wizard.composer] step skipped (no kind match + no choices) {step_key: viande_2, label: Viande 2, source_type: item_attribute}
+[warning] http://127.0.0.1:8768/kiosk/categories?cat=1 :: [kiosk-wizard.composer] step skipped (no kind match + no choices) {step_key: viande_2, label: Viande 2, source_type: item_attribute}
+[warning] http://127.0.0.1:8768/kiosk/categories?cat=1 :: [kiosk-wizard.composer] step skipped (no kind match + no choices) {step_key: viande_2, label: Viande 2, source_type: item_attribute}

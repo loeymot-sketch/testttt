@@ -1,0 +1,1 @@
+[01:05:16] KDS scan: {"hasA0006":false,"hasA0012":false,"queues":["A0001","A0002","A0003","A0005","Z0901","Z0902","Z0903","Z0904"],"pendingBadge":"+11 en attente"}

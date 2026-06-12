@@ -1,0 +1,1 @@
+HTTP 403 GET http://127.0.0.1:8768/api/admin/setting/payment-gateway?order_column=id&order_type=asc&status=5&excepts=1

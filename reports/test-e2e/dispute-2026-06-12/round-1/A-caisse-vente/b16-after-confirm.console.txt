@@ -1,0 +1,2 @@
+[00:42:28] WARNING WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: WebSocket is closed before the connection is established.
+[00:42:33] WARNING [pos-wizard.composer] step skipped (unsupported) {step_key: viande_2, label: Viande 2}

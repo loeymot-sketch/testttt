@@ -1,0 +1,187 @@
+[
+ {
+  "ts": 1781226088896,
+  "level": "error",
+  "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+ },
+ {
+  "ts": 1781226097114,
+  "level": "warning",
+  "text": "[kiosk-wizard.composer] step skipped (no kind match + no choices) {step_key: viande_2, label: Viande 2, source_type: item_attribute}"
+ },
+ {
+  "ts": 1781226097115,
+  "level": "warning",
+  "text": "[kiosk-wizard.composer] step skipped (no kind match + no choices) {step_key: viande_2, label: Viande 2, source_type: item_attribute}"
+ },
+ {
+  "ts": 1781226097116,
+  "level": "warning",
+  "text": "[kiosk-wizard.composer] step skipped (no kind match + no choices) {step_key: viande_2, label: Viande 2, source_type: item_attribute}"
+ },
+ {
+  "ts": 1781226097119,
+  "level": "warning",
+  "text": "[kiosk-wizard.composer] step skipped (no kind match + no choices) {step_key: viande_2, label: Viande 2, source_type: item_attribute}"
+ },
+ {
+  "ts": 1781226097119,
+  "level": "warning",
+  "text": "[kiosk-wizard.composer] step skipped (no kind match + no choices) {step_key: viande_2, label: Viande 2, source_type: item_attribute}"
+ },
+ {
+  "ts": 1781226097119,
+  "level": "warning",
+  "text": "[kiosk-wizard.composer] step skipped (no kind match + no choices) {step_key: viande_2, label: Viande 2, source_type: item_attribute}"
+ },
+ {
+  "ts": 1781226097120,
+  "level": "warning",
+  "text": "[kiosk-wizard.composer] step skipped (no kind match + no choices) {step_key: viande_2, label: Viande 2, source_type: item_attribute}"
+ },
+ {
+  "ts": 1781226098265,
+  "level": "warning",
+  "text": "[kiosk-wizard.composer] step skipped (no kind match + no choices) {step_key: viande_2, label: Viande 2, source_type: item_attribute}"
+ },
+ {
+  "ts": 1781226098265,
+  "level": "warning",
+  "text": "[kiosk-wizard.composer] step skipped (no kind match + no choices) {step_key: viande_2, label: Viande 2, source_type: item_attribute}"
+ },
+ {
+  "ts": 1781226098265,
+  "level": "warning",
+  "text": "[kiosk-wizard.composer] step skipped (no kind match + no choices) {step_key: viande_2, label: Viande 2, source_type: item_attribute}"
+ },
+ {
+  "ts": 1781226098266,
+  "level": "warning",
+  "text": "[kiosk-wizard.composer] step skipped (no kind match + no choices) {step_key: viande_2, label: Viande 2, source_type: item_attribute}"
+ },
+ {
+  "ts": 1781226098795,
+  "level": "warning",
+  "text": "[kiosk-wizard.composer] step skipped (no kind match + no choices) {step_key: viande_2, label: Viande 2, source_type: item_attribute}"
+ },
+ {
+  "ts": 1781226099606,
+  "level": "warning",
+  "text": "[kiosk-wizard.composer] step skipped (no kind match + no choices) {step_key: viande_2, label: Viande 2, source_type: item_attribute}"
+ },
+ {
+  "ts": 1781226099606,
+  "level": "warning",
+  "text": "[kiosk-wizard.composer] step skipped (no kind match + no choices) {step_key: viande_2, label: Viande 2, source_type: item_attribute}"
+ },
+ {
+  "ts": 1781226099606,
+  "level": "warning",
+  "text": "[kiosk-wizard.composer] step skipped (no kind match + no choices) {step_key: viande_2, label: Viande 2, source_type: item_attribute}"
+ },
+ {
+  "ts": 1781226099606,
+  "level": "warning",
+  "text": "[kiosk-wizard.composer] step skipped (no kind match + no choices) {step_key: viande_2, label: Viande 2, source_type: item_attribute}"
+ },
+ {
+  "ts": 1781226100071,
+  "level": "error",
+  "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+ },
+ {
+  "ts": 1781226100128,
+  "level": "warning",
+  "text": "[kiosk-wizard.composer] step skipped (no kind match + no choices) {step_key: viande_2, label: Viande 2, source_type: item_attribute}"
+ },
+ {
+  "ts": 1781226100938,
+  "level": "warning",
+  "text": "[kiosk-wizard.composer] step skipped (no kind match + no choices) {step_key: viande_2, label: Viande 2, source_type: item_attribute}"
+ },
+ {
+  "ts": 1781226100938,
+  "level": "warning",
+  "text": "[kiosk-wizard.composer] step skipped (no kind match + no choices) {step_key: viande_2, label: Viande 2, source_type: item_attribute}"
+ },
+ {
+  "ts": 1781226100940,
+  "level": "warning",
+  "text": "[kiosk-wizard.composer] step skipped (no kind match + no choices) {step_key: viande_2, label: Viande 2, source_type: item_attribute}"
+ },
+ {
+  "ts": 1781226101450,
+  "level": "warning",
+  "text": "[kiosk-wizard.composer] step skipped (no kind match + no choices) {step_key: viande_2, label: Viande 2, source_type: item_attribute}"
+ },
+ {
+  "ts": 1781226101450,
+  "level": "warning",
+  "text": "[kiosk-wizard.composer] step skipped (no kind match + no choices) {step_key: viande_2, label: Viande 2, source_type: item_attribute}"
+ },
+ {
+  "ts": 1781226101451,
+  "level": "warning",
+  "text": "[kiosk-wizard.composer] step skipped (no kind match + no choices) {step_key: viande_2, label: Viande 2, source_type: item_attribute}"
+ },
+ {
+  "ts": 1781226101870,
+  "level": "error",
+  "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+ },
+ {
+  "ts": 1781226101960,
+  "level": "warning",
+  "text": "[kiosk-wizard.composer] step skipped (no kind match + no choices) {step_key: viande_2, label: Viande 2, source_type: item_attribute}"
+ },
+ {
+  "ts": 1781226101961,
+  "level": "warning",
+  "text": "[kiosk-wizard.composer] step skipped (no kind match + no choices) {step_key: viande_2, label: Viande 2, source_type: item_attribute}"
+ },
+ {
+  "ts": 1781226101961,
+  "level": "warning",
+  "text": "[kiosk-wizard.composer] step skipped (no kind match + no choices) {step_key: viande_2, label: Viande 2, source_type: item_attribute}"
+ },
+ {
+  "ts": 1781226102487,
+  "level": "warning",
+  "text": "[kiosk-wizard.composer] step skipped (no kind match + no choices) {step_key: viande_2, label: Viande 2, source_type: item_attribute}"
+ },
+ {
+  "ts": 1781226104119,
+  "level": "warning",
+  "text": "[kiosk-wizard.composer] step skipped (no kind match + no choices) {step_key: viande_2, label: Viande 2, source_type: item_attribute}"
+ },
+ {
+  "ts": 1781226104119,
+  "level": "warning",
+  "text": "[kiosk-wizard.composer] step skipped (no kind match + no choices) {step_key: viande_2, label: Viande 2, source_type: item_attribute}"
+ },
+ {
+  "ts": 1781226108993,
+  "level": "error",
+  "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+ },
+ {
+  "ts": 1781226114999,
+  "level": "error",
+  "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+ },
+ {
+  "ts": 1781226115050,
+  "level": "error",
+  "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+ },
+ {
+  "ts": 1781226115344,
+  "level": "error",
+  "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+ },
+ {
+  "ts": 1781226115383,
+  "level": "error",
+  "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+ }
+]

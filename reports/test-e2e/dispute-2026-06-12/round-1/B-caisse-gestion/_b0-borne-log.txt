@@ -1,0 +1,12 @@
+[00:29:49] kioskBoot: token OK (try 1)
+[00:29:57] simple ajouté kiosk-product-add-49 (cat=9)
+[00:29:58] order#1 cart total="3,80 €"
+[00:30:03] order#1 après checkout → /kiosk/payment
+[00:30:05] ORDER-POST 201 id=4516 serial=1206264516 queue=A0001 total=3.8
+[00:30:08] order#1 cash-instruction: numéro="#A0001" montant="3,80 €" url=/kiosk/cash-instruction?number=A0001&total=3.8&timeout=45
+[00:30:47] simple ajouté kiosk-product-add-49 (cat=9)
+[00:30:48] order#2 cart total="3,80 €"
+[00:30:52] order#2 après checkout → /kiosk/payment
+[00:30:54] ORDER-POST 201 id=4519 serial=1206264519 queue=A0003 total=3.8
+[00:30:56] order#2 cash-instruction: numéro="#A0003" montant="3,80 €" url=/kiosk/cash-instruction?number=A0003&total=3.8&timeout=45
+[00:31:28] ORDERS: [{"status":201,"id":4516,"order_serial_no":"1206264516","queue":"A0001","total":3.8},{"status":201,"id":4519,"order_serial_no":"1206264519","queue":"A0003","total":3.8}]

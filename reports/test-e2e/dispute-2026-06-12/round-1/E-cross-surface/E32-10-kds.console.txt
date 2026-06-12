@@ -1,0 +1,27 @@
+WARNING /admin/pos :: WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: WebSocket is closed before the connection is established.
+WARNING /admin/cash-overview :: WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: WebSocket is closed before the connection is established.
+ERROR /login :: Failed to load resource: the server responded with a status of 401 (Unauthorized)
+PAGEERROR /login :: AxiosError: Request failed with status code 401
+ERROR /login :: Failed to load resource: the server responded with a status of 401 (Unauthorized)
+PAGEERROR /login :: AxiosError: Request failed with status code 401
+ERROR /login :: Failed to load resource: the server responded with a status of 401 (Unauthorized)
+WARNING /admin/cash-overview :: WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: WebSocket is closed before the connection is established.
+WARNING /admin/encaissement :: WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: WebSocket is closed before the connection is established.
+WARNING /admin/pos-orders/show/4543 :: WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: WebSocket is closed before the connection is established.
+WARNING /admin/pos-orders/show/4543 :: Failed to decode downloaded font: http://127.0.0.1:8768/admin/pos-orders/show/Rubik-Regular.ttf
+WARNING /admin/pos-orders/show/4543 :: OTS parsing error: invalid sfntVersion: 1008813135
+WARNING /admin/pos-orders/show/4543 :: Failed to decode downloaded font: http://127.0.0.1:8768/admin/pos-orders/show/Rubik-Regular.ttf
+WARNING /admin/pos-orders/show/4543 :: OTS parsing error: invalid sfntVersion: 1008813135
+WARNING /admin/pos-orders/show/4543 :: Failed to decode downloaded font: http://127.0.0.1:8768/admin/pos-orders/show/Rubik-Bold.ttf
+WARNING /admin/pos-orders/show/4543 :: OTS parsing error: invalid sfntVersion: 1008813135
+WARNING /admin/pos-orders/show/4543 :: Failed to decode downloaded font: http://127.0.0.1:8768/admin/pos-orders/show/Rubik-Bold.ttf
+WARNING /admin/pos-orders/show/4543 :: OTS parsing error: invalid sfntVersion: 1008813135
+WARNING /admin/pos-orders/show/4543 :: Failed to decode downloaded font: http://127.0.0.1:8768/admin/pos-orders/show/Rubik-SemiBold.ttf
+WARNING /admin/pos-orders/show/4543 :: OTS parsing error: invalid sfntVersion: 1008813135
+WARNING /admin/pos-orders/show/4543 :: Failed to decode downloaded font: http://127.0.0.1:8768/admin/pos-orders/show/Rubik-SemiBold.ttf
+WARNING /admin/pos-orders/show/4543 :: OTS parsing error: invalid sfntVersion: 1008813135
+WARNING /admin/historique :: WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: WebSocket is closed before the connection is established.
+WARNING /admin/pos-orders-tracker :: WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: WebSocket is closed before the connection is established.
+WARNING /admin/cash-overview :: WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: WebSocket is closed before the connection is established.
+WARNING /admin/transactions :: WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: WebSocket is closed before the connection is established.
+WARNING /kds :: WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: WebSocket is closed before the connection is established.

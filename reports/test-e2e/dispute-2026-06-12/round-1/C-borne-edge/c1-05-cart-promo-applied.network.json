@@ -1,0 +1,8 @@
+[
+ {
+  "ts": 1781224584586,
+  "status": 401,
+  "method": "POST",
+  "url": "http://127.0.0.1:8768/api/frontend/kiosk-event"
+ }
+]

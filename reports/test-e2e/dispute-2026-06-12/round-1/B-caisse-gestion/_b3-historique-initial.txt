@@ -1,0 +1,82 @@
+Bonjour
+BM T2 Admin
+BM T2 Admin
+
+bm.t2admin@lecayenne.fr
+
++33600000099
+
+0,00 €
+Modifier Le Profil
+Changer Le Mot De Passe
+Déconnexion
+Tableau De Bord
+POS
+Ingrédients
+Commandes Caisse
+Historique
+Encaissement
+Vue Caisse Unifiée
+Caisse Livreur
+CAISSE ET COMMANDES
+Écran Cuisine
+Suivi Client
+COMMUNICATIONS
+Notifications Push
+Messages
+UTILISATEURS
+Employés
+Chefs
+COMPTES
+Transactions
+RAPPORTS
+Rapport Des Ventes
+Tableau De Bord
+Historique
+Historique
+10
+10
+25
+50
+100
+500
+1000
+Filtrer
+Exporter
+XLS
+N° COMMANDE
+ORIGINE
+STATUT
+STATUT PAIEMENT
+DATE
+Rechercher
+Effacer
+N° COMMANDE	ORIGINE	N° FILE	CLIENT	MONTANT	PAIEMENT	N° FISCAL	DATE	STATUT	ACTION
+1206264537	Borne	N°A0011	Admin Le Cayenne	9,50 €	À encaisser	—	02:43, 12-06-2026	Accepter	
+
+1206264536	Caisse	N°A0010	Client passage	8,50 €	Payé	2171	02:42, 12-06-2026	En préparation	
+
+1206264535	Borne	N°A0009	Admin Le Cayenne	3,80 €	À encaisser	—	02:39, 12-06-2026	Accepter	
+
+F2-RDM-6	Caisse	—	Alexandro Daniel	0,00 €	Non payé	—	02:39, 12-06-2026	En attente	
+
+1206264533	Borne	N°A0008	Admin Le Cayenne	3,00 €	À encaisser	—	02:38, 12-06-2026	Accepter	
+
+1206264532	Borne	N°A0007	Admin Le Cayenne	3,80 €	À encaisser	—	02:38, 12-06-2026	Accepter	
+
+1206264531	Borne	N°A0006	Admin Le Cayenne	10,00 €	Payé	2172	02:35, 12-06-2026	Accepter	
+
+F1R8498504	Caisse	N°Z0906	F1 Earn Test	8,49 €	Payé	—	02:31, 12-06-2026	En préparation	
+
+F1R859298	Caisse	N°Z0905	F1 Earn Test	8,50 €	Payé	—	02:31, 12-06-2026	En préparation	
+
+F1R8442786	Caisse	N°Z0904	F1 Earn Test	8,44 €	Payé	—	02:31, 12-06-2026	En préparation	
+
+Affichage de 1 à 10 sur 2409 entrées
+
+Précédent
+1
+2
+...
+241
+Suivant

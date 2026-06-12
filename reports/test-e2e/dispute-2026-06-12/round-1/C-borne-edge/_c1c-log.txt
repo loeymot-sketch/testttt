@@ -1,0 +1,17 @@
+[00:46:59] add Tacos(26): {"ok":false,"reason":"wizard-stuck","trace":["step \"Choisissez 1 viande\" → pick .kiosk-viande-card:not(.disabled):not(.selected)","step \"Choisissez 1 viande\" → NEXT","step \"Quelle sauce ?\" → pick .kiosk-option-card:not(.disabled):not(.selected)","step \"Quelle sauce ?\" → NEXT","step \"Quel menu ?\" → pick .kiosk-menu-card:not(.selected)","step \"Quel menu ?\" → pick .kiosk-boisson-card:not(.selected)","step \"Quel menu ?\" → pick .kiosk-boisson-card:not(.selected)","step \"Quel menu ?\" → pick .kiosk-boisson-card:not(.selected)","step \"Quel menu ?\" → pick .kiosk-boisson-card:not(.sele
+[00:47:08] add Galette(23): {"ok":true,"before":0,"after":1}
+[00:47:12] add Coca(52): {"ok":true,"before":1,"after":2}
+[00:47:15] add Eau(58): {"ok":true,"before":2,"after":3}
+[00:47:15] cart: {"n":3,"items":[{"name":"Galette Normale","qty":1,"total":6.5},{"name":"Coca-Cola 33cl","qty":1,"total":1.5},{"name":"Eau Plate 50cl","qty":1,"total":1}]}
+[00:47:17] lignes: ["Galette Normale","Coca-Cola 33cl","Eau Plate 50cl"]
+[00:47:20] T0 initial: {"subtotal":"9,00 €","loyalty":null,"promo":null,"total":"9,00 €"}
+[00:47:23] T1 après qty+ (composé Tacos→2, Coca→2): {"subtotal":"10,50 €","loyalty":null,"promo":null,"total":"10,50 €"}
+[00:47:27] T2 après suppr Eau: {"subtotal":"9,50 €","loyalty":null,"promo":null,"total":"9,50 €"} state={"n":2,"items":[{"name":"Galette Normale","qty":1,"total":6.5},{"name":"Coca-Cola 33cl","qty":2,"total":3}]}
+[00:47:32] promo essai 1 échec — erreur inline: "Too Many Attempts." — attente 35s
+[00:48:11] T3 promo appliquée (essai 2): {"subtotal":"9,50 €","loyalty":null,"promo":"-5,00 €","total":"4,50 €"}
+[00:48:16] loyalty essai 1 échec — erreur: "null" — attente 35s
+[00:49:25] loyalty essai 2 échec — erreur: "null" — attente 35s
+[00:50:34] loyalty essai 3 échec — erreur: "null" — attente 35s
+[00:51:44] loyalty essai 4 échec — erreur: "null" — attente 35s
+[00:52:19] après loyalty → /kiosk/idle
+[00:52:24] T4 panier promo+fidélité: {"subtotal":null,"loyalty":null,"promo":null,"total":null}

@@ -1,0 +1,10 @@
+cart: {"items":[{"name":"Glace","qty":1}],"orderType":10}
+ORDER-POST 201 id=4535 queue=A0009 total=3.8
+commande 1 → /kiosk/cash-instruction?number=A0009&total=3.8&timeout=45
+cart à cash-instruction: {"items":[{"name":"Glace","qty":1}],"orderType":10}
+router.push(/kiosk/cart) depuis cash-instruction → PUSHED
+url=/kiosk/cart cart={"items":[{"name":"Glace","qty":1}],"orderType":10}
+panier rendu: 1 lignes
+ORDER-POST 409 id=undefined queue=undefined total=undefined
+commande 2 → /kiosk/payment
+ORDERS: [{"status":201,"id":4535,"queue":"A0009","total":3.8},{"status":409}]

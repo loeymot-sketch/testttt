@@ -1,0 +1,197 @@
+{
+  "hist4329": {
+    "data": [
+      {
+        "id": 4329,
+        "order_serial_no": "1006264329",
+        "queue_number": "A0010",
+        "order_datetime": "01:42, 10-06-2026",
+        "total": 3.8,
+        "subtotal": 3.8,
+        "discount": 0,
+        "delivery_charge": 0,
+        "total_currency_price": "3,80 €",
+        "total_amount_price": "3.80",
+        "discount_amount_price": "0.00",
+        "delivery_charge_amount_price": "0.00",
+        "discount_currency_price": "0,00 €",
+        "delivery_charge_currency_price": "0,00 €",
+        "payment_method": 1,
+        "payment_status": 20,
+        "transaction": "COUNTER_CASH",
+        "order_type": 10,
+        "source": 5,
+        "source_surface": "kiosk",
+        "pos_payment_method": 1,
+        "fiscal_sequence_no": 2170,
+        "parent_order_id": null,
+        "status": 22,
+        "status_name": "Retournée",
+        "customer_name": "Admin Le Cayenne",
+        "is_cash_pending": false,
+        "cash_pending_amount": null,
+        "customer_phone": null,
+        "order_items": [
+          {
+            "item_id": 49,
+            "item_name": "Glace",
+            "quantity": 1
+          }
+        ]
+      }
+    ],
+    "links": {
+      "first": "http://127.0.0.1:8768/api/admin/order-history?page=1",
+      "last": "http://127.0.0.1:8768/api/admin/order-history?page=1",
+      "prev": null,
+      "next": null
+    },
+    "meta": {
+      "current_page": 1,
+      "from": 1,
+      "last_page": 1,
+      "links": [
+        {
+          "url": null,
+          "label": "&laquo; Previous",
+          "active": false
+        },
+        {
+          "url": "http://127.0.0.1:8768/api/admin/order-history?page=1",
+          "label": "1",
+          "active": true
+        },
+        {
+          "url": null,
+          "label": "Next &raquo;",
+          "active": false
+        }
+      ],
+      "path": "http://127.0.0.1:8768/api/admin/order-history",
+      "per_page": 5,
+      "to": 1,
+      "total": 1
+    }
+  },
+  "hist4519": {
+    "data": [
+      {
+        "id": 4519,
+        "order_serial_no": "1206264519",
+        "queue_number": "A0003",
+        "order_datetime": "02:30, 12-06-2026",
+        "total": 3.8,
+        "subtotal": 3.8,
+        "discount": 0,
+        "delivery_charge": 0,
+        "total_currency_price": "3,80 €",
+        "total_amount_price": "3.80",
+        "discount_amount_price": "0.00",
+        "delivery_charge_amount_price": "0.00",
+        "discount_currency_price": "0,00 €",
+        "delivery_charge_currency_price": "0,00 €",
+        "payment_method": 1,
+        "payment_status": 15,
+        "transaction": null,
+        "order_type": 10,
+        "source": 5,
+        "source_surface": "kiosk",
+        "pos_payment_method": 6,
+        "fiscal_sequence_no": null,
+        "parent_order_id": null,
+        "status": 4,
+        "status_name": "Acceptée",
+        "customer_name": "Admin Le Cayenne",
+        "is_cash_pending": true,
+        "cash_pending_amount": "3.80",
+        "customer_phone": null,
+        "order_items": [
+          {
+            "item_id": 49,
+            "item_name": "Glace",
+            "quantity": 1
+          }
+        ]
+      }
+    ],
+    "links": {
+      "first": "http://127.0.0.1:8768/api/admin/order-history?page=1",
+      "last": "http://127.0.0.1:8768/api/admin/order-history?page=1",
+      "prev": null,
+      "next": null
+    },
+    "meta": {
+      "current_page": 1,
+      "from": 1,
+      "last_page": 1,
+      "links": [
+        {
+          "url": null,
+          "label": "&laquo; Previous",
+          "active": false
+        },
+        {
+          "url": "http://127.0.0.1:8768/api/admin/order-history?page=1",
+          "label": "1",
+          "active": true
+        },
+        {
+          "url": null,
+          "label": "Next &raquo;",
+          "active": false
+        }
+      ],
+      "path": "http://127.0.0.1:8768/api/admin/order-history",
+      "per_page": 5,
+      "to": 1,
+      "total": 1
+    }
+  },
+  "pendingCount": 58,
+  "pendingFirst3": [
+    {
+      "id": 4330,
+      "serial": "1006264330",
+      "queue": "A0011",
+      "date": "01:46, 10-06-2026",
+      "total": 1
+    },
+    {
+      "id": 4331,
+      "serial": "1006264331",
+      "queue": "A0012",
+      "date": "01:47, 10-06-2026",
+      "total": 3.8
+    },
+    {
+      "id": 4332,
+      "serial": "1006264332",
+      "queue": "A0013",
+      "date": "01:49, 10-06-2026",
+      "total": 7
+    }
+  ],
+  "pendingLast3": [
+    {
+      "id": 4544,
+      "serial": "1206264544",
+      "queue": "A0013",
+      "date": "02:59, 12-06-2026",
+      "total": 23
+    },
+    {
+      "id": 4545,
+      "serial": "1206264545",
+      "queue": "A0014",
+      "date": "02:59, 12-06-2026",
+      "total": 1.5
+    },
+    {
+      "id": 4547,
+      "serial": "1206264547",
+      "queue": "A0015",
+      "date": "03:00, 12-06-2026",
+      "total": 3.8
+    }
+  ]
+}

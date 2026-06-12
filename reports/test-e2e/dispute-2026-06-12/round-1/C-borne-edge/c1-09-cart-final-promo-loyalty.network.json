@@ -1,0 +1,20 @@
+[
+ {
+  "ts": 1781224657708,
+  "status": 401,
+  "method": "POST",
+  "url": "http://127.0.0.1:8768/api/frontend/kiosk-event"
+ },
+ {
+  "ts": 1781224657767,
+  "status": 401,
+  "method": "GET",
+  "url": "http://127.0.0.1:8768/api/frontend/menu"
+ },
+ {
+  "ts": 1781224658080,
+  "status": 401,
+  "method": "GET",
+  "url": "http://127.0.0.1:8768/api/login"
+ }
+]

@@ -1,0 +1,14 @@
+[00:40:54] login(bm.t2admin@lecayenne.fr) → /admin/dashboard
+[00:41:00] 4329 avant: paiement=["Payé","Espèces","Payé","Payé","Payé"]
+[00:41:00] refund btn present=1
+[00:41:01] modal: total="3,80 €" méthode="Espèces" warning="⚠️ Cette action génère une commande miroir NF525 et un ticket de remboursement. L'opération est irréversible."
+[00:41:01] confirm disabled avant raison: true
+[00:41:01] confirm disabled raison 4 chars: true
+[00:41:02] API POST 200 /api/admin/pos-order/4329/refund-with-counter-entry :: {"success":true,"mode":"pre_z","data":{"id":4329,"order_serial_no":"1006264329","queue_number":"A0010","token":null,"receipt_print_count":0,"parent_order_id":null,"parent_order_serial_no":null,"subtotal":3.8,"discount":0,"total_tax":0.35,"total":3.8,"delivery_charge":0,"subtotal_currency_price":"3,80 €","subtotal_without_tax_currency_price":"3,45 €","discount_currency_price":"0,00 €","delivery_cha
+[00:41:06] après confirm: marqueurs=["Remboursé","Remboursé"]
+[00:41:17] login(bm.t2admin@lecayenne.fr) → /admin/dashboard
+[00:41:23] 4329 rechargé: badges=["Remboursé","Remboursé","Payé","Payé"]
+[00:41:23] montants négatifs père: []
+[00:41:23] liens show présents: []
+[00:41:23] miroir via API: 4329
+[00:41:29] cash-overview extrait: Bonjour | BM T2 Admin | BM T2 Admin | bm.t2admin@lecayenne.fr | +33600000099 | 0,00 € | Modifier Le Profil | Changer Le Mot De Passe | Déconnexion | Tableau De Bord | POS | Ingrédients | Commandes Caisse | Historique | Encaissement | Vue Caisse Unifiée | Caisse Livreur | CAISSE ET COMMANDES | Écran Cuisine | Suivi Client | COMMUNICATIONS | Notifications Push | Messages | UTILISATEURS | Employés | Chefs | COMPTES | Transactions | RAPPORTS | Rapport Des Ventes | Vue Caisse Unifiée | DU | AU | SOURCE | Toutes les sources | Caisse | Borne | Livreur | MODE DE PAIEMENT | Tous les modes | Espèces | Carte | Mobile | Ticket-restaurant | Rechercher | Effacer | GRAND TOTAL | 29,80 € | 3 tx | CAISSE | 25,00 € | 1 tx | BORNE | 4,80 € | 2 tx | LIVREUR | 0,00 € | 0 tx | Réconciliation caisse | Caisse ouverte à:02:39 | Fond de caisse:50,00 € | Espèces encaissées (session en cours):-3,80 € | Espèces attendues au tiroir:46,20 € | Pour calculer l'écart, saisir le comptage physique du tiroir (à venir). | ⚠️ | Encaissements espèces sans session caisse | 1 encaissement(s) espèces sans session caisse — montant non rattaché à un fond de caisse (à régulariser) | Commandes concernées:1 | Montant non rattach

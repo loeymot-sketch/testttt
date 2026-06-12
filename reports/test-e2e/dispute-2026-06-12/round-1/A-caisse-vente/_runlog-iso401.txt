@@ -1,0 +1,20 @@
+--- V1 cash sans remise
+POS-POST: [33m201[39m | auth…FW25f043de | body: {"data":{"id":4552,"order_serial_no":"1206264552","queue_number":"A0016","token":"1","receipt_print_count":0,"parent_order_id":null,"parent_order_serial_no":null,"subtotal":1.5,"discount":0,"total_tax":0.14,"total":1.5,"delivery_charge":0,"subtotal_currency_price":"1,50\u00a0\u20ac","subtotal_withou
+--- V2 cash + remise
+POS-POST: [33m401[39m | auth…FW25f043de | body: {"status":false,"message":"Order quote intent mismatch."}
+--- V3 card sans remise
+NET>=400: ["[01:09:02] HTTP 401 POST http://127.0.0.1:8768/api/admin/pos","[01:09:02] HTTP 401 GET http://127.0.0.1:8768/api/admin/setting/company","[01:09:02] HTTP 401 GET http://127.0.0.1:8768/api/admin/payment-terminals?status=1&per_page=50","[01:09:02] HTTP 401 GET http://127.0.0.1:8768/api/admin/pos-category?paginate=0&order_column=sort&order_type=asc&status=5&surface=pos","[01:09:02] HTTP 401 GET http://127.0.0.1:8768/api/admin/pos/counter-collect/pending","[01:09:02] HTTP 401 GET http://127.0.0.1:8768/api/admin/default-access","[01:09:02] HTTP 401 GET http://127.0.0.1:8768/api/admin/users?order_column=id&order_type=asc&status=5&role_id=2","[01:09:02] HTTP 401 GET http://127.0.0.1:8768/api/admin/dining-table?order_column=id&order_type=desc&status=5","[01:09:02] HTTP 401 GET http://127.0.0.1:8768/api/admin/setting/company","[01:09:02] HTTP 401 GET http://127.0.0.1:8768/api/admin/pos/counter-collect/pending","[01:09:04] HTTP 401 GET http://127.0.0.1:8768/api/admin/users/address/2","[01:09:07] HTTP 401 GET http://127.0.0.1:8768/api/admin/pos/counter-collect/pending","[01:09:07] HTTP 401 POST http://127.0.0.1:8768/api/auth/logout"]
+node:internal/process/esm_loader:40
+      internalBinding('errors').triggerUncaughtException(
+                                ^
+
+locator.click: Timeout 30000ms exceeded.
+Call log:
+[2m  - waiting for locator('.pos-v5-tile:has-text("Coca-Cola 33cl")').first()[22m
+
+    at addSimple [90m(/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/.claude/worktrees/release-v1-2026-06-10/[39mtests/e2e/_d1-A-lib.mjs:86:72[90m)[39m
+    at async [90mfile:///Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/.claude/worktrees/release-v1-2026-06-10/[39mtests/e2e/_d1-A-33-isolate-401.mjs:62:3 {
+  name: [32m'TimeoutError'[39m
+}
+
+Node.js v18.20.7

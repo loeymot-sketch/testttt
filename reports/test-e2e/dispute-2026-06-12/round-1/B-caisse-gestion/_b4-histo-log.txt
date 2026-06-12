@@ -1,0 +1,19 @@
+[00:55:01] login(bm.t2admin@lecayenne.fr) → /admin/dashboard
+[00:55:07] pagination clic="2"
+[00:55:09] pagination: 1re ligne page1="1206264537" → page2="F1R8451096" (changé=true)
+[00:55:13] recherche n° 1006264329: lignes=1 remboursé=true montants=["0,00 €","3,80 €"]
+[00:55:13] chips filtre actif: ["N° Commande : 1006264329"]
+[00:55:15] panneau filtre ouvert=true
+[00:55:15] datepicker présent=1
+[00:55:16] presets datepicker: ["Aujourd’huiCe moisMois dernierCette année","Aujourd’hui","Ce mois","Mois dernier","Cette année"]
+[00:55:17] datepicker valeur="10/06/2026  -  12/06/2026"
+[00:55:20] après plage 10→12/06: Affichage de 1 à 10 sur 177 entrées
+[00:55:20] bouton Exporter présent=1
+[00:55:21] items dropdown export: ["Modifier le profil","Changer le mot de passe","Déconnexion","XLS"]
+[00:55:26] EXPORT OK: Historique.xlsx 12202 octets
+[00:55:34] widget Z: "Dernier Rapport Z\n\nDernier rapport Z #20\n\nFermée\n\n10/06/2026 07:06:45\n\nVoir les clôtures Z"
+[00:55:36] "Voir les clôtures Z" → /admin/transactions
+[00:55:36] destination contient "Z"? rapport-z listé=false — page=Historique,Transactions,Transactions,Transactions
+[00:55:42] bouton eod-pdf présent=1
+[00:55:47] EOD-PDF téléchargé: cloture_jour_2026-06-12.pdf 1281958 octets
+[00:55:47] réseau export/z: ["GET 200 /api/admin/fiscal/z-report ct=application/json","GET 200 /api/admin/order-history/export?paginate=0&page=1&per_page=10&order_column=id&order_by=desc&from_date=2026-06-10T00:55:00.000Z&to_date=2026- ct=application/vnd.openxmlformats-officedocument.spreadsheetml.sheet","GET 200 /api/admin/fiscal/z-report ct=application/json","GET 200 /api/admin/fiscal/z-report ct=application/json","POST 200 /api/admin/dashboard/eod-pdf?date=2026-06-12 ct=application/pdf"]

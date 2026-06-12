@@ -1,0 +1,95 @@
+Bonjour
+BM T2 Admin
+BM T2 Admin
+
+bm.t2admin@lecayenne.fr
+
++33600000099
+
+0,00 €
+Modifier Le Profil
+Changer Le Mot De Passe
+Déconnexion
+Tableau De Bord
+POS
+Ingrédients
+Commandes Caisse
+Historique
+Encaissement
+Vue Caisse Unifiée
+Caisse Livreur
+CAISSE ET COMMANDES
+Écran Cuisine
+Suivi Client
+COMMUNICATIONS
+Notifications Push
+Messages
+UTILISATEURS
+Employés
+Chefs
+COMPTES
+Transactions
+RAPPORTS
+Rapport Des Ventes
+Rapport Caisses Quotidien
+DU
+AU
+Rechercher
+Effacer
+vendredi 12 juin 2026
+Sessions: 2
+Transactions: 3
+Total ouverture: 150,00 €
+Total clôture: 105,30 €
+Session	Filiale	Caissier	Ouverte le	Fermée le	Fond de caisse	Fonds final	Écart	Transactions	Statut
+#22	1	BM T2 Admin	02:39	—	50,00 €	—	—	1	Ouverte
+#21	1	BM T2 Admin	02:35	02:35	100,00 €	105,30 €	0,50 €	2	Réconciliée
+mercredi 10 juin 2026
+Sessions: 8
+Transactions: 17
+Total ouverture: 420,00 €
+Total clôture: 324,00 €
+Session	Filiale	Caissier	Ouverte le	Fermée le	Fond de caisse	Fonds final	Écart	Transactions	Statut
+#20	1	Caissier Le Cayenne	22:46	—	50,00 €	—	—	11	Ouverte
+#19	1	Admin Le Cayenne	19:53	—	70,00 €	—	—	3	Ouverte
+#18	1	Admin Le Cayenne	09:10	09:12	50,00 €	62,00 €	2,00 €	1	Réconciliée
+#17	1	Admin Le Cayenne	09:05	09:07	50,00 €	62,00 €	2,00 €	1	Réconciliée
+#16	1	Admin Le Cayenne	09:02	09:05	50,00 €	50,00 €	—	1	Fermée
+#15	1	Admin Le Cayenne	08:58	09:01	50,00 €	50,00 €	—	0	Fermée
+#14	1	Admin Le Cayenne	08:45	08:58	50,00 €	50,00 €	—	0	Fermée
+#13	1	Admin Le Cayenne	08:40	08:45	50,00 €	50,00 €	—	0	Fermée
+mardi 9 juin 2026
+Sessions: 1
+Transactions: 32
+Total ouverture: 50,00 €
+Total clôture: 50,00 €
+Session	Filiale	Caissier	Ouverte le	Fermée le	Fond de caisse	Fonds final	Écart	Transactions	Statut
+#12	1	Admin Le Cayenne	13:14	08:40	50,00 €	50,00 €	—	32	Fermée
+lundi 8 juin 2026
+Sessions: 1
+Transactions: 2
+Total ouverture: 50,00 €
+Total clôture: 50,00 €
+Session	Filiale	Caissier	Ouverte le	Fermée le	Fond de caisse	Fonds final	Écart	Transactions	Statut
+#11	1	Caissier Le Cayenne	07:16	08:40	50,00 €	50,00 €	—	2	Fermée
+dimanche 7 juin 2026
+Sessions: 2
+Transactions: 1
+Total ouverture: 100,00 €
+Total clôture: 54,00 €
+Session	Filiale	Caissier	Ouverte le	Fermée le	Fond de caisse	Fonds final	Écart	Transactions	Statut
+#9	1	Admin Le Cayenne	21:28	21:33	50,00 €	54,00 €	0,00 €	1	Réconciliée
+#8	1	Caissier Le Cayenne	18:38	18:38	50,00 €	—	—	0	Fermée
+jeudi 28 mai 2026
+Sessions: 7
+Transactions: 170
+Total ouverture: 450,00 €
+Total clôture: 358,00 €
+Session	Filiale	Caissier	Ouverte le	Fermée le	Fond de caisse	Fonds final	Écart	Transactions	Statut
+#7	1	Admin Le Cayenne	18:27	18:38	50,00 €	—	—	28	Fermée
+#6	1	Admin Le Cayenne	14:35	14:35	100,00 €	110,00 €	10,00 €	0	Réconciliée
+#5	1	Admin Le Cayenne	14:27	14:34	50,00 €	50,00 €	0,00 €	0	Réconciliée
+#4	1	Caissier Le Cayenne	14:27	18:38	50,00 €	—	—	142	Fermée
+#3	1	Admin Le Cayenne	12:54	12:54	100,00 €	95,00 €	-5,00 €	0	Réconciliée
+#2	1	Admin Le Cayenne	12:53	12:53	50,00 €	53,00 €	3,00 €	0	Réconciliée
+#1	1	Admin Le Cayenne	12:40	12:52	50,00 €	50,00 €	0,00 €	0	Réconciliée

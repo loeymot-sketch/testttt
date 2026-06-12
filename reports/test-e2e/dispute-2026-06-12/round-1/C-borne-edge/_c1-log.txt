@@ -1,0 +1,24 @@
+[00:32:56] kiosk token: true
+[00:33:01] startFlow → /kiosk/categories?cat=1
+[00:33:12] add Tacos(26): {"ok":false,"reason":"wizard-stuck"}
+[00:33:21] add Galette Normale(23): {"ok":true,"before":0,"after":1}
+[00:33:24] add Coca(52): {"ok":true,"before":1,"after":2}
+[00:33:24] cart state: {"n":2,"items":[{"name":"Galette Normale","qty":1,"total":6.5},{"name":"Coca-Cola 33cl","qty":1,"total":1.5}]}
+[00:33:26] cart lines: ["Galette Normale","Coca-Cola 33cl"]
+[00:34:26] totals initial: {"subtotal":"8,00 €","loyalty":null,"promo":null,"total":"8,00 €"}
+[00:34:26] idx tacos=-1 galette=0 coca=1
+[00:35:27] totals après qty+: {"subtotal":"9,50 €","loyalty":null,"promo":null,"total":"9,50 €"}
+[00:35:29] cart après suppr: {"n":1,"items":[{"name":"Coca-Cola 33cl","qty":2,"total":3}]}
+[00:36:29] totals après suppr: {"subtotal":"3,00 €","loyalty":null,"promo":null,"total":"3,00 €"}
+[00:37:01] totals après promo: {"subtotal":"3,00 €","loyalty":null,"promo":"-3,00 €","total":"0,00 €"}
+[00:37:37] après loyalty → /kiosk/loyalty
+[00:38:39] TOTALS PANIER FINAL: {"subtotal":"3,00 €","loyalty":null,"promo":null,"total":"3,00 €"}
+[00:38:41] après checkout → /kiosk/upsell
+[00:38:41] upsell totals visibles: []
+[00:38:45] avant payment → /kiosk/payment
+[00:38:46] PAYMENT total affiché: TOTAL À RÉGLER : | 3,00 €
+[00:38:46] PAYMENT lignes montants: ["TOTAL À RÉGLER :"]
+[00:38:50] après confirm → /kiosk/cash-instruction?number=A0008&total=3&timeout=45
+[00:38:50] CASH-INSTRUCTION: numero="#A0008" montant="3,00 €"
+[00:38:50] ORDERS POST: [{"ts":1781224726271,"status":201,"id":4533,"queue":"A0008","total":3,"discount":0,"subtotal":3}]
+[00:38:50] C1 done

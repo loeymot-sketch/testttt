@@ -1,0 +1,8 @@
+WARNING /admin/pos :: WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: WebSocket is closed before the connection is established.
+WARNING /admin/cash-overview :: WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: WebSocket is closed before the connection is established.
+ERROR /login :: Failed to load resource: the server responded with a status of 401 (Unauthorized)
+PAGEERROR /login :: AxiosError: Request failed with status code 401
+ERROR /login :: Failed to load resource: the server responded with a status of 401 (Unauthorized)
+PAGEERROR /login :: AxiosError: Request failed with status code 401
+ERROR /login :: Failed to load resource: the server responded with a status of 401 (Unauthorized)
+WARNING /admin/cash-overview :: WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: WebSocket is closed before the connection is established.

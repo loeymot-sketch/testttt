@@ -1,0 +1,15 @@
+[00:59:16] c2-o1 add item 26: {"ok":true,"before":0,"after":1}
+[00:59:19] c2-o1 lignes=["Tacos"] (tacos idx 0 → qty2)
+[00:59:21] c2-o1 cart totals: {"subtotal":"23,00 €","loyalty":null,"promo":null,"total":"23,00 €"}
+[00:59:31] c2-o1 RESULT: ui=#A0013/23,00 € payment=TOTAL À RÉGLER : 23,00 € POST={"ts":1781225967714,"status":201,"id":4544,"queue":"A0013","total":23,"discount":0,"subtotal":23}
+[00:59:34] c2-o1 après CTA → /kiosk/idle
+[00:59:43] c2-o2 add item 53: {"ok":true,"before":0,"after":1}
+[00:59:47] c2-o2 cart totals: {"subtotal":"1,50 €","loyalty":null,"promo":null,"total":"1,50 €"}
+[00:59:56] c2-o2 RESULT: ui=#A0014/1,50 € payment=TOTAL À RÉGLER : 1,50 € POST={"ts":1781225992082,"status":201,"id":4545,"queue":"A0014","total":1.5,"discount":0,"subtotal":1.5}
+[00:59:58] c2-o2 après CTA → /kiosk/idle
+[01:00:08] c2-o3 add item 50: {"ok":true,"before":0,"after":1}
+[01:00:12] c2-o3 cart totals: {"subtotal":"3,80 €","loyalty":null,"promo":null,"total":"3,80 €"}
+[01:00:23] c2-o3 RESULT: ui=#A0015/3,80 € payment=TOTAL À RÉGLER : 3,80 € POST={"ts":1781226020010,"status":201,"id":4547,"queue":"A0015","total":3.8,"discount":0,"subtotal":3.8}
+[01:00:25] c2-o3 après CTA → /kiosk/idle
+[01:00:25] SEQUENCE: [{"q":"#A0013","id":4544,"postQ":"A0013"},{"q":"#A0014","id":4545,"postQ":"A0014"},{"q":"#A0015","id":4547,"postQ":"A0015"}]
+[01:00:25] C2 done

@@ -1,0 +1,28 @@
+{
+  "status": 200,
+  "data": {
+    "data": {
+      "branch_id": 1,
+      "generated_at": "2026-06-12T02:47:17+02:00",
+      "period": {
+        "from": "2026-06-10T07:06:45+02:00",
+        "to": "2026-06-12T02:47:17+02:00"
+      },
+      "totals": {
+        "total_ttc": 144.2,
+        "total_ht": 131.12,
+        "total_tva": 13.08,
+        "total_by_method": {
+          "1": 135.7,
+          "5": 8.5
+        },
+        "total_by_tax_rate": {
+          "10": 13.08
+        },
+        "order_count": 17,
+        "cancel_count": 0,
+        "refund_count": 1
+      }
+    }
+  }
+}

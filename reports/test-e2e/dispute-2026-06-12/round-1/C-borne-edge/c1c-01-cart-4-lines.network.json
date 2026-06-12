@@ -1,0 +1,14 @@
+[
+ {
+  "ts": 1781225232471,
+  "status": 429,
+  "method": "POST",
+  "url": "http://127.0.0.1:8768/api/frontend/kiosk-event"
+ },
+ {
+  "ts": 1781225235844,
+  "status": 429,
+  "method": "POST",
+  "url": "http://127.0.0.1:8768/api/frontend/kiosk-event"
+ }
+]

@@ -1,0 +1,79 @@
+Bonjour
+BM T2 Admin
+BM T2 Admin
+
+bm.t2admin@lecayenne.fr
+
++33600000099
+
+0,00 €
+Modifier Le Profil
+Changer Le Mot De Passe
+Déconnexion
+Tableau De Bord
+POS
+Ingrédients
+Commandes Caisse
+Historique
+Encaissement
+Vue Caisse Unifiée
+Caisse Livreur
+CAISSE ET COMMANDES
+Écran Cuisine
+Suivi Client
+COMMUNICATIONS
+Notifications Push
+Messages
+UTILISATEURS
+Employés
+Chefs
+COMPTES
+Transactions
+RAPPORTS
+Rapport Des Ventes
+Vue Caisse Unifiée
+DU
+AU
+SOURCE
+Toutes les sources
+Caisse
+Borne
+Livreur
+MODE DE PAIEMENT
+Tous les modes
+Espèces
+Carte
+Mobile
+Ticket-restaurant
+Rechercher
+Effacer
+GRAND TOTAL
+29,80 €
+3 tx
+CAISSE
+25,00 €
+1 tx
+BORNE
+4,80 €
+2 tx
+LIVREUR
+0,00 €
+0 tx
+Réconciliation caisse
+Caisse ouverte à:02:39
+Fond de caisse:50,00 €
+Espèces encaissées (session en cours):-3,80 €
+Espèces attendues au tiroir:46,20 €
+Pour calculer l'écart, saisir le comptage physique du tiroir (à venir).
+⚠️
+Encaissements espèces sans session caisse
+1 encaissement(s) espèces sans session caisse — montant non rattaché à un fond de caisse (à régulariser)
+Commandes concernées:1
+Montant non rattaché:25,00 €
+À régulariser : ouvrir une session caisse avant d'encaisser, ou rattacher ces montants au fond de caisse lors de la clôture.
+Répartition par mode
+Espèces3 · 29,80 €
+Heure	N° commande	Source	Mode de paiement	Livreur	Montant
+02:38	#4515	Caisse	Espèces	—	25,00 €
+02:35	N°A0010	Borne	Espèces	—	3,80 €
+02:35	N°A0009	Borne	Espèces	—	1,00 €

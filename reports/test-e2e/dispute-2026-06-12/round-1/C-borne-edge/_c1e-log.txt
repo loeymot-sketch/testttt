@@ -1,0 +1,9 @@
+[01:10:53] AVANT: user44 points = loyalty_points
+165 | kiosk_promos uses = uses_count
+0
+[01:11:11] add Tacos(26): ok=true
+[01:11:20] add Galette(23): ok=true
+[01:11:23] add Coca(52): ok=true
+[01:11:26] lignes=["Tacos","Galette Normale","Coca-Cola 33cl"] (Tacos→2)
+[01:11:28] T0: {"subtotal":"31,00 €","loyalty":null,"promo":null,"total":"31,00 €"}
+[01:11:36] re-boot token → cart: {"subtotal":null,"loyalty":null,"promo":null,"total":null}

@@ -1,0 +1,73 @@
+Bonjour
+BM T2 Admin
+BM T2 Admin
+
+bm.t2admin@lecayenne.fr
+
++33600000099
+
+0,00 €
+Modifier Le Profil
+Changer Le Mot De Passe
+Déconnexion
+Tableau De Bord
+POS
+Ingrédients
+Commandes Caisse
+Historique
+Encaissement
+Vue Caisse Unifiée
+Caisse Livreur
+CAISSE ET COMMANDES
+Écran Cuisine
+Suivi Client
+COMMUNICATIONS
+Notifications Push
+Messages
+UTILISATEURS
+Employés
+Chefs
+COMPTES
+Transactions
+RAPPORTS
+Rapport Des Ventes
+Tableau De Bord
+Transactions
+Transactions
+10
+10
+25
+50
+100
+500
+1000
+Filtrer
+Exporter
+Imprimer
+XLS
+ID DE TRANSACTION
+N° DE COMMANDE
+MODE DE PAIEMENT
+DATE
+Rechercher
+Effacer
+ID DE TRANSACTION	DATE	MODE DE PAIEMENT	N° DE COMMANDE	MONTANT
+COUNTER-4531-20260612024459	02:44, 12-06-2026	Espèces	1206264531	+ 10,00 €
+TXN-fkDxb6PZtOwj	02:41, 12-06-2026	Carte bancaire	1006264329	- 3,80 €
+TXN-GXdX82uD6hf7	02:38, 12-06-2026	Carte bancaire	F2-RDM-4	- 25,00 €
+F2-PAY-4515	02:38, 12-06-2026	Espèces	F2-RDM-4	+ 25,00 €
+COUNTER-4329-20260612023534	02:35, 12-06-2026	Espèces	1006264329	+ 3,80 €
+COUNTER-4328-20260612023528	02:35, 12-06-2026	Espèces	1006264328	+ 1,00 €
+COUNTER-4327-20260610070630	07:06, 10-06-2026	Espèces	1006264327	+ 3,80 €
+COUNTER-4326-20260610070623	07:06, 10-06-2026	Espèces	1006264326	+ 1,00 €
+COUNTER-4325-20260610070617	07:06, 10-06-2026	Espèces	1006264325	+ 1,00 €
+COUNTER-4324-20260610070611	07:06, 10-06-2026	Espèces	1006264324	+ 1,00 €
+
+Affichage de 1 à 10 sur 750 entrées
+
+Précédent
+1
+2
+...
+75
+Suivant

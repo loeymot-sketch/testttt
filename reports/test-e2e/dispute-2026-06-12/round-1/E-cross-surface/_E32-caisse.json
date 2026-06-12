@@ -1,0 +1,304 @@
+{
+  "ORDER_ID": 4543,
+  "QUEUE": "A0012",
+  "cashBefore": [
+    "5,80 €",
+    "Espèces",
+    "Carte",
+    "Mobile",
+    "Ticket-restaurant",
+    "GRAND TOTAL",
+    "39,80 €",
+    "25,00 €",
+    "14,80 €",
+    "0,00 €",
+    "Fond de caisse:50,00 €",
+    "Espèces encaissées (session en cours):-3,80 €",
+    "Espèces attendues au tiroir:46,20 €",
+    "Encaissements espèces sans session caisse",
+    "1 encaissement(s) espèces sans session caisse — montant non rattaché à un fond de caisse (à régulariser)",
+    "Montant non rattaché:25,00 €",
+    "À régulariser : ouvrir une session caisse avant d'encaisser, ou rattacher ces montants au fond de caisse lors de la clôture.",
+    "Espèces4 · 39,80 €",
+    "02:44\tN°A0006\tBorne\tEspèces\t—\t10,00 €",
+    "02:38\t#4515\tCaisse\tEspèces\t—\t25,00 €",
+    "02:35\tN°A0010\tBorne\tEspèces\t—\t3,80 €",
+    "02:35\tN°A0009\tBorne\tEspèces\t—\t1,00 €"
+  ],
+  "cardInfo": {
+    "count": 58,
+    "mine": {
+      "queue": "N°A0012",
+      "origin": "Borne",
+      "customer": "Client borne",
+      "items": [
+        "1× Glace"
+      ],
+      "amount": "3,80 €"
+    },
+    "all": [
+      {
+        "queue": "N°A0011",
+        "origin": "Borne",
+        "customer": "Client borne",
+        "items": [
+          "1× Eau Plate 50cl"
+        ],
+        "amount": "1,00 €"
+      },
+      {
+        "queue": "N°A0012",
+        "origin": "Borne",
+        "customer": "Client borne",
+        "items": [
+          "1× Glace"
+        ],
+        "amount": "3,80 €"
+      },
+      {
+        "queue": "N°A0013",
+        "origin": "Borne",
+        "customer": "Client borne",
+        "items": [
+          "1× Sandwich Cayenne"
+        ],
+        "amount": "7,00 €"
+      },
+      {
+        "queue": "N°A0014",
+        "origin": "Borne",
+        "customer": "Client borne",
+        "items": [
+          "1× Tacos"
+        ],
+        "amount": "8,50 €"
+      },
+      {
+        "queue": "N°A0015",
+        "origin": "Borne",
+        "customer": "Client borne",
+        "items": [
+          "1× Chicken Burger"
+        ],
+        "amount": "6,90 €"
+      },
+      {
+        "queue": "N°A0016",
+        "origin": "Borne",
+        "customer": "Client borne",
+        "items": [
+          "1× Bowl Frites Poulet mariné"
+        ],
+        "amount": "8,90 €"
+      },
+      {
+        "queue": "N°A0017",
+        "origin": "Borne",
+        "customer": "Client borne",
+        "items": [
+          "1× Coca-Cola 33cl",
+          "1× Tarte Daim"
+        ],
+        "amount": "5,30 €"
+      },
+      {
+        "queue": "N°A0018",
+        "origin": "Borne",
+        "customer": "Client borne",
+        "items": [
+          "1× Tacos",
+          "1× Coca-Cola Zero 33cl"
+        ],
+        "amount": "10,00 €"
+      },
+      {
+        "queue": "N°A0019",
+        "origin": "Borne",
+        "customer": "Client borne",
+        "items": [
+          "1× Fanta Orange 33cl",
+          "1× Capri-Sun"
+        ],
+        "amount": "3,00 €"
+      },
+      {
+        "queue": "N°A0020",
+        "origin": "Borne",
+        "customer": "Client borne",
+        "items": [
+          "1× Sandwich Cayenne",
+          "1× Sprite 33cl"
+        ],
+        "amount": "8,50 €"
+      }
+    ]
+  },
+  "showInfo": {
+    "montants": [
+      "5,80 €",
+      "3,80 €",
+      "1,00 €",
+      "4,80 €",
+      "0,00 €",
+      "4,80 €"
+    ],
+    "statut": [
+      "En Préparation",
+      "En Préparation",
+      "Accepter",
+      "En Préparation",
+      "Livré"
+    ],
+    "paiement": [
+      "Payé",
+      "Type de paiement: Espèces",
+      "Payé",
+      "Payé",
+      "Non Payé"
+    ]
+  },
+  "histInfo": {
+    "head": [
+      "N° COMMANDE",
+      "ORIGINE",
+      "N° FILE",
+      "CLIENT",
+      "MONTANT",
+      "PAIEMENT",
+      "N° FISCAL",
+      "DATE",
+      "STATUT",
+      "ACTION"
+    ],
+    "mine": [
+      "1206264543",
+      "Caisse",
+      "N°A0012",
+      "Client passage",
+      "4,80 €",
+      "Payé",
+      "2173",
+      "02:58, 12-06-2026",
+      "En préparation",
+      ""
+    ],
+    "first3": [
+      [
+        "1206264547",
+        "Borne",
+        "N°A0015",
+        "Admin Le Cayenne",
+        "3,80 €",
+        "À encaisser",
+        "—",
+        "03:00, 12-06-2026",
+        "Accepter",
+        ""
+      ],
+      [
+        "1206264545",
+        "Borne",
+        "N°A0014",
+        "Admin Le Cayenne",
+        "1,50 €",
+        "À encaisser",
+        "—",
+        "02:59, 12-06-2026",
+        "Accepter",
+        ""
+      ],
+      [
+        "1206264544",
+        "Borne",
+        "N°A0013",
+        "Admin Le Cayenne",
+        "23,00 €",
+        "À encaisser",
+        "—",
+        "02:59, 12-06-2026",
+        "Accepter",
+        ""
+      ]
+    ]
+  },
+  "trackInfo": {
+    "cols": [
+      "Filiale Le Cayenne (Principal)",
+      "Bonjour Admin Le Cayenne",
+      "Admin Le Cayenne",
+      "5,80 €",
+      "🔔 À ENCAISSER",
+      "🍳 EN PRÉPARATION",
+      "🛎️ PRÊTS À SERVIR",
+      "🛵 EN LIVRAISON",
+      "✅ LIVRÉS"
+    ],
+    "mine": [
+      "CAISSE LE CAYENNE Suivi commandes 20 actives 29 aujourd'hui 🧾 Toutes 🛒 Caisse 🖥️ Borne 🌐 En ligne Historique Écran client Retour caisse 🔔 À ENCAISSER Borne — paiement comptoir 10 N°A0015 🔔 🖥️ Admin Le Cayenne 1× Tarte Daim À ENCAISSER : 3,80 € Encaisser N°A0014 🔔 🖥️ Admin Le Cayenne 1× Coca",
+      "🔔 À ENCAISSER Borne — paiement comptoir 10 N°A0015 🔔 🖥️ Admin Le Cayenne 1× Tarte Daim À ENCAISSER : 3,80 € Encaisser N°A0014 🔔 🖥️ Admin Le Cayenne 1× Coca-Cola Zero 33cl À ENCAISSER : 1,50 € Encaisser N°A0013 🔔 🖥️ Admin Le Cayenne 2× Tacos À ENCAISSER : 23,00 € Encaisser N°A0011 🔔 🖥️ Admin"
+    ],
+    "bodyHas": true
+  },
+  "cashAfter": [
+    "5,80 €",
+    "Espèces",
+    "Carte",
+    "Mobile",
+    "Ticket-restaurant",
+    "GRAND TOTAL",
+    "39,80 €",
+    "25,00 €",
+    "14,80 €",
+    "0,00 €",
+    "Fond de caisse:50,00 €",
+    "Espèces encaissées (session en cours):-3,80 €",
+    "Espèces attendues au tiroir:46,20 €",
+    "Encaissements espèces sans session caisse",
+    "1 encaissement(s) espèces sans session caisse — montant non rattaché à un fond de caisse (à régulariser)",
+    "Montant non rattaché:25,00 €",
+    "À régulariser : ouvrir une session caisse avant d'encaisser, ou rattacher ces montants au fond de caisse lors de la clôture.",
+    "Espèces4 · 39,80 €",
+    "02:44\tN°A0006\tBorne\tEspèces\t—\t10,00 €",
+    "02:38\t#4515\tCaisse\tEspèces\t—\t25,00 €",
+    "02:35\tN°A0010\tBorne\tEspèces\t—\t3,80 €",
+    "02:35\tN°A0009\tBorne\tEspèces\t—\t1,00 €"
+  ],
+  "txInfo": {
+    "head": [
+      "ID DE TRANSACTION",
+      "DATE",
+      "MODE DE PAIEMENT",
+      "N° DE COMMANDE",
+      "MONTANT"
+    ],
+    "mine": null,
+    "first3": [
+      [
+        "COUNTER-4531-20260612024459",
+        "02:44, 12-06-2026",
+        "Espèces",
+        "1206264531",
+        "+ 10,00 €"
+      ],
+      [
+        "TXN-fkDxb6PZtOwj",
+        "02:41, 12-06-2026",
+        "Carte bancaire",
+        "1006264329",
+        "- 3,80 €"
+      ],
+      [
+        "TXN-GXdX82uD6hf7",
+        "02:38, 12-06-2026",
+        "Carte bancaire",
+        "F2-RDM-4",
+        "- 25,00 €"
+      ]
+    ],
+    "total": 10
+  },
+  "kdsInfo": {
+    "has": false,
+    "card": null
+  }
+}

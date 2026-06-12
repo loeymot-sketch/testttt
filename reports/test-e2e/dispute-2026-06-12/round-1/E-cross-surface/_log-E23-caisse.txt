@@ -1,0 +1,62 @@
+[00:47:48] login admin OK → /admin/dashboard
+[00:48:14] pas de modal ouverture → session déjà ouverte (ou non requise)
+[00:48:21] CASH-OVERVIEW BASELINE:
+  5,80 €
+  Espèces
+  Carte
+  Mobile
+  Ticket-restaurant
+  GRAND TOTAL
+  39,80 €
+  25,00 €
+  14,80 €
+  0,00 €
+  Fond de caisse:50,00 €
+  Espèces encaissées (session en cours):-3,80 €
+  Espèces attendues au tiroir:46,20 €
+  Encaissements espèces sans session caisse
+  1 encaissement(s) espèces sans session caisse — montant non rattaché à un fond de caisse (à régulariser)
+  Montant non rattaché:25,00 €
+  À régulariser : ouvrir une session caisse avant d'encaisser, ou rattacher ces montants au fond de caisse lors de la clôture.
+  Espèces4 · 39,80 €
+  02:44	N°A0006	Borne	Espèces	—	10,00 €
+  02:38	#4515	Caisse	Espèces	—	25,00 €
+  02:35	N°A0010	Borne	Espèces	—	3,80 €
+  02:35	N°A0009	Borne	Espèces	—	1,00 €
+[00:48:30] ENCAISSEMENT: 55 cartes, cible A0006 = null
+[00:48:30] ENCAISSEMENT autres cartes: [{"queue":"N°A0011","origin":"Borne","customer":"Client borne","items":["1× Eau Plate 50cl"],"amount":"1,00 €"},{"queue":"N°A0012","origin":"Borne","customer":"Client borne","items":["1× Glace"],"amount":"3,80 €"},{"queue":"N°A0013","origin":"Borne","customer":"Client borne","items":["1× Sandwich Cayenne"],"amount":"7,00 €"},{"queue":"N°A0014","origin":"Borne","customer":"Client borne","items":["1× Tacos"],"amount":"8,50 €"},{"queue":"N°A0015","origin":"Borne","customer":"Client borne","items":["1× Chicken Burger"],"amount":"6,90 €"},{"queue":"N°A0016","origin":"Borne","customer":"Client borne","items":["1× Bowl Frites Poulet mariné"],"amount":"8,90 €"},{"queue":"N°A0017","origin":"Borne","customer":"Client borne","items":["1× Coca-Cola 33cl","1× Tarte Daim"],"amount":"5,30 €"},{"queue":"N°A0018","origin":"Borne","customer":"Client borne","items":["1× Tacos","1× Coca-Cola Zero 33cl"],"amount":"10,00 €"},{"queue":"N°A0019","origin":"Borne","customer":"Client borne","items":["1× Fanta Orange 33cl","1× Capri-Sun"],"amount":"3,00 €"},{"queue":"N°A0020","origin":"Borne","customer":"Client borne","items":["1× Sandwich Cayenne","1× Sprite 33cl"],"amount":"8,50 €"}]
+[00:48:38] SHOW 4531: montants=["5,80 €","8,50 €","1,50 €","10,00 €","0,00 €","10,00 €"]
+[00:48:38] SHOW statut=["Accepter","Accepter","Accepter","En Préparation","Livré"]
+[00:48:38] SHOW paiement=["Payé","Type de paiement: Espèces","Payé","Payé","Non Payé"]
+[00:48:38] bouton receipt trouvé: "Imprimer La Facture" → clic
+[00:48:40] RECEIPT: []
+[00:48:49] HISTORIQUE head=["N° COMMANDE","ORIGINE","N° FILE","CLIENT","MONTANT","PAIEMENT","N° FISCAL","DATE","STATUT","ACTION"]
+[00:48:49] HISTORIQUE ligne A0006=["1206264531","Borne","N°A0006","Admin Le Cayenne","10,00 €","Payé","2172","02:35, 12-06-2026","Accepter",""]
+[00:48:58] TRACKER cols=["Filiale Le Cayenne (Principal)","Bonjour Admin Le Cayenne","Admin Le Cayenne","5,80 €","🔔 À ENCAISSER","🍳 EN PRÉPARATION","🛎️ PRÊTS À SERVIR","🛵 EN LIVRAISON","✅ LIVRÉS"] contient A0006=true
+[00:48:58] TRACKER carte=["CAISSE LE CAYENNE Suivi commandes 16 actives 24 aujourd'hui 🧾 Toutes 🛒 Caisse 🖥️ Borne 🌐 En ligne Historique Écran client Retour caisse 🔔 À ENCAISSER Borne — paiement comptoir 7 N°A0011 🔔 🖥️ Admin Le Cayenne 1× Galette Normale 2× Coca-Cola 33cl À ENCAISSER : 9,50 € Encaisser N°A0009 🔔 🖥️ Ad","🔔 À ENCAISSER Borne — paiement comptoir 7 N°A0011 🔔 🖥️ Admin Le Cayenne 1× Galette Normale 2× Coca-Cola 33cl À ENCAISSER : 9,50 € Encaisser N°A0009 🔔 🖥️ Admin Le Cayenne 1× Glace À ENCAISSER : 3,80 € Encaisser N°A0008 🔔 🖥️ Admin Le Cayenne 2× Coca-Cola 33cl À ENCAISSER : 3,00 € Encaisser N°A0"]
+[00:49:05] CASH-OVERVIEW APRÈS:
+  5,80 €
+  Espèces
+  Carte
+  Mobile
+  Ticket-restaurant
+  GRAND TOTAL
+  39,80 €
+  25,00 €
+  14,80 €
+  0,00 €
+  Fond de caisse:50,00 €
+  Espèces encaissées (session en cours):-3,80 €
+  Espèces attendues au tiroir:46,20 €
+  Encaissements espèces sans session caisse
+  1 encaissement(s) espèces sans session caisse — montant non rattaché à un fond de caisse (à régulariser)
+  Montant non rattaché:25,00 €
+  À régulariser : ouvrir une session caisse avant d'encaisser, ou rattacher ces montants au fond de caisse lors de la clôture.
+  Espèces4 · 39,80 €
+  02:44	N°A0006	Borne	Espèces	—	10,00 €
+  02:38	#4515	Caisse	Espèces	—	25,00 €
+  02:35	N°A0010	Borne	Espèces	—	3,80 €
+  02:35	N°A0009	Borne	Espèces	—	1,00 €
+[00:49:14] TRANSACTIONS head=["ID DE TRANSACTION","DATE","MODE DE PAIEMENT","N° DE COMMANDE","MONTANT"] rows=10
+[00:49:14] TRANSACTIONS ligne=["COUNTER-4531-20260612024459","02:44, 12-06-2026","Espèces","1206264531","+ 10,00 €"]
+[00:49:22] KDS contient A0006=false carte=null

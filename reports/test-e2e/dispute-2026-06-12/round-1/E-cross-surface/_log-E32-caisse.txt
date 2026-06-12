@@ -1,0 +1,62 @@
+[01:01:20] login admin OK → /admin/dashboard
+[01:01:27] pas de modal ouverture → session déjà ouverte (ou non requise)
+[01:01:44] CASH-OVERVIEW BASELINE:
+  5,80 €
+  Espèces
+  Carte
+  Mobile
+  Ticket-restaurant
+  GRAND TOTAL
+  39,80 €
+  25,00 €
+  14,80 €
+  0,00 €
+  Fond de caisse:50,00 €
+  Espèces encaissées (session en cours):-3,80 €
+  Espèces attendues au tiroir:46,20 €
+  Encaissements espèces sans session caisse
+  1 encaissement(s) espèces sans session caisse — montant non rattaché à un fond de caisse (à régulariser)
+  Montant non rattaché:25,00 €
+  À régulariser : ouvrir une session caisse avant d'encaisser, ou rattacher ces montants au fond de caisse lors de la clôture.
+  Espèces4 · 39,80 €
+  02:44	N°A0006	Borne	Espèces	—	10,00 €
+  02:38	#4515	Caisse	Espèces	—	25,00 €
+  02:35	N°A0010	Borne	Espèces	—	3,80 €
+  02:35	N°A0009	Borne	Espèces	—	1,00 €
+[01:01:52] ENCAISSEMENT: 58 cartes, cible A0012 = {"queue":"N°A0012","origin":"Borne","customer":"Client borne","items":["1× Glace"],"amount":"3,80 €"}
+[01:02:01] SHOW 4543: montants=["5,80 €","3,80 €","1,00 €","4,80 €","0,00 €","4,80 €"]
+[01:02:01] SHOW statut=["En Préparation","En Préparation","Accepter","En Préparation","Livré"]
+[01:02:01] SHOW paiement=["Payé","Type de paiement: Espèces","Payé","Payé","Non Payé"]
+[01:02:01] bouton receipt trouvé: "Imprimer La Facture" → clic
+[01:02:03] RECEIPT: []
+[01:02:12] HISTORIQUE head=["N° COMMANDE","ORIGINE","N° FILE","CLIENT","MONTANT","PAIEMENT","N° FISCAL","DATE","STATUT","ACTION"]
+[01:02:12] HISTORIQUE ligne A0012=["1206264543","Caisse","N°A0012","Client passage","4,80 €","Payé","2173","02:58, 12-06-2026","En préparation",""]
+[01:02:20] TRACKER cols=["Filiale Le Cayenne (Principal)","Bonjour Admin Le Cayenne","Admin Le Cayenne","5,80 €","🔔 À ENCAISSER","🍳 EN PRÉPARATION","🛎️ PRÊTS À SERVIR","🛵 EN LIVRAISON","✅ LIVRÉS"] contient A0012=true
+[01:02:20] TRACKER carte=["CAISSE LE CAYENNE Suivi commandes 20 actives 29 aujourd'hui 🧾 Toutes 🛒 Caisse 🖥️ Borne 🌐 En ligne Historique Écran client Retour caisse 🔔 À ENCAISSER Borne — paiement comptoir 10 N°A0015 🔔 🖥️ Admin Le Cayenne 1× Tarte Daim À ENCAISSER : 3,80 € Encaisser N°A0014 🔔 🖥️ Admin Le Cayenne 1× Coca","🔔 À ENCAISSER Borne — paiement comptoir 10 N°A0015 🔔 🖥️ Admin Le Cayenne 1× Tarte Daim À ENCAISSER : 3,80 € Encaisser N°A0014 🔔 🖥️ Admin Le Cayenne 1× Coca-Cola Zero 33cl À ENCAISSER : 1,50 € Encaisser N°A0013 🔔 🖥️ Admin Le Cayenne 2× Tacos À ENCAISSER : 23,00 € Encaisser N°A0011 🔔 🖥️ Admin"]
+[01:02:28] CASH-OVERVIEW APRÈS:
+  5,80 €
+  Espèces
+  Carte
+  Mobile
+  Ticket-restaurant
+  GRAND TOTAL
+  39,80 €
+  25,00 €
+  14,80 €
+  0,00 €
+  Fond de caisse:50,00 €
+  Espèces encaissées (session en cours):-3,80 €
+  Espèces attendues au tiroir:46,20 €
+  Encaissements espèces sans session caisse
+  1 encaissement(s) espèces sans session caisse — montant non rattaché à un fond de caisse (à régulariser)
+  Montant non rattaché:25,00 €
+  À régulariser : ouvrir une session caisse avant d'encaisser, ou rattacher ces montants au fond de caisse lors de la clôture.
+  Espèces4 · 39,80 €
+  02:44	N°A0006	Borne	Espèces	—	10,00 €
+  02:38	#4515	Caisse	Espèces	—	25,00 €
+  02:35	N°A0010	Borne	Espèces	—	3,80 €
+  02:35	N°A0009	Borne	Espèces	—	1,00 €
+[01:02:36] TRANSACTIONS head=["ID DE TRANSACTION","DATE","MODE DE PAIEMENT","N° DE COMMANDE","MONTANT"] rows=10
+[01:02:36] TRANSACTIONS ligne=null
+[01:02:36] TRANSACTIONS first3=[["COUNTER-4531-20260612024459","02:44, 12-06-2026","Espèces","1206264531","+ 10,00 €"],["TXN-fkDxb6PZtOwj","02:41, 12-06-2026","Carte bancaire","1006264329","- 3,80 €"],["TXN-GXdX82uD6hf7","02:38, 12-06-2026","Carte bancaire","F2-RDM-4","- 25,00 €"]]
+[01:02:45] KDS contient A0012=false carte=null

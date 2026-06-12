@@ -1,0 +1,78 @@
+{
+  "results": [
+    {
+      "tag": "c2-o1",
+      "queueUi": "#A0013",
+      "amountUi": "23,00 €",
+      "payTotal": "TOTAL À RÉGLER : 23,00 €",
+      "post": {
+        "ts": 1781225967714,
+        "status": 201,
+        "id": 4544,
+        "queue": "A0013",
+        "total": 23,
+        "discount": 0,
+        "subtotal": 23
+      }
+    },
+    {
+      "tag": "c2-o2",
+      "queueUi": "#A0014",
+      "amountUi": "1,50 €",
+      "payTotal": "TOTAL À RÉGLER : 1,50 €",
+      "post": {
+        "ts": 1781225992082,
+        "status": 201,
+        "id": 4545,
+        "queue": "A0014",
+        "total": 1.5,
+        "discount": 0,
+        "subtotal": 1.5
+      }
+    },
+    {
+      "tag": "c2-o3",
+      "queueUi": "#A0015",
+      "amountUi": "3,80 €",
+      "payTotal": "TOTAL À RÉGLER : 3,80 €",
+      "post": {
+        "ts": 1781226020010,
+        "status": 201,
+        "id": 4547,
+        "queue": "A0015",
+        "total": 3.8,
+        "discount": 0,
+        "subtotal": 3.8
+      }
+    }
+  ],
+  "orders": [
+    {
+      "ts": 1781225967714,
+      "status": 201,
+      "id": 4544,
+      "queue": "A0013",
+      "total": 23,
+      "discount": 0,
+      "subtotal": 23
+    },
+    {
+      "ts": 1781225992082,
+      "status": 201,
+      "id": 4545,
+      "queue": "A0014",
+      "total": 1.5,
+      "discount": 0,
+      "subtotal": 1.5
+    },
+    {
+      "ts": 1781226020010,
+      "status": 201,
+      "id": 4547,
+      "queue": "A0015",
+      "total": 3.8,
+      "discount": 0,
+      "subtotal": 3.8
+    }
+  ]
+}

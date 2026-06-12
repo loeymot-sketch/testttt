@@ -1,0 +1,20 @@
+baseline html={"contrast":"aa","pmr":"false","audio":"false","reducedMotion":"false","htmlClass":"","bodyClass":"","vars":{"text":"#1a1a1a","primary":"#f4501e","focusWidth":"4px","tapMin":""}}
+baseline CTA={"top":946,"height":91,"fontSize":"16px","bg":"rgb(244, 80, 30)","color":"rgb(255, 255, 255)"}
+drawer ouvert: true
+options présentes: ["kiosk-a11y-title","kiosk-a11y-close","kiosk-a11y-contrast-group","kiosk-a11y-contrast-aa","kiosk-a11y-contrast-aaa","kiosk-a11y-pmr-toggle","kiosk-a11y-audio-toggle","kiosk-a11y-audio-description-toggle","kiosk-a11y-reduced-motion-toggle","kiosk-a11y-reset","kiosk-a11y-done"]
+après AAA: html={"contrast":"aaa","pmr":"false","audio":"false","reducedMotion":"false","htmlClass":"","bodyClass":"","vars":{"text":"#000","primary":"#a00013","focusWidth":"6px","tapMin":""}}
+aria-checked AAA=true
+AAA effet idle: CTA={"top":949,"height":92,"fontSize":"16px","bg":"rgb(244, 80, 30)","color":"rgb(255, 255, 255)"} html={"contrast":"aaa","pmr":"false","audio":"false","reducedMotion":"false","htmlClass":"","bodyClass":"","vars":{"text":"#000","primary":"#a00013","focusWidth":"6px","tapMin":""}}
+PMR toggle aria-checked=true
+PMR effet idle: CTA={"top":954,"height":89,"fontSize":"19.2px","bg":"rgb(244, 80, 30)","color":"rgb(255, 255, 255)"} html={"contrast":"aaa","pmr":"true","audio":"false","reducedMotion":"false","htmlClass":"","bodyClass":"","vars":{"text":"#000","primary":"#a00013","focusWidth":"6px","tapMin":""}}
+PMR catalogue: html={"contrast":"aaa","pmr":"true","audio":"false","reducedMotion":"false","htmlClass":"","bodyClass":"","vars":{"text":"#000","primary":"#a00013","focusWidth":"6px","tapMin":""}}
+kiosk-a11y-audio-toggle aria-checked=true
+kiosk-a11y-audio-description-toggle aria-checked=true
+kiosk-a11y-reduced-motion-toggle aria-checked=true
+tous toggles ON: html={"contrast":"aaa","pmr":"true","audio":"true","reducedMotion":"false","htmlClass":"","bodyClass":"","vars":{"text":"#000","primary":"#a00013","focusWidth":"6px","tapMin":""}}
+reduced-motion promo: A="(pas de promo)" B="(pas de promo)" identique=true
+après RESET: html={"contrast":"aa","pmr":"false","audio":"false","reducedMotion":"false","htmlClass":"","bodyClass":"","vars":{"text":"#1a1a1a","primary":"#f4501e","focusWidth":"4px","tapMin":""}}
+aria après reset: {"aa":"true","aaa":"false","pmr":"false","audio":"false","audioDesc":"false","motion":"false"}
+final idle: CTA={"top":947,"height":89,"fontSize":"16px","bg":"rgb(244, 80, 30)","color":"rgb(255, 255, 255)"} html={"contrast":"aa","pmr":"false","audio":"false","reducedMotion":"false","htmlClass":"","bodyClass":"","vars":{"text":"#1a1a1a","primary":"#f4501e","focusWidth":"4px","tapMin":""}}
+focus initial drawer: "ks-a11y-drawer"
+Escape ferme: drawer visible=false

@@ -1,0 +1,14 @@
+[00:29:23] kiosk token: true
+[00:29:28] après order-type → /kiosk/categories?cat=1
+[00:29:40] wizard Tacos complété=false cart 0→0
+[00:29:44] Coca ajouté: cart 0→1
+[00:29:46] CART AVANT PROMO: {"names":["Coca-Cola 33cl"],"options":[],"lineTotals":["1,50 €"],"subtotal":"1,50 €","promoDiscount":null,"total":"1,50 €"}
+[00:30:18] PROMO-APPLIED bloc: "✓\nCode promo BORNEAUDIT5 appliqué (−1,50 €)\nRetirer le code"
+[00:30:18] CART APRES PROMO: {"names":["Coca-Cola 33cl"],"options":[],"lineTotals":["1,50 €"],"subtotal":"1,50 €","promoDiscount":"-1,50 €","total":"0,00 €"}
+[00:30:21] après checkout → /kiosk/upsell
+[00:30:25] upsell passé → /kiosk/payment
+[00:30:26] PAYMENT: {"counterTitle":"PAIEMENT À LA CAISSE","counterSub":"Veuillez payer à la caisse","counterTotal":"TOTAL À RÉGLER : 0,00 €","methodCards":0}
+[00:30:27] ORDER-POST 201 id=4518 queue=A0002 total=1.5
+[00:30:30] après confirm → /kiosk/cash-instruction?number=A0002&total=1.5&timeout=45
+[00:30:30] CASH-INSTRUCTION: {"title":"Rendez-vous en caisse","number":"#A0002","amount":"1,50 €"}
+[00:30:31] ORDER FINAL: {"id":4518,"queue":"A0002","total":1.5}

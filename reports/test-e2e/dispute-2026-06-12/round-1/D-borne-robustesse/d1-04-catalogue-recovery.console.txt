@@ -1,0 +1,18 @@
+[error] http://127.0.0.1:8768/kiosk/idle :: Failed to load resource: the server responded with a status of 401 (Unauthorized)
+[error] http://127.0.0.1:8768/kiosk/idle :: Failed to load resource: net::ERR_INTERNET_DISCONNECTED
+[error] http://127.0.0.1:8768/kiosk/idle :: ChunkLoadError: Loading chunk 28 failed.
+(error: http://127.0.0.1:8768/js/kiosk-errors.js)
+    at n.f.j (http://127.0.0.1:8768/js/manifest.js?id=4d0f2c40f7b1c5b8f2e1e3f49d76386e:1:2433)
+    at http://127.0.0.1:8768/js/manifest.js?id=4d0f2c40f7b1c5b8f2e1e3f49d76386e:1:821
+    at Array.reduce (<anonymous>)
+    at n.e (http://127.0.0.1:8768/js/manifest.js?id=4d0f2c40f7b1c5b8f2e1e3f49d76386e:1:800)
+  
+[pageerror] http://127.0.0.1:8768/kiosk/idle :: ChunkLoadError: Loading chunk 28 failed.
+(error: http://127.0.0.1:8768/js/kiosk-errors.js)
+[error] http://127.0.0.1:8768/kiosk/categories?cat=9 :: WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_INTERNET_DISCONNECTED
+[error] http://127.0.0.1:8768/kiosk/categories?cat=9 :: WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_INTERNET_DISCONNECTED
+[error] http://127.0.0.1:8768/kiosk/categories?cat=9 :: WebSocket connection to 'wss://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_INTERNET_DISCONNECTED
+[error] http://127.0.0.1:8768/kiosk/categories?cat=9 :: WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_INTERNET_DISCONNECTED
+[error] http://127.0.0.1:8768/kiosk/categories?cat=9 :: WebSocket connection to 'wss://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: Error in connection establishment: net::ERR_INTERNET_DISCONNECTED
+[error] http://127.0.0.1:8768/kiosk/categories?cat=9 :: Failed to load resource: net::ERR_INTERNET_DISCONNECTED
+[error] http://127.0.0.1:8768/kiosk/categories?cat=9 :: Failed to load resource: the server responded with a status of 401 (Unauthorized)

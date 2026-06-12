@@ -1,0 +1,63 @@
+WIZ[Tiramisu] round0: [{"i":0,"head":"📝 Instruction spéciale","mandatory":false,"selected":0}]
+ADD Tiramisu: cart 0 -> 1
+WIZ[Grande Frites] round0: [{"i":0,"head":"Choix du style","mandatory":true,"selected":0},{"i":1,"head":"📝 Instruction spéciale","mandatory":false,"selected":0}]
+ADD Grande Frites: cart 1 -> 2
+CART-C avant remise: {
+ "items": [
+  "Tiramisu ✎ 3,80 € 🗑 +",
+  "Grande Frites ✎ 1× Nature 4,00 € 🗑 +"
+ ],
+ "totals": [
+  "Sous-total 7,80 €",
+  "Sous-total",
+  "7,80 €",
+  "7,80 €",
+  "Total 7,80 €",
+  "Total",
+  "7,80 €",
+  "7,80 €"
+ ],
+ "payLabel": "💳 Commande · 7,80 €"
+}
+QUARTET c01-cart-2items
+REMISE-SANS-MOTIF: applyDisabled= [33mtrue[39m {"reasonFlag":true,"flagText":"(obligatoire)"}
+QUARTET c02-remise-sans-motif-gate
+CART-C après remise 10%: {
+ "items": [
+  "Tiramisu ✎ 3,80 € 🗑 +",
+  "Grande Frites ✎ 1× Nature 4,00 € 🗑 +"
+ ],
+ "totals": [
+  "Sous-total 7,80 €",
+  "Sous-total",
+  "7,80 €",
+  "7,80 €",
+  "Remise - 0,78 €",
+  "Remise",
+  "- 0,78 €",
+  "-",
+  "0,78 €",
+  "Total 7,02 €",
+  "Total",
+  "7,02 €",
+  "7,02 €"
+ ],
+ "payLabel": "💳 Commande · 7,02 €"
+}
+QUARTET c03-remise-10pct-appliquee
+PAYMENT-MODAL-TOTAL: "7,02 €"
+TERMINAL-SELECT: {"value":"1","options":["Sélectionnez un TPE","TPE Le Cayenne #1 · simulation"]}
+QUARTET c04-payment-card
+ORDER-POST attempt [33m1[39m : [33m401[39m
+CART après re-login (intact ?): [] [1mnull[22m
+QUARTET c05b-cart-after-relogin
+WIZ[Tiramisu] round0: [{"i":0,"head":"📝 Instruction spéciale","mandatory":false,"selected":0}]
+ADD Tiramisu: cart 0 -> 1
+WIZ[Grande Frites] round0: [{"i":0,"head":"Choix du style","mandatory":true,"selected":0},{"i":1,"head":"📝 Instruction spéciale","mandatory":false,"selected":0}]
+ADD Grande Frites: cart 1 -> 2
+NO ORDER POST CAPTURED attempt [33m2[39m
+QUARTET c05-after-confirm
+=== RECEIPT C ===
+ABSENT
+QUARTET c06-receipt-card-remise
+NET>=400: ["[01:06:35] HTTP 401 POST http://127.0.0.1:8768/api/admin/pos","[01:07:00] HTTP 429 POST http://127.0.0.1:8768/api/admin/pos/quote"]

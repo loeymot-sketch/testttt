@@ -1,0 +1,16 @@
+loyalty → /kiosk/loyalty
+input visible: true
+après saisie 0612345678 → input="0612345678"
+bouton suppression trouvé: false
+après 3 del → input="0612345678"
+après re-saisie 678 → input="0612345678678" (attendu 0612345678)
+validation numéro inconnu → message="Non trouvé"
+inscription → visible name=true
+clavier virtuel sur champ nom: true
+clavier contenu: "1 2 3 4 5 6 7 8 9 0 a z e r t y u i o p q s d f g h j k l m w x c v b n - _ . @ Effacer Espace ⌫ OK"
+name value="jean"
+clavier sur email: visible=true contenu="1 2 3 4 5 6 7 8 9 0 a z e r t y u i o p q s d f g h j k l m w x c v b n - _ . @ Effacer Espace ⌫ OK"
+AZERTY detect: contient "azerty"=true contient "qwerty"=false arobase=true
+email value="jean@x.fr"
+après submit inscription → /kiosk/loyalty
+texte: "Programme fidélité | Créer votre compte fidélité | NOM * | TÉLÉPHONE * | E-MAIL (FACULTATIF) | Créer mon compte | ← Retour | jean@x.fr | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 0 | a | z | e | r | t | y | u | i | o | p | q | s | d | f | g | h | j | k | l | m | w | x | c | v | b | n | - | _ | . | @ | Eff"

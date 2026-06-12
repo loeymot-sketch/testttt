@@ -1,0 +1,10 @@
+[00:44:48] login OK
+[00:44:48] tentative encaissement #1
+[00:44:58] modal hero="10,00 €"
+[00:44:59] CONFIRM-POST status=200
+[00:45:00] résultat confirm: 200 resp={"data":{"id":4531,"order_serial_no":"1206264531","queue_number":"A0006","token":null,"receipt_print_count":0,"parent_order_id":null,"parent_order_serial_no":null,"subtotal":10,"discount":0,"total_tax":0.91,"total":10,"delivery_charge":0,"subtotal_currency_price":"10,00 €","subtotal_without_tax_curr
+[00:45:02] collected=true
+[00:45:11] SHOW post-encaissement: {"header":["Commandes Caisse","CAISSE ET COMMANDES","Commandes Caisse","N° Commande: #1206264531· N°A0006","Payé","Accepter","Type de paiement: Espèces","Type de commande: À emporter","Payé","Payé"],"montants":["5,80 €","8,50 €","1,50 €","10,00 €","0,00 €","10,00 €"]}
+[00:45:11] RECEIPT #print (0 lignes):
+  
+[00:45:41] receipt screenshot tenté

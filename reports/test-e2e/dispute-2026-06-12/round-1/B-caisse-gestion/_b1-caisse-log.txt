@@ -1,0 +1,34 @@
+[00:35:14] login(bm.t2admin@lecayenne.fr) → /admin/dashboard
+[00:35:21] shortcuts encaisser borne: ["💳 Encaisser","💳 Encaisser","💳 Encaisser","💳 Encaisser"]
+[00:35:21] dialog session déjà ouvert (auto-open POS)
+[00:35:21] dialog initial: active=false openForm=true
+[00:35:21] open-form visible: true
+[00:35:22] fond saisi → display="100,00 €"
+[00:35:22] API POST 201 /api/admin/pos/cash-drawer/sessions/open :: {"status":true,"data":{"id":21,"branch_id":1,"opened_by_user_id":11,"opened_at":"2026-06-12T02:35:22+02:00","closed_at":null,"opening_amount":100,"closing_amount":null,"expected_closing_amount":null,"variance":null,"variance_reason":null,"status":"open"}}
+[00:35:24] session ouverte: active=true opening="100,00 €" expected="100,00 €"
+[00:35:25] WARN shortcut encaisser-4516 introuvable — fallback premier shortcut
+[00:35:27] encaisse 4516: modal=true total="1,00 €"
+[00:35:27] modes: ["💶EspècesOuvre le tiroir (simulation)","💳Terminal (manuel)SumUp — saisir la référence","📱Mobile","🎟️Ticket restaurant"]
+[00:35:28] reçu=3.8 → rendu="✨ Monnaie à rendre 2,80 €"
+[00:35:28] API POST 200 /api/admin/pos/counter-collect/4328/confirm :: {"data":{"id":4328,"order_serial_no":"1006264328","queue_number":"A0009","token":null,"receipt_print_count":0,"parent_order_id":null,"parent_order_serial_no":null,"subtotal":1,"discount":0,"total_tax":0.09,"total":1,"delivery_charge":0,"subtotal_currency_price
+[00:35:31] WARN shortcut encaisser-4519 introuvable — fallback premier shortcut
+[00:35:33] encaisse 4519: modal=true total="3,80 €"
+[00:35:33] modes: ["💶EspècesOuvre le tiroir (simulation)","💳Terminal (manuel)SumUp — saisir la référence","📱Mobile","🎟️Ticket restaurant"]
+[00:35:33] reçu=5 → rendu="✨ Monnaie à rendre 1,20 €"
+[00:35:34] API POST 200 /api/admin/pos/counter-collect/4329/confirm :: {"data":{"id":4329,"order_serial_no":"1006264329","queue_number":"A0010","token":null,"receipt_print_count":0,"parent_order_id":null,"parent_order_serial_no":null,"subtotal":3.8,"discount":0,"total_tax":0.35,"total":3.8,"delivery_charge":0,"subtotal_currency_p
+[00:35:37] no-sale present=1
+[00:35:37] API POST 422 /api/admin/pos/cash-drawer/open :: {"success":false,"error":"no_printer"}
+[00:35:41] mouvements (2):
+[00:35:41]   mvt#1: 12/06 | 02:35:28Paiement | de | commande1,00 | €↑ | EntréeEncaissement | borne | au | comptoir | (SSOT | modal)
+[00:35:41]   mvt#2: 12/06 | 02:35:34Paiement | de | commande3,80 | €↑ | EntréeEncaissement | borne | au | comptoir | (SSOT | modal)
+[00:35:42] stats après encaissements: expected="104,80 €" mvts="2"
+[00:35:49] show 4519 avant refund: statut-paiement=["Payé","Payé"]
+[00:35:49] refund btn present=0
+[00:35:56] avant clôture: expected="104,80 €"
+[00:35:57] close-form expected="104,80 €" → num=104.8
+[00:35:58] comptage exact 104.80 → variance affichée="0,00 €"
+[00:35:58] comptage 105.30 → variance affichée="+0,50 €" raison-visible=true
+[00:35:59] API POST 200 /api/admin/pos/cash-drawer/sessions/21/close :: {"status":true,"data":{"id":21,"branch_id":1,"opened_by_user_id":11,"opened_at":"2026-06-12T02:35:22+02:00","closed_at":"2026-06-12T02:35:59+02:00","opening_amount":100,"closing_amount":105.3,"expected_closing_amount":null,"variance":null,"variance_reason":nul
+[00:35:59] API POST 200 /api/admin/pos/cash-drawer/sessions/21/reconcile :: {"status":true,"data":{"id":21,"branch_id":1,"opened_by_user_id":11,"opened_at":"2026-06-12T02:35:22+02:00","closed_at":"2026-06-12T02:35:59+02:00","opening_amount":100,"closing_amount":105.3,"expected_closing_amount":104.8,"variance":0.5,"variance_reason":"Éc
+[00:36:02] après clôture, dialog: ""
+[00:36:02] open-form re-visible après clôture: false

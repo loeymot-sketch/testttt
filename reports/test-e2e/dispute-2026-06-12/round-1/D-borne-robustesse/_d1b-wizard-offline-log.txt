@@ -1,0 +1,12 @@
+wizard ouvert via kiosk-product-add-3 — cart={"items":[],"orderType":10}
+étape AVANT offline: {"title":"Boisson Seule","nextLabel":"AJOUTER AU PANIER","nextDisabled":false}
+OFFLINE=true — clic 1 option
+option click err: TimeoutError: locator.click: Timeout 30000ms exceeded.
+Call log:
+[2m  - waiting for locator('.kiosk-option-card:not(.disabled), .kiosk-viande-card:not(.disabled)').first()[22m
+
+après option: overlay=true step={"title":"Boisson Seule","nextLabel":"AJOUTER AU PANIER","nextDisabled":false}
+clic next (1)
+après next1: overlay=false step=null cart={"items":[{"name":"Boisson Seule","qty":1}],"orderType":10}
+toasts visibles: [""]
+URL finale: /kiosk/categories?cat=1 cart={"items":[{"name":"Boisson Seule","qty":1}],"orderType":10}

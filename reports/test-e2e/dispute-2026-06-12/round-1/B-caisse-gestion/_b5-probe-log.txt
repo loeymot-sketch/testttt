@@ -1,0 +1,6 @@
+[01:00:24] login(bm.t2admin@lecayenne.fr) → /admin/dashboard
+[01:00:31] hist 4329: [{"serial":"1006264329","client":"Admin Le Cayenne","source":"kiosk","total":3.8}]
+[01:00:31] hist 4519: [{"serial":"1206264519","client":"Admin Le Cayenne","source":"kiosk","total":3.8}]
+[01:00:31] pending count=58
+[01:00:31] pending first3=[{"id":4330,"serial":"1006264330","queue":"A0011","date":"01:46, 10-06-2026","total":1},{"id":4331,"serial":"1006264331","queue":"A0012","date":"01:47, 10-06-2026","total":3.8},{"id":4332,"serial":"1006264332","queue":"A0013","date":"01:49, 10-06-2026","total":7}]
+[01:00:31] pending last3=[{"id":4544,"serial":"1206264544","queue":"A0013","date":"02:59, 12-06-2026","total":23},{"id":4545,"serial":"1206264545","queue":"A0014","date":"02:59, 12-06-2026","total":1.5},{"id":4547,"serial":"1206264547","queue":"A0015","date":"03:00, 12-06-2026","total":3.8}]

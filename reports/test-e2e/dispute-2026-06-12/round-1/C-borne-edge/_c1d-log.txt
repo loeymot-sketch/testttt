@@ -1,0 +1,13 @@
+[01:01:27] AVANT: user44 points = loyalty_points
+165 | kiosk_promos uses = uses_count
+0
+[01:01:45] add Tacos(26): ok=true
+[01:01:54] add Galette(23): ok=true
+[01:01:58] add Coca(52): ok=true
+[01:02:00] lignes=["Tacos","Galette Normale","Coca-Cola 33cl"] (Tacos→2)
+[01:02:03] T0: {"subtotal":"31,00 €","loyalty":null,"promo":null,"total":"31,00 €"}
+[01:02:08] fidélité essai 1 échec err="null" — tap + attente 20s
+[01:03:33] fidélité essai 2 échec err="null" — tap + attente 20s
+[01:04:57] fidélité essai 3 échec err="null" — tap + attente 20s
+[01:05:47] après fidélité → /kiosk/idle
+[01:05:52] T1 après fidélité: {"subtotal":null,"loyalty":null,"promo":null,"total":null}

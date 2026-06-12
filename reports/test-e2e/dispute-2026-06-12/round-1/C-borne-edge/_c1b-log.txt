@@ -1,0 +1,26 @@
+[00:42:03] start → /kiosk/categories?cat=1
+[00:42:18] add Tacos(26): {"ok":false,"reason":"wizard-stuck","trace":["step \"Choisissez 1 viande\" → pick .kiosk-viande-card:not(.disabled):not(.selected)","step \"Choisissez 1 viande\" → NEXT","step \"Quelle sauce ?\" → pick .kiosk-option-card:not(.disabled):not(.selected)","step \"Quelle sauce ?\" → NEXT","step \"Quel menu ?\" → pick .kiosk-menu-card:not(.active):not(.selected)","step \"Quel menu ?\" → pick .kiosk-menu-card:not(.active):not(.selected)","step \"Quel menu ?\" → pick .kiosk-menu-card:not(.active):not(.selected)","step \"Quel menu ?\" → pick .kiosk-menu-card:not(.active):not(.selected)","step \"Quel menu ?\" → pick .kiosk-menu-card:not(.active):not(.selected)","step \"Quel menu ?\" → pick .kiosk-menu-card:not(.active):not(.selected)","step \"Quel menu ?\" → pick .kiosk-menu-card:not(.active):not(.selected)","step \"Quel menu ?\" → pick .kiosk-menu-card:not(.active):not(.selected)","step \"Quel menu ?\" → pick .kiosk-menu-card:not(.active):not(.selected)","step \"Quel menu ?\" → pick .kiosk-menu-card:not(.active):not(.selected)","step \"Quel menu ?\" → pick .kiosk-menu-card:not(.active):not(.selected)","step \"Quel menu ?\" → pick .kiosk-menu-card:not(.active):not(.selected)","step \"Quel menu ?\" → pick .kiosk-menu-card:not(.active):not(.selected)","step \"Quel menu ?\" → pick .kiosk-menu-card:not(.active):not(.selected)","step \"Quel menu ?\" → pick .kiosk-menu-card:not(.active):not(.selected)","step \"Quel menu ?\" → pick .kiosk-menu-card:not(.active):not(.selected)","step \"Quel menu ?\" → pick .kiosk-menu-card:not(.active):not(.selected)","step \"Quel menu ?\" → pick .kiosk-menu-card:not(.active):not(.selected)","step \"Quel menu ?\" → pick .kiosk-menu-card:not(.active):not(.selected)","step \"Quel menu ?\" → pick .kiosk-menu-card:not(.active):not(.selected)"]}
+[00:42:27] add Galette(23): {"ok":true,"before":0,"after":1}
+[00:42:31] add Coca(52): {"ok":true,"before":1,"after":2}
+[00:42:34] add Eau(58): {"ok":true,"before":2,"after":3}
+[00:42:34] cart: {"n":3,"items":[{"name":"Galette Normale","qty":1,"total":6.5},{"name":"Coca-Cola 33cl","qty":1,"total":1.5},{"name":"Eau Plate 50cl","qty":1,"total":1}]}
+[00:42:36] panier → /kiosk/cart
+[00:42:36] lignes: ["Galette Normale","Coca-Cola 33cl","Eau Plate 50cl"]
+[00:42:39] T0 panier initial: {"subtotal":"9,00 €","loyalty":null,"promo":null,"total":"9,00 €"}
+[00:42:39] idx tacos=-1 coca=1 eau=2
+[00:42:42] T1 après qty+ (Tacos×2, Coca×2): {"subtotal":"10,50 €","loyalty":null,"promo":null,"total":"10,50 €"}
+[00:42:46] T2 après suppr Eau: {"subtotal":"9,50 €","loyalty":null,"promo":null,"total":"9,50 €"} — state: {"n":2,"items":[{"name":"Galette Normale","qty":1,"total":6.5},{"name":"Coca-Cola 33cl","qty":2,"total":3}]}
+[00:42:51] T3 après promo BORNEAUDIT5: {"subtotal":"9,50 €","loyalty":null,"promo":null,"total":"9,50 €"}
+[00:42:53] loyalty → /kiosk/loyalty
+[00:42:55] loyalty balance: ABSENT
+[00:42:55] après redeem → /kiosk/loyalty
+[00:42:57] retour → /kiosk/cart
+[00:42:59] T4 panier promo+fidélité: {"subtotal":"9,50 €","loyalty":null,"promo":null,"total":"9,50 €"}
+[00:43:01] checkout → /kiosk/upsell
+[00:43:04] payment → /kiosk/payment
+[00:43:05] T5 PAYMENT total: TOTAL À RÉGLER : | 9,50 €
+[00:43:05] T5 PAYMENT lignes: ["TOTAL À RÉGLER :"]
+[00:43:10] confirm → /kiosk/cash-instruction?number=A0011&total=9.5&timeout=45
+[00:43:10] T6 CASH-INSTRUCTION: numero="#A0011" montant="9,50 €"
+[00:43:10] ORDERS POST: [{"ts":1781224985964,"status":201,"id":4537,"queue":"A0011","total":9.5,"discount":0,"subtotal":9.5}]
+[00:43:10] C1b done
