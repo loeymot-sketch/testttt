@@ -559,6 +559,11 @@ class FrontendOrderService
                     $this->pendingKioskPromoToConsume = null;
                 }
 
+                // [HEAL dispute-r1 C-RED-02] Same deferral for the loyalty
+                // points debit / pending-redeem attach (see
+                // consumePendingKioskLoyaltyRedemption).
+                $this->consumePendingKioskLoyaltyRedemption();
+
                 if ($request->address_id) {
                     // [SECURITY-IDOR / Sprint 2B DEL-2] Ensure the address belongs to the
                     // authenticated user. Without this check, any user could reference
@@ -904,7 +909,13 @@ class FrontendOrderService
         float &$calculatedDiscount
     ): void {
         $loyaltyCode = trim((string) $request->input('loyalty_code', ''));
-        $requestedDiscount = (float) $request->input('discount', 0);
+        // [HEAL dispute-r1 C-RED-02 2026-06-12] Dedicated redeem-intent field
+        // with legacy `discount` fallback — mirrors
+        // OrderQuoteService::withKioskLoyaltyDiscount (quote/commit parity).
+        $requestedDiscount = (float) $request->input(
+            'loyalty_redeem_discount',
+            $request->input('discount', 0)
+        );
 
         if ($loyaltyCode === '' || $requestedDiscount <= 0.0) {
             return;
@@ -957,19 +968,55 @@ class FrontendOrderService
             ->latest('id')
             ->first();
 
-        if ($pendingRedeem) {
-            if (abs((int) $pendingRedeem->points) !== $pointsRequired) {
-                throw \Illuminate\Validation\ValidationException::withMessages([
-                    'loyalty_code' => 'A pending loyalty redemption exists for a different discount amount.',
-                ]);
-            }
+        if ($pendingRedeem && abs((int) $pendingRedeem->points) !== $pointsRequired) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'loyalty_code' => 'A pending loyalty redemption exists for a different discount amount.',
+            ]);
+        }
 
+        // [HEAL dispute-r1 C-RED-02 2026-06-12] The points DEBIT (or pending
+        // attach) is DEFERRED until after sealForCommit: the seal re-runs the
+        // quote pricing inside THIS transaction — debiting first made the
+        // balance check (kioskLoyaltyRedemption) see the post-debit balance
+        // and zero out the discount → false "Order quote intent mismatch".
+        // The user row stays locked (lockForUpdate above) until commit, so a
+        // concurrent redemption cannot overdraw. Mirrors the kiosk promo
+        // deferred consumption pattern.
+        $calculatedDiscount += $maxDiscount;
+        $this->loyaltyApplied = true;
+        $this->pendingKioskLoyaltyRedemption = [
+            'user' => $loyaltyUser,
+            'points' => $pointsRequired,
+            'discount' => $maxDiscount,
+            'pending_txn' => $pendingRedeem,
+        ];
+    }
+
+    /**
+     * [HEAL dispute-r1 C-RED-02] Deferred loyalty mutation — executed AFTER
+     * sealForCommit, still inside the outer DB::transaction (rollback-safe).
+     */
+    private ?array $pendingKioskLoyaltyRedemption = null;
+
+    private function consumePendingKioskLoyaltyRedemption(): void
+    {
+        if ($this->pendingKioskLoyaltyRedemption === null) {
+            return;
+        }
+
+        $redemption = $this->pendingKioskLoyaltyRedemption;
+        $this->pendingKioskLoyaltyRedemption = null;
+
+        /** @var \App\Models\User $loyaltyUser */
+        $loyaltyUser = $redemption['user'];
+        $pointsRequired = (int) $redemption['points'];
+        $maxDiscount = (float) $redemption['discount'];
+        $pendingRedeem = $redemption['pending_txn'];
+
+        if ($pendingRedeem) {
             $pendingRedeem->order_id = $this->frontendOrder->id;
             $pendingRedeem->description = 'Reduction fidelite kiosk rattachee a la commande';
             $pendingRedeem->save();
-
-            $calculatedDiscount += $maxDiscount;
-            $this->loyaltyApplied = true;
 
             Log::info('[Loyalty] Pending kiosk redeem attached without second deduction', [
                 'user_id' => $loyaltyUser->id,
@@ -989,9 +1036,6 @@ class FrontendOrderService
             ]);
 
         $this->createKioskLoyaltyRedeemLedger($loyaltyUser, $pointsRequired, $balanceAfter);
-
-        $calculatedDiscount += $maxDiscount;
-        $this->loyaltyApplied = true;
 
         Log::info("[Loyalty] {$pointsRequired} pts redeemed for user #{$loyaltyUser->id} (-{$maxDiscount} EUR)");
     }

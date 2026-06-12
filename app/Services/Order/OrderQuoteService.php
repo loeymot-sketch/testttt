@@ -251,7 +251,17 @@ class OrderQuoteService
     private function withKioskLoyaltyDiscount(Request $request, PricingResult $pricing): PricingResult
     {
         $loyaltyCode = trim((string) $request->input('loyalty_code', ''));
-        $requestedDiscount = (float) $request->input('discount', 0);
+        // [HEAL dispute-r1 C-RED-02 2026-06-12] The redeem intent travels in
+        // the DEDICATED `loyalty_redeem_discount` field (legacy `discount`
+        // kept as fallback). Rationale: the kiosk order payload overwrites
+        // `discount` with quote.discount (combined promo+loyalty) — feeding
+        // that back as the loyalty request would diverge quote vs commit.
+        // Identify-only customers (loyalty_code without any redeem field)
+        // still short-circuit below — no auto-redeem.
+        $requestedDiscount = (float) $request->input(
+            'loyalty_redeem_discount',
+            $request->input('discount', 0)
+        );
 
         if ((int) $request->input('coupon_id', 0) > 0 || $loyaltyCode === '' || $requestedDiscount <= 0.0) {
             return $pricing;
