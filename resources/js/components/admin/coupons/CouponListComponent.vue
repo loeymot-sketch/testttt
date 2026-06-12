@@ -151,7 +151,9 @@
                                 <div v-else>{{ coupon.name.substring(0, 40) + ".." }}</div>
                             </td>
                             <td class="db-table-body-td">{{ coupon.code }}</td>
-                            <td class="db-table-body-td">{{ coupon.flat_discount }}</td>
+                            <!-- [W-REM T-R2.0 Q-7 2026-06-12] REMISE typée par discount_type :
+                                 FIXED → "12,00 €" (formatter FR partagé), PERCENTAGE → "12 %". -->
+                            <td class="db-table-body-td">{{ formatTypedDiscount(coupon.discount, coupon.discount_type) }}</td>
                             <td class="db-table-body-td">
                                 <span :class="taxTypeClass(coupon.discount_type)">{{
                                     enums.taxTypeEnumArray[coupon.discount_type]
@@ -229,6 +231,8 @@ import PaginationBox from "../components/pagination/PaginationBox";
 import PaginationSMBox from "../components/pagination/PaginationSMBox";
 import appService from "../../../services/appService";
 import taxTypeEnum from "../../../enums/modules/taxTypeEnum";
+// [W-REM T-R2.0 Q-7 2026-06-12] Typed REMISE renderer (couponDiscountFormat).
+import { formatTypedDiscount } from "./couponDiscountFormat";
 import TableLimitComponent from "../components/TableLimitComponent";
 import SmIconDeleteComponent from "../components/buttons/SmIconDeleteComponent";
 import SmViewComponent from "../components/buttons/SmViewComponent";
@@ -343,6 +347,8 @@ export default {
         },
     },
     methods: {
+        // [W-REM T-R2.0 Q-7] REMISE typée — délégation au module pur testé.
+        formatTypedDiscount,
         permissionChecker(e) {
             return appService.permissionChecker(e);
         },
