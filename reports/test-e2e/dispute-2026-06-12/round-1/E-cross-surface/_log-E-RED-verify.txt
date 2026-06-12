@@ -1,0 +1,140 @@
+[09:39:06] login OK → /admin/dashboard
+[09:39:14] TOPBAR amounts: [
+ {
+  "text": "5,80 €",
+  "inHeader": true,
+  "ctxText": "Filiale | Le Cayenne (Principal) | Le Cayenne (Principal) | Bonjour | Admin Le Cayenne | Admin Le Cayenne |  | admin@lecayenne.fr |  | +330600000000 |  | 5,80 € | Modifier Le Profil | Changer Le Mot De Passe | Déconnexio",
+  "path": "H3.font-medium text-sm leading-6 capitalize mb-0.5 < DIV.w-fit mx-auto text-center mb-5 < DIV.dropdown-list fixed sm:absolute top-[75px] sm:top-12 ltr:rig < DIV.dropdown-group < DIV.flex items-center justify-end w-full gap-4"
+ },
+ {
+  "text": "3,80 €",
+  "inHeader": false,
+  "ctxText": "",
+  "path": "SPAN.pos-tracker-card-total pos-tracker-card-total--cash < FOOTER.pos-tracker-card-foot < ARTICLE.pos-tracker-card pos-tracker-card--amber < DIV.pos-tracker-cards < DIV.pos-tracker-col-body"
+ },
+ {
+  "text": "1,50 €",
+  "inHeader": false,
+  "ctxText": "",
+  "path": "SPAN.pos-tracker-card-total pos-tracker-card-total--cash < FOOTER.pos-tracker-card-foot < ARTICLE.pos-tracker-card pos-tracker-card--amber < DIV.pos-tracker-cards < DIV.pos-tracker-col-body"
+ },
+ {
+  "text": "1,50 €",
+  "inHeader": false,
+  "ctxText": "",
+  "path": "SPAN.pos-tracker-card-total pos-tracker-card-total--cash < FOOTER.pos-tracker-card-foot < ARTICLE.pos-tracker-card pos-tracker-card--amber < DIV.pos-tracker-cards < DIV.pos-tracker-col-body"
+ },
+ {
+  "text": "23,00 €",
+  "inHeader": false,
+  "ctxText": "",
+  "path": "SPAN.pos-tracker-card-total pos-tracker-card-total--cash < FOOTER.pos-tracker-card-foot < ARTICLE.pos-tracker-card pos-tracker-card--amber < DIV.pos-tracker-cards < DIV.pos-tracker-col-body"
+ },
+ {
+  "text": "9,50 €",
+  "inHeader": false,
+  "ctxText": "",
+  "path": "SPAN.pos-tracker-card-total pos-tracker-card-total--cash < FOOTER.pos-tracker-card-foot < ARTICLE.pos-tracker-card pos-tracker-card--amber < DIV.pos-tracker-cards < DIV.pos-tracker-col-body"
+ },
+ {
+  "text": "3,80 €",
+  "inHeader": false,
+  "ctxText": "",
+  "path": "SPAN.pos-tracker-card-total pos-tracker-card-total--cash < FOOTER.pos-tracker-card-foot < ARTICLE.pos-tracker-card pos-tracker-card--amber < DIV.pos-tracker-cards < DIV.pos-tracker-col-body"
+ },
+ {
+  "text": "3,00 €",
+  "inHeader": false,
+  "ctxText": "",
+  "path": "SPAN.pos-tracker-card-total pos-tracker-card-total--cash < FOOTER.pos-tracker-card-foot < ARTICLE.pos-tracker-card pos-tracker-card--amber < DIV.pos-tracker-cards < DIV.pos-tracker-col-body"
+ }
+]
+[09:39:23] CASH-OVERVIEW LIVE:
+Filiale
+Le Cayenne (Principal)
+Le Cayenne (Principal)
+Bonjour
+Admin Le Cayenne
+Admin Le Cayenne
+admin@lecayenne.fr
++330600000000
+5,80 €
+Modifier Le Profil
+Changer Le Mot De Passe
+Déconnexion
+Tableau De Bord
+POS
+Produits & Stock
+Catalogue
+Attribut D’articles
+Ingrédients
+Commandes Caisse
+Historique
+Encaissement
+Vue Caisse Unifiée
+Caisse Livreur
+CAISSE ET COMMANDES
+Écran Cuisine
+Suivi Client
+COMMUNICATIONS
+Notifications Push
+Messages
+Abonnés
+UTILISATEURS
+Administrateurs
+Employés
+Chefs
+COMPTES
+Transactions
+RAPPORTS
+Rapport Des Ventes
+Rapport Articles
+CONFIGURATION
+Paramètres
+Vue Caisse Unifiée
+DU
+AU
+SOURCE
+[09:39:31] TRANSACTIONS LIVE: contient 4543/1206264543=false
+[09:39:31] TRANSACTIONS rows:
+Filiale
+Le Cayenne (Principal)
+Le Cayenne (Principal)
+Bonjour
+Admin Le Cayenne
+Admin Le Cayenne
+admin@lecayenne.fr
++330600000000
+5,80 €
+Modifier Le Profil
+Changer Le Mot De Passe
+Déconnexion
+Tableau De Bord
+POS
+Produits & Stock
+Catalogue
+Attribut D’articles
+Ingrédients
+Commandes Caisse
+Historique
+Encaissement
+Vue Caisse Unifiée
+Caisse Livreur
+CAISSE ET COMMANDES
+Écran Cuisine
+Suivi Client
+COMMUNICATIONS
+Notifications Push
+Messages
+Abonnés
+UTILISATEURS
+Administrateurs
+Employés
+Chefs
+COMPTES
+Transactions
+RAPPORTS
+Rapport Des Ventes
+Rapport Articles
+CONFIGURATION
+[09:39:39] ENCAISSEMENT cartes A0011 (0): []

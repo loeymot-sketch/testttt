@@ -1,0 +1,9 @@
+[09:36:10] kiosk token: true
+[09:36:15] après order-type → /kiosk/categories?cat=1
+[09:36:21] CART avant promo: {"subtotal":"1,50 €","promoDiscount":null,"total":"1,50 €","applied":null,"error":null}
+[09:36:23] CART après promo: {"subtotal":"1,50 €","promoDiscount":"-1,50 €","total":"0,00 €","applied":"✓ Code promo BORNEAUDIT5 appliqué (−1,50 €) Retirer le code","error":null}
+[09:36:23] POST 200 QUOTE id=- subtotal=1.5 discount=0 total=undefined
+[09:36:30] PAYMENT total affiché: "TOTAL À RÉGLER : 0,00 €"
+[09:36:30] POST 200 QUOTE id=- subtotal=1.5 discount=0 total=undefined
+[09:36:30] POST 201 ORDER id=4562 subtotal=1.5 discount=0 total=1.5
+[09:36:35] CASH-INSTRUCTION: {"number":"#A0017","amount":"1,50 €"} url=/kiosk/cash-instruction?number=A0017&total=1.5&timeout=45

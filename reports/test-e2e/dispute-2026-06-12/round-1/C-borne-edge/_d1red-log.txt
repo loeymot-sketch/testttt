@@ -1,0 +1,29 @@
+[09:40:28] A add Galette(23): {"ok":true,"before":0,"after":1}
+[09:40:32] A add Coca(52): {"ok":true,"before":1,"after":2}
+[09:40:37] A T0: {"subtotal":"9,50 €","loyalty":null,"promo":null,"total":"9,50 €"}
+[09:40:41] A T1 promo: {"subtotal":"9,50 €","loyalty":null,"promo":"-5,00 €","total":"4,50 €"}
+[09:40:46] A loyalty balance (essai 1): 165 points disponibles = 1,65 € de réduction sur cette commande
+[09:40:46] A options redeem: ["Utiliser mes points -1,65 € sur cette commande","Garder mes points Continuer à accumuler"]
+[09:40:49] A après loyalty → /kiosk/loyalty
+[09:40:52] A T2 panier promo+fidélité: {"subtotal":"9,50 €","loyalty":"-1,65 €","promo":null,"total":"7,85 €"} state={"n":2,"items":[{"name":"Galette Normale","qty":1,"total":6.5},{"name":"Coca-Cola 33cl","qty":2,"total":3}]}
+[09:40:58] A PAYMENT: TOTAL À RÉGLER : | 7,85 €
+[09:41:03] A CASH: numero="#A0019" montant="9,50 €"
+[09:41:03] A ORDERS POST: [{"ts":1781257258772,"status":201,"id":4565,"queue":"A0019","total":9.5,"discount":0,"subtotal":9.5}]
+[09:41:12] B add Coca: {"ok":true,"before":0,"after":1}
+[09:41:19] B T1 promo sur 3,00: {"subtotal":"3,00 €","loyalty":null,"promo":"-3,00 €","total":"0,00 €"}
+[09:41:23] B PAYMENT (attendu 0,00): TOTAL À RÉGLER : | 0,00 €
+[09:41:28] B après confirm → /kiosk/cash-instruction?number=A0020&total=3&timeout=45
+[09:41:28] B CASH: numero="#A0020" montant="3,00 €" — POSTs: [{"ts":1781257283720,"status":201,"id":4566,"queue":"A0020","total":3,"discount":0,"subtotal":3}]
+[09:41:37] C grid badge Tiramisu(51): {"exists":false}
+[09:41:37] C carte Tiramisu: +
+[09:41:40] C add Tiramisu: {"ok":true,"before":0,"after":1}
+[09:41:42] C badges allergènes panier: [{"visible":true,"text":"🌾 Gluten 🥛 Lait 🥚 Œufs"}]
+[09:41:42] C texte allergène visible quelque part dans le panier ? true
+[09:42:24] D add Coca: {"ok":true,"before":0,"after":1}
+[09:42:32] D overlay inactivité sur CART (idleMs=12s): true
+[09:42:37] D arrivée payment: /kiosk/payment
+[09:43:03] D payment après 25s (idleMs=12s): overlay=false url=/kiosk/payment
+[09:43:03] E triple-click dispatché
+[09:43:12] E POSTs order après triple-click: [{"ts":1781257386275,"status":201,"id":4567,"queue":"A0021","total":1.5,"discount":0,"subtotal":1.5}]
+[09:43:12] E url finale: /kiosk/cash-instruction?number=A0021&total=1.5&timeout=45
+[09:43:12] RED run done

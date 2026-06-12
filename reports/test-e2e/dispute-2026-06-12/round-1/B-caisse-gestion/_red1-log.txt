@@ -1,0 +1,13 @@
+[09:41:50] login(bm.t2admin@lecayenne.fr) → /admin/dashboard
+[09:41:59] modal visible=true
+[09:41:59] GEO {"viewportH":900,"modal":{"top":36,"bottom":864,"left":460,"height":828},"numpad":{"top":436,"bottom":702,"left":497,"height":266},"footer":{"top":752,"bottom":840,"left":460,"height":88},"keys":{"0":{"top":807,"bottom":863,"left":609,"height":56},"1":{"top":615,"bottom":671,"left":493,"height":56},"2":{"top":615,"bottom":671,"left":609,"height":56},"3":{"top":615,"bottom":671,"left":724,"height":56},"4":{"top":679,"bottom":735,"left":493,"height":56},"5":{"top":679,"bottom":735,"left":609,"height":56},"6":{"top":679,"bottom":735,"left":724,"height":56},"7":{"top":743,"bottom":799,"left":493,"height":56},"8":{"top":743,"bottom":799,"left":609,"height":56},"9":{"top":743,"bottom":799,"left":724,"height":56},"⌫":{"top":615,"bottom":735,"left":840,"height":120},"C":{"top":743,"bottom":863,"left":840,"height":120},"00":{"top":807,"bottom":863,"left":493,"height":56},".":{"top":637,"bottom":693,"left":724,"height":56},",":{"top":807,"bottom":863,"left":724,"height":56}},"modalScrollable":{"scrollHeight":940,"clientHeight":828,"scrollTop":0}}
+[09:41:59] KEY "0" top=807 bottom=863 → DERRIÈRE footer sticky (footer.top=752)
+[09:41:59] KEY "7" top=743 bottom=799 → DERRIÈRE footer sticky (footer.top=752)
+[09:41:59] KEY "8" top=743 bottom=799 → DERRIÈRE footer sticky (footer.top=752)
+[09:41:59] KEY "9" top=743 bottom=799 → DERRIÈRE footer sticky (footer.top=752)
+[09:41:59] KEY "C" top=743 bottom=863 → DERRIÈRE footer sticky (footer.top=752)
+[09:41:59] KEY "00" top=807 bottom=863 → DERRIÈRE footer sticky (footer.top=752)
+[09:41:59] KEY "," top=807 bottom=863 → DERRIÈRE footer sticky (footer.top=752)
+[09:42:02] touche 7: click trial FAIL → locator.click: Timeout 3000ms exceeded.
+[09:42:02] modal.scrollTop après trial=0
+[09:42:10] SNAP red-02-cash-overview-fullpage (fullPage)

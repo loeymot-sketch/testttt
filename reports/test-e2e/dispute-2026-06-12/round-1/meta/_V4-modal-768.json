@@ -1,0 +1,126 @@
+{
+  "btns": [
+    {
+      "text": "Déconnexion",
+      "top": 59,
+      "bottom": 59,
+      "visible": false
+    },
+    {
+      "text": "🇫🇷 +33",
+      "top": 109,
+      "bottom": 125,
+      "visible": true
+    },
+    {
+      "text": "Ajouter un client",
+      "top": 261,
+      "bottom": 309,
+      "visible": true
+    },
+    {
+      "text": "✕",
+      "top": 17,
+      "bottom": 53,
+      "visible": true
+    },
+    {
+      "text": "💵Espèces",
+      "top": 249,
+      "bottom": 315,
+      "visible": true
+    },
+    {
+      "text": "💳Carte (TPE)",
+      "top": 249,
+      "bottom": 315,
+      "visible": true
+    },
+    {
+      "text": "🔀Multi-paiement",
+      "top": 249,
+      "bottom": 315,
+      "visible": true
+    },
+    {
+      "text": "1",
+      "top": 445,
+      "bottom": 501,
+      "visible": true
+    },
+    {
+      "text": "2",
+      "top": 445,
+      "bottom": 501,
+      "visible": true
+    },
+    {
+      "text": "3",
+      "top": 445,
+      "bottom": 501,
+      "visible": true
+    },
+    {
+      "text": "⌫",
+      "top": 445,
+      "bottom": 565,
+      "visible": true
+    },
+    {
+      "text": "4",
+      "top": 509,
+      "bottom": 565,
+      "visible": true
+    },
+    {
+      "text": "5",
+      "top": 509,
+      "bottom": 565,
+      "visible": true
+    },
+    {
+      "text": "6",
+      "top": 509,
+      "bottom": 565,
+      "visible": true
+    },
+    {
+      "text": "7",
+      "top": 573,
+      "bottom": 629,
+      "visible": true
+    },
+    {
+      "text": "8",
+      "top": 573,
+      "bottom": 629,
+      "visible": true
+    },
+    {
+      "text": "9",
+      "top": 573,
+      "bottom": 629,
+      "visible": true
+    },
+    {
+      "text": "C",
+      "top": 573,
+      "bottom": 693,
+      "visible": true
+    },
+    {
+      "text": "00",
+      "top": 637,
+      "bottom": 693,
+      "visible": true
+    },
+    {
+      "text": "0",
+      "top": 637,
+      "bottom": 693,
+      "visible": true
+    }
+  ],
+  "vh": 768,
+  "vw": 1366
+}

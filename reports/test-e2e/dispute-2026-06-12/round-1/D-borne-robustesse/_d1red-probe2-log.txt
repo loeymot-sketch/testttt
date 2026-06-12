@@ -1,0 +1,7 @@
+baseline: {"attr":"false","attrAudioDesc":"false","store":{"reducedMotion":false,"audioDescription":false,"contrast":"aa","pmr":false}}
+switch[0] aria-label=null aria-checked=false
+switch[1] aria-label=null aria-checked=false
+switch[2] aria-label=null aria-checked=false
+switch[3] aria-label=null aria-checked=false
+après clic: aria-checked=true state={"attr":"false","attrAudioDesc":"false","store":{"reducedMotion":true,"audioDescription":false,"contrast":"aa","pmr":false}}
+après F5: {"attr":"false","attrAudioDesc":"false","store":{"reducedMotion":false,"audioDescription":false,"contrast":"aa","pmr":false}}

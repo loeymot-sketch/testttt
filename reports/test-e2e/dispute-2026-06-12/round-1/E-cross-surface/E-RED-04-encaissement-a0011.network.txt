@@ -1,0 +1,1 @@
+(aucune réponse >=400 depuis le boot)

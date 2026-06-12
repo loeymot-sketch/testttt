@@ -1,0 +1,37 @@
+{
+  "cartAfterPromo": {
+    "subtotal": "1,50 €",
+    "promoDiscount": "-1,50 €",
+    "total": "0,00 €",
+    "applied": "✓ Code promo BORNEAUDIT5 appliqué (−1,50 €) Retirer le code",
+    "error": null
+  },
+  "payTotal": "TOTAL À RÉGLER : 0,00 €",
+  "cash": {
+    "number": "#A0017",
+    "amount": "1,50 €"
+  },
+  "orderPosts": [
+    {
+      "status": 200,
+      "url": "frontend/order/quote",
+      "subtotal": 1.5,
+      "discount": 0
+    },
+    {
+      "status": 200,
+      "url": "frontend/order/quote",
+      "subtotal": 1.5,
+      "discount": 0
+    },
+    {
+      "status": 201,
+      "url": "frontend/order",
+      "id": 4562,
+      "queue": "A0017",
+      "subtotal": 1.5,
+      "discount": 0,
+      "total": 1.5
+    }
+  ]
+}

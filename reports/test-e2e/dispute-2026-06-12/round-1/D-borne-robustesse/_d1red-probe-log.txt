@@ -1,0 +1,16 @@
+produit A ajouté: kiosk-product-add-49 cart={"items":[{"name":"Glace","qty":1}],"orderType":10}
+idemKey avant cmd1: null
+ORDER-POST 201 id=4563 queue=A0018 total=3.8
+commande 1 → /kiosk/cash-instruction?number=A0018&total=3.8&timeout=45
+idemKey après cmd1: 6cf62770-c8b7-4a0e-9917-aa6606a330f7
+router.push(categories cat=8) → PUSHED
+produit B ajouté: kiosk-product-add-35
+cart modifié: {"items":[{"name":"Glace","qty":1},{"name":"Boursin","qty":1}],"orderType":10}
+idemKey après modif: 6cf62770-c8b7-4a0e-9917-aa6606a330f7
+ORDER-POST 409 id=undefined queue=undefined total=undefined
+commande 2 (panier modifié) → /kiosk/payment
+messages visibles: ["Request failed with status code 409","✕Request failed with status code 409×"]
+ORDERS: [{"status":201,"id":4563,"queue":"A0018","total":3.8},{"status":409}]
+drawer switches: 4
+APRÈS TOGGLE live: attr=false store=undefined
+APRÈS F5: attr=false store=undefined

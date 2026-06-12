@@ -1,0 +1,26 @@
+[09:37:16] login OK → /admin/dashboard
+[09:37:25] V-4 modal @1366x768:
+[09:37:25]   btn "Déconnexion" top=59 bottom=59 NON-RENDU
+[09:37:25]   btn "🇫🇷 +33" top=109 bottom=125 VISIBLE
+[09:37:25]   btn "Ajouter un client" top=261 bottom=309 VISIBLE
+[09:37:25]   btn "✕" top=17 bottom=53 VISIBLE
+[09:37:25]   btn "💵Espèces" top=249 bottom=315 VISIBLE
+[09:37:25]   btn "💳Carte (TPE)" top=249 bottom=315 VISIBLE
+[09:37:25]   btn "🔀Multi-paiement" top=249 bottom=315 VISIBLE
+[09:37:25]   btn "1" top=445 bottom=501 VISIBLE
+[09:37:25]   btn "2" top=445 bottom=501 VISIBLE
+[09:37:25]   btn "3" top=445 bottom=501 VISIBLE
+[09:37:25]   btn "⌫" top=445 bottom=565 VISIBLE
+[09:37:25]   btn "4" top=509 bottom=565 VISIBLE
+[09:37:25]   btn "5" top=509 bottom=565 VISIBLE
+[09:37:25]   btn "6" top=509 bottom=565 VISIBLE
+[09:37:25]   btn "7" top=573 bottom=629 VISIBLE
+[09:37:25]   btn "8" top=573 bottom=629 VISIBLE
+[09:37:25]   btn "9" top=573 bottom=629 VISIBLE
+[09:37:25]   btn "C" top=573 bottom=693 VISIBLE
+[09:37:25]   btn "00" top=637 bottom=693 VISIBLE
+[09:37:25]   btn "0" top=637 bottom=693 VISIBLE
+[09:37:25] V-4 CTA Confirmer: INTROUVABLE (viewport 768px)
+[09:37:32] V-5 input type=null class=dp__pointer dp__input_readonly dp__input dp__input_reg
+[09:37:33] V-5 datepicker cash-sessions-report: "juin 2026 lu ma me je ve sa di 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 1 2 3 4 5"
+[09:37:33] V-5 verdict FR=true
