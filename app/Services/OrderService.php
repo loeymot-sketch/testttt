@@ -726,6 +726,15 @@ class OrderService
                 $validated = $request->validated();
                 unset($validated['total'], $validated['subtotal'], $validated['discount']);
 
+                // [HEAL dispute-r1 ADV-B-08 2026-06-12] The sales channel is a
+                // SERVER fact: a POS order is created on the admin POS route by
+                // a `pos`-permission holder — force Source::POS and ignore the
+                // client value (observed live: real caisse sale persisted
+                // source=Web → EOD channel split falsified). Mirrored in
+                // OrderQuoteService::canonicalPayload so quote/commit intent
+                // hashes stay consistent.
+                $validated['source'] = Source::POS;
+
                 // Attach idempotency key if provided by client
                 if ($idempotencyKey) {
                     $validated['idempotency_key'] = substr($idempotencyKey, 0, 64);

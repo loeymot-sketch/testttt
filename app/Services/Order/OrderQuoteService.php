@@ -495,7 +495,15 @@ class OrderQuoteService
             'order' => [
                 'customer_id' => $this->customerId($request, $surface),
                 'order_type' => (int) $request->input('order_type', 0),
-                'source' => (int) $request->input('source', 0),
+                // [HEAL dispute-r1 ADV-B-08 2026-06-12] POS surface: the sales
+                // channel is a SERVER fact, never a client claim — forced to
+                // Source::POS on BOTH quote and commit canonicals (so the
+                // intent hash stays consistent while OrderService persists the
+                // forced value). Kiosk keeps the request value (kiosk machine
+                // token is the channel authority there).
+                'source' => $surface === self::SURFACE_POS
+                    ? (int) \App\Enums\Source::POS
+                    : (int) $request->input('source', 0),
                 'payment_method' => (int) $request->input($surface === self::SURFACE_POS ? 'pos_payment_method' : 'payment_method', 0),
             ],
             'items' => $this->normalizeForCanonical($items),
