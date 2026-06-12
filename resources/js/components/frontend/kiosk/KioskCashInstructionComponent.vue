@@ -41,6 +41,9 @@
       <p v-if="countdown > 0" class="kiosk-cash__countdown" aria-live="polite">
         {{ $t('kiosk.cash_instruction.auto_redirect', { n: countdown }) }}
       </p>
+      <!-- [dispute-r1 D-003/ADV-F-P1-1] CTA explicite « Retour à l'accueil » :
+           l'ancien « J'ai compris » n'explicitait pas la sortie (cul-de-sac
+           perçu, seule issue lisible = countdown 45 s). -->
       <KsButton
         variant="primary"
         size="lg"
@@ -48,7 +51,7 @@
         data-testid="kiosk-cash-cta-understood"
         @click="acknowledge('user')"
       >
-        {{ $t('kiosk.cash_instruction.cta_understood') }}
+        {{ $t('kiosk.cash_instruction.cta_back_home') }}
       </KsButton>
     </footer>
   </section>
@@ -92,6 +95,16 @@ export default {
     mounted() {
         this.logEvent('cash_instruction_shown');
         this.startCountdown();
+        // [dispute-r1 D-003 2026-06-12] La commande est CRÉÉE (POST 201) quand
+        // cet écran s'affiche, mais le panier n'était JAMAIS vidé avant le
+        // retour idle (45 s). Conséquence prouvée live : retour SPA catalogue,
+        // panier toujours plein avec la MÊME clé d'idempotence → re-validation
+        // = 409 brut EN sans issue (probe D-003b, même panier MODIFIÉ bloqué).
+        // On vide le panier à l'entrée de l'écran : RESET nettoie items +
+        // idempotencyKey + promo + fidélité (le kioskToken machine est
+        // préservé — mutation séparée CLEAR_KIOSK_TOKEN). L'affichage de cet
+        // écran ne dépend que des props query (number/total), pas du store.
+        try { this.$store.dispatch('kioskCart/reset'); } catch (_) {}
     },
     beforeUnmount() {
         this.stopCountdown();

@@ -1722,6 +1722,7 @@
             "amount_label": "Montant à régler",
             "help": "Paiement en espèces uniquement à la caisse.",
             "cta_understood": "J'ai compris",
+            "cta_back_home": "Retour à l'accueil",
             "auto_redirect": "Retour à l'accueil dans {n} s"
         },
         "error": {
@@ -1880,7 +1881,9 @@
             "counter_route_title": "Paiement à la caisse",
             "counter_route_sub": "Veuillez payer à la caisse",
             "counter_route_processing": "Enregistrement de votre commande…",
-            "counter_route_confirm_btn": "Confirmer ma commande"
+            "counter_route_confirm_btn": "Confirmer ma commande",
+            "counter_route_back": "Retour au panier",
+            "order_conflict": "Votre commande a déjà été envoyée en caisse. La borne revient à l'accueil pour une nouvelle commande."
         },
         "upsell_screen": {
             "title": "Et pour terminer ?",

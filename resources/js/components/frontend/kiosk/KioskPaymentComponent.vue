@@ -77,6 +77,19 @@
       >
         <span>{{ $t('kiosk.pay_screen.counter_route_confirm_btn') }}</span>
       </button>
+      <!-- [dispute-r1 ADV-F-P1-1 2026-06-12] Échappatoire Plan B : le bloc
+           counter-route n'avait AUCUN contrôle de retour (le header back est
+           gaté !paymentRouteAllToCounter) → client piégé, seule sortie =
+           timer d'inactivité. Bouton retour panier explicite. -->
+      <button
+        v-if="!submitting && !submitted"
+        type="button"
+        class="kiosk-pay-counter-back"
+        @click="$router.replace({ name: 'kiosk.cart' })"
+        data-testid="kiosk-payment-counter-back"
+      >
+        {{ $t('kiosk.pay_screen.counter_route_back') }}
+      </button>
     </div>
 
     <!-- Header -->
@@ -560,12 +573,19 @@ export default {
         // ERR_NETWORK) → ne JAMAIS afficher le « Network Error » brut (EN).
         const isNetworkError = !err?.response
           && (err?.code === 'ERR_NETWORK' || err?.message === 'Network Error' || !!err?.request);
+        // [dispute-r1 D-003 2026-06-12] 409 idempotency-conflict : une commande
+        // a DÉJÀ été créée pour ce panier (re-soumission même clé, panier
+        // modifié re-soumis — probe D-003b). Avant ce fix : « Request failed
+        // with status code 409 » brut EN, sans issue jusqu'au reset idle.
+        const isConflict = Number(err?.response?.status) === 409;
         // [AUDIT-52-BUG7] Specific user-friendly message for TPE timeout
         let msg;
         if (err?.message === 'TPE_TIMEOUT') {
           msg = this.$t('kiosk.payment.tpe_timeout_message');
         } else if (isNetworkError) {
           msg = this.$t('kiosk.pay_screen.network_lost');
+        } else if (isConflict) {
+          msg = this.$t('kiosk.pay_screen.order_conflict');
         } else {
           msg = err?.response?.data?.errors
             ? Object.values(err.response.data.errors).flat().join(' ')
@@ -591,6 +611,17 @@ export default {
         if (isNetworkError) {
           try {
             this.$router.push({ name: 'kiosk.error.network' });
+          } catch (_) { /* navigation guard hors dispo (tests) → no-op */ }
+          return;
+        }
+
+        // [dispute-r1 D-003] 409 = la commande de ce panier existe déjà côté
+        // caisse. Issue claire : retour accueil (le mount idle RESET le store
+        // → nouvelle clé d'idempotence pour la commande suivante). On n'empile
+        // pas le compteur de refus TPE — ce n'est pas un refus de paiement.
+        if (isConflict) {
+          try {
+            this.$router.push({ name: 'kiosk.idle' });
           } catch (_) { /* navigation guard hors dispo (tests) → no-op */ }
           return;
         }
@@ -1202,6 +1233,31 @@ export default {
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
   margin-top: 8px;
+}
+/* [dispute-r1 ADV-F-P1-1] Bouton retour panier du flux Plan B (counter-route).
+   Ghost sobre sous le CTA Confirmer — cible tactile ≥ 56px (borne). */
+.kiosk-pay-counter-back {
+  min-height: 64px;
+  width: min(640px, calc(100vw - 64px));
+  padding: 16px 28px;
+  border-radius: 20px;
+  border: 1.5px solid var(--kiosk-border, #E5E5E5);
+  background: var(--kiosk-surface, #FFFFFF);
+  color: var(--kiosk-text-muted, #5A5A5A);
+  font-size: 20px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.kiosk-pay-counter-back:hover,
+.kiosk-pay-counter-back:focus-visible {
+  background: var(--kiosk-primary-soft, #FFE8DD);
+  color: var(--kiosk-primary, #F4501E);
+  border-color: var(--kiosk-primary, #F4501E);
+}
+.kiosk-pay-counter-back:focus-visible {
+  outline: var(--kiosk-focus-width, 3px) solid var(--kiosk-focus-ring, var(--kiosk-primary, #F4501E));
+  outline-offset: 2px;
 }
 .kiosk-pay-counter-processing {
   font-size: 18px;
