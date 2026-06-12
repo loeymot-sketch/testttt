@@ -41,7 +41,12 @@
                                     class="db-field-control">
                             </div>
 
-                            <div class="col-12 sm:col-6 md:col-4 xl:col-3">
+                            <!-- [DISPUTE-R1 B-R1-19 2026-06-12] Si la liste des modes de
+                                 paiement est inaccessible (403 rôle sans permission:settings),
+                                 on masque proprement le filtre au lieu d'afficher un select
+                                 vide cassé. Le catch du dispatch (mounted) évite l'AxiosError
+                                 non gérée qui crashait la console à CHAQUE visite BM. -->
+                            <div class="col-12 sm:col-6 md:col-4 xl:col-3" v-if="!paymentGatewaysUnavailable">
                                 <label for="payment_method" class="db-field-title after:hidden">{{
                                     $t('label.payment_method')
                                 }}</label>
@@ -214,6 +219,10 @@ export default {
                 id: "print",
                 popTitle: this.$t("menu.transactions"),
             },
+            // [DISPUTE-R1 B-R1-19 2026-06-12] true quand le rôle courant ne peut
+            // pas lister les passerelles de paiement (403) — le filtre « Mode de
+            // paiement » est alors masqué proprement, la page reste fonctionnelle.
+            paymentGatewaysUnavailable: false,
             props: {
                 form: {
                     date: null,
@@ -241,11 +250,20 @@ export default {
             this.list();
         }).catch();
 
+        // [DISPUTE-R1 B-R1-19 2026-06-12] GET /admin/setting/payment-gateway est
+        // gaté permission:settings côté backend : pour un Branch Manager le
+        // dispatch rejetait en 403 NON CATCHÉ → PAGEERROR AxiosError à CHAQUE
+        // visite de /admin/transactions. Catch défensif : on dégrade en masquant
+        // le filtre mode de paiement, la liste des transactions reste servie.
+        // (Le fix d'authz backend est porté par H1 en parallèle — ce catch reste
+        // la défense en profondeur.)
         this.$store.dispatch('paymentGateway/lists', {
             order_column: 'id',
             order_type: 'asc',
             status: statusEnum.ACTIVE,
             excepts: 1
+        }).catch(() => {
+            this.paymentGatewaysUnavailable = true;
         });
     },
     computed: {
