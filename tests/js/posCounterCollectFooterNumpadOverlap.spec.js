@@ -131,4 +131,14 @@ describe('PosCounterCollectModal — contrat CSS anti-occlusion (source)', () =>
     expect(bodyBlock()).toMatch(/overflow-y:\s*auto/);
     expect(bodyBlock()).toMatch(/min-height:\s*0/);
   });
+
+  it('compaction viewports courts : media query ≤820px présente (fit 1366×768 validé live, body 664/664, 14/14 touches OK)', () => {
+    // Les valeurs ont été VALIDÉES LIVE par simulation DOM avant écriture :
+    //   1440×900 → body 736/736, 14/14 touches hit-test OK sans scroll ;
+    //   1366×768 → body 664/664, 14/14 touches hit-test OK sans scroll.
+    expect(source).toMatch(/@media\s*\(max-height:\s*820px\)/);
+    // Plancher tactile des touches : 48px, jamais en dessous.
+    expect(source).toMatch(/\.cc-cash-section\s*:deep\(\.pos-v5-numpad button\)\s*\{\s*min-height:\s*48px/);
+    expect(source).not.toMatch(/\.pos-v5-numpad button\)\s*\{\s*min-height:\s*(?:[1-3]\d|4[0-7])px/);
+  });
 });

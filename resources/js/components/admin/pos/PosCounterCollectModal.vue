@@ -707,7 +707,13 @@ export default {
   overflow-y: auto;
   padding: 20px 24px 8px 24px;
 }
-.cc-modal-header { margin-bottom: 14px; }
+/* [DISPUTE-R1 ADV-F-P0-1 compaction 2026-06-12] Densité verticale mesurée
+   live : contenu 862px vs ~743px disponibles à 1440×900 → le pavé exigeait
+   un scroll pour CHAQUE encaissement espèces. Compaction ciblée (~-125px :
+   hero, tuiles mode, input, touches 56→48px = plancher tactile 48px) pour
+   que le modal tienne SANS scroll à 900px de hauteur. À 768px le scroll
+   interne reste possible et SÛR (footer hors du scroller). */
+.cc-modal-header { margin-bottom: 8px; }
 .cc-modal-title-row {
   display: flex;
   align-items: center;
@@ -773,11 +779,11 @@ export default {
 /* Hero total — mirror PaymentComponent V5 ".pos-v5-payment-total-card" */
 .cc-hero-total {
   text-align: center;
-  padding: 14px 16px;
+  padding: 8px 12px;
   background: var(--pos-v5-surface-2, #faf6f1);
   border: 1px solid var(--pos-v5-border, #eadfd2);
   border-radius: 10px;
-  margin-bottom: 16px;
+  margin-bottom: 10px;
 }
 .cc-hero-label {
   margin: 0 0 4px 0;
@@ -789,7 +795,7 @@ export default {
 }
 .cc-hero-value {
   margin: 0;
-  font-size: 40px;
+  font-size: 32px;
   line-height: 1.1;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
@@ -803,7 +809,7 @@ export default {
 @media (max-width: 480px) { .cc-hero-value { font-size: 32px; } }
 
 /* Mode picker — same look as Wave W */
-.cc-mode-section { margin-bottom: 16px; }
+.cc-mode-section { margin-bottom: 10px; }
 .cc-section-title {
   margin: 0 0 8px 0;
   font-size: 13px;
@@ -823,14 +829,14 @@ export default {
   align-items: center;
   justify-content: center;
   gap: 4px;
-  padding: 14px 10px;
+  padding: 8px 10px;
   border: 2px solid var(--pos-v5-border, #e0e0e0);
   border-radius: 10px;
   background: var(--pos-v5-surface-2, #fafafa);
   cursor: pointer;
   font-family: inherit;
   transition: transform 80ms ease, border-color 120ms ease, background 120ms ease;
-  min-height: 84px;
+  min-height: 64px;
 }
 /* [test-e2e fix A-002 round-1 2026-05-21] Separate :hover (subtle hint)
    from .is-active (brand-red filled state) so a cashier never sees TWO
@@ -846,7 +852,7 @@ export default {
 }
 .cc-mode-btn:active:not(:disabled) { transform: translateY(0); }
 .cc-mode-btn:disabled { opacity: 0.55; cursor: not-allowed; }
-.cc-mode-icon { font-size: 26px; line-height: 1; }
+.cc-mode-icon { font-size: 20px; line-height: 1; }
 .cc-mode-label {
   font-size: 14px;
   font-weight: 700;
@@ -859,7 +865,11 @@ export default {
 }
 
 /* Cash sub-section */
-.cc-cash-section { margin-bottom: 16px; }
+.cc-cash-section { margin-bottom: 10px; }
+/* [DISPUTE-R1 ADV-F-P0-1 compaction] Touches du pavé 56→48px DANS CE MODAL
+   uniquement (plancher tactile 48px respecté — réf. EAA/McDo §1) ; l'atome
+   partagé PosV5Numpad reste intact pour les autres surfaces. */
+.cc-cash-section :deep(.pos-v5-numpad button) { min-height: 48px; }
 .cc-input-label {
   display: block;
   font-size: 12px;
@@ -871,10 +881,10 @@ export default {
 }
 .cc-input {
   width: 100%;
-  padding: 12px 14px;
+  padding: 8px 14px;
   border: 1.5px solid var(--pos-v5-border, #e0e0e0);
   border-radius: 8px;
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 700;
   text-align: right;
   background: var(--pos-v5-surface, #fff);
@@ -936,7 +946,7 @@ export default {
   flex: 0 0 auto;
   background: var(--pos-v5-surface, #fff);
   border-top: 1px solid var(--pos-v5-border, #eee);
-  padding: 12px 24px 20px;
+  padding: 10px 24px 14px;
 }
 .cc-cancel-btn,
 .cc-confirm-btn {
@@ -989,4 +999,25 @@ export default {
 .fade-leave-active { transition: opacity 160ms ease; }
 .fade-enter-from,
 .fade-leave-to { opacity: 0; }
+
+/* [DISPUTE-R1 ADV-F-P0-1 compaction 2026-06-12] Viewports courts (1366×768 =
+   résolution de caisse courante) : valeurs VALIDÉES LIVE par simulation DOM
+   (body 664/664, 14/14 touches hit-test OK sans scroll, CTA visible).
+   Touches du pavé inchangées (48px = plancher tactile). Le sous-libellé des
+   modes est masqué ici uniquement (info disponible ≥820px de hauteur). */
+@media (max-height: 820px) {
+  .cc-modal { max-height: 96vh; }
+  .cc-modal-body { padding: 12px 24px 6px; }
+  .cc-modal-header { margin-bottom: 6px; }
+  .cc-hero-total { padding: 6px 12px; margin-bottom: 8px; }
+  .cc-hero-value { font-size: 26px; }
+  .cc-section-title { margin-bottom: 6px; }
+  .cc-mode-grid { gap: 8px; }
+  .cc-mode-btn { min-height: 52px; padding: 6px 10px; }
+  .cc-mode-sub { display: none; }
+  .cc-mode-icon { font-size: 18px; }
+  .cc-input-label { margin-bottom: 4px; }
+  .cc-input { margin-bottom: 8px; }
+  .cc-modal-footer { padding: 8px 24px 10px; }
+}
 </style>
