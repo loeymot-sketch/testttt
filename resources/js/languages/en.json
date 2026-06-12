@@ -1855,7 +1855,7 @@
             "tpe_default": "Payment in progress…",
             "tpe_browser_sim": "Simulating payment (browser mode)…",
             "tpe_accepted": "Payment accepted",
-            "loyalty_not_applied_toast": "Your loyalty discount could not be applied (not enough points at payment time). Your order was confirmed without the discount.",
+            "loyalty_not_applied_toast": "Your loyalty discount could not be applied. Your order was confirmed without the discount — please show your card at the counter.",
             "invalid_order_response": "Invalid server response: order not found. Please try again.",
             "tpe_timeout": "Payment terminal timed out. Please try again or ask a staff member.",
             "payment_sync_failed": "The payment was accepted, but the kiosk could not confirm the order with the server. Please call a staff member.",

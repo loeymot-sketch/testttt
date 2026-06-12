@@ -1280,7 +1280,7 @@
             "tpe_default": "Paiement en cours…",
             "tpe_browser_sim": "Simulation du paiement (mode navigateur)…",
             "tpe_accepted": "Paiement accepté",
-            "loyalty_not_applied_toast": "Votre réduction fidélité n'a pas pu être appliquée (points insuffisants au moment du paiement). Votre commande a été validée sans réduction.",
+            "loyalty_not_applied_toast": "Votre réduction fidélité n'a pas pu être appliquée. Votre commande a été validée sans réduction — présentez votre carte en caisse.",
             "invalid_order_response": "Réponse serveur incorrecte : commande introuvable. Veuillez réessayer.",
             "tpe_timeout": "পেমেন্ট টার্মিনালের সময় শেষ। অনুগ্রহ করে আবার চেষ্টা করুন বা একজন অপারেটরের সাথে যোগাযোগ করুন।",
             "payment_sync_failed": "Le paiement a été accepté mais la borne n'a pas pu confirmer la commande auprès du serveur. Merci d'appeler un membre du personnel.",

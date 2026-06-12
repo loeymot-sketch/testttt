@@ -267,9 +267,14 @@ class OrderQuoteService
             return $pricing;
         }
 
+        // [HEAL dispute-r3 C-RED-02-R2 2026-06-12] `->where('status', 1)` here
+        // silently dropped the redemption for EVERY real customer (seed + POS
+        // add-customer persist Status::ACTIVE=5) — UI promised 4,85 €, order
+        // billed 6,50 €, points intact (R2 orders 4537/4520). Canonical gate
+        // = User::loyaltyActive() (parity LoyaltyController::isCustomerActive).
         $loyaltyUser = User::query()
             ->where('loyalty_code', $loyaltyCode)
-            ->where('status', 1)
+            ->loyaltyActive()
             ->first();
 
         if (! $loyaltyUser) {

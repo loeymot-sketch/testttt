@@ -96,6 +96,58 @@ class KioskLoyaltyBillingTest extends TestCase
         ]);
     }
 
+    /**
+     * [HEAL dispute-r3 C-RED-02-R2 2026-06-12] The R2 adversaries reproduced
+     * the P0 against REAL customers: the H1 lookup `->where('status', 1)`
+     * (OrderQuoteService:272 + FrontendOrderService:936) re-introduced the
+     * exact trap documented in LoyaltyController:100-106 since 2026-06-06 —
+     * seeded + caisse-created customers persist `status = Status::ACTIVE (5)`,
+     * so the quote silently dropped the redemption (UI promised 4,85 €, DB
+     * billed 6,50 €, points never debited — orders 4537/4520). The H1 tests
+     * passed because this factory hardcoded status=1. This test pins the
+     * REAL production population: status=5 end-to-end (quote discount +
+     * order billing + points debit + ledger row).
+     */
+    public function test_kiosk_redemption_works_for_status_active_5_customer(): void
+    {
+        config(['app.api_key' => 'test-api-key']);
+        [$kioskUser, $payload] = $this->kioskFixture();
+        $customer = $this->makeLoyaltyCustomer('VICT1234', 150, Status::ACTIVE);
+
+        $payload['loyalty_code'] = 'VICT1234';
+        $payload['loyalty_redeem_discount'] = 1.00;
+
+        $quote = $this->actingAs($kioskUser, 'sanctum')
+            ->postJson('/api/frontend/order/quote', $payload)
+            ->assertOk()
+            ->json('data');
+
+        $this->assertSame(1.0, (float) $quote['discount'], 'quote must apply redemption for status=5 (Status::ACTIVE) customer');
+        $this->assertSame(7.25, (float) $quote['total_ttc']);
+
+        $response = $this->actingAs($kioskUser, 'sanctum')
+            ->withHeader('x-api-key', 'test-api-key')
+            ->postJson('/api/frontend/order', $payload + [
+                'quote_token' => $quote['quote_token'],
+                'quote_signature' => $quote['signature'],
+                'discount' => $quote['discount'],
+                'total' => $quote['total_ttc'],
+            ]);
+
+        $this->assertContains($response->status(), [200, 201], $response->getContent());
+
+        $order = FrontendOrder::query()->latest('id')->firstOrFail();
+        $this->assertSame(1.0, round((float) $order->discount, 2), 'loyalty discount must be billed for status=5 customer');
+        $this->assertSame(7.25, round((float) $order->total, 2));
+        $this->assertSame(50, (int) $customer->fresh()->loyalty_points, 'points must be debited for status=5 customer');
+        $this->assertDatabaseHas('loyalty_transactions', [
+            'user_id' => $customer->id,
+            'order_id' => $order->id,
+            'type' => 'redeem',
+            'points' => -100,
+        ]);
+    }
+
     public function test_identify_only_customer_is_never_auto_redeemed(): void
     {
         config(['app.api_key' => 'test-api-key']);
@@ -191,13 +243,19 @@ class KioskLoyaltyBillingTest extends TestCase
         $this->assertSame(1, (int) $promo->fresh()->uses_count);
     }
 
-    private function makeLoyaltyCustomer(string $code, int $points): User
+    /**
+     * [HEAL dispute-r3 C-RED-02-R2] `$status` param added — the default 1 keeps
+     * the legacy tests intact, but the REAL population (seed + POS add-customer
+     * form) persists Status::ACTIVE (5). Never write a loyalty test that only
+     * exercises status=1 (the R2 P0 survived precisely because of that).
+     */
+    private function makeLoyaltyCustomer(string $code, int $points, int $status = 1): User
     {
         return User::factory()->create([
             'branch_id' => 0,
             'loyalty_code' => $code,
             'loyalty_points' => $points,
-            'status' => 1,
+            'status' => $status,
         ]);
     }
 

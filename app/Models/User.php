@@ -184,4 +184,23 @@ class User extends Authenticatable implements HasMedia
     {
         return $this->hasMany(MessageHistory::class, 'user_id', 'id')->where('is_read', Ask::NO);
     }
+
+    /**
+     * [HEAL dispute-r3 C-RED-02-R2 2026-06-12] Canonical "active customer"
+     * status gate for loyalty lookups — query-builder counterpart of
+     * LoyaltyController::isCustomerActive() (:933) and the dual lookup in
+     * PosRedemptionService (:114-128).
+     *
+     * Historical rows carry status=1 (pre-enum active flag) while the seeders
+     * AND the POS add-customer form persist Status::ACTIVE (5) — BOTH coexist
+     * in production. A bare `->where('status', 1)` silently drops every real
+     * customer (the R2 P0: kiosk loyalty redemption promised on screen, never
+     * billed). LoyaltyController:100-106 documents this exact trap since
+     * 2026-06-06 — never write a users/status lookup without grepping that
+     * precedent first.
+     */
+    public function scopeLoyaltyActive(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
+    {
+        return $query->whereIn('status', [1, \App\Enums\Status::ACTIVE]);
+    }
 }

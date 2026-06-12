@@ -932,8 +932,12 @@ class FrontendOrderService
 
         // Lock the customer row before deciding whether to consume a pending kiosk redemption
         // or create a new ledger entry. This keeps points and ledger in the same DB transaction.
+        // [HEAL dispute-r3 C-RED-02-R2 2026-06-12] status gate via the canonical
+        // User::loyaltyActive() scope (1 OR Status::ACTIVE=5) — the bare
+        // `->where('status', 1)` re-introduced the documented LoyaltyController
+        // trap and dropped billing for the whole real population (R2 P0).
         $loyaltyUser = \App\Models\User::where('loyalty_code', $loyaltyCode)
-            ->where('status', 1)
+            ->loyaltyActive()
             ->lockForUpdate()
             ->first();
 
