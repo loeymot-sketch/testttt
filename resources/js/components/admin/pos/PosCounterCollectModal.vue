@@ -40,6 +40,14 @@
       @click.self="onCancel"
     >
       <div ref="ccModalRoot" class="cc-modal" role="dialog" aria-modal="true" :aria-label="$t('label.encaisser_mode_title')">
+        <!-- [DISPUTE-R1 ADV-F-P0-1 2026-06-12] Zone scrollable INTERNE.
+             Le footer sticky du heal W2-G6 recouvrait 6 touches du pavé
+             (taper « 9 » pouvait déclencher « Confirmer & Imprimer ticket »
+             — hit-test live 1440×900). Structure colonne flex : tout le
+             contenu scrolle ICI, le footer est un sibling FIXE en bas,
+             hors du scroller → chevauchement impossible, CTA toujours
+             visible (l'intention G6 est préservée sans son effet de bord). -->
+        <div class="cc-modal-body" data-testid="pos-counter-collect-body">
         <!-- Header: hero total + queue number (mirror PaymentComponent design language) -->
         <div class="cc-modal-header">
           <div class="cc-modal-title-row">
@@ -172,8 +180,9 @@
             />
           </div>
         </div>
+        </div><!-- /.cc-modal-body — fin de la zone scrollable -->
 
-        <!-- Footer: confirm + cancel -->
+        <!-- Footer: confirm + cancel — SIBLING du body, jamais au-dessus du pavé -->
         <div class="cc-modal-footer">
           <button
             type="button"
@@ -626,10 +635,25 @@ export default {
   width: 100%;
   max-width: 520px;
   max-height: 92vh;
-  overflow-y: auto;
+  /* [DISPUTE-R1 ADV-F-P0-1 2026-06-12] La racine n'est PLUS le scroller
+     (l'ancien scroll racine + footer collant opaque = 6 touches du
+     pavé recouvertes, « 9 » déclenchait le CTA Confirmer). Colonne flex :
+     le scroll vit dans .cc-modal-body, le footer est fixe en bas. */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
-  padding: 20px 24px 24px 24px;
+  padding: 0;
   font-family: var(--pos-v5-font-family, 'Rubik', system-ui, sans-serif);
+}
+/* [DISPUTE-R1 ADV-F-P0-1] Scroller interne — header + hero + modes + pavé.
+   min-height: 0 est requis pour qu'un enfant flex puisse rétrécir sous son
+   contenu et scroller au lieu de pousser le footer hors écran. */
+.cc-modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 20px 24px 8px 24px;
 }
 .cc-modal-header { margin-bottom: 14px; }
 .cc-modal-title-row {
@@ -840,16 +864,15 @@ export default {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
-  /* [UIUX-W2 G6 2026-06-11] CTA « Confirmer & Imprimer ticket » passait sous le
-     fold (<900px de hauteur, .cc-modal max-height 92vh scrollable). Footer
-     sticky dans le scroll du modal — même design, juste l'ancrage : fond =
-     surface du modal, bleed sur le padding latéral/bas via marges négatives. */
-  position: sticky;
-  bottom: 0;
-  z-index: 1;
+  /* [DISPUTE-R1 ADV-F-P0-1 2026-06-12] L'ancien footer collant opaque
+     (heal W2-G6) recouvrait les touches 7/8/9/00/0/«,» du pavé —
+     « 9 » tombait sur « Confirmer & Imprimer ticket » (hit-test live).
+     Le footer est désormais un enfant flex FIXE hors du scroller
+     (.cc-modal-body) : jamais au-dessus du contenu, CTA toujours visible. */
+  flex: 0 0 auto;
   background: var(--pos-v5-surface, #fff);
-  margin: 4px -24px -24px;
-  padding: 12px 24px 24px;
+  border-top: 1px solid var(--pos-v5-border, #eee);
+  padding: 12px 24px 20px;
 }
 .cc-cancel-btn,
 .cc-confirm-btn {

@@ -98,12 +98,23 @@ describe('G4 — order show polish: orphan variations, empty state, kiosk custom
 });
 
 describe('G6 — collect modal polish: sticky CTA, FR casing, single back/clear keys, hero font', () => {
-  it('anchors the footer sticky inside the modal scroll and drops Title Case + mono-hero', () => {
-    const modal = read('resources/js/components/admin/pos/PosCounterCollectModal.vue');
+  it('keeps the footer OUTSIDE the internal scroller (CTA visible, numpad never occluded) and drops Title Case + mono-hero', () => {
+    // [DISPUTE-R1 ADV-F-P0-1 2026-06-12] The original G6 sticky-footer anchor
+    // (position: sticky; bottom: 0; opaque) was REFUTED by live hit-test:
+    // it occluded numpad keys 7/8/9/00/0/, and tapping "9" landed on the
+    // "Confirmer & Imprimer ticket" CTA (irreversible NF525 event). New
+    // canonical (locked by posCounterCollectFooterNumpadOverlap.spec.js):
+    // flex-column modal, internal .cc-modal-body scroller, footer is a
+    // FIXED sibling outside the scroll — CTA still never under the fold
+    // (original G6 intent preserved) AND it can never cover the pad.
+    const modal = read('resources/js/components/admin/pos/PosCounterCollectModal.vue')
+      .replace(/\/\*[\s\S]*?\*\//g, '');
 
-    // CTA must never sit under the fold on <900px-tall screens.
-    expect(modal).toMatch(/\.cc-modal-footer\s*{[^}]*position:\s*sticky/);
-    expect(modal).toMatch(/\.cc-modal-footer\s*{[^}]*bottom:\s*0/);
+    // CTA must never sit under the fold on <900px-tall screens…
+    expect(modal).toMatch(/\.cc-modal-footer\s*{[^}]*flex:\s*0\s+0\s+auto/);
+    expect(modal).toMatch(/\.cc-modal-body\s*{[^}]*overflow-y:\s*auto/);
+    // …and must never come back as a sticky overlay INSIDE the scroller.
+    expect(modal).not.toMatch(/\.cc-modal-footer\s*{[^}]*position:\s*sticky/);
     // Title Case is not a French convention.
     expect(modal).not.toMatch(/\.cc-modal-title\s*{[^}]*text-transform:\s*capitalize/);
     // 'Rubik Mono One' rendered "3 , 80" with full-width comma/space.
