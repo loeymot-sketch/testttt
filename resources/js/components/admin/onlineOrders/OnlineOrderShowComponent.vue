@@ -399,7 +399,8 @@ export default {
         orderStatusEnumArray: function () {
             return {
                 [orderStatusEnum.PENDING]: this.$t("label.pending"),
-                [orderStatusEnum.ACCEPT]: this.$t("label.accept"),
+                // [W-REM T-R2.0 Q-2] STATUS display key (≠ action verb label.accept)
+                [orderStatusEnum.ACCEPT]: this.$t("label.accepted"),
                 [orderStatusEnum.PREPARING]: this.$t("label.preparing"),
                 [orderStatusEnum.PREPARED]: this.$t("label.prepared"),
                 [orderStatusEnum.OUT_FOR_DELIVERY]: this.$t("label.out_for_delivery"),

@@ -35,7 +35,7 @@
                             <vue-select class="db-field-control f-b-custom-select" id="searchStatus"
                                 v-model="props.search.status" :options="[
                                     { id: enums.orderStatusEnum.PENDING, name: $t('label.pending') },
-                                    { id: enums.orderStatusEnum.ACCEPT, name: $t('label.accept') },
+                                    { id: enums.orderStatusEnum.ACCEPT, name: $t('label.accepted') },
                                     { id: enums.orderStatusEnum.PREPARING, name: $t('label.preparing') },
                                     { id: enums.orderStatusEnum.OUT_FOR_DELIVERY, name: $t('label.out_for_delivery') },
                                     { id: enums.orderStatusEnum.DELIVERED, name: $t('label.delivered') },
@@ -116,7 +116,10 @@
                             <td class="db-table-body-td">
                                 {{ textShortener(order.customer_name, 20) }}
                             </td>
-                            <td class="db-table-body-td">{{ order.total_amount_price }}</td>
+                            <!-- [W-REM T-R2.0 Q-2 2026-06-12] Canonical FR EUR via shared
+                                 `formatPrice()` (WT-D-R1-F4 pattern) — `total_amount_price`
+                                 ships flatAmountFormat ("7.00") which parses cleanly. -->
+                            <td class="db-table-body-td">{{ formatPrice(order.total_amount_price) }}</td>
                             <td class="db-table-body-td">
                                 {{ order.order_datetime }}
                             </td>
@@ -190,9 +193,12 @@ import isAdvanceOrderEnum from "../../../enums/modules/isAdvanceOrderEnum";
 import displayModeEnum from "../../../enums/modules/displayModeEnum";
 import SourceEnum from "../../../enums/modules/sourceEnum";
 import ENV from "../../../config/env";
+// [W-REM T-R2.0 Q-2 2026-06-12] Shared admin FR EUR price formatter (WT-D-R1-F4).
+import { adminPriceMixin } from "../../../helpers/formatPrice";
 
 export default {
     name: "OnlineOrderListComponent",
+    mixins: [adminPriceMixin],
     components: {
         TableLimitComponent,
         PaginationSMBox,
@@ -242,7 +248,8 @@ export default {
                 isAdvanceOrderEnum: isAdvanceOrderEnum,
                 orderStatusEnumArray: {
                     [orderStatusEnum.PENDING]: this.$t("label.pending"),
-                    [orderStatusEnum.ACCEPT]: this.$t("label.accept"),
+                    // [W-REM T-R2.0 Q-2] STATUS display key (≠ action verb label.accept)
+                    [orderStatusEnum.ACCEPT]: this.$t("label.accepted"),
                     [orderStatusEnum.PREPARING]: this.$t("label.preparing"),
                     [orderStatusEnum.PREPARED]: this.$t("label.prepared"),
                     [orderStatusEnum.OUT_FOR_DELIVERY]: this.$t("label.out_for_delivery"),

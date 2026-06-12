@@ -962,6 +962,7 @@
         "from_date": "Date début",
         "to_date": "Date fin",
         "accept": "Acceptée",
+        "accepted": "Acceptée",
         "date_range": "Date Range",
         "my_cart": "My Cart",
         "instruction": "Instruction",
