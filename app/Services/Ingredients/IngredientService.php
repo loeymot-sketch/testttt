@@ -207,8 +207,19 @@ class IngredientService
     private function usedByRowsForExtra(int $extraId): array
     {
         $extra = ItemExtra::query()->find($extraId);
-        if (! $extra || ! $extra->group_label) {
+        if (! $extra) {
             return [];
+        }
+
+        // [W-REM T-R2.4 — D-B1-01 2026-06-12] Drawer menteur : la liste groupe
+        // les extras par name||group_label et compte les rows ItemExtra
+        // (« Utilisé dans 8 produit(s) »), mais ce drill-down ne résolvait
+        // l'usage QUE via les wizard steps matchés sur group_label → tout
+        // extra legacy SANS group_label répondait « Non utilisé » (8 vs 0,
+        // risque de suppression cassante). Fallback par NOM : les items
+        // propriétaires des rows de même nom (group_label null) SONT l'usage.
+        if (! $extra->group_label) {
+            return $this->usedByRowsForGrouplessExtra($extra);
         }
 
         $steps = ItemWizardStep::query()
@@ -218,6 +229,57 @@ class IngredientService
             ->get();
 
         return $this->mapStepsToUsedBy($steps);
+    }
+
+    /**
+     * [W-REM T-R2.4 — D-B1-01] By-name usage for legacy extras without a
+     * group_label: each ItemExtra row of the same name (group_label null)
+     * belongs to an item — those owner items are the usage, in parity with
+     * the list's `used_by_count = $group->count()`.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function usedByRowsForGrouplessExtra(ItemExtra $extra): array
+    {
+        $rows = ItemExtra::query()
+            ->where('name', (string) $extra->name)
+            ->whereNull('group_label')
+            // withTrashed : les rows legacy pointent souvent des items
+            // archivés (purge catalogue 2026-05-28) — le drawer doit les
+            // NOMMER (« X (archivé) ») plutôt que rendre "Article #N".
+            ->with(['item' => fn ($query) => $query->withTrashed()])
+            ->get();
+
+        $usedBy = [];
+        $seenItemIds = [];
+        foreach ($rows as $row) {
+            $ownerId = (int) $row->item_id;
+            if ($ownerId <= 0 || isset($seenItemIds[$ownerId])) {
+                continue;
+            }
+            $seenItemIds[$ownerId] = true;
+
+            $ownerItem = $row->item;
+            $ownerName = (string) ($ownerItem?->name ?? "Article #{$ownerId}");
+            if ($ownerItem && $ownerItem->trashed()) {
+                $ownerName .= ' (archivé)';
+            }
+            $wizardProfileId = ItemWizardProfile::query()
+                ->where('item_id', $ownerId)
+                ->value('id');
+
+            $usedBy[] = [
+                'owner_type' => 'item',
+                'owner_id' => $ownerId,
+                'owner_name' => $ownerName,
+                'step_key' => 'extra',
+                'step_label' => 'Supplément',
+                'wizard_profile_id' => $wizardProfileId !== null ? (int) $wizardProfileId : null,
+                'admin_url' => "/admin/items/{$ownerId}/composer",
+            ];
+        }
+
+        return $usedBy;
     }
 
     /**
@@ -325,8 +387,15 @@ class IngredientService
     private function usageCountForExtra(int $extraId): int
     {
         $extra = ItemExtra::query()->find($extraId);
-        if (! $extra || ! $extra->group_label) {
+        if (! $extra) {
             return 0;
+        }
+
+        // [W-REM T-R2.4 — D-B1-01] Symétrie avec usedByRowsForExtra : un
+        // extra sans group_label compte ses items propriétaires by-name
+        // (avant : 0 systématique, scellait la divergence liste/drawer).
+        if (! $extra->group_label) {
+            return count($this->usedByRowsForGrouplessExtra($extra));
         }
 
         return ItemWizardStep::query()
