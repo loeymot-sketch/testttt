@@ -146,9 +146,13 @@
                         >
                             {{ $t('label.cash_session_view_movements') }}
                         </button>
+                        <!-- [DISPUTE-R1 ADV-F-P2-2 2026-06-12] L'action destructive
+                             (flux Z fiscal) n'est plus le PRIMAIRE visuel du modal
+                             de consultation routine : variante outline ici ; le
+                             bouton de CONFIRMATION du flux close reste plein. -->
                         <button
                             type="button"
-                            class="cash-session-dialog__btn cash-session-dialog__btn--danger"
+                            class="cash-session-dialog__btn cash-session-dialog__btn--danger-outline"
                             data-testid="cash-session-go-close"
                             @click="mode = 'close'"
                         >
@@ -892,6 +896,19 @@ export default {
 .cash-session-dialog__btn--danger:hover:not(:disabled) {
     background: #9c1727;
     border-color: #9c1727;
+}
+
+/* [DISPUTE-R1 ADV-F-P2-2] Variante outline — entrée du flux clôture depuis
+   le modal de consultation routine (le plein rouge reste réservé à la
+   CONFIRMATION du flux close). */
+.cash-session-dialog__btn--danger-outline {
+    background: transparent;
+    color: #c21e2f;
+    border-color: #c21e2f;
+}
+
+.cash-session-dialog__btn--danger-outline:hover:not(:disabled) {
+    background: #fdeaec;
 }
 
 .cash-session-dialog__table {
