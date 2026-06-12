@@ -69,9 +69,16 @@ class MonitorOutboxStaleness extends Command
         // success, so a healthy dispatched row never matches regardless of age.
         $orphanCutoff = now()->subSeconds(max($staleAfter, 600));
 
+        // [W-REM R1 T-R1.1a 2026-06-12] Quarantined rows (expired pending
+        // closed by OutboxQuarantineService with dispatched_at=now +
+        // last_error='expired:quarantined') are a TERMINAL, INTENTIONAL
+        // state — without this exclusion every quarantined attempts>=5 row
+        // would match the orphan predicate forever and page the operator
+        // on every cron tick (permanent false alarm).
         $crashClaimedCount = (int) DB::table('domain_events')
             ->whereNotNull('dispatched_at')
             ->whereNotNull('last_error')
+            ->where('last_error', '!=', \App\Services\Outbox\OutboxQuarantineService::QUARANTINE_ERROR)
             ->where('attempts', '>=', 5)
             ->where('dispatched_at', '<', $orphanCutoff)
             ->count();
@@ -96,6 +103,7 @@ class MonitorOutboxStaleness extends Command
         $oldestOrphan = DB::table('domain_events')
             ->whereNotNull('dispatched_at')
             ->whereNotNull('last_error')
+            ->where('last_error', '!=', \App\Services\Outbox\OutboxQuarantineService::QUARANTINE_ERROR)
             ->where('attempts', '>=', 5)
             ->where('dispatched_at', '<', $orphanCutoff)
             ->orderBy('dispatched_at')
