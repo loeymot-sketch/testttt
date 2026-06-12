@@ -176,10 +176,13 @@
                         </ul>
                     </div>
 
+                    <!-- [DISPUTE-R1 ADV-F-P2-8/B-R1-12 2026-06-12] `capitalize`
+                         forçait le Title Case « Imprimer La Facture » sur une
+                         trad FR déjà correcte — pas une convention FR. -->
                     <button type="button" v-print="printObj"
                         class="flex items-center justify-center gap-2 px-4 h-[38px] rounded shadow-db-card bg-primary">
                         <i class="lab lab-printer-line lab-font-size-16 text-white"></i>
-                        <span class="text-sm capitalize text-white">{{ $t('button.print_invoice') }}</span>
+                        <span class="text-sm text-white">{{ $t('button.print_invoice') }}</span>
                     </button>
                     <!--
                       [HEAL-4 / PROPOSAL-02 — V101-02 2026-05-26]
