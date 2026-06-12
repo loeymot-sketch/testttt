@@ -489,6 +489,18 @@ class FrontendOrderService
                     $calculatedDiscount
                 );
 
+                // [HEAL dispute-r1 C-RED-01/E-ADV-1 2026-06-12] Borne promo
+                // (kiosk_promo_code) — billed on the order, mirrored from
+                // OrderQuoteService::withKioskPromoDiscount so the sealed
+                // quote total and the persisted order total agree.
+                $this->applyKioskPromoDiscount(
+                    $request,
+                    $validatedCoupon,
+                    $isKioskMachineOrder,
+                    (float) $realSubtotal,
+                    $calculatedDiscount
+                );
+
                 // [GOAL-GOLIVE-VAT10 / F1-dormancy 2026-05-30] Single fiscal gate
                 // for the customer-facing kiosk/web path. After coupon (SSOT or
                 // legacy) + kiosk loyalty redeem, $calculatedDiscount holds the
@@ -535,6 +547,17 @@ class FrontendOrderService
                         $this->frontendOrder->source_surface = $isKiosk ? 'kiosk' : 'web';
                     }
                 }, $isKioskMachineOrder ? 'kiosk' : 'frontend');
+
+                // [HEAL dispute-r1 C-RED-01] Consume the promo AFTER the quote
+                // seal (sealForCommit re-runs the quote pricing inside THIS
+                // transaction — incrementing first would invalidate a max_uses
+                // promo against our own consumption → false intent mismatch).
+                // Still inside the outer DB::transaction: a rollback reverts
+                // the increment with the order.
+                if ($this->pendingKioskPromoToConsume !== null) {
+                    $this->pendingKioskPromoToConsume->increment('uses_count');
+                    $this->pendingKioskPromoToConsume = null;
+                }
 
                 if ($request->address_id) {
                     // [SECURITY-IDOR / Sprint 2B DEL-2] Ensure the address belongs to the
@@ -812,6 +835,68 @@ class FrontendOrderService
     /**
      * Apply kiosk loyalty redemption exactly once inside the order transaction.
      */
+    /**
+     * [HEAL dispute-r1 C-RED-01/E-ADV-1] Pending kiosk promo locked for this
+     * order — consumed (uses_count++) after sealForCommit, see myOrderStore.
+     */
+    private ?\App\Models\KioskPromo $pendingKioskPromoToConsume = null;
+
+    /**
+     * [HEAL dispute-r1 C-RED-01/E-ADV-1 2026-06-12] Bill the borne promo on
+     * the order. Pre-fix the code was DISPLAYED by PricingPreviewService and
+     * carried as canonical metadata only — orders were created at full price
+     * (uses_count never consumed, customer billed more than the payment
+     * screen showed). Mirrors OrderQuoteService::withKioskPromoDiscount:
+     * coupon keeps priority, V1 kill-switch gates the application, discount
+     * stacks with the loyalty redemption. The row is locked (lockForUpdate)
+     * so concurrent redemptions of a max_uses promo serialize.
+     */
+    private function applyKioskPromoDiscount(
+        OrderRequest $request,
+        ?Coupon $validatedCoupon,
+        bool $isKioskMachineOrder,
+        float $realSubtotal,
+        float &$calculatedDiscount
+    ): void {
+        $this->pendingKioskPromoToConsume = null;
+        $code = trim((string) $request->input('kiosk_promo_code', ''));
+
+        if (! $isKioskMachineOrder || $code === '' || config('pos.manual_discount_enabled') !== true) {
+            return;
+        }
+
+        if ($validatedCoupon instanceof Coupon || (int) $request->input('coupon_id', 0) > 0) {
+            Log::info('[KioskPromo] Promo skipped because coupon takes priority on frontend order.');
+            return;
+        }
+
+        $promo = \App\Models\KioskPromo::query()
+            ->where('branch_id', (int) $this->frontendOrder->branch_id)
+            ->where('code', $code)
+            ->where('active', true)
+            ->lockForUpdate()
+            ->first();
+
+        $cartTotal = round($realSubtotal, 2);
+        if (! $promo || ! $promo->isRedeemableFor($cartTotal)) {
+            Log::warning('[KioskPromo] Promo code not redeemable at order creation', [
+                'code' => $code,
+                'order_id' => $this->frontendOrder->id,
+            ]);
+            return;
+        }
+
+        $promoDiscount = $promo->computeDiscount($cartTotal);
+        if ($promoDiscount <= 0.0) {
+            return;
+        }
+
+        $calculatedDiscount += $promoDiscount;
+        $this->pendingKioskPromoToConsume = $promo;
+
+        Log::info("[KioskPromo] {$code} applied on order #{$this->frontendOrder->id} (-{$promoDiscount} EUR)");
+    }
+
     private function applyKioskLoyaltyDiscount(
         OrderRequest $request,
         ?Coupon $validatedCoupon,

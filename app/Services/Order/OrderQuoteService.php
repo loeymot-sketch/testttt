@@ -223,7 +223,15 @@ class OrderQuoteService
                 $this->couponService
             );
 
-            return $this->withKioskLoyaltyDiscount($request, $pricing);
+            $pricing = $this->withKioskLoyaltyDiscount($request, $pricing);
+
+            // [HEAL dispute-r1 C-RED-01/E-ADV-1 2026-06-12] The borne promo
+            // (kiosk_promo_code) was DISPLAYED by PricingPreviewService but
+            // never applied by the quote/order pipeline — the customer saw
+            // 0,00 € on the payment screen and was billed full price at the
+            // counter. Apply it here so the discount traverses quote → order
+            // (FrontendOrderService::applyKioskPromoDiscount mirrors this).
+            return $this->withKioskPromoDiscount($request, $branchId, $pricing);
         }
 
         return $this->pricingService->calculateOrder(
@@ -272,10 +280,10 @@ class OrderQuoteService
             return $pricing;
         }
 
-        $total = round(max(
-            0.0,
-            $pricing->accumulatedSubtotal + $pricing->totalTax + $pricing->deliveryCharge - $discount
-        ), 2);
+        // [HEAL dispute-r1 C-RED-02] TTC-aware total (the previous formula
+        // re-added totalTax on top of TTC line totals — latent double-count,
+        // unreachable while the discount guard short-circuited).
+        $total = $this->discountedKioskTotal($pricing, $discount);
 
         return new PricingResult(
             $pricing->orderItemInsertRows,
@@ -288,6 +296,72 @@ class OrderQuoteService
             $total,
             $pricing->meta + ['loyalty_points_required' => $pointsRequired],
         );
+    }
+
+    /**
+     * [HEAL dispute-r1 C-RED-01/E-ADV-1] Apply the branch-scoped kiosk promo
+     * (kiosk_promos table) as an order-level discount on top of the SSOT
+     * PricingResult — the frozen PricingService is NOT touched. Stacks with
+     * the kiosk loyalty redemption (the borne cart displays both lines);
+     * coupon keeps priority (promo skipped when a coupon is active), and the
+     * V1 discretionary-discount kill-switch gates the application exactly
+     * like the order-side gate (assertDiscretionaryDiscountAllowed).
+     */
+    private function withKioskPromoDiscount(Request $request, int $branchId, PricingResult $pricing): PricingResult
+    {
+        $code = trim((string) $request->input('kiosk_promo_code', ''));
+
+        if ($code === ''
+            || (int) $request->input('coupon_id', 0) > 0
+            || config('pos.manual_discount_enabled') !== true) {
+            return $pricing;
+        }
+
+        $promo = \App\Models\KioskPromo::findValid(
+            $branchId,
+            $code,
+            round($pricing->accumulatedSubtotal, 2)
+        );
+
+        if (! $promo) {
+            return $pricing;
+        }
+
+        $promoDiscount = $promo->computeDiscount(round($pricing->accumulatedSubtotal, 2));
+        if ($promoDiscount <= 0.0) {
+            return $pricing;
+        }
+
+        $discount = round((float) $pricing->discount + $promoDiscount, 2);
+
+        return new PricingResult(
+            $pricing->orderItemInsertRows,
+            $pricing->lines,
+            $pricing->accumulatedSubtotal,
+            $pricing->subtotal,
+            $pricing->totalTax,
+            $discount,
+            $pricing->deliveryCharge,
+            $this->discountedKioskTotal($pricing, $discount),
+            $pricing->meta + ['kiosk_promo_id' => (int) $promo->id],
+        );
+    }
+
+    /**
+     * [HEAL dispute-r1 C-RED-01..02] TTC-aware recomputed total after an
+     * order-level kiosk discount. Mirrors the frozen PricingService formula
+     * (tax_inclusive_prices=true → tax already INSIDE accumulatedSubtotal;
+     * adding totalTax again would double-count) and the order-side formula in
+     * FrontendOrderService::myOrderStore — sealForCommit equality depends on
+     * both sides computing the same number.
+     */
+    private function discountedKioskTotal(PricingResult $pricing, float $discount): float
+    {
+        $base = (bool) config('pricing.tax_inclusive_prices', false)
+            ? $pricing->accumulatedSubtotal + $pricing->deliveryCharge
+            : $pricing->accumulatedSubtotal + $pricing->totalTax + $pricing->deliveryCharge;
+
+        return round(max(0.0, $base - $discount), 2);
     }
 
     private function assertManualDiscountAllowed(Request $request, string $surface, PricingResult $pricing, User $actor): void

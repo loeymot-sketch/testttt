@@ -82,12 +82,27 @@ class KioskPromo extends Model
             ->first();
 
         if (!$promo) return null;
-        if ($promo->valid_from && $promo->valid_from->gt($at)) return null;
-        if ($promo->valid_to && $promo->valid_to->lt($at)) return null;
-        if ($promo->max_uses !== null && $promo->uses_count >= $promo->max_uses) return null;
-        if ($cartTotal < (float) $promo->min_cart) return null;
 
-        return $promo;
+        return $promo->isRedeemableFor($cartTotal, $at) ? $promo : null;
+    }
+
+    /**
+     * [HEAL dispute-r1 C-RED-01] Validity check on an already-fetched row —
+     * lets the order-creation path lock the row (lockForUpdate) and re-check
+     * under the same transaction (max_uses race). Logic extracted verbatim
+     * from findValid().
+     */
+    public function isRedeemableFor(float $cartTotal, ?Carbon $at = null): bool
+    {
+        $at ??= now();
+
+        if (!$this->active) return false;
+        if ($this->valid_from && $this->valid_from->gt($at)) return false;
+        if ($this->valid_to && $this->valid_to->lt($at)) return false;
+        if ($this->max_uses !== null && $this->uses_count >= $this->max_uses) return false;
+        if ($cartTotal < (float) $this->min_cart) return false;
+
+        return true;
     }
 
     /**
