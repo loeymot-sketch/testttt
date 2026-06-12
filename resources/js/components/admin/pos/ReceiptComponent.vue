@@ -121,18 +121,19 @@
                                         </div>
                                         <p v-if="receiptVariationsFor(item).length !== 0"
                                             class="text-xs leading-5 font-normal text-heading max-w-[200px]">
+                                            <!-- [DISPUTE-R1 A-RED-7 2026-06-12] Séparateur COLLÉ au nom :
+                                                 le retour-ligne template devenait un espace rendu →
+                                                 « Poulet mariné , Sauce ». -->
                                             <span v-for="(variation, index) in receiptVariationsFor(item)" :key="'var-' + idx + '-' + index">
                                                 <template v-if="variation.label">{{ variation.label }}: </template>
-                                                <template v-if="variation.quantity > 1">{{ variation.quantity }}× </template>{{ variation.name }}
-                                                <span v-if="index + 1 < receiptVariationsFor(item).length">, </span>
+                                                <template v-if="variation.quantity > 1">{{ variation.quantity }}× </template>{{ variation.name }}<span v-if="index + 1 < receiptVariationsFor(item).length">, </span>
                                             </span>
                                         </p>
                                         <p v-if="receiptExtrasFor(item).length > 0"
                                             class="text-xs leading-5 font-normal text-heading max-w-[200px]">
                                             {{ $t('label.extras') }}:
                                             <span v-for="(extra, index) in receiptExtrasFor(item)" :key="'extra-' + idx + '-' + index">
-                                                <template v-if="extra.quantity > 1">{{ extra.quantity }}× </template>{{ extra.name }}
-                                                <span v-if="index + 1 < receiptExtrasFor(item).length">, </span>
+                                                <template v-if="extra.quantity > 1">{{ extra.quantity }}× </template>{{ extra.name }}<span v-if="index + 1 < receiptExtrasFor(item).length">, </span>
                                             </span>
                                         </p>
                                         <!-- [G2-HEAL-03 / G.5 G5-F-002 P1] Composer addons (menu_formule bundled drinks/sides).
@@ -306,17 +307,16 @@
                                     <td class="py-1.5">
                                         <p class="text-sm font-semibold capitalize">{{ item.item_name }}</p>
                                         <p v-if="receiptVariationsFor(item).length !== 0" class="text-[11px] leading-snug text-heading mt-0.5">
+                                            <!-- [DISPUTE-R1 A-RED-7 2026-06-12] Séparateur collé au nom (cf. ticket client). -->
                                             <span v-for="(variation, index) in receiptVariationsFor(item)" :key="'kv-' + idx + '-' + index">
                                                 <template v-if="variation.label">{{ variation.label }}: </template>
-                                                <template v-if="variation.quantity > 1">{{ variation.quantity }}× </template>{{ variation.name }}
-                                                <span v-if="index + 1 < receiptVariationsFor(item).length"> · </span>
+                                                <template v-if="variation.quantity > 1">{{ variation.quantity }}× </template>{{ variation.name }}<span v-if="index + 1 < receiptVariationsFor(item).length"> · </span>
                                             </span>
                                         </p>
                                         <p v-if="receiptExtrasFor(item).length > 0" class="text-[11px] leading-snug mt-0.5">
                                             {{ $t('label.extras') }}:
                                             <span v-for="(extra, index) in receiptExtrasFor(item)" :key="'ke-' + idx + '-' + index">
-                                                <template v-if="extra.quantity > 1">{{ extra.quantity }}× </template>{{ extra.name }}
-                                                <span v-if="index + 1 < receiptExtrasFor(item).length"> · </span>
+                                                <template v-if="extra.quantity > 1">{{ extra.quantity }}× </template>{{ extra.name }}<span v-if="index + 1 < receiptExtrasFor(item).length"> · </span>
                                             </span>
                                         </p>
                                         <!-- [G2-HEAL-03 / G.5 G5-F-002 P1] Kitchen ticket — name + qty only (no price). -->
