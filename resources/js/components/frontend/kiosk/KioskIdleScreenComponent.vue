@@ -5,8 +5,13 @@
        computed, watchers, lifecycle, refs, emits). Tous les data-testid
        conservés à l'identique pour ne pas casser les sentinels Vitest /
        Playwright (cf. tests/e2e/c3-runtime-multi-surface.spec.js, etc.). -->
+  <!-- [dispute-r1 ADV-F-P1-3 2026-06-12] Idle = LIGHT par défaut (mandat owner
+       « kiosk light mode 100% », DESIGN_SYSTEM_POLICY §1). Le rendu sombre
+       (gradient brun + overlay + scrim) n'est conservé QUE lorsqu'une vidéo
+       de fond est configurée (texte crème nécessaire à la lisibilité). -->
   <div
     class="kiosk-idle kiosk-idle--bold"
+    :class="{ 'kiosk-idle--has-video': !!videoSrc }"
     data-testid="kiosk-idle-root"
   >
     <!-- Floating top-right — langue + a11y settings -->
@@ -338,9 +343,13 @@ export default {
      consume the variable; fallback `#FFFFFF` matches the owner's V2 palette
      mandate (black/red Cayenne/yellow/white — no warm browns). */
   background: var(--kiosk-idle-bg, #FFFFFF);
-  /* Texte toujours clair : l'idle screen a TOUJOURS un overlay warm sombre par-dessus
-     vidéo/image/gradient. On ne consomme PAS les tokens text-inverse (qui s'inversent
-     en dark mode) — on fixe la couleur claire en dur. */
+  /* [dispute-r1 ADV-F-P1-3] LIGHT par défaut : texte sombre sur fond clair
+     (mandat owner light 100%). L'ancien postulat « l'idle a TOUJOURS un
+     overlay warm sombre » ne tient que pour la variante vidéo — voir
+     .kiosk-idle--has-video plus bas qui restaure le texte crème. */
+  color: var(--kiosk-text, #1A1410);
+}
+.kiosk-idle--bold.kiosk-idle--has-video {
   color: #FFF5E8;
 }
 
@@ -355,28 +364,36 @@ export default {
   filter: saturate(1.08);
 }
 
-/* Fallback : gradient warm appétissant + food emojis fond */
+/* [dispute-r1 ADV-F-P1-3] Fallback sans vidéo : gradient CLAIR Cayenne
+   (blanc → pêche, accents orange brand #F4501E + jaune #FFB800 très doux).
+   L'ancien linear-gradient brun/noir #1A1410→#0E0A07 contredisait le mandat
+   light 100% sur le PREMIER écran client. */
 .kiosk-idle-fallback {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(ellipse 80% 60% at 30% 20%, rgba(230, 57, 70, 0.18) 0%, transparent 60%),
-    radial-gradient(ellipse 70% 50% at 80% 80%, rgba(255, 182, 39, 0.12) 0%, transparent 55%),
-    linear-gradient(135deg, #1A1410 0%, #0E0A07 100%);
+    radial-gradient(ellipse 80% 60% at 30% 20%, rgba(244, 80, 30, 0.10) 0%, transparent 60%),
+    radial-gradient(ellipse 70% 50% at 80% 80%, rgba(255, 184, 0, 0.14) 0%, transparent 55%),
+    linear-gradient(180deg, #FFFFFF 0%, #FFF4EE 100%);
   z-index: 0;
 }
 
-/* Overlay warm (jamais pure noir) */
+/* Overlay : AUCUN voile sombre en light (défaut). La variante vidéo restaure
+   le dégradé warm nécessaire à la lisibilité du texte crème. */
 .kiosk-idle-overlay {
   position: absolute;
   inset: 0;
+  background: none;
+  z-index: 1;
+  pointer-events: none;
+}
+.kiosk-idle--has-video .kiosk-idle-overlay {
   background: linear-gradient(
     180deg,
     rgba(26, 20, 16, 0.20) 0%,
     rgba(26, 20, 16, 0.40) 50%,
     rgba(26, 20, 16, 0.85) 100%
   );
-  z-index: 1;
 }
 
 /* Décor : food emojis flottants — très subtil, fond uniquement */
@@ -418,8 +435,11 @@ export default {
   text-align: center;
 }
 
-/* abuse-e2e A-001: dark scrim so cream text reaches WCAG AA >=4.5:1 on the light idle gradient (flat color survives AAA background-image:none); proven 5.12:1 worst-case / 17.7:1 dark-fallback. */
-.kiosk-idle-content::before {
+/* abuse-e2e A-001: dark scrim so cream text reaches WCAG AA >=4.5:1.
+   [dispute-r1 ADV-F-P1-3] Le scrim n'a de sens QUE pour la variante vidéo
+   (texte crème) : en light (défaut) le texte est sombre sur fond clair
+   (≥ 12:1) — l'« ellipse floue centrale » sombre du verdict F disparaît. */
+.kiosk-idle--has-video .kiosk-idle-content::before {
   content: '';
   position: absolute;
   inset: -4% -6%;
@@ -455,17 +475,27 @@ export default {
   width: 160px;
   height: 160px;
   object-fit: contain;
+  /* [dispute-r1 ADV-F-P1-3] Light : ombre douce (l'ombre 0.6 était calibrée
+     pour le fond sombre). */
+  filter: drop-shadow(0 8px 20px rgba(26, 20, 16, 0.18));
+}
+.kiosk-idle--has-video .kiosk-idle-logo {
   filter: drop-shadow(0 12px 32px rgba(0, 0, 0, 0.6));
 }
 
 /* Brand mark — Fraunces hero (via classe .kiosk-display-hero) */
 .kiosk-idle-brand {
-  color: #FFF5E8;
+  /* [dispute-r1 ADV-F-P1-3] Light : encre sombre, pas d'ombre portée. */
+  color: var(--kiosk-text, #1A1410);
   margin: 0;
-  text-shadow: 0 4px 24px rgba(0, 0, 0, 0.7), 0 2px 8px rgba(0, 0, 0, 0.5);
+  text-shadow: none;
   text-transform: none;
   /* La classe .kiosk-display-hero applique font-family Fraunces, weight 900,
      font-size 144px, line-height 1.0, letter-spacing -0.04em — voir typography-bold.css */
+}
+.kiosk-idle--has-video .kiosk-idle-brand {
+  color: #FFF5E8;
+  text-shadow: 0 4px 24px rgba(0, 0, 0, 0.7), 0 2px 8px rgba(0, 0, 0, 0.5);
 }
 
 .kiosk-idle-headline {
@@ -478,10 +508,15 @@ export default {
 }
 
 .kiosk-idle-title {
-  color: #FFF5E8;
+  /* [dispute-r1 ADV-F-P1-3] Light : encre sombre (≥ 12:1 sur #FFF4EE). */
+  color: var(--kiosk-text, #1A1410);
   margin: 0;
-  text-shadow: 0 4px 24px rgba(0, 0, 0, 0.7), 0 2px 8px rgba(0, 0, 0, 0.5);
+  text-shadow: none;
   /* La classe .kiosk-display-xl applique font Fraunces 80px black */
+}
+.kiosk-idle--has-video .kiosk-idle-title {
+  color: #FFF5E8;
+  text-shadow: 0 4px 24px rgba(0, 0, 0, 0.7), 0 2px 8px rgba(0, 0, 0, 0.5);
 }
 
 .kiosk-idle-subtitle {
@@ -489,13 +524,17 @@ export default {
   font-size: clamp(20px, 2.6vw, 28px);
   line-height: 1.35;
   font-weight: var(--kiosk-font-weight-medium, 500);
-  color: #FFF5E8;
-  /* abuse-e2e A-001 — opaque cream over the .kiosk-idle-content::before dark
-     scrim (rgba(15,12,10,.62)) reaches WCAG AA >=4.5:1 on the light idle
-     gradient (worst stop 5.12:1) and 17.7:1 on the dark fallback. text-shadow
-     kept as belt-and-braces; was rgba(255,245,232,0.88) (~1.0:1 pre-scrim). */
-  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.65), 0 1px 4px rgba(0, 0, 0, 0.45);
+  /* [dispute-r1 ADV-F-P1-3] Light : gris encre 7:1 sur #FFF4EE (AA confort). */
+  color: #4A4036;
+  text-shadow: none;
   margin: 0;
+}
+.kiosk-idle--has-video .kiosk-idle-subtitle {
+  /* abuse-e2e A-001 — opaque cream over the .kiosk-idle-content::before dark
+     scrim (rgba(15,12,10,.62)) reaches WCAG AA >=4.5:1 (worst stop 5.12:1).
+     text-shadow kept as belt-and-braces. */
+  color: #FFF5E8;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.65), 0 1px 4px rgba(0, 0, 0, 0.45);
 }
 
 /* CTA pulse — décoratif, conservé pour cohérence du flow visuel */
@@ -554,11 +593,16 @@ export default {
   font-family: var(--kiosk-font-body-bold, var(--kiosk-font-latin));
   font-size: calc(15px * var(--kiosk-text-scale, 1));
   font-weight: var(--kiosk-font-weight-bold, 700);
-  color: rgba(255, 245, 232, 0.85);
+  /* [dispute-r1 ADV-F-P1-3] Light : encre 7:1 (le « micro-texte gris » crème
+     du verdict F devenait illisible sur fond clair). */
+  color: #4A4036;
   margin: 0;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   animation: kiosk-slide-up 600ms 300ms var(--kiosk-motion-smooth, cubic-bezier(0.4, 0, 0.2, 1));
+}
+.kiosk-idle--has-video .kiosk-idle-tap-hint {
+  color: rgba(255, 245, 232, 0.85);
 }
 
 /* Order type chooser — bold cards avec iconographie warm */
@@ -675,7 +719,8 @@ export default {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: rgba(255, 245, 232, 0.30);
+  /* [dispute-r1 ADV-F-P1-3] Light : points encre doux (décoratif). */
+  background: rgba(26, 20, 16, 0.22);
   transition:
     width var(--kiosk-duration-card, 240ms) var(--kiosk-motion-smooth, cubic-bezier(0.4, 0, 0.2, 1)),
     background-color var(--kiosk-duration-card, 240ms) var(--kiosk-motion-smooth, cubic-bezier(0.4, 0, 0.2, 1)),
