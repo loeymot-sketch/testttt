@@ -71,9 +71,34 @@ const lastDeliveredAt = Object.create(null);
 
 const DEBOUNCED_EVENTS = ['kiosk-auth-retried', 'kiosk-auth-failed'];
 
+// [dispute-r1 D-006 + C-ADV-05 2026-06-12] Le toast « Session rafraîchie
+// automatiquement » (KioskAppComponent:380, frozen — déclenché par
+// kiosk-auth-retried) est un message TECHNIQUE de session qui s'affichait
+// DEVANT le client en plein parcours (d3-07 pendant le drawer a11y ;
+// c1-11 où il CHEVAUCHE le CTA upsell « Non merci, continuer sans »).
+// Le retry silencieux a réussi → il n'y a RIEN à dire au client. On avale
+// donc l'event entièrement côté capture (le shell frozen ne le voit plus)
+// et on garde la trace auditable en console pour les ingénieurs/Playwright.
+// `kiosk-auth-failed` (borne déconnectée, actionnable) reste délivré,
+// simplement débouncé comme avant.
+const SILENCED_EVENTS = new Set(['kiosk-auth-retried']);
+
 function makeDebouncer(eventName) {
   return function debouncer(evt) {
     try {
+      if (SILENCED_EVENTS.has(eventName)) {
+        // [dispute-r1 D-006] Silence total côté client — log console only.
+        if (typeof evt.stopImmediatePropagation === 'function') {
+          evt.stopImmediatePropagation();
+        }
+        if (typeof evt.preventDefault === 'function') {
+          evt.preventDefault();
+        }
+        if (typeof console !== 'undefined' && typeof console.debug === 'function') {
+          console.debug('[kioskAuthInterceptor] session auto-refreshed (toast client supprimé — dispute-r1 D-006)', evt?.detail || null);
+        }
+        return;
+      }
       const now = Date.now();
       const previous = lastDeliveredAt[eventName] || 0;
       if (now - previous < DEBOUNCE_MS) {
