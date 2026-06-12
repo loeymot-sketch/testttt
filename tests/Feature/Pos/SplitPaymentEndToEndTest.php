@@ -210,8 +210,15 @@ class SplitPaymentEndToEndTest extends TestCase
         $orderId = $response->json('data.id');
         $this->assertNotNull($orderId);
 
-        $this->assertSame(0, OrderPayment::where('order_id', $orderId)->count(),
-            'Legacy single-tender ne doit PAS écrire dans order_payments.');
+        // [HEAL dispute-r1 E-ADV-9 2026-06-12] CONTRAT INVERSÉ : le mono-mode
+        // écrit désormais EXACTEMENT UNE row order_payments (ventilation TPE
+        // des Z structurellement vide sinon — la quasi-totalité des paiements
+        // V1 est mono-mode). La row mono porte le mode du paiement et le
+        // total entier — PAS des tranches.
+        $monoRows = OrderPayment::where('order_id', $orderId)->get();
+        $this->assertCount(1, $monoRows,
+            'Mono-mode doit écrire exactement UNE row order_payments (ventilation Z).');
+        $this->assertSame(PosPaymentMethod::CASH, (int) $monoRows->first()->mode);
     }
 
     public function test_pos_create_with_breakdown_sum_below_total_returns_422(): void
@@ -296,10 +303,18 @@ class SplitPaymentEndToEndTest extends TestCase
             ->postJson('/api/admin/pos', $this->payloadWithPosQuote($this->operator, $payload));
 
         // Flag OFF : prepareForValidation strip le champ AVANT validation,
-        // legacy single-tender doit fonctionner et 0 tranche persistée.
+        // legacy single-tender doit fonctionner et 0 TRANCHE persistée.
+        // [HEAL dispute-r1 E-ADV-9 2026-06-12] Le mono-mode écrit désormais
+        // UNE row de ventilation (mode du paiement, montant = total entier) —
+        // les TRANCHES du breakdown ignoré ne doivent PAS apparaître (pas de
+        // row à 10,00 / 15,00 ; une seule row au total).
         $response->assertStatus(201);
         $orderId = $response->json('data.id');
-        $this->assertSame(0, OrderPayment::where('order_id', $orderId)->count(),
-            'Quand le flag est OFF, payment_breakdown doit être ignoré silencieusement.');
+        $rows = OrderPayment::where('order_id', $orderId)->get();
+        $this->assertCount(1, $rows,
+            'Quand le flag est OFF, payment_breakdown est ignoré : 1 seule row mono-mode, pas de tranches.');
+        $this->assertSame(PosPaymentMethod::CASH, (int) $rows->first()->mode);
+        $this->assertNotEquals(15.00, round((float) $rows->first()->amount, 2),
+            'la tranche CARD du breakdown ignoré ne doit pas être persistée');
     }
 }

@@ -420,6 +420,35 @@ class PaymentService
                 ]
             );
 
+            // [HEAL dispute-r1 E-ADV-9 2026-06-12] Mono-mode ventilation row —
+            // the Z report TPE breakdown (aggregateByTerminal, additive
+            // decorator outside the HMAC signature) reads `order_payments`
+            // exclusively; counter-collect confirms never wrote one. Same
+            // shape as a SplitPaymentService tranche; firstOrCreate keeps the
+            // race-protected re-confirm idempotent. Mirrors the inline-paid
+            // POS writer in OrderService::posOrderStore.
+            $counterTendered = ($mode === PosPaymentMethod::CASH && $received !== null)
+                ? (float) $received
+                : null;
+            \App\Models\OrderPayment::query()
+                ->withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
+                ->firstOrCreate(
+                    ['order_id' => (int) $locked->id],
+                    [
+                        'branch_id' => (int) $locked->branch_id,
+                        'mode' => (int) $mode,
+                        'terminal_id' => null,
+                        'amount' => $locked->total,
+                        'tendered' => $counterTendered,
+                        // change_amount is NOT NULL default 0 (migration
+                        // 2026_05_06_180000) — 0.0 for non-cash modes.
+                        'change_amount' => $counterTendered !== null
+                            ? round(max(0, $counterTendered - (float) $locked->total), 2)
+                            : 0.0,
+                        'paid_at' => now(),
+                    ]
+                );
+
             app(AuditLogService::class)->write([
                 'branch_id' => (int) $locked->branch_id,
                 'user_id' => Auth::check() ? (int) Auth::id() : null,

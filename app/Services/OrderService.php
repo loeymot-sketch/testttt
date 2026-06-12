@@ -1337,6 +1337,39 @@ class OrderService
                             'sign' => '+',
                         ]
                     );
+
+                    // [HEAL dispute-r1 E-ADV-9 2026-06-12] Mono-mode ventilation.
+                    // Only SplitPaymentService (flag default OFF) wrote
+                    // `order_payments` — the Z report TPE ventilation
+                    // (ZReportCashEnrichmentService::aggregateByTerminal,
+                    // additive decorator OUTSIDE the HMAC signature) was
+                    // structurally empty for the quasi-totality of V1
+                    // payments. One row per mono-mode inline-paid POS sale,
+                    // same shape as a split tranche. Split orders skip (their
+                    // tranches were persisted above — no double-count).
+                    if (! $splitActive) {
+                        $monoTendered = ((int) $request->pos_payment_method === \App\Enums\PosPaymentMethod::CASH
+                            && $request->pos_received_amount !== null)
+                            ? (float) $request->pos_received_amount
+                            : null;
+                        \App\Models\OrderPayment::query()
+                            ->withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
+                            ->firstOrCreate(
+                                ['order_id' => (int) $this->order->id],
+                                [
+                                    'branch_id' => (int) $this->order->branch_id,
+                                    'mode' => (int) $request->pos_payment_method,
+                                    'terminal_id' => ((int) ($request->terminal_id ?? 0)) > 0 ? (int) $request->terminal_id : null,
+                                    'amount' => $this->order->total,
+                                    'tendered' => $monoTendered,
+                                    // change_amount NOT NULL default 0 — 0.0 for non-cash.
+                                    'change_amount' => $monoTendered !== null
+                                        ? round(max(0, $monoTendered - (float) $this->order->total), 2)
+                                        : 0.0,
+                                    'paid_at' => now(),
+                                ]
+                            );
+                    }
                 }
 
                 $order = $this->order;
