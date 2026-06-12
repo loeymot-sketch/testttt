@@ -471,16 +471,28 @@ export default {
     },
     mounted() {
         this.loading.isActive = true;
-        this.$store.dispatch('deliveryBoy/lists', {
-            order_column: 'id',
-            order_type: 'asc',
-            status: statusEnum.ACTIVE
-        });
         this.$store.dispatch('posOrder/show', this.$route.params.id).then(res => {
             this.payment_status = res.data.data.payment_status;
             this.order_status = res.data.data.status;
             this.delivery_boy = res.data.data.delivery_boy ? res.data.data.delivery_boy.id : 0;
             this.loading.isActive = false;
+            // [DISPUTE-R1 A-RED-11 2026-06-12] GET /admin/delivery-boy est gaté
+            // `permission:delivery-boys` côté backend → pour un caissier, le
+            // dispatch inconditionnel produisait un 403 silencieux à CHAQUE
+            // visite du show (observé live ×2). Le sélecteur livreur ne sert
+            // qu'aux commandes LIVRAISON : on ne charge la liste QUE si la
+            // commande est une livraison ET que l'utilisateur a la permission.
+            // Catch propre en défense (pas d'AxiosError non gérée en console).
+            if (
+                res.data.data.order_type === orderTypeEnum.DELIVERY
+                && appService.permissionChecker('delivery-boys')
+            ) {
+                this.$store.dispatch('deliveryBoy/lists', {
+                    order_column: 'id',
+                    order_type: 'asc',
+                    status: statusEnum.ACTIVE
+                }).catch(() => { /* sélecteur livreur vide — pas de crash */ });
+            }
         }).catch((error) => {
             this.loading.isActive = false;
         });
