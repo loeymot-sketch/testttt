@@ -41,12 +41,21 @@
                     </div>
 
                     <div v-else class="enc-grid">
-                        <div v-for="order in orders" :key="order.id" class="enc-ticket">
+                        <div v-for="order in sortedOrders" :key="order.id" class="enc-ticket">
                             <div class="enc-ticket-top">
                                 <span class="enc-origin-badge" :class="originBadge(order).cls">
                                     {{ originBadge(order).label }}
                                 </span>
                                 <span class="enc-top-right">
+                                    <!-- [DISPUTE-R1 B-R1-04+E-ADV-4 2026-06-12] Les N° de file (A0011…)
+                                         se RÉUTILISENT chaque jour : deux cartes « A0011 » de jours
+                                         différents coexistaient SANS date → risque d'encaisser la
+                                         mauvaise commande (prouvé par le run GStack lui-même).
+                                         Badge date explicite sur toute carte d'un autre jour. -->
+                                    <span v-if="dayBadge(order.created_at)" class="enc-day-badge"
+                                          :data-testid="`enc-day-badge-${order.id}`">
+                                        {{ dayBadge(order.created_at) }}
+                                    </span>
                                     <!-- [W2.2] Badge d'attente (aging) — calculé depuis created_at,
                                          devient ambre puis rouge passé ~15 min pour que le gérant
                                          serve d'abord la commande qui attend le plus. -->
@@ -133,6 +142,22 @@ export default {
         // under 200, so this caveat normally never shows and the label is a true Total.
         pendingCapped() {
             return this.orders.length >= this.PENDING_CAP;
+        },
+        // [DISPUTE-R1 B-R1-04+E-ADV-4 2026-06-12] Tri de la file : le jour le
+        // plus récent D'ABORD (les commandes du jour — celles des clients
+        // physiquement au comptoir — en tête ; les reliquats des jours
+        // précédents descendent en bas au lieu d'être servis en premier),
+        // FIFO À L'INTÉRIEUR d'une même journée (ancienneté = priorité,
+        // cohérent avec le badge d'attente W2.2). La purge backend des
+        // zombies PENDING_COUNTER reste une décision owner — ici on ne fait
+        // que rendre la collision de N° impossible à confondre.
+        sortedOrders() {
+            return [...this.orders].sort((a, b) => {
+                const da = this.businessDayStart(a.created_at);
+                const db = this.businessDayStart(b.created_at);
+                if (da !== db) return db - da; // jour récent en premier
+                return new Date(a.created_at) - new Date(b.created_at); // FIFO intra-jour
+            });
         },
     },
     mounted() {
@@ -262,6 +287,34 @@ export default {
         orderAmount(order) {
             return order.cash_pending_amount ?? order.total ?? order.order_amount ?? 0;
         },
+        // [DISPUTE-R1 B-R1-04+E-ADV-4 2026-06-12] Début de journée locale du
+        // created_at (la business date des commandes borne = jour de création).
+        businessDayStart(iso) {
+            if (!iso) return 0;
+            const d = new Date(iso);
+            if (!Number.isFinite(d.getTime())) return 0;
+            d.setHours(0, 0, 0, 0);
+            return d.getTime();
+        },
+        // Badge date : null pour aujourd'hui (cas normal, pas de bruit),
+        // « hier » pour J-1, sinon la date FR jj/mm. (Clé i18n « hier »
+        // inexistante dans fr.json → FR hardcodé, noté pour H2.)
+        dayBadge(iso) {
+            const t = this.businessDayStart(iso);
+            if (!t) return null;
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            if (t === today.getTime()) return null;
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+            if (t === yesterday.getTime()) return 'hier';
+            try {
+                return new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: '2-digit' }).format(new Date(t));
+            } catch (_) {
+                const d = new Date(t);
+                return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+            }
+        },
         openEncaissement(order) {
             if (!order || !order.id) return;
             const amount = this.orderAmount(order);
@@ -370,6 +423,21 @@ export default {
 }
 .enc-wait-stale { color: #b45309; }
 .enc-wait-critical { color: #b91c1c; }
+/* [DISPUTE-R1 B-R1-04+E-ADV-4] Badge « hier » / date sur les commandes
+   d'un autre jour — chip ambre bien visible (risque d'encaisser la
+   mauvaise commande sur collision de N° de file inter-jours). */
+.enc-day-badge {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 9999px;
+    padding: 0.12rem 0.5rem;
+    font-size: 0.72rem;
+    font-weight: 800;
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #f59e0b;
+    white-space: nowrap;
+}
 .enc-origin-badge {
     display: inline-flex;
     align-items: center;

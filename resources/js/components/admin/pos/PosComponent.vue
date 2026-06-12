@@ -1194,6 +1194,14 @@
             >
               <div class="kiosk-cash-order-head">
                 <span class="kiosk-cash-order-num">N° {{ order.queue_number || order.order_serial_no }}</span>
+                <!-- [DISPUTE-R1 B-R1-04+E-ADV-4 2026-06-12] Les N° de file se
+                     réutilisent chaque jour : badge date explicite sur toute
+                     commande d'un autre jour (collision 2× « A0011 » prouvée). -->
+                <span
+                  v-if="kioskCashDayBadge(order.created_at)"
+                  class="kiosk-cash-day-badge"
+                  :data-testid="`kiosk-cash-day-badge-${order.id}`"
+                >{{ kioskCashDayBadge(order.created_at) }}</span>
                 <div class="kiosk-cash-order-head-actions">
                   <button
                     type="button"
@@ -3174,8 +3182,16 @@ export default {
             try {
                 const res = await axios.get('admin/pos/counter-collect/pending');
                 const all = res?.data?.data || [];
-                this.kioskCashOrders = all
-                    .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+                // [DISPUTE-R1 B-R1-04+E-ADV-4 2026-06-12] Jour le plus récent
+                // D'ABORD (le client au comptoir = commande du jour ; les
+                // reliquats des jours précédents — N° de file dupliqués —
+                // descendent en bas), FIFO à l'intérieur d'une même journée.
+                this.kioskCashOrders = all.sort((a, b) => {
+                    const da = this.kioskCashDayStart(a.created_at);
+                    const db = this.kioskCashDayStart(b.created_at);
+                    if (da !== db) return db - da;
+                    return new Date(a.created_at) - new Date(b.created_at);
+                });
                 // [Q10 P-OWNER 2026-05-21] Stamp the successful refresh so
                 // the always-rendered shortcut panel can show "Mis à jour
                 // il y a Xs" — visible health signal even when the list is
@@ -3386,6 +3402,35 @@ export default {
             try {
                 return new Date(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
             } catch (_) { return ''; }
+        },
+        // [DISPUTE-R1 B-R1-04+E-ADV-4 2026-06-12] Début de journée locale du
+        // created_at — base du tri jour-récent-d'abord + badge date.
+        kioskCashDayStart(iso) {
+            if (!iso) return 0;
+            const d = new Date(iso);
+            if (!Number.isFinite(d.getTime())) return 0;
+            d.setHours(0, 0, 0, 0);
+            return d.getTime();
+        },
+        // Badge date des cartes file d'encaissement : null aujourd'hui
+        // (zéro bruit), « hier » pour J-1, sinon jj/mm. Les N° de file se
+        // réutilisent chaque jour → sans date, deux « A0011 » sont
+        // indistinguables et le mauvais peut être encaissé.
+        kioskCashDayBadge(iso) {
+            const t = this.kioskCashDayStart(iso);
+            if (!t) return null;
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            if (t === today.getTime()) return null;
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+            if (t === yesterday.getTime()) return 'hier';
+            try {
+                return new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: '2-digit' }).format(new Date(t));
+            } catch (_) {
+                const d = new Date(t);
+                return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+            }
         },
         // ──────────────────────────────────────────────────────────────────
         onlyNumber: function (e) {
@@ -5039,6 +5084,22 @@ export default {
   font-weight: var(--pos-v5-weight-extrabold);
   font-size: var(--pos-v5-text-body-lg);
   color: var(--pos-v5-ink);
+}
+/* [DISPUTE-R1 B-R1-04+E-ADV-4] Badge « hier » / date — commandes d'un autre
+   jour dans la file (N° de file réutilisés quotidiennement). */
+.kiosk-cash-day-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 800;
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #f59e0b;
+  white-space: nowrap;
+  margin-left: 6px;
+  margin-right: auto;
 }
 .kiosk-cash-order-total {
   font-weight: var(--pos-v5-weight-extrabold);

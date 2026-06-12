@@ -69,6 +69,15 @@
               N° {{ order?.queue_number || order?.order_serial_no || order?.id }}
             </span>
             <span class="cc-modal-source">{{ $t('label.cc_source_kiosk') }}</span>
+            <!-- [DISPUTE-R1 B-R1-04+E-ADV-4 2026-06-12] Les N° de file se
+                 réutilisent chaque jour (2× « A0011 » en attente simultanée,
+                 prouvé DB). Avant de confirmer un encaissement, le caissier
+                 doit VOIR qu'il tient une commande d'un autre jour. -->
+            <span
+              v-if="orderDayBadge"
+              class="cc-modal-order-day"
+              data-testid="pos-counter-collect-day-badge"
+            >⚠ {{ orderDayBadge }}</span>
           </p>
         </div>
 
@@ -327,6 +336,32 @@ export default {
         TICKET: this.$t('label.cc_mode_ticket_hint'),
       };
       return map[this.selectedMode] || '';
+    },
+    // [DISPUTE-R1 B-R1-04+E-ADV-4 2026-06-12] Les N° de file (A0011…) se
+    // réutilisent chaque business date → avant de confirmer, le caissier doit
+    // voir qu'il encaisse une commande d'un AUTRE jour. null = aujourd'hui
+    // (cas normal, zéro bruit). « hier » pour J-1, sinon date FR jj/mm/aaaa.
+    // (Clé i18n dédiée inexistante → FR hardcodé, noté pour H2.)
+    orderDayBadge() {
+      const iso = this.order?.created_at;
+      if (!iso) return null;
+      const d = new Date(iso);
+      if (!Number.isFinite(d.getTime())) return null;
+      d.setHours(0, 0, 0, 0);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (d.getTime() === today.getTime()) return null;
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      if (d.getTime() === yesterday.getTime()) return "Commande d'hier";
+      try {
+        return 'Commande du ' + new Intl.DateTimeFormat('fr-FR', {
+          day: '2-digit', month: '2-digit', year: 'numeric',
+        }).format(d);
+      } catch (_) {
+        return 'Commande du ' + String(d.getDate()).padStart(2, '0') + '/'
+          + String(d.getMonth() + 1).padStart(2, '0') + '/' + d.getFullYear();
+      }
     },
   },
   watch: {
@@ -721,6 +756,18 @@ export default {
   background: var(--pos-v5-brand-red-soft, #ffeaea);
   color: var(--pos-v5-brand-red, #cf3a3a);
   font-weight: 600;
+}
+/* [DISPUTE-R1 B-R1-04+E-ADV-4] Chip ambre « Commande d'hier / du jj/mm/aaaa »
+   — visible AVANT confirmation pour désamorcer la collision de N° de file. */
+.cc-modal-order-day {
+  font-size: 11px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #f59e0b;
+  white-space: nowrap;
 }
 
 /* Hero total — mirror PaymentComponent V5 ".pos-v5-payment-total-card" */
