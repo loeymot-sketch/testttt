@@ -204,13 +204,17 @@ class HealthzController extends Controller
      * Pending queue size. Returns an int per the OPS-GATE-1 contract
      * (NOT a string ok|fail) so the monitor can graph the value.
      *
-     * [OPS-2 2026-06-04] Made HONEST. The previous implementation counted
-     * the `jobs` DB table — but this box runs QUEUE_CONNECTION=redis, so
-     * that table is always empty and the metric was a constant 0 (it could
-     * never surface a backed-up queue). Now uses the driver-agnostic
-     * Queue::size() against the same queues HealthController::checkQueue
-     * graphs (default + high). Returns 0 on any driver error so the JSON
-     * shape never breaks the monitor's parser.
+     * [OPS-2 2026-06-04] First made honest vs the `jobs` table (always 0
+     * under QUEUE_CONNECTION=redis) by switching to Queue::size().
+     *
+     * [W-REM R1 T-R1.2 2026-06-12 — RED-SHARED-02] Made HONEST again.
+     * Queue::size() graphs the REDIS LIST depth — near-zero whenever the
+     * worker is alive (or when jobs were dropped/consumed while the
+     * worker was down). Meanwhile 8 405 domain_events rows sat pending:
+     * the true "undelivered sync events" backlog was invisible. The
+     * metric now counts the OUTBOX backlog directly
+     * (COUNT domain_events WHERE dispatched_at IS NULL) — the SSOT of
+     * what has not been broadcast, regardless of redis state.
      */
     private function checkQueuePending(): int
     {
@@ -218,14 +222,16 @@ class HealthzController extends Controller
     }
 
     /**
-     * Shared honest queue-depth probe (used by HealthzController and the
-     * `healthz:check` CLI mirror).
+     * Shared honest outbox-backlog probe (used by HealthzController and
+     * the `healthz:check` CLI mirror). Returns 0 on any error so the JSON
+     * shape never breaks the monitor's parser (db=fail already pages).
      */
     public static function probeQueuePending(): int
     {
         try {
-            return (int) \Illuminate\Support\Facades\Queue::size('default')
-                + (int) \Illuminate\Support\Facades\Queue::size('high');
+            return (int) DB::table('domain_events')
+                ->whereNull('dispatched_at')
+                ->count();
         } catch (\Throwable $e) {
             return 0;
         }
