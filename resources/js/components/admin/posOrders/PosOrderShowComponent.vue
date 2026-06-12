@@ -664,7 +664,11 @@ export default {
         // refresh the order so subtotal/discount/total + loyalty_customer_code
         // reflect the new state. Then close the modal.
         onLoyaltyRedeemApplied: function () {
-            this.loyaltyRedeemOpen = false;
+            // [GOAL 2026-06-12] NE PLUS auto-fermer : la fermeture immédiate
+            // rendait invisibles le message de succès ET le solde restant, et
+            // réduisait à zéro la fenêtre du solde-live L2 (le modal est le
+            // seul endroit où le solde s'affiche). La caissière ferme via le
+            // bouton — les totaux de la commande se rafraîchissent quand même.
             this.loading.isActive = true;
             this.$store
                 .dispatch('posOrder/show', this.$route.params.id)

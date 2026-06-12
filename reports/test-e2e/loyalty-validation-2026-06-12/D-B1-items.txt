@@ -1,0 +1,157 @@
+Filiale
+Le Cayenne (Principal)
+Le Cayenne (Principal)
+Bonjour
+Admin Le Cayenne
+Admin Le Cayenne
+
+admin@lecayenne.fr
+
++330600000000
+
+2,00 €
+Modifier Le Profil
+Changer Le Mot De Passe
+Déconnexion
+Tableau De Bord
+POS
+Produits & Stock
+Catalogue
+Attribut D’articles
+Ingrédients
+Commandes Caisse
+Historique
+Encaissement
+Vue Caisse Unifiée
+Caisse Livreur
+CAISSE ET COMMANDES
+Écran Cuisine
+Suivi Client
+COMMUNICATIONS
+Notifications Push
+Messages
+Abonnés
+UTILISATEURS
+Administrateurs
+Employés
+Chefs
+COMPTES
+Transactions
+RAPPORTS
+Rapport Des Ventes
+Rapport Articles
+CONFIGURATION
+Paramètres
+Tableau De Bord
+Articles
+PILOTAGE CATALOGUE
+Produits, catégories, offres et disponibilités
+POS / borne
+45
+PRODUITS
+12
+CATÉGORIES
+45
+ACTIFS
+0
+INDISPONIBLES
+Produits
+Catégories
+Offres
+Disponibilités
+Articles
+10
+10
+25
+50
+100
+500
+1000
+Filtrer
+Exporter
+Imprimer
+XLS
+Importer
+Fichier Exemple
+Téléverser Le Fichier
+Ajouter Un Article
+Articles
+NOM
+PRIX
+CATÉGORIE
+TAXE (INCLUANT)
+IMAGE
+TYPE
+Végétarien
+Non Végétarien
+MIS EN AVANT
+Oui
+Non
+SUGGESTION CAISSE
+Oui
+Non
+
+Afficher cet article comme suggestion au paiement sur la borne
+
+STATUT
+Actif
+Inactif
+ATTENTION
+CANAUX DE DIFFUSION
+Borne
+Caisse
+Site Web
+
+Sélectionnez où cet article apparaît. Laisser vide = visible partout.
+
+DESCRIPTION
+Enregistrer
+Fermer
+NOM
+PRIX
+CATÉGORIE
+TAXE
+TYPE
+MIS EN AVANT
+STATUT
+Rechercher
+Effacer
+IMAGE	NOM	CATÉGORIE	PRIX	STATUT	ACTION
+
+	Capri-Sun	Boissons	1,50 €	Actif	
+
+
+	Eau Plate 50cl	Boissons	1,00 €	Actif	
+
+
+	Orangina 33cl	Boissons	1,50 €	Actif	
+
+
+	Oasis Tropical 33cl	Boissons	1,50 €	Actif	
+
+
+	Sprite 33cl	Boissons	1,50 €	Actif	
+
+
+	Fanta Orange 33cl	Boissons	1,50 €	Actif	
+
+
+	Coca-Cola Zero 33cl	Boissons	1,50 €	Actif	
+
+
+	Coca-Cola 33cl	Boissons	1,50 €	Actif	
+
+
+	Tiramisu	Desserts	3,80 €	Actif	
+
+
+	Tarte Daim	Desserts	3,80 €	Actif	
+
+Affichage de 1 à 10 sur 45 entrées
+
+Précédent
+1
+2
+...
+5
+Suivant

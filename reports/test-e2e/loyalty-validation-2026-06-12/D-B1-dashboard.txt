@@ -1,0 +1,275 @@
+Filiale
+Le Cayenne (Principal)
+Bonjour
+Admin Le Cayenne
+Admin Le Cayenne
+
+admin@lecayenne.fr
+
++330600000000
+
+2,00 €
+Modifier Le Profil
+Changer Le Mot De Passe
+Déconnexion
+Tableau De Bord
+POS
+Produits & Stock
+Catalogue
+Attribut D’articles
+Ingrédients
+Commandes Caisse
+Historique
+Encaissement
+Vue Caisse Unifiée
+Caisse Livreur
+CAISSE ET COMMANDES
+Écran Cuisine
+Suivi Client
+COMMUNICATIONS
+Notifications Push
+Messages
+Abonnés
+UTILISATEURS
+Administrateurs
+Employés
+Chefs
+COMPTES
+Transactions
+RAPPORTS
+Rapport Des Ventes
+Rapport Articles
+CONFIGURATION
+Paramètres
+Bonjour !
+Admin Le Cayenne
+PDF Clôture du jour
+Accès rapides
+POS
+Commandes caisse
+Suivi caisse (kanban)
+Encaissement
+Historique
+Écran cuisine
+Suivi client
+Catalogue
+Ingrédients
+Produits & Stock
+Rapport caisses quotidien
+Vue caisse unifiée
+Suivi en direct
+Chiffre d'Affaires du Jour
+0,00 €
+Commandes du Jour
+0
+Ticket Moyen
+0,00 €
+Vue D’ensemble
+Total ventes (depuis le début)
+34 733,00 €
+Total commandes (depuis le début)
+2383
+Total articles menu
+45
+Alertes SLA (Cuisine > 15min)
+0 Alerte(s)
+
+Aucune alerte SLA. Flux de cuisine optimal.
+
+10 anciens tickets (> 24 h)
+Répartition par Canal (Aujourd'hui)
+Web
+0%
+Kiosk/App
+0%
+POS
+0%
+Audit Trail NF525 (Journal Inviolable)
+
+Source : audit_logs (INSERT-only, HMAC SHA-256 chain-signed). Le préfixe de hash atteste l'intégrité de la chaîne.
+
+UTILISATEUR	ACTION	RESSOURCE	HASH	TEMPS
+Admin Le Cayenne	Connexion utilisateur	user#1	eba8b64d	il y a 5 secondes
+Admin Le Cayenne	Connexion utilisateur	user#1	24640598	il y a 31 secondes
+Admin Le Cayenne	Connexion utilisateur	user#1	8ddf4ab2	il y a 1 jour
+Admin Le Cayenne	Statut de paiement modifié	order#4496	2121aa8d	il y a 1 jour
+Admin Le Cayenne	Connexion utilisateur	user#1	41a95aa0	il y a 1 jour
+Admin Le Cayenne	Connexion utilisateur	user#1	7cf85b2e	il y a 1 jour
+Admin Le Cayenne	Connexion utilisateur	user#1	9e5817d4	il y a 1 jour
+Caissier Le Cayenne	Connexion utilisateur	user#3	a2511c8e	il y a 1 jour
+Admin Le Cayenne	Connexion utilisateur	user#1	7b8c2621	il y a 1 jour
+Admin Le Cayenne	Connexion utilisateur	user#1	21a5352a	il y a 1 jour
+Admin Le Cayenne	Connexion utilisateur	user#1	33bb648a	il y a 1 jour
+Admin Le Cayenne	Connexion utilisateur	user#1	f2171199	il y a 1 jour
+Caissier Le Cayenne	Connexion utilisateur	user#3	600805e9	il y a 1 jour
+Caissier Le Cayenne	Connexion utilisateur	user#3	ac698050	il y a 1 jour
+Caissier Le Cayenne	Connexion utilisateur	user#3	530dc0a4	il y a 1 jour
+Caissier Le Cayenne	Connexion utilisateur	user#3	886d22ba	il y a 1 jour
+Admin Le Cayenne	Statut de paiement modifié	order#4499	89d77645	il y a 1 jour
+Admin Le Cayenne	Connexion utilisateur	user#1	5ffa9ca5	il y a 1 jour
+Caissier Le Cayenne	Connexion utilisateur	user#3	1638d5ed	il y a 1 jour
+Admin Le Cayenne	Connexion utilisateur	user#1	738bf31e	il y a 1 jour
+Admin Le Cayenne	Connexion utilisateur	user#1	e7052b9d	il y a 1 jour
+Caissier Le Cayenne	Mouvement de caisse enregistré	cash_drawer_session#20	69bfef3a	il y a 1 jour
+Caissier Le Cayenne	Commande créée (caisse)	order#4510	04d27ed7	il y a 1 jour
+Admin Le Cayenne	Connexion utilisateur	user#1	12df2dfc	il y a 1 jour
+Admin Le Cayenne	Connexion utilisateur	user#1	8a98dd20	il y a 1 jour
+Caissier Le Cayenne	Connexion utilisateur	user#3	c6b10a55	il y a 1 jour
+Admin Le Cayenne	Connexion utilisateur	user#1	48b82669	il y a 1 jour
+Caissier Le Cayenne	Connexion utilisateur	user#3	8a3a367c	il y a 1 jour
+Admin Le Cayenne	Connexion utilisateur	user#1	c192e733	il y a 1 jour
+Admin Le Cayenne	Connexion utilisateur	user#1	5ba411c4	il y a 1 jour
+Admin Le Cayenne	Connexion utilisateur	user#1	400f86c3	il y a 1 jour
+Admin Le Cayenne	Connexion utilisateur	user#1	0e9fc4ab	il y a 1 jour
+Admin Le Cayenne	Connexion utilisateur	user#1	c7cfa977	il y a 1 jour
+Admin Le Cayenne	Connexion utilisateur	user#1	476d6d52	il y a 1 jour
+Admin Le Cayenne	Connexion utilisateur	user#1	84a709bc	il y a 1 jour
+Caissier Le Cayenne	Connexion utilisateur	user#3	1876e29f	il y a 1 jour
+Admin Le Cayenne	Connexion utilisateur	user#1	46003892	il y a 1 jour
+Admin Le Cayenne	Connexion utilisateur	user#1	45ffdf09	il y a 1 jour
+Admin Le Cayenne	Connexion utilisateur	user#1	656927f4	il y a 1 jour
+Admin Le Cayenne	Connexion utilisateur	user#1	e8282fc0	il y a 1 jour
+Chef Le Cayenne	Connexion utilisateur	user#4	67b4be8c	il y a 1 jour
+Chef Le Cayenne	Connexion utilisateur	user#4	c8cd1d2f	il y a 1 jour
+Chef Le Cayenne	Connexion utilisateur	user#4	8e0e3906	il y a 1 jour
+Admin Le Cayenne	Connexion utilisateur	user#1	f66c554b	il y a 1 jour
+Caissier Le Cayenne	Connexion utilisateur	user#3	88308f58	il y a 1 jour
+Admin Le Cayenne	Connexion utilisateur	user#1	1d505de1	il y a 1 jour
+Chef Le Cayenne	Connexion utilisateur	user#4	9be8984b	il y a 1 jour
+Chef Le Cayenne	Connexion utilisateur	user#4	ffd2a03b	il y a 1 jour
+Chef Le Cayenne	Connexion utilisateur	user#4	eb2d96f8	il y a 1 jour
+Chef Le Cayenne	Connexion utilisateur	user#4	e06d54e0	il y a 1 jour
+Statistiques Des Commandes
+Date
+Total Commandes
+0
+En Attente
+0
+Accepter
+0
+En Préparation
+0
+Préparée
+0
+En Livraison
+0
+Livré
+0
+Annulé
+0
+Retournée
+0
+Refusée
+0
+Résumé Des Ventes
+Date
+24 383,10 €
+
+Total Ventes
+
+812,77 €
+
+Ventes Moyennes Par Jour
+
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+Résumé Des Commandes
+Date
+Total
+95
+Livré (95%)
+Retournée (0%)
+Annulé (0%)
+Refusée (0%)
+Dernier Rapport Z
+
+Dernier rapport Z #20
+
+Fermée
+
+10/06/2026 07:06:45
+
+Voir les clôtures Z
+Articles Mis En Avant
+Frites Seules
+Menu (Frites + Boisson)
+Boisson Seule
+Articles Les Plus Populaires
+Menu (Frites + Boisson)
+Sandwich Cayenne
+3,00 €
+Frites Seules
+Sandwich Cayenne
+2,00 €
+Eau Plate 50cl
+Boissons
+1,00 €
+Tacos
+Tacos
+8,50 €
+Sandwich Cayenne
+Sandwich Cayenne
+7,00 €
+Coca-Cola 33cl
+Boissons
+1,50 €
+Statistiques Client
+Date
+06:00
+07:00
+08:00
+09:00
+10:00
+11:00
+12:00
+13:00
+14:00
+15:00
+16:00
+17:00
+18:00
+19:00
+20:00
+21:00
+22:00
+23:00
+Meilleurs Clients
+Client Passage
+
+1406 Commandes
+
+E2E Client EDIT
+
+0 Commandes
+
+E2E Client EDIT
+
+0 Commandes

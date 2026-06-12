@@ -1,0 +1,4 @@
+{"status":true,"data":{"discount_eur":6,"balance_after":400,"order":{"id":4549,"subtotal":25,"discount":26,"total":0,"loyalty_customer_code":"REFUT201"},"transaction_id":39}}
+HTTP 200
+{"status":false,"code":"DISCOUNT_EXCEEDS_SUBTOTAL","message":"Reduction 26 EUR > sous-total 25 EUR"}
+HTTP 422

@@ -1,0 +1,66 @@
+[
+  {
+    "name": "dashboard",
+    "route": "/admin/dashboard",
+    "ms": 822,
+    "console": [],
+    "http": [],
+    "finalUrl": "http://127.0.0.1:8767/admin/dashboard"
+  },
+  {
+    "name": "items",
+    "route": "/admin/items",
+    "ms": 815,
+    "console": [],
+    "http": [],
+    "finalUrl": "http://127.0.0.1:8767/admin/items"
+  },
+  {
+    "name": "ingredients",
+    "route": "/admin/ingredients",
+    "ms": 580,
+    "console": [],
+    "http": [],
+    "finalUrl": "http://127.0.0.1:8767/admin/ingredients"
+  },
+  {
+    "name": "ingredients-attribute",
+    "route": "/admin/ingredients/attribute",
+    "ms": 587,
+    "console": [],
+    "http": [],
+    "finalUrl": "http://127.0.0.1:8767/admin/ingredients/attribute"
+  },
+  {
+    "name": "ingredients-extra",
+    "route": "/admin/ingredients/extra",
+    "ms": 576,
+    "console": [],
+    "http": [],
+    "finalUrl": "http://127.0.0.1:8767/admin/ingredients/extra"
+  },
+  {
+    "name": "ingredients-addon",
+    "route": "/admin/ingredients/addon",
+    "ms": 598,
+    "console": [],
+    "http": [],
+    "finalUrl": "http://127.0.0.1:8767/admin/ingredients/addon"
+  },
+  {
+    "name": "stock-rupture",
+    "route": "/admin/stock/rupture",
+    "ms": 580,
+    "console": [
+      "[console-error] Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "[pageerror] AxiosError: Request failed with status code 401",
+      "[console-error] Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "[pageerror] AxiosError: Request failed with status code 401"
+    ],
+    "http": [
+      "401 GET /api/admin/default-access",
+      "401 GET /api/admin/setting/branch?paginate=0&order_column=id&order_type=asc&status=5"
+    ],
+    "finalUrl": "http://127.0.0.1:8767/login"
+  }
+]

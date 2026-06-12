@@ -1,0 +1,293 @@
+{
+  "sales-report": {
+    "route": "/admin/sales-report",
+    "steps": {
+      "filterOpen": "OK panel visible",
+      "searchNonsense": {
+        "rows": 1,
+        "emptyFR": true
+      },
+      "clearRestore": {
+        "rows": 10,
+        "expected": 10
+      },
+      "pagination": {
+        "changed": true,
+        "before": "F2-RDM-4 02:28, 12-06-2026 25,00 € 0,00 € 0,00 € Espèces Non",
+        "after": "1006264505 23:05, 10-06-2026 11,50 € 0,00 € 0,00 € Espèces P"
+      },
+      "perPage25": {
+        "rows": 25
+      },
+      "exportDropdown": "opens"
+    },
+    "loadMs": 720,
+    "rows0": 10,
+    "firstRow0": "F2-RDM-4 02:28, 12-06-2026 25,00 € 0,00 € 0,00 € Espèces Non Payé",
+    "scan": {
+      "rawLabels": [],
+      "enResiduals": [],
+      "ampm": [],
+      "dotMoney": [],
+      "emptyStateVisible": false
+    },
+    "a11y": [
+      "INPUT#dp__pointer dp__input_readonly dp__input dp__input_reg"
+    ],
+    "paginationText": "Affichage de 1 à 10 sur 2389 entrées",
+    "console": [],
+    "http": []
+  },
+  "items-report": {
+    "route": "/admin/items-report",
+    "steps": {
+      "filterOpen": "OK panel visible",
+      "searchNonsense": "NO text input in filter panel",
+      "pagination": {
+        "changed": true,
+        "before": "Menu (Frites + Boisson) Sandwich Cayenne Végétarien 10811",
+        "after": "Coca-Cola 33cl Boissons Végétarien 22"
+      },
+      "perPage25": {
+        "rows": 25
+      },
+      "exportDropdown": "opens"
+    },
+    "loadMs": 557,
+    "rows0": 10,
+    "firstRow0": "Menu (Frites + Boisson) Sandwich Cayenne Végétarien 10811",
+    "scan": {
+      "rawLabels": [],
+      "enResiduals": [],
+      "ampm": [],
+      "dotMoney": [],
+      "emptyStateVisible": false
+    },
+    "a11y": [
+      "INPUT#dp__pointer dp__input_readonly dp__input dp__input_reg"
+    ],
+    "paginationText": "Affichage de 1 à 10 sur 45 entrées",
+    "console": [],
+    "http": []
+  },
+  "administrators": {
+    "route": "/admin/administrators",
+    "steps": {
+      "filterOpen": "OK panel visible",
+      "searchNonsense": {
+        "rows": 1,
+        "emptyFR": true
+      },
+      "clearRestore": {
+        "rows": 2,
+        "expected": 2
+      },
+      "searchReal": {
+        "value": "admin",
+        "rows": 2,
+        "firstRow": "central-dash-vis Adm.. central-dash-vis-admin@lecayenne.fr +330699999991 Actif "
+      },
+      "pagination": "no page-2 control",
+      "perPage25": "no limit dropdown (total<=10)",
+      "exportDropdown": "opens"
+    },
+    "loadMs": 577,
+    "rows0": 2,
+    "firstRow0": "central-dash-vis Adm.. central-dash-vis-admin@lecayenne.fr +330699999991 Actif ",
+    "scan": {
+      "rawLabels": [],
+      "enResiduals": [],
+      "ampm": [],
+      "dotMoney": [],
+      "emptyStateVisible": false
+    },
+    "a11y": [],
+    "paginationText": "Affichage de 1 à 2 sur 2 entrées",
+    "console": [],
+    "http": []
+  },
+  "employees": {
+    "route": "/admin/employees",
+    "steps": {
+      "filterOpen": "OK panel visible",
+      "searchNonsense": {
+        "rows": 1,
+        "emptyFR": true
+      },
+      "clearRestore": {
+        "rows": 10,
+        "expected": 10
+      },
+      "pagination": {
+        "changed": true,
+        "before": "stress-cashier-1 stress-cashier-1-6a28f03d44efd@stress.local",
+        "after": "stress-cashier-1 stress-cashier-1-6a1a380d8c320@stress.local"
+      },
+      "perPage25": {
+        "rows": 18
+      },
+      "exportDropdown": "opens"
+    },
+    "loadMs": 588,
+    "rows0": 10,
+    "firstRow0": "stress-cashier-1 stress-cashier-1-6a28f03d44efd@stress.local 0603025505 Opérateur caisse Actif ",
+    "scan": {
+      "rawLabels": [],
+      "enResiduals": [],
+      "ampm": [],
+      "dotMoney": [],
+      "emptyStateVisible": false
+    },
+    "a11y": [],
+    "paginationText": "Affichage de 1 à 10 sur 18 entrées",
+    "console": [],
+    "http": []
+  },
+  "chefs": {
+    "route": "/admin/chefs",
+    "steps": {
+      "filterOpen": "OK panel visible",
+      "searchNonsense": {
+        "rows": 1,
+        "emptyFR": true
+      },
+      "clearRestore": {
+        "rows": 1,
+        "expected": 1
+      },
+      "pagination": "no page-2 control",
+      "perPage25": "no limit dropdown (total<=10)",
+      "exportDropdown": "opens"
+    },
+    "loadMs": 577,
+    "rows0": 1,
+    "firstRow0": "Chef Le Cayenne chef@lecayenne.fr +330600000003 Actif ",
+    "scan": {
+      "rawLabels": [],
+      "enResiduals": [],
+      "ampm": [],
+      "dotMoney": [],
+      "emptyStateVisible": false
+    },
+    "a11y": [],
+    "paginationText": "Affichage de 1 à 1 sur 1 entrées",
+    "console": [],
+    "http": []
+  },
+  "customers": {
+    "route": "/admin/customers",
+    "steps": {
+      "filterOpen": "OK panel visible",
+      "searchNonsense": {
+        "rows": 1,
+        "emptyFR": true
+      },
+      "clearRestore": {
+        "rows": 3,
+        "expected": 3
+      },
+      "pagination": "no page-2 control",
+      "perPage25": "no limit dropdown (total<=10)",
+      "exportDropdown": "opens"
+    },
+    "loadMs": 575,
+    "rows0": 3,
+    "firstRow0": "E2E Client EDIT e2e1780849575387@test.fr +330649575387 Actif ",
+    "scan": {
+      "rawLabels": [],
+      "enResiduals": [],
+      "ampm": [],
+      "dotMoney": [],
+      "emptyStateVisible": false
+    },
+    "a11y": [],
+    "paginationText": "Affichage de 1 à 3 sur 3 entrées",
+    "console": [],
+    "http": []
+  },
+  "delivery-boys": {
+    "route": "/admin/delivery-boys",
+    "steps": {
+      "filterOpen": "OK panel visible",
+      "searchNonsense": {
+        "rows": 1,
+        "emptyFR": true
+      },
+      "clearRestore": {
+        "rows": 1,
+        "expected": 1
+      },
+      "pagination": "no page-2 control",
+      "perPage25": "no limit dropdown (total<=10)",
+      "exportDropdown": "opens"
+    },
+    "loadMs": 563,
+    "rows0": 1,
+    "firstRow0": "Livreur E2E livreur.e2e@lecayenne.test +33700000010 Actif ",
+    "scan": {
+      "rawLabels": [],
+      "enResiduals": [],
+      "ampm": [],
+      "dotMoney": [],
+      "emptyStateVisible": false
+    },
+    "a11y": [],
+    "paginationText": "Affichage de 1 à 1 sur 1 entrées",
+    "console": [],
+    "http": []
+  },
+  "delivery-boy-cash-sessions": {
+    "route": "/admin/delivery-boy-cash-sessions",
+    "steps": {
+      "filterOpen": "no filter button",
+      "pagination": "no page-2 control",
+      "perPage25": "no limit dropdown (total<=10)",
+      "exportDropdown": "no export button"
+    },
+    "loadMs": 561,
+    "rows0": 6,
+    "firstRow0": "#7 10 1 100,00 € 137,50 € -2,50 € Réconciliée 07/06 22:56 Voir",
+    "scan": {
+      "rawLabels": [],
+      "enResiduals": [],
+      "ampm": [],
+      "dotMoney": [],
+      "emptyStateVisible": false
+    },
+    "a11y": [],
+    "paginationText": null,
+    "console": [],
+    "http": []
+  },
+  "waiters": {
+    "route": "/admin/waiters",
+    "steps": {
+      "filterOpen": "OK panel visible",
+      "searchNonsense": {
+        "rows": 1,
+        "emptyFR": true
+      },
+      "clearRestore": {
+        "rows": 1,
+        "expected": 1
+      },
+      "pagination": "no page-2 control",
+      "perPage25": "no limit dropdown (total<=10)",
+      "exportDropdown": "opens"
+    },
+    "loadMs": 561,
+    "rows0": 1,
+    "firstRow0": "Aucune donnée disponible.",
+    "scan": {
+      "rawLabels": [],
+      "enResiduals": [],
+      "ampm": [],
+      "dotMoney": [],
+      "emptyStateVisible": true
+    },
+    "a11y": [],
+    "paginationText": null,
+    "console": [],
+    "http": []
+  }
+}

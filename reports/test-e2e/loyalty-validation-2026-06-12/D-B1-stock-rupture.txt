@@ -1,0 +1,124 @@
+Filiale
+Le Cayenne (Principal)
+Le Cayenne (Principal)
+Bonjour
+Admin Le Cayenne
+Admin Le Cayenne
+
+admin@lecayenne.fr
+
++330600000000
+
+5,80 €
+Modifier Le Profil
+Changer Le Mot De Passe
+Déconnexion
+Tableau De Bord
+POS
+Produits & Stock
+Catalogue
+Attribut D’articles
+Ingrédients
+Commandes Caisse
+Historique
+Encaissement
+Vue Caisse Unifiée
+Caisse Livreur
+CAISSE ET COMMANDES
+Écran Cuisine
+Suivi Client
+COMMUNICATIONS
+Notifications Push
+Messages
+Abonnés
+UTILISATEURS
+Administrateurs
+Employés
+Chefs
+COMPTES
+Transactions
+RAPPORTS
+Rapport Des Ventes
+Rapport Articles
+CONFIGURATION
+Paramètres
+Gestion Produits & Stock
+
+Activez ou désactivez chaque produit pour cette branche. Le changement est synchronisé en temps réel sur la caisse, la borne et le wizard.
+
+📦
+Sandwich Cayenne
+5
+🌮
+Tacos Signature
+0
+📦
+Galette
+2
+📦
+Sandwich Classique
+2
+🍔
+Burgers
+2
+🌮
+Tacos
+2
+🥗
+Bols Gourmands
+8
+🍟
+Frites
+2
+➕
+Suppléments
+10
+🍰
+Desserts
+3
+🥤
+Boissons
+8
+🍱
+Menu enfant
+1
+📦
+Autres ingrédients
+6
+🥬
+Crudite
+4
+➕
+Suppléments (à composer)
+10
+🥗
+Suppléments bol
+6
+🥗
+Base bol
+2
+🧂
+Sauce (1ère Gratuite)
+11
+🥗
+Sauce bol
+11
+🍟
+Style frites
+3
+🥩
+Viande 1
+4
+🥩
+Viande 2
+4
+Sandwich Cayenne
+EN STOCK
+Big Cayenne
+EN STOCK
+Menu (Frites + Boisson)
+EN STOCK
+Frites Seules
+EN STOCK
+Boisson Seule
+EN STOCK

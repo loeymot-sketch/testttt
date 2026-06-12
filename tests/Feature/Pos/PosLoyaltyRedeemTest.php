@@ -152,6 +152,38 @@ class PosLoyaltyRedeemTest extends TestCase
         $this->assertSame('TESTCUST', (string) $fresh->loyalty_customer_code);
     }
 
+    /**
+     * [F2-01 GOAL 2026-06-12] Le plafond doit se comparer au sous-total NET des
+     * remises déjà posées, pas au brut. Avant le fix : sous-total 25, remise
+     * existante 24,50 → redeem 1,00€ accepté (1 ≤ 25) → total négatif/écrasé
+     * ET points client détruits. Attendu : 422 DISCOUNT_EXCEEDS_SUBTOTAL,
+     * zéro mutation.
+     */
+    public function test_redeem_exceeding_remaining_after_existing_discount_is_refused(): void
+    {
+        DB::table('orders')->where('id', $this->order->id)
+            ->update(['discount' => 24.50, 'total' => 0.50]);
+
+        $this->actingAs($this->cashier, 'sanctum');
+
+        $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', 'test-redeem-net-' . uniqid())
+            ->postJson("/api/admin/pos-order/{$this->order->id}/redeem-loyalty", [
+                'points'       => 100, // = 1,00 € > 0,50 € restant
+                'loyalty_code' => 'TESTCUST',
+            ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonPath('code', 'DISCOUNT_EXCEEDS_SUBTOTAL');
+
+        // Zéro mutation : solde intact, aucune ligne ledger, remise inchangée.
+        $this->customer->refresh();
+        $this->assertSame(500, (int) $this->customer->loyalty_points);
+        $this->assertSame(0, LoyaltyTransaction::where('order_id', $this->order->id)->where('type', 'redeem')->count());
+        $fresh = Order::withoutGlobalScopes()->findOrFail($this->order->id);
+        $this->assertEqualsWithDelta(24.50, (float) $fresh->discount, 0.01);
+    }
+
     /** Path 2 — Insufficient balance : customer has 50 pts, asks for 200 → 422 + 0 mutation. */
     public function test_insufficient_balance_returns_422_and_rolls_back(): void
     {

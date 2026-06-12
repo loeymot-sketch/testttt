@@ -92,10 +92,13 @@ export default {
     data() {
         return {
             loading: { isActive: false },
+            // [DB4-F3 GOAL 2026-06-12] defaults alignés sur le canon L1/D11
+            // (1 pt/€ · 100 pts = 1 € · min 100) — l'ancien 10/100/50 était le
+            // barème 10× éradiqué : affiché ET enregistrable si le fetch échouait.
             form: {
-                loyalty_points_per_euro:            10,
+                loyalty_points_per_euro:            1,
                 loyalty_points_for_1_euro_discount: 100,
-                loyalty_min_redeem_points:          50,
+                loyalty_min_redeem_points:          100,
             },
             errors: {}
         };
@@ -106,13 +109,16 @@ export default {
             this.$store.dispatch('loyaltySetup/lists').then(res => {
                 const d = res.data.data;
                 this.form = {
-                    loyalty_points_per_euro:            d.loyalty_points_per_euro            ?? 10,
+                    loyalty_points_per_euro:            d.loyalty_points_per_euro            ?? 1,
                     loyalty_points_for_1_euro_discount: d.loyalty_points_for_1_euro_discount ?? 100,
-                    loyalty_min_redeem_points:          d.loyalty_min_redeem_points          ?? 50,
+                    loyalty_min_redeem_points:          d.loyalty_min_redeem_points          ?? 100,
                 };
                 this.loading.isActive = false;
-            }).catch(() => {
+            }).catch((err) => {
+                // [DB4-F3] échec de chargement plus jamais avalé en silence —
+                // l'admin verrait sinon des defaults trompeurs enregistrables.
                 this.loading.isActive = false;
+                alertService.error(err?.response?.data?.message ?? this.$t('message.something_wrong'));
             });
         } catch {
             this.loading.isActive = false;

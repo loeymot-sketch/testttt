@@ -205,6 +205,11 @@ return [
         'valid_hours_start' => 'heure de début de validité',
         'valid_hours_end' => 'heure de fin de validité',
         'max_uses_global' => 'utilisations max',
+        // [F3-05 2026-06-12] barème fidélité — l'UI affichait « Le champ
+        // loyalty points per euro est obligatoire ».
+        'loyalty_points_per_euro' => 'points par euro',
+        'loyalty_points_for_1_euro_discount' => 'points pour 1 € de réduction',
+        'loyalty_min_redeem_points' => 'minimum de points pour utiliser',
     ],
 
     'items_cap_exceeded' => 'Maximum 50 articles par commande',

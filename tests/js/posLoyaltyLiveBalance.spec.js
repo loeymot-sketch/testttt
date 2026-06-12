@@ -37,21 +37,60 @@ describe('PosLoyaltyRedeemModal — solde live (L2)', () => {
         expect(onEventsMock).not.toHaveBeenCalled();
     });
 
-    it('met à jour le solde affiché quand un event arrive après lookup', async () => {
+    // [GOAL 2026-06-12] sur PosOrderShow la branche dérive de la COMMANDE
+    // chargée en async → arrive APRÈS le mount. Sans watcher, le modal ne
+    // s'abonnait jamais (live mort sur la surface canonique pour un admin).
+    it("s'abonne quand la branche devient connue APRÈS le mount (watcher)", async () => {
+        const wrapper = mountModal({ branchId: 0 });
+        expect(onEventsMock).not.toHaveBeenCalled();
+        await wrapper.setProps({ branchId: 1 });
+        expect(onEventsMock).toHaveBeenCalledTimes(1);
+        expect(onEventsMock.mock.calls[0][0]).toBe(1);
+    });
+
+    it('re-souscrit proprement si la branche change (unsubscribe avant resubscribe)', async () => {
+        const unsub = vi.fn();
+        onEventsMock.mockReturnValue({ unsubscribe: unsub });
+        const wrapper = mountModal({ branchId: 1 });
+        expect(onEventsMock).toHaveBeenCalledTimes(1);
+        await wrapper.setProps({ branchId: 2 });
+        expect(unsub).toHaveBeenCalledTimes(1);
+        expect(onEventsMock).toHaveBeenCalledTimes(2);
+        expect(onEventsMock.mock.calls[1][0]).toBe(2);
+        onEventsMock.mockReturnValue({ unsubscribe: vi.fn() });
+    });
+
+    // [F3-01 2026-06-12] Le handler reçoit l'ENVELOPE PARSÉE du contrat
+    // (eventContract.parseEvent → { type, branchId, payload: {...} }), PAS un
+    // objet plat. L'ancienne spec mockait un payload plat → verte-sur-mauvais-
+    // contrat pendant que le live était un no-op total en prod.
+    it("met à jour le solde quand l'event CONTRAT (payload imbriqué) arrive après lookup", async () => {
         const wrapper = mountModal();
         const handler = onEventsMock.mock.calls[0][1][0].handler;
+        const env = (payload) => ({
+            version: 1, type: 'loyalty.balance_changed', branchId: 1, payload,
+        });
 
         // pas de lookup → l'event est ignoré (pas d'affichage fantôme)
-        handler({ balance_after: 999 });
+        handler(env({ balance_after: 999, user_id: 68 }));
         expect(wrapper.vm.customerBalance).toBe(null);
 
-        // après lookup, l'event rafraîchit
+        // après lookup (client connu = 68), l'event du MÊME client rafraîchit
         wrapper.vm.customerBalance = 265;
-        handler({ balance_after: 165 });
+        wrapper.vm.customerUserId = 68;
+        handler(env({ balance_after: 165, user_id: 68 }));
+        expect(wrapper.vm.customerBalance).toBe(165);
+
+        // [F3-04] l'event d'un AUTRE client de la branche n'écrase PAS le solde affiché
+        handler(env({ balance_after: 9999, user_id: 42 }));
+        expect(wrapper.vm.customerBalance).toBe(165);
+
+        // event sans user_id (producteur legacy) : ignoré aussi quand on connaît le client
+        handler(env({ balance_after: 777 }));
         expect(wrapper.vm.customerBalance).toBe(165);
 
         // payload invalide ignoré
-        handler({ balance_after: 'nope' });
+        handler(env({ balance_after: 'nope', user_id: 68 }));
         expect(wrapper.vm.customerBalance).toBe(165);
     });
 

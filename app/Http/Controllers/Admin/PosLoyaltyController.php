@@ -68,6 +68,8 @@ final class PosLoyaltyController extends Controller
                 'data'   => [
                     'discount_eur'  => $result['discount_eur'],
                     'balance_after' => $result['balance_after'],
+                    // [F3-04] cible du filtre solde-live côté modal POS.
+                    'customer_user_id' => $result['customer_user_id'] ?? null,
                     'order'         => [
                         'id'                    => $result['order']->id,
                         'subtotal'              => (float) $result['order']->subtotal,
