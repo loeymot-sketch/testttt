@@ -11,9 +11,11 @@
                                 #{{ order.order_serial_no }}
                             </span>
                             <!-- [UIUX-W2 G7 2026-06-11] N° borne (queue_number, ex. A0042) dans
-                                 l'en-tête — même convention N°… que liste/OSS/ticket. -->
+                                 l'en-tête — même convention N°… que liste/OSS/ticket.
+                                 [DISPUTE-R1 ADV-F-P2-7 2026-06-12] espace insécable explicite :
+                                 le whitespace inter-éléments était condensé → « 2· N° » collé. -->
                             <span v-if="order.queue_number" class="text-base font-semibold text-[#6E7191] whitespace-nowrap">
-                                · N°{{ order.queue_number }}
+                                &nbsp;·&nbsp;N°{{ order.queue_number }}
                             </span>
                         </p>
                         <div class="flex items-center gap-2 mt-1.5">
