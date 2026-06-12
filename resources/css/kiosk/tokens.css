@@ -179,3 +179,31 @@
     --kiosk-duration-idle: 0ms;
   }
 }
+
+/* =============================================================================
+   [dispute-r1 D-005 2026-06-12] « Animations réduites » du drawer a11y borne.
+   La classe html.ks-reduced-motion est posée par helpers/kioskMotionPrefs.js
+   (toggle drawer KsA11ySettings + ré-hydratation boot kioskRoutes). Elle
+   neutralise GLOBALEMENT animations/transitions/smooth-scroll de la surface
+   borne (WCAG 2.3.3) — en complément des sélecteurs par-composant
+   [data-kiosk-reduced-motion='true'] déjà présents. La borne est un appareil
+   mono-usage : la classe n'existe que lorsque l'option est activée.
+   ============================================================================= */
+html.ks-reduced-motion {
+  --kiosk-duration-fast: 0ms;
+  --kiosk-duration-base: 0ms;
+  --kiosk-duration-slow: 0ms;
+  --kiosk-duration-idle: 0ms;
+  --kiosk-duration-tap: 0ms;
+  --kiosk-duration-card: 0ms;
+}
+html.ks-reduced-motion *,
+html.ks-reduced-motion *::before,
+html.ks-reduced-motion *::after {
+  animation-duration: 0.001ms !important;
+  animation-delay: 0ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  transition-delay: 0ms !important;
+  scroll-behavior: auto !important;
+}

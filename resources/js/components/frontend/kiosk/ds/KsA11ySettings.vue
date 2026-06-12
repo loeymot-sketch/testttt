@@ -196,6 +196,15 @@ const UID = () => 'ks-a11y-' + Math.random().toString(36).slice(2, 10);
 // [UIUX-W4 K9] import KsThemeToggle retiré avec la section THÈME
 // (kill-switch light-mode kiosk-fallback.css — voir commentaire template).
 
+// [dispute-r1 D-005 2026-06-12] « Animations réduites » était un placebo : ni
+// watcher runtime (shell frozen ne câble que contrast/pmr/audio), ni
+// persistance. Le drawer applique désormais LUI-MÊME l'effet (attributs
+// <html> + classe ks-reduced-motion) et persiste les deux toggles orphelins.
+import {
+    applyKioskMotionPrefs,
+    persistKioskMotionPrefs,
+} from '../../../../helpers/kioskMotionPrefs';
+
 export default {
     name: 'KsA11ySettings',
     props: {
@@ -259,17 +268,29 @@ export default {
         toggleAudioDescription() {
             const next = !this.audioDescription;
             this.$store.dispatch('kioskSettings/setAudioDescription', next);
+            // [dispute-r1 D-005] application LIVE + persistance (aucun watcher
+            // runtime ne couvre ce toggle — shell frozen).
+            applyKioskMotionPrefs(this.$store);
+            persistKioskMotionPrefs(this.$store);
             this.reportEvent('audio_description_toggle', { value: next });
         },
         toggleReducedMotion() {
             const next = !this.reducedMotion;
             this.$store.dispatch('kioskSettings/setReducedMotion', next);
+            // [dispute-r1 D-005] application LIVE (data-kiosk-reduced-motion +
+            // html.ks-reduced-motion) + persistance localStorage.
+            applyKioskMotionPrefs(this.$store);
+            persistKioskMotionPrefs(this.$store);
             this.reportEvent('reduced_motion_toggle', { value: next });
         },
         // [UIUX-W4 K9] selectTheme retiré avec la section THÈME — le store
         // kioskSettings/setTheme reste disponible si le kill-switch est levé.
         reset() {
             this.$store.dispatch('kioskSettings/reset');
+            // [dispute-r1 D-005] le reset retombe sur reducedMotion=false →
+            // retire la classe/attributs et persiste l'état neutre.
+            applyKioskMotionPrefs(this.$store);
+            persistKioskMotionPrefs(this.$store);
             this.reportEvent('reset');
         },
         /**

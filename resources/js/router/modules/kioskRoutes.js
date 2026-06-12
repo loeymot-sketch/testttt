@@ -1,5 +1,10 @@
 import store from "../../store/index.js";
 import { trackLegacyRouteHit } from "../../helpers/kioskAnalytics.js";
+// [dispute-r1 D-005 2026-06-12] Ré-hydrate reducedMotion/audioDescription
+// depuis localStorage AVANT le mount du shell (ces 2 toggles sont absents des
+// paths vuex-persistedstate ; le applyKioskA11yFromStore one-shot du shell
+// frozen relit le store déjà hydraté). Idempotent par session.
+import { hydrateKioskMotionPrefs } from "../../helpers/kioskMotionPrefs.js";
 // Shell borne + idle + catalogue : imports synchrones. Le trio lazy-only provoquait des
 // navigations où l’URL changeait sans montage de vue (DOM vide jusqu’à F5) et des cold-load
 // /kiosk/categories avant résolution du chunk parent. Voir tests/e2e/kiosk-spa-black-screen-guard.spec.js
@@ -51,6 +56,10 @@ function getKioskAutoCredentials() {
  * Si window.foodkingConfig.kioskAutoLogin est défini (config/kiosk.php) : login API silencieux.
  */
 function requireKioskAuth(to, from, next) {
+    // [dispute-r1 D-005] boot-time : ré-applique les préférences de motion
+    // persistées (no-op après le premier passage).
+    try { hydrateKioskMotionPrefs(store); } catch (_) { /* defensive */ }
+
     const proceed = () => {
         if (to.name === 'kiosk.login') return next();
         const token = store.state.kioskCart?.kioskToken;
