@@ -25,6 +25,11 @@ class DeliveryBoyCashSessionResource extends JsonResource
             'id'                      => $this->id,
             'branch_id'               => $this->branch_id,
             'delivery_boy_id'         => $this->delivery_boy_id,
+            // [W-REM T-R2.3 Q-1 2026-06-12] Finding D-B3-01 : l'UI rendait
+            // les IDs bruts. Noms shippés directement (eager-loaded par le
+            // controller ; optional() tolère un user supprimé/hors-scope).
+            'delivery_boy_name'       => optional($this->deliveryBoy)->name,
+            'branch_name'             => optional($this->branch)->name,
             'opened_by_user_id'       => $this->opened_by_user_id,
             'closed_by_user_id'       => $this->closed_by_user_id,
             'reconciled_by_user_id'   => $this->reconciled_by_user_id,

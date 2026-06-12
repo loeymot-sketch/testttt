@@ -84,7 +84,7 @@
                             <div class="db-list-item p-0">
                                 <span class="db-list-item-title w-full sm:w-1/2">{{ $t('label.phone') }}</span>
                                 <span class="db-list-item-text w-full sm:w-1/2">
-                                    {{ deliveryBoy.phone ? (deliveryBoy.country_code || '') + deliveryBoy.phone : '' }}
+                                    {{ formatPhoneFr(deliveryBoy.country_code, deliveryBoy.phone) }}
                                 </span>
                             </div>
                         </div>
@@ -227,7 +227,10 @@ import PaginationBox from "../components/pagination/PaginationBox";
 import PaginationSMBox from "../components/pagination/PaginationSMBox";
 import ENV from '../../../config/env';
 
+// [W-REM T-R2.3 Q-8/D-B3-03] Téléphone FR partagé.
+import { adminPhoneMixin } from "../../../helpers/formatPhoneFr";
 export default {
+    mixins: [adminPhoneMixin],
     name: "DeliveryBoyShowComponent",
     components: {
         DeliveryBoyAddressList,

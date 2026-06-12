@@ -473,4 +473,37 @@ class DeliveryBoyCashSessionControllerTest extends TestCase
 
         $response->assertStatus(403);
     }
+
+    // ─────────────────────────────────────────────────────────────────
+    // [W-REM T-R2.3 Q-1 2026-06-12] Finding D-B3-01 : la page Caisses
+    // Livreur affichait les IDs bruts (LIVREUR «10», FILIALE «1») car la
+    // resource ne shippait que delivery_boy_id/branch_id. L'UI doit
+    // pouvoir rendre les NOMS sans requête supplémentaire.
+    // ─────────────────────────────────────────────────────────────────
+
+    public function test_index_ships_delivery_boy_name_and_branch_name(): void
+    {
+        $service = app(DeliveryBoyCashSessionService::class);
+        $service->openSession($this->branchA->id, $this->livreurA->id, 50.00, $this->admin->id);
+
+        $response = $this->actingAs($this->admin, 'sanctum')
+            ->getJson('/api/admin/delivery-boy/cash-sessions');
+
+        $response->assertStatus(200)
+            ->assertJsonPath('data.0.delivery_boy_name', $this->livreurA->name)
+            ->assertJsonPath('data.0.branch_name', $this->branchA->name);
+    }
+
+    public function test_show_ships_delivery_boy_name_and_branch_name(): void
+    {
+        $service = app(DeliveryBoyCashSessionService::class);
+        $session = $service->openSession($this->branchA->id, $this->livreurA->id, 50.00, $this->admin->id);
+
+        $response = $this->actingAs($this->admin, 'sanctum')
+            ->getJson("/api/admin/delivery-boy/cash-sessions/{$session->id}");
+
+        $response->assertStatus(200)
+            ->assertJsonPath('data.delivery_boy_name', $this->livreurA->name)
+            ->assertJsonPath('data.branch_name', $this->branchA->name);
+    }
 }

@@ -16,13 +16,14 @@
                 <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <dt class="text-sm text-gray-500">{{ $t('label.delivery_boy') }}</dt>
+                        <!-- [W-REM T-R2.3 Q-1] D-B3-01 : nom au lieu de l'ID brut. -->
                         <dd class="text-base font-semibold" data-testid="delivery-cash-livreur-id">
-                            #{{ session.delivery_boy_id }}
+                            {{ session.delivery_boy_name || `#${session.delivery_boy_id}` }}
                         </dd>
                     </div>
                     <div>
                         <dt class="text-sm text-gray-500">{{ $t('label.branch') }}</dt>
-                        <dd class="text-base font-semibold">#{{ session.branch_id }}</dd>
+                        <dd class="text-base font-semibold">{{ session.branch_name || `#${session.branch_id}` }}</dd>
                     </div>
                     <div>
                         <dt class="text-sm text-gray-500">{{ $t('label.cash_session_opening_amount') }}</dt>

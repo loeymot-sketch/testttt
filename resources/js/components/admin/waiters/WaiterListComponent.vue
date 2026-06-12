@@ -102,7 +102,7 @@
                                 {{ waiter.email }}
                             </td>
                             <td class="db-table-body-td">
-                                {{ waiter.phone ? (waiter.country_code || '') + waiter.phone : '' }}
+                                {{ formatPhoneFr(waiter.country_code, waiter.phone) }}
                             </td>
                             <td class="db-table-body-td">
                                 <span :class="statusClass(waiter.status)">
@@ -170,7 +170,10 @@ import ExcelComponent from "../components/buttons/export/ExcelComponent";
 import WaiterCreateComponent from "./WaiterCreateComponent.vue";
 import ENV from "../../../config/env";
 
+// [W-REM T-R2.3 Q-8/D-B3-03] Téléphone FR partagé.
+import { adminPhoneMixin } from "../../../helpers/formatPhoneFr";
 export default {
+    mixins: [adminPhoneMixin],
     name: "WaiterListComponent",
     components: {
         WaiterCreateComponent,

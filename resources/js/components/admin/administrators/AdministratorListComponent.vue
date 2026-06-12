@@ -105,7 +105,7 @@
                                 {{ administrator.email }}
                             </td>
                             <td class="db-table-body-td">
-                                {{ administrator.phone ? (administrator.country_code || '') + administrator.phone : '' }}
+                                {{ formatPhoneFr(administrator.country_code, administrator.phone) }}
                             </td>
                             <td class="db-table-body-td ">
                                 <span :class="statusClass(administrator.status)">
@@ -174,7 +174,9 @@ import PrintComponent from "../components/buttons/export/PrintComponent";
 import ExcelComponent from "../components/buttons/export/ExcelComponent";
 import ENV from '../../../config/env';
 
+import { adminPhoneMixin } from "../../../helpers/formatPhoneFr";
 export default {
+    mixins: [adminPhoneMixin],
     name: "AdministratorListComponent",
     components: {
         SmIconSidebarModalEditComponent,

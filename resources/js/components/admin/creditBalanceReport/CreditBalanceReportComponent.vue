@@ -86,7 +86,7 @@
                                 <td class="db-table-body-td">{{ user.name }}</td>
                                 <td class="db-table-body-td">{{ user.email }}</td>
                                 <!-- [UR1-002 V1.0.2 Wave B1] phoneDisplay SSOT -->
-                                <td class="db-table-body-td">{{ safePhone(user.phone) ? (user.country_code || '') + safePhone(user.phone) : '' }}
+                                <td class="db-table-body-td">{{ formatPhoneFr(user.country_code, safePhone(user.phone)) }}
                                 </td>
                                 <td class="db-table-body-td">{{ user.currency_balance }}</td>
 
@@ -141,7 +141,10 @@ import { safePhone } from "../../../helpers/phoneDisplay";
 import displayModeEnum from "../../../enums/modules/displayModeEnum";
 import ENV from "../../../config/env";
 
+// [W-REM T-R2.3 Q-8/D-B3-03] Téléphone FR partagé.
+import { adminPhoneMixin } from "../../../helpers/formatPhoneFr";
 export default {
+    mixins: [adminPhoneMixin],
     name: "CreditBalanceReportComponent",
     components: {
         BreadcrumbComponent,

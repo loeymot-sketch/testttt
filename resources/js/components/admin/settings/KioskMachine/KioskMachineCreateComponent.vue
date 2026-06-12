@@ -16,9 +16,12 @@
                             <label for="user_id" class="db-field-title required">
                                 {{ $t("label.user") }}
                             </label>
+                            <!-- [W-REM T-R2.3 Q-6/F4] options gardées : userOptions injecte un
+                                 fallback pour un user_id absent de la liste (user sans rôle)
+                                 au lieu d'un select muet « \-\- » + TypeError console. -->
                             <vue-select class="db-field-control f-b-custom-select" id="user_id"
                                 v-bind:class="errors.user_id ? 'invalid' : ''" v-model="props.form.user_id"
-                                :options="users" label-by="name_email" value-by="id" :closeOnSelect="true"
+                                :options="userOptions" label-by="name_email" value-by="id" :closeOnSelect="true"
                                 :searchable="true" :clearOnClose="true" placeholder="--" search-placeholder="--" />
                             <small class="db-field-alert" v-if="errors.user_id">{{
                                 errors.user_id[0]
@@ -146,22 +149,43 @@ export default {
         users: function () {
             return this.$store.getters['user/lists'];
         },
+        // [W-REM T-R2.3 Q-6/F4] La liste users est filtrée par rôle côté
+        // backend (whereHas roles) : une machine pointant un user SANS rôle
+        // (artefact E2E) rendait le select muet ("--") avec TypeError.
+        // On injecte une option fallback lisible pour le user_id courant.
+        userOptions: function () {
+            const list = Array.isArray(this.users) ? this.users : [];
+            const current = this.props?.form?.user_id;
+            if (current && !list.some((u) => u && u.id === current)) {
+                return list.concat([{
+                    id: current,
+                    name_email: `#${current} — compte hors liste (sans rôle)`,
+                }]);
+            }
+            return list;
+        },
         branches: function () {
             return this.$store.getters["branch/lists"];
         },
     },
     mounted() {
         this.loading.isActive = true;
+        // [W-REM T-R2.3 Q-6] Échec de fetch des listes = toast FR explicite
+        // (avant : dispatch sans .catch → modal vide inexpliqué).
         this.$store.dispatch("user/lists", {
             order_column: "id",
             order_type: "asc",
             status: statusEnum.ACTIVE,
             excepts: roleEnum.CUSTOMER,
+        }).catch((err) => {
+            alertService.error(err?.response?.data?.message ?? 'Impossible de charger la liste des utilisateurs.');
         });
         this.$store.dispatch("branch/lists", {
             order_column: "id",
             order_type: "asc",
             status: statusEnum.ACTIVE,
+        }).catch((err) => {
+            alertService.error(err?.response?.data?.message ?? 'Impossible de charger la liste des filiales.');
         });
         this.loading.isActive = false;
     },

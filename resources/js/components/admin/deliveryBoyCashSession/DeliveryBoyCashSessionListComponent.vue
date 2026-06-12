@@ -72,8 +72,10 @@
                             :data-testid="`delivery-cash-session-row-${session.id}`"
                         >
                             <td class="db-table-body-td">#{{ session.id }}</td>
-                            <td class="db-table-body-td">{{ session.delivery_boy_id }}</td>
-                            <td class="db-table-body-td">{{ session.branch_id }}</td>
+                            <!-- [W-REM T-R2.3 Q-1] D-B3-01 : noms au lieu des IDs bruts
+                                 (fallback #id si la resource n'a pas le nom). -->
+                            <td class="db-table-body-td">{{ session.delivery_boy_name || `#${session.delivery_boy_id}` }}</td>
+                            <td class="db-table-body-td">{{ session.branch_name || `#${session.branch_id}` }}</td>
                             <td class="db-table-body-td">{{ formatMoney(session.opening_amount) }}</td>
                             <td class="db-table-body-td">
                                 {{ session.closing_amount === null ? '—' : formatMoney(session.closing_amount) }}

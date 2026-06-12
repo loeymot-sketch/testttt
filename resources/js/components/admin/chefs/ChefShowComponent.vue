@@ -86,7 +86,7 @@
                                     {{ $t("label.phone") }}
                                 </span>
                                 <span class="db-list-item-text w-full sm:w-1/2">
-                                    {{ chef.phone ? (chef.country_code || '') + chef.phone : '' }}
+                                    {{ formatPhoneFr(chef.country_code, chef.phone) }}
                                 </span>
                             </div>
                         </div>
@@ -231,7 +231,10 @@ import PaginationSMBox from "../components/pagination/PaginationSMBox";
 import ChefAddressList from "./address/ChefAddressList.vue";
 import ENV from '../../../config/env';
 
+// [W-REM T-R2.3 Q-8/D-B3-03] Téléphone FR partagé.
+import { adminPhoneMixin } from "../../../helpers/formatPhoneFr";
 export default {
+    mixins: [adminPhoneMixin],
     name: "ChefShowComponent",
     components: {
         ChefAddressList,

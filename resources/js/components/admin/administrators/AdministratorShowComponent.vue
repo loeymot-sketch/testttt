@@ -84,8 +84,7 @@
                                 <span class="db-list-item-title w-full sm:w-1/2">{{
                                     $t("label.phone")
                                 }}</span>
-                                <span class="db-list-item-text w-full sm:w-1/2">{{ administrator.phone ?
-                                    (administrator.country_code || '') + administrator.phone : '' }}</span>
+                                <span class="db-list-item-text w-full sm:w-1/2">{{ formatPhoneFr(administrator.country_code, administrator.phone) }}</span>
                             </div>
                         </div>
                         <div class="col-12 sm:col-6 !py-1.5">
@@ -232,7 +231,10 @@ import PaginationBox from "../components/pagination/PaginationBox";
 import PaginationSMBox from "../components/pagination/PaginationSMBox";
 import ENV from '../../../config/env';
 
+// [W-REM T-R2.3 Q-8/D-B3-03] Téléphone FR partagé.
+import { adminPhoneMixin } from "../../../helpers/formatPhoneFr";
 export default {
+    mixins: [adminPhoneMixin],
     name: "AdministratorShowComponent",
     components: {
         LoadingComponent,

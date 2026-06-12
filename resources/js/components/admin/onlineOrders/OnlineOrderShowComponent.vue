@@ -289,7 +289,7 @@
                             </li>
                             <li class="flex items-center gap-2.5" v-if="orderUser.phone">
                                 <i class="lab lab-call-calling-linear lab-font-size-14"></i>
-                                <span dir="ltr" class="text-xs">{{ (orderUser.country_code || '') + orderUser.phone
+                                <span dir="ltr" class="text-xs">{{ formatPhoneFr(orderUser.country_code, orderUser.phone)
                                 }}</span>
                             </li>
                         </ul>
@@ -322,7 +322,10 @@ import alertService from "../../../services/alertService";
 import OnlineOrderReasonComponent from "./OnlineOrderReasonComponent";
 import OnlineOrderReceiptComponent from "./OnlineOrderReceiptComponent";
 
+// [W-REM T-R2.3 Q-8/D-B3-03] Téléphone FR partagé.
+import { adminPhoneMixin } from "../../../helpers/formatPhoneFr";
 export default {
+    mixins: [adminPhoneMixin],
     name: "OnlineOrderShowComponent",
     components: {
         OnlineOrderReceiptComponent,

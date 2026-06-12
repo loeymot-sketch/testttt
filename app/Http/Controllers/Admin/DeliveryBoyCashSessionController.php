@@ -60,6 +60,9 @@ class DeliveryBoyCashSessionController extends AdminController
         ]);
 
         $query = DeliveryBoyCashSession::query()
+            // [W-REM T-R2.3 Q-1] Eager-load pour shipper les NOMS (D-B3-01)
+            // sans N+1 ; la resource rend delivery_boy_name/branch_name.
+            ->with(['deliveryBoy', 'branch'])
             ->orderByDesc('opened_at')
             ->orderByDesc('id');
 
@@ -100,7 +103,7 @@ class DeliveryBoyCashSessionController extends AdminController
      */
     public function show(DeliveryBoyCashSession $session): JsonResponse
     {
-        $session->load(['movements' => function ($q) {
+        $session->load(['deliveryBoy', 'branch', 'movements' => function ($q) {
             $q->orderBy('created_at')->orderBy('id');
         }]);
 

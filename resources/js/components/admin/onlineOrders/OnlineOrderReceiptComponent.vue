@@ -173,7 +173,7 @@
                                  archive. SSOT helper safePhone — mirrors App\Support\PhoneDisplay::safe. -->
                             <tr v-if="safePhone(orderUser.phone)">
                                 <td class="pt-1 pb-1 pr-1">{{ $t('label.phone') }}:</td>
-                                <td class="pt-1 pb-1">{{ (orderUser.country_code || '') + safePhone(orderUser.phone) }}</td>
+                                <td class="pt-1 pb-1">{{ formatPhoneFr(orderUser.country_code, safePhone(orderUser.phone)) }}</td>
                             </tr>
                             <tr v-if="order.order_type === enums.orderTypeEnum.DELIVERY">
                                 <td class="pt-1 pb-1 pr-1">{{ $t('label.address') }}:</td>
@@ -221,7 +221,10 @@ import { safePhone } from "../../../helpers/phoneDisplay";
 // [PRINTER-RECEIPT-4-01] NF525 footer SSOT — same helper the POS receipts use.
 import { buildNf525Footer } from "../../../helpers/posReceiptBuilder";
 
+// [W-REM T-R2.3 Q-8/D-B3-03] Téléphone FR partagé.
+import { adminPhoneMixin } from "../../../helpers/formatPhoneFr";
 export default {
+    mixins: [adminPhoneMixin],
     name: "OnlineOrderReceiptComponent",
     props: {
         order: Object,

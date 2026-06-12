@@ -89,6 +89,16 @@ class DeliveryBoyCashSession extends Model
         return $this->belongsTo(User::class, 'delivery_boy_id');
     }
 
+    /**
+     * [W-REM T-R2.3 Q-1 2026-06-12] Additive relation so the admin UI can
+     * render the branch NAME instead of the raw branch_id (finding D-B3-01).
+     * Branch is BranchScope-exempt (self-reference) — no scoping recursion.
+     */
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class, 'branch_id');
+    }
+
     public function openedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'opened_by_user_id');

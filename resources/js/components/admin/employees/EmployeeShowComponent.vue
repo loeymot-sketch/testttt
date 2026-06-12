@@ -86,7 +86,7 @@
                                     {{ $t("label.phone") }}
                                 </span>
                                 <span class="db-list-item-text w-full sm:w-1/2">
-                                    {{ employee.phone ? (employee.country_code || '') + employee.phone : '' }}
+                                    {{ formatPhoneFr(employee.country_code, employee.phone) }}
                                 </span>
                             </div>
                         </div>
@@ -230,7 +230,10 @@ import PaginationBox from "../components/pagination/PaginationBox";
 import PaginationSMBox from "../components/pagination/PaginationSMBox";
 import ENV from '../../../config/env';
 
+// [W-REM T-R2.3 Q-8/D-B3-03] Téléphone FR partagé.
+import { adminPhoneMixin } from "../../../helpers/formatPhoneFr";
 export default {
+    mixins: [adminPhoneMixin],
     name: "EmployeeShowComponent",
     components: {
         EmployeeAddressList,

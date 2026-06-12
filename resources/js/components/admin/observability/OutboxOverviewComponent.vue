@@ -304,7 +304,11 @@
  * Admin-gated mutations:
  *   - retryFailed() POST /retry-failed → re-queues failed events
  *   - drainFailed() POST /drain-failed { older_than_hours: 24 } → safe purge
+ *     [W-REM T-R2.3 Q-5/DB5-04] gated behind appService.confirmation —
+ *     destructive purge must never fire on a single misclick.
  */
+import appService from '../../../services/appService';
+
 export default {
     name: 'OutboxOverviewComponent',
     props: {
@@ -336,7 +340,9 @@ export default {
     },
     computed: {
         generatedAtHuman() {
-            return this.generatedAt ? new Date(this.generatedAt).toLocaleString() : null;
+            // [W-REM T-R2.3 Q-5/DB5-03] locale forcée fr-FR (24h) — sans elle
+            // le rendu dépendait du navigateur ("6/12/2026, 2:56:01 AM").
+            return this.generatedAt ? new Date(this.generatedAt).toLocaleString('fr-FR') : null;
         },
     },
     mounted() {
@@ -380,6 +386,17 @@ export default {
             }
         },
         async drainFailed() {
+            // [W-REM T-R2.3 Q-5/DB5-04] Confirmation obligatoire avant purge
+            // (même garde que l'envoi push masse — heal petits-systèmes).
+            try {
+                await appService.confirmation(
+                    'Les événements en échec depuis plus de 24 h seront purgés définitivement de la file. Continuer ?',
+                    'Purger les échecs > 24 h ?',
+                    'Oui, purger'
+                );
+            } catch (e) {
+                return; // annulé par l'opérateur
+            }
             this.draining = true;
             try {
                 await axios.post('/admin/observability/outbox/drain-failed', {
@@ -393,7 +410,8 @@ export default {
         formatTimestamp(value) {
             if (!value) return '—';
             try {
-                return new Date(value).toLocaleString();
+                // [W-REM T-R2.3 Q-5/DB5-03] fr-FR forcé (24h, jj/mm/aaaa).
+                return new Date(value).toLocaleString('fr-FR');
             } catch (e) {
                 return String(value);
             }

@@ -102,7 +102,7 @@
                                 {{ chef.email }}
                             </td>
                             <td class="db-table-body-td">
-                                {{ chef.phone ? (chef.country_code || '') + chef.phone : '' }}
+                                {{ formatPhoneFr(chef.country_code, chef.phone) }}
                             </td>
                             <td class="db-table-body-td">
                                 <span :class="statusClass(chef.status)">
@@ -170,7 +170,10 @@ import ExcelComponent from "../components/buttons/export/ExcelComponent";
 import ChefCreateComponent from "./ChefCreateComponent.vue";
 import ENV from "../../../config/env";
 
+// [W-REM T-R2.3 Q-8/D-B3-03] Téléphone FR partagé.
+import { adminPhoneMixin } from "../../../helpers/formatPhoneFr";
 export default {
+    mixins: [adminPhoneMixin],
     name: "ChefListComponent",
     components: {
         ChefCreateComponent,

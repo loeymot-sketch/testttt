@@ -110,8 +110,7 @@
                         <tr class="db-table-body-tr" v-for="employee in employees" :key="employee">
                             <td class="db-table-body-td">{{ textShortener(employee.name, 20) }}</td>
                             <td class="db-table-body-td">{{ employee.email }}</td>
-                            <td class="db-table-body-td">{{ employee.phone ? (employee.country_code || '') + employee.phone
-                                : '' }}</td>
+                            <td class="db-table-body-td">{{ formatPhoneFr(employee.country_code, employee.phone) }}</td>
                             <td class="db-table-body-td">{{ employee.role_label || employee.role }}</td>
                             <td class="db-table-body-td">
                                 <span :class="statusClass(employee.status)">
@@ -178,7 +177,10 @@ import PrintComponent from "../components/buttons/export/PrintComponent";
 import ExcelComponent from "../components/buttons/export/ExcelComponent";
 import ENV from "../../../config/env";
 
+// [W-REM T-R2.3 Q-8/D-B3-03] Téléphone FR partagé.
+import { adminPhoneMixin } from "../../../helpers/formatPhoneFr";
 export default {
+    mixins: [adminPhoneMixin],
     name: "EmployeeListComponent",
     components: {
         ExportComponent,

@@ -342,6 +342,18 @@ class DashboardService
                         $query->where('branch_id', $branchId);
                     }
                 }])
+                // [W-REM T-R2.3 Q-8 2026-06-12] "Meilleurs Clients" ne doit
+                // jamais se remplir avec des clients à 0 commande quand moins
+                // de 8 clients ont déjà commandé (finding D-B1, véracité DB).
+                // whereHas (mêmes contraintes que le withCount) plutôt que
+                // HAVING : portable MySQL/SQLite (HAVING sur alias non agrégé
+                // casse sur SQLite).
+                ->whereHas('orders', function ($query) use ($branchId): void {
+                    $query->whereNull('parent_order_id');
+                    if ($branchId !== null) {
+                        $query->where('branch_id', $branchId);
+                    }
+                })
                 ->orderBy('orders_count', 'desc')
                 ->limit(8)
                 ->get();
