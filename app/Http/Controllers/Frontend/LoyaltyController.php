@@ -108,6 +108,13 @@ class LoyaltyController extends Controller
                 if (!$user->loyalty_code) {
                     $user->loyalty_code = strtoupper(substr(md5(uniqid()), 0, 8));
                     $user->save();
+                    // [W-REM T-R3.3 F1-02 2026-06-12] Décision produit : les
+                    // +25 promis « à l'inscription » sont crédités au moment où
+                    // le compte fidélité est effectivement créé — y compris au
+                    // LAZY-MINT (client créé à la caisse par téléphone). Une
+                    // seule fois par client (idempotent via le ledger).
+                    // Sentinel: tests/Feature/Loyalty/LoyaltyWelcomeLazyMintTest.php
+                    $this->awardWelcomeBonusOnFirstJoin($user, 'kiosk');
                 }
                 // [SPLASH] Return points + computed discount value so kiosk can display it
                 $discountValue = $this->pointsToDiscount($user->loyalty_points);
@@ -174,7 +181,32 @@ class LoyaltyController extends Controller
                 }
             }
 
+            $isNewUser = !$user;
             if (!$user) {
+                // [W-REM T-R3.3 Q-4 RGPD 2026-06-12] Création de compte =
+                // persistance de PII (nom/téléphone/email) → consentement
+                // EXPLICITE obligatoire + journalisé (loyalty_consents). La
+                // voie directe /register créait des comptes SANS aucune trace
+                // de consentement (seul /opt-in journalisait). La borne envoie
+                // désormais consent_accepted + privacy_notice_version après le
+                // KsConsentModal. La mise à jour d'un compte EXISTANT (email)
+                // ne re-exige pas le consentement.
+                // Sentinel: tests/Feature/Loyalty/LoyaltyConsentOptOutTest.php
+                $consentValidator = Validator::make($request->all(), [
+                    'consent_accepted'       => ['required', 'accepted'],
+                    'privacy_notice_version' => ['required', 'string', 'min:1', 'max:20'],
+                ], [
+                    'consent_accepted.required' => 'Le consentement explicite est requis (RGPD).',
+                    'consent_accepted.accepted' => 'Le consentement doit être accepté (RGPD).',
+                ]);
+                if ($consentValidator->fails()) {
+                    return response()->json([
+                        'status'  => false,
+                        'message' => 'Données invalides',
+                        'errors'  => $consentValidator->errors(),
+                    ], 422);
+                }
+
                 // Création rapide d'un client via le Kiosk
                 $user = new User();
                 $user->name = $request->input('name') ?? 'Client Loyalty';
@@ -221,6 +253,21 @@ class LoyaltyController extends Controller
                 \App\Events\LoyaltyBalanceChanged::dispatch(
                     (int) $user->id, 1, (int) $user->loyalty_points, $welcomePoints, 'welcome'
                 );
+            }
+
+            // [W-REM T-R3.3 Q-4 RGPD 2026-06-12] Journalise le consentement à la
+            // CRÉATION du compte (IP/UA hashés sha256+salt — jamais bruts).
+            // optIn() journalise lui-même : il pose l'attribut skip pour éviter
+            // la double ligne.
+            if ($isNewUser && !$request->attributes->get('loyalty_consent_logged_by_caller')) {
+                LoyaltyConsent::create([
+                    'user_id'                => $user->id,
+                    'consent_accepted'       => true,
+                    'privacy_notice_version' => (string) $request->input('privacy_notice_version'),
+                    'ip_hash'                => LoyaltyConsent::hashIdentifier($request->ip()),
+                    'user_agent_hash'        => LoyaltyConsent::hashIdentifier((string) $request->userAgent()),
+                    'occurred_at'            => now(),
+                ]);
             }
 
             return response()->json([
@@ -460,6 +507,11 @@ class LoyaltyController extends Controller
     {
         try {
             $data = $request->validated();
+
+            // [W-REM T-R3.3 Q-4] register() journalise désormais lui-même le
+            // consentement à la création — optIn garde SA journalisation
+            // (liée au user résolu) et demande à register de s'abstenir.
+            $request->attributes->set('loyalty_consent_logged_by_caller', true);
 
             $registerResponse = $this->register($request);
 
@@ -913,6 +965,9 @@ class LoyaltyController extends Controller
                 $loyaltyCode = strtoupper(substr(md5(uniqid()), 0, 8));
                 $user->loyalty_code = $loyaltyCode;
                 $user->save();
+                // [W-REM T-R3.3 F1-02] même promesse +25 quel que soit le
+                // canal d'adhésion (cf. lazy-mint check()).
+                $this->awardWelcomeBonusOnFirstJoin($user, 'web');
             }
 
             $signed = app(LoyaltyQrSigner::class)->sign(
@@ -1009,6 +1064,179 @@ class LoyaltyController extends Controller
             return round($points / $rate, 2);
         } catch (\Throwable $e) {
             return 0.0;
+        }
+    }
+
+    /**
+     * [W-REM T-R3.3 F1-02 2026-06-12] Bonus de bienvenue à la PREMIÈRE
+     * adhésion effective au programme (mint du loyalty_code) — quel que soit
+     * le canal : register/opt-in (déjà couvert inline) OU lazy-mint
+     * (check()/balance() borne, generateQr web). Idempotent : une seule
+     * ligne « Bonus de bienvenue » par client dans le ledger.
+     *
+     * Décision produit (gate plan W-REM) : les clients borne/web promettent
+     * « +25 pts à l'inscription » ; un client créé à la caisse (téléphone,
+     * sans code) qui rejoignait le programme via lazy-mint ne touchait
+     * jamais les points promis — iniquité entre canaux fermée ici.
+     */
+    private function awardWelcomeBonusOnFirstJoin(User $user, string $surface): void
+    {
+        try {
+            $welcomePoints = (int) Settings::group('loyalty_setup')->get('loyalty_welcome_points', 25);
+            if ($welcomePoints <= 0) {
+                return;
+            }
+            if (! \Illuminate\Support\Facades\Schema::hasTable('loyalty_transactions')) {
+                // Pas de ledger = pas de preuve d'idempotence → on n'accorde pas.
+                return;
+            }
+            $alreadyAwarded = \App\Models\LoyaltyTransaction::where('user_id', $user->id)
+                ->where('description', 'Bonus de bienvenue')
+                ->exists();
+            if ($alreadyAwarded) {
+                return;
+            }
+
+            $user->loyalty_points = (int) $user->loyalty_points + $welcomePoints;
+            $user->save();
+
+            \App\Models\LoyaltyTransaction::create([
+                'user_id'        => $user->id,
+                'loyalty_code'   => $user->loyalty_code,
+                'type'           => 'earn',
+                'points'         => $welcomePoints,
+                'balance_after'  => (int) $user->loyalty_points,
+                'source_surface' => $surface,
+                'description'    => 'Bonus de bienvenue',
+            ]);
+
+            // [L2 LOYALTY-SYNC] même canal temps réel que register().
+            \App\Events\LoyaltyBalanceChanged::dispatch(
+                (int) $user->id, 1, (int) $user->loyalty_points, $welcomePoints, 'welcome'
+            );
+        } catch (\Throwable $e) {
+            // Le bonus ne doit JAMAIS casser le parcours de consultation.
+            Log::warning('[LoyaltyWelcomeLazyMint] ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * [W-REM T-R3.3 Q-4 RGPD 2026-06-12] Droit de retrait (opt-out) CNIL.
+     *
+     * POST /api/frontend/loyalty/opt-out (auth:sanctum + throttle).
+     *  - Client authentifié : se retire LUI-MÊME du programme.
+     *  - Staff (Admin/Branch Manager/POS Operator/Stuff) : peut assister un
+     *    client au comptoir via `code` ou `phone`.
+     *  - Un token machine kiosk ne peut retirer personne (403).
+     *
+     * Effets (transaction) : journal `loyalty_consents` consent_accepted=false
+     * (IP/UA hashés), retrait du programme (loyalty_code=null, points=0),
+     * ligne ledger `opt_out` (audit, solde tracé), push temps réel solde 0.
+     * Idempotent : un client déjà retiré peut rappeler la route (re-journalise
+     * la révocation, aucun autre effet).
+     */
+    public function optOut(Request $request): JsonResponse
+    {
+        try {
+            $caller = $request->user();
+            if (! $caller) {
+                return response()->json([
+                    'status'  => false,
+                    'message' => 'Authentification requise.',
+                ], 401);
+            }
+
+            $isStaff = $caller->hasAnyRole(['Admin', 'Branch Manager', 'POS Operator', 'Stuff']);
+            $code    = trim((string) $request->input('code', ''));
+            $phone   = trim((string) $request->input('phone', ''));
+
+            if ($code !== '' || $phone !== '') {
+                // Retrait d'un TIERS : réservé au staff (sinon vecteur d'abus —
+                // un guest kiosk:order pourrait radier n'importe quel client).
+                if (! $isStaff) {
+                    return response()->json([
+                        'status'  => false,
+                        'message' => 'Non autorisé.',
+                    ], 403);
+                }
+                $target = null;
+                if ($code !== '') {
+                    $target = User::where('loyalty_code', strtoupper($code))->first()
+                        ?: User::where('loyalty_code', $code)->first();
+                }
+                if (! $target && $phone !== '') {
+                    $target = User::where('phone', preg_replace('/[\s\-]/', '', $phone))->first();
+                }
+                if (! $target) {
+                    return response()->json([
+                        'status'  => false,
+                        'message' => 'Client introuvable.',
+                    ], 404);
+                }
+            } else {
+                // Auto-retrait : un compte machine kiosk n'est pas un client.
+                $isKioskMachine = \App\Models\KioskMachine::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
+                    ->where('user_id', $caller->id)
+                    ->exists();
+                if ($isKioskMachine) {
+                    return response()->json([
+                        'status'  => false,
+                        'message' => 'Non autorisé.',
+                    ], 403);
+                }
+                $target = $caller;
+            }
+
+            DB::transaction(function () use ($target, $isStaff, $request): void {
+                $balance = (int) $target->loyalty_points;
+
+                if (($balance !== 0 || $target->loyalty_code)
+                    && \Illuminate\Support\Facades\Schema::hasTable('loyalty_transactions')) {
+                    // NB : la colonne `type` est un ENUM figé (earn/redeem/
+                    // manual_add/manual_deduct/expire — migration appliquée).
+                    // Le journal RGPD AUTORITATIF est `loyalty_consents` ;
+                    // cette ligne ledger n'est que l'audit de solde →
+                    // `manual_deduct` + description explicite, pas d'ALTER
+                    // d'une migration appliquée.
+                    \App\Models\LoyaltyTransaction::create([
+                        'user_id'        => $target->id,
+                        'loyalty_code'   => $target->loyalty_code,
+                        'type'           => 'manual_deduct',
+                        'points'         => -$balance,
+                        'balance_after'  => 0,
+                        'source_surface' => $isStaff ? 'admin' : 'web',
+                        'description'    => 'Retrait du programme fidélité (opt-out RGPD)',
+                    ]);
+                }
+
+                $target->loyalty_code   = null;
+                $target->loyalty_points = 0;
+                $target->save();
+
+                LoyaltyConsent::create([
+                    'user_id'                => $target->id,
+                    'consent_accepted'       => false,
+                    'privacy_notice_version' => (string) ($request->input('privacy_notice_version') ?: 'opt-out'),
+                    'ip_hash'                => LoyaltyConsent::hashIdentifier($request->ip()),
+                    'user_agent_hash'        => LoyaltyConsent::hashIdentifier((string) $request->userAgent()),
+                    'occurred_at'            => now(),
+                ]);
+
+                if ($balance !== 0) {
+                    // [L2 LOYALTY-SYNC] after-commit : solde 0 poussé aux surfaces.
+                    \App\Events\LoyaltyBalanceChanged::dispatch(
+                        (int) $target->id, 1, 0, -$balance, 'opt_out'
+                    );
+                }
+            });
+
+            return response()->json([
+                'status'  => true,
+                'message' => 'Retrait du programme fidélité effectué.',
+            ], 200);
+        } catch (Exception $exception) {
+            Log::error('[LoyaltyOptOut] ' . $exception->getMessage());
+            return response()->json(['status' => false, 'message' => 'Erreur serveur'], 500);
         }
     }
 }

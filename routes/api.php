@@ -1464,6 +1464,15 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
         Route::post('/qr', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'generateQr'])
             ->middleware('throttle:30,1')
             ->name('qr.generate');
+
+        // [W-REM T-R3.3 Q-4 RGPD 2026-06-12] Droit de retrait (opt-out) :
+        // client authentifié se retire lui-même ; staff peut assister au
+        // comptoir (param code/phone). Journal loyalty_consents
+        // consent_accepted=false + retrait programme (code null, points 0,
+        // ledger opt_out). Voir tests/Feature/Loyalty/LoyaltyConsentOptOutTest.
+        Route::post('/opt-out', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'optOut'])
+            ->middleware('throttle:5,1')
+            ->name('opt-out');
     });
 
     // [C6] Kiosk observability — structured event logging for operators

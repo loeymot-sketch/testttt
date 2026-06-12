@@ -63,7 +63,12 @@ class LoyaltyRateSsotTest extends TestCase
     {
         $this->seedMinimalSettings();
 
-        $payload = ['phone' => '0699887766', 'name' => 'E2E Welcome'];
+        // [W-REM T-R3.3 Q-4 2026-06-12] Contrat register : la création d'un
+        // nouveau compte exige le consentement RGPD explicite (journalisé).
+        $payload = [
+            'phone' => '0699887766', 'name' => 'E2E Welcome',
+            'consent_accepted' => true, 'privacy_notice_version' => '2026-04-18',
+        ];
         $first = $this->withHeaders(['x-api-key' => env('MIX_API_KEY', 'test-api-key')])
             ->postJson('/api/frontend/loyalty/register', $payload);
         $first->assertSuccessful();

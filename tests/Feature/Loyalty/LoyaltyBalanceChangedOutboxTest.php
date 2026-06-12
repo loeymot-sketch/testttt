@@ -70,7 +70,11 @@ class LoyaltyBalanceChangedOutboxTest extends TestCase
         $this->seedMinimalSettings();
 
         $this->withHeaders(['x-api-key' => env('MIX_API_KEY', 'test-api-key')])
-            ->postJson('/api/frontend/loyalty/register', ['phone' => '0611224488', 'name' => 'E2E Sync'])
+            ->postJson('/api/frontend/loyalty/register', [
+                'phone' => '0611224488', 'name' => 'E2E Sync',
+                // [W-REM T-R3.3 Q-4] consentement RGPD requis à la création.
+                'consent_accepted' => true, 'privacy_notice_version' => '2026-04-18',
+            ])
             ->assertSuccessful();
 
         $row = DomainEvent::query()->where('event_type', EventType::LOYALTY_BALANCE_CHANGED)->first();

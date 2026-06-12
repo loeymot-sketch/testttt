@@ -33,7 +33,10 @@ class LoyaltyApiTest extends TestCase
     {
         $response = $this->postJson('/api/frontend/loyalty/register', [
             'name' => 'John Doe',
-            'phone' => '+33612345678'
+            'phone' => '+33612345678',
+            // [W-REM T-R3.3 Q-4] consentement RGPD requis à la création.
+            'consent_accepted' => true,
+            'privacy_notice_version' => '2026-04-18',
         ]);
 
         $response->assertStatus(200);
@@ -69,6 +72,9 @@ class LoyaltyApiTest extends TestCase
             'name' => 'Attacker',
             'phone' => '+33700001111',
             'email' => 'victim@example.com',
+            // [W-REM T-R3.3 Q-4] le conflit email (409) doit primer même avec consentement.
+            'consent_accepted' => true,
+            'privacy_notice_version' => '2026-04-18',
         ]);
 
         $response->assertStatus(409);

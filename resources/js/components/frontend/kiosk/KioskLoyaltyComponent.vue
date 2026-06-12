@@ -614,7 +614,15 @@ export default {
       this.registerLoading = true;
       this.registerError = null;
       try {
-        const res = await axios.post('frontend/loyalty/register', payload);
+        // [W-REM T-R3.3 Q-4 RGPD 2026-06-12] _doSubmitRegister n'est atteint
+        // QUE consentement validé (modale acceptée ou consent déjà stocké) —
+        // le backend exige et JOURNALISE désormais ce consentement à la
+        // création (loyalty_consents). Version notice = défaut KsConsentModal.
+        const res = await axios.post('frontend/loyalty/register', {
+          ...payload,
+          consent_accepted: true,
+          privacy_notice_version: '2026-04-18',
+        });
         const data = res.data?.data || {};
         this.customer = {
           name:          data.name || payload.name,
