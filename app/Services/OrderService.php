@@ -1296,6 +1296,40 @@ class OrderService
                     );
                 }
 
+                // [HEAL dispute-r1 ADV-B-07/E-ADV-2 2026-06-12] Unified money
+                // ledger. POS direct sales (paid inline at creation) had NO
+                // `transactions` writer — type='payment' rows were only minted
+                // by gateway callbacks (PaymentService::payment) and by the
+                // counter-collect confirm (COUNTER-*). Result: « Vue Caisse
+                // Unifiée » + /admin/transactions under-reported the day by
+                // the WHOLE direct-caisse volume (−55% observed live). Mint
+                // the row here, same shape as the counter path. No double
+                // count: deferred (counter-collect) orders skip — their single
+                // Transaction is written at collection; firstOrCreate guards
+                // idempotent replays. NF525 untouched (fiscal seq + audit
+                // chain already written above; this is the reporting ledger).
+                if (! $deferToCounter) {
+                    $posLedgerSlug = $splitActive ? 'split' : match ((int) $request->pos_payment_method) {
+                        \App\Enums\PosPaymentMethod::CASH => 'cash',
+                        \App\Enums\PosPaymentMethod::CARD => 'card',
+                        \App\Enums\PosPaymentMethod::MOBILE_BANKING => 'mobile_banking',
+                        \App\Enums\PosPaymentMethod::TICKET_RESTAURANT => 'ticket_restaurant',
+                        default => 'other',
+                    };
+                    Transaction::query()->firstOrCreate(
+                        [
+                            'order_id' => $this->order->id,
+                            'type' => 'payment',
+                        ],
+                        [
+                            'transaction_no' => 'POS-' . $this->order->id . '-' . now()->format('YmdHis'),
+                            'amount' => $this->order->total,
+                            'payment_method' => $posLedgerSlug,
+                            'sign' => '+',
+                        ]
+                    );
+                }
+
                 $order = $this->order;
 
                 // [Wave M / Heal Z2 P1 — 2026-05-19] OrderCreated::dispatch moved
