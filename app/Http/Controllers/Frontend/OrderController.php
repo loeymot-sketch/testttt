@@ -61,6 +61,11 @@ class OrderController extends Controller
                 'code' => GeocodeUnavailableException::ERROR_CODE,
                 'message' => $exception->getMessage(),
             ], $exception->getStatusCode());
+        } catch (\App\Exceptions\UnavailableItemException $exception) {
+            // [HEAL dispute-r3 C-R2-NEW-2 2026-06-12] Même contrat structuré
+            // que le quote (PosController::quote) : la borne marque la ligne
+            // fautive via item_id/item_name au lieu d'un cul-de-sac verbatim.
+            return response($exception->toResponsePayload(), 422);
         } catch (HttpException $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], $exception->getStatusCode());
         } catch (Exception $exception) {

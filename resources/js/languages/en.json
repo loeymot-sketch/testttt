@@ -1678,6 +1678,10 @@
                 "server": "Service temporarily unavailable. Please try again shortly."
             }
         },
+        "item_unavailable_in_cart": "\u201c{name}\u201d is no longer available. Remove this item from your cart to continue.",
+        "unavailable_line_blocking": "An item in your cart is no longer available. Remove the line marked \u201cUnavailable\u201d to continue.",
+        "unavailable_badge": "Unavailable",
+        "unavailable_remove_cta": "Remove this item",
         "network_lost_cart": "Connection lost. Your cart is saved — try again in a moment.",
         "session_recovered_cart": "Connection restored. Your order has been kept.",
         "cancel": "Cancel",

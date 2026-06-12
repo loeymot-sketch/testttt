@@ -446,6 +446,28 @@ export const kioskCart = {
             state.orderQuote = null;
             state.items = Array.isArray(items) ? items : [];
         },
+        /**
+         * [HEAL dispute-r3 C-R2-NEW-2 2026-06-12] Rupture en session signalée
+         * par le backend (422 code=ITEM_UNAVAILABLE) : marque la/les ligne(s)
+         * du panier portant cet item_id pour que le client VOIE quelle ligne
+         * retirer (badge + CTA dans KioskCartComponent) au lieu d'un toast
+         * « Article 34 indisponible » en boucle. Le flag `unavailable` ne
+         * sort JAMAIS vers l'API (sanitizeKioskOrderItem = allowlist).
+         */
+        MARK_LINE_UNAVAILABLE(state, itemId) {
+            const id = parseInt(itemId, 10);
+            if (!Number.isFinite(id)) return;
+            let touched = false;
+            state.items.forEach((line) => {
+                if (parseInt(line?.item_id, 10) === id) {
+                    line.unavailable = true;
+                    touched = true;
+                }
+            });
+            if (touched) {
+                state.orderQuote = null;
+            }
+        },
         RESET(state) {
             state.items = [];
             state.orderRef = null;
@@ -532,6 +554,13 @@ export const kioskCart = {
         },
         removeItem({ commit }, index) {
             commit('REMOVE_ITEM', index);
+        },
+        /**
+         * [HEAL dispute-r3 C-R2-NEW-2] Marque les lignes d'un item en rupture
+         * (réponse 422 ITEM_UNAVAILABLE du quote/order). Cf. mutation.
+         */
+        markLineUnavailable({ commit }, itemId) {
+            commit('MARK_LINE_UNAVAILABLE', itemId);
         },
         /**
          * Remove an item by index and return it (used to pre-populate wizard on edit).

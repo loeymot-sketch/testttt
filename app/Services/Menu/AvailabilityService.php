@@ -220,8 +220,14 @@ final class AvailabilityService
             return;
         }
 
+        // [HEAL dispute-r3 C-R2-NEW-2 2026-06-12] `name` chargé pour des
+        // messages client-grade : « Article 34 indisponible » (ID interne nu)
+        // exposait le jargon DB au client borne sans lui dire QUELLE ligne
+        // retirer. Les messages portent désormais le NOM, et l'exception
+        // dédiée UnavailableItemException transporte item_id/item_name pour
+        // que la borne marque la ligne fautive (KioskCartComponent).
         $catalogItems = Item::query()
-            ->select('id', 'status', 'is_available')
+            ->select('id', 'name', 'status', 'is_available')
             ->whereIn('id', $itemIds)
             ->get()
             ->keyBy('id');
@@ -229,23 +235,27 @@ final class AvailabilityService
         foreach ($itemIds as $itemId) {
             $item = $catalogItems->get($itemId);
             if (! $item) {
-                throw new \InvalidArgumentException(
-                    "Article {$itemId} introuvable. Commande rejetée.",
-                    422
+                throw new \App\Exceptions\UnavailableItemException(
+                    "Un article du panier (réf. {$itemId}) est introuvable au catalogue. Retirez-le pour continuer.",
+                    $itemId
                 );
             }
 
             if ((int) $item->status !== Status::ACTIVE) {
-                throw new \InvalidArgumentException(
-                    "Article {$itemId} inactif dans le catalogue. Commande rejetée.",
-                    422
+                // « inactif » conservé dans le message (pin
+                // ComposerStepConstraintTest — substring historique).
+                throw new \App\Exceptions\UnavailableItemException(
+                    "« {$item->name} » est indisponible (article inactif au catalogue). Retirez cet article du panier pour continuer.",
+                    $itemId,
+                    (string) $item->name
                 );
             }
 
             if ($item->is_available !== null && ! (bool) $item->is_available) {
-                throw new \InvalidArgumentException(
-                    "Article {$itemId} indisponible dans le catalogue. Commande rejetée.",
-                    422
+                throw new \App\Exceptions\UnavailableItemException(
+                    "« {$item->name} » est indisponible pour le moment. Retirez cet article du panier pour continuer.",
+                    $itemId,
+                    (string) $item->name
                 );
             }
         }
@@ -266,9 +276,16 @@ final class AvailabilityService
                 $reason = $row && $row->unavailable_reason
                     ? (string) $row->unavailable_reason
                     : 'unavailable';
-                throw new \InvalidArgumentException(
-                    "Article {$itemId} indisponible pour cette branche ({$reason}).",
-                    422
+                // [HEAL dispute-r3 C-R2-NEW-2] Nom à la place de l'ID nu ; le
+                // substring « indisponible pour cette branche » est conservé
+                // (pin ComposerStepConstraintTest:199). La raison interne reste
+                // dans le message (utile staff POS) — la borne, elle, rend sa
+                // propre copy depuis item_name (payload structuré).
+                $name = (string) ($catalogItems->get($itemId)?->name ?? "réf. {$itemId}");
+                throw new \App\Exceptions\UnavailableItemException(
+                    "« {$name} » est indisponible pour cette branche ({$reason}). Retirez cet article du panier pour continuer.",
+                    $itemId,
+                    $catalogItems->get($itemId)?->name
                 );
             }
         }

@@ -666,6 +666,12 @@ class FrontendOrderService
             return $this->frontendOrder;
         } catch (HttpException $exception) {
             throw $exception;
+        } catch (\App\Exceptions\UnavailableItemException $exception) {
+            // [HEAL dispute-r3 C-R2-NEW-2 2026-06-12] Propage l'exception
+            // typée intacte (item_id/item_name) — le wrap générique ci-dessous
+            // la transformait en Exception nue et la borne perdait le payload
+            // structuré qui lui permet de marquer la ligne en rupture.
+            throw $exception;
         } catch (\Illuminate\Database\QueryException $qe) {
             // [FIX-54-6] Catch MySQL duplicate key on idempotency_key UNIQUE constraint.
             // Same recovery logic as OrderService::posOrderStore() for consistency.

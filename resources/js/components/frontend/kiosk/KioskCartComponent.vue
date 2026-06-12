@@ -126,6 +126,7 @@
           v-for="(item, idx) in cartItems"
           :key="item.item_id ? `${item.item_id}-${idx}` : idx"
           class="kiosk-cart-item"
+          :class="{ 'is-unavailable': item.unavailable }"
           role="listitem"
           :data-testid="`kiosk-cart-item-${idx}`"
         >
@@ -150,6 +151,26 @@
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                   <path d="M11.333 2a1.885 1.885 0 0 1 2.667 2.667L5.333 13.333 2 14l.667-3.333L11.333 2Z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
+              </button>
+            </div>
+            <!-- [dispute-r3 C-R2-NEW-2 2026-06-12] Ligne en rupture signalée
+                 par le backend : badge explicite + CTA retrait — le client
+                 SAIT quelle ligne bloque sa commande (fin du cul-de-sac
+                 « Article 34 indisponible » en boucle). -->
+            <div
+              v-if="item.unavailable"
+              class="kiosk-cart-item-unavailable"
+              role="alert"
+              :data-testid="`kiosk-cart-item-unavailable-${idx}`"
+            >
+              <span class="kiosk-cart-unavailable-badge">{{ $t('kiosk.unavailable_badge') }}</span>
+              <button
+                type="button"
+                class="kiosk-cart-unavailable-remove"
+                @click="removeItemDirectly(idx)"
+                :data-testid="`kiosk-cart-item-unavailable-remove-${idx}`"
+              >
+                {{ $t('kiosk.unavailable_remove_cta') }}
               </button>
             </div>
             <!-- [GAP-22-2] Afficher les sélections wizard (variations, extras) -->
@@ -506,6 +527,10 @@ export default {
       // "ça marche parfois" after retries because subsequent clicks finally
       // refreshed the menu cache and pruning silently dropped the stale line.
       'pruneUnavailableLines',
+      // [dispute-r3 C-R2-NEW-2 2026-06-12] Marquage de la ligne fautive quand
+      // le backend rejette le checkout avec 422 code=ITEM_UNAVAILABLE
+      // (rupture en session que le prune local n'a pas vue — menu cache stale).
+      'markLineUnavailable',
     ]),
 
     // Kiosk Phase 9.1.6 — Applique un code promo via /api/frontend/promo/validate.
@@ -677,6 +702,20 @@ export default {
       this.quoteLoading = true;
       this.quoteError = null;
 
+      // [dispute-r3 C-R2-NEW-2 2026-06-12] Une ligne déjà marquée
+      // « Indisponible » (422 ITEM_UNAVAILABLE au checkout précédent) BLOQUE
+      // le re-checkout : sans cette garde, re-taper « Valider » rejouait le
+      // même 422 en boucle (cul-de-sac C30). Le client doit retirer la ligne
+      // via le CTA dédié sur la ligne marquée.
+      const blockedLines = (this.cartItems || []).filter((line) => line && line.unavailable);
+      if (blockedLines.length > 0) {
+        const msg = this.$t('kiosk.unavailable_line_blocking');
+        this.quoteError = msg;
+        this.showToast(msg, 'warning', 6000);
+        this.quoteLoading = false;
+        return;
+      }
+
       // [bug-kiosk-valider-2026-05-21] Pre-flight prune of cart lines whose
       // catalog row is currently unavailable (manual 86 / branch flip the
       // kiosk missed). Without this, the backend AvailabilityService rejects
@@ -730,6 +769,7 @@ export default {
         const isNetworkError = !err?.response
           && (err?.code === 'ERR_NETWORK' || err?.message === 'Network Error' || !!err?.request);
         const status = Number(err?.response?.status) || 0;
+        const errData = err?.response?.data || {};
         let message;
         if (isNetworkError) {
           message = this.$t('kiosk.network_lost_cart');
@@ -737,6 +777,18 @@ export default {
           // [dispute-r1 C-ADV-01 même classe] « Too Many Attempts. » EN sur le
           // quote → copie FR kiosk dédiée (déjà utilisée par kioskCart.quoteOrder).
           message = this.$t('error.kiosk_rate_limited');
+        } else if (status === 422 && errData.code === 'ITEM_UNAVAILABLE') {
+          // [dispute-r3 C-R2-NEW-2 2026-06-12] Rupture en session : le backend
+          // identifie l'article fautif (item_id/item_name structurés) → on
+          // MARQUE la ligne (badge « Indisponible » + CTA retrait) et la copy
+          // porte le NOM du produit, jamais l'ID interne (« Article 34 »).
+          const itemId = Number.parseInt(errData.item_id, 10);
+          if (Number.isFinite(itemId)) {
+            try { this.markLineUnavailable(itemId); } catch (_) { /* defensive */ }
+          }
+          message = errData.item_name
+            ? this.$t('kiosk.item_unavailable_in_cart', { name: errData.item_name })
+            : (errData.message || this.$t('kiosk.unavailable_items_pruned'));
         } else {
           message = err?.response?.data?.message
             || err?.message
@@ -950,6 +1002,48 @@ export default {
 .kiosk-cart-item:hover {
   border-color: #F4501E;
   box-shadow: 0 6px 18px rgba(244, 80, 30, 0.12);
+}
+
+/* [dispute-r3 C-R2-NEW-2 2026-06-12] Ligne marquée en rupture par le backend
+   (422 ITEM_UNAVAILABLE) : état visuel non-ambigu + CTA retrait ≥48px. */
+.kiosk-cart-item.is-unavailable {
+  border-color: #D32F2F;
+  background: #FFF5F5;
+}
+.kiosk-cart-item.is-unavailable .kiosk-cart-item-name {
+  text-decoration: line-through;
+  color: #8A8A8A;
+}
+.kiosk-cart-item-unavailable {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 6px 0 4px;
+  flex-wrap: wrap;
+}
+.kiosk-cart-unavailable-badge {
+  background: #D32F2F;
+  color: #FFFFFF;
+  font-weight: 800;
+  font-size: 14px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  padding: 6px 12px;
+  border-radius: 8px;
+}
+.kiosk-cart-unavailable-remove {
+  background: #FFFFFF;
+  color: #D32F2F;
+  border: 2px solid #D32F2F;
+  border-radius: 12px;
+  padding: 10px 18px;
+  font-weight: 700;
+  font-size: 16px;
+  min-height: 48px;
+  cursor: pointer;
+}
+.kiosk-cart-unavailable-remove:active {
+  transform: scale(0.97);
 }
 
 .kiosk-cart-item-img {

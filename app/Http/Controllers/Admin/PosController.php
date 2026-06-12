@@ -201,6 +201,12 @@ class PosController extends AdminController
             ]);
         } catch (ValidationException $exception) {
             throw $exception;
+        } catch (\App\Exceptions\UnavailableItemException $exception) {
+            // [HEAL dispute-r3 C-R2-NEW-2 2026-06-12] Rupture en session :
+            // payload structuré (code ITEM_UNAVAILABLE + item_id + item_name)
+            // pour que la borne marque la ligne fautive au lieu de rendre
+            // « Article 34 indisponible » verbatim en boucle.
+            return response()->json($exception->toResponsePayload(), 422);
         } catch (HttpException $exception) {
             return response()->json([
                 'status' => false,
