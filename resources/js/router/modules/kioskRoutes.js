@@ -217,7 +217,15 @@ export default [
                 name: "kiosk.loyalty",
                 component: KioskLoyaltyComponent,
                 meta: { isKiosk: true },
-                beforeEnter: requireCart,
+                // [W-REM T-R3.1b F-BV-04 2026-06-12] PAS de requireCart ici :
+                // le chip « Mon compte » (catalogue) route vers cet écran pour
+                // CONSULTER le compte fidélité — panier vide compris. L'ancien
+                // guard renvoyait le client sur « PANIER VIDE » sans aucune
+                // explication. Les sorties de l'écran sont contextuelles
+                // (catalogue si panier vide). Le rachat reste impossible sans
+                // commande (options masquées composant) et upsell/payment
+                // restent protégés par requireCart.
+                // Sentinel: tests/js/kioskLoyaltyEmptyCartConsult.spec.js
             },
             {
                 path: "upsell",

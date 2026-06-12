@@ -1976,6 +1976,7 @@
             "confirm_discount_sub": "Réduction déduite de votre total",
             "confirm_saved_sub": "Vos points seront crédités après la commande",
             "continue_payment": "Continuer vers le paiement",
+            "continue_menu": "Choisir mes articles",
             "error_not_found": "Code ou numéro introuvable. Vérifiez et réessayez.",
             "request_timeout": "Le serveur met trop de temps à répondre. Vérifiez la connexion et réessayez.",
             "toast_discount": "Réduction de {amount} appliquée !",

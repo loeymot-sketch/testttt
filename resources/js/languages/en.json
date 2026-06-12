@@ -1960,6 +1960,7 @@
             "confirm_discount_sub": "Discount taken off your total",
             "confirm_saved_sub": "Your points will be credited after the order",
             "continue_payment": "Continue to payment",
+            "continue_menu": "Choose my items",
             "error_not_found": "Code or number not found. Check and try again.",
             "request_timeout": "The server is taking too long. Check the connection and try again.",
             "toast_discount": "Discount of {amount} applied!",

@@ -187,8 +187,10 @@
           </p>
         </div>
 
-        <!-- Options : utiliser ou pas -->
-        <div v-if="canRedeem" class="kiosk-loyalty-options">
+        <!-- Options : utiliser ou pas.
+             [F-BV-04] Masquées panier vide (mode consultation « Mon compte ») :
+             « -X € sur cette commande » n'a aucun sens sans commande. -->
+        <div v-if="canRedeem && !cartIsEmpty" class="kiosk-loyalty-options">
           <button type="button"
             class="kiosk-loyalty-option"
             :class="{ selected: redeemChoice === 'yes' }"
@@ -223,7 +225,9 @@
           </button>
         </div>
 
-        <div v-else class="kiosk-loyalty-not-enough">
+        <!-- [F-BV-04] v-else-if : panier vide, ni options ni « il en faut min »
+             (le texte parle de réduction « sur cette commande »). -->
+        <div v-else-if="!cartIsEmpty" class="kiosk-loyalty-not-enough">
           <p>{{ $t('kiosk.loyalty_screen.not_enough', { current: customer.loyalty_point, min: minRedeemPoints }) }}</p>
           <p class="green">{{ $t('kiosk.loyalty_screen.not_enough_green') }}</p>
         </div>
@@ -231,7 +235,7 @@
         <button type="button"
           class="kiosk-btn-primary full"
           @click="applyLoyalty"
-          :disabled="canRedeem && !redeemChoice"
+          :disabled="canRedeem && !cartIsEmpty && !redeemChoice"
         >
           {{ $t('kiosk.loyalty_screen.confirm') }}
         </button>
@@ -291,8 +295,10 @@
         <p class="kiosk-loyalty-confirm-sub">
           {{ appliedDiscount > 0 ? $t('kiosk.loyalty_screen.confirm_discount_sub') : $t('kiosk.loyalty_screen.confirm_saved_sub') }}
         </p>
+        <!-- [F-BV-04] CTA contextuel : panier vide (consultation « Mon compte »)
+             → « Choisir mes articles » (catalogue) ; sinon flux checkout. -->
         <button type="button" class="kiosk-btn-primary full" @click="proceedToPayment">
-          {{ $t('kiosk.loyalty_screen.continue_payment') }}
+          {{ cartIsEmpty ? $t('kiosk.loyalty_screen.continue_menu') : $t('kiosk.loyalty_screen.continue_payment') }}
         </button>
       </div>
     </div>
@@ -363,6 +369,13 @@ export default {
     ...mapGetters('kioskMenu', ['categories']),
     shouldSkipKioskUpsell() {
       return shouldSkipKioskUpsellScreen(this.items, this.categories);
+    },
+
+    // [W-REM T-R3.1b F-BV-04 2026-06-12] Mode consultation « Mon compte » :
+    // l'écran est accessible panier vide (chip catalogue) — toutes les
+    // sorties deviennent contextuelles (catalogue au lieu du panier vide).
+    cartIsEmpty() {
+      return (this.items || []).length === 0;
     },
 
     customerInitials() {
@@ -647,6 +660,12 @@ export default {
     },
 
     proceedToPayment() {
+      // [F-BV-04] Consultation compte panier vide : « continuer » = aller
+      // choisir ses articles (catalogue). Payment/upsell exigent un panier.
+      if (this.cartIsEmpty) {
+        this.$router.push({ name: 'kiosk.categories' });
+        return;
+      }
       // Same routing as KioskCartComponent::proceedToUpsell (category skip + upsell once per session).
       if (this.upsellShown) {
         this.$router.push({ name: 'kiosk.payment' });
@@ -661,6 +680,12 @@ export default {
     },
 
     goBack() {
+      // [F-BV-04] Panier vide (entrée via « Mon compte ») : retour au
+      // catalogue, jamais sur l'écran PANIER VIDE inexpliqué.
+      if (this.cartIsEmpty) {
+        this.$router.push({ name: 'kiosk.categories' });
+        return;
+      }
       this.$router.push({ name: 'kiosk.cart' });
     },
 

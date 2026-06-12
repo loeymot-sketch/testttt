@@ -1726,6 +1726,7 @@
             "confirm_discount_sub": "تم خصم المبلغ من الإجمالي",
             "confirm_saved_sub": "ستُضاف نقاطك بعد الطلب",
             "continue_payment": "متابعة إلى الدفع",
+            "continue_menu": "اختيار منتجاتي",
             "error_not_found": "الرمز أو الرقم غير موجود. تحقق وحاول مرة أخرى.",
             "request_timeout": "انتهت مهلة الانتظار. تحقق من الاتصال وأعد المحاولة.",
             "toast_discount": "تم تطبيق خصم {amount}!",
