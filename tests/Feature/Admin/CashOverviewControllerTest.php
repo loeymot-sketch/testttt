@@ -383,6 +383,80 @@ class CashOverviewControllerTest extends TestCase
         $this->assertEquals(100.00, $response->json('summary.total'));
     }
 
+    /**
+     * [HEAL dispute-r3 B-R1-07 2026-06-12] La page cash-overview était
+     * AVEUGLE aux remboursements : les cash_back du jour (−13,40 € au R2)
+     * n'apparaissaient ni en ligne ni en mention « hors remboursements »,
+     * alors que le grand livre transactions les montre en négatif — 2
+     * réalités sur le même périmètre. Contrat : le payload porte un bloc
+     * `refunds` (count + total brut + currency) sur la MÊME fenêtre
+     * date+branche que le summary, SANS être déduit des totaux (les cartes
+     * restent des encaissements BRUTS, désormais étiquetés comme tels).
+     */
+    public function test_refunds_block_surfaces_cash_back_of_the_window(): void
+    {
+        $today = Carbon::now('Europe/Paris')->startOfDay()->addHours(15);
+        $yesterday = Carbon::now('Europe/Paris')->subDay()->startOfDay()->addHours(15);
+
+        $payment = $this->makeOrderTransaction($this->branchA, 'caisse', 'cash', 100.00, $today);
+
+        // 2 refunds today on branch A (6.90 + 6.50 = 13.40).
+        foreach ([6.90, 6.50] as $i => $amount) {
+            $cb = Transaction::create([
+                'order_id'       => $payment->order_id,
+                'transaction_no' => 'REFUND-B-R1-07-'.$i,
+                'amount'         => $amount,
+                'payment_method' => 'cash',
+                'sign'           => '-',
+                'type'           => 'cash_back',
+            ]);
+            Transaction::query()->where('id', $cb->id)
+                ->update(['created_at' => $today, 'updated_at' => $today]);
+        }
+
+        // 1 refund YESTERDAY → excluded by the default today window.
+        $stale = Transaction::create([
+            'order_id'       => $payment->order_id,
+            'transaction_no' => 'REFUND-B-R1-07-stale',
+            'amount'         => 50.00,
+            'payment_method' => 'cash',
+            'sign'           => '-',
+            'type'           => 'cash_back',
+        ]);
+        Transaction::query()->where('id', $stale->id)
+            ->update(['created_at' => $yesterday, 'updated_at' => $yesterday]);
+
+        // 1 refund today on branch B → excluded for the branch manager.
+        $paymentB = $this->makeOrderTransaction($this->branchB, 'caisse', 'cash', 20.00, $today);
+        $cbB = Transaction::create([
+            'order_id'       => $paymentB->order_id,
+            'transaction_no' => 'REFUND-B-R1-07-branchB',
+            'amount'         => 5.00,
+            'payment_method' => 'cash',
+            'sign'           => '-',
+            'type'           => 'cash_back',
+        ]);
+        Transaction::query()->where('id', $cbB->id)
+            ->update(['created_at' => $today, 'updated_at' => $today]);
+
+        // Admin (toutes branches) : 13.40 + 5.00 = 18.40 sur 3 refunds.
+        $adminRes = $this->actingAs($this->admin, 'sanctum')
+            ->getJson('/api/admin/cash-overview')
+            ->assertOk();
+        $this->assertSame(3, $adminRes->json('refunds.count'));
+        $this->assertEquals(18.40, $adminRes->json('refunds.total'));
+        $this->assertIsString($adminRes->json('refunds.total_currency_price'));
+        // Les totaux restent BRUTS (non nettés) — sémantique inchangée.
+        $this->assertEquals(120.00, $adminRes->json('summary.total'));
+
+        // Branch manager : ne voit que les refunds de SA branche (13.40 / 2).
+        $bmRes = $this->actingAs($this->managerA, 'sanctum')
+            ->getJson('/api/admin/cash-overview')
+            ->assertOk();
+        $this->assertSame(2, $bmRes->json('refunds.count'));
+        $this->assertEquals(13.40, $bmRes->json('refunds.total'));
+    }
+
     public function test_invalid_date_returns_422(): void
     {
         $this->actingAs($this->admin, 'sanctum')

@@ -280,6 +280,22 @@ class CashOverviewController extends AdminController
             $isGlobalAdmin
         );
 
+        // [HEAL dispute-r3 B-R1-07 2026-06-12] La page était AVEUGLE aux
+        // remboursements : les cash_back de la fenêtre n'apparaissaient nulle
+        // part alors que le grand livre transactions les montre en négatif —
+        // 2 réalités sur le même périmètre (R2 : −13,40 € invisibles).
+        // Bloc disclosure : compte + total BRUT des cash_back de la même
+        // fenêtre date+branche que le summary (volontairement INSENSIBLE aux
+        // filtres source/mode UI, comme cash_session — c'est un périmètre de
+        // page, pas une ligne filtrable). Les cartes restent des encaissements
+        // BRUTS : on n'invente pas un netting, on étiquette + on expose.
+        $refunds = $this->summarizeRefunds(
+            $startBound,
+            $endBound,
+            $branchFilter,
+            $isGlobalAdmin
+        );
+
         return response()->json([
             'status' => true,
             'data'   => CashOverviewTransactionResource::collection($transactions),
@@ -292,6 +308,10 @@ class CashOverviewController extends AdminController
             // cashback) with no session → expected cash overstated. Kept SEPARATE
             // from `unrecorded_cash` (opposite sign, never netted).
             'unrecorded_cash_out' => $unrecordedCashOut,
+            // [dispute-r3 B-R1-07] Refunds disclosure (count + gross total of
+            // cash_back rows in the window) — NOT netted into `summary`
+            // (gross encashments stay gross, the UI labels the perimeter).
+            'refunds' => $refunds,
             'meta'         => [
                 'from'      => $startBound->toIso8601String(),
                 'to'        => $endBound->toIso8601String(),
@@ -449,6 +469,44 @@ class CashOverviewController extends AdminController
             'message'              => $count > 0
                 ? "{$count} remboursement(s)/rendu(s) espèces sans session caisse — sortie de caisse non rattachée à un fond de caisse (à régulariser)"
                 : null,
+        ];
+    }
+
+    /**
+     * [HEAL dispute-r3 B-R1-07 2026-06-12] Gross refunds (cash_back rows) of
+     * the window — disclosure block for the overview page. Same date+branch
+     * perimeter as the summary, deliberately INSENSITIVE to the UI source/
+     * mode filters (page-level perimeter, mirrors cash_session semantics).
+     * The figure is kept POSITIVE (magnitude); the UI renders it as −X €.
+     * Pure aggregation, zero writes.
+     *
+     * @return array{count:int, total:float, total_currency_price:string}
+     */
+    private function summarizeRefunds(
+        Carbon $startBound,
+        Carbon $endBound,
+        ?int $branchFilter,
+        bool $isGlobalAdmin
+    ): array {
+        $rows = Transaction::query()
+            ->whereBetween('created_at', [$startBound, $endBound])
+            ->where('type', 'cash_back')
+            ->whereHas('order', function ($q) use ($isGlobalAdmin, $branchFilter) {
+                if ($isGlobalAdmin) {
+                    $q->withoutGlobalScope(BranchScope::class);
+                }
+                if ($branchFilter !== null) {
+                    $q->where('branch_id', $branchFilter);
+                }
+            })
+            ->get(['id', 'amount']);
+
+        $total = round((float) $rows->sum(fn ($t) => abs((float) $t->amount)), 2);
+
+        return [
+            'count'                => $rows->count(),
+            'total'                => $total,
+            'total_currency_price' => \App\Libraries\AppLibrary::currencyAmountFormat($total),
         ];
     }
 

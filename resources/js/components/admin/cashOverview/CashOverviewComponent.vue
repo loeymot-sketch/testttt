@@ -101,6 +101,16 @@
                         <div class="text-xs text-gray-500 mt-1">
                             {{ summary.count }} {{ $t('label.transactions_short') }}
                         </div>
+                        <!-- [dispute-r3 B-R1-07 2026-06-12] Étiquette de périmètre
+                             explicite : les cartes sont des encaissements BRUTS,
+                             les remboursements ne sont PAS déduits (ils sont
+                             exposés dans le bloc disclosure dédié ci-dessous). -->
+                        <div
+                            class="text-[11px] text-gray-400 mt-1"
+                            data-testid="cash-overview-gross-note"
+                        >
+                            {{ $t('label.cash_overview_gross_note') }}
+                        </div>
                     </div>
                     <div
                         v-for="src in displayedSources"
@@ -112,6 +122,46 @@
                         <div class="text-xl font-semibold mt-1">{{ formatMoney(src.stat.total) }}</div>
                         <div class="text-xs text-gray-500 mt-1">
                             {{ src.stat.count }} {{ $t('label.transactions_short') }}
+                        </div>
+                    </div>
+                </section>
+
+                <!--
+                    [dispute-r3 B-R1-07 2026-06-12] Disclosure remboursements :
+                    les cash_back de la fenêtre étaient INVISIBLES sur cette
+                    page (le grand livre transactions les montre en négatif —
+                    2 réalités sur le même périmètre). Le bloc rend le total
+                    BRUT (−X €) + le count, et rappelle qu'ils ne sont PAS
+                    déduits des cartes ci-dessus (encaissements bruts).
+                    Masqué quand count === 0 (pas de bruit).
+                -->
+                <section
+                    v-if="!loading && refunds && refunds.count > 0"
+                    class="px-4 sm:px-5 mb-4"
+                    data-testid="cash-overview-refunds"
+                >
+                    <div class="border-l-4 border-rose-500 bg-rose-50 rounded p-3">
+                        <div class="text-sm font-semibold text-rose-900">
+                            {{ $t('label.cash_overview_refunds_title') }}
+                        </div>
+                        <div class="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                            <div>
+                                <span class="text-gray-600">{{ $t('label.amount') }}:</span>
+                                <strong
+                                    class="ml-1 text-rose-800"
+                                    data-testid="cash-overview-refunds-total"
+                                >−{{ refunds.total_currency_price || formatMoney(refunds.total) }}</strong>
+                            </div>
+                            <div>
+                                <span class="text-gray-600">{{ $t('label.transactions_short') }}:</span>
+                                <strong
+                                    class="ml-1 text-rose-800"
+                                    data-testid="cash-overview-refunds-count"
+                                >{{ refunds.count }}</strong>
+                            </div>
+                        </div>
+                        <div class="mt-2 text-xs text-rose-700" data-testid="cash-overview-refunds-note">
+                            {{ $t('label.cash_overview_refunds_note') }}
                         </div>
                     </div>
                 </section>
@@ -365,6 +415,9 @@ export default {
             // discrepancy here, where the écart actually manifests, instead of
             // only via the ephemeral collect-time toast.
             unrecordedCash: null,
+            // [dispute-r3 B-R1-07] Bloc disclosure remboursements de la
+            // fenêtre (count + total brut) — jamais netté dans summary.
+            refunds: null,
             meta: { capped: false, row_count: 0 },
             filters: {
                 from: today,
@@ -449,6 +502,7 @@ export default {
                 this.summary = payload.summary || null;
                 this.cashSession = payload.cash_session || null;
                 this.unrecordedCash = payload.unrecorded_cash || null;
+                this.refunds = payload.refunds || null;
                 this.meta = payload.meta || { capped: false, row_count: 0 };
             } catch (e) {
                 // eslint-disable-next-line no-console
@@ -457,6 +511,7 @@ export default {
                 this.summary = null;
                 this.cashSession = null;
                 this.unrecordedCash = null;
+                this.refunds = null;
             } finally {
                 this.loading = false;
             }
