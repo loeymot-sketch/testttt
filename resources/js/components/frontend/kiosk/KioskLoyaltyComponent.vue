@@ -74,7 +74,10 @@
         </button>
 
         <!-- Register new customer -->
-        <button type="button" class="kiosk-loyalty-register-btn" @click="step = 'register'">
+        <!-- [dispute-r1 D-007 2026-06-12] Le téléphone déjà saisi au numpad
+             (étape « Non trouvé ») est reporté dans le formulaire — le client
+             ne le retape pas (d4c-03 : TÉLÉPHONE* vide après S'inscrire). -->
+        <button type="button" class="kiosk-loyalty-register-btn" @click="goToRegister">
           {{ $t('kiosk.loyalty_screen.register_cta') }}
         </button>
       </div>
@@ -483,6 +486,23 @@ export default {
     },
     onVkeybClose() {
       this.vkeybActiveField = null;
+    },
+
+    /**
+     * [dispute-r1 D-007 2026-06-12] Bascule vers l'inscription en reportant le
+     * téléphone saisi au numpad. Le `code` accepte code fidélité OU téléphone
+     * (placeholder « Ex. : code ou 06 12 34 56 78 ») : on ne pré-remplit que
+     * si la saisie ressemble à un numéro FR (uniquement chiffres/espaces/+,
+     * 6 à 15 chiffres) — jamais un code alphanumérique.
+     */
+    goToRegister() {
+      const raw = String(this.code || '').trim();
+      const digits = raw.replace(/\D/g, '');
+      const looksLikePhone = /^[\d\s+().-]+$/.test(raw) && digits.length >= 6 && digits.length <= 15;
+      if (looksLikePhone && !this.registerPhone) {
+        this.registerPhone = raw;
+      }
+      this.step = 'register';
     },
 
     async checkLoyalty() {
