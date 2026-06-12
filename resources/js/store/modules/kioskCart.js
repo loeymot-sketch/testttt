@@ -422,8 +422,13 @@ export const kioskCart = {
         SET_KIOSK_TOKEN(state, { token, machineId }) {
             state.kioskToken = token || null;
             // [GAP-34-2] Re-inject kiosk token into Echo auth headers after kiosk login.
+            // [W-REM T-R3.2 BORNE-BOOT-401 2026-06-12] Token EXPLICITE obligatoire :
+            // vuex-persistedstate écrit localStorage APRÈS la mutation (store.subscribe),
+            // donc le chemin localStorage de _refreshEchoAuth() était stale-by-one ici
+            // (pitfall documenté bootstrap.js « P-AUTH-SYNC ») — il réinjectait le token
+            // PRÉCÉDENT, possiblement révoqué.
             if (typeof window !== 'undefined' && typeof window._refreshEchoAuth === 'function') {
-                window._refreshEchoAuth();
+                window._refreshEchoAuth(token);
             }
             state.kioskMachineId = machineId || null;
         },

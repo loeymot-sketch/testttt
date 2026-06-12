@@ -401,17 +401,32 @@ if (_MIX_PUSHER_APP_KEY) {
         return channel;
     }
 
+    // [W-REM T-R3.2 BORNE-BOOT-401 2026-06-12] Le header Authorization d'Echo
+    // était un snapshot EAGER pris à la construction (boot) — token possiblement
+    // vide ou révoqué → 1re souscription privée = /api/broadcasting/auth 401
+    // one-shot. On rafraîchit le header depuis l'état persisté AU MOMENT du
+    // subscribe (idempotent, même source que le filet réactif
+    // subscription_error). Sentinel: tests/js/kioskBootBearerFreshness.spec.js
     if (typeof window.Echo.private === 'function') {
         const _origPrivate = window.Echo.private.bind(window.Echo);
-        window.Echo.private = (...args) => _bindSubscriptionErrorHandler(_origPrivate(...args));
+        window.Echo.private = (...args) => {
+            try { window._refreshEchoAuth?.(); } catch (_) { /* ignore */ }
+            return _bindSubscriptionErrorHandler(_origPrivate(...args));
+        };
     }
     if (typeof window.Echo.encryptedPrivate === 'function') {
         const _origEncPrivate = window.Echo.encryptedPrivate.bind(window.Echo);
-        window.Echo.encryptedPrivate = (...args) => _bindSubscriptionErrorHandler(_origEncPrivate(...args));
+        window.Echo.encryptedPrivate = (...args) => {
+            try { window._refreshEchoAuth?.(); } catch (_) { /* ignore */ }
+            return _bindSubscriptionErrorHandler(_origEncPrivate(...args));
+        };
     }
     if (typeof window.Echo.join === 'function') {
         const _origJoin = window.Echo.join.bind(window.Echo);
-        window.Echo.join = (...args) => _bindSubscriptionErrorHandler(_origJoin(...args));
+        window.Echo.join = (...args) => {
+            try { window._refreshEchoAuth?.(); } catch (_) { /* ignore */ }
+            return _bindSubscriptionErrorHandler(_origJoin(...args));
+        };
     }
 
     wsService.start();

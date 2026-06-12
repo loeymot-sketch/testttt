@@ -69,14 +69,25 @@ function requireKioskAuth(to, from, next) {
     const proceed = () => {
         if (to.name === 'kiosk.login') return next();
         const token = store.state.kioskCart?.kioskToken;
-        if (token) return next();
-
         const auto = getKioskAutoCredentials();
+        // [W-REM T-R3.2 BORNE-BOOT-401 2026-06-12] Au BOOT (navigation
+        // initiale : `from` sans name), un token PERSISTÉ peut être révoqué
+        // (rotation au relogin précédent / TTL 480 min). Le shell frozen
+        // souscrivait alors ses canaux Echo avec ce bearer mort →
+        // /api/broadcasting/auth 401 one-shot avant le re-login silencieux.
+        // Avec auto-login configuré : on ROTATE le token AVANT next() — tout
+        // ce qui monte part avec un bearer frais (SET_KIOSK_TOKEN rafraîchit
+        // aussi le header Echo). Si la rotation échoue (offline) et qu'un
+        // token persisté existe, on procède quand même (dégradé, comportement
+        // antérieur). Sentinel: tests/js/kioskBootBearerFreshness.spec.js
+        const isBoot = !from || !from.name;
+        if (token && !(isBoot && auto)) return next();
+
         if (auto) {
             store
                 .dispatch('kioskCart/kioskLogin', auto)
                 .then(() => next())
-                .catch(() => next({ name: 'kiosk.login' }));
+                .catch(() => (token ? next() : next({ name: 'kiosk.login' })));
             return;
         }
         next({ name: 'kiosk.login' });
