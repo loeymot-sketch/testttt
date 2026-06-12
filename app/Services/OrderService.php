@@ -2114,9 +2114,14 @@ class OrderService
                         }
                         if ($targetStatus === OrderStatus::REJECTED || $targetStatus === OrderStatus::CANCELED) {
                             if ($locked->transaction) {
+                                // [HEAL dispute-r1 B-R1-15/E-ADV-5 2026-06-12]
+                                // Refund mode = REAL mode of the original
+                                // encashment (cash→cash, counter_cash→…), not
+                                // the hardcoded 'credit' slug which displayed
+                                // « Carte bancaire » for cash refunds.
                                 app(PaymentService::class)->cashBack(
                                     $locked,
-                                    'credit',
+                                    self::refundLedgerMethod($locked),
                                     'TXN-' . \Illuminate\Support\Str::random(12)
                                 );
                             }
@@ -2250,9 +2255,13 @@ class OrderService
                             $locked->reason = $request->reason;
                         }
                         if ($locked->transaction) {
+                            // [HEAL dispute-r1 B-R1-15/E-ADV-5 2026-06-12] Real
+                            // encashment mode on the cash_back row (was a
+                            // hardcoded 'credit' → « Carte bancaire » lie for
+                            // cash refunds on /admin/transactions).
                             app(PaymentService::class)->cashBack(
                                 $locked,
-                                'credit',
+                                self::refundLedgerMethod($locked),
                                 'TXN-' . \Illuminate\Support\Str::random(12)
                             );
                         }
@@ -2931,6 +2940,23 @@ class OrderService
                 'discount' => "Les remises (manuelle, coupon, fidélité) sont désactivées en V1 (correction fiscale TVA/HT en attente). Contactez le responsable.",
             ]);
         }
+    }
+
+    /**
+     * [HEAL dispute-r1 B-R1-15/E-ADV-5 2026-06-12] Ledger mode for a refund:
+     * mirror the REAL mode of the original encashment (the order's prior
+     * `payment` Transaction). Falls back to the legacy 'credit' slug only
+     * when no prior payment method is known (defensive — cashBack itself
+     * early-returns without a prior payment row).
+     *
+     * Public static: shared with FrontendOrderService (kiosk/web cancel path).
+     * Works for both Order and FrontendOrder (same `transaction` hasOne).
+     */
+    public static function refundLedgerMethod(object $order): string
+    {
+        $method = strtolower(trim((string) ($order->transaction?->payment_method ?? '')));
+
+        return $method !== '' ? $method : 'credit';
     }
 
     private function assertPosManualDiscountAllowed(float $discount, float $backendSubtotal, ?User $user, ?string $reason = null): void

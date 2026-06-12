@@ -753,9 +753,13 @@ class FrontendOrderService
                     }
 
                     if ($frontendOrder->transaction) {
+                        // [HEAL dispute-r1 B-R1-15/E-ADV-5 2026-06-12] Real
+                        // encashment mode on the cash_back row — mirrors the
+                        // POS changeStatus fix (hardcoded 'credit' displayed
+                        // « Carte bancaire » for cash refunds).
                         app(PaymentService::class)->cashBack(
                             $frontendOrder,
-                            'credit',
+                            \App\Services\OrderService::refundLedgerMethod($frontendOrder),
                             'TXN-' . \Illuminate\Support\Str::random(12)
                         );
                     }
