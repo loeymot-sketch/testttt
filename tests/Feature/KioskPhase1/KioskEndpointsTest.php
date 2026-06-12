@@ -298,6 +298,10 @@ class KioskEndpointsTest extends TestCase
 
     public function test_preview_applies_kiosk_promo_priority(): void
     {
+        // [BORNE-PROMO-01 / LOT D] These tests pin the REDEMPTION mechanics
+        // (kiosk_promo priority + coupon fallback) reserved for the G7 wiring;
+        // the chain is dormant by default (kiosk.promos_redeemable=false).
+        config(['kiosk.promos_redeemable' => true]);
         KioskPromo::create([
             'branch_id' => $this->branch->id,
             'code' => 'KIOSK10', 'type' => 'percent', 'value' => 10,
@@ -320,6 +324,10 @@ class KioskEndpointsTest extends TestCase
 
     public function test_promo_validate_prioritizes_kiosk_promo_over_coupon(): void
     {
+        // [BORNE-PROMO-01 / LOT D] These tests pin the REDEMPTION mechanics
+        // (kiosk_promo priority + coupon fallback) reserved for the G7 wiring;
+        // the chain is dormant by default (kiosk.promos_redeemable=false).
+        config(['kiosk.promos_redeemable' => true]);
         KioskPromo::create([
             'branch_id' => $this->branch->id,
             'code' => 'WELCOME', 'type' => 'percent', 'value' => 15,
@@ -341,6 +349,10 @@ class KioskEndpointsTest extends TestCase
 
     public function test_promo_validate_falls_back_to_coupon(): void
     {
+        // [BORNE-PROMO-01 / LOT D] These tests pin the REDEMPTION mechanics
+        // (kiosk_promo priority + coupon fallback) reserved for the G7 wiring;
+        // the chain is dormant by default (kiosk.promos_redeemable=false).
+        config(['kiosk.promos_redeemable' => true]);
         Coupon::create([
             'name' => 'Fallback', 'code' => 'FALLBACK',
             'discount' => 2, 'discount_type' => 2,

@@ -235,7 +235,9 @@
                                 </a>
                                 <!-- [UIUX-W2 G4 2026-06-11] variationsText() : plus de « Poulet Mariné: ,
                                      Algérienne: » orphelins — « nom: valeur » seulement si les deux
-                                     existent, sinon le seul présent, entrées vides filtrées. -->
+                                     existent, sinon le seul présent, entrées vides filtrées.
+                                     [W-INT 2026-06-12] union §0.4 : fallbacks W4 (attribute_name/variation_name)
+                                     portés dans le helper, rendu spine conservé. -->
                                 <p v-if="variationsText(item)" class="capitalize text-xs mb-1.5">
                                     {{ variationsText(item) }}
                                 </p>
@@ -249,7 +251,7 @@
                                 <h3 class="capitalize text-xs w-fit whitespace-nowrap">{{ $t('label.extras') }}:</h3>
                                 <p class="text-xs">
                                     <span v-for="(extra, index) in item.item_extras">
-                                        {{ extra.name }}<span v-if="index + 1 < item.item_extras.length">,&nbsp;</span>
+                                        {{ extra.extra_name || extra.name }}<span v-if="index + 1 < item.item_extras.length">,&nbsp;</span>
                                     </span>
                                 </p>
                             </li>
@@ -705,12 +707,17 @@ export default {
         // seulement si les deux existent, sinon le seul présent ; entrées
         // entièrement vides filtrées (plus de « Poulet Mariné: , Algérienne: »).
         variationsText: function (item) {
+            // [W-INT 2026-06-12] union §0.4 : fallbacks W4 (CDV) par-dessus le hunk
+            // spine — group lit attribute_name d'abord, value retombe sur
+            // variation_name (payload shape {attribute_name, variation_name}).
+            // Garde anti-doublon « X: X » quand les deux fallbacks résolvent
+            // la même chaîne.
             const variations = Array.isArray(item && item.item_variations) ? item.item_variations : [];
             return variations
                 .map((variation) => {
-                    const group = String(variation && variation.variation_name || '').trim();
-                    const value = String(variation && variation.name || '').trim();
-                    if (group && value) return `${group}: ${value}`;
+                    const group = String(variation && (variation.attribute_name || variation.variation_name) || '').trim();
+                    const value = String(variation && (variation.name || variation.variation_name) || '').trim();
+                    if (group && value && group !== value) return `${group}: ${value}`;
                     return group || value;
                 })
                 .filter(Boolean)

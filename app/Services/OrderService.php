@@ -2402,12 +2402,72 @@ class OrderService
     }
 
     /**
+     * [RED-DASH-02 P0 / ultra-audit 2026-06-10] A transition to PAID is a
+     * settlement. It is only legal when the order already carries at least one
+     * tender trace: an allocated fiscal sequence, an OrderPayment row (counter
+     * encashment) or a payment Transaction (gateway). Otherwise the flip would
+     * register an off-book sale (NF525 integrity breach: unknown payment
+     * method, invisible to the drawer, the Z report and the Vue Caisse).
+     */
+    private function assertPaidTransitionHasTenderTrace(Order $order): void
+    {
+        $hasTrace = $order->fiscal_sequence_no !== null
+            || \App\Models\OrderPayment::query()
+                ->withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
+                ->where('order_id', $order->id)
+                ->exists()
+            || \App\Models\Transaction::query()
+                ->where('order_id', $order->id)
+                ->where('type', 'payment')
+                ->exists();
+
+        if ($hasTrace) {
+            return;
+        }
+
+        try {
+            app(AuditLogService::class)->write([
+                'branch_id'   => (int) $order->branch_id,
+                'user_id'     => Auth::check() ? (int) Auth::id() : null,
+                'action'      => 'order.payment_status_change_blocked',
+                'resource'    => 'order',
+                'resource_id' => (int) $order->id,
+                'payload'     => [
+                    'order_serial_no'     => $order->order_serial_no,
+                    'attempted_transition' => 'PAID',
+                    'reason'              => 'no_tender_trace',
+                ],
+            ]);
+        } catch (\Throwable) {
+            // best-effort audit — the refusal below must not be masked
+        }
+
+        abort(422, 'Encaissement requis : cette commande ne porte aucune trace de paiement. '
+            . 'Utilisez le flux d\'encaissement (encaissement comptoir / Vue Caisse) pour la passer en « Payé ».');
+    }
+
+    /**
      * @throws Exception
      */
     public function changePaymentStatus(Order $order, PaymentStatusRequest $request, bool $auth = false): Order|array
     {
         try {
             $targetPaymentStatus = (int) $request->payment_status;
+
+            // [RED-DASH-02 P0 / ultra-audit 2026-06-10] Off-book settlement
+            // guard. Flipping an order to PAID through these generic endpoints
+            // used to settle the sale with ZERO tender trace: no fiscal
+            // sequence allocation, no OrderPayment, no Transaction, no cash
+            // movement (live repro: order 4496, PENDING_COUNTER→PAID HTTP 200,
+            // fiscal_sequence_no NULL — 43 such orders in DB). Legitimate
+            // settlement paths (PaymentService::confirmCounterPayment, gateway
+            // flows) ALWAYS record a tender trace before/with the flip, so we
+            // refuse PAID when no trace exists and point the operator to the
+            // encashment flow. Applies to BOTH the customer self-service
+            // branch and the staff branch below.
+            if ($targetPaymentStatus === \App\Enums\PaymentStatus::PAID) {
+                $this->assertPaidTransitionHasTenderTrace($order);
+            }
 
             if ($auth) {
                 // Branche customer self-service.

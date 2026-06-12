@@ -67,6 +67,16 @@ final class KitchenReleaseRule
             return true;
         }
 
+        // [LOT E / ultra-audit 2026-06-10] Counter-collect orders (kiosk
+        // Plan B + walk-in deferred) are PENDING_COUNTER and the kitchen
+        // prepares them BEFORE payment (owner decision W-D1) — the KDS board
+        // query already shows them (KitchenDisplaySystemOrderService:74-82).
+        // This rule predated that decision; aligning it lets changeStatus()
+        // enforce orderIsReleased() without breaking the Plan B flow.
+        if ($paymentStatus === PaymentStatus::PENDING_COUNTER) {
+            return true;
+        }
+
         return $orderType === OrderType::POS
             && $posPaymentMethod === PosPaymentMethod::CASH;
     }

@@ -52,7 +52,7 @@ class ChangePaymentStatusTransactionalTest extends TestCase
 
     private function makeOrder(int $paymentStatus = PaymentStatus::UNPAID): Order
     {
-        return Order::factory()->create([
+        $order = Order::factory()->create([
             'user_id'        => $this->cashier->id,
             'branch_id'      => $this->branch->id,
             'order_type'     => OrderType::POS,
@@ -60,6 +60,21 @@ class ChangePaymentStatusTransactionalTest extends TestCase
             'status'         => OrderStatus::PENDING,
             'total'          => 25.00,
         ]);
+
+        // [RED-DASH-02] The off-book settlement guard now refuses → PAID on
+        // orders with zero tender trace. These tests pin the transactional
+        // mechanics of the flip, so give the order a legitimate gateway-style
+        // trace to keep exercising the same code path.
+        \App\Models\Transaction::create([
+            'order_id'       => $order->id,
+            'transaction_no' => 'test-trace-' . $order->id,
+            'amount'         => (float) $order->total,
+            'payment_method' => '1',
+            'type'           => 'payment',
+            'sign'           => '+',
+        ]);
+
+        return $order;
     }
 
     /**

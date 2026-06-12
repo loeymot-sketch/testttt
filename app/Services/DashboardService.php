@@ -194,6 +194,11 @@ class DashboardService
                 $orderSummaryArray["rejected"] = 0;
             }
 
+            // [CDV-05 / ultra-audit 2026-06-10] Real order count for the donut
+            // center label — the series above are PERCENTAGES, so the frontend
+            // summing them displayed a meaningless "95" instead of the total.
+            $orderSummaryArray["total_orders"] = $total_order;
+
             return $orderSummaryArray;
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
@@ -743,7 +748,19 @@ class DashboardService
     private function resolvePaymentBucketKey($order): string
     {
         $orderType = (int) ($order->order_type ?? 0);
-        $isPosTender = $orderType === \App\Enums\OrderType::POS;
+
+        // [CDASH-02 + RED-DASH-01 / ultra-audit 2026-06-10] A counter-encashed
+        // order carries its REAL tender in pos_payment_method (written by
+        // PaymentService::confirmCounterPayment:338) whatever its order_type
+        // (takeaway counter-collect, kiosk Plan B). Keying on order_type===POS
+        // alone sent every non-POS-typed counter order into the gateway branch
+        // below, where payment_method (=1 CASH_ON_DELIVERY placeholder) counted
+        // card/TR sales as Espèces in the EOD by_payment recap. Mirror the
+        // bucketChannels discriminator: pos tender = recorded pos_payment_method
+        // OR POS order_type OR POS source.
+        $isPosTender = (int) ($order->pos_payment_method ?? 0) > 0
+            || $orderType === \App\Enums\OrderType::POS
+            || (int) ($order->source ?? 0) === \App\Enums\Source::POS;
 
         if ($isPosTender) {
             $method = (int) ($order->pos_payment_method ?? 0);

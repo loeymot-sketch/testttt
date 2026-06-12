@@ -53,6 +53,15 @@ class ChangePaymentStatusOutboxTest extends TestCase
             'status'         => OrderStatus::PENDING,
             'total'          => 42.50,
         ]);
+        \App\Models\Transaction::create([
+            'order_id'       => $order->id,
+            'transaction_no' => 'test-trace-' . $order->id,
+            'amount'         => (float) $order->total,
+            'payment_method' => '1',
+            'type'           => 'payment',
+            'sign'           => '+',
+        ]); // [RED-DASH-02] tender trace required by the off-book settlement guard
+
 
         $response = $this->actingAs($this->cashier, 'sanctum')
             ->postJson('/api/admin/pos-order/change-payment-status/' . $order->id, [
@@ -92,6 +101,15 @@ class ChangePaymentStatusOutboxTest extends TestCase
             'status'         => OrderStatus::PENDING,
             'total'          => 18.00,
         ]);
+        \App\Models\Transaction::create([
+            'order_id'       => $order->id,
+            'transaction_no' => 'test-trace-' . $order->id,
+            'amount'         => (float) $order->total,
+            'payment_method' => '1',
+            'type'           => 'payment',
+            'sign'           => '+',
+        ]); // [RED-DASH-02] tender trace required by the off-book settlement guard
+
 
         $this->actingAs($this->cashier, 'sanctum')
             ->postJson('/api/admin/pos-order/change-payment-status/' . $order->id, [

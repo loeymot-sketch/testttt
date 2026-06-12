@@ -165,6 +165,13 @@ if ($requireForm) {
         'frites_included_category_ids' => $fritesIncludedCategoryIds,
         // [Sprint H1 K-004 2026-05-17] Wizard template aliases — see top of file.
         'wizard_template_aliases' => $wizardTemplateAliases,
+        // [BORNE-PROMO-01 / ultra-audit 2026-06-10 — LOT D quick-win] Dormancy
+        // gate for the kiosk promo DISPLAY chain (validate + banner + preview):
+        // the order path never bills kiosk_promo_code (OrderQuoteService:416
+        // metadata-only), so showing −5,00 € is a price lie. NEVER flip to true
+        // without the G7 owner-gated order-path wiring. Present in BOTH return
+        // branches (Z1-RED-08 lesson).
+        'promos_redeemable' => (bool) env('KIOSK_PROMOS_REDEEMABLE', false),
     ];
 }
 
@@ -257,4 +264,11 @@ return [
     'payment_route_all_to_counter' => $paymentRouteAllToCounter,
     // [TRAP-2 2026-06-04] Stale counter-collect cleanup TTL (minutes) — see top of file.
     'stale_collect_ttl_minutes' => $staleCollectTtlMinutes,
+    // [BORNE-PROMO-01 / ultra-audit 2026-06-10 — LOT D quick-win] Dormancy
+    // gate for the kiosk promo DISPLAY chain (validate + banner + preview):
+    // the order path never bills kiosk_promo_code (OrderQuoteService:416
+    // metadata-only), so showing −5,00 € is a price lie. NEVER flip to true
+    // without the G7 owner-gated order-path wiring. Present in BOTH return
+    // branches (Z1-RED-08 lesson).
+    'promos_redeemable' => (bool) env('KIOSK_PROMOS_REDEEMABLE', false),
 ];

@@ -86,10 +86,10 @@
                                     <p v-if="item.item_variations.length > 0" class="capitalize text-xs mb-1.5">
                                         <span v-for="variation in item.item_variations" :key="variation">
                                             <span class="capitalize text-xs w-fit whitespace-nowrap">
-                                                {{ variation.variation_name }}:&nbsp;
+                                                {{ variation.attribute_name || variation.variation_name }}:&nbsp;
                                             </span>
                                             <span class="text-xs">
-                                                {{ variation.name }}
+                                                {{ variation.name || variation.variation_name }}
                                             </span>
                                         </span>
                                     </p>
@@ -103,7 +103,7 @@
                                         $t('label.extras')
                                         }}:</h3>
                                     <p class="text-xs" v-for="(extra, index) in item.item_extras">
-                                        {{ extra.name }}<span v-if="index + 1 < item.item_extras.length">, </span>
+                                        {{ extra.extra_name || extra.name }}<span v-if="index + 1 < item.item_extras.length">, </span>
                                     </p>
                                 </li>
                                 <li class="flex gap-1" v-if="item.instruction">
@@ -194,7 +194,9 @@ export default {
                 },
                 paymentStatusEnumArray: {
                     [paymentStatusEnum.PAID]: this.$t("label.paid"),
-                    [paymentStatusEnum.UNPAID]: this.$t("label.unpaid")
+                    [paymentStatusEnum.UNPAID]: this.$t("label.unpaid"),
+                    [paymentStatusEnum.PENDING_COUNTER]: this.$t("label.pending_counter"),
+                    [paymentStatusEnum.REFUNDED]: this.$t("label.refunded")
                 },
                 paymentTypeEnumArray: {
                     [paymentTypeEnum.CASH_ON_DELIVERY]: this.$t("label.cash_on_delivery"),

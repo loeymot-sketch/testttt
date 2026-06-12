@@ -45,6 +45,26 @@ class AlignFritesWizardProfilesSeeder extends Seeder
 
     public function run(): void
     {
+        // [LOT A guard / ultra-audit 2026-06-10] These hardcoded ids (361/402/
+        // 403) belong to a PREVIOUS catalog generation — none exist in the
+        // live Le Cayenne DB (verified 2026-06-11), and attribute 311 is gone
+        // too. Running the seeder as-is would insert orphan variations/extras
+        // against nonexistent items. Refuse instead of polluting; the live
+        // replacement is CaisseBillableUpgradesSeeder (name-resolved).
+        $existing = \App\Models\Item::query()
+            ->whereIn('id', self::FRITES_ITEM_IDS)
+            ->whereNull('deleted_at')
+            ->count();
+        if ($existing === 0) {
+            $this->command->warn(
+                'AlignFritesWizardProfilesSeeder: target items '
+                . implode(', ', self::FRITES_ITEM_IDS)
+                . ' do not exist in this catalog — seeder is calibrated for an older DB. '
+                . 'NOTHING seeded. Use CaisseBillableUpgradesSeeder instead.'
+            );
+            return;
+        }
+
         foreach (self::FRITES_ITEM_IDS as $itemId) {
             $this->seedSauceVariations($itemId);
             $this->seedPaidSauceExtras($itemId);

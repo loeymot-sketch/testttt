@@ -96,6 +96,18 @@ class KdsSyncService
             $ordersQuery = Order::with(['orderItems', 'address', 'user'])
                 ->whereIn('status', $activeStatuses)
                 ->where('updated_at', '>=', $sinceForDb)
+                // [KDS-OSS-02 / ultra-audit 2026-06-10 — LOT E] Same release
+                // predicate as the main board (KitchenDisplaySystemOrderService
+                // :74-82): the sync feed exposed unreleased orders
+                // (DELIVERY+UNPAID, POS+UNPAID non-cash) in payload.orders.
+                ->where(function ($q) {
+                    $q->where('payment_status', \App\Enums\PaymentStatus::PAID)
+                        ->orWhere('payment_status', \App\Enums\PaymentStatus::PENDING_COUNTER)
+                        ->orWhere(function ($cashQuery) {
+                            $cashQuery->where('order_type', \App\Enums\OrderType::POS)
+                                ->where('pos_payment_method', \App\Enums\PosPaymentMethod::CASH);
+                        });
+                })
                 ->where(function ($q) use ($todayStart, $todayEnd, $tomorrowStart) {
                     $q->where(function ($s) use ($todayStart, $todayEnd) {
                         $s->whereBetween('order_datetime', [$todayStart, $todayEnd])

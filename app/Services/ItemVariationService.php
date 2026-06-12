@@ -73,6 +73,14 @@ class ItemVariationService
                 $methodValue
             );
 
+            // [CC-01 / ultra-audit 2026-06-10] Children are the Eloquent models
+            // themselves, NOT hand-built partial stdClass copies. The previous
+            // (object)[...] blocks omitted visible_on/description/image_path/
+            // thumb/is_new while ItemVariationResource reads them without
+            // null-coalescing — and ResourceCollection serializes lazily AFTER
+            // the controller return, so the 500 bypassed the catch(\Throwable).
+            // Passing the model keeps the resource future-proof: any new field
+            // added to ItemVariationResource resolves on the model directly.
             $array = [];
             if ($itemVariations) {
                 foreach ($itemVariations as $itemVariation) {
@@ -80,32 +88,10 @@ class ItemVariationService
                         $array[$itemVariation->item_attribute_id] = (object)[
                             'item_attribute_id' => $itemVariation->item_attribute_id,
                             'item_attribute'    => $itemVariation->itemAttribute,
-                            'children'          => [
-                                (object)[
-                                    'id'                => $itemVariation->id,
-                                    'item_id'           => $itemVariation->item_id,
-                                    'item_attribute_id' => $itemVariation->item_attribute_id,
-                                    'name'              => $itemVariation->name,
-                                    'price'             => $itemVariation->price,
-                                    'caution'           => $itemVariation->caution,
-                                    'status'            => $itemVariation->status,
-                                    'item'              => $itemVariation->item,
-                                    'itemAttribute'     => $itemVariation->itemAttribute
-                                ]
-                            ]
+                            'children'          => [$itemVariation]
                         ];
                     } else {
-                        $array[$itemVariation->item_attribute_id]->children[] = (object)[
-                            'id'                => $itemVariation->id,
-                            'item_id'           => $itemVariation->item_id,
-                            'item_attribute_id' => $itemVariation->item_attribute_id,
-                            'name'              => $itemVariation->name,
-                            'price'             => $itemVariation->price,
-                            'caution'           => $itemVariation->caution,
-                            'status'            => $itemVariation->status,
-                            'item'              => $itemVariation->item,
-                            'itemAttribute'     => $itemVariation->itemAttribute
-                        ];
+                        $array[$itemVariation->item_attribute_id]->children[] = $itemVariation;
                     }
                 }
             }
