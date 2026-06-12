@@ -30,7 +30,11 @@ describe('Perf — chunks lazy loading', () => {
     const src = read('resources/js/router/modules/kioskRoutes.js');
     expect(src).toMatch(/webpackChunkName:\s*["']kiosk-shell["']/);
     expect(src).toMatch(/webpackChunkName:\s*["']kiosk-wizard["']/);
-    expect(src).toMatch(/webpackChunkName:\s*["']kiosk-errors["']/);
+    // [dispute-r1 D-001 2026-06-12] Le chunk "kiosk-errors" est SUPPRIMÉ :
+    // lazy (même prefetché) il était re-fetché réseau au import() → les écrans
+    // d'erreur ne rendaient jamais offline. Ils sont désormais importés
+    // statiquement (bundle principal). Voir kioskErrorScreensEagerOffline.spec.js.
+    expect(src).not.toMatch(/webpackChunkName:\s*["']kiosk-errors["']/);
   });
 
   it('KioskProductListComponent is not imported anywhere (dead code removed)', () => {

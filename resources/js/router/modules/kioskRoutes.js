@@ -6,6 +6,18 @@ import { trackLegacyRouteHit } from "../../helpers/kioskAnalytics.js";
 import KioskAppComponent from "../../components/frontend/kiosk/KioskAppComponent.vue";
 import KioskIdleScreenComponent from "../../components/frontend/kiosk/KioskIdleScreenComponent.vue";
 import KioskCategoriesComponent from "../../components/frontend/kiosk/KioskCategoriesComponent.vue";
+// [dispute-r1 D-001 2026-06-12] Écrans d'erreur : import EAGER obligatoire.
+// Le heal W4-N1 (webpackPrefetch sur le chunk lazy kiosk-errors) est RÉFUTÉ
+// par le round-1 adversarial : le chunk est re-fetché réseau au `import()`
+// (artisan serve sans Cache-Control → prefetch non réutilisable), donc
+// offline l'écran « Connexion perdue » ne rendait JAMAIS
+// (ChunkLoadError: Loading chunk kiosk-errors failed + pageerror non gérée).
+// Les 4 écrans d'erreur doivent être dans le bundle principal, déjà en
+// mémoire AVANT la coupure. Sentinel: tests/js/kioskErrorScreensEagerOffline.spec.js
+import KioskErrorNetworkComponent from "../../components/frontend/kiosk/KioskErrorNetworkComponent.vue";
+import KioskErrorMenuUnavailableComponent from "../../components/frontend/kiosk/KioskErrorMenuUnavailableComponent.vue";
+import KioskErrorProductRemovedComponent from "../../components/frontend/kiosk/KioskErrorProductRemovedComponent.vue";
+import KioskErrorPaymentRefusedComponent from "../../components/frontend/kiosk/KioskErrorPaymentRefusedComponent.vue";
 
 // [C4] Lazy-load les autres écrans kiosk dans des chunks dédiés.
 const KioskLoginComponent        = () => import(/* webpackChunkName: "kiosk-shell" */ "../../components/frontend/kiosk/KioskLoginComponent.vue");
@@ -19,12 +31,9 @@ const KioskWaitingComponent      = () => import(/* webpackChunkName: "kiosk-shel
 const KioskConfirmationComponent = () => import(/* webpackChunkName: "kiosk-shell" */ "../../components/frontend/kiosk/KioskConfirmationComponent.vue");
 // [KIOSK-DS V1 Phase 3] Écrans UX critiques (cash + erreurs globales).
 const KioskCashInstructionComponent      = () => import(/* webpackChunkName: "kiosk-shell" */ "../../components/frontend/kiosk/KioskCashInstructionComponent.vue");
-// webpackPrefetch: le chunk d'erreurs doit être en cache navigateur AVANT une coupure
-// réseau, sinon l'écran « Connexion perdue » est lui-même injoignable hors-ligne (W4-N1).
-const KioskErrorNetworkComponent         = () => import(/* webpackChunkName: "kiosk-errors", webpackPrefetch: true */ "../../components/frontend/kiosk/KioskErrorNetworkComponent.vue");
-const KioskErrorMenuUnavailableComponent = () => import(/* webpackChunkName: "kiosk-errors", webpackPrefetch: true */ "../../components/frontend/kiosk/KioskErrorMenuUnavailableComponent.vue");
-const KioskErrorProductRemovedComponent  = () => import(/* webpackChunkName: "kiosk-errors", webpackPrefetch: true */ "../../components/frontend/kiosk/KioskErrorProductRemovedComponent.vue");
-const KioskErrorPaymentRefusedComponent  = () => import(/* webpackChunkName: "kiosk-errors", webpackPrefetch: true */ "../../components/frontend/kiosk/KioskErrorPaymentRefusedComponent.vue");
+// [dispute-r1 D-001] Les 4 composants d'erreur sont importés statiquement en
+// tête de fichier (voir bloc d'imports) — l'ancien chunk lazy "kiosk-errors"
+// (webpackPrefetch) était démontré inopérant offline.
 
 function getKioskAutoCredentials() {
     if (typeof window === 'undefined') return null;
