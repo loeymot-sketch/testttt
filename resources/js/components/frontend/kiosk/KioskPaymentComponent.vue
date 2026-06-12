@@ -92,6 +92,23 @@
       </button>
     </div>
 
+    <!-- [dispute-r1 C-RED-03 2026-06-12] Timer d'inactivité local Plan B.
+         Le timer global du shell exclut kiosk.payment (noTimerRoutes,
+         AUDIT-52-BUG3 « le client interagit avec le TPE physique ») — mais en
+         Plan B (payment_route_all_to_counter=true) il n'y a PAS de TPE : cet
+         écran est un simple « Confirmer ma commande ». Prouvé live : 25 s sans
+         overlay ni redirect → borne bloquée sur le panier du client parti, le
+         suivant pouvait envoyer SA commande en caisse. KioskAppComponent est
+         frozen → overlay « Toujours là ? » porté par CE composant, actif
+         uniquement en Plan B et hors soumission en cours. -->
+    <KioskInactivityOverlayComponent
+      v-if="paymentRouteAllToCounter"
+      :visible="planBStillHere"
+      :countdown-ms="planBConfirmMs"
+      @stay="onPlanBInactivityStay"
+      @leave="onPlanBInactivityLeave"
+    />
+
     <!-- Header -->
     <div
       v-if="!paymentRouteAllToCounter"
@@ -331,10 +348,18 @@ import { buildIdempotencyHeaders } from '../../../helpers/idempotencyHeaders';
 import { useKioskSpeech } from '../../../composables/useKioskSpeech';
 import { buildKioskOrderPayload } from '../../../store/modules/kioskCart';
 import orderStatusEnum from '../../../enums/modules/orderStatusEnum';
+// [dispute-r1 C-RED-03 2026-06-12] Overlay « Toujours là ? » réutilisé pour le
+// timer d'inactivité local Plan B (le shell exclut kiosk.payment et est frozen).
+import KioskInactivityOverlayComponent from './KioskInactivityOverlayComponent.vue';
+
+// [dispute-r1 C-RED-03] Fallbacks identiques au shell (KioskAppComponent).
+const PLAN_B_IDLE_FALLBACK_MS = 180000;
+const PLAN_B_STILL_HERE_FALLBACK_MS = 30000;
 
 export default {
   name: 'KioskPaymentComponent',
   mixins: [kioskPriceMixin],
+  components: { KioskInactivityOverlayComponent },
 
   inject: {
     showToast: { default: () => () => {} },
@@ -364,6 +389,8 @@ export default {
       // les 3 CTAs : retenter / payer au comptoir / annuler. Évite la boucle
       // "essaye, refusé, toast, essaye encore" frustrante et indéfinie.
       paymentFailureCount: 0,
+      // [dispute-r1 C-RED-03] Overlay « Toujours là ? » du timer local Plan B.
+      planBStillHere: false,
     };
   },
 
@@ -391,6 +418,25 @@ export default {
         return false;
       }
     },
+    // [dispute-r1 C-RED-03] Fenêtres du timer local Plan B — mêmes sources que
+    // le shell (kioskSettings admin-configurable, fallbacks historiques).
+    planBIdleMs() {
+      const s = this.$store?.state?.kioskSettings;
+      return Number.isFinite(s?.idleMs) ? s.idleMs : PLAN_B_IDLE_FALLBACK_MS;
+    },
+    planBConfirmMs() {
+      const s = this.$store?.state?.kioskSettings;
+      return Number.isFinite(s?.confirmMs) ? s.confirmMs : PLAN_B_STILL_HERE_FALLBACK_MS;
+    },
+  },
+  watch: {
+    // [dispute-r1 C-RED-03] Pas de timer pendant l'envoi de la commande ;
+    // re-armé si la soumission échoue (le client est rendu à l'écran).
+    submitting(value) {
+      if (!this.paymentRouteAllToCounter) return;
+      if (value) this._clearPlanBIdleTimer();
+      else this._startPlanBIdleTimer();
+    },
   },
   mounted() {
     // Kiosk Phase 9.1.8 — prépare le composable TTS (no-op si audio off ou
@@ -414,6 +460,18 @@ export default {
         this._reconcilePendingPayments();
       }, 60000);
     } catch (_) { this._reconcileInterval = null; }
+    // [dispute-r1 C-RED-03] Timer d'inactivité local Plan B — le timer global
+    // du shell (frozen) exclut kiosk.payment ; sans TPE (Plan B) un client
+    // parti laissait la borne bloquée indéfiniment sur SON panier.
+    if (this.paymentRouteAllToCounter) {
+      this._planBActivityHandler = () => this._onPlanBActivity();
+      try {
+        window.addEventListener('pointerdown', this._planBActivityHandler, { passive: true });
+        window.addEventListener('touchstart', this._planBActivityHandler, { passive: true });
+        window.addEventListener('keydown', this._planBActivityHandler);
+      } catch (_) {}
+      this._startPlanBIdleTimer();
+    }
   },
   beforeUnmount() {
     this._lastOrder = null;
@@ -432,9 +490,67 @@ export default {
       try { clearTimeout(this._offlineQueuedTimer); } catch (_) {}
       this._offlineQueuedTimer = null;
     }
+    // [dispute-r1 C-RED-03] Démonte proprement le timer local Plan B.
+    this._clearPlanBIdleTimer();
+    if (this._planBActivityHandler) {
+      try {
+        window.removeEventListener('pointerdown', this._planBActivityHandler);
+        window.removeEventListener('touchstart', this._planBActivityHandler);
+        window.removeEventListener('keydown', this._planBActivityHandler);
+      } catch (_) {}
+      this._planBActivityHandler = null;
+    }
   },
   methods: {
     ...mapActions('kioskCart', ['submitOrder', 'reset']),
+
+    /* ------------------------------------------------------------------
+     * [dispute-r1 C-RED-03 2026-06-12] Timer d'inactivité local Plan B.
+     * Le shell (KioskAppComponent, frozen) exclut kiosk.payment de son timer
+     * global (noTimerRoutes — rationale TPE physique). En Plan B il n'y a
+     * AUCUNE transaction TPE en cours sur la borne : un client parti laissait
+     * l'écran « Confirmer ma commande » affiché indéfiniment (prouvé live
+     * r4-payment-25s-sans-timer.png) et le client suivant pouvait envoyer la
+     * commande abandonnée en caisse. Miroir du pattern shell : warn à
+     * (idleMs - confirmMs), overlay « Toujours là ? », leave = panier vidé +
+     * retour idle.
+     * ------------------------------------------------------------------ */
+    _startPlanBIdleTimer() {
+      this._clearPlanBIdleTimer();
+      if (!this.paymentRouteAllToCounter) return;
+      // Jamais pendant une soumission : l'écran enchaîne seul vers
+      // cash-instruction (succès) ou réaffiche l'erreur (le watcher
+      // submitting=false ré-arme alors le timer).
+      if (this.submitting || this.submitted) return;
+      const warnAt = Math.max(1000, this.planBIdleMs - this.planBConfirmMs);
+      this._planBWarnTimer = setTimeout(() => {
+        this.planBStillHere = true;
+        try { kioskAnalytics.track('idle_warning_shown', { warn_at_ms: warnAt, surface: 'payment_plan_b' }); } catch (_) {}
+      }, warnAt);
+      this._planBIdleTimer = setTimeout(() => this.onPlanBInactivityLeave(), this.planBIdleMs);
+    },
+    _clearPlanBIdleTimer() {
+      if (this._planBWarnTimer) { try { clearTimeout(this._planBWarnTimer); } catch (_) {} this._planBWarnTimer = null; }
+      if (this._planBIdleTimer) { try { clearTimeout(this._planBIdleTimer); } catch (_) {} this._planBIdleTimer = null; }
+      this.planBStillHere = false;
+    },
+    _onPlanBActivity() {
+      // Quand l'overlay est ouvert, c'est lui qui tranche (stay/leave) — le
+      // pointerdown de ses propres boutons ne doit pas le court-circuiter.
+      if (this.planBStillHere) return;
+      this._startPlanBIdleTimer();
+    },
+    onPlanBInactivityStay() {
+      this.planBStillHere = false;
+      this._startPlanBIdleTimer();
+    },
+    onPlanBInactivityLeave() {
+      this._clearPlanBIdleTimer();
+      // Invariant §12 DATA_CONTRACT : abandon = panier vidé (aucune commande
+      // n'a encore été envoyée sur cet écran en Plan B).
+      try { this.$store.dispatch('kioskCart/reset'); } catch (_) {}
+      try { this.$router.push({ name: 'kiosk.idle' }); } catch (_) {}
+    },
 
     syncNetworkState() {
       this.networkOffline = typeof navigator !== 'undefined' ? !navigator.onLine : false;
