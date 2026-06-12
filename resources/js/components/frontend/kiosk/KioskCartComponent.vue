@@ -470,6 +470,13 @@ export default {
         this.$store?.dispatch?.('frontendSetting/lists').catch(() => {});
       }
     } catch (_e) { /* defaults to dineInEnabled=false — safe */ }
+    // [dispute-r1 C-ADV-02 2026-06-12] Restaure le code promo persisté après
+    // un reload (re-validation SERVEUR — le montant n'est jamais rejoué
+    // localement). Best-effort : un échec laisse simplement l'inline error.
+    try {
+      const maybe = this.restorePersistedPromo();
+      if (maybe && typeof maybe.catch === 'function') maybe.catch(() => {});
+    } catch (_e) { /* best-effort */ }
   },
   methods: {
     ...mapActions('kioskCart', [
@@ -477,6 +484,8 @@ export default {
       'quoteOrder',
       // Kiosk Phase 9.1.6 — actions promo (validate lecture-seule + clear local).
       'validatePromo', 'clearPromo',
+      // [dispute-r1 C-ADV-02] restauration promo persistée au mount (re-validée serveur).
+      'restorePersistedPromo',
       // [P-MEGA-05] Édition d'une ligne sans suppression intermédiaire.
       'startEditingCartItem',
       // [bug-kiosk-valider-2026-05-21] Drop cart lines that became unavailable

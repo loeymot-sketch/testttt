@@ -19,6 +19,33 @@ const KIOSK_IS_ADVANCE_ORDER_NO = 10;
 // store's reactivity does not need to track it.
 let _inFlightKioskLogin = null;
 
+// [dispute-r1 C-ADV-02 2026-06-12] Le code promo appliqué n'était PAS persisté
+// (asymétrie avec la fidélité : loyaltyDiscount/loyaltyCustomer sont dans les
+// paths vuex-persistedstate, promoCode non) → un reload (Electron/F5) perdait
+// silencieusement la remise : panier restauré à plein tarif, bandeau revenu à
+// « Avez-vous une carte fidélité ? » (c1-05 → c1-09). On persiste le code en
+// localStorage et on le RE-VALIDE serveur au mount du panier (jamais de
+// montant rejoué localement — le serveur reste SSOT de la remise).
+export const KIOSK_PROMO_STORAGE_KEY = 'foodking:kiosk-promo-code';
+
+function readPersistedPromoCode() {
+    try {
+        return window?.localStorage?.getItem(KIOSK_PROMO_STORAGE_KEY) || null;
+    } catch (_) {
+        return null;
+    }
+}
+
+function writePersistedPromoCode(code) {
+    try {
+        if (code) {
+            window?.localStorage?.setItem(KIOSK_PROMO_STORAGE_KEY, String(code));
+        } else {
+            window?.localStorage?.removeItem(KIOSK_PROMO_STORAGE_KEY);
+        }
+    } catch (_) { /* private mode / quota — best-effort */ }
+}
+
 const PAYMENT_METHOD_MAP = { cash: 1, card: 4, tr: 5 };
 const ELECTRONIC_PAYMENT_METHODS = new Set(['card', 'tr']);
 const MAX_ITEM_QTY = window.foodkingConfig?.maxItemQty ?? 20;
@@ -489,6 +516,9 @@ export const kioskCart = {
                 }
             } catch (_) { /* best-effort */ }
             commit('CLEAR_KIOSK_TOKEN');
+            // [dispute-r1 C-ADV-02] logout machine = RESET direct (sans passer
+            // par l'action reset) → purge aussi la promo persistée.
+            writePersistedPromoCode(null);
             commit('RESET');
         },
         addItem({ commit }, item) {
@@ -575,6 +605,9 @@ export const kioskCart = {
                 const data = res?.data?.data || {};
                 const valid = !!(res?.data?.status);
                 if (valid) {
+                    // [dispute-r1 C-ADV-02] persiste le code validé (re-validé
+                    // serveur à chaque restauration — jamais le montant).
+                    writePersistedPromoCode(code);
                     commit('SET_PROMO', {
                         code,
                         // [SEC-FALSIFY-2026-06-08 P1] Backend (KioskPromoService::validate)
@@ -593,6 +626,10 @@ export const kioskCart = {
                     });
                     return { valid: true, data };
                 }
+                // [dispute-r1 C-ADV-02] code refusé métier (expiré/invalide) :
+                // on purge la persistance si c'était le code restauré, pour ne
+                // pas re-tenter à chaque reload.
+                if (readPersistedPromoCode() === code) writePersistedPromoCode(null);
                 commit('SET_PROMO_ERROR', res?.data?.message || 'kiosk.promo.error.invalid');
                 return { valid: false, message: res?.data?.message || null };
             } catch (err) {
@@ -619,7 +656,22 @@ export const kioskCart = {
             }
         },
         clearPromo({ commit }) {
+            // [dispute-r1 C-ADV-02] retrait explicite → purge la persistance.
+            writePersistedPromoCode(null);
             commit('CLEAR_PROMO');
+        },
+        /**
+         * [dispute-r1 C-ADV-02] Restaure le code promo persisté après un
+         * reload : re-validation SERVEUR systématique (min_cart, expiration,
+         * uses_count re-vérifiés) — le montant n'est jamais rejoué localement.
+         * No-op si un code est déjà appliqué ou si le panier est vide.
+         */
+        async restorePersistedPromo({ state, dispatch }) {
+            const code = readPersistedPromoCode();
+            if (!code || state.promoCode || !Array.isArray(state.items) || state.items.length === 0) {
+                return null;
+            }
+            return dispatch('validatePromo', code);
         },
         // [GAP-22-1] Store the order type chosen by the customer (sur place / à emporter)
         setOrderType({ commit }, orderType) {
@@ -711,6 +763,9 @@ export const kioskCart = {
             });
         },
         reset({ commit }) {
+            // [dispute-r1 C-ADV-02] fin de parcours (idle/cash-instruction/
+            // abandon) → la promo persistée meurt avec le panier.
+            writePersistedPromoCode(null);
             commit('RESET');
         },
         submitOrder({ commit, state }, { orderType, paymentMethod, quote } = {}) {
