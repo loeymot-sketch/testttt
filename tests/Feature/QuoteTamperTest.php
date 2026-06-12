@@ -42,9 +42,12 @@ class QuoteTamperTest extends TestCase
         $tampered['quote_token'] = $first['quote_token'];
         $tampered['quote_signature'] = $first['signature'];
 
+        // [HEAL dispute-r1 A-RED-2] Integrity guards are NOT auth failures:
+        // 409 (was 401 — which the POS axios interceptor read as session-dead
+        // → forced logout + cart lost).
         $this->actingAs($operator, 'sanctum')
             ->postJson('/api/admin/pos/quote', $tampered)
-            ->assertStatus(401);
+            ->assertStatus(409);
     }
 
     public function test_pos_commit_with_tampered_quote_intent_is_rejected(): void
@@ -69,10 +72,11 @@ class QuoteTamperTest extends TestCase
         $tampered['total'] = $first['total_ttc'];
         $tampered['pos_received_amount'] = $first['total_ttc'];
 
+        // [HEAL dispute-r1 A-RED-2] intent mismatch → 409 (integrity), not 401 (auth).
         $this->actingAs($operator, 'sanctum')
             ->withHeader('x-api-key', 'test-api-key')
             ->postJson('/api/admin/pos', $tampered)
-            ->assertStatus(401);
+            ->assertStatus(409);
 
         $this->assertNull(OrderQuote::where('quote_token', $first['quote_token'])->value('consumed_at'));
     }
@@ -93,10 +97,96 @@ class QuoteTamperTest extends TestCase
         $payloadB['total'] = $first['total_ttc'];
         $payloadB['pos_received_amount'] = $first['total_ttc'];
 
+        // [HEAL dispute-r1 A-RED-2] cross-branch replay → 409 (integrity), not 401 (auth).
         $this->actingAs($operatorB, 'sanctum')
             ->withHeader('x-api-key', 'test-api-key')
             ->postJson('/api/admin/pos', $payloadB)
-            ->assertStatus(401);
+            ->assertStatus(409);
+    }
+
+    /**
+     * [HEAL dispute-r1 A-RED-1 2026-06-12] REAL frontend payload: the FROZEN
+     * PaymentComponent (POS-A6 client-totals strip, commit aafa8c8f1) removes
+     * `total`/`subtotal`/`discount` from the order POST while the quote was
+     * sealed WITH the manual discount. The backend must restore the discount
+     * from the SERVER-persisted quote — the sale completes and the discount is
+     * billed. Pre-fix: 401 "Order quote intent mismatch" → forced logout.
+     */
+    public function test_pos_commit_with_stripped_discount_field_honors_quote_discount(): void
+    {
+        config(['app.api_key' => 'test-api-key']);
+        [$operator, $payload] = $this->fixture();
+
+        $quotePayload = $payload;
+        $quotePayload['discount'] = 1.00; // 10% of the 10.00 subtotal — allowed for POS Operator
+        $quotePayload['discount_reason'] = 'repro A-RED-1 dispute round-1';
+
+        $quote = $this->actingAs($operator, 'sanctum')
+            ->postJson('/api/admin/pos/quote', $quotePayload)
+            ->assertOk()
+            ->json('data');
+
+        $this->assertSame(9.0, (float) $quote['total_ttc']);
+        $this->assertSame(1.0, (float) $quote['discount']);
+
+        $commitPayload = $quotePayload;
+        unset($commitPayload['discount'], $commitPayload['total'], $commitPayload['subtotal']);
+        $commitPayload['quote_token'] = $quote['quote_token'];
+        $commitPayload['quote_signature'] = $quote['signature'];
+        $commitPayload['pos_received_amount'] = 10;
+
+        $response = $this->actingAs($operator, 'sanctum')
+            ->withHeader('x-api-key', 'test-api-key')
+            ->postJson('/api/admin/pos', $commitPayload);
+
+        $this->assertContains($response->status(), [200, 201], $response->getContent());
+        $orderId = (int) $response->json('data.id');
+        $this->assertDatabaseHas('orders', [
+            'id' => $orderId,
+            'discount' => 1.0,
+            'total' => 9.0,
+        ]);
+        $this->assertNotNull(OrderQuote::where('quote_token', $quote['quote_token'])->value('consumed_at'));
+    }
+
+    /**
+     * [HEAL dispute-r1 A-RED-1] Anti-tamper preserved: restoring the stripped
+     * discount must NOT open a hole — a commit that CHANGES a binding field
+     * (items) after the discounted quote still fails the intent check.
+     */
+    public function test_pos_commit_with_stripped_discount_and_tampered_items_is_still_rejected(): void
+    {
+        config(['app.api_key' => 'test-api-key']);
+        [$operator, $payload] = $this->fixture();
+
+        $quotePayload = $payload;
+        $quotePayload['discount'] = 1.00;
+        $quotePayload['discount_reason'] = 'repro A-RED-1 tamper';
+
+        $quote = $this->actingAs($operator, 'sanctum')
+            ->postJson('/api/admin/pos/quote', $quotePayload)
+            ->assertOk()
+            ->json('data');
+
+        $commitPayload = $quotePayload;
+        unset($commitPayload['discount'], $commitPayload['total'], $commitPayload['subtotal']);
+        $commitPayload['items'] = json_encode([[
+            'item_id' => json_decode($payload['items'])[0]->item_id,
+            'quantity' => 2,
+            'item_variations' => [],
+            'item_extras' => [],
+        ]]);
+        $commitPayload['quote_token'] = $quote['quote_token'];
+        $commitPayload['quote_signature'] = $quote['signature'];
+        $commitPayload['pos_received_amount'] = 100;
+
+        $this->actingAs($operator, 'sanctum')
+            ->withHeader('x-api-key', 'test-api-key')
+            ->postJson('/api/admin/pos', $commitPayload)
+            ->assertStatus(409);
+
+        $this->assertSame(0, \App\Models\Order::count());
+        $this->assertNull(OrderQuote::where('quote_token', $quote['quote_token'])->value('consumed_at'));
     }
 
     /**

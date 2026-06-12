@@ -656,6 +656,28 @@ class OrderService
      */
     public function posOrderStore(PosOrderRequest $request): object
     {
+        // [HEAL dispute-r1 A-RED-1 2026-06-12] The FROZEN PaymentComponent
+        // strips `discount` (with total/subtotal) from the order POST
+        // (POS-A6 client-totals strip, commit aafa8c8f1) while the quote
+        // intent hash was sealed WITH the manual discount → every discounted
+        // sale died on "Order quote intent mismatch" → forced logout + cart
+        // lost (vague A P0). When the field is ABSENT and a quote token is
+        // bound, restore the discount from the SERVER-persisted quote — never
+        // from any client value. Anti-tamper preserved: a client that SENDS a
+        // different discount (or changes any binding field) still fails the
+        // intent-hash check in OrderQuoteService::resolveReplay, and the
+        // restored value re-passes assertPosManualDiscountAllowed below.
+        // BranchScope on OrderQuote keeps the lookup tenant-safe.
+        if ($request->filled('quote_token') && ! $request->exists('discount')) {
+            $boundQuote = \App\Models\OrderQuote::query()
+                ->where('quote_token', (string) $request->input('quote_token'))
+                ->first();
+            $boundDiscount = (float) data_get($boundQuote?->canonical_payload, 'discounts.manual_discount', 0);
+            if ($boundDiscount > 0) {
+                $request->merge(['discount' => $boundDiscount]);
+            }
+        }
+
         // [AUDIT-P49-BUG6] Idempotency: if the cashier double-clicks submit (slow network),
         // return the existing order instead of creating a duplicate.
         //

@@ -29,10 +29,13 @@ class QuoteBindingTest extends TestCase
         config(['app.api_key' => 'test-api-key']);
         [$operator, $payload] = $this->fixture();
 
+        // [HEAL dispute-r1 A-RED-2] missing token/signature pair → 422 (integrity
+        // precondition), not 401 (auth) — a 401 forced the POS interceptor to
+        // log the cashier out and destroy the cart.
         $this->actingAs($operator, 'sanctum')
             ->withHeader('x-api-key', 'test-api-key')
             ->postJson('/api/admin/pos', $payload)
-            ->assertStatus(401);
+            ->assertStatus(422);
 
         $this->assertSame(0, Order::count());
     }
@@ -102,7 +105,9 @@ class QuoteBindingTest extends TestCase
                 'total' => $quote['total_ttc'],
                 'pos_received_amount' => $quote['total_ttc'],
             ]))
-            ->assertStatus(401);
+            // [HEAL dispute-r1 A-RED-2] actor-bound intent mismatch → 409
+            // (integrity conflict), not 401 (auth) — guard itself unchanged.
+            ->assertStatus(409);
 
         $this->assertSame(0, Order::count());
         $this->assertNull(OrderQuote::where('quote_token', $quote['quote_token'])->value('consumed_at'));

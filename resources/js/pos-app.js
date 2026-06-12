@@ -56,6 +56,15 @@ axios.interceptors.response.use(
     error => {
         const status = error?.response?.status;
         if (status !== 401) return Promise.reject(error);
+        // [HEAL dispute-r1 A-RED-2 2026-06-12] Only a GENUINE auth 401
+        // (Sanctum middleware always answers "Unauthenticated.") may kill the
+        // session. Any other 401 (legacy/third-party integrity guards — e.g.
+        // the pre-fix quote guards that answered 401 "Order quote intent
+        // mismatch") must surface to the caller's catch as a toast, NOT log
+        // the cashier out mid-service and destroy the cart. Backend guards
+        // now answer 409/422 (OrderQuoteService) and never reach this branch.
+        const msg = String(error?.response?.data?.message || '');
+        if (msg !== '' && !/unauthenticated/i.test(msg)) return Promise.reject(error);
         if (!_401Handling) {
             _401Handling = true;
             setTimeout(() => { _401Handling = false; }, 3000);

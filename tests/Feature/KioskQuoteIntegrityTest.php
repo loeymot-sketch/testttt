@@ -81,7 +81,9 @@ class KioskQuoteIntegrityTest extends TestCase
                 'quote_signature' => $quote['signature'],
                 'total' => $quote['total_ttc'],
             ])
-            ->assertStatus(401);
+            // [HEAL dispute-r1 A-RED-2] intent mismatch → 409 (integrity
+            // conflict), not 401 (auth) — guard itself unchanged.
+            ->assertStatus(409);
 
         $this->assertNull(OrderQuote::where('quote_token', $quote['quote_token'])->value('consumed_at'));
     }

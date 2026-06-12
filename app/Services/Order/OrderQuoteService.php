@@ -110,9 +110,14 @@ class OrderQuoteService
     {
         $surface = $this->normalizeSurface($surface);
         $hasClientQuote = $request->filled('quote_token') || $request->filled('quote_signature');
+        // [HEAL dispute-r1 A-RED-2 2026-06-12] Integrity-guard failures are NOT
+        // auth failures. The POS/kiosk axios interceptors treat every 401 as a
+        // dead session (logout + cart destroyed). 401 is now reserved for real
+        // authentication; quote-integrity guards answer 422 (malformed/missing
+        // input) or 409 (state/intent conflict). 410 expired stays unchanged.
         if ((in_array($surface, [self::SURFACE_POS, self::SURFACE_KIOSK], true) || $hasClientQuote)
             && (! $request->filled('quote_token') || ! $request->filled('quote_signature'))) {
-            throw new HttpException(401, 'Order quote token and signature are required together.');
+            throw new HttpException(422, 'Order quote token and signature are required together.');
         }
 
         $quote = $this->quote($request, $surface, $orderId);
@@ -334,8 +339,11 @@ class OrderQuoteService
             ->lockForUpdate()
             ->first();
 
+        // [HEAL dispute-r1 A-RED-2] 409 (integrity conflict), not 401 (auth) —
+        // see sealForCommit note. The guards themselves are UNCHANGED: every
+        // mismatch below still rejects the commit.
         if (! $quote || (int) $quote->branch_id !== $branchId) {
-            throw new HttpException(401, 'Invalid order quote.');
+            throw new HttpException(409, 'Invalid order quote.');
         }
 
         if ($quote->isExpired()) {
@@ -344,11 +352,11 @@ class OrderQuoteService
 
         $requestSignature = (string) $request->input('quote_signature', '');
         if ($requestSignature === '' || ! hash_equals($quote->hmac_signature, $requestSignature)) {
-            throw new HttpException(401, 'Order quote signature mismatch.');
+            throw new HttpException(409, 'Order quote signature mismatch.');
         }
 
         if (! hash_equals($quote->intent_hash, $intentHash) || ! hash_equals($quote->hmac_signature, $signature)) {
-            throw new HttpException(401, 'Order quote intent mismatch.');
+            throw new HttpException(409, 'Order quote intent mismatch.');
         }
 
         return $quote;
