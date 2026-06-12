@@ -175,6 +175,12 @@ export function buildKioskQuotePayload(state, { orderType, paymentMethod, requir
         // branch_id is intentionally omitted: kiosk quotes resolve it server-side from KioskMachine.
         order_type: resolvedOrderType,
         loyalty_code: state.loyaltyCustomer?.loyalty_code || null,
+        // [dispute-r1 C-RED-02 wire-up 2026-06-12] Montant de rachat fidélité
+        // demandé par le client. Champ DÉDIÉ (le backend recalcule/borne et
+        // débite les points post-seal — H1 c0518cf50/00dcbffda) : sans lui,
+        // identify-only et redeem étaient indistinguables et la remise
+        // affichée n'était JAMAIS facturée.
+        loyalty_redeem_discount: state.loyaltyDiscount || 0,
         // Promo code remains non-financial metadata; the backend recomputes the discount.
         kiosk_promo_code: state.promoCode || null,
         is_advance_order: KIOSK_IS_ADVANCE_ORDER_NO,

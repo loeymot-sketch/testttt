@@ -31,6 +31,10 @@ describe('kioskCart submit payload', () => {
         expect(payload).toEqual({
             order_type: 10,
             loyalty_code: 'LOYAL-42',
+            // [dispute-r1 C-RED-02] demande de rachat fidélité — champ de
+            // REQUÊTE (le backend recalcule/borne et débite post-seal),
+            // pas un champ d'argent client-trusted.
+            loyalty_redeem_discount: 0,
             kiosk_promo_code: 'PROMO10',
             is_advance_order: 10,
             source: 5,
