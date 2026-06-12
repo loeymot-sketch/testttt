@@ -1276,13 +1276,17 @@
                   picker is replaced by the modal mounted at the section
                   root above.
                 -->
+                <!-- [DISPUTE-R1 ADV-F-P2-1 2026-06-12] Même action que le CTA
+                     raccourci (openCounterCollect) → même libellé i18n
+                     (le '✓ Encaisser' hardcodé divergeait du jumeau
+                     $t('label.pos_shortcut_cash_cta')). -->
                 <button
                   class="kiosk-cash-collect-btn"
                   :disabled="order._collecting || order._canceling"
                   :data-testid="`kiosk-cash-collect-${order.id}`"
                   @click="openCounterCollect(order)"
                 >
-                  {{ order._collecting ? '…' : '✓ Encaisser' }}
+                  {{ order._collecting ? '…' : $t('label.pos_shortcut_cash_cta') }}
                 </button>
                 <button
                   class="kiosk-cash-cancel-btn"
@@ -5130,16 +5134,19 @@ export default {
   padding: 8px 14px;
   border-radius: var(--pos-v5-radius-sm);
   border: 0;
-  background: var(--pos-v5-success);
+  /* [DISPUTE-R1 ADV-F-P2-1 2026-06-12] Une action = une couleur : même
+     traitement que .pos-shortcuts__cta--cash (le jumeau du même écran,
+     même handler openCounterCollect) — l'« Encaisser » VERT vs ORANGE
+     sur le même écran n'était pas normé. */
+  background: var(--pos-v5-brand-red, #cf3a3a);
   color: var(--pos-v5-ink-on-dark);
   font-size: var(--pos-v5-text-caption);
   font-weight: var(--pos-v5-weight-extrabold);
   cursor: pointer;
   transition: all var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);
   white-space: nowrap;
-  box-shadow: var(--pos-v5-shadow-success);
 }
-.kiosk-cash-collect-btn:hover { background: var(--pos-v5-success-dark); }
+.kiosk-cash-collect-btn:hover { background: var(--pos-v5-brand-red-dark, #b32f2f); }
 .kiosk-cash-collect-btn:disabled,
 .kiosk-cash-cancel-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .kiosk-cash-cancel-btn {
