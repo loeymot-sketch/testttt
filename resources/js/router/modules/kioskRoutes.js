@@ -23,15 +23,21 @@ import KioskErrorNetworkComponent from "../../components/frontend/kiosk/KioskErr
 import KioskErrorMenuUnavailableComponent from "../../components/frontend/kiosk/KioskErrorMenuUnavailableComponent.vue";
 import KioskErrorProductRemovedComponent from "../../components/frontend/kiosk/KioskErrorProductRemovedComponent.vue";
 import KioskErrorPaymentRefusedComponent from "../../components/frontend/kiosk/KioskErrorPaymentRefusedComponent.vue";
+// [W-REM T-R3.1a F-BV-03 2026-06-12] Tunnel d'achat (panier → upsell → paiement) :
+// import EAGER obligatoire. Lazy, le import() du chunk échouait offline
+// (ChunkLoadError silencieux) → bouton « Payer » mort sans aucun feedback
+// client, précisément quand la borne perd le réseau APRÈS le catalogue.
+// Même invariant que D-001 (écrans d'erreur) — sentinel :
+// tests/js/kioskOfflineChunkGuard.spec.js
+import KioskCartComponent from "../../components/frontend/kiosk/KioskCartComponent.vue";
+import KioskUpsellComponent from "../../components/frontend/kiosk/KioskUpsellComponent.vue";
+import KioskPaymentComponent from "../../components/frontend/kiosk/KioskPaymentComponent.vue";
 
 // [C4] Lazy-load les autres écrans kiosk dans des chunks dédiés.
 const KioskLoginComponent        = () => import(/* webpackChunkName: "kiosk-shell" */ "../../components/frontend/kiosk/KioskLoginComponent.vue");
 const KioskWizardComponent       = () => import(/* webpackChunkName: "kiosk-wizard" */ "../../components/frontend/kiosk/KioskWizardComponent.vue");
 const KioskPosWizardComponent    = () => import(/* webpackChunkName: "kiosk-wizard" */ "../../components/frontend/kiosk/KioskPosWizardComponent.vue");
-const KioskCartComponent         = () => import(/* webpackChunkName: "kiosk-shell" */ "../../components/frontend/kiosk/KioskCartComponent.vue");
 const KioskLoyaltyComponent      = () => import(/* webpackChunkName: "kiosk-shell" */ "../../components/frontend/kiosk/KioskLoyaltyComponent.vue");
-const KioskUpsellComponent       = () => import(/* webpackChunkName: "kiosk-shell" */ "../../components/frontend/kiosk/KioskUpsellComponent.vue");
-const KioskPaymentComponent      = () => import(/* webpackChunkName: "kiosk-shell" */ "../../components/frontend/kiosk/KioskPaymentComponent.vue");
 const KioskWaitingComponent      = () => import(/* webpackChunkName: "kiosk-shell" */ "../../components/frontend/kiosk/KioskWaitingComponent.vue");
 const KioskConfirmationComponent = () => import(/* webpackChunkName: "kiosk-shell" */ "../../components/frontend/kiosk/KioskConfirmationComponent.vue");
 // [KIOSK-DS V1 Phase 3] Écrans UX critiques (cash + erreurs globales).
