@@ -3,8 +3,8 @@
     <div id="categoryUpload" class="modal">
         <div class="modal-dialog">
             <div class="modal-header">
-                <h3 class="modal-title">{{ $t("menu.item_categories") }}</h3>
-                <button class="modal-close fa-solid fa-xmark text-xl text-slate-400 hover:text-red-500"
+                <h3 class="modal-title">{{ $t("label.import_categories_title") }}</h3>
+                <button :aria-label="$t('button.close')" class="modal-close fa-solid fa-xmark text-xl text-slate-400 hover:text-red-500"
                     @click="reset"></button>
             </div>
             <div class="modal-body">
@@ -13,8 +13,20 @@
                         <div class="form-col-12">
                             <label class="db-field-title required">{{ $t("label.upload_file") }} ({{
                                 $t("label.xlsx") }})</label>
-                            <input @change="changeFile" v-bind:class="errors.file ? 'invalid' : ''" id="file"
-                                type="file" class="db-field-control" ref="fileProperty" accept=".xlsx, .xls" />
+                            <div class="db-field-control flex items-center gap-2 cursor-pointer"
+                                v-bind:class="errors.file ? 'invalid' : ''"
+                                role="button" tabindex="0"
+                                @click="$refs.fileProperty.click()"
+                                @keydown.enter.prevent="$refs.fileProperty.click()">
+                                <span class="shrink-0 rounded bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700">
+                                    {{ $t('button.browse_file') }}
+                                </span>
+                                <span class="truncate text-xs text-slate-500">
+                                    {{ file && file.name ? file.name : $t('label.no_file_chosen') }}
+                                </span>
+                            </div>
+                            <input @change="changeFile" id="file"
+                                type="file" class="hidden" ref="fileProperty" accept=".xlsx, .xls" />
                             <small class="db-field-alert" v-if="errors.file">{{ errors.file[0] }}</small>
                         </div>
 

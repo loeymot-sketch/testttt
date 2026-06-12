@@ -8,13 +8,13 @@
                 <p class="catalog-studio__subtitle">{{ $t("studio.subtitle") }}</p>
             </div>
             <div class="catalog-studio__header-actions">
-                <button v-if="canCreateCategory" type="button" class="db-btn py-2 bg-rose-700 text-white"
+                <button v-if="canCreateCategory" type="button" class="db-btn py-2 bg-primary text-white"
                     data-testid="catalog-studio-add-category"
                     @click="onAddCategoryClick">
                     <i class="lab lab-add-circle-line"></i>
                     <span>{{ $t("button.add_item_category") }}</span>
                 </button>
-                <button v-if="canCreateItem" type="button" class="db-btn py-2 bg-green-700 text-white"
+                <button v-if="canCreateItem" type="button" class="db-btn py-2 bg-primary text-white"
                     data-testid="catalog-studio-add-product"
                     @click="onAddProductClick">
                     <i class="lab lab-add-circle-line"></i>
@@ -33,7 +33,7 @@
                 <button type="button" class="catalog-studio__category"
                     :class="{ 'catalog-studio__category--active': selectedCategoryId === null }" @click="selectCategory(null)">
                     <strong>{{ $t("studio.all_categories") }}</strong>
-                    <small>{{ $t("studio.products_count", { n: totalProducts }) }}</small>
+                    <small>{{ $t("studio.products_count", { n: totalProducts }, totalProducts) }}</small>
                 </button>
 
                 <div v-if="selectedCategoryId !== null" class="catalog-studio__category-wizard"
@@ -42,7 +42,7 @@
                         <strong>{{ selectedCategoryName }}</strong>
                         <small>{{ t("studio.category_wizard_hint", "Ce wizard s'applique à TOUS les produits de cette catégorie.") }}</small>
                     </div>
-                    <button type="button" class="db-btn py-2 bg-rose-700 text-white"
+                    <button type="button" class="db-btn py-2 bg-primary text-white"
                         data-testid="catalog-studio-category-wizard-button"
                         @click="openCategoryComposerDrawer">
                         <i class="lab lab-settings"></i>
@@ -57,7 +57,7 @@
                         :class="{ 'catalog-studio__category--active': selectedCategoryId === Number(category.id) }"
                         @click="selectCategory(Number(category.id))">
                         <strong><span v-if="category.parent_id" aria-hidden="true">↳ </span>{{ category.name }}</strong>
-                        <small>{{ $t("studio.products_count", { n: category.product_count || productsCountByCategory[category.id] || 0 }) }}</small>
+                        <small>{{ $t("studio.products_count", { n: category.product_count || productsCountByCategory[category.id] || 0 }, category.product_count || productsCountByCategory[category.id] || 0) }}</small>
                     </button>
                     <div class="catalog-studio__category-actions" v-if="canEditCategory || canDeleteCategory">
                         <button v-if="canEditCategory" type="button" class="db-table-action view"
@@ -85,7 +85,7 @@
                     <label class="db-field-title">{{ $t("label.name") }}</label>
                     <input ref="categoryQuickFormNameInput" v-model.trim="categoryQuickForm.name" type="text"
                         class="db-field-control" required />
-                    <button type="submit" class="db-btn py-2 bg-rose-700 text-white">{{ $t("button.save") }}</button>
+                    <button type="submit" class="db-btn py-2 bg-primary text-white">{{ $t("button.save") }}</button>
                 </form>
             </aside>
 
@@ -123,7 +123,7 @@
                         <label class="db-field-title">{{ $t("label.image") }}</label>
                         <input type="file" class="db-field-control" accept="image/png, image/jpeg, image/jpg"
                             data-testid="catalog-studio-product-image-upload" @change="changeQuickProductImage" />
-                        <button type="submit" class="db-btn py-2 bg-green-700 text-white">{{ $t("button.save") }}</button>
+                        <button type="submit" class="db-btn py-2 bg-primary text-white">{{ $t("button.save") }}</button>
                     </form>
 
                     <article v-for="item in filteredProducts" :key="item.id" class="catalog-studio__product">
@@ -181,7 +181,7 @@
                         </small>
                     </div>
                     <div class="catalog-studio__composer-actions">
-                        <router-link class="db-btn py-2 bg-rose-700 text-white"
+                        <router-link class="db-btn py-2 bg-primary text-white"
                             :to="composerDrawerRoute"
                             :data-testid="'catalog-studio-composer-open-full'">
                             <i class="lab lab-file-export"></i>

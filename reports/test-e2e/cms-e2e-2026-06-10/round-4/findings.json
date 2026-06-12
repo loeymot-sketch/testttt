@@ -1,0 +1,100 @@
+{
+  "round": 4,
+  "reviewer": "adversarial-supervisor-round-4-polish",
+  "reviewed_at": "2026-06-10",
+  "scope": "Post-polish verification of the 11 round-3 residuals on FRESH round-4 captures (17 states wave-A A1-A7d + wave-B B1-B6), PNG vision (full reads + zoom crops A2/A4/A5-CTAs/A6-sidebar/A7a-stats/B6-panel) + DOM greps + proof JSONs + read-only DB cross-check (foodking_e2e) + source diff of polish commit 8ae00e8a4; then general re-attack (raw-i18n regex 18 DOMs, console allowlist audit, network >=400, palette sweep, numeric integrity, pixel-sampling brand color).",
+  "residuals_closed": [
+    {
+      "id": "R2-NEW-01",
+      "status": "CLOSED",
+      "evidence": "B6 iframe DOM composer-step-source-ref now has 4 options (Toutes les options / Viande 1 [id=1] / Sauce (1ère Gratuite) [id=5] / Viande 2 [id=2]) vs 3 in round-3. Viande 2 exists ONLY on Big Tacos (DB: item_variations attr 2 absent from first item 'Tacos') => union-over-all-items aggregation proven LIVE. Code: ComposerProfileController::availableSourcesForCategory now unions buildAvailableSources() over $category->items()->get() with dedup/choice-merge (commit 8ae00e8a4) + TDD ComposerAvailableSourcesTest. NOTE: 'Taille' can NOT appear — read-only DB check confirms NO 'Taille' item_attribute exists in the catalog (attributes = Viande 1-4, Sauce, Type de Pain, Base bol, Sauce bol, Style frites); Tacos sizes are separate items (Tacos/Big Tacos), so round-3's 'Taille group expected' premise was unsatisfiable. The picker is now COMPLETE w.r.t. the catalog: 4 = 1 + all 3 attribute groups present across Tacos items."
+    },
+    {
+      "id": "A-003",
+      "status": "CLOSED",
+      "evidence": "A1 DOM row order: ... Tacos (DRAG) -> '↳ Tacos Signature SOUS-CATÉGORIE DE TACOS' (NO drag handle) -> Bols Gourmands; A3 DOM additionally interleaves '↳ E2E-AUDIT Sub' immediately under Galette. A1 PNG visually confirms sub-row indented directly under Tacos with handles only on top-level rows. Spec tests/js/categoryListTreeOrder.spec.js added."
+    },
+    {
+      "id": "A-004",
+      "status": "CLOSED",
+      "evidence": "grep bg-rose-700|bg-green-700|bg-rose-600|bg-green-600 = 0 hits in A5/A6 DOM (and 0 across all 18 round-4 DOMs). A5 PNG pixel-sampled on both studio CTAs ('Ajouter Une Catégorie D'articles', 'Ajouter Un Article') = exactly #F4501E brand orange; A6 'Wizard De La Catégorie' CTA orange."
+    },
+    {
+      "id": "A-005",
+      "status": "CLOSED",
+      "evidence": "A2 DOM: both modal close buttons (category form + categoryUpload) now <button aria-label=\"Fermer\" class=\"modal-close fa-solid fa-xmark ...\">; header nav toggle also aria-label'd. Criterion (modal close buttons named) met. Remainder outside modal scope logged as NEW-R4-02."
+    },
+    {
+      "id": "A-006",
+      "status": "CLOSED",
+      "evidence": "A6 DOM: '1 article' x2 (↳ E2E-AUDIT Sub sidebar card) + '0 article' (↳ Tacos Signature), plurals '2/5/8/46 articles' intact; A7a DOM+PNG: '1 PRODUIT' singular; A7b: '0 PRODUIT'; B6 iframe: 'exactement 1 article'. A6 sidebar PNG visually confirms '1 article' / '0 article'."
+    },
+    {
+      "id": "A-007",
+      "status": "CLOSED",
+      "evidence": "A2/A4 DOM: category-form native input id=image now class=\"hidden\" behind custom FR control 'Choisir une image' / 'Aucun fichier…'; 0 hits for 'Choose File|No file chosen'. A2+A4 PNGs show 'Choisir une image | Aucun fichier…' inside the modal."
+    },
+    {
+      "id": "A-008",
+      "status": "CLOSED",
+      "evidence": "A2 DOM modal-title = 'Ajouter une catégorie' (create, PNG shows 'Ajouter Une Catégorie' via CSS capitalize); A4 DOM+PNG = 'Modifier la catégorie' (edit). Only remaining 'Catégories' title is the separate xlsx import modal (see NEW-R4-03)."
+    },
+    {
+      "id": "A-009",
+      "status": "CLOSED",
+      "evidence": "A7a PNG zoom: 'INDISPONIBLES' fully readable, wraps to 2 lines inside the stats card, zero clipping at the card edge. Cosmetic mid-word break (no hyphen) noted as NEW-R4-04."
+    },
+    {
+      "id": "R2-NEW-02",
+      "status": "CLOSED",
+      "evidence": "A4 DOM contains 'Cette catégorie a des sous-catégories : elle ne peut pas devenir elle-même une sous-catégorie.' directly under the locked parent select (value 'Aucune', A4-parent-options.json=[\"Aucune\"]); A4 PNG shows the hint rendered under the select."
+    },
+    {
+      "id": "R2-NEW-03",
+      "status": "CLOSED",
+      "evidence": "A7a DOM: button aria-label='Dupliquer' now renders <i class=\"lab lab-addons\"> (no circled plus). The single remaining lab-add-circle-line sits on the 'Ajouter un article' CTA where ⊕ is semantically correct."
+    },
+    {
+      "id": "B-005",
+      "status": "CLOSED",
+      "evidence": "B6 PNG zoom: 'D'où viennent les choix ?' -> 'Attribut produit' and 'Limiter à un groupe précis (optionnel)' -> 'Toutes les options' are stacked full-width in ONE column, both values fully visible, zero truncation ('Toutes les options' complete, no '…t prod')."
+    }
+  ],
+  "new_findings": [
+    {
+      "id": "NEW-R4-01",
+      "severity": "P3",
+      "title": "Datatable footer plural miss: 'Affichage de 1 à 1 sur 1 entrées'",
+      "evidence": "A7a DOM (items list filtered to the E2E product): exact string 'Affichage de 1 à 1 sur 1 entrées' — same pluralization family as A-006 but a different i18n string (entrées), missed by the polish. A1 'sur 12 entrées' correct for >1."
+    },
+    {
+      "id": "NEW-R4-02",
+      "severity": "P3",
+      "title": "2 header-shell icon-only buttons still have no accessible name (A-005 out-of-modal remainder)",
+      "evidence": "A5 DOM: <button class=\"dropdown-btn ... bg-[#FFE8DD]\"> has empty text content and no aria-label; <button class=\"fa-solid fa-xmark xmark-btn close-db-menu\"> (mobile sidebar close) idem. The two other dropdown-btns are fine (text content = accessible name). Global admin shell, present on every page."
+    },
+    {
+      "id": "NEW-R4-03",
+      "severity": "P3",
+      "title": "xlsx import modal keeps generic title 'Catégories' + native (EN-locale) file input",
+      "evidence": "A2 DOM: <div id=\"categoryUpload\" class=\"modal\"> -> <h3 class=\"modal-title\">Catégories</h3> + <input class=\"db-field-control\" id=\"file\" type=\"file\" accept=\".xlsx, .xls\"> with no FR custom control — sibling of A-007/A-008 not covered by the fix (modal closed in all captures, so no PNG repro; DOM-only)."
+    },
+    {
+      "id": "NEW-R4-04",
+      "severity": "P3",
+      "title": "Stats-card labels wrap mid-word without hyphen",
+      "evidence": "A7a PNG zoom: '13 CATÉGORI / ES' and '0 INDISPON / IBLES' break mid-word (break-all-style). Readable (A-009 criterion met) but typographically rough; proper fix = hyphens:auto or smaller font/wider card."
+    }
+  ],
+  "hygiene_reattack": {
+    "console": "17/17 allowlist-only — programmatic audit: 0 entries other than the known ws://127.0.0.1:6001 Pusher warning; zero errors, zero CSP violations",
+    "network": "17/17 network.json empty — zero >=400",
+    "i18n_raw_keys": "0 hits across all 18 DOMs (incl. B6 iframe) for label.*/composer.*/Label.X/0undefined/NaN €",
+    "palette": "0 bg-rose-700/bg-green-700 across all 18 DOMs; brand CTAs pixel-exact #F4501E",
+    "numeric_integrity": "PASS — entries 12 (A1) -> 13 (A3) -> 12 (A7d); actifs 46 (A7a) -> 45 (A7b); 1 PRODUIT -> 0 PRODUIT; sidebar 46 articles / E2E sub 1 article / Tacos Signature 0 article; price 5,00 € FR (A6)",
+    "cleanup": "PASS — round-4 rows item 80 + category 25 soft-deleted at 17:27 in foodking_e2e (cleanup.json + DB cross-check confirms rows live in foodking_e2e, NOT the operating DB)",
+    "sync_proof": "COHERENT — is_available 0->1 with ItemAvailabilityChanged + CatalogChanged outbox events at both steps, matching B3 RUPTURE / B4 EN STOCK"
+  },
+  "p0_p1_count": 0,
+  "verdict": "ALL 11 RESIDUALS CLOSED (11/11) — 0 new P0/P1, 4 new P3 cosmetic/a11y leftovers (footer plural, 2 shell icon buttons, import-xlsx modal, mid-word wrap). Polish GOAL converged."
+}

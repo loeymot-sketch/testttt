@@ -415,7 +415,8 @@
             "choice_logic": "منطق الاختيارات",
             "preset_single": "اختيار واحد (إلزامي)",
             "preset_multiple": "اختيارات متعددة (حر)",
-            "preset_custom": "مخصص (الإعدادات أدناه)"
+            "preset_custom": "مخصص (الإعدادات أدناه)",
+            "min_max_summary_required_one": "= إلزامي، يجب اختيار عنصر واحد بالضبط."
         },
         "wizard_configured": "تم تكوين المعالج",
         "view_product": "عرض المنتج",
@@ -1213,7 +1214,11 @@
         "surface": "الواجهة",
         "parent_category": "الفئة الأم",
         "none": "لا شيء",
-        "subcategory_of": "فئة فرعية من"
+        "subcategory_of": "فئة فرعية من",
+        "add_category_title": "إضافة فئة",
+        "edit_category_title": "تعديل الفئة",
+        "no_file_chosen": "لم يتم اختيار ملف",
+        "import_categories_title": "استيراد الفئات"
     },
     "button": {
         "try_again": "أعد المحاولة",
@@ -1325,7 +1330,9 @@
             "choose_template_v2": "اختيار قالب",
             "add_page_manual": "إضافة صفحة يدويًا"
         },
-        "menu": "القائمة"
+        "menu": "القائمة",
+        "choose_file": "اختر صورة",
+        "browse_file": "اختر ملفًا"
     },
     "error": {
         "something_wrong": "هل هناك خطب ما",
@@ -1440,7 +1447,8 @@
             "toggle_success": "تم تحديث الحالة.",
             "toggle_error": "فشل التحديث. حاول مرة أخرى."
         },
-        "subcategory_wizard_hint": "معالج الفئة الأم لا يُطبق تلقائيًا على الفئات الفرعية."
+        "subcategory_wizard_hint": "معالج الفئة الأم لا يُطبق تلقائيًا على الفئات الفرعية.",
+        "parent_locked_has_children": "هذه الفئة لديها فئات فرعية: لا يمكن أن تصبح فئة فرعية."
     },
     "kiosk": {
         "dine_in": "تناول في المطعم",

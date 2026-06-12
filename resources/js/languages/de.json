@@ -211,7 +211,8 @@
             "choice_logic": "Auswahllogik",
             "preset_single": "Einzelauswahl (1 erforderlich)",
             "preset_multiple": "Mehrfachauswahl (frei)",
-            "preset_custom": "Benutzerdefiniert (Einstellungen unten)"
+            "preset_custom": "Benutzerdefiniert (Einstellungen unten)",
+            "min_max_summary_required_one": "= Pflicht, genau 1 Artikel wählen."
         },
         "wizard_configured": "Wizard konfiguriert",
         "view_product": "Produkt anzeigen",
@@ -832,7 +833,11 @@
         "surface": "Oberfläche",
         "parent_category": "Übergeordnete Kategorie",
         "none": "Keine",
-        "subcategory_of": "Unterkategorie von"
+        "subcategory_of": "Unterkategorie von",
+        "add_category_title": "Kategorie hinzufügen",
+        "edit_category_title": "Kategorie bearbeiten",
+        "no_file_chosen": "Keine Datei gewählt",
+        "import_categories_title": "Kategorien importieren"
     },
     "button": {
         "kds_print_ticket": "Ticket drucken",
@@ -932,7 +937,9 @@
         "composer": {
             "choose_template_v2": "Template waehlen",
             "add_page_manual": "Seite manuell hinzufuegen"
-        }
+        },
+        "choose_file": "Bild auswählen",
+        "browse_file": "Datei auswählen"
     },
     "number": {
         "10": "10",
@@ -1049,7 +1056,8 @@
             "toggle_success": "Status aktualisiert.",
             "toggle_error": "Aktualisierung fehlgeschlagen. Bitte erneut versuchen."
         },
-        "subcategory_wizard_hint": "Der Assistent einer übergeordneten Kategorie gilt nicht automatisch für ihre Unterkategorien."
+        "subcategory_wizard_hint": "Der Assistent einer übergeordneten Kategorie gilt nicht automatisch für ihre Unterkategorien.",
+        "parent_locked_has_children": "Diese Kategorie hat Unterkategorien: sie kann selbst keine Unterkategorie werden."
     },
     "kiosk": {
         "welcome": "Bienvenue !",

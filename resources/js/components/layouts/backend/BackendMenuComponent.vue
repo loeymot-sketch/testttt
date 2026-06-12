@@ -8,7 +8,7 @@
             <router-link v-else class="w-24" :to="{ name: 'frontend.home' }">
                 <img :src="setting.theme_logo" alt="logo">
             </router-link>
-            <button @click.prevent="handleSidebar" class="fa-solid fa-xmark xmark-btn close-db-menu"></button>
+            <button @click.prevent="handleSidebar" :aria-label="$t('button.close')" class="fa-solid fa-xmark xmark-btn close-db-menu"></button>
         </div>
         <!--        {{ menus }}-->
         <nav class="db-sidebar-nav">

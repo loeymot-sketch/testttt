@@ -68,6 +68,50 @@ class ComposerAvailableSourcesTest extends TestCase
     }
 
     /**
+     * [GOAL POLISH T-P1.1 2026-06-10 — R2-NEW-01] Pour un wizard CATÉGORIE,
+     * les sources doivent être l'UNION de TOUS les items actifs de la
+     * catégorie (dérivées du seul premier item, les attributs absents de
+     * celui-ci — Taille, Viande 2… — n'apparaissaient jamais dans le picker).
+     */
+    public function test_category_sources_aggregate_all_items(): void
+    {
+        $category = \App\Models\ItemCategory::factory()->create(['status' => 5]);
+
+        $itemA = Item::factory()->create(['item_category_id' => $category->id, 'status' => 5]);
+        $itemB = Item::factory()->create(['item_category_id' => $category->id, 'status' => 5]);
+
+        $taille = \App\Models\ItemAttribute::query()->create(['name' => 'Taille']);
+        $viande = \App\Models\ItemAttribute::query()->create(['name' => 'Viande 2']);
+
+        // Taille n'existe QUE sur l'item B (pas le représentatif A).
+        \App\Models\ItemVariation::query()->create([
+            'item_id' => $itemA->id, 'item_attribute_id' => $viande->id,
+            'name' => 'Poulet', 'price' => 0, 'status' => 5,
+        ]);
+        \App\Models\ItemVariation::query()->create([
+            'item_id' => $itemB->id, 'item_attribute_id' => $taille->id,
+            'name' => 'Grande', 'price' => 1.5, 'status' => 5,
+        ]);
+        // Groupe d'extras présent uniquement sur B.
+        \App\Models\ItemExtra::query()->create([
+            'item_id' => $itemB->id, 'name' => 'Cheddar', 'price' => 1.0,
+            'group_label' => 'supplement', 'status' => 5,
+        ]);
+
+        $response = $this->actingAs($this->admin, 'sanctum')
+            ->getJson("/api/admin/composer/categories/{$category->id}/available-sources");
+
+        $response->assertOk();
+
+        $attrNames = collect($response->json('data.item_attribute'))->pluck('name');
+        $this->assertTrue($attrNames->contains('Taille'), 'attribute from 2nd item missing');
+        $this->assertTrue($attrNames->contains('Viande 2'));
+
+        $extraIds = collect($response->json('data.extra_group'))->pluck('id');
+        $this->assertTrue($extraIds->contains('supplement'), 'extra group from 2nd item missing');
+    }
+
+    /**
      * [GOAL CMS heal P1-4 2026-06-10] Echo prix read-only par option dans le
      * builder : l'endpoint ADMIN available-sources émet `choices` (id, name,
      * price) par source. NF525-safe : ce n'est PAS la projection kiosk (qui

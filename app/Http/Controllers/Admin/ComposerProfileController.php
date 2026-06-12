@@ -198,12 +198,54 @@ class ComposerProfileController extends AdminController
      */
     public function availableSourcesForCategory(ItemCategory $category): JsonResponse
     {
-        $firstItem = $category->items()->first();
-        abort_if(! $firstItem, 422, 'Category has no items yet - add at least one product before composing its wizard.');
+        // [GOAL POLISH T-P1.1 2026-06-10 — R2-NEW-01] UNION over ALL active
+        // items of the category: deriving sources from items()->first() only
+        // hid every attribute/extra-group absent from that representative
+        // item (Taille, Viande 2, …) — the category wizard's source picker
+        // could never scope those steps.
+        $items = $category->items()->get();
+        abort_if($items->isEmpty(), 422, 'Category has no items yet - add at least one product before composing its wizard.');
+
+        $merged = ['item_attribute' => collect(), 'extra_group' => collect(), 'addon' => collect()];
+        foreach ($items as $item) {
+            $sources = $this->buildAvailableSources($item);
+            // attributes dedup by id; extra groups by group label (merge
+            // choices, dedup by choice id); addons by id.
+            foreach ($sources['item_attribute'] as $attribute) {
+                if (! $merged['item_attribute']->has($attribute['id'])) {
+                    $merged['item_attribute']->put($attribute['id'], $attribute);
+                } else {
+                    $existing = $merged['item_attribute']->get($attribute['id']);
+                    $existing['choices'] = collect($existing['choices'])
+                        ->concat($attribute['choices'])
+                        ->unique('id')->values()->all();
+                    $merged['item_attribute']->put($attribute['id'], $existing);
+                }
+            }
+            foreach ($sources['extra_group'] as $group) {
+                if (! $merged['extra_group']->has($group['id'])) {
+                    $merged['extra_group']->put($group['id'], $group);
+                } else {
+                    $existing = $merged['extra_group']->get($group['id']);
+                    $existing['choices'] = collect($existing['choices'])
+                        ->concat($group['choices'])
+                        ->unique('id')->values()->all();
+                    $existing['count'] = count($existing['choices']);
+                    $merged['extra_group']->put($group['id'], $existing);
+                }
+            }
+            foreach ($sources['addon'] as $addon) {
+                $merged['addon']->put($addon['id'], $addon);
+            }
+        }
 
         return response()->json([
             'success' => true,
-            'data' => ['category_id' => (int) $category->id] + $this->buildAvailableSources($firstItem),
+            'data' => ['category_id' => (int) $category->id] + [
+                'item_attribute' => $merged['item_attribute']->values(),
+                'extra_group' => $merged['extra_group']->values(),
+                'addon' => $merged['addon']->values(),
+            ],
         ]);
     }
 

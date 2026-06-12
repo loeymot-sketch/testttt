@@ -568,7 +568,8 @@
             "preset_single": "Choix unique (1 obligatoire)",
             "preset_multiple": "Choix multiples (libre)",
             "preset_custom": "Personnalisé (réglages ci-dessous)",
-            "unsaved_changes": "Modifications non sauvegardées"
+            "unsaved_changes": "Modifications non sauvegardées",
+            "min_max_summary_required_one": "= Obligatoire, le client doit choisir exactement 1 article."
         },
         "wizard_configured": "Wizard configuré",
         "view_product": "Voir le produit",
@@ -1411,7 +1412,11 @@
         "item_attribute": "Attribut produit",
         "extra_group": "Groupe de suppléments",
         "menu_component": "Composant menu",
-        "generic_choices": "Choix génériques"
+        "generic_choices": "Choix génériques",
+        "add_category_title": "Ajouter une catégorie",
+        "edit_category_title": "Modifier la catégorie",
+        "no_file_chosen": "Aucun fichier choisi",
+        "import_categories_title": "Importer des catégories"
     },
     "button": {
         "try_again": "Réessayer",
@@ -1524,7 +1529,9 @@
             "choose_template_v2": "Choisir un template",
             "add_page_manual": "Ajouter une page manuellement"
         },
-        "menu": "Menu"
+        "menu": "Menu",
+        "choose_file": "Choisir une image",
+        "browse_file": "Choisir un fichier"
     },
     "error": {
         "rate_limited": "Trop de requêtes — patientez {seconds}s avant de réessayer.",
@@ -1659,7 +1666,8 @@
             "toggle_success": "Statut mis à jour.",
             "toggle_error": "Échec de la mise à jour. Réessaye."
         },
-        "subcategory_wizard_hint": "Le wizard d'une catégorie parente ne s'applique pas automatiquement à ses sous-catégories."
+        "subcategory_wizard_hint": "Le wizard d'une catégorie parente ne s'applique pas automatiquement à ses sous-catégories.",
+        "parent_locked_has_children": "Cette catégorie a des sous-catégories : elle ne peut pas devenir elle-même une sous-catégorie."
     },
     "kiosk": {
         "dine_in": "Sur place",

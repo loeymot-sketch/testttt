@@ -1,6 +1,6 @@
 # GOAL — CMS POLISH & FINITION : résiduels e2e + intégration spine + gates owner
 
-**Date:** 2026-06-10 · **Statut:** PLAN-ONLY (attend `lance le GOAL` owner)
+**Date:** 2026-06-10 · **Statut:** ✅ EXÉCUTÉ ET CONVERGÉ (waves P1+P2 + 4 P3 round-4 ; adversarial 11/11 CLOSED + 4 nouveaux P3 fixés ; P3.1 ff différé — spine occupée, merge-into-mine maintenu superset ; P3.2-P3.5 = gates owner PENDING)
 **Base:** branche `goal/cms-gestion-2026-06-10-spine` (post-convergence test-e2e 3 rounds, P0+P1=0)
 **Fondation:** `reports/test-e2e/cms-e2e-2026-06-10/CONVERGENCE_FINAL.md` (11 résiduels P2/P3 stables 2 cycles, chacun avec preuve PNG/DOM) + gates du `GOAL_CMS_GESTION §S`
 
@@ -42,4 +42,4 @@ P1 (séquentiel, ~1 session) → P2 (batch, même session) → re-capture set-eq
 ## §F — DONE
 Les 11 résiduels e2e fermés (ou explicitement acceptés owner), palette/a11y/i18n owner-grade sur les 4 surfaces CMS, branche intégrée à la spine, gates G-1/G-4/G-5 décidés par l'owner, push effectué. Production-perfect ou rien.
 
-**⏸️ PLAN-ONLY — attend `lance le GOAL`.**
+**✅ EXÉCUTÉ 2026-06-10** — waves P1+P2 livrées, adversarial round-4 : 11/11 résiduels CLOSED + 4 nouveaux P3 fixés et vérifiés live. Evidence : `reports/test-e2e/cms-e2e-2026-06-10/round-4/`. Reste owner : G-5, G-4/GATE-W6, G-1, push, et le ff spine (spine active — branche maintenue superset par merges).

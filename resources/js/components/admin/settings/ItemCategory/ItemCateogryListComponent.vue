@@ -41,7 +41,11 @@
                 <draggable tag="tbody" class="db-table-body" v-if="categories.length > 0" v-model="categories"
                     @end="sortCategory" :handle="'.drag-handle'">
                     <tr class="db-table-body-tr" v-for="itemCategory in categories" :key="itemCategory" :data-testid="`admin-category-row-${itemCategory.id}`">
-                        <td class="db-table-body-td"><i class="lab lab-move cursor-move drag-handle"></i></td>
+                        <td class="db-table-body-td">
+                            <!-- [GOAL POLISH T-P1.2] children follow their parent;
+                                 only top-level rows are draggable -->
+                            <i v-if="!itemCategory.parent_id" class="lab lab-move cursor-move drag-handle"></i>
+                        </td>
                         <td class="db-table-body-td">
                             <span v-if="itemCategory.parent_id" class="category-subrow-indent"
                                 :data-testid="`admin-category-subrow-${itemCategory.id}`">↳&nbsp;</span>
@@ -199,7 +203,7 @@ export default {
             this.loading.isActive = true;
             this.props.search.page = page;
             this.$store.dispatch('itemCategory/lists', this.props.search).then(res => {
-                this.categories = res.data.data;
+                this.categories = this.treeOrder(res.data.data);
                 this.loading.isActive = false;
             }).catch((err) => {
                 this.loading.isActive = false;
@@ -247,7 +251,26 @@ export default {
                 this.loading.isActive = false;
             })
         },
+        // [GOAL POLISH T-P1.2] tree display: top-levels keep their order,
+        // each immediately followed by its sub-categories.
+        treeOrder: function (list) {
+            const rows = Array.isArray(list) ? list : [];
+            const tops = rows.filter((category) => !category.parent_id);
+            const children = rows.filter((category) => category.parent_id);
+            const ordered = tops.flatMap((top) => [
+                top,
+                ...children.filter((child) => Number(child.parent_id) === Number(top.id)),
+            ]);
+            // orphans (parent on another page) stay visible at the end
+            children
+                .filter((child) => !tops.some((top) => Number(top.id) === Number(child.parent_id)))
+                .forEach((child) => ordered.push(child));
+            return ordered;
+        },
         sortCategory: function () {
+            // normalize: a drag may have dropped a top-level between a parent
+            // and its children — re-interleave before persisting + rendering.
+            this.categories = this.treeOrder(this.categories);
             const sortedIds = this.categories.map(category => category.id);
             this.$store.dispatch('itemCategory/sortCategory', {
                 form: { category_id: sortedIds },
@@ -300,7 +323,7 @@ export default {
         itemCategories: {
             deep: true,
             handler(itemCategory) {
-                this.categories = itemCategory;
+                this.categories = this.treeOrder(itemCategory);
             }
         }
     }

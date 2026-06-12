@@ -5,7 +5,7 @@
                 $t("message.pagination_label", {
                     from: props.page.from, to: props.page.to,
                     total: props.page.total
-                })
+                }, Number(props.page.total) || 0)
             }}
         </p>
     </div>

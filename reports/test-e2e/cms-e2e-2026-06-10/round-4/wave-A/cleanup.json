@@ -1,0 +1,6 @@
+{
+  "queried_at": "2026-06-10T15:27:45.057Z",
+  "items_like_E2E_AUDIT": "id\tname\tdeleted_at\n77\tE2E-AUDIT Prod\t2026-06-10 15:08:49\n78\tE2E-AUDIT Prod\t2026-06-10 15:36:52\n79\tE2E-AUDIT Prod\t2026-06-10 15:50:46\n80\tE2E-AUDIT Prod\t2026-06-10 17:27:34\n",
+  "item_categories_like_E2E_AUDIT": "id\tname\tdeleted_at\n22\tE2E-AUDIT Sub\t2026-06-10 15:08:57\n23\tE2E-AUDIT Sub\t2026-06-10 15:37:01\n24\tE2E-AUDIT Sub\t2026-06-10 15:50:55\n25\tE2E-AUDIT Sub\t2026-06-10 17:27:42\n",
+  "interpretation": "soft-deleted = row present with deleted_at NOT NULL; hard-deleted = no row"
+}

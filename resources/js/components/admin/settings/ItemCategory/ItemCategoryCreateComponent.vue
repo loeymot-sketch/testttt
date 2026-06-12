@@ -5,8 +5,9 @@
     <div id="categoryModal" class="modal">
         <div class="modal-dialog">
             <div class="modal-header">
-                <h3 class="modal-title">{{ $t('menu.item_categories') }}</h3>
-                <button class="modal-close fa-solid fa-xmark text-xl text-slate-400 hover:text-red-500"
+                <!-- [GOAL POLISH T-P2.3] titre contextuel create/edit -->
+                <h3 class="modal-title">{{ isEditing ? $t('label.edit_category_title') : $t('label.add_category_title') }}</h3>
+                <button :aria-label="$t('button.close')" class="modal-close fa-solid fa-xmark text-xl text-slate-400 hover:text-red-500"
                     @click="reset"></button>
             </div>
             <div class="modal-body">
@@ -30,14 +31,31 @@
                                     {{ parent.name }}
                                 </option>
                             </select>
-                            <small class="db-field-hint">{{ $t('message.subcategory_wizard_hint') }}</small>
+                            <!-- [GOAL POLISH T-P2.5] explique le select vide (verrou depth-3) -->
+                            <small v-if="parentLockedByChildren" class="db-field-hint" data-testid="admin-category-parent-locked-hint">
+                                {{ $t('message.parent_locked_has_children') }}
+                            </small>
+                            <small v-else class="db-field-hint">{{ $t('message.subcategory_wizard_hint') }}</small>
                             <small class="db-field-alert" v-if="errors.parent_id">{{ errors.parent_id[0] }}</small>
                         </div>
 
                         <div class="form-col-12 sm:form-col-6">
                             <label for="image" class="db-field-title">{{ $t('label.image') }} (74px,48px)</label>
-                            <input @change="changeImage" v-bind:class="errors.image ? 'invalid' : ''" id="image" type="file"
-                                class="db-field-control" ref="imageProperty" accept="image/png, image/jpeg, image/jpg" data-testid="admin-category-form-image">
+                            <!-- [GOAL POLISH T-P2.2] input natif masqué → contrôle 100% FR -->
+                            <div class="db-field-control flex items-center gap-2 cursor-pointer"
+                                v-bind:class="errors.image ? 'invalid' : ''"
+                                role="button" tabindex="0"
+                                @click="$refs.imageProperty.click()"
+                                @keydown.enter.prevent="$refs.imageProperty.click()">
+                                <span class="shrink-0 rounded bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700">
+                                    {{ $t('button.choose_file') }}
+                                </span>
+                                <span class="truncate text-xs text-slate-500" data-testid="admin-category-form-image-name">
+                                    {{ image && image.name ? image.name : $t('label.no_file_chosen') }}
+                                </span>
+                            </div>
+                            <input @change="changeImage" id="image" type="file" class="hidden"
+                                ref="imageProperty" accept="image/png, image/jpeg, image/jpg" data-testid="admin-category-form-image">
                             <small class="db-field-alert" v-if="errors.image">{{ errors.image[0] }}</small>
                         </div>
 
@@ -227,6 +245,20 @@ export default {
     computed: {
         addButton: function () {
             return { title: this.$t('button.add_item_category') };
+        },
+        isEditing: function () {
+            return Boolean(this.$store.getters['itemCategory/temp'].isEditing);
+        },
+        // [GOAL POLISH T-P2.5] vrai uniquement quand le verrou anti-depth-3
+        // a vidé la liste (catégorie éditée AVEC enfants).
+        parentLockedByChildren: function () {
+            const editingId = this.$store.getters['itemCategory/temp'].temp_id;
+            if (editingId === null || editingId === undefined) return false;
+            const byId = {};
+            (Array.isArray(this.allCategories) ? this.allCategories : [])
+                .concat(this.$store.getters['itemCategory/lists'] || [])
+                .forEach((category) => { byId[category.id] = category; });
+            return Object.values(byId).some((category) => Number(category.parent_id) === Number(editingId));
         },
         // [GOAL CMS C1.1 + heal P1-1] Eligible parents = top-level categories
         // only (2-level hierarchy enforced backend by
