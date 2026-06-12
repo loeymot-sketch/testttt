@@ -108,7 +108,19 @@ export default {
       try {
         await this.kioskLogin(auto);
         this.retryAttempts = 0;
-        this.$router.replace({ name: 'kiosk.idle' });
+        // [dispute-r1 C-ADV-08 2026-06-12] Re-login de RÉCUPÉRATION : si un
+        // panier client est en cours (rotation/expiration du token machine en
+        // pleine commande → bascule /kiosk/login), rendre le client à SON
+        // panier. L'ancien replace systématique vers kiosk.idle détruisait la
+        // commande composée (le mount idle dispatch kioskCart/reset) avec pour
+        // seul signal un toast technique 6 s. Le panier est intact dans le
+        // store persisté — CLEAR_KIOSK_TOKEN ne touche pas les items.
+        const cartCount = Number(this.$store?.getters?.['kioskCart/count'] || 0);
+        if (cartCount > 0) {
+          this.$router.replace({ name: 'kiosk.cart', query: { recovered: '1' } });
+        } else {
+          this.$router.replace({ name: 'kiosk.idle' });
+        }
       } catch (err) {
         // [iter15-mega-fix D-007 2026-05-10] 429 must surface a localized
         // user-facing message — not the raw axios `Request failed with

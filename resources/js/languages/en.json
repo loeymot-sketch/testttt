@@ -1679,6 +1679,7 @@
             }
         },
         "network_lost_cart": "Connection lost. Your cart is saved — try again in a moment.",
+        "session_recovered_cart": "Connection restored. Your order has been kept.",
         "cancel": "Cancel",
         "back": "Back",
         "loyalty_card": "Loyalty card",

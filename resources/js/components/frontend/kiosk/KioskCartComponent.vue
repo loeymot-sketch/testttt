@@ -477,6 +477,15 @@ export default {
       const maybe = this.restorePersistedPromo();
       if (maybe && typeof maybe.catch === 'function') maybe.catch(() => {});
     } catch (_e) { /* best-effort */ }
+    // [dispute-r1 C-ADV-08 2026-06-12] Arrivée depuis la récupération de
+    // session machine (KioskLoginComponent ?recovered=1) : rassurer le client
+    // en FR — sa commande est intacte. Query strippée pour ne pas re-toaster.
+    try {
+      if (this.$route?.query?.recovered === '1') {
+        this.showToast(this.$t('kiosk.session_recovered_cart'), 'success', 5000);
+        this.$router?.replace({ name: 'kiosk.cart' }).catch(() => {});
+      }
+    } catch (_e) { /* best-effort */ }
   },
   methods: {
     ...mapActions('kioskCart', [
