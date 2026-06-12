@@ -89,6 +89,81 @@ class HideUpsellVehicleItemsFromGridSeederTest extends TestCase
         );
     }
 
+    /**
+     * [HEAL dispute-r3 C-R2-NEW-1 2026-06-12] Collateral regression of this
+     * very seeder: defeaturing the 3 vehicles killed the ONLY featured items
+     * alive → kiosk upsell pool = 0 → the upsell screen auto-skips forever
+     * (`no_suggestions`) and the merchandising surface silently disappeared.
+     * The seeder must now ALSO revive the pool by flagging REAL sellable
+     * add-ons (drink/dessert) `is_upsell = Ask::YES`, while the vehicles stay
+     * out of the grid AND out of the pool (broken-image internal SKUs).
+     */
+    public function test_seeder_revives_kiosk_upsell_pool_with_real_sellable_items(): void
+    {
+        $this->seedMinimalSettings();
+        [, $category] = $this->fixture();
+
+        // Drifted vehicles (featured, on a customer category).
+        foreach (HideUpsellVehicleItemsFromGridSeeder::UPSELL_VEHICLE_SLUGS as $slug) {
+            Item::factory()->create([
+                'name' => ucwords(str_replace('-', ' ', $slug)),
+                'slug' => $slug,
+                'item_category_id' => $category->id,
+                'is_featured' => Status::ACTIVE,
+                'status' => Status::ACTIVE,
+            ]);
+        }
+
+        // Real sellable add-ons (live catalog slugs) — pool candidates.
+        $drinks = ItemCategory::factory()->create(['name' => 'Boissons', 'slug' => 'boissons', 'status' => Status::ACTIVE]);
+        $desserts = ItemCategory::factory()->create(['name' => 'Desserts', 'slug' => 'desserts', 'status' => Status::ACTIVE]);
+        $pool = [
+            ['slug' => 'coca', 'name' => 'Coca-Cola 33cl', 'cat' => $drinks->id],
+            ['slug' => 'tiramisu', 'name' => 'Tiramisu', 'cat' => $desserts->id],
+            ['slug' => 'glace', 'name' => 'Glace', 'cat' => $desserts->id],
+        ];
+        foreach ($pool as $row) {
+            Item::factory()->create([
+                'name' => $row['name'],
+                'slug' => $row['slug'],
+                'item_category_id' => $row['cat'],
+                'is_upsell' => \App\Enums\Ask::NO,
+                'is_featured' => Status::INACTIVE,
+                'status' => Status::ACTIVE,
+            ]);
+        }
+
+        $this->seed(HideUpsellVehicleItemsFromGridSeeder::class);
+
+        // Pool flags: the real add-ons are now upsell candidates.
+        foreach (HideUpsellVehicleItemsFromGridSeeder::UPSELL_POOL_SLUGS as $slug) {
+            $this->assertSame(
+                \App\Enums\Ask::YES,
+                (int) Item::where('slug', $slug)->firstOrFail()->is_upsell,
+                "{$slug} must be flagged is_upsell=YES by the seeder"
+            );
+        }
+
+        // Vehicles: still defeatured, still NOT in the pool.
+        foreach (HideUpsellVehicleItemsFromGridSeeder::UPSELL_VEHICLE_SLUGS as $slug) {
+            $vehicle = Item::where('slug', $slug)->firstOrFail();
+            $this->assertSame(Status::INACTIVE, (int) $vehicle->is_featured);
+            $this->assertNotSame(\App\Enums\Ask::YES, (int) $vehicle->is_upsell, "{$slug} must NOT enter the upsell pool");
+        }
+
+        // The kiosk upsell endpoint serves a NON-EMPTY pool again.
+        $response = $this->getJson('/api/frontend/item/kiosk-upsell?limit=6')->assertOk();
+        $served = collect($response->json('data'))->pluck('slug')->all();
+        $this->assertNotEmpty($served, 'kiosk upsell pool must not be empty post-seed');
+        $this->assertEmpty(
+            array_intersect(HideUpsellVehicleItemsFromGridSeeder::UPSELL_VEHICLE_SLUGS, $served),
+            'vehicles must never be served as upsell suggestions'
+        );
+        foreach ($served as $slug) {
+            $this->assertContains($slug, array_column($pool, 'slug'));
+        }
+    }
+
     public function test_seeder_is_idempotent(): void
     {
         $this->seedMinimalSettings();

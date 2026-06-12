@@ -41,6 +41,27 @@ class HideUpsellVehicleItemsFromGridSeeder extends Seeder
         'boisson-seule',
     ];
 
+    /**
+     * [HEAL dispute-r3 C-R2-NEW-1 2026-06-12] Régression collatérale de la
+     * version round-1 de CE seeder : les 3 véhicules étaient les SEULS items
+     * featured vivants — les défeaturer a vidé le pool upsell borne
+     * (ItemController::kioskUpsell — is_upsell=YES, fallback is_featured=YES)
+     * → écran upsell auto-skip permanent (`no_suggestions`), surface
+     * merchandising morte EN SILENCE.
+     *
+     * Réanimation = flagger de VRAIS add-ons vendables `is_upsell = Ask::YES`
+     * (boisson/dessert réels, vraies images, vrais prix) — PAS les véhicules
+     * (SKU internes image-cassée : ils restent HORS grille ET HORS pool).
+     * Slugs résolus contre le catalogue Le Cayenne vivant ; le choix des
+     * items est ajustable owner (gate DATA #9, META_CONVERGENCE §5.B).
+     * Idempotent : update borné aux rows non-supprimées pas encore flaggées.
+     */
+    public const UPSELL_POOL_SLUGS = [
+        'coca',       // Coca-Cola 33cl — boisson
+        'tiramisu',   // Tiramisu — dessert
+        'glace',      // Glace — dessert
+    ];
+
     public const INTERNAL_CATEGORY_SLUG = 'technique-interne-upsell';
 
     public function run(): void
@@ -70,6 +91,31 @@ class HideUpsellVehicleItemsFromGridSeeder extends Seeder
             $updated,
             $internal->id,
             implode(',', self::UPSELL_VEHICLE_SLUGS)
+        ));
+
+        // [HEAL dispute-r3 C-R2-NEW-1] Phase 2 — réanime le pool upsell borne
+        // avec de vrais add-ons vendables. Garde-fou : ne flagge jamais un
+        // véhicule (intersection slugs impossible par construction, assert
+        // défensif quand même), ne touche pas aux rows soft-deleted.
+        $poolSlugs = array_values(array_diff(self::UPSELL_POOL_SLUGS, self::UPSELL_VEHICLE_SLUGS));
+
+        $flagged = DB::table('items')
+            ->whereIn('slug', $poolSlugs)
+            ->whereNull('deleted_at')
+            ->where('status', Status::ACTIVE)
+            ->where(function ($q) {
+                $q->where('is_upsell', '!=', \App\Enums\Ask::YES)
+                    ->orWhereNull('is_upsell');
+            })
+            ->update([
+                'is_upsell' => \App\Enums\Ask::YES,
+                'updated_at' => now(),
+            ]);
+
+        $this->command?->info(sprintf(
+            'HideUpsellVehicleItemsFromGridSeeder: %d row(s) flagged is_upsell=YES (kiosk upsell pool) for slugs %s',
+            $flagged,
+            implode(',', $poolSlugs)
         ));
     }
 }
