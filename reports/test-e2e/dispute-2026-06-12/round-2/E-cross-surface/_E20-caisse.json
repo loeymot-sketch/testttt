@@ -1,0 +1,360 @@
+{
+  "ORDER_ID": 4520,
+  "QUEUE": "A0009",
+  "MODE": "CARD",
+  "cashBefore": [
+    "2,00 €",
+    "Commandes Caisse",
+    "Encaissement",
+    "Vue Caisse Unifiée",
+    "Caisse Livreur",
+    "CAISSE ET COMMANDES",
+    "Vue Caisse Unifiée",
+    "Caisse",
+    "Borne",
+    "Espèces",
+    "Carte",
+    "Mobile",
+    "Ticket-restaurant",
+    "GRAND TOTAL",
+    "15,34 €",
+    "CAISSE",
+    "15,34 €",
+    "BORNE",
+    "0,00 €",
+    "0,00 €",
+    "Réconciliation caisse",
+    "Caisse ouverte à:13:20",
+    "Fond de caisse:50,00 €",
+    "Espèces encaissées (session en cours):0,00 €",
+    "Espèces attendues au tiroir:50,00 €",
+    "Carte1 · 8,50 €",
+    "Espèces2 · 6,84 €",
+    "13:22\tN°A0010\tCaisse\tCarte\t—\t8,50 €",
+    "13:14\tN°A0003\tCaisse\tEspèces\t—\t3,42 €",
+    "13:13\tN°A0001\tCaisse\tEspèces\t—\t3,42 €"
+  ],
+  "cardInfo": {
+    "count": 58,
+    "mine": {
+      "queue": "N°A0009",
+      "origin": "Borne",
+      "customer": "Client borne",
+      "dayBadge": null,
+      "items": [
+        "1× Tacos",
+        "1× Coca-Cola 33cl"
+      ],
+      "amount": "5,00 €"
+    },
+    "all": [
+      {
+        "queue": "N°A0002",
+        "origin": "Borne",
+        "customer": "Client borne",
+        "dayBadge": null,
+        "items": [
+          "1× Coca-Cola 33cl",
+          "1× Capri-Sun"
+        ],
+        "amount": "3,00 €"
+      },
+      {
+        "queue": "N°A0004",
+        "origin": "Borne",
+        "customer": "Client borne",
+        "dayBadge": null,
+        "items": [
+          "1× Tacos"
+        ],
+        "amount": "6,50 €"
+      },
+      {
+        "queue": "N°A0005",
+        "origin": "Borne",
+        "customer": "Client borne",
+        "dayBadge": null,
+        "items": [
+          "1× Tacos",
+          "1× Coca-Cola 33cl"
+        ],
+        "amount": "5,00 €"
+      },
+      {
+        "queue": "N°A0006",
+        "origin": "Borne",
+        "customer": "Client borne",
+        "dayBadge": null,
+        "items": [
+          "1× Glace"
+        ],
+        "amount": "3,80 €"
+      },
+      {
+        "queue": "N°A0007",
+        "origin": "Borne",
+        "customer": "Client borne",
+        "dayBadge": null,
+        "items": [
+          "1× Coca-Cola 33cl",
+          "1× Capri-Sun"
+        ],
+        "amount": "3,00 €"
+      },
+      {
+        "queue": "N°A0008",
+        "origin": "Borne",
+        "customer": "Client borne",
+        "dayBadge": null,
+        "items": [
+          "1× Galette Normale"
+        ],
+        "amount": "6,50 €"
+      },
+      {
+        "queue": "N°A0009",
+        "origin": "Borne",
+        "customer": "Client borne",
+        "dayBadge": null,
+        "items": [
+          "1× Tacos",
+          "1× Coca-Cola 33cl"
+        ],
+        "amount": "5,00 €"
+      },
+      {
+        "queue": "N°A0011",
+        "origin": "Borne",
+        "customer": "Client borne",
+        "dayBadge": null,
+        "items": [
+          "1× Galette Normale"
+        ],
+        "amount": "6,50 €"
+      },
+      {
+        "queue": "N°A0009",
+        "origin": "Borne",
+        "customer": "Client borne",
+        "dayBadge": "10/06",
+        "items": [
+          "1× Eau Plate 50cl"
+        ],
+        "amount": "1,00 €"
+      },
+      {
+        "queue": "N°A0010",
+        "origin": "Borne",
+        "customer": "Client borne",
+        "dayBadge": "10/06",
+        "items": [
+          "1× Glace"
+        ],
+        "amount": "3,80 €"
+      },
+      {
+        "queue": "N°A0011",
+        "origin": "Borne",
+        "customer": "Client borne",
+        "dayBadge": "10/06",
+        "items": [
+          "1× Eau Plate 50cl"
+        ],
+        "amount": "1,00 €"
+      },
+      {
+        "queue": "N°A0012",
+        "origin": "Borne",
+        "customer": "Client borne",
+        "dayBadge": "10/06",
+        "items": [
+          "1× Glace"
+        ],
+        "amount": "3,80 €"
+      }
+    ]
+  },
+  "showInfo": {
+    "montants": [
+      "2,00 €",
+      "8,50 €",
+      "1,50 €",
+      "10,00 €",
+      "5,00 €",
+      "5,00 €"
+    ],
+    "statut": [
+      "En Préparation",
+      "En Préparation",
+      "En Préparation",
+      "Livré"
+    ],
+    "paiement": [
+      "Payé",
+      "Type de paiement: Carte (Encaissement Terminal manuel (SumUp) — réf: SUMUP-E2-TRACE)",
+      "Payé",
+      "Payé",
+      "Non Payé"
+    ],
+    "client": [
+      "Admin Le Cayenne",
+      "Admin Le Cayenne",
+      "admin@lecayenne.fr",
+      "Suivi Client",
+      "Administrateurs",
+      "Informations Client"
+    ]
+  },
+  "histInfo": {
+    "head": [
+      "N° COMMANDE",
+      "ORIGINE",
+      "N° FILE",
+      "CLIENT",
+      "MONTANT",
+      "PAIEMENT",
+      "N° FISCAL",
+      "DATE",
+      "STATUT",
+      "ACTION"
+    ],
+    "mine": [
+      "1206264520",
+      "Borne",
+      "N°A0009",
+      "Client borne",
+      "5,00 €",
+      "Payé",
+      "2171",
+      "13:20, 12-06-2026",
+      "En préparation",
+      ""
+    ],
+    "first3": [
+      [
+        "1206264525",
+        "Caisse",
+        "N°A0012",
+        "Client passage",
+        "3,80 €",
+        "Payé",
+        "2170",
+        "13:24, 12-06-2026",
+        "En préparation",
+        ""
+      ],
+      [
+        "1206264524",
+        "Borne",
+        "N°A0011",
+        "Client borne",
+        "6,50 €",
+        "À encaisser",
+        "—",
+        "13:24, 12-06-2026",
+        "Accepter",
+        ""
+      ],
+      [
+        "1206264523",
+        "Caisse",
+        "N°A0010",
+        "Client passage",
+        "8,50 €",
+        "Payé",
+        "2169",
+        "13:22, 12-06-2026",
+        "En préparation",
+        ""
+      ]
+    ]
+  },
+  "trackInfo": {
+    "mine": [
+      "CAISSE LE CAYENNE Suivi commandes 12 actives 12 aujourd'hui 🧾 Toutes 🛒 Caisse 🖥️ Borne 🌐 En ligne Historique Écran client Retour caisse 🔔 À ENCAISSER Borne — paiement comptoir 7 N°A0011 🔔 🖥️ Client borne 1× Galette Normale À ENCAISSER : 6,50 € Encaisser N°A0008 🔔 🖥️ Client borne 1× Galette ",
+      "🔔 À ENCAISSER Borne — paiement comptoir 7 N°A0011 🔔 🖥️ Client borne 1× Galette Normale À ENCAISSER : 6,50 € Encaisser N°A0008 🔔 🖥️ Client borne 1× Galette Normale À ENCAISSER : 6,50 € Encaisser N°A0007 🔔 🖥️ Client borne 1× Coca-Cola 33cl 1× Capri-Sun À ENCAISSER : 3,00 € Encaisser N°A0006 🔔 "
+    ],
+    "bodyHas": true
+  },
+  "cashAfter": [
+    "2,00 €",
+    "Commandes Caisse",
+    "Encaissement",
+    "Vue Caisse Unifiée",
+    "Caisse Livreur",
+    "CAISSE ET COMMANDES",
+    "Vue Caisse Unifiée",
+    "Caisse",
+    "Borne",
+    "Espèces",
+    "Carte",
+    "Mobile",
+    "Ticket-restaurant",
+    "GRAND TOTAL",
+    "27,94 €",
+    "CAISSE",
+    "22,94 €",
+    "BORNE",
+    "5,00 €",
+    "0,00 €",
+    "Réconciliation caisse",
+    "Caisse ouverte à:13:20",
+    "Fond de caisse:50,00 €",
+    "Espèces encaissées (session en cours):0,00 €",
+    "Espèces attendues au tiroir:50,00 €",
+    "Espèces4 · 14,44 €",
+    "Carte2 · 13,50 €",
+    "13:25\tN°A0013\tCaisse\tEspèces\t—\t3,80 €",
+    "13:25\tN°A0009\tBorne\tCarte\t—\t5,00 €",
+    "13:24\tN°A0012\tCaisse\tEspèces\t—\t3,80 €",
+    "13:22\tN°A0010\tCaisse\tCarte\t—\t8,50 €",
+    "13:14\tN°A0003\tCaisse\tEspèces\t—\t3,42 €",
+    "13:13\tN°A0001\tCaisse\tEspèces\t—\t3,42 €"
+  ],
+  "txInfo": {
+    "head": [
+      "ID DE TRANSACTION",
+      "DATE",
+      "MODE DE PAIEMENT",
+      "N° DE COMMANDE",
+      "MONTANT"
+    ],
+    "mine": [
+      [
+        "COUNTER-4520-20260612132511",
+        "13:25, 12-06-2026",
+        "Carte bancaire",
+        "1206264520",
+        "+ 5,00 €"
+      ]
+    ],
+    "first3": [
+      [
+        "POS-4526-20260612132545",
+        "13:25, 12-06-2026",
+        "Espèces",
+        "1206264526",
+        "+ 3,80 €"
+      ],
+      [
+        "COUNTER-4520-20260612132511",
+        "13:25, 12-06-2026",
+        "Carte bancaire",
+        "1206264520",
+        "+ 5,00 €"
+      ],
+      [
+        "POS-4525-20260612132459",
+        "13:24, 12-06-2026",
+        "Espèces",
+        "1206264525",
+        "+ 3,80 €"
+      ]
+    ],
+    "total": 10
+  },
+  "kdsInfo": {
+    "has": false,
+    "card": null
+  }
+}

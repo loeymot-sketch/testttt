@@ -1,0 +1,13 @@
+[11:35:41] login(bm.t2admin@lecayenne.fr) → /admin/dashboard
+[11:35:48] stat expected avant clôture: "58,90 €"
+[11:35:49] close-form expected="58,90 €" → num=58.9
+[11:35:50] comptage exact 58.90 → variance="0,00 €" raison-visible=false
+[11:35:51] comptage 59.40 → variance="+0,50 €" raison-visible=true
+[11:35:52] comptage 57.90 → variance="-1,00 €"
+[11:35:53] API POST 200 /api/admin/pos/cash-drawer/sessions/22/close :: {"status":true,"data":{"id":22,"branch_id":1,"opened_by_user_id":11,"opened_at":"2026-06-12T13:28:16+02:00","closed_at":"2026-06-12T13:35:53+02:00","opening_amount":50,"closing_amount":59.4,"expected_closing_amount":null,"variance":null,"variance_reason":null,"status":"closed"}}
+[11:35:53] API POST 200 /api/admin/pos/cash-drawer/sessions/22/reconcile :: {"status":true,"data":{"id":22,"branch_id":1,"opened_by_user_id":11,"opened_at":"2026-06-12T13:28:16+02:00","closed_at":"2026-06-12T13:35:53+02:00","opening_amount":50,"closing_amount":59.4,"expected_closing_amount":58.9,"variance":0.5,"variance_reason":"Écart volontaire +0,50 € — test round-2 vague B","status":"reconc
+[11:35:56] après clôture (extrait): []
+[11:35:56] open-form re-visible après clôture: false
+[11:35:56] console cumulés: 1
+[11:35:56]   WARNING /admin/pos :: WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: WebSocket is closed before the connection is established.
+[11:35:56] net>=400: 0

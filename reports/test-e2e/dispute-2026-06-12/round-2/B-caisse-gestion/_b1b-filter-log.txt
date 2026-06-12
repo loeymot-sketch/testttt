@@ -1,0 +1,7 @@
+[11:16:53] login(bm.t2admin@lecayenne.fr) → /admin/dashboard
+[11:16:57] LIST 200 rows=10 /api/admin/transaction?paginate=1&page=1&per_page=10&order_column=id&order_type=desc&branch_id=1
+[11:17:00] bouton filtre count=1
+[11:17:01] filtre "Mode de paiement" visible après slide: false
+[11:17:01] console cumulés: 1
+[11:17:01]   WARNING /admin/transactions :: WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: WebSocket is closed before the connection is established.
+[11:17:01] net>=400 cumulés: 0

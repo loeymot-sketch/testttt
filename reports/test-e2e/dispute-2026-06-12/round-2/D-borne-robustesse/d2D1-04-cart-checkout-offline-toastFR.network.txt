@@ -1,0 +1,13 @@
+401 GET http://127.0.0.1:8768/api/login
+FAILED POST http://127.0.0.1:8768/api/frontend/kiosk/event :: net::ERR_INTERNET_DISCONNECTED
+FAILED GET http://127.0.0.1:8768/images/theme/theme-favicon-logo.png :: net::ERR_INTERNET_DISCONNECTED
+401 POST http://127.0.0.1:8768/api/frontend/kiosk/event
+FAILED GET http://127.0.0.1:8768/js/app.js?id=3fa68f59346ad611a55cda69691e0682 :: net::ERR_ABORTED
+401 POST http://127.0.0.1:8768/api/frontend/kiosk-event
+401 GET http://127.0.0.1:8768/api/frontend/menu
+401 GET http://127.0.0.1:8768/api/login
+401 GET http://127.0.0.1:8768/api/frontend/menu
+401 POST http://127.0.0.1:8768/api/frontend/kiosk-event
+401 GET http://127.0.0.1:8768/api/frontend/menu
+401 GET http://127.0.0.1:8768/api/login
+FAILED POST http://127.0.0.1:8768/api/frontend/order/quote :: net::ERR_INTERNET_DISCONNECTED

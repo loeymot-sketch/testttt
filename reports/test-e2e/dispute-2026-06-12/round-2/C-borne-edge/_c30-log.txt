@@ -1,0 +1,10 @@
+[11:42:54] add Grande Frites(34) essai 1: {"ok":true,"before":0,"after":1}
+[11:42:57] add Coca(52): {"ok":true,"before":1,"after":2}
+[11:43:02] cart avant rupture: {"n":2,"items":[{"name":"Grande Frites","qty":1,"total":4},{"name":"Coca-Cola 33cl","qty":1,"total":1.5}]} totals={"subtotal":"5,50 €","loyalty":null,"promo":null,"total":"5,50 €"}
+[11:43:02] RUPTURE DB: id	is_available 34	0
+[11:43:05] après checkout → /kiosk/cart
+[11:43:05] toast="Article 34 indisponible dans le catalogue. Commande rejetée." quoteErr="Article 34 indisponible dans le catalogue. Commande rejetée."
+[11:43:07] cart après 1er checkout: {"n":2,"items":[{"name":"Grande Frites","qty":1,"total":4},{"name":"Coca-Cola 33cl","qty":1,"total":1.5}]} totals={"subtotal":"5,50 €","loyalty":null,"promo":null,"total":"5,50 €"}
+[11:43:10] après 2e checkout → /kiosk/cart
+[11:43:10] RESTORE: id	is_available 34	1
+[11:43:26] C30 done

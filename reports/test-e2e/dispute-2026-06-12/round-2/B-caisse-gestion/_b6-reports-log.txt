@@ -1,0 +1,23 @@
+[11:39:21] GET 200 /api/admin/fiscal/z-report
+[11:39:23] login(bm.t2admin@lecayenne.fr) → /admin/dashboard
+[11:39:23] GET 200 /admin/cash-overview
+[11:39:27] GET 200 /api/admin/cash-overview?from=2026-06-12&to=2026-06-12
+[11:39:30] cash-overview (extrait): Bonjour | BM T2 Admin | BM T2 Admin | bm.t2admin@lecayenne.fr | +33600000099 | 0,00 € | Modifier Le Profil | Changer Le Mot De Passe | Déconnexion | Tableau De Bord | POS | Ingrédients | Commandes Caisse | Historique | Encaissement | Vue Caisse Unifiée | Caisse Livreur | CAISSE ET COMMANDES | Écran Cuisine | Suivi Client | COMMUNICATIONS | Notifications Push | Messages | UTILISATEURS | Employés | Chefs | COMPTES | Transactions | RAPPORTS | Rapport Des Ventes | Vue Caisse Unifiée | DU | AU | SOURCE | Toutes les sources | Caisse | Borne | Livreur | MODE DE PAIEMENT | Tous les modes | Espèces | Carte | Mobile | Ticket-restaurant | Rechercher | Effacer | GRAND TOTAL | 59,54 € | 12 tx | CAISSE | 33,74 € | 8 tx | BORNE | 25,80 € | 4 tx | LIVREUR | 0,00 € | 0 tx | Réconciliation caisse | Caisse ouverte à:22:46 | Fond de caisse:50,00 € | Espèces encaissées (session en cours):100,44 € | Espèces attendues au tiroir:150,44 € | Pour calculer l'écart, saisir le comptage physique du tiroir (à venir). | Répartition par mode | Espèces9 · 41,54 € | Autre1 · 4,50 € | Carte2 · 13,50 € | Heure	N° commande	Source	Mode de paiement	Livreur	Montant | 13:33	N°A0005	Borne	Espèces	—	5,00 € | 13:31	N°A0018	Caisse	Espèces	—	1,50 € | 13:30	N°A0017	Caisse	Espèces	—	4,80 € | 13:29	N°A0015	Caisse	Autre	—	4,50 € | 13:28	N°A0016	Borne	Espèces	—	8,90 € | 13:28	N°A0015	Borne	Espèces	—	6,90 € | 13:25	N°A0013	Caisse	Espèces	—	3,80 € | 13:25	N°A0009	Borne	Carte	—	5,00 € | 13:24	N°A0012	Caisse	Espèces	—	3,80 € | 13:
+[11:39:38] sessions-report (extrait): Bonjour | BM T2 Admin | BM T2 Admin | bm.t2admin@lecayenne.fr | +33600000099 | 0,00 € | Modifier Le Profil | Changer Le Mot De Passe | Déconnexion | Tableau De Bord | POS | Ingrédients | Commandes Caisse | Historique | Encaissement | Vue Caisse Unifiée | Caisse Livreur | CAISSE ET COMMANDES | Écran Cuisine | Suivi Client | COMMUNICATIONS | Notifications Push | Messages | UTILISATEURS | Employés | Chefs | COMPTES | Transactions | RAPPORTS | Rapport Des Ventes | Rapport Caisses Quotidien | DU | AU | Rechercher | Effacer | vendredi 12 juin 2026 | Sessions: 2 | Transactions: 5 | Total ouverture: 100,00 € | Total clôture: 109,40 € | Session	Filiale	Caissier	Ouverte le	Fermée le	Fond de caisse	Fonds final	Écart	Transactions	Statut | #22	1	BM T2 Admin	13:28	13:35	50,00 €	59,40 €	0,50 €	5	Réconciliée | #21	1	BM T2 Admin	13:20	13:27	50,00 €	50,00 €	0,00 €	0	Réconciliée | mercredi 10 juin 2026 | Sessions: 8 | Transactions: 20 | Total ouverture: 420,00 € | Total clôture: 324,00 € | Session	Filiale	Caissier	Ouverte le	Fermée le	Fond de caisse	Fonds final	Écart	Transactions	Statut | #20	1	Caissier Le Cayenne	22:46	—	50,00 €	—	—	14	Ouverte | #19	1	Admin Le Cayenne	19:53	—	70,00 €	—	—	3	Ouverte |
+[11:39:38] rows matching session 22: ["#22\t1\tBM T2 Admin\t13:28\t13:35\t50,00 €\t59,40 €\t0,50 €\t5\tRéconciliée"]
+[11:39:45] historique rows initiales: 10
+[11:39:46] champs filtre historique: ["order_id","vs54-combobox","","vs57-combobox","","dp-input-searchStartDate"]
+[11:39:46] WARN input serial introuvable dans le filtre historique
+[11:39:46] statuts visibles: []
+[11:39:47] export historique XLS: Commandes caisse.xlsx
+[11:39:51] GET 200 /api/admin/fiscal/z-report
+[11:39:54] widget Z dashboard: Dernier Rapport Z Dernier rapport Z #20 Fermée 10/06/2026 07:06:45 Voir les clôtures Z
+[11:39:54] GET admin/z-report → 200 ; 0 rows ; dernier: null
+[11:39:54] GET 200 /api/admin/z-report
+[11:39:56] après clic « Voir les clôtures Z »: url=/admin/transactions
+[11:39:56] console cumulés: 4
+[11:39:56]   WARNING /admin/cash-overview :: WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: WebSocket is closed before the connection is established.
+[11:39:56]   WARNING /admin/cash-sessions-report :: WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: WebSocket is closed before the connection is established.
+[11:39:56]   WARNING /admin/pos-orders :: WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: WebSocket is closed before the connection is established.
+[11:39:56]   WARNING /admin/dashboard :: WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: WebSocket is closed before the connection is established.
+[11:39:56] net>=400: 0

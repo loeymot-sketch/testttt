@@ -1,0 +1,98 @@
+[
+ {
+  "t": "11:33:23.020",
+  "m": "POST",
+  "u": "/api/frontend/promo/validate",
+  "status": 200,
+  "reqBody": "{\"code\":\"BORNEAUDIT5\",\"cart_total\":11.5}",
+  "resp": "{\"status\":true,\"data\":{\"valid\":true,\"code\":\"BORNEAUDIT5\",\"source\":\"kiosk_promo\",\"type\":\"amount\",\"value\":5,\"discount_amount\":5,\"message\":null},\"message\":null}"
+ },
+ {
+  "t": "11:33:27.274",
+  "m": "POST",
+  "u": "/api/frontend/promo/validate",
+  "status": 200,
+  "reqBody": "{\"code\":\"BORNEAUDIT5\",\"cart_total\":11.5}",
+  "resp": "{\"status\":true,\"data\":{\"valid\":true,\"code\":\"BORNEAUDIT5\",\"source\":\"kiosk_promo\",\"type\":\"amount\",\"value\":5,\"discount_amount\":5,\"message\":null},\"message\":null}"
+ },
+ {
+  "t": "11:33:27.352",
+  "m": "POST",
+  "u": "/api/frontend/promo/validate",
+  "status": 200,
+  "reqBody": "{\"code\":\"BORNEAUDIT5\",\"cart_total\":11.5}",
+  "resp": "{\"status\":true,\"data\":{\"valid\":true,\"code\":\"BORNEAUDIT5\",\"source\":\"kiosk_promo\",\"type\":\"amount\",\"value\":5,\"discount_amount\":5,\"message\":null},\"message\":null}"
+ },
+ {
+  "t": "11:33:28.524",
+  "m": "POST",
+  "u": "/api/frontend/promo/validate",
+  "status": 200,
+  "reqBody": "{\"code\":\"BORNEAUDIT5\",\"cart_total\":11.5}",
+  "resp": "{\"status\":true,\"data\":{\"valid\":true,\"code\":\"BORNEAUDIT5\",\"source\":\"kiosk_promo\",\"type\":\"amount\",\"value\":5,\"discount_amount\":5,\"message\":null},\"message\":null}"
+ },
+ {
+  "t": "11:33:29.655",
+  "m": "GET",
+  "u": "/api/frontend/loyalty/config",
+  "status": 200,
+  "reqBody": null,
+  "resp": "{\"status\":true,\"data\":{\"points_per_euro\":10,\"points_for_1_euro_discount\":100,\"min_redeem_points\":50,\"tiers\":[100,250,500,1000,2000],\"label\":\"Dépensez 100 points = 1€ de remise\"}}"
+ },
+ {
+  "t": "11:33:32.164",
+  "m": "POST",
+  "u": "/api/frontend/loyalty/check",
+  "status": 429,
+  "reqBody": "{\"code\":\"VICT1234\"}",
+  "resp": "{\"message\":\"Too Many Attempts.\"}"
+ },
+ {
+  "t": "11:34:41.166",
+  "m": "POST",
+  "u": "/api/frontend/loyalty/check",
+  "status": 401,
+  "reqBody": "{\"code\":\"VICT1234\"}",
+  "resp": "{\"message\":\"Unauthenticated.\"}"
+ },
+ {
+  "t": "11:34:41.468",
+  "m": "POST",
+  "u": "/api/frontend/loyalty/check",
+  "status": 200,
+  "reqBody": "{\"code\":\"VICT1234\"}",
+  "resp": "{\"status\":true,\"data\":{\"name\":\"Victim Secret\",\"points\":165,\"discount_value\":1.65,\"loyalty_code\":\"VICT1234\"}}"
+ },
+ {
+  "t": "11:34:49.918",
+  "m": "POST",
+  "u": "/api/frontend/promo/validate",
+  "status": 200,
+  "reqBody": "{\"code\":\"BORNEAUDIT5\",\"cart_total\":11.5}",
+  "resp": "{\"status\":true,\"data\":{\"valid\":true,\"code\":\"BORNEAUDIT5\",\"source\":\"kiosk_promo\",\"type\":\"amount\",\"value\":5,\"discount_amount\":5,\"message\":null},\"message\":null}"
+ },
+ {
+  "t": "11:34:51.514",
+  "m": "POST",
+  "u": "/api/frontend/order/quote",
+  "status": 200,
+  "reqBody": "{\"order_type\":10,\"loyalty_code\":\"VICT1234\",\"loyalty_redeem_discount\":1.65,\"kiosk_promo_code\":\"BORNEAUDIT5\",\"is_advance_order\":10,\"source\":5,\"payment_method\":0,\"items\":\"[{\\\"item_id\\\":26,\\\"instruction\\\":\\\"Viandes : Poulet mariné ×1. Formule : Menu complet (frites + boisson) (Coca-Cola 33cl). Sauce frites : Algérienne\\\",\\\"quantity\\\":1,\\\"item_variations\\\":[{\\\"id\\\":43,\\\"name\\\":\\\"Poulet mariné\\\",\\\"variation_name\\\":\\\"Viande 1\\\"},{\\\"id\\\":311,\\\"name\\\":\\\"Algérienne\\\",\\\"variation_name\\\":\\\"Sauce (1ère Gratuite)\\\"}],\\\"item_extras\\\":[],\\\"item_addons\\\":[{\\\"id\\\":37,\\\"name\\\":\\\"Menu (Frites + Boisson)\\\",\\\"role\\\":\\\"menu_full\\\"}]}]\"}",
+  "resp": "{\"status\":true,\"data\":{\"quote_token\":\"26e6f5e8-5cff-4ae8-b653-99f5bcc7efe4\",\"signature\":\"2ba854930800d46d9e0928694323047b4c191a5028a2261884ed6e238c4e8ccf\",\"expires_at\":\"2026-06-12T13:39:51+02:00\",\"ttl_seconds\":299,\"subtotal\":11.5,\"discount\":6.65,\"total_tax\":1.05,\"delivery_charge\":0,\"total_ttc\":4.85,\"currency\":\"EUR\",\"consumed_at\":null}}"
+ },
+ {
+  "t": "11:34:53.962",
+  "m": "POST",
+  "u": "/api/frontend/order/quote",
+  "status": 200,
+  "reqBody": "{\"order_type\":10,\"loyalty_code\":\"VICT1234\",\"loyalty_redeem_discount\":1.65,\"kiosk_promo_code\":\"BORNEAUDIT5\",\"is_advance_order\":10,\"source\":5,\"payment_method\":1,\"items\":\"[{\\\"item_id\\\":26,\\\"instruction\\\":\\\"Viandes : Poulet mariné ×1. Formule : Menu complet (frites + boisson) (Coca-Cola 33cl). Sauce frites : Algérienne\\\",\\\"quantity\\\":1,\\\"item_variations\\\":[{\\\"id\\\":43,\\\"name\\\":\\\"Poulet mariné\\\",\\\"variation_name\\\":\\\"Viande 1\\\"},{\\\"id\\\":311,\\\"name\\\":\\\"Algérienne\\\",\\\"variation_name\\\":\\\"Sauce (1ère Gratuite)\\\"}],\\\"item_extras\\\":[],\\\"item_addons\\\":[{\\\"id\\\":37,\\\"name\\\":\\\"Menu (Frites + Boisson)\\\",\\\"role\\\":\\\"menu_full\\\"}]}]\"}",
+  "resp": "{\"status\":true,\"data\":{\"quote_token\":\"d3e6f334-c3bb-4ab8-82fd-9d6d12fe2b75\",\"signature\":\"6d6ac9c6919290508dc31381eea8debf1be385608e56bd0de407c1bd8b390d6b\",\"expires_at\":\"2026-06-12T13:39:53+02:00\",\"ttl_seconds\":299,\"subtotal\":11.5,\"discount\":6.65,\"total_tax\":1.05,\"delivery_charge\":0,\"total_ttc\":4.85,\"currency\":\"EUR\",\"consumed_at\":null}}"
+ },
+ {
+  "t": "11:34:54.116",
+  "m": "POST",
+  "u": "/api/frontend/order",
+  "status": 201,
+  "reqBody": "{\"order_type\":10,\"loyalty_code\":\"VICT1234\",\"loyalty_redeem_discount\":1.65,\"kiosk_promo_code\":\"BORNEAUDIT5\",\"is_advance_order\":10,\"source\":5,\"payment_method\":1,\"items\":\"[{\\\"item_id\\\":26,\\\"instruction\\\":\\\"Viandes : Poulet mariné ×1. Formule : Menu complet (frites + boisson) (Coca-Cola 33cl). Sauce frites : Algérienne\\\",\\\"quantity\\\":1,\\\"item_variations\\\":[{\\\"id\\\":43,\\\"name\\\":\\\"Poulet mariné\\\",\\\"variation_name\\\":\\\"Viande 1\\\"},{\\\"id\\\":311,\\\"name\\\":\\\"Algérienne\\\",\\\"variation_name\\\":\\\"Sauce (1ère Gratuite)\\\"}],\\\"item_extras\\\":[],\\\"item_addons\\\":[{\\\"id\\\":37,\\\"name\\\":\\\"Menu (Frites + Boisson)\\\",\\\"role\\\":\\\"menu_full\\\"}]}]\",\"quote_token\":\"d3e6f334-c3bb-4ab8-82fd-9d6d12fe2b75\",\"quote_signature\":\"6d6ac9c6919290508dc31381eea8debf1be385608e56bd0de407c1bd8b390d6b\",\"subtotal\":11.5,\"discount\":6.65,\"delivery_charge\":0,\"total\":4.85}",
+  "resp": "{\"data\":{\"id\":4532,\"order_serial_no\":\"1206264532\",\"queue_number\":\"A0019\",\"token\":null,\"receipt_print_count\":0,\"parent_order_id\":null,\"parent_order_serial_no\":null,\"subtotal\":11.5,\"discount\":6.65,\"total_tax\":0.44,\"total\":4.85,\"delivery_charge\":0,\"subtotal_currency_price\":\"11,50 €\",\"subtotal_without_tax_currency_price\":\"4,41 €\",\"discount_currency_price\":\"6,65 €\",\"delivery_charge_currency_price\":\"0,00 €\",\"total_currency_price\":\"4,85 €\",\"total_tax_currency_price\":\"0,44 €\",\"order_type\":10,\"created_at\":\"2026-06-12T13:34:53+02:00\",\"order_datetime\":\"13:34, 12-06-2026\",\"order_date\":\"12-06-2026\",\"order_time\":\"13:34\",\"delivery_date\":\"12-06-2026\",\"delivery_time\":\"\",\"payment_method\":1,\"payment_status\":15,\"payment_pending_counter\":true,\"cash_movement_skipped\":false,\"cash_movement_skipped_message\":null,\"is_advance_order\":10,\"preparation_time\":30,\"status\":4,\"status_name\":\"Acceptée\",\"reason\":null,\"user\":"
+ }
+]

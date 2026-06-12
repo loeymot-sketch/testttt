@@ -1,0 +1,32 @@
+[
+ {
+  "ts": 1781263376931,
+  "status": 401,
+  "method": "GET",
+  "url": "http://127.0.0.1:8768/api/login"
+ },
+ {
+  "ts": 1781263396806,
+  "status": 401,
+  "method": "GET",
+  "url": "http://127.0.0.1:8768/api/login"
+ },
+ {
+  "ts": 1781263401672,
+  "status": 429,
+  "method": "POST",
+  "url": "http://127.0.0.1:8768/api/frontend/loyalty/check"
+ },
+ {
+  "ts": 1781263420654,
+  "status": 429,
+  "method": "POST",
+  "url": "http://127.0.0.1:8768/api/frontend/loyalty/check"
+ },
+ {
+  "ts": 1781263440045,
+  "status": 401,
+  "method": "POST",
+  "url": "http://127.0.0.1:8768/api/frontend/loyalty/check"
+ }
+]

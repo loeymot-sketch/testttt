@@ -1,0 +1,4 @@
+[11:28:27] KDS FEED: 0 commandes
+[11:28:27] []
+[11:28:27] ORDER 4520 dans le feed: undefined
+[11:28:37] overflow badge: "EN ATTENTE ENCAISSEMENT"

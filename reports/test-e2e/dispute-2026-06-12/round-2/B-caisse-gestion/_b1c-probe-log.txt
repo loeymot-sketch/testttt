@@ -1,0 +1,17 @@
+[11:17:28] login(bm.t2admin@lecayenne.fr) → /admin/dashboard
+[11:17:34] {
+ "filterDiv": {
+  "vis": "visible",
+  "h": "0px",
+  "display": "block"
+ },
+ "paymentMethodExists": false,
+ "filterButtons": [
+  "db-card-filter-btn dropdown-btn :: 10",
+  "db-card-filter-btn table-filter-btn :: Filtrer",
+  "db-card-filter-btn dropdown-btn :: Exporter",
+  "db-card-filter-dropdown-menu :: Imprimer",
+  "db-card-filter-dropdown-menu :: XLS"
+ ]
+}
+[11:17:35] {"vis":"visible","h":"202px","pmVisible":"ABSENT"}

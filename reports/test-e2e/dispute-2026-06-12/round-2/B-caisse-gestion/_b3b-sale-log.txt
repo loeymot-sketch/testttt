@@ -1,0 +1,21 @@
+[11:30:27] login(bm.t2admin@lecayenne.fr) → /admin/dashboard
+[11:31:07] panier: ["Coca-Cola 33cl ✎ 1,50 € 🗑 +"]
+[11:31:11] reçu 2,00 → rendu="0,50 €"
+[11:31:11] API POST 200 /api/admin/pos/quote :: {"status":true,"data":{"quote_token":"9e65ae2b-2e91-4146-9f27-043e1e650615","signature":"dafdd753e078bc4a70b7a772dea7a3753cf598a8c41721af9cf0996aee036cf1","expires_at":"2026-06-12T13:36:11+02:00","ttl
+[11:31:11] API POST 201 /api/admin/pos :: {"data":{"id":4531,"order_serial_no":"1206264531","queue_number":"A0018","token":"1","receipt_print_count":0,"parent_order_id":null,"parent_order_serial_no":null,"subtotal":1.5,"discount":0,"total_tax
+[11:31:11] POST /admin/pos → 201 order id=4531 serial=1206264531 total=1.5
+[11:31:14] receipt extrait: SIRET: 10417050100019 | TVA intra: FR19104170501 | Opérateur: BM T2 Admin | Le Cayenne | 437 Rue Élie Gruyelle, 62110 Hénin-Beaumont | Tel: +33600000000 | Commande #1206264531 | 12-06-2026	13:31 | Qté	 | Article Description | Prix HT | 1 | 	 | Coca-Cola 33cl | 1,36 € | SOUS-TOTAL HT:	1,36 € | TOTAL TAXES:	0,14 € | VAT (10%)· Base HT 1,36 €	0,14 € | REMISE:	0,00 € | TOTAL:	1,50 € | Type de commande: À emporter | Type de paiement: Espèces	 | Espèces: 2,00 € | Rendu : 0,50 € | N°A0018 | N° ticket N
+[11:31:22] pos-no-sale présent=1
+[11:31:22] API POST 422 /api/admin/pos/cash-drawer/open :: {"success":false,"error":"no_printer"}
+[11:31:24] après clic no-sale: (pas de dialog visible)
+[11:32:29] mouvements (3):
+[11:32:29]   mvt#1: 12/06 | 13:28:27Paiement | de | commande6,90 | €↑ | EntréeEncaissement | borne | au | comptoir | (SSOT | modal)
+[11:32:29]   mvt#2: 12/06 | 13:28:39Paiement | de | commande8,90 | €↑ | EntréeEncaissement | borne | au | comptoir | (SSOT | modal)
+[11:32:29]   mvt#3: 12/06 | 13:31:11Paiement | de | commande1,50 | €↑ | Entrée—
+[11:32:30] stats session: expected="67,30 €" mvts="3"
+[11:32:30] console cumulés: 3
+[11:32:30]   WARNING /admin/pos :: WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: WebSocket is closed before the connection is established.
+[11:32:30]   WARNING /admin/pos :: WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: WebSocket is closed before the connection is established.
+[11:32:30]   ERROR /admin/pos :: Failed to load resource: the server responded with a status of 422 (Unprocessable Content)
+[11:32:30] net>=400: 1
+[11:32:30]   HTTP 422 POST http://127.0.0.1:8768/api/admin/pos/cash-drawer/open

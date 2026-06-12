@@ -1,0 +1,10 @@
+[11:24:54] login(bm.t2admin@lecayenne.fr) → /admin/dashboard
+[11:25:01] badge 4329 présent: 1
+[11:25:01] clic carte 4329: CLICKED via ancestor 3
+[11:25:04] modal visible=true chip-date="⚠ Commande du 10/06/2026" total="3,80 €"
+[11:25:04] modal contenu: 💳 Encaisser la commande borne ✕ N° A0010 BORNE ⚠ Commande du 10/06/2026 MONTANT TOTAL 3,80 € CHOISIR LE PAIEMENT 💶 Espèces Ouvre le tiroir (simulation) 💳 Terminal (manuel) SumUp — saisir la référence 📱 Mobile 🎟️ Ticket restaurant MONTANT REÇU 1 2 3 ⌫ 4 5 6 7 8 9 C 00 0 , Annuler ✓ Confirmer & Imprimer ticket
+[11:25:04] hit-test ADV-F-P0-1: {"keysFound":14,"blocked":[],"bodyScroll":"737/737","footerPos":"static","ctaVisible":true}
+[11:25:04] modal fermé sans confirmer: true
+[11:25:04] console cumulés: 1
+[11:25:04]   WARNING /admin/encaissement :: WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: WebSocket is closed before the connection is established.
+[11:25:04] net>=400: 0

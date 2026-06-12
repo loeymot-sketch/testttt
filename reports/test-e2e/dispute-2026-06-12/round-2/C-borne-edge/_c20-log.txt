@@ -1,0 +1,14 @@
+[11:37:22] grille cat1 contient "Boisson Seule" ? NON ✅
+[11:37:22] grille cat1 contient "Frites Seules" ? NON ✅
+[11:37:22] grille cat1 contient "Menu (Frites + Boisson)" ? NON ✅
+[11:37:22] boutons add visibles cat1: ["kiosk-product-add-22","kiosk-product-add-36"]
+[11:37:22] sidebar catégories: []
+[11:37:22] sidebar contient "Technique" ? NON ✅
+[11:37:22] nb catégories sidebar: 0
+[11:37:32] add Sandwich Cayenne(22): {"ok":true,"before":0,"after":1}
+[11:37:33] cart: {"n":1,"items":[{"name":"Sandwich Cayenne","qty":1,"total":7}]}
+[11:37:33] ligne panier: Sandwich Cayenne | Poulet mariné, Algérienne · Salade, Tomate, Oignon, Cornichon |  | Viandes : Poulet mariné ×1 |  | 7,00 € par unité | 1 | 7,00 €
+[11:37:36] T0: {"subtotal":"7,00 €","loyalty":null,"promo":null,"total":"7,00 €"}
+[11:37:38] après checkout → /kiosk/payment
+[11:37:38] PAS d'écran upsell (skip auto ?) url=/kiosk/payment
+[11:37:59] C20 done

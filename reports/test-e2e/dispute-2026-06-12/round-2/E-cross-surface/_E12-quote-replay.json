@@ -1,0 +1,40 @@
+[
+  {
+    "tag": "A-exact-4520",
+    "body": {
+      "loyalty_code": "VICT1234",
+      "loyalty_redeem_discount": 1.65,
+      "kiosk_promo_code": "BORNEAUDIT5",
+      "items": "[{\"item_id\":26,\"instruction\":\"Viandes : Poulet mariné ×1\",\"quantity\":1,\"item_variations\":[{\"id\":43,\"name\":\"Poulet mariné\",\"variation_name\":\"Viande 1\"},{\"id\":311,\"name\":\"Algérienne\",\"variation_name\":\"Sauce (1ère Gratuite)\"}],\"item_extras\":[]},{\"item_id\":52,\"instruction\":\"\",\"quantity\":1,\"item_variations\":[],\"item_extras\":[]}]"
+    },
+    "res": {
+      "status": 405,
+      "raw": "{\"success\":false,\"message\":\"Méthode non prise en charge pour cette route.\"}"
+    }
+  },
+  {
+    "tag": "B-sans-promo",
+    "body": {
+      "loyalty_code": "VICT1234",
+      "loyalty_redeem_discount": 1.65,
+      "items": "[{\"item_id\":26,\"instruction\":\"Viandes : Poulet mariné ×1\",\"quantity\":1,\"item_variations\":[{\"id\":43,\"name\":\"Poulet mariné\",\"variation_name\":\"Viande 1\"},{\"id\":311,\"name\":\"Algérienne\",\"variation_name\":\"Sauce (1ère Gratuite)\"}],\"item_extras\":[]},{\"item_id\":52,\"instruction\":\"\",\"quantity\":1,\"item_variations\":[],\"item_extras\":[]}]"
+    },
+    "res": {
+      "status": 405,
+      "raw": "{\"success\":false,\"message\":\"Méthode non prise en charge pour cette route.\"}"
+    }
+  },
+  {
+    "tag": "C-redeem-1.00",
+    "body": {
+      "loyalty_code": "VICT1234",
+      "loyalty_redeem_discount": 1,
+      "kiosk_promo_code": "BORNEAUDIT5",
+      "items": "[{\"item_id\":26,\"instruction\":\"Viandes : Poulet mariné ×1\",\"quantity\":1,\"item_variations\":[{\"id\":43,\"name\":\"Poulet mariné\",\"variation_name\":\"Viande 1\"},{\"id\":311,\"name\":\"Algérienne\",\"variation_name\":\"Sauce (1ère Gratuite)\"}],\"item_extras\":[]},{\"item_id\":52,\"instruction\":\"\",\"quantity\":1,\"item_variations\":[],\"item_extras\":[]}]"
+    },
+    "res": {
+      "status": 405,
+      "raw": "{\"success\":false,\"message\":\"Méthode non prise en charge pour cette route.\"}"
+    }
+  }
+]

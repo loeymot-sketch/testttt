@@ -1,0 +1,508 @@
+[
+  {
+    "method": "POST",
+    "status": 200,
+    "url": "/api/admin/pos/cash-drawer/sessions/21/close",
+    "body": {
+      "status": true,
+      "data": {
+        "id": 21,
+        "branch_id": 1,
+        "opened_by_user_id": 11,
+        "opened_at": "2026-06-12T13:20:56+02:00",
+        "closed_at": "2026-06-12T13:27:41+02:00",
+        "opening_amount": 50,
+        "closing_amount": 50,
+        "expected_closing_amount": null,
+        "variance": null,
+        "variance_reason": null,
+        "status": "closed"
+      }
+    }
+  },
+  {
+    "method": "POST",
+    "status": 200,
+    "url": "/api/admin/pos/cash-drawer/sessions/21/reconcile",
+    "body": {
+      "status": true,
+      "data": {
+        "id": 21,
+        "branch_id": 1,
+        "opened_by_user_id": 11,
+        "opened_at": "2026-06-12T13:20:56+02:00",
+        "closed_at": "2026-06-12T13:27:41+02:00",
+        "opening_amount": 50,
+        "closing_amount": 50,
+        "expected_closing_amount": 50,
+        "variance": 0,
+        "variance_reason": null,
+        "status": "reconciled",
+        "expected": 50
+      }
+    }
+  },
+  {
+    "method": "POST",
+    "status": 201,
+    "url": "/api/admin/pos/cash-drawer/sessions/open",
+    "body": {
+      "status": true,
+      "data": {
+        "id": 22,
+        "branch_id": 1,
+        "opened_by_user_id": 11,
+        "opened_at": "2026-06-12T13:28:16+02:00",
+        "closed_at": null,
+        "opening_amount": 50,
+        "closing_amount": null,
+        "expected_closing_amount": null,
+        "variance": null,
+        "variance_reason": null,
+        "status": "open"
+      }
+    }
+  },
+  {
+    "method": "POST",
+    "status": 200,
+    "url": "/api/admin/pos/counter-collect/4334/confirm",
+    "body": {
+      "data": {
+        "id": 4334,
+        "order_serial_no": "1006264334",
+        "queue_number": "A0015",
+        "token": null,
+        "receipt_print_count": 0,
+        "parent_order_id": null,
+        "parent_order_serial_no": null,
+        "subtotal": 6.9,
+        "discount": 0,
+        "total_tax": 0.63,
+        "total": 6.9,
+        "delivery_charge": 0,
+        "subtotal_currency_price": "6,90 €",
+        "subtotal_without_tax_currency_price": "6,27 €",
+        "discount_currency_price": "0,00 €",
+        "delivery_charge_currency_price": "0,00 €",
+        "total_currency_price": "6,90 €",
+        "total_tax_currency_price": "0,63 €",
+        "order_type": 10,
+        "created_at": "2026-06-10T01:51:28+02:00",
+        "order_datetime": "01:51, 10-06-2026",
+        "order_date": "10-06-2026",
+        "order_time": "01:51",
+        "delivery_date": "10-06-2026",
+        "delivery_time": "",
+        "payment_method": 1,
+        "payment_status": 5,
+        "payment_pending_counter": false,
+        "cash_movement_skipped": false,
+        "cash_movement_skipped_message": null,
+        "is_advance_order": 10,
+        "preparation_time": 30,
+        "status": 13,
+        "status_name": "Livrée",
+        "reason": null,
+        "user": {
+          "id": 1,
+          "name": "Admin Le Cayenne",
+          "first_name": "Admin",
+          "last_name": "Le Cayenne",
+          "phone": "0600000000",
+          "email": "admin@lecayenne.fr",
+          "username": "admin",
+          "balance": "2.00",
+          "currency_balance": "2,00 €",
+          "image": "http://127.0.0.1:8768/images/default/profile.png",
+          "role_id": 1,
+          "country_code": "+33",
+          "create_date": "28-05-2026",
+          "update_date": "07-06-2026"
+        },
+        "order_address": null,
+        "branch": {
+          "id": 1,
+          "name": "Le Cayenne (principal)",
+          "email": "contact@lecayenne.fr",
+          "phone": "+33600000000",
+          "latitude": "50.4215667",
+          "longitude": "2.9549060",
+          "city": "Hénin-Beaumont",
+          "state": "Hauts-de-France",
+          "zip_code": "62110",
+          "address": "437 Rue Élie Gruyelle, 62110 Hénin-Beaumont",
+          "status": 5,
+          "zone": "\"[{\\\"lat\\\":48.86,\\\"lng\\\":2.33},{\\\"lat\\\":48.87,\\\"lng\\\":2.36},{\\\"lat\\\":48.85,\\\"lng\\\":2.37},{\\\"lat\\\":48.84,\\\"lng\\\":2.34}]\""
+        },
+        "delivery_boy": null,
+        "coupon": null,
+        "transaction": {
+          "id": 756,
+          "order_id": 4334,
+          "order_serial_no": "1006264334",
+          "transaction_no": "COUNTER-4334-20260612132827",
+          "amount": "6.90",
+          "payment_method": "COUNTER_CASH",
+          "amount_display": "6,90 €",
+          "payment_method_label": "Espèces",
+          "type": "payment",
+          "sign": "+",
+          "date": "13:28, 12-06-2026"
+        },
+        "order_items": [
+          {
+            "id": 4076,
+            "order_id": 4334,
+            "branch_id": 1,
+            "item_id": 38,
+            "item_name": "Chicken Burger",
+            "item_image": "http://127.0.0.1:8768/images/menu/burger-cheese.png?v=1781098616",
+            "quantity": 1,
+            "discount": "0,00 €",
+            "price": "6,90 €",
+            "item_variations": [
+              {
+                "quantity": 1,
+                "line_total": 0,
+                "unit_price": 0,
+                "attribute_id": 1,
+                "variation_id": 163,
+                "attribute_name": "Viande 1",
+                "variation_name": "Poulet mariné"
+              },
+              {
+                "quantity": 1,
+                "line_total": 0,
+                "unit_price": 0,
+                "attribute_id": 5,
+                "variation_id": 167,
+                "attribute_name": "Sauce (1ère Gratuite)",
+                "variation_name": "Mayonnaise"
+              }
+            ],
+            "item_extras": [
+              {
+                "extra_id": 151,
+                "quantity": 1,
+                "extra_name": "Salade",
+                "line_total": 0,
+                "unit_price": 0
+              },
+              {
+                "extra_id": 152,
+                "quantity": 1,
+                "extra_name": "Tomate",
+                "line_total": 0,
+                "unit_price": 0
+              },
+              {
+                "extra_id": 153,
+                "quantity": 1,
+                "extra_name": "Oignon",
+                "line_total": 0,
+                "unit_price": 0
+              },
+              {
+                "extra_id": 154,
+                "quantity": 1,
+                "extra_name": "Cornichon",
+                "line_total": 0,
+                "unit_price": 0
+              }
+            ],
+            "item_addons": [],
+            "composition_snapshot": {
+              "lines": [
+                {
+                  "quantity": 1,
+                  "line_total": 0,
+                  "unit_price": 0,
+                  "attribute_id": 1,
+                  "variation_id": 163,
+                  "attribute_name": "Viande 1",
+                  "variation_name": "Poulet mariné"
+                },
+                {
+                  "quantity": 1,
+                  "line_total": 0,
+                  "unit_price": 0,
+                  "attribute_id": 5,
+                  "variation_id": 167,
+                  "attribute_name": "Sauce (1ère Gratuite)",
+                  "variation_name": "Mayonnaise"
+                }
+              ],
+              "addons": [],
+              "extras": [
+                {
+                  "extra_id": 151,
+                  "quantity": 1,
+                  "extra_name": "Salade",
+                  "line_total": 0,
+                  "unit_price": 0
+                },
+                {
+                  "extra_id": 152,
+                  "quantity": 1,
+                  "extra_name": "Tomate",
+                  "line_total": 0,
+                  "unit_price": 0
+                },
+                {
+                  "extra_id": 153,
+                  "quantity": 1,
+                  "extra_name": "Oignon",
+                  "line_total": 0,
+                  "unit_price": 0
+                },
+                {
+                  "extra_id": 154,
+                  "quantity": 1,
+                  "extra_name": "Cornichon",
+                  "line_total": 0,
+                  "unit_price": 0
+                }
+              ],
+              "captured_at": "2026-06-10T01:51:28+02:00",
+              "schema_version": 1
+            },
+            "allergens_snapshot": [],
+            "item_variation_currency_total": "0,00 €",
+            "item_extra_currency_total": "0,00 €",
+            "total_price": 6.9,
+            "total_convert_price": 6.9,
+            "total_currency_price": "6,90 €",
+            "instruction": "Viandes : Poulet mariné ×1",
+            "kds_station": "none",
+            "tax_type": "%",
+            "tax_rate": "10.000000",
+            "tax_currency_rate": "10.00",
+            "tax_name": "VAT",
+            "tax_currency_amount": "0,63 €",
+            "total_without_tax_currency_price": "6,27 €"
+          }
+        ],
+        "table_name": null,
+        "pos_payment_method": 1,
+        "pos_payment_note": "Encaissement borne au comptoir (SSOT modal)",
+        "source": 5,
+        "source_surface": "kiosk",
+        "pos_received_amount": "6.900000",
+        "pos_received_currency_amount": "6,90 €",
+        "cash_back_amount": 0,
+        "cash_back_currency_amount": "0,00 €",
+        "tax_lines": [
+          {
+            "tax_name": "VAT",
+            "tax_rate": "10",
+            "tax_type": 10,
+            "base_ht": 6.27,
+            "base_ht_currency": "6,27 €",
+            "tax": 0.63,
+            "tax_currency": "0,63 €"
+          }
+        ],
+        "fiscal_sequence_no": 2173,
+        "audit_chain_fingerprint": "7fa2ba2b5ccf",
+        "pos_register_id": null,
+        "pos_siret": "10417050100019",
+        "pos_vat_intra": "FR19104170501",
+        "pos_legal_footer": "TVA intracommunautaire - Merci de votre visite",
+        "operator_name": "BM T2 Admin",
+        "payments_breakdown": [
+          {
+            "method": 1,
+            "amount": 6.9,
+            "currency_amount": "6,90 €",
+            "change_amount": 0,
+            "reference": null
+          }
+        ]
+      }
+    }
+  },
+  {
+    "method": "POST",
+    "status": 200,
+    "url": "/api/admin/pos/counter-collect/4335/confirm",
+    "body": {
+      "data": {
+        "id": 4335,
+        "order_serial_no": "1006264335",
+        "queue_number": "A0016",
+        "token": null,
+        "receipt_print_count": 0,
+        "parent_order_id": null,
+        "parent_order_serial_no": null,
+        "subtotal": 8.9,
+        "discount": 0,
+        "total_tax": 0.81,
+        "total": 8.9,
+        "delivery_charge": 0,
+        "subtotal_currency_price": "8,90 €",
+        "subtotal_without_tax_currency_price": "8,09 €",
+        "discount_currency_price": "0,00 €",
+        "delivery_charge_currency_price": "0,00 €",
+        "total_currency_price": "8,90 €",
+        "total_tax_currency_price": "0,81 €",
+        "order_type": 10,
+        "created_at": "2026-06-10T01:52:40+02:00",
+        "order_datetime": "01:52, 10-06-2026",
+        "order_date": "10-06-2026",
+        "order_time": "01:52",
+        "delivery_date": "10-06-2026",
+        "delivery_time": "",
+        "payment_method": 1,
+        "payment_status": 5,
+        "payment_pending_counter": false,
+        "cash_movement_skipped": false,
+        "cash_movement_skipped_message": null,
+        "is_advance_order": 10,
+        "preparation_time": 30,
+        "status": 13,
+        "status_name": "Livrée",
+        "reason": null,
+        "user": {
+          "id": 1,
+          "name": "Admin Le Cayenne",
+          "first_name": "Admin",
+          "last_name": "Le Cayenne",
+          "phone": "0600000000",
+          "email": "admin@lecayenne.fr",
+          "username": "admin",
+          "balance": "2.00",
+          "currency_balance": "2,00 €",
+          "image": "http://127.0.0.1:8768/images/default/profile.png",
+          "role_id": 1,
+          "country_code": "+33",
+          "create_date": "28-05-2026",
+          "update_date": "07-06-2026"
+        },
+        "order_address": null,
+        "branch": {
+          "id": 1,
+          "name": "Le Cayenne (principal)",
+          "email": "contact@lecayenne.fr",
+          "phone": "+33600000000",
+          "latitude": "50.4215667",
+          "longitude": "2.9549060",
+          "city": "Hénin-Beaumont",
+          "state": "Hauts-de-France",
+          "zip_code": "62110",
+          "address": "437 Rue Élie Gruyelle, 62110 Hénin-Beaumont",
+          "status": 5,
+          "zone": "\"[{\\\"lat\\\":48.86,\\\"lng\\\":2.33},{\\\"lat\\\":48.87,\\\"lng\\\":2.36},{\\\"lat\\\":48.85,\\\"lng\\\":2.37},{\\\"lat\\\":48.84,\\\"lng\\\":2.34}]\""
+        },
+        "delivery_boy": null,
+        "coupon": null,
+        "transaction": {
+          "id": 757,
+          "order_id": 4335,
+          "order_serial_no": "1006264335",
+          "transaction_no": "COUNTER-4335-20260612132839",
+          "amount": "8.90",
+          "payment_method": "COUNTER_CASH",
+          "amount_display": "8,90 €",
+          "payment_method_label": "Espèces",
+          "type": "payment",
+          "sign": "+",
+          "date": "13:28, 12-06-2026"
+        },
+        "order_items": [
+          {
+            "id": 4077,
+            "order_id": 4335,
+            "branch_id": 1,
+            "item_id": 41,
+            "item_name": "Bowl Frites Poulet mariné",
+            "item_image": "http://127.0.0.1:8768/images/menu/bol-frites.png?v=1781098616",
+            "quantity": 1,
+            "discount": "0,00 €",
+            "price": "8,90 €",
+            "item_variations": [
+              {
+                "quantity": 1,
+                "line_total": 0,
+                "unit_price": 0,
+                "attribute_id": 8,
+                "variation_id": 202,
+                "attribute_name": "Sauce bol",
+                "variation_name": "Sauce fromagère maison"
+              }
+            ],
+            "item_extras": [],
+            "item_addons": [],
+            "composition_snapshot": {
+              "lines": [
+                {
+                  "quantity": 1,
+                  "line_total": 0,
+                  "unit_price": 0,
+                  "attribute_id": 8,
+                  "variation_id": 202,
+                  "attribute_name": "Sauce bol",
+                  "variation_name": "Sauce fromagère maison"
+                }
+              ],
+              "addons": [],
+              "extras": [],
+              "captured_at": "2026-06-10T01:52:40+02:00",
+              "schema_version": 1
+            },
+            "allergens_snapshot": [],
+            "item_variation_currency_total": "0,00 €",
+            "item_extra_currency_total": "0,00 €",
+            "total_price": 8.9,
+            "total_convert_price": 8.9,
+            "total_currency_price": "8,90 €",
+            "instruction": "",
+            "kds_station": "none",
+            "tax_type": "%",
+            "tax_rate": "10.000000",
+            "tax_currency_rate": "10.00",
+            "tax_name": "VAT",
+            "tax_currency_amount": "0,81 €",
+            "total_without_tax_currency_price": "8,09 €"
+          }
+        ],
+        "table_name": null,
+        "pos_payment_method": 1,
+        "pos_payment_note": "Encaissement borne au comptoir (SSOT modal)",
+        "source": 5,
+        "source_surface": "kiosk",
+        "pos_received_amount": "10.000000",
+        "pos_received_currency_amount": "10,00 €",
+        "cash_back_amount": 1.0999999999999996,
+        "cash_back_currency_amount": "1,10 €",
+        "tax_lines": [
+          {
+            "tax_name": "VAT",
+            "tax_rate": "10",
+            "tax_type": 10,
+            "base_ht": 8.09,
+            "base_ht_currency": "8,09 €",
+            "tax": 0.81,
+            "tax_currency": "0,81 €"
+          }
+        ],
+        "fiscal_sequence_no": 2174,
+        "audit_chain_fingerprint": "a0789841be9b",
+        "pos_register_id": null,
+        "pos_siret": "10417050100019",
+        "pos_vat_intra": "FR19104170501",
+        "pos_legal_footer": "TVA intracommunautaire - Merci de votre visite",
+        "operator_name": "BM T2 Admin",
+        "payments_breakdown": [
+          {
+            "method": 1,
+            "amount": 8.9,
+            "currency_amount": "8,90 €",
+            "change_amount": 1.1,
+            "reference": null
+          }
+        ]
+      }
+    }
+  }
+]

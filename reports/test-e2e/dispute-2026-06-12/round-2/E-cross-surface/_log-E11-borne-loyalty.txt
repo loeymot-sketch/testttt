@@ -1,0 +1,14 @@
+[11:19:59] → /kiosk/loyalty
+[11:20:00] POST 200 tend/loyalty/check
+[11:20:03] LOYALTY balance: "165\npoints disponibles\n= 1,65 € de réduction sur cette commande"
+[11:20:03] option redeem: "Utiliser mes points\n-1,65 € sur cette commande"
+[11:20:06] après applyLoyalty → /kiosk/loyalty
+[11:20:08] CART FINAL: {"names":["Tacos","Coca-Cola 33cl"],"lineTotals":["8,50 €","1,50 €"],"subtotal":"10,00 €","promo":"-5,00 €","loyalty":"-1,65 €","total":"3,35 €"}
+[11:20:08] POST 200 tend/order/quote
+[11:20:11] → /kiosk/payment
+[11:20:11] PAYMENT: {"total":"TOTAL À RÉGLER : 3,35 €","body":"PAIEMENT À LA CAISSE Veuillez payer à la caisse TOTAL À RÉGLER : 3,35 € Confirmer ma commande Retour au panier"}
+[11:20:11] POST 200 tend/order/quote
+[11:20:11] POST 201 tend/order
+[11:20:15] CASH-INSTRUCTION: {"url":"/kiosk/cash-instruction?number=A0009&total=5&timeout=45","number":"#A0009","amount":"5,00 €"}
+[11:20:15] ORDER FINAL: id=4520 total=5 status=201
+[11:20:15] REQUEST BODY fields: {"loyalty_code":"VICT1234","loyalty_redeem_discount":1.65,"kiosk_promo_code":"BORNEAUDIT5","discount":5}

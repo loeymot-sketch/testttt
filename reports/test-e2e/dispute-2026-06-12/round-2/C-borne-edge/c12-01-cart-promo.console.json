@@ -1,0 +1,152 @@
+[
+ {
+  "ts": 1781263982214,
+  "level": "error",
+  "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+ },
+ {
+  "ts": 1781263989441,
+  "level": "warning",
+  "text": "[kiosk-wizard.composer] step skipped (no kind match + no choices) {step_key: viande_2, label: Viande 2, source_type: item_attribute}"
+ },
+ {
+  "ts": 1781263989442,
+  "level": "warning",
+  "text": "[kiosk-wizard.composer] step skipped (no kind match + no choices) {step_key: viande_2, label: Viande 2, source_type: item_attribute}"
+ },
+ {
+  "ts": 1781263989443,
+  "level": "warning",
+  "text": "[kiosk-wizard.composer] step skipped (no kind match + no choices) {step_key: viande_2, label: Viande 2, source_type: item_attribute}"
+ },
+ {
+  "ts": 1781263989446,
+  "level": "warning",
+  "text": "[kiosk-wizard.composer] step skipped (no kind match + no choices) {step_key: viande_2, label: Viande 2, source_type: item_attribute}"
+ },
+ {
+  "ts": 1781263989446,
+  "level": "warning",
+  "text": "[kiosk-wizard.composer] step skipped (no kind match + no choices) {step_key: viande_2, label: Viande 2, source_type: item_attribute}"
+ },
+ {
+  "ts": 1781263989447,
+  "level": "warning",
+  "text": "[kiosk-wizard.composer] step skipped (no kind match + no choices) {step_key: viande_2, label: Viande 2, source_type: item_attribute}"
+ },
+ {
+  "ts": 1781263989447,
+  "level": "warning",
+  "text": "[kiosk-wizard.composer] step skipped (no kind match + no choices) {step_key: viande_2, label: Viande 2, source_type: item_attribute}"
+ },
+ {
+  "ts": 1781263990588,
+  "level": "warning",
+  "text": "[kiosk-wizard.composer] step skipped (no kind match + no choices) {step_key: viande_2, label: Viande 2, source_type: item_attribute}"
+ },
+ {
+  "ts": 1781263990588,
+  "level": "warning",
+  "text": "[kiosk-wizard.composer] step skipped (no kind match + no choices) {step_key: viande_2, label: Viande 2, source_type: item_attribute}"
+ },
+ {
+  "ts": 1781263990588,
+  "level": "warning",
+  "text": "[kiosk-wizard.composer] step skipped (no kind match + no choices) {step_key: viande_2, label: Viande 2, source_type: item_attribute}"
+ },
+ {
+  "ts": 1781263990588,
+  "level": "warning",
+  "text": "[kiosk-wizard.composer] step skipped (no kind match + no choices) {step_key: viande_2, label: Viande 2, source_type: item_attribute}"
+ },
+ {
+  "ts": 1781263991113,
+  "level": "warning",
+  "text": "[kiosk-wizard.composer] step skipped (no kind match + no choices) {step_key: viande_2, label: Viande 2, source_type: item_attribute}"
+ },
+ {
+  "ts": 1781263991922,
+  "level": "warning",
+  "text": "[kiosk-wizard.composer] step skipped (no kind match + no choices) {step_key: viande_2, label: Viande 2, source_type: item_attribute}"
+ },
+ {
+  "ts": 1781263991922,
+  "level": "warning",
+  "text": "[kiosk-wizard.composer] step skipped (no kind match + no choices) {step_key: viande_2, label: Viande 2, source_type: item_attribute}"
+ },
+ {
+  "ts": 1781263991922,
+  "level": "warning",
+  "text": "[kiosk-wizard.composer] step skipped (no kind match + no choices) {step_key: viande_2, label: Viande 2, source_type: item_attribute}"
+ },
+ {
+  "ts": 1781263991922,
+  "level": "warning",
+  "text": "[kiosk-wizard.composer] step skipped (no kind match + no choices) {step_key: viande_2, label: Viande 2, source_type: item_attribute}"
+ },
+ {
+  "ts": 1781263992446,
+  "level": "warning",
+  "text": "[kiosk-wizard.composer] step skipped (no kind match + no choices) {step_key: viande_2, label: Viande 2, source_type: item_attribute}"
+ },
+ {
+  "ts": 1781263993257,
+  "level": "warning",
+  "text": "[kiosk-wizard.composer] step skipped (no kind match + no choices) {step_key: viande_2, label: Viande 2, source_type: item_attribute}"
+ },
+ {
+  "ts": 1781263993258,
+  "level": "warning",
+  "text": "[kiosk-wizard.composer] step skipped (no kind match + no choices) {step_key: viande_2, label: Viande 2, source_type: item_attribute}"
+ },
+ {
+  "ts": 1781263993260,
+  "level": "warning",
+  "text": "[kiosk-wizard.composer] step skipped (no kind match + no choices) {step_key: viande_2, label: Viande 2, source_type: item_attribute}"
+ },
+ {
+  "ts": 1781263993773,
+  "level": "warning",
+  "text": "[kiosk-wizard.composer] step skipped (no kind match + no choices) {step_key: viande_2, label: Viande 2, source_type: item_attribute}"
+ },
+ {
+  "ts": 1781263993773,
+  "level": "warning",
+  "text": "[kiosk-wizard.composer] step skipped (no kind match + no choices) {step_key: viande_2, label: Viande 2, source_type: item_attribute}"
+ },
+ {
+  "ts": 1781263993774,
+  "level": "warning",
+  "text": "[kiosk-wizard.composer] step skipped (no kind match + no choices) {step_key: viande_2, label: Viande 2, source_type: item_attribute}"
+ },
+ {
+  "ts": 1781263994281,
+  "level": "warning",
+  "text": "[kiosk-wizard.composer] step skipped (no kind match + no choices) {step_key: viande_2, label: Viande 2, source_type: item_attribute}"
+ },
+ {
+  "ts": 1781263994281,
+  "level": "warning",
+  "text": "[kiosk-wizard.composer] step skipped (no kind match + no choices) {step_key: viande_2, label: Viande 2, source_type: item_attribute}"
+ },
+ {
+  "ts": 1781263994282,
+  "level": "warning",
+  "text": "[kiosk-wizard.composer] step skipped (no kind match + no choices) {step_key: viande_2, label: Viande 2, source_type: item_attribute}"
+ },
+ {
+  "ts": 1781263994805,
+  "level": "warning",
+  "text": "[kiosk-wizard.composer] step skipped (no kind match + no choices) {step_key: viande_2, label: Viande 2, source_type: item_attribute}"
+ },
+ {
+  "ts": 1781263996442,
+  "level": "warning",
+  "text": "[kiosk-wizard.composer] step skipped (no kind match + no choices) {step_key: viande_2, label: Viande 2, source_type: item_attribute}"
+ },
+ {
+  "ts": 1781263996443,
+  "level": "warning",
+  "text": "[kiosk-wizard.composer] step skipped (no kind match + no choices) {step_key: viande_2, label: Viande 2, source_type: item_attribute}"
+ }
+]

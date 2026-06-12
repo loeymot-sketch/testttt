@@ -1,0 +1,19 @@
+[11:25:56] AVANT: user44 points=165
+[11:26:13] add Galette(23) essai 1: {"ok":true,"before":0,"after":1}
+[11:26:23] fidélité essai 1 échec — attente 12s
+[11:26:39] fidélité essai 2 échec — attente 12s
+[11:27:25] fidélité essai 3 échec — attente 12s
+[11:28:11] fidélité essai 4 échec — attente 12s
+[11:29:39] AVANT: user44 points=165
+[11:29:56] add Galette(23) essai 1: {"ok":true,"before":0,"after":1}
+[11:30:06] balance (essai 1): 165 points disponibles = 1,65 € de réduction sur cette commande
+[11:30:08] confirmé: Réduction appliquée ! |  | -1,65 € |  | Réduction déduite de votre total |  | Continuer vers le paiement
+[11:30:08] store loyalty: {"loyaltyDiscount":1.65,"loyaltyCustomer":null}
+[11:30:11] PAYMENT: "TOTAL À RÉGLER : | 4,85 €"
+[11:30:16] CASH num="#A0016" amount="6,50 €"
+[11:30:16] ORDERS API: [{"ts":1781263812742,"status":201,"id":4529,"queue":"A0016","total":6.5,"discount":0,"subtotal":6.5}]
+[11:30:16] DB ORDER: id	queue_number	subtotal	discount	total | 4529	A0016	6.500000	0.000000	6.500000
+[11:30:16] DB user44 APRÈS: 165
+[11:30:16] DB ledger TOP2: id	type	points	balance_after	order_id || 11	redeem	-100	165	4511 || 10	earn	15	265	4489
+[11:30:16] trace écrite: 4 échanges API
+[11:30:16] C11c done

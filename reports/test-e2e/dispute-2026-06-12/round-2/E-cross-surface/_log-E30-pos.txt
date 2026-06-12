@@ -1,0 +1,43 @@
+[11:30:07] === tentative POS #1 ===
+[11:30:17] CART: ["Tiramisu ✎ 3,80 € 🗑 +","Eau Plate 50cl ✎ 1,00 € 🗑 +"] total="Total4,80 €"
+[11:30:18] PAYMENT modal total="4,80 €"
+[11:30:19] reçu=5,00 rendu="0,20 €"
+[11:30:20] confirm POST → 201
+[11:30:20] ORDER-POST 201 id=4530 serial=1206264530 total=4.8
+[11:30:23] done=true
+[11:30:23] RECEIPT POS (34 lignes):
+  SIRET: 10417050100019
+  TVA intra: FR19104170501
+  Opérateur: Admin Le Cayenne
+  Le Cayenne
+  437 Rue Élie Gruyelle, 62110 Hénin-Beaumont
+  Tel: +33600000000
+  Commande #1206264530
+  12-06-2026 13:30
+  Qté
+  Article Description
+  Prix HT
+  1
+  Tiramisu
+  3,45 €
+  1
+  Eau Plate 50cl
+  0,91 €
+  SOUS-TOTAL HT: 4,36 €
+  TOTAL TAXES: 0,44 €
+  VAT (10%)· Base HT 4,36 € 0,44 €
+  REMISE: 0,00 €
+  TOTAL: 4,80 €
+  Type de commande: À emporter
+  Type de paiement: Espèces
+  Espèces: 5,00 €
+  Rendu : 0,20 €
+  N°A0017
+  N° ticket NF525: 2176
+  Empreinte audit: 45ff443952f0
+  Mentions légales: TVA intracommunautaire - Merci de votre visite
+  Merci
+  À Très Bientôt !
+  Propulsé par
+  Le Cayenne
+[11:30:23] ORDER POS FINAL: {"id":4530,"serial":"1206264530","queue":"A0017","subtotal":4.8,"discount":0,"total_tax":0.44,"total":4.8}

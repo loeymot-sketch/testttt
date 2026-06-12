@@ -1,0 +1,44 @@
+[
+ {
+  "ts": 1781262865193,
+  "status": 401,
+  "method": "GET",
+  "url": "http://127.0.0.1:8768/api/frontend/menu"
+ },
+ {
+  "ts": 1781262865310,
+  "status": 401,
+  "method": "GET",
+  "url": "http://127.0.0.1:8768/api/login"
+ },
+ {
+  "ts": 1781262866277,
+  "status": 401,
+  "method": "GET",
+  "url": "http://127.0.0.1:8768/api/frontend/menu"
+ },
+ {
+  "ts": 1781262866380,
+  "status": 401,
+  "method": "GET",
+  "url": "http://127.0.0.1:8768/api/login"
+ },
+ {
+  "ts": 1781262873756,
+  "status": 401,
+  "method": "POST",
+  "url": "http://127.0.0.1:8768/api/frontend/pricing/preview"
+ },
+ {
+  "ts": 1781262875024,
+  "status": 401,
+  "method": "POST",
+  "url": "http://127.0.0.1:8768/api/frontend/pricing/preview"
+ },
+ {
+  "ts": 1781262877411,
+  "status": 401,
+  "method": "POST",
+  "url": "http://127.0.0.1:8768/api/frontend/pricing/preview"
+ }
+]

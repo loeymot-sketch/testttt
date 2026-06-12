@@ -1,0 +1,7 @@
+payment atteint: /kiosk/payment cart={"items":[{"name":"Glace","qty":1}],"promoCode":null,"promoDiscount":null,"loyaltyDiscount":0,"idemKey":null}
+OFFLINE=true — clic Confirmer ma commande
+après confirm offline → /kiosk/error/network
+écran erreur rendu: true · texte: "1 | Mon panier | 3,80 € | › | 📡 | Connexion perdue | Nous n'arrivons plus à joindre le service de commande. | Patientez quelques instants ou appelez un membre de l'équipe. | RÉESSAYER | PRÉVENIR UN MEMBRE DE L'ÉQUIPE | ✕ | Connexion perdue. Votre commande n’a pas été envoyée. | ×"
+état FINAL après Réessayer (+9 s): /kiosk/error/network
+cart après reload: {"items":[{"name":"Glace","qty":1}],"promoCode":null,"promoDiscount":null,"loyaltyDiscount":0,"idemKey":null}
+TEXTE: "1 | Mon panier | 3,80 € | › | 📡 | Connexion perdue | Nous n'arrivons plus à joindre le service de commande. | Patientez quelques instants ou appelez un membre de l'équipe. | RÉESSAYER | PRÉVENIR UN MEMBRE DE L'ÉQUIPE"

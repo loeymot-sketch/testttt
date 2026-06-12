@@ -1,0 +1,4 @@
+[11:29:31] KDS feed calls: 1
+[11:29:31] dernier: status=200 count=14 meta={"overflow":false,"limit":50}
+[11:29:31] [{"id":4527,"queue":"A0014","status":4,"pay":15},{"id":4526,"queue":"A0013","status":7,"pay":5},{"id":4525,"queue":"A0012","status":7,"pay":5},{"id":4524,"queue":"A0011","status":4,"pay":15},{"id":4523,"queue":"A0010","status":7,"pay":5},{"id":4520,"queue":"A0009","status":7,"pay":5},{"id":4519,"queue":"A0008","status":4,"pay":15},{"id":4518,"queue":"A0007","status":4,"pay":15},{"id":4517,"queue":"A0006","status":4,"pay":15},{"id":4516,"queue":"A0005","status":4,"pay":15},{"id":4515,"queue":"A0004","status":4,"pay":15},{"id":4514,"queue":"A0003","status":7,"pay":5},{"id":4513,"queue":"A0002","status":4,"pay":15},{"id":4512,"queue":"A0001","status":7,"pay":5}]
+[11:29:31] ORDER 4520 dans le feed: {"id":4520,"queue":"A0009","status":7,"pay":5}

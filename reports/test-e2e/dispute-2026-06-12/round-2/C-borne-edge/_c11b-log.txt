@@ -1,0 +1,19 @@
+[11:21:18] AVANT: user44 points=165
+[11:21:57] add Galette(23): {"ok":false,"reason":"add-btn-invisible"}
+[11:22:04] T0 cart: {"subtotal":null,"loyalty":null,"promo":null,"total":null}
+[11:22:54] AVANT: user44 points=165
+[11:23:12] add Galette(23) essai 1: {"ok":true,"before":0,"after":1}
+[11:23:16] T0 cart: {"subtotal":"6,50 €","loyalty":null,"promo":null,"total":"6,50 €"}
+[11:23:24] fidélité essai 1 échec — attente 15s
+[11:23:43] fidélité essai 2 échec — attente 15s
+[11:24:02] balance (essai 3): 165 points disponibles = 1,65 € de réduction sur cette commande
+[11:24:05] écran confirmé: Réduction appliquée ! |  | -1,65 € |  | Réduction déduite de votre total |  | Continuer vers le paiement
+[11:24:07] après continue → /kiosk/payment
+[11:24:07] T2 PAYMENT: "TOTAL À RÉGLER : | 4,85 €" url=/kiosk/payment
+[11:24:11] T3 CASH num="#A0011" amount="6,50 €"
+[11:24:11] ORDERS API: [{"ts":1781263448588,"status":401},{"ts":1781263449027,"status":201,"id":4524,"queue":"A0011","total":6.5,"discount":0,"subtotal":6.5}]
+[11:24:11] DB ORDER: id	queue_number	subtotal	discount	total	status
+4524	A0011	6.500000	0.000000	6.500000	4
+[11:24:12] DB user44 APRÈS: 165
+[11:24:12] DB ledger TOP3: id	type	points	balance_after	order_id	source_surface || 11	redeem	-100	165	4511	pos || 10	earn	15	265	4489	kiosk
+[11:24:12] C11b done

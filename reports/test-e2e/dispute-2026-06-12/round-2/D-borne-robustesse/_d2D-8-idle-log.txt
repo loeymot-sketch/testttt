@@ -1,0 +1,5 @@
+T0 panier abandonné: {"items":[{"name":"Glace","qty":1}],"promoCode":null,"promoDiscount":null,"loyaltyDiscount":0,"idemKey":null} url=/kiosk/cart
+T+155s: overlay visible=true url=/kiosk/cart txt~="VOTRE PANIER | 1 article | Vider le panier | 🥡 | À emporter | Glace | 3,80 € par unité | 1 | 3,80 € | Sous-total | 3,80 € | Total | 3,80 € | Code promo | Appliquer | ★ | Avez-vous une carte fidélité ? | › | Valider ma commande | 3,80 € | + Ajouter des articles | Toujours là ? | Votre comma"
+T+195s: url=/kiosk/idle cart=0
+T+210s FINAL: url=/kiosk/idle cart={"items":[],"promoCode":null,"promoDiscount":null,"loyaltyDiscount":0,"idemKey":null}
+réutilisable: url=/kiosk/categories?cat=1 cart=0

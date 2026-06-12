@@ -1,0 +1,13 @@
+[11:14:22] AVANT: kiosk_promos#1 uses_count=0 | max order=4514
+[11:14:40] add Tacos(26): {"ok":true,"before":0,"after":1}
+[11:14:44] T0 cart: {"subtotal":"11,50 €","loyalty":null,"promo":null,"total":"11,50 €"}
+[11:14:49] promo OK (essai 1): {"subtotal":"11,50 €","loyalty":null,"promo":"-5,00 €","total":"6,50 €"}
+[11:14:50] T1 cart avec promo: {"subtotal":"11,50 €","loyalty":null,"promo":"-5,00 €","total":"6,50 €"}
+[11:14:53] payment url=/kiosk/payment
+[11:14:53] T2 PAYMENT total="TOTAL À RÉGLER : | 6,50 €" copy=["PAIEMENT À LA CAISSE","Veuillez payer à la caisse"]
+[11:14:58] T3 CASH num="#A0004" amount="6,50 €" copy(C-ADV-06)=["Rendez-vous en caisse","Réglez à la caisse — espèces, carte ou ticket restaurant."]
+[11:14:58] ORDERS API: [{"ts":1781262893745,"status":201,"id":4515,"queue":"A0004","total":6.5,"discount":5,"subtotal":11.5}]
+[11:14:58] DB ORDER: id	queue_number	subtotal	discount	total	status
+4515	A0004	11.500000	5.000000	6.500000	4
+[11:14:58] DB uses_count APRÈS: 1
+[11:16:42] C10 done

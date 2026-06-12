@@ -1,0 +1,24 @@
+[11:34:01] login(bm.t2admin@lecayenne.fr) → /admin/dashboard
+[11:34:07] 4531 avant: paiement=["Payé","Espèces","Payé","Payé","Payé"]
+[11:34:09] modal refund 4531: total="1,50 €" méthode="Espèces" warning="⚠️ Cette action génère une commande miroir NF525 et un ticket de remboursement. L'opération est irréversible."
+[11:34:09] API POST 200 /api/admin/pos-order/4531/refund-with-counter-entry :: {"success":true,"mode":"pre_z","data":{"id":4531,"order_serial_no":"1206264531","queue_number":"A0018","token":"1","receipt_print_count":0,"parent_order_id":null,"parent_order_serial_no":null,"subtotal":1.5,"discount":0,"total_tax":0.14,"total":1.5,"delivery_charge":0,"subtotal_currency_price":"1,50
+[11:34:19] 4334 avant: paiement=["Payé","Espèces","Payé","Payé","Payé"]
+[11:34:20] modal refund 4334: total="6,90 €" méthode="Espèces" warning="⚠️ Cette action génère une commande miroir NF525 et un ticket de remboursement. L'opération est irréversible."
+[11:34:21] API POST 200 /api/admin/pos-order/4334/refund-with-counter-entry :: {"success":true,"mode":"pre_z","data":{"id":4334,"order_serial_no":"1006264334","queue_number":"A0015","token":null,"receipt_print_count":0,"parent_order_id":null,"parent_order_serial_no":null,"subtotal":6.9,"discount":0,"total_tax":0.63,"total":6.9,"delivery_charge":0,"subtotal_currency_price":"6,9
+[11:34:31] transactions top 10:
+[11:34:31]   row1: TXN-oRfs9bDD6gmD13:34, 12-06-2026Espèces1006264334- 6,90 €
+[11:34:31]   row2: TXN-NFHlHjxEOLCK13:34, 12-06-2026Espèces1206264531- 1,50 €
+[11:34:31]   row3: TXN-mINjwpPQfOH513:33, 12-06-2026Espèces1206264516- 5,00 €
+[11:34:31]   row4: COUNTER-4516-2026061213330513:33, 12-06-2026Espèces1206264516+ 5,00 €
+[11:34:31]   row5: POS-4531-2026061213311113:31, 12-06-2026Espèces1206264531+ 1,50 €
+[11:34:31]   row6: POS-4530-2026061213301913:30, 12-06-2026Espèces1206264530+ 4,80 €
+[11:34:31]   row7: POS-4528-2026061213293813:29, 12-06-2026Split1206264528+ 4,50 €
+[11:34:31]   row8: COUNTER-4335-2026061213283913:28, 12-06-2026Espèces1006264335+ 8,90 €
+[11:34:31]   row9: COUNTER-4334-2026061213282713:28, 12-06-2026Espèces1006264334+ 6,90 €
+[11:34:31]   row10: POS-4526-2026061213254513:25, 12-06-2026Espèces1206264526+ 3,80 €
+[11:34:31] rows « Carte bancaire » fraîches éventuelles: []
+[11:34:31] console cumulés: 3
+[11:34:31]   WARNING /admin/pos-orders/show/4531 :: WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: WebSocket is closed before the connection is established.
+[11:34:31]   WARNING /admin/pos-orders/show/4334 :: WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: WebSocket is closed before the connection is established.
+[11:34:31]   WARNING /admin/transactions :: WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: WebSocket is closed before the connection is established.
+[11:34:31] net>=400: 0

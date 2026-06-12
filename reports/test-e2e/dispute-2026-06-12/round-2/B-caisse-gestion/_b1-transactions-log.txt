@@ -1,0 +1,11 @@
+[11:15:34] login(bm.t2admin@lecayenne.fr) → /admin/dashboard
+[11:15:38] GW GET 200 /api/admin/setting/payment-gateway?order_column=id&order_type=asc&status=5&excepts=1 bytes=75
+[11:15:42] url=/admin/transactions
+[11:15:42] rows visibles: 10
+[11:15:42] extrait page: Bonjour | BM T2 Admin | BM T2 Admin | bm.t2admin@lecayenne.fr | +33600000099 | 0,00 € | Modifier Le Profil | Changer Le Mot De Passe | Déconnexion | Tableau De Bord | POS | Ingrédients | Commandes Caisse | Historique | Encaissement | Vue Caisse Unifiée | Caisse Livreur | CAISSE ET COMMANDES | Écran Cuisine | Suivi Client | COMMUNICATIONS | Notifications Push | Messages | UTILISATEURS | Employés | Chefs | COMPTES | Transactions | RAPPORTS | Rapport Des Ventes | Tableau De Bord | Transactions | Transactions | 10 | 10 | 25 | 50 | 100 | 500 | 1000 | Filtrer | Exporter | Imprimer | XLS | ID DE TRAN
+[11:15:43] filtre "Mode de paiement" visible: false
+[11:15:43] gw /api/admin/setting/payment-gateway?order_column=id&order_type=asc&status=5&excep: 1 gateways, 0 avec options non vides 
+[11:15:43] SECRET LEAK: NON (aucun pattern sk_live/secret dans les bodies gateway)
+[11:15:43] console err/warn cumulés: 1
+[11:15:43]   CONSOLE: WARNING /admin/transactions :: WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: WebSocket is closed before the connection is established.
+[11:15:43] réseau >=400 cumulés: 0

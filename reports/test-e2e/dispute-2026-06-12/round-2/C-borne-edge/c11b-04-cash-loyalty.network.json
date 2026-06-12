@@ -1,0 +1,14 @@
+[
+ {
+  "ts": 1781263447760,
+  "status": 401,
+  "method": "POST",
+  "url": "http://127.0.0.1:8768/api/frontend/order/quote"
+ },
+ {
+  "ts": 1781263448587,
+  "status": 401,
+  "method": "POST",
+  "url": "http://127.0.0.1:8768/api/frontend/order"
+ }
+]

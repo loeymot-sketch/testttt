@@ -1,0 +1,22 @@
+[11:27:31] login(bm.t2admin@lecayenne.fr) → /admin/dashboard
+[11:27:39] dialog initial: active=true openForm=false
+[11:27:40] session résiduelle → clôture à l'attendu 50
+[11:27:41] API POST 200 /api/admin/pos/cash-drawer/sessions/21/close :: {"status":true,"data":{"id":21,"branch_id":1,"opened_by_user_id":11,"opened_at":"2026-06-12T13:20:56+02:00","closed_at":"2026-06-12T13:27:41+02:00","opening_amount":50,"closing_amount":50,"expected_closing_amount":null,"
+[11:27:41] API POST 200 /api/admin/pos/cash-drawer/sessions/21/reconcile :: {"status":true,"data":{"id":21,"branch_id":1,"opened_by_user_id":11,"opened_at":"2026-06-12T13:20:56+02:00","closed_at":"2026-06-12T13:27:41+02:00","opening_amount":50,"closing_amount":50,"expected_closing_amount":50,"va
+[11:28:15] fond saisi 50 → display="50,00 €"
+[11:28:16] API POST 201 /api/admin/pos/cash-drawer/sessions/open :: {"status":true,"data":{"id":22,"branch_id":1,"opened_by_user_id":11,"opened_at":"2026-06-12T13:28:16+02:00","closed_at":null,"opening_amount":50,"closing_amount":null,"expected_closing_amount":null,"variance":null,"varia
+[11:28:18] session ouverte: opening="50,00 €" expected="50,00 €"
+[11:28:25] encaisse 4334: clic carte=OK
+[11:28:27] modal 4334: total="6,90 €" chip="⚠ Commande du 10/06/2026"
+[11:28:27] API POST 200 /api/admin/pos/counter-collect/4334/confirm :: {"data":{"id":4334,"order_serial_no":"1006264334","queue_number":"A0015","token":null,"receipt_print_count":0,"parent_order_id":null,"parent_order_serial_no":null,"subtotal":6.9,"discount":0,"total_tax":0.63,"total":6.9,
+[11:28:37] encaisse 4335: clic carte=OK
+[11:28:39] modal 4335: total="8,90 €" chip="⚠ Commande du 10/06/2026"
+[11:28:39] reçu=10 → rendu="✨ Monnaie à rendre 1,10 €"
+[11:28:39] API POST 200 /api/admin/pos/counter-collect/4335/confirm :: {"data":{"id":4335,"order_serial_no":"1006264335","queue_number":"A0016","token":null,"receipt_print_count":0,"parent_order_id":null,"parent_order_serial_no":null,"subtotal":8.9,"discount":0,"total_tax":0.81,"total":8.9,
+[11:28:51] panier: []
+[11:29:21] console cumulés: 4
+[11:29:21]   WARNING /admin/pos :: WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: WebSocket is closed before the connection is established.
+[11:29:21]   WARNING /admin/encaissement :: WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: WebSocket is closed before the connection is established.
+[11:29:21]   WARNING /admin/encaissement :: WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: WebSocket is closed before the connection is established.
+[11:29:21]   WARNING /admin/pos :: WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: WebSocket is closed before the connection is established.
+[11:29:21] net>=400: 0

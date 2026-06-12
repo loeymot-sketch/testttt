@@ -1,0 +1,16 @@
+[11:22:21] login(bm.t2admin@lecayenne.fr) → /admin/dashboard
+[11:22:28] url=/admin/encaissement
+[11:22:28] cartes via testid enc-card: 2
+[11:22:28]   carte1 [null]: Encaissement Commandes en attente d’encaissement 57 Actualiser Total en attente d’encaissement 280,40 € Borne 8 min N°A0002 Client borne 1× Coca-Cola 33cl 1× Ca
+[11:22:28]   carte2 [null]: Encaissement Commandes en attente d’encaissement 57 Actualiser
+[11:22:28] badges enc-day-badge: 50 → ["10/06"]
+[11:22:28] badge testids (5 premiers): ["enc-day-badge-4328","enc-day-badge-4329","enc-day-badge-4330","enc-day-badge-4331","enc-day-badge-4332"]
+[11:22:28] header file: ["en attente d’encaissement","en attente d’encaissement"]
+[11:22:28] numéros A dans l'ordre DOM: ["A0002","A0004","A0005","A0006","A0007","A0008","A0009","A0009","A0010","A0011","A0012","A0013","A0014","A0015","A0016","A0017"]
+[11:22:29] bouton encaisser carte count=1
+[11:23:31] modal visible=false chip-date="(ABSENT)" total="?"
+[11:23:31] modal head: (pas de .cc-modal)
+[11:23:31] hit-test numpad modal: keys=0 blocked=[] body=(pas de .cc-modal-body)
+[11:24:02] console cumulés: 1
+[11:24:02]   WARNING /admin/encaissement :: WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: WebSocket is closed before the connection is established.
+[11:24:02] net>=400: 0

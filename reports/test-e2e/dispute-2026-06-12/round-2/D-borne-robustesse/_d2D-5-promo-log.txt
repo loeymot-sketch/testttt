@@ -1,0 +1,9 @@
+après Appliquer: promoCalls=["401 http://127.0.0.1:8768/api/frontend/promo/validate","200 http://127.0.0.1:8768/api/frontend/promo/validate"]
+cart store: {"items":[{"name":"Glace","qty":1}],"promoCode":null,"promoDiscount":null,"loyaltyDiscount":0,"idemKey":null}
+ls promo: BORNEAUDIT5
+TEXTE: "VOTRE PANIER | 1 article | Vider le panier | 🥡 | À emporter | Glace | 3,80 € par unité | 1 | 3,80 € | Sous-total | 3,80 € | 🏷️ Code promo BORNEAUDIT5 | -3,80 € | Total | 0,00 € | ✓ | Code promo BORNEAUDIT5 appliqué (−3,80 €) | Retirer le code | ★ | Avez-vous une carte fidélité ? | › | Valider ma commande | 0,00 € | + Ajouter des articles"
+après F5: promoCalls=["401 http://127.0.0.1:8768/api/frontend/promo/validate","200 http://127.0.0.1:8768/api/frontend/promo/validate","200 http://127.0.0.1:8768/api/frontend/promo/validate"]
+cart store après F5: {"items":[{"name":"Glace","qty":1}],"promoCode":null,"promoDiscount":null,"loyaltyDiscount":0,"idemKey":null}
+ls promo après F5: BORNEAUDIT5
+TEXTE après F5: "VOTRE PANIER | 1 article | Vider le panier | 🥡 | À emporter | Glace | 3,80 € par unité | 1 | 3,80 € | Sous-total | 3,80 € | 🏷️ Code promo BORNEAUDIT5 | -3,80 € | Total | 0,00 € | ✓ | Code promo BORNEAUDIT5 appliqué (−3,80 €) | Retirer le code | ★ | Avez-vous une carte fidélité ? | › | Valider ma commande | 0,00 € | + Ajouter des articles"
+C-ADV-02 promo visible après F5: false

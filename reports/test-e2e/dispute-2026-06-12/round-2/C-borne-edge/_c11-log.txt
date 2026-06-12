@@ -1,0 +1,18 @@
+[11:18:38] AVANT: user44 = id	loyalty_code	loyalty_points | 44	VICT1234	165
+[11:18:38] AVANT: ledger user44 = 2 rows
+[11:18:56] add Galette(23): {"ok":true,"before":0,"after":1}
+[11:19:00] T0 cart: {"subtotal":"6,50 €","loyalty":null,"promo":null,"total":"6,50 €"}
+[11:19:09] balance affichée (essai 1): 165 points disponibles = 1,65 € de réduction sur cette commande
+[11:19:09] options rachat: ["Utiliser mes points -1,65 € sur cette commande","Garder mes points Continuer à accumuler"]
+[11:19:11] après rachat → /kiosk/loyalty
+[11:19:15] T1 cart après rachat fidélité: {"subtotal":"6,50 €","loyalty":null,"promo":null,"total":"6,50 €"}
+[11:19:17] T2 PAYMENT: "TOTAL À RÉGLER : | 6,50 €" url=/kiosk/payment
+[11:19:22] T3 CASH num="#A0008" amount="6,50 €"
+[11:19:22] ORDERS API: [{"ts":1781263158045,"status":201,"id":4519,"queue":"A0008","total":6.5,"discount":0,"subtotal":6.5}]
+[11:19:22] DB ORDER: id	queue_number	subtotal	discount	total	status
+4519	A0008	6.500000	0.000000	6.500000	4
+[11:19:22] DB user44 APRÈS: 165
+[11:19:22] DB ledger: id	type	points	balance_after	order_id	source_surface
+11	redeem	-100	165	4511	pos
+10	earn	15	265	4489	kiosk
+[11:20:02] C11 done

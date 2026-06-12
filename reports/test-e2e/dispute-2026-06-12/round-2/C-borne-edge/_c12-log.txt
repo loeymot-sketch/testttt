@@ -1,0 +1,17 @@
+[11:33:00] MUTATION TEST: user44.status 5→1 → id	status	loyalty_points | 44	1	165
+[11:33:00] AVANT: promo uses_count=3
+[11:33:17] add Tacos(26) essai 1: {"ok":true,"before":0,"after":1}
+[11:33:21] T0: {"subtotal":"11,50 €","loyalty":null,"promo":null,"total":"11,50 €"}
+[11:33:26] T1 promo: {"subtotal":"11,50 €","loyalty":null,"promo":"-5,00 €","total":"6,50 €"}
+[11:33:34] fidélité essai 1 échec err="Trop de tentatives, patientez quelques secondes." — attente 65s
+[11:34:43] balance (essai 2): 165 points disponibles = 1,65 € de réduction sur cette commande
+[11:34:51] T2 STACK panier (promo+fidélité): {"subtotal":"11,50 €","loyalty":"-1,65 €","promo":"-5,00 €","total":"4,85 €"}
+[11:34:53] T3 PAYMENT: "TOTAL À RÉGLER : | 4,85 €"
+[11:34:58] T4 CASH num="#A0019" amount="4,85 €"
+[11:34:58] ORDERS API: [{"ts":1781264094115,"status":201,"id":4532,"queue":"A0019","total":4.85,"discount":6.65,"subtotal":11.5}]
+[11:34:58] DB ORDER: id	queue_number	subtotal	discount	total | 4532	A0019	11.500000	6.650000	4.850000
+[11:34:58] DB user44 points APRÈS: 0
+[11:34:58] DB ledger TOP2: id	type	points	balance_after	order_id	source_surface || 13	redeem	-165	0	4532	kiosk || 11	redeem	-100	165	4511	pos
+[11:34:58] DB promo uses_count APRÈS: 4
+[11:34:58] RESTORE: user44.status → 5 (points laissés à l'état réel post-flux)
+[11:34:58] C12 done

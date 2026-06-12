@@ -1,0 +1,10 @@
+IDLE-LIGHT computed: {"fallback":{"backgroundImage":"linear-gradient(rgb(255, 255, 255), rgb(255, 232, 221) 55%, rgb(244, 80, 30))","backgroundColor":"rgba(0, 0, 0, 0)"},"root":{"backgroundColor":"rgba(0, 0, 0, 0)","className":"kiosk-idle kiosk-idle--bold"},"titleColor":"rgb(15, 15, 15)","hasVideoClass":false}
+D-006 toast « Session rafraîchie » visible après event: false
+D-009 drawer texte (326c): jargon hits=[]
+drawer libellés: "Accessibilité | × | CONTRASTE | Standard | Lisibilité standard | Renforcé | Lisibilité renforcée | MODE PMR | Textes plus grands, zones tactiles élargies | ASSISTANCE AUDIO | Lecture vocale des étapes | DESCRIPTION AUDIO DÉTAILLÉE | Lit à voix haute boutons, prix et choix | ANIMATIONS RÉDUITES | Désactive animations et défilements | Réinitialiser | Terminé"
+motion AVANT toggle: {"attr":"false","hasClass":false,"varFast":"140ms","varIdle":"800ms","ctaTransition":"0.14s, 0.14s, 0.14s","ctaAnimation":"0s","ls":null}
+motion APRÈS toggle ON (LIVE, sans F5): {"attr":"true","hasClass":true,"varFast":"0ms","varIdle":"0ms","ctaTransition":"1e-06s","ctaAnimation":"1e-06s","ls":"{\"reducedMotion\":true,\"audioDescription\":false}"}
+motion après fermeture drawer: {"attr":"true","hasClass":true,"varFast":"0ms","varIdle":"0ms","ctaTransition":"1e-06s","ctaAnimation":"1e-06s","ls":"{\"reducedMotion\":true,\"audioDescription\":false}"}
+motion APRÈS F5: {"attr":"true","hasClass":true,"varFast":"0ms","varIdle":"0ms","ctaTransition":"1e-06s","ctaAnimation":"1e-06s","ls":"{\"reducedMotion\":true,\"audioDescription\":false}"}
+motion APRÈS reset: {"attr":"false","hasClass":false,"varFast":"140ms","varIdle":"800ms","ctaTransition":"0.14s, 0.14s, 0.14s","ctaAnimation":"0s","ls":"{\"reducedMotion\":false,\"audioDescription\":false}"}
+motion après reset+F5: {"attr":"false","hasClass":false,"varFast":"140ms","varIdle":"800ms","ctaTransition":"0.14s, 0.14s, 0.14s","ctaAnimation":"0s","ls":"{\"reducedMotion\":false,\"audioDescription\":false}"}

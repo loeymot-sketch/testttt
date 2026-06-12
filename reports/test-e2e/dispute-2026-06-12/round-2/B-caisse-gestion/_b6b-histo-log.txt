@@ -1,0 +1,10 @@
+[11:41:40] login(bm.t2admin@lecayenne.fr) → /admin/dashboard
+[11:41:47] input order_id présent: 1
+[11:41:50] filtre order_id=1206264531 → 1 rows
+[11:41:50]   row1: 1206264531 N°A0018À emporterClient passage1,50 €13:31, 12-06-2026RetournéeVoirSupprimer
+[11:41:56] show 4531 post-refund: marqueurs=["Remboursé","Retournée","Espèces","Remboursé","Retournée"]
+[11:41:56] montants négatifs: []
+[11:41:56] console: 2
+[11:41:56]   WARNING /admin/pos-orders :: WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: WebSocket is closed before the connection is established.
+[11:41:56]   WARNING /admin/pos-orders/show/4531 :: WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: WebSocket is closed before the connection is established.
+[11:41:56] net>=400: 0

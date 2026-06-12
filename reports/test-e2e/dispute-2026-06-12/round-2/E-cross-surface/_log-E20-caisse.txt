@@ -1,0 +1,83 @@
+[11:24:44] login admin OK → /admin/dashboard
+[11:24:51] pas de modal ouverture → session déjà ouverte
+[11:24:59] CASH-OVERVIEW BASELINE:
+  2,00 €
+  Commandes Caisse
+  Encaissement
+  Vue Caisse Unifiée
+  Caisse Livreur
+  CAISSE ET COMMANDES
+  Vue Caisse Unifiée
+  Caisse
+  Borne
+  Espèces
+  Carte
+  Mobile
+  Ticket-restaurant
+  GRAND TOTAL
+  15,34 €
+  CAISSE
+  15,34 €
+  BORNE
+  0,00 €
+  0,00 €
+  Réconciliation caisse
+  Caisse ouverte à:13:20
+  Fond de caisse:50,00 €
+  Espèces encaissées (session en cours):0,00 €
+  Espèces attendues au tiroir:50,00 €
+  Carte1 · 8,50 €
+  Espèces2 · 6,84 €
+  13:22	N°A0010	Caisse	Carte	—	8,50 €
+  13:14	N°A0003	Caisse	Espèces	—	3,42 €
+  13:13	N°A0001	Caisse	Espèces	—	3,42 €
+[11:25:08] ENCAISSEMENT: 58 cartes, cible A0009 = {"queue":"N°A0009","origin":"Borne","customer":"Client borne","dayBadge":null,"items":["1× Tacos","1× Coca-Cola 33cl"],"amount":"5,00 €"}
+[11:25:08] ENCAISSEMENT toutes: [{"queue":"N°A0002","origin":"Borne","customer":"Client borne","dayBadge":null,"items":["1× Coca-Cola 33cl","1× Capri-Sun"],"amount":"3,00 €"},{"queue":"N°A0004","origin":"Borne","customer":"Client borne","dayBadge":null,"items":["1× Tacos"],"amount":"6,50 €"},{"queue":"N°A0005","origin":"Borne","customer":"Client borne","dayBadge":null,"items":["1× Tacos","1× Coca-Cola 33cl"],"amount":"5,00 €"},{"queue":"N°A0006","origin":"Borne","customer":"Client borne","dayBadge":null,"items":["1× Glace"],"amount":"3,80 €"},{"queue":"N°A0007","origin":"Borne","customer":"Client borne","dayBadge":null,"items":["1× Coca-Cola 33cl","1× Capri-Sun"],"amount":"3,00 €"},{"queue":"N°A0008","origin":"Borne","customer":"Client borne","dayBadge":null,"items":["1× Galette Normale"],"amount":"6,50 €"},{"queue":"N°A0009","origin":"Borne","customer":"Client borne","dayBadge":null,"items":["1× Tacos","1× Coca-Cola 33cl"],"amount":"5,00 €"},{"queue":"N°A0011","origin":"Borne","customer":"Client borne","dayBadge":null,"items":["1× Galette Normale"],"amount":"6,50 €"},{"queue":"N°A0009","origin":"Borne","customer":"Client borne","dayBadge":"10/06","items":["1× Eau Plate 50cl"],"amount":"1,00 €"},{"queue":"N°A0010","origin":"Borne","customer":"Client borne","dayBadge":"10/06","items":["1× Glace"],"amount":"3,80 €"},{"queue":"N°A0011","origin":"Borne","customer":"Client borne","dayBadge":"10/06","items":["1× Eau Plate 50cl"],"amount":"1,00 €"},{"queue":"N°A0012","origin":"Borne","customer":"Client borne","dayBadge":"10/06","items":["1× Glace"],"amount":"3,80 €"}]
+[11:25:10] MODAL: hero="5,00 €" badge="null" header="💳 Encaisser la commande borne ✕ N° A0009 BORNE"
+[11:25:10] MODAL modes=["pos-counter-collect-mode-CASH:💶 Espèces Ouvre le tiroir (si","pos-counter-collect-mode-CARD:💳 Terminal (manuel) SumUp — s","pos-counter-collect-mode-MOBILE:📱 Mobile","pos-counter-collect-mode-TICKET:🎟️ Ticket restaurant"]
+[11:25:11] réf carte saisie SUMUP-E2-TRACE
+[11:25:15] POST-CONFIRM toasts: []
+[11:25:23] SHOW 4520: montants=["2,00 €","8,50 €","1,50 €","10,00 €","5,00 €","5,00 €"]
+[11:25:23] SHOW statut=["En Préparation","En Préparation","En Préparation","Livré"] paiement=["Payé","Type de paiement: Carte (Encaissement Terminal manuel (SumUp) — réf: SUMUP-E2-TRACE)","Payé","Payé","Non Payé"]
+[11:25:23] SHOW client=["Admin Le Cayenne","Admin Le Cayenne","admin@lecayenne.fr","Suivi Client","Administrateurs","Informations Client"]
+[11:25:26] RECEIPT: []
+[11:25:35] HISTORIQUE head=["N° COMMANDE","ORIGINE","N° FILE","CLIENT","MONTANT","PAIEMENT","N° FISCAL","DATE","STATUT","ACTION"]
+[11:25:35] HISTORIQUE ligne A0009=["1206264520","Borne","N°A0009","Client borne","5,00 €","Payé","2171","13:20, 12-06-2026","En préparation",""]
+[11:25:44] TRACKER contient A0009=true carte=["CAISSE LE CAYENNE Suivi commandes 12 actives 12 aujourd'hui 🧾 Toutes 🛒 Caisse 🖥️ Borne 🌐 En ligne Historique Écran client Retour caisse 🔔 À ENCAISSER Borne — paiement comptoir 7 N°A0011 🔔 🖥️ Client borne 1× Galette Normale À ENCAISSER : 6,50 € Encaisser N°A0008 🔔 🖥️ Client borne 1× Galette ","🔔 À ENCAISSER Borne — paiement comptoir 7 N°A0011 🔔 🖥️ Client borne 1× Galette Normale À ENCAISSER : 6,50 € Encaisser N°A0008 🔔 🖥️ Client borne 1× Galette Normale À ENCAISSER : 6,50 € Encaisser N°A0007 🔔 🖥️ Client borne 1× Coca-Cola 33cl 1× Capri-Sun À ENCAISSER : 3,00 € Encaisser N°A0006 🔔 "]
+[11:25:51] CASH-OVERVIEW APRÈS:
+  2,00 €
+  Commandes Caisse
+  Encaissement
+  Vue Caisse Unifiée
+  Caisse Livreur
+  CAISSE ET COMMANDES
+  Vue Caisse Unifiée
+  Caisse
+  Borne
+  Espèces
+  Carte
+  Mobile
+  Ticket-restaurant
+  GRAND TOTAL
+  27,94 €
+  CAISSE
+  22,94 €
+  BORNE
+  5,00 €
+  0,00 €
+  Réconciliation caisse
+  Caisse ouverte à:13:20
+  Fond de caisse:50,00 €
+  Espèces encaissées (session en cours):0,00 €
+  Espèces attendues au tiroir:50,00 €
+  Espèces4 · 14,44 €
+  Carte2 · 13,50 €
+  13:25	N°A0013	Caisse	Espèces	—	3,80 €
+  13:25	N°A0009	Borne	Carte	—	5,00 €
+  13:24	N°A0012	Caisse	Espèces	—	3,80 €
+  13:22	N°A0010	Caisse	Carte	—	8,50 €
+  13:14	N°A0003	Caisse	Espèces	—	3,42 €
+  13:13	N°A0001	Caisse	Espèces	—	3,42 €
+[11:26:00] TRANSACTIONS head=["ID DE TRANSACTION","DATE","MODE DE PAIEMENT","N° DE COMMANDE","MONTANT"] rows=10
+[11:26:00] TRANSACTIONS lignes=[["COUNTER-4520-20260612132511","13:25, 12-06-2026","Carte bancaire","1206264520","+ 5,00 €"]]
+[11:26:08] KDS contient A0009=false carte=null

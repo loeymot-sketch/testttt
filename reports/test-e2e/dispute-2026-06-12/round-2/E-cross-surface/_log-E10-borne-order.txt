@@ -1,0 +1,23 @@
+[11:14:46] wizard step "QUELLE VIANDE ?" → choisi "POULET MARINÉ CHOISIR"
+[11:14:47]   avancé via "SUIVANT"
+[11:14:48] wizard step "QUELLE SAUCE ?" → choisi "ALGÉRIENNE +"
+[11:14:49]   avancé via "SUIVANT"
+[11:14:50] wizard step "QUEL MENU ?" → choisi "🚫 SANS MENU Article seul +"
+[11:14:51]   avancé via "SUIVANT"
+[11:14:52] wizard step "RÉCAPITULATIF DE VOTRE COMMANDE" → choisi "null"
+[11:14:53]   avancé via "AJOUTER AU PANIER"
+[11:14:54] Tacos: wizard fermé=true cartCount=1 choix=["QUELLE VIANDE ?: POULET MARINÉ CHOISIR","QUELLE SAUCE ?: ALGÉRIENNE +","QUEL MENU ?: 🚫 SANS MENU Article seul +"]
+[11:14:57] Coca ajouté: cartCount=2
+[11:14:59] CART AVANT PROMO: {"names":["Tacos","Coca-Cola 33cl"],"lineTotals":["8,50 €","1,50 €"],"subtotal":"10,00 €","promoDiscount":null,"loyaltyDiscount":null,"total":"10,00 €"}
+[11:15:32] PROMO-APPLIED: "✓\nCode promo BORNEAUDIT5 appliqué (−5,00 €)\nRetirer le code"
+[11:15:32] CART APRES PROMO: {"names":["Tacos","Coca-Cola 33cl"],"lineTotals":["8,50 €","1,50 €"],"subtotal":"10,00 €","promoDiscount":"-5,00 €","loyaltyDiscount":null,"total":"5,00 €"}
+[11:15:32] POST 200 QUOTE tend/order/quote
+[11:15:35] après checkout → /kiosk/payment
+[11:15:35] WARN: écran fidélité non visible après checkout
+[11:15:35] → /kiosk/payment
+[11:15:36] PAYMENT PLAN B: {"url":"/kiosk/payment","title":"PAIEMENT À LA CAISSE","total":"TOTAL À RÉGLER : 5,00 €","body":"PAIEMENT À LA CAISSE Veuillez payer à la caisse TOTAL À RÉGLER : 5,00 € Confirmer ma commande Retour au panier"}
+[11:15:36] POST 200 QUOTE tend/order/quote
+[11:15:36] POST 201 ORDER tend/order
+[11:15:40] CASH-INSTRUCTION: {"url":"/kiosk/cash-instruction?number=A0005&total=5&timeout=45","number":"#A0005","amount":"5,00 €","body":"💶 Rendez-vous en caisse Présentez votre numéro à un membre de l'équipe Numéro de commande #A0005 Montant à régler 5,00 € Réglez à la caisse — espèces, carte ou ticket restaurant. Retour à l'accueil dans 42 s RETOUR À L'ACCUEIL"}
+[11:15:40] ORDER FINAL: id=4516 total=5 status=201
+[11:15:40] REQUEST BODY promo/loyalty fields: {"loyalty_code":null,"loyalty_redeem_discount":0,"kiosk_promo_code":"BORNEAUDIT5","discount":5}

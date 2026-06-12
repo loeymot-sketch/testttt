@@ -1,0 +1,13 @@
+produit ajouté: kiosk-product-add-49 cart={"items":[{"name":"Glace","qty":1}],"promoCode":null,"promoDiscount":null,"loyaltyDiscount":0,"idemKey":null}
+bouton Retour au panier sur écran Plan B: true
+ORDER-POST 201 id=4517 queue=A0006 total=3.8
+commande 1 → /kiosk/cash-instruction?number=A0006&total=3.8&timeout=45
+cart à cash-instruction (D-003 attendu VIDE + idemKey null): {"items":[],"promoCode":null,"promoDiscount":null,"loyaltyDiscount":0,"idemKey":null}
+TEXTE cash-instruction: "💶 | Rendez-vous en caisse | Présentez votre numéro à un membre de l'équipe | Numéro de commande | #A0006 | Montant à régler | 3,80 € | Réglez à la caisse — espèces, carte ou ticket restaurant. | Retour à l'accueil dans 42 s | RETOUR À L'ACCUEIL"
+CTA retour accueil: count=1 text="RETOUR À L'ACCUEIL"
+router.push(/kiosk/cart) depuis cash-instruction → PUSHED
+url=/kiosk/cart cart=0 lignes rendues=0
+bouton checkout: visible=false disabled=null
+après back → /kiosk/cash-instruction?number=A0006&total=3.8&timeout=45
+après clic Retour à l'accueil → /kiosk/idle
+ORDERS totaux: [{"status":201,"id":4517,"queue":"A0006","total":3.8}] (attendu: UN SEUL 201, aucun 409)

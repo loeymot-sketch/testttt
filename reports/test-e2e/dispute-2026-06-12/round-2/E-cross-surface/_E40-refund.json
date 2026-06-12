@@ -1,0 +1,123 @@
+{
+  "modal": {
+    "title": "💸 Rembourser cette commande",
+    "total": "5,00 €",
+    "method": "Espèces",
+    "warning": "⚠️ Cette action génère une commande miroir NF525 et un ticket de remboursement. L'opération est irréversible."
+  },
+  "showAfter": [
+    "2,00 €",
+    "Remboursé",
+    "Retournée",
+    "Remboursé",
+    "Retournée",
+    "8,50 €",
+    "1,50 €",
+    "10,00 €",
+    "5,00 €",
+    "5,00 €"
+  ],
+  "txInfo": {
+    "mine": [
+      [
+        "TXN-mINjwpPQfOH5",
+        "13:33, 12-06-2026",
+        "Espèces",
+        "1206264516",
+        "- 5,00 €"
+      ],
+      [
+        "COUNTER-4516-20260612133305",
+        "13:33, 12-06-2026",
+        "Espèces",
+        "1206264516",
+        "+ 5,00 €"
+      ],
+      [
+        "POS-4530-20260612133019",
+        "13:30, 12-06-2026",
+        "Espèces",
+        "1206264530",
+        "+ 4,80 €"
+      ]
+    ],
+    "first5": [
+      [
+        "TXN-mINjwpPQfOH5",
+        "13:33, 12-06-2026",
+        "Espèces",
+        "1206264516",
+        "- 5,00 €"
+      ],
+      [
+        "COUNTER-4516-20260612133305",
+        "13:33, 12-06-2026",
+        "Espèces",
+        "1206264516",
+        "+ 5,00 €"
+      ],
+      [
+        "POS-4531-20260612133111",
+        "13:31, 12-06-2026",
+        "Espèces",
+        "1206264531",
+        "+ 1,50 €"
+      ],
+      [
+        "POS-4530-20260612133019",
+        "13:30, 12-06-2026",
+        "Espèces",
+        "1206264530",
+        "+ 4,80 €"
+      ],
+      [
+        "POS-4528-20260612132938",
+        "13:29, 12-06-2026",
+        "Split",
+        "1206264528",
+        "+ 4,50 €"
+      ]
+    ],
+    "total": 10
+  },
+  "cash": [
+    "2,00 €",
+    "Commandes Caisse",
+    "Encaissement",
+    "Vue Caisse Unifiée",
+    "Caisse Livreur",
+    "CAISSE ET COMMANDES",
+    "Vue Caisse Unifiée",
+    "Caisse",
+    "Borne",
+    "Espèces",
+    "Carte",
+    "GRAND TOTAL",
+    "59,54 €",
+    "CAISSE",
+    "33,74 €",
+    "BORNE",
+    "25,80 €",
+    "0,00 €",
+    "Réconciliation caisse",
+    "Caisse ouverte à:13:28",
+    "Fond de caisse:50,00 €",
+    "Espèces encaissées (session en cours):17,30 €",
+    "Espèces attendues au tiroir:67,30 €",
+    "Espèces9 · 41,54 €",
+    "Autre1 · 4,50 €",
+    "Carte2 · 13,50 €",
+    "13:33\tN°A0005\tBorne\tEspèces\t—\t5,00 €",
+    "13:31\tN°A0018\tCaisse\tEspèces\t—\t1,50 €",
+    "13:30\tN°A0017\tCaisse\tEspèces\t—\t4,80 €",
+    "13:29\tN°A0015\tCaisse\tAutre\t—\t4,50 €",
+    "13:28\tN°A0016\tBorne\tEspèces\t—\t8,90 €",
+    "13:28\tN°A0015\tBorne\tEspèces\t—\t6,90 €",
+    "13:25\tN°A0013\tCaisse\tEspèces\t—\t3,80 €",
+    "13:25\tN°A0009\tBorne\tCarte\t—\t5,00 €",
+    "13:24\tN°A0012\tCaisse\tEspèces\t—\t3,80 €",
+    "13:22\tN°A0010\tCaisse\tCarte\t—\t8,50 €",
+    "13:14\tN°A0003\tCaisse\tEspèces\t—\t3,42 €",
+    "13:13\tN°A0001\tCaisse\tEspèces\t—\t3,42 €"
+  ]
+}

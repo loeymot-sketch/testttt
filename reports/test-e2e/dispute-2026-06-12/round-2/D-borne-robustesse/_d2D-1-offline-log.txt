@@ -1,0 +1,20 @@
+requêtes chunk kiosk-errors depuis boot: 0 []
+OFFLINE=true (depuis idle)
+router.push(kiosk.error.network) offline → PUSHED
+URL après push offline: /kiosk/error/network
+TEXTE écran erreur offline: "📡 | Connexion perdue | Nous n'arrivons plus à joindre le service de commande. | Patientez quelques instants ou appelez un membre de l'équipe. | RÉESSAYER | PRÉVENIR UN MEMBRE DE L'ÉQUIPE"
+requêtes chunk kiosk-errors cumulées: 0
+CTA Réessayer visible offline: true
+après Réessayer online → /kiosk/error/network
+produit ajouté: kiosk-product-add-49 cart={"items":[{"name":"Glace","qty":1}],"promoCode":null,"promoDiscount":null,"loyaltyDiscount":0,"idemKey":null}
+CART avant offline: {"items":[{"name":"Glace","qty":1}],"promoCode":null,"promoDiscount":null,"loyaltyDiscount":0,"idemKey":null}
+OFFLINE=true (panier) — clic Valider ma commande
+après checkout offline → /kiosk/cart
+toast EN brut présent: false · message FR présent: true
+TEXTE: "VOTRE PANIER | 1 article | Vider le panier | 🥡 | À emporter | Glace | 3,80 € par unité | 1 | 3,80 € | Sous-total | 3,80 € | Total | 3,80 € | Code promo | Appliquer | ★ | Avez-vous une carte fidélité ? | › | Valider ma commande | 3,80 € | Connexion perdue. Votre panier est conservé — réessayez dans un instant. | + Ajouter des articles | ✕ | Connexion perdue. Votre panier est conservé — réessayez dans un instant. | ×"
+recovery: url=/kiosk/cart cart={"items":[{"name":"Glace","qty":1}],"promoCode":null,"promoDiscount":null,"loyaltyDiscount":0,"idemKey":null}
+OFFLINE=true (payment) — clic Confirmer ma commande
+après confirm offline → /kiosk/cart
+TEXTE: "VOTRE PANIER | 1 article | Vider le panier | 🥡 | À emporter | Glace | 3,80 € par unité | 1 | 3,80 € | Sous-total | 3,80 € | Total | 3,80 € | Code promo | Appliquer | ★ | Avez-vous une carte fidélité ? | › | Valider ma commande | 3,80 € | + Ajouter des articles"
+requêtes chunk kiosk-errors cumulées: 0
+OFFLINE=false — url=/kiosk/cart cart={"items":[{"name":"Glace","qty":1}],"promoCode":null,"promoDiscount":null,"loyaltyDiscount":0,"idemKey":null}

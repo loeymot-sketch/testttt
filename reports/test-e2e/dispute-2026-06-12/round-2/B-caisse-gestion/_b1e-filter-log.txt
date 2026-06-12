@@ -1,0 +1,19 @@
+[11:20:08] login(bm.t2admin@lecayenne.fr) → /admin/dashboard
+[11:20:13] LIST 200 rows=10 /api/admin/transaction?paginate=1&page=1&per_page=10&order_column=id&order_type=desc&branch_id=1
+[11:20:15] vue-select présent: 1
+[11:20:16] options dropdown: ["10","25","50","100","500","1000","Credit"]
+[11:20:16] option cliquée: Credit
+[11:20:17] LIST 200 rows=1 /api/admin/transaction?paginate=1&page=1&per_page=10&order_column=id&order_type=desc&branch_id=1&payment_method=credit
+[11:20:19] filtre "Credit" → 1 rows
+[11:20:19]   row1: TXN-JETe3vhjRnfR18:14, 07-06-2026Carte bancaire280526112- 2,00 €
+[11:20:19] LIST 200 rows=10 /api/admin/transaction?paginate=1&page=1&per_page=10&order_column=id&order_type=desc&branch_id=1
+[11:20:19] LIST 200 rows=10 /api/admin/transaction?paginate=1&page=1&per_page=10&order_column=id&order_type=desc&branch_id=1
+[11:20:21] LIST 200 rows=1 /api/admin/transaction?paginate=1&page=1&per_page=10&order_column=id&order_type=desc&branch_id=1&transaction_no=COUNTER-4327
+[11:20:24] filtre transaction_no=COUNTER-4327 → 1 rows
+[11:20:24]   row1: COUNTER-4327-2026061007063007:06, 10-06-2026Espèces1006264327+ 3,80 €
+[11:20:24] LIST 200 rows=10 /api/admin/transaction?paginate=1&page=1&per_page=10&order_column=id&order_type=desc&branch_id=1
+[11:20:24] LIST 200 rows=10 /api/admin/transaction?paginate=1&page=1&per_page=10&order_column=id&order_type=desc&branch_id=1
+[11:20:26] export XLS: download=Transactions.xlsx
+[11:20:26] console cumulés: 1
+[11:20:26]   WARNING /admin/transactions :: WebSocket connection to 'ws://127.0.0.1:6001/app/app-key?protocol=7&client=js&version=8.4.0&flash=false' failed: WebSocket is closed before the connection is established.
+[11:20:26] net>=400: 0

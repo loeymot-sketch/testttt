@@ -1,0 +1,34 @@
+[
+ {
+  "t": "11:30:00.813",
+  "m": "GET",
+  "u": "/api/frontend/loyalty/config",
+  "status": 200,
+  "reqBody": null,
+  "resp": "{\"status\":true,\"data\":{\"points_per_euro\":10,\"points_for_1_euro_discount\":100,\"min_redeem_points\":50,\"tiers\":[100,250,500,1000,2000],\"label\":\"Dépensez 100 points = 1€ de remise\"}}"
+ },
+ {
+  "t": "11:30:03.301",
+  "m": "POST",
+  "u": "/api/frontend/loyalty/check",
+  "status": 200,
+  "reqBody": "{\"code\":\"VICT1234\"}",
+  "resp": "{\"status\":true,\"data\":{\"name\":\"Victim Secret\",\"points\":165,\"discount_value\":1.65,\"loyalty_code\":\"VICT1234\"}}"
+ },
+ {
+  "t": "11:30:12.477",
+  "m": "POST",
+  "u": "/api/frontend/order/quote",
+  "status": 200,
+  "reqBody": "{\"order_type\":10,\"loyalty_code\":\"VICT1234\",\"loyalty_redeem_discount\":1.65,\"kiosk_promo_code\":null,\"is_advance_order\":10,\"source\":5,\"payment_method\":1,\"items\":\"[{\\\"item_id\\\":23,\\\"instruction\\\":\\\"Viandes : Poulet mariné ×1\\\",\\\"quantity\\\":1,\\\"item_variations\\\":[{\\\"id\\\":5,\\\"name\\\":\\\"Poulet mariné\\\",\\\"variation_name\\\":\\\"Viande 1\\\"},{\\\"id\\\":9,\\\"name\\\":\\\"Mayonnaise\\\",\\\"variation_name\\\":\\\"Sauce (1ère Gratuite)\\\"}],\\\"item_extras\\\":[{\\\"id\\\":63,\\\"name\\\":\\\"Salade\\\"},{\\\"id\\\":64,\\\"name\\\":\\\"Tomate\\\"},{\\\"id\\\":65,\\\"name\\\":\\\"Oignon\\\"},{\\\"id\\\":66,\\\"name\\\":\\\"Cornichon\\\"}]}]\"}",
+  "resp": "{\"status\":true,\"data\":{\"quote_token\":\"2084fb61-c0b7-480d-9ac8-8f0e92a0bda9\",\"signature\":\"83e7f794c04b2dff7568a364753e66359b97f56658903942568b7d40a808f281\",\"expires_at\":\"2026-06-12T13:35:12+02:00\",\"ttl_seconds\":299,\"subtotal\":6.5,\"discount\":0,\"total_tax\":0.59,\"delivery_charge\":0,\"total_ttc\":6.5,\"currency\":\"EUR\",\"consumed_at\":null}}"
+ },
+ {
+  "t": "11:30:12.742",
+  "m": "POST",
+  "u": "/api/frontend/order",
+  "status": 201,
+  "reqBody": "{\"order_type\":10,\"loyalty_code\":\"VICT1234\",\"loyalty_redeem_discount\":1.65,\"kiosk_promo_code\":null,\"is_advance_order\":10,\"source\":5,\"payment_method\":1,\"items\":\"[{\\\"item_id\\\":23,\\\"instruction\\\":\\\"Viandes : Poulet mariné ×1\\\",\\\"quantity\\\":1,\\\"item_variations\\\":[{\\\"id\\\":5,\\\"name\\\":\\\"Poulet mariné\\\",\\\"variation_name\\\":\\\"Viande 1\\\"},{\\\"id\\\":9,\\\"name\\\":\\\"Mayonnaise\\\",\\\"variation_name\\\":\\\"Sauce (1ère Gratuite)\\\"}],\\\"item_extras\\\":[{\\\"id\\\":63,\\\"name\\\":\\\"Salade\\\"},{\\\"id\\\":64,\\\"name\\\":\\\"Tomate\\\"},{\\\"id\\\":65,\\\"name\\\":\\\"Oignon\\\"},{\\\"id\\\":66,\\\"name\\\":\\\"Cornichon\\\"}]}]\",\"quote_token\":\"2084fb61-c0b7-480d-9ac8-8f0e92a0bda9\",\"quote_signature\":\"83e7f794c04b2dff7568a364753e66359b97f56658903942568b7d40a808f281\",\"subtotal\":6.5,\"discount\":0,\"delivery_charge\":0,\"total\":6.5}",
+  "resp": "{\"data\":{\"id\":4529,\"order_serial_no\":\"1206264529\",\"queue_number\":\"A0016\",\"token\":null,\"receipt_print_count\":0,\"parent_order_id\":null,\"parent_order_serial_no\":null,\"subtotal\":6.5,\"discount\":0,\"total_tax\":0.59,\"total\":6.5,\"delivery_charge\":0,\"subtotal_currency_price\":\"6,50 €\",\"subtotal_without_tax_currency_price\":\"5,91 €\",\"discount_currency_price\":\"0,00 €\",\"delivery_charge_currency_price\":\"0,00 €\",\"total_currency_price\":\"6,50 €\",\"total_tax_currency_price\":\"0,59 €\",\"order_type\":10,\"created_at\":\"2026-06-12T13:30:12+02:00\",\"order_datetime\":\"13:30, 12-06-2026\",\"order_date\":\"12-06-2026\",\"order_time\":\"13:30\",\"delivery_date\":\"12-06-2026\",\"delivery_time\":\"\",\"payment_method\":1,\"payment_status\":15,\"payment_pending_counter\":true,\"cash_movement_skipped\":false,\"cash_movement_skipped_message\":null,\"is_advance_order\":10,\"preparation_time\":30,\"status\":4,\"status_name\":\"Acceptée\",\"reason\":null,\"user\":{\"id\":1,\"name\":\"Admin Le Cayenne\",\"first_name\":\"Admin\",\"last_name\":\"Le Cayenne\",\"phone\":\"0600000000\",\"email\":\"admin@lecayenne.fr\",\"username\":\"admin\",\"balance\":\"2.00\",\"currency_balance\":\"2,00 €\",\"image\":\"http://127.0.0.1:8768/images/default/profile.png\",\"role_id\":1,\"country_code\":\"+33\",\"create_date\":\"28-05-2026\",\"update_date\":\"07-06-2026\"},\"order_address\":null,\"branch\":{\"id\":1,\"name\":\"Le Cayenne (principal)\",\"email\":\"contact@lecayenne.fr\",\"phone\":\"+33600000000\",\"latitude\":\"50.4215667\",\"longitude\":\"2.9549060\",\"city\":\"Hénin-Beaumont\",\"state\":\"Hauts-de-France\",\"zip_code\":\"62110\",\"address\":\"437 Rue Élie "
+ }
+]

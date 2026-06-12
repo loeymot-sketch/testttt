@@ -1,0 +1,14 @@
+[
+ {
+  "ts": 1781263781326,
+  "status": 401,
+  "method": "GET",
+  "url": "http://127.0.0.1:8768/api/login"
+ },
+ {
+  "ts": 1781263798539,
+  "status": 401,
+  "method": "GET",
+  "url": "http://127.0.0.1:8768/api/login"
+ }
+]

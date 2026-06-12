@@ -1,0 +1,9 @@
+cart initial: {"items":[{"name":"Glace","qty":1}],"promoCode":null,"promoDiscount":null,"loyaltyDiscount":0,"idemKey":null}
+F5 catalogue: url=/kiosk/categories?cat=9 cart=1
+F5 cart: url=/kiosk/cart cart=1
+F5 payment: url=/kiosk/payment cart=1
+TAB-B /kiosk/cart: cart=1 lignes=1
+TAB-B après ajout: cart=1
+TAB-A (payment) store EN MÉMOIRE: {"memItems":1} · localStorage partagé: 1
+TAB-A confirm → /kiosk/cash-instruction?number=A0014&total=3.8&timeout=45 ORDERS=[{"status":201,"id":4527,"total":3.8}]
+TAB-B après commande A: cart=0 lignes=0

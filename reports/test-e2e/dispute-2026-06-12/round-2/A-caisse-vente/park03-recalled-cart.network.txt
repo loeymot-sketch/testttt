@@ -1,0 +1,1 @@
+[11:25:40] HTTP 422 GET http://127.0.0.1:8768/api/frontend/loyalty/balance?code=

@@ -1,0 +1,46 @@
+[11:33:01] cartes A0005 du jour: 1
+[11:33:03] modal hero="5,00 €"
+[11:33:09] 4516 encaissé espèces
+[11:33:19] REFUND MODAL: {"title":"💸 Rembourser cette commande","total":"5,00 €","method":"Espèces","warning":"⚠️ Cette action génère une commande miroir NF525 et un ticket de remboursement. L'opération est irréversible."}
+[11:33:54] SHOW après refund: ["2,00 €","Remboursé","Retournée","Remboursé","Retournée","8,50 €","1,50 €","10,00 €","5,00 €","5,00 €"]
+[11:34:02] TRANSACTIONS: [["TXN-mINjwpPQfOH5","13:33, 12-06-2026","Espèces","1206264516","- 5,00 €"],["COUNTER-4516-20260612133305","13:33, 12-06-2026","Espèces","1206264516","+ 5,00 €"],["POS-4530-20260612133019","13:30, 12-06-2026","Espèces","1206264530","+ 4,80 €"]]
+[11:34:02] TRANSACTIONS first5: [["TXN-mINjwpPQfOH5","13:33, 12-06-2026","Espèces","1206264516","- 5,00 €"],["COUNTER-4516-20260612133305","13:33, 12-06-2026","Espèces","1206264516","+ 5,00 €"],["POS-4531-20260612133111","13:31, 12-06-2026","Espèces","1206264531","+ 1,50 €"],["POS-4530-20260612133019","13:30, 12-06-2026","Espèces","1206264530","+ 4,80 €"],["POS-4528-20260612132938","13:29, 12-06-2026","Split","1206264528","+ 4,50 €"]]
+[11:34:10] CASH-OVERVIEW:
+  2,00 €
+  Commandes Caisse
+  Encaissement
+  Vue Caisse Unifiée
+  Caisse Livreur
+  CAISSE ET COMMANDES
+  Vue Caisse Unifiée
+  Caisse
+  Borne
+  Espèces
+  Carte
+  GRAND TOTAL
+  59,54 €
+  CAISSE
+  33,74 €
+  BORNE
+  25,80 €
+  0,00 €
+  Réconciliation caisse
+  Caisse ouverte à:13:28
+  Fond de caisse:50,00 €
+  Espèces encaissées (session en cours):17,30 €
+  Espèces attendues au tiroir:67,30 €
+  Espèces9 · 41,54 €
+  Autre1 · 4,50 €
+  Carte2 · 13,50 €
+  13:33	N°A0005	Borne	Espèces	—	5,00 €
+  13:31	N°A0018	Caisse	Espèces	—	1,50 €
+  13:30	N°A0017	Caisse	Espèces	—	4,80 €
+  13:29	N°A0015	Caisse	Autre	—	4,50 €
+  13:28	N°A0016	Borne	Espèces	—	8,90 €
+  13:28	N°A0015	Borne	Espèces	—	6,90 €
+  13:25	N°A0013	Caisse	Espèces	—	3,80 €
+  13:25	N°A0009	Borne	Carte	—	5,00 €
+  13:24	N°A0012	Caisse	Espèces	—	3,80 €
+  13:22	N°A0010	Caisse	Carte	—	8,50 €
+  13:14	N°A0003	Caisse	Espèces	—	3,42 €
+  13:13	N°A0001	Caisse	Espèces	—	3,42 €
