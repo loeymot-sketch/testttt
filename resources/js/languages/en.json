@@ -1711,7 +1711,7 @@
             "subtitle": "Show your order number to a staff member",
             "order_label": "Order number",
             "amount_label": "Amount due",
-            "help": "Cash payment at the counter only.",
+            "help": "Pay at the counter — cash, card or meal voucher.",
             "cta_understood": "I understand",
             "cta_back_home": "Back to home",
             "auto_redirect": "Returning to home in {n} s"
