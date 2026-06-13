@@ -83,5 +83,15 @@ Puis (interim G2 non posé) : **consigne caisse — encaisser le montant du MODA
 
 **Cycle 3 new findings : 0 P0 / 0 P1 / 0 P2 / 1 P3** (SF-CAP résiduel, immédiatement corrigé). Résidu cycle 2 = résidu cycle 3 = {caisse frozen G2, baseline wizard G-BASELINE, P3 data/env documentés}. **2 cycles consécutifs au résidu IDENTIQUE = CONVERGENCE ATTEINTE** (règle test-e2e).
 
+## 6ter. #17 RÉCONCILIATION SPINE — exécutée (2026-06-14)
+Le spine `release/v1-2026-06-10` a continué d'avancer (+18 commits) sous des sessions parallèles (dispute / final-push / delta-validation). Analyse de la topologie :
+- **`cb6b21746` (lignée crainte « parallèle ») = ANCÊTRE de mon HEAD** → AUCUNE fragmentation, une seule lignée. L'ultra-review d'une autre session relisait un état antérieur de CE tronc.
+- Le code du spine est **déjà dans le tronc** (#17 = docs-only, confirmé par l'overlap-map `e173245fe` de la session final-push : « tronc ⊇ spine, 117 commits absorbés »). Les 2848 fichiers du diff = `.playwright-mcp/` (2000+) + docs d'autres sessions.
+- **2 vrais P1 non-frozen produits par la session final-push, ABSENTS de mon tronc, PORTÉS par cherry-pick** :
+  - **R-1** (`9214bee75` → `3e8e03a5e`) : garde anti-double-remboursement pré-Z (409 MIRROR_ALREADY_EXISTS) — `PosOrderController.php`, test 6/6.
+  - **F1** (`61e63296d` → `9879e8d37`) : garde Entrée pass-through encaissement (a11y/fiscal) — `PosCounterCollectModal.vue` (non-frozen), specs 25/25.
+- Les 3 P1 ultra-review (allergènes KDS food-safety, race offline-queue, OSS 4xx-backoff) = **déjà présents** dans le tronc (via merges W4/clients-next). Vérifié.
+- Sanity Refund+Pos+Catalog 23/23 après ports. ⚠️ Le spine reste actif — un dernier `git merge release/v1-2026-06-10` (docs/playwright-mcp uniquement) au moment du ship gardera le tronc aligné.
+
 ## 7. VERDICT
 **Autonome : CONVERGÉ.** Tout ce qui est corrigeable sans gate owner est fixé, testé (suites complètes vertes), et prouvé en live. Le tronc unifié est prêt à push (G-PUSH) et à déployer (G-OVH) une fois les 2 contreseings (G2 frozen caisse, G-BASELINE) posés. La perfection restante (P1 caisse) est **structurellement** entre les mains de l'owner — par conception NF525/frozen, pas par défaut d'exécution.
