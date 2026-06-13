@@ -127,7 +127,7 @@
             class="cc-input cc-tabular"
             v-on:keypress="onlyFloat"
             @input="onReceivedInput"
-            @keyup.enter="onConfirm"
+            @keyup.enter="onConfirmFromKeyboard"
             :value="cashReceivedRaw"
             :disabled="submitting"
             data-testid="pos-counter-collect-received-input"
@@ -278,6 +278,9 @@ export default {
       // press then starts a FRESH entry instead of appending onto "8,50"
       // (owner-reported "chiffres bizarres": pre-filled 8,50 + tap 1 → 8,501).
       cashFieldPristine: true,
+      // [HEAL F1 / dispute-final-push 2026-06-13] timestamp (ms) où la section
+      // CASH s'est ouverte — pour rejeter le keyup d'Entrée pass-through.
+      cashSectionOpenedAt: 0,
       submitting: false,
       // Static mode list — kept inside data to ease i18n key reference;
       // intentionally NOT a computed because keys never change.
@@ -380,6 +383,11 @@ export default {
           this.selectedMode = 'CASH';
           this.cardReference = '';
           this.submitting = false;
+          // [HEAL F1 / dispute-final-push 2026-06-13] Horodatage d'ouverture de
+          // la section CASH : sert à rejeter le keyup d'Entrée qui a OUVERT ce
+          // modal (cf. onConfirmFromKeyboard).
+          this.cashSectionOpenedAt = (typeof performance !== 'undefined' && performance.now)
+            ? performance.now() : Date.now();
           // [GOAL-M-POS-2 2026-05-24] Auto-focus receivedInput on modal
           // open so the cashier can type-then-Enter without a mouse hop.
           // $nextTick defers until the cc-cash-section v-if mounts the
@@ -522,6 +530,21 @@ export default {
       if (e.key === 'Escape') {
         this.onCancel();
       }
+    },
+    // [HEAL F1 / dispute-final-push 2026-06-13] Confirmation déclenchée AU
+    // CLAVIER (Entrée) sur l'input montant. L'appui Entrée qui OUVRE le modal
+    // (click sur « Encaisser ») envoie son keyUP dans l'input fraîchement
+    // autofocusé → cet unique keyup confirmait un encaissement ESPÈCES SANS
+    // aucune revue (prouvé ×3 live : mauvais mode + piste NF525 polluée). On
+    // ignore une Entrée qui arrive pendant la fenêtre d'ouverture sur un champ
+    // resté vierge ; une Entrée DÉLIBÉRÉE (le caissier revoit puis valide, ou
+    // saisit un montant) arrive bien plus tard / sur un champ édité. Le bouton
+    // Confirmer (souris) appelle onConfirm() directement, inchangé.
+    onConfirmFromKeyboard() {
+      const now = (typeof performance !== 'undefined' && performance.now)
+        ? performance.now() : Date.now();
+      if (this.cashFieldPristine && (now - this.cashSectionOpenedAt) < 450) return;
+      this.onConfirm();
     },
     async onConfirm() {
       if (!this.order || this.submitting || !this.canConfirm) return;

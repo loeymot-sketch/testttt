@@ -142,7 +142,19 @@ describe('Keyboard navigation — POS counter-collect modal (FK-M-POS-2-001)', (
     const ccModal = read('resources/js/components/admin/pos/PosCounterCollectModal.vue');
 
     it('PosCounterCollectModal binds @keyup.enter on receivedInput (cashier types → Enter to confirm)', () => {
-        expect(ccModal).toMatch(/@keyup\.enter="onConfirm"/);
+        // [HEAL F1 / dispute-final-push 2026-06-13] Le binding passe par un
+        // handler GARDÉ (onConfirmFromKeyboard) au lieu d'onConfirm direct : le
+        // keyup de l'Entrée qui OUVRE le modal fuyait dans l'input autofocusé et
+        // confirmait un encaissement sans revue. L'intention « taper → Entrée
+        // confirme » est préservée (onConfirmFromKeyboard délègue à onConfirm
+        // dès que le champ est édité OU après la fenêtre d'ouverture).
+        expect(ccModal).toMatch(/@keyup\.enter="onConfirmFromKeyboard"/);
+        // Le handler gardé doit exister ET déléguer à onConfirm (contrat non
+        // affaibli : la confirmation clavier reste possible).
+        expect(ccModal).toMatch(/onConfirmFromKeyboard\s*\(\)\s*\{/);
+        expect(ccModal).toMatch(/this\.onConfirm\(\)/);
+        // La garde temporelle/pristine qui tue le pass-through.
+        expect(ccModal).toMatch(/cashSectionOpenedAt/);
     });
 
     it('PosCounterCollectModal installs Escape-to-close on document keydown (mirror KdsHistoryDrawer pattern)', () => {
