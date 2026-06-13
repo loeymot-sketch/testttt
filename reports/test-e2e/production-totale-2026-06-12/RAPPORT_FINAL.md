@@ -69,5 +69,19 @@ Puis (interim G2 non posé) : **consigne caisse — encaisser le montant du MODA
 - CDASH-CREDIT-PAY-01 : libellé `credit` legacy non mappé (1 ligne).
 - F-CAISSE-VIS-01 : format €US modal wizard (frozen, inclus au scope G2).
 
+## 6bis. W-VAL CYCLE 3 — CONVERGENCE PROUVÉE (2 cycles identiques)
+7 systèmes re-validés e2e (4 dimensions) sur HEAD `612402116` :
+| Voie | Verdict cycle 3 | Preuve |
+|---|---|---|
+| borne | VERT | code inchangé depuis c2-VERT + promo dormante live (valid:false) |
+| caisse | VERT (hors frozen G2) | item simple quote 7,00 € ; frites+variation Cheddar id 134 → **5,00 € (SSOT correct)** = prouve que le bug est SEULEMENT le wizard frozen envoyant id 133 |
+| kds-oss | VERT | 0 nouveau, boards release-filtrés |
+| central-gestion | VERT pur | 0 nouveau, CRUD+RBAC+visuel OK |
+| central-dashboard | VERT | 0 nouveau, exactitude SQL prouvée |
+| storefront | VERT | SF-CAP résiduel (« Se souvenir de moi ») corrigé `612402116` |
+| shared | VERT | chaîne OK avant/après, 27 cmd gap-free 2361-2387, sentinelles (hors baseline owner-gate) |
+
+**Cycle 3 new findings : 0 P0 / 0 P1 / 0 P2 / 1 P3** (SF-CAP résiduel, immédiatement corrigé). Résidu cycle 2 = résidu cycle 3 = {caisse frozen G2, baseline wizard G-BASELINE, P3 data/env documentés}. **2 cycles consécutifs au résidu IDENTIQUE = CONVERGENCE ATTEINTE** (règle test-e2e).
+
 ## 7. VERDICT
 **Autonome : CONVERGÉ.** Tout ce qui est corrigeable sans gate owner est fixé, testé (suites complètes vertes), et prouvé en live. Le tronc unifié est prêt à push (G-PUSH) et à déployer (G-OVH) une fois les 2 contreseings (G2 frozen caisse, G-BASELINE) posés. La perfection restante (P1 caisse) est **structurellement** entre les mains de l'owner — par conception NF525/frozen, pas par défaut d'exécution.
