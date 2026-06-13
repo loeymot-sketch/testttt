@@ -67,8 +67,8 @@
                     <div v-if="form.loyalty_points_per_euro > 0 && form.loyalty_points_for_1_euro_discount > 0" class="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
                         <p class="text-sm text-blue-700 font-medium">{{ $t('label.loyalty_preview') }}</p>
                         <p class="text-xs text-blue-600 mt-1">
-                            10€ d'achat = {{ form.loyalty_points_per_euro * 10 }} pts
-                            → {{ (form.loyalty_points_per_euro * 10 / form.loyalty_points_for_1_euro_discount).toFixed(2) }}€ de réduction
+                            {{ appService.currencyFormat(10) }} d'achat = {{ form.loyalty_points_per_euro * 10 }} pts
+                            → {{ discountPreview }} de réduction
                         </p>
                     </div>
                 </fieldset>
@@ -85,6 +85,7 @@
 <script>
 import LoadingComponent from "../../components/LoadingComponent";
 import alertService from "../../../../services/alertService";
+import appService from "../../../../services/appService";
 
 export default {
     name: "LoyaltySetupComponent",
@@ -100,8 +101,23 @@ export default {
                 loyalty_points_for_1_euro_discount: 100,
                 loyalty_min_redeem_points:          100,
             },
-            errors: {}
+            errors: {},
+            // [CENTRAL-C1-P3-01] exposé au template pour le rendu FR EUR de
+            // l'aperçu live (appService.currencyFormat → "0,10 €").
+            appService: appService,
         };
+    },
+    computed: {
+        // [CENTRAL-C1-P3-01] Réduction obtenue pour 10 € d'achat, rendue en FR
+        // EUR canonique ("0,10 €") au lieu de l'ancien toFixed(2)+€ collé en-US.
+        discountPreview() {
+            const perEuro = Number(this.form.loyalty_points_per_euro) || 0;
+            const ptsFor1Euro = Number(this.form.loyalty_points_for_1_euro_discount) || 0;
+            if (perEuro <= 0 || ptsFor1Euro <= 0) {
+                return appService.currencyFormat(0);
+            }
+            return appService.currencyFormat((perEuro * 10) / ptsFor1Euro);
+        },
     },
     mounted() {
         try {

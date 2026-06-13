@@ -191,14 +191,48 @@ class IngredientService
     {
         $steps = ItemWizardStep::query()
             ->where('source_type', 'item_attribute')
-            ->where(function ($query) use ($attributeId): void {
-                $query->where('source_item_attribute_id', $attributeId)
-                    ->orWhere('source_ref', (string) $attributeId);
-            })
+            ->where($this->attributeUsageStepConstraint($attributeId))
             ->with(['profile.category', 'profile.item'])
             ->get();
 
         return $this->mapStepsToUsedBy($steps);
+    }
+
+    /**
+     * [CENTRAL-RED-P2-02 2026-06-13] Contrainte de matching d'un step attribut.
+     * Même classe de bug que T-R2.4 (D-B1-01) mais sur le chemin attribut :
+     * les wizard steps legacy référencent l'attribut par son NOM
+     * (source_ref texte, source_item_attribute_id NULL) — prouvé sur
+     * foodking_e2e (« Sauce bol » id 8 : 7 par FK + 4 par nom = 11, drawer
+     * affichait 7). On matche désormais :
+     *   (a) source_item_attribute_id == id (FK numérique), OU
+     *   (b) source_ref == id-numérique-stringifié (legacy id-in-text), OU
+     *   (c) source_ref == nom de l'attribut (insensible casse) ET FK NULL/0.
+     * La garde FK-NULL en (c) empêche le double-comptage des steps déjà
+     * matchés par (a) (la liste somme usageCountForAttribute sur chaque id du
+     * groupe-par-nom — un by-name sans garde compterait N fois).
+     *
+     * @return \Closure(\Illuminate\Database\Eloquent\Builder): void
+     */
+    private function attributeUsageStepConstraint(int $attributeId): \Closure
+    {
+        $name = ItemAttribute::query()->whereKey($attributeId)->value('name');
+        $name = $name !== null ? (string) $name : null;
+
+        return function ($query) use ($attributeId, $name): void {
+            $query->where('source_item_attribute_id', $attributeId)
+                ->orWhere('source_ref', (string) $attributeId);
+
+            if ($name !== null && $name !== '') {
+                $query->orWhere(function ($byName) use ($name): void {
+                    $byName->whereRaw('LOWER(source_ref) = ?', [mb_strtolower($name)])
+                        ->where(function ($noFk): void {
+                            $noFk->whereNull('source_item_attribute_id')
+                                ->orWhere('source_item_attribute_id', 0);
+                        });
+                });
+            }
+        };
     }
 
     /**
@@ -375,12 +409,11 @@ class IngredientService
 
     private function usageCountForAttribute(int $attributeId): int
     {
+        // [CENTRAL-RED-P2-02] Parité liste/drawer : même contrainte que
+        // usedByRowsForAttribute (FK numérique + id-en-texte + nom by-name FK-NULL).
         return ItemWizardStep::query()
             ->where('source_type', 'item_attribute')
-            ->where(function ($query) use ($attributeId): void {
-                $query->where('source_item_attribute_id', $attributeId)
-                    ->orWhere('source_ref', (string) $attributeId);
-            })
+            ->where($this->attributeUsageStepConstraint($attributeId))
             ->count();
     }
 

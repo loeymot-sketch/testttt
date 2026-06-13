@@ -260,6 +260,17 @@ class ItemService
         try {
             DB::transaction(function () use ($request) {
                 $this->item = Item::create($request->validated() + ['slug' => Str::slug($request->name)]);
+                // [CENTRAL-C1-P3-03 / W-VAL c1 2026-06-12] Estampille d'audit
+                // creator_id/creator_type depuis l'AUTH (jamais le payload —
+                // colonnes hors $fillable, donc forceFill après create garantit
+                // que l'auth prime sur toute valeur usurpée). Aligne items sur
+                // Order::creator_id (OrderService:808) pour la traçabilité NF525.
+                if (\Illuminate\Support\Facades\Auth::check()) {
+                    $this->item->forceFill([
+                        'creator_id'   => (int) \Illuminate\Support\Facades\Auth::id(),
+                        'creator_type' => \App\Models\User::class,
+                    ])->save();
+                }
                 if ($request->image) {
                     $this->item->addMedia($request->image)->toMediaCollection('item');
                 }
