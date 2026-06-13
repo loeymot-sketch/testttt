@@ -266,10 +266,14 @@ class ItemService
                 // que l'auth prime sur toute valeur usurpée). Aligne items sur
                 // Order::creator_id (OrderService:808) pour la traçabilité NF525.
                 if (\Illuminate\Support\Facades\Auth::check()) {
+                    // saveQuietly : l'estampille d'audit est un backfill de
+                    // colonnes, PAS une mise à jour métier — ne doit pas
+                    // re-déclencher les events domaine (menu.item_availability_changed)
+                    // déjà émis par le create ci-dessus (sinon double-dispatch/500).
                     $this->item->forceFill([
                         'creator_id'   => (int) \Illuminate\Support\Facades\Auth::id(),
                         'creator_type' => \App\Models\User::class,
-                    ])->save();
+                    ])->saveQuietly();
                 }
                 if ($request->image) {
                     $this->item->addMedia($request->image)->toMediaCollection('item');
