@@ -22,7 +22,11 @@
 
 `*` = frozen, owner-gate G2 (voir §4).
 
-**État terminal autonome : 0 P0 · 0 P1/P2 hors-frozen.** Les suites complètes : PHPUnit 3242+ tests / Vitest **369 fichiers, 2505 tests, 0 échec**. Frozen-diff = **0 ligne** sur les 15 fichiers §7. Chaîne NF525 attestée bit-identique (append-only).
+**État terminal autonome : 0 P0 · 0 P1/P2 hors-frozen.** Suites complètes FINALES (HEAD `1773fe185`) :
+- **PHPUnit : 3290 tests, 1 seule failure** = `FrozenZoneSha256BaselineSentinelTest` (baseline SHA wizard = gate owner G-BASELINE, voir OWNER_ACK) + 1 risky `TpeSimulationDepth` (baseline pré-existante, reproduit sur release/v1 vierge). **0 échec réel.**
+- **Vitest : 369 fichiers, 2505 tests, 0 échec.**
+- Frozen-diff = **0 ligne** sur les 15 fichiers §7. Chaîne NF525 attestée bit-identique (append-only).
+- Régression rattrapée en cours de campagne : creator-stamp item re-déclenchait un event domaine (500) → corrigé `saveQuietly()`. Faux-vert batch ItemCreatorStamp détecté en isolation → vrai fix posé.
 
 ## 3. POURQUOI « 2 cycles identiques P0+P1+P2=0 » N'EST PAS ATTEIGNABLE EN AUTONOME
 La règle de convergence stricte est **bloquée par un fait structurel** : le P1 caisse (C2-01) est dans le wizard **frozen** `pos-wizard.js`. Seul l'owner peut autoriser sa correction (gate §10). Tant que G2 n'est pas contresigné, tout cycle re-listera ce P1. **C'est une gate humaine, pas une boucle à relancer.** L'autonome a atteint son maximum : tout le non-frozen est vert et prouvé.
