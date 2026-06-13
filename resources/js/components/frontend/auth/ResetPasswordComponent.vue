@@ -2,18 +2,18 @@
     <LoadingComponent :props="loading"/>
     <section class="pt-8 pb-16">
         <div class="container max-w-[360px] py-6 p-4 sm:px-6 shadow-xs rounded-2xl bg-white">
-            <h2 class="capitalize mb-6 text-center text-[22px] font-semibold leading-[34px] text-heading">
+            <h2 class="normal-case mb-6 text-center text-[22px] font-semibold leading-[34px] text-heading">
                 {{ $t('label.create_new_password') }}</h2>
             <form @submit.prevent="resetPassword">
                 <div class="mb-4">
-                    <label class="text-sm capitalize mb-1 text-heading">{{ $t('label.new_password') }}</label>
+                    <label class="text-sm normal-case mb-1 text-heading">{{ $t('label.new_password') }}</label>
                     <input :class="errors.password ? 'invalid' : ''" v-model="form.password" type="password"
                            class="w-full h-12 rounded-lg border px-4 border-[#D9DBE9]">
                     <small class="db-field-alert" v-if="errors.password">{{ errors.password[0] }}</small>
                 </div>
 
                 <div class="mb-4">
-                    <label class="text-sm capitalize mb-1 text-heading">{{ $t('label.confirm_password') }}</label>
+                    <label class="text-sm normal-case mb-1 text-heading">{{ $t('label.confirm_password') }}</label>
                     <input :class="errors.password_confirmation ? 'invalid' : ''" v-model="form.password_confirmation"
                            type="password"
                            class="w-full h-12 rounded-lg border px-4 border-[#D9DBE9]">
@@ -23,7 +23,7 @@
                 </div>
 
                 <button type="submit"
-                        class="w-full h-12 text-center capitalize font-medium rounded-3xl text-white bg-primary">
+                        class="w-full h-12 text-center normal-case font-medium rounded-3xl text-white bg-primary">
                     {{ $t('button.submit') }}
                 </button>
             </form>

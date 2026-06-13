@@ -2,7 +2,7 @@
     <LoadingComponent :props="loading" />
     <section class="pt-8 pb-16">
         <div class="container max-w-[360px] py-6 p-4 sm:px-6 shadow-xs rounded-2xl bg-white">
-            <h2 class="capitalize mb-6 text-center text-[22px] font-semibold leading-[34px] text-heading">
+            <h2 class="normal-case mb-6 text-center text-[22px] font-semibold leading-[34px] text-heading">
                 {{ $t('label.verify_email') }}</h2>
             <form @submit.prevent="verifyCode">
                 <label class="text-sm mb-1 first-letter:uppercase text-heading">{{
@@ -13,11 +13,11 @@
                 <small class="db-field-alert" v-if="errors.code">{{ errors.code[0] }}</small>
                 <br>
                 <button @click.prevent="resendCode" type="button"
-                    class="capitalize mb-6 mt-2 text-xs font-medium transition text-primary hover:underline">
+                    class="normal-case mb-6 mt-2 text-xs font-medium transition text-primary hover:underline">
                     {{ $t('button.resend_code') }}
                 </button>
                 <button type="submit"
-                    class="w-full h-12 text-center capitalize font-medium rounded-3xl text-white bg-primary">
+                    class="w-full h-12 text-center normal-case font-medium rounded-3xl text-white bg-primary">
                     {{ $t('button.continue') }}
                 </button>
             </form>

@@ -2,7 +2,7 @@
     <LoadingComponent :props="loading" />
     <section class="pt-8 pb-16">
         <div class="container max-w-[360px] py-6 p-4 mb-6 sm:px-6 shadow-xs rounded-2xl bg-white">
-            <!-- [SF-02 2026-06-13] `capitalize` retiré : il mettait une majuscule à
+            <!-- [SF-02 2026-06-13] `normal-case` retiré : il mettait une majuscule à
                  chaque mot (« Bon retour » → « Bon Retour »). La traduction FR
                  porte déjà la casse correcte. -->
             <h2 class="mb-6 text-center text-[22px] font-semibold leading-[34px] text-heading">
@@ -18,13 +18,13 @@
             </div>
             <form @submit.prevent="login">
                 <div class="mb-4">
-                    <label for="formEmail" class="text-sm capitalize mb-1 text-heading">{{ $t('label.email') }}</label>
+                    <label for="formEmail" class="text-sm normal-case mb-1 text-heading">{{ $t('label.email') }}</label>
                     <input autocomplete="email" type="text" :class="errors.email ? 'invalid' : ''" v-model="form.email"
                         class="w-full h-12 rounded-lg border px-4 border-[#D9DBE9]" id="formEmail">
                     <small class="db-field-alert" v-if="errors.email">{{ errors.email[0] }}</small>
                 </div>
                 <div class="mb-4">
-                    <label for="formPassword" class="text-sm capitalize mb-1 text-heading">{{
+                    <label for="formPassword" class="text-sm normal-case mb-1 text-heading">{{
                         $t('label.password')
                     }}</label>
                     <input autocomplete="current-password" type="password" :class="errors.password ? 'invalid' : ''"
@@ -44,12 +44,12 @@
                         </label>
                     </div>
                     <router-link :to="{ name: 'auth.forgetPassword' }"
-                        class="capitalize text-xs font-medium transition text-primary">
+                        class="normal-case text-xs font-medium transition text-primary">
                         {{ $t('button.forget_password') }}
                     </router-link>
                 </div>
                 <button type="submit"
-                    class="w-full h-12 text-center capitalize font-medium rounded-3xl mb-6 text-white bg-primary">
+                    class="w-full h-12 text-center normal-case font-medium rounded-3xl mb-6 text-white bg-primary">
                     {{ $t('button.login') }}
                 </button>
                 <div v-if="!staffOnlyMode" class="flex items-center justify-center gap-2 mb-4">
@@ -62,7 +62,7 @@
                 <div v-if="!staffOnlyMode && enums.activityEnum.ENABLE == setting.site_guest_login">
                     <p class="text-sm uppercase text-center mb-3 text-[#6E7191]">{{ $t('label.or') }}</p>
                     <router-link :to="{ name: 'auth.guestLogin' }"
-                        class="w-full h-12 leading-[46px] text-center capitalize font-medium rounded-3xl border text-primary border-primary bg-white">
+                        class="w-full h-12 leading-[46px] text-center normal-case font-medium rounded-3xl border text-primary border-primary bg-white">
                         {{ $t('button.login_as_guest') }}
                     </router-link>
                 </div>
@@ -74,27 +74,27 @@
             <h2 class="mb-6 text-center text-lg font-medium text-heading">{{ $t('message.for_quick_demo') }}</h2>
             <nav class="grid grid-cols-2 gap-3">
                 <button @click.prevent="setupCredit('admin')"
-                    class="click-to-prop w-full h-10 leading-10 rounded-lg text-center text-sm capitalize text-white bg-orange-500"
+                    class="click-to-prop w-full h-10 leading-10 rounded-lg text-center text-sm normal-case text-white bg-orange-500"
                     id="adminClick">
                     {{ $t('label.admin') }}
                 </button>
                 <button @click.prevent="setupCredit('customer')"
-                    class="click-to-prop w-full h-10 leading-10 rounded-lg text-center text-sm capitalize text-white bg-emerald-500"
+                    class="click-to-prop w-full h-10 leading-10 rounded-lg text-center text-sm normal-case text-white bg-emerald-500"
                     id="customerClick">
                     {{ $t('label.customer') }}
                 </button>
                 <button @click.prevent="setupCredit('branchManager')"
-                    class="click-to-prop w-full h-10 leading-10 rounded-lg text-center text-sm capitalize text-white bg-sky-600"
+                    class="click-to-prop w-full h-10 leading-10 rounded-lg text-center text-sm normal-case text-white bg-sky-600"
                     id="branchManagerClick">
                     {{ $t('label.branch_manager') }}
                 </button>
                 <button @click.prevent="setupCredit('posOperator')"
-                    class="click-to-prop w-full h-10 leading-10 rounded-lg text-center text-sm capitalize text-white bg-purple-500"
+                    class="click-to-prop w-full h-10 leading-10 rounded-lg text-center text-sm normal-case text-white bg-purple-500"
                     id="posOperatorClick">
                     {{ $t('label.pos_operator') }}
                 </button>
                 <button @click.prevent="setupCredit('chef')"
-                    class="click-to-prop w-full h-10 leading-10 rounded-lg text-center text-sm capitalize text-white bg-blue-500"
+                    class="click-to-prop w-full h-10 leading-10 rounded-lg text-center text-sm normal-case text-white bg-blue-500"
                     id="chefClick">
                     {{ $t('label.chef_kitchen') }}
                 </button>
