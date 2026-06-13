@@ -474,4 +474,49 @@ class PreZRefundViaEndpointTest extends TestCase
             'type'     => 'cash_back',
         ]);
     }
+
+    /**
+     * [HEAL R-1 / dispute-final-push 2026-06-13] Double-refund guard.
+     *
+     * Before the fix, the pre-Z path (refundPreZ → changeStatus(RETURNED)+cashBack)
+     * had NO check that a refund already existed for the parent: a SECOND refund
+     * request minted a SECOND cash_back for a single sale (double negative).
+     * The symmetric guard now returns 409 MIRROR_ALREADY_EXISTS on the replay,
+     * whether the first refund was pre-Z (parent → RETURNED) or post-Z (mirror
+     * child exists). The first refund still succeeds.
+     */
+    public function test_pre_z_refund_replay_is_rejected_409_no_second_cashback(): void
+    {
+        $branch = Branch::factory()->create();
+        $customer = User::factory()->create(['branch_id' => $branch->id, 'balance' => 0]);
+        $order = $this->makeOrder($branch, $customer, OrderStatus::DELIVERED, Carbon::now()->subMinutes(5));
+        $admin = $this->newAdmin($branch);
+
+        // First refund — succeeds (pre-Z, mode='pre_z').
+        $this->actingAs($admin, 'sanctum')
+            ->withHeaders(['X-Idempotency-Key' => 'r1-first-' . bin2hex(random_bytes(8))])
+            ->postJson("/api/admin/pos-order/{$order->id}/refund-with-counter-entry", [
+                'reason' => 'Premier remboursement légitime.',
+            ])->assertStatus(200);
+
+        $this->assertSame(OrderStatus::RETURNED, (int) $order->fresh()->status);
+        $cashBackAfterFirst = Transaction::query()
+            ->where('order_id', $order->id)->where('type', 'cash_back')->count();
+        $this->assertSame(1, $cashBackAfterFirst, 'exactly one cash_back after the first refund');
+
+        // Replay — MUST be rejected 409, NO second cash_back minted.
+        $this->actingAs($admin, 'sanctum')
+            ->withHeaders(['X-Idempotency-Key' => 'r1-replay-' . bin2hex(random_bytes(8))])
+            ->postJson("/api/admin/pos-order/{$order->id}/refund-with-counter-entry", [
+                'reason' => 'Tentative de double remboursement.',
+            ])
+            ->assertStatus(409)
+            ->assertJsonPath('code', 'MIRROR_ALREADY_EXISTS');
+
+        $this->assertSame(
+            1,
+            Transaction::query()->where('order_id', $order->id)->where('type', 'cash_back')->count(),
+            'replay must NOT mint a second cash_back (double-negative guard).'
+        );
+    }
 }

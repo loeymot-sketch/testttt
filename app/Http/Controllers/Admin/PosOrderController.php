@@ -105,6 +105,28 @@ class PosOrderController extends AdminController
         // ─────────────────────────────────────────────────────────────────────
         $isSealed = app(\App\Services\Order\SealedOrderGuard::class)->isSealed($order);
 
+        // [HEAL R-1 / dispute-final-push 2026-06-13] Garde miroir SYMÉTRIQUE.
+        // Le chemin scellé (counter-entry) est protégé contre le double
+        // remboursement par UNIQUE(parent_order_id) + le status-flip guard.
+        // Le chemin pre-Z (refundPreZ → changeStatus(RETURNED)+cashBack) n'avait
+        // AUCUN équivalent : un parent déjà remboursé une fois (miroir enfant
+        // existant) dont isSealed() reste false (aucun Z clos ne le couvre)
+        // pouvait être remboursé À NOUVEAU, mintant un 2e cash_back pour une
+        // seule vente (double négatif fiscal — R-1, reproduit live :8768).
+        // On bloque les DEUX chemins quand un remboursement existe déjà, qu'il
+        // soit matérialisé par un miroir (chemin scellé) ou par le passage du
+        // parent en RETURNED (chemin pre-Z). Le 1er remboursement passe (aucun
+        // miroir / parent non-RETURNED) ; seul le rejeu est refusé.
+        $alreadyRefunded = Order::where('parent_order_id', $order->id)->exists()
+            || (int) $order->status === (int) \App\Enums\OrderStatus::RETURNED;
+        if ($alreadyRefunded) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cette commande a déjà été remboursée.',
+                'code'    => 'MIRROR_ALREADY_EXISTS',
+            ], 409);
+        }
+
         if (!$isSealed) {
             try {
                 return $this->refundPreZ($order, (string) $validated['reason']);
