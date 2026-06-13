@@ -39,7 +39,7 @@
                             <i
                                 class="fa-solid fa-check custom-checkbox-icon leading-[9px] text-[9px] rounded-[3px] border-[#6E7191]"></i>
                         </div>
-                        <label for="checkbox2" class="db-field-label text-xs text-heading">
+                        <label for="checkbox2" class="db-field-label normal-case text-xs text-heading">
                             {{ $t('label.remember_me') }}
                         </label>
                     </div>
