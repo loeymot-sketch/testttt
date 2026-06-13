@@ -360,7 +360,11 @@ class KitchenDisplaySystemOrderService
                 'transition_id' => (int) $recallRow->id,
                 'order_id'      => (int) $locked->id,
                 'branch_id'     => (int) $locked->branch_id,
-                'queue_number'  => $locked->queue_number !== null ? (int) $locked->queue_number : null,
+                // [KDS-OSS-V2 2026-06-13] queue_number is varchar(20) — it can be
+                // alphanumeric (e.g. "R0501"). The old `(int)` cast turned it to 0,
+                // losing the customer-facing pickup number. Surface it verbatim as
+                // a string (null preserved).
+                'queue_number'  => $locked->queue_number !== null ? (string) $locked->queue_number : null,
                 'recalled_at'   => $now->toIso8601String(),
             ];
         });

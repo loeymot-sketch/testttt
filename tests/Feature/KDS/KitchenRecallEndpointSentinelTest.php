@@ -114,6 +114,31 @@ class KitchenRecallEndpointSentinelTest extends TestCase
     }
 
     /** @test */
+    public function recall_preserves_alphanumeric_queue_number(): void
+    {
+        // [KDS-OSS-V2 2026-06-13] orders.queue_number is varchar(20) — it can be
+        // alphanumeric (e.g. "R0501"). The recall service used to `(int)` cast it
+        // for the response/broadcast → "R0501" became 0, losing the customer-
+        // facing pickup number on the RAPPELÉ card. The cast must be removed:
+        // the queue number is returned/broadcast verbatim as a string.
+        $branch = Branch::factory()->create();
+        $this->actingAsChef($branch->id);
+
+        $order = $this->preparedOrder($branch, Carbon::now()->subSeconds(20));
+        $order->forceFill(['queue_number' => 'R0501'])->save();
+
+        $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->postJson($this->endpoint($order));
+
+        $response->assertOk();
+        $this->assertSame(
+            'R0501',
+            $response->json('queue_number'),
+            'Alphanumeric queue_number must be preserved verbatim (not (int)-cast to 0).'
+        );
+    }
+
+    /** @test */
     public function recall_rejects_after_60s_window_with_no_row_appended(): void
     {
         $branch = Branch::factory()->create();

@@ -2,7 +2,10 @@
     <LoadingComponent :props="loading" />
     <section class="pt-8 pb-16">
         <div class="container max-w-[360px] py-6 p-4 mb-6 sm:px-6 shadow-xs rounded-2xl bg-white">
-            <h2 class="capitalize mb-6 text-center text-[22px] font-semibold leading-[34px] text-heading">
+            <!-- [SF-02 2026-06-13] `capitalize` retiré : il mettait une majuscule à
+                 chaque mot (« Bon retour » → « Bon Retour »). La traduction FR
+                 porte déjà la casse correcte. -->
+            <h2 class="mb-6 text-center text-[22px] font-semibold leading-[34px] text-heading">
                 {{ $t('label.welcome_back') }}
             </h2>
             <div v-if="errors.validation"

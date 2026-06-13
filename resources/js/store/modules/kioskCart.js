@@ -681,11 +681,20 @@ export const kioskCart = {
                 // FR ; seul le chemin métier non-exception (status:false →
                 // res.data.message, localisé serveur) reste verbatim.
                 const status = Number(err?.response?.status) || 0;
+                const serverMessage = err?.response?.data?.message;
                 let message;
                 if (status === 429) {
                     message = 'kiosk.promo.error.too_many';
                 } else if (!err?.response) {
                     message = 'kiosk.promo.error.network';
+                } else if (status === 422 && typeof serverMessage === 'string' && serverMessage.trim().length > 0) {
+                    // [BV-RED-02 2026-06-13] Un 422 de VALIDATION porte un refus
+                    // métier explicite déjà localisé serveur (ex. promo dormante :
+                    // « Ce code n'est pas encore actif. »). On le surface verbatim
+                    // — comme le chemin status:false (200) — au lieu de l'écraser
+                    // par la clef générique 'server'. Le composant rend
+                    // `$te(promoError) ? $t : promoError` → message brut FR affiché.
+                    message = serverMessage;
                 } else {
                     message = 'kiosk.promo.error.server';
                 }

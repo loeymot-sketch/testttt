@@ -59,12 +59,22 @@ const authenticatedStaffLanding = () => {
 
 // [STAFF-ONLY-V1] Liste blanche des frontend routes accessibles même en staff-only mode.
 // Tout ce qui n'est pas ici est redirigé vers /login quand staffOnlyMode=true.
+// [SF-01 2026-06-13] Noms ALIGNÉS sur les vraies routes de authRoutes.js. Les
+// anciens noms `auth.signup` et `auth.guest` étaient FANTÔMES (aucune route ne
+// les portait) → en staff-only le reset-mdp (étape verify), l'inscription et
+// l'invité étaient redirigés vers /login (parcours cassés). On liste désormais
+// chaque étape réelle : forget-password/verify (auth.verifyEmail), signup
+// phone/verify/register, guest login/verify.
 const STAFF_ONLY_FRONTEND_ALLOWLIST = new Set([
     "auth.login",
-    "auth.signup",
     "auth.forgetPassword",
+    "auth.verifyEmail",
     "auth.resetPassword",
-    "auth.guest",
+    "auth.signupPhone",
+    "auth.signupVerify",
+    "auth.signupRegister",
+    "auth.guestLogin",
+    "auth.guestLoginVerify",
     "route.notFound",
     "route.exception",
 ]);

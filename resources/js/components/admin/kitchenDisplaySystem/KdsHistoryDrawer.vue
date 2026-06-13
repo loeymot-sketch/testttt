@@ -347,21 +347,45 @@ export default {
       return renderItem(item).lines;
     },
 
-    // [KDS history full-detail 2026-06-04] Heure de prise de commande. The
-    // resource already exposes a pre-formatted HH:MM string via
+    // [KDS-OSS-V1 2026-06-13] Normalise une heure pré-formatée serveur en 24h.
+    // AppLibrary::time() suit env('TIME_FORMAT') : si le motif est 12h
+    // (« 02:17 PM »), le tiroir Historique affichait l'heure en 12h ALORS QUE
+    // les cartes live KDS passent order_datetime par kdsDisplayDateTime() qui
+    // force le 24h (« 14:17 ») → même écran mélangeait 02:17 PM et 14:20.
+    // On applique ici la MÊME conversion (mirror de kdsDisplayDateTime) pour
+    // garantir un format 24h cohérent. Le suffixe date éventuel (« , 13-06-2026 »)
+    // est préservé tel quel. Une chaîne déjà 24h ressort inchangée.
+    _to24h(raw) {
+      const value = String(raw || '').trim();
+      const match = value.match(/^(\d{1,2}):(\d{2})\s*(AM|PM),?\s*(.*)$/i);
+      if (!match) {
+        return value.replace(/\s*\b(AM|PM)\b/gi, '').trim();
+      }
+      let hour = parseInt(match[1], 10);
+      const minute = match[2];
+      const marker = match[3].toUpperCase();
+      const suffix = match[4] ? `, ${match[4]}` : '';
+      if (marker === 'PM' && hour < 12) hour += 12;
+      if (marker === 'AM' && hour === 12) hour = 0;
+      return `${String(hour).padStart(2, '0')}:${minute}${suffix}`;
+    },
+
+    // [KDS history full-detail 2026-06-04 / KDS-OSS-V1 2026-06-13] Heure de prise
+    // de commande. The resource already exposes a pre-formatted string via
     // AppLibrary::time(order_datetime) — it is NOT an ISO date, so it must be
-    // bound raw (NOT passed through formatTime, which would yield Invalid Date
-    // and render blank). `order_datetime` is the fuller formatted fallback.
+    // normalised in 24h via _to24h (NOT passed through formatTime, which would
+    // yield Invalid Date and render blank). `order_datetime` is the fuller
+    // formatted fallback (also normalised so a 12h env stays coherent 24h).
     placedTime(order) {
       const raw = order?.order_time;
       if (typeof raw === 'string' && raw.trim().length > 0) {
-        return raw.trim();
+        return this._to24h(raw);
       }
       // Defensive fallback: derive HH:MM from order_datetime if order_time is
       // absent. order_datetime is also pre-formatted, so we only reuse it as a
-      // last-resort display string.
+      // last-resort display string (normalised to 24h for consistency).
       const dt = order?.order_datetime;
-      return typeof dt === 'string' && dt.trim().length > 0 ? dt.trim() : '';
+      return typeof dt === 'string' && dt.trim().length > 0 ? this._to24h(dt) : '';
     },
 
     statusClass(status) {

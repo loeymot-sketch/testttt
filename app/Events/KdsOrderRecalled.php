@@ -31,7 +31,10 @@ class KdsOrderRecalled
     public function __construct(
         public int $orderId,
         public int $branchId,
-        public ?int $queueNumber,
+        // [KDS-OSS-V2 2026-06-13] queue_number is varchar(20) — alphanumeric
+        // pickup numbers (e.g. "R0501") must survive the broadcast. Was ?int
+        // which silently coerced to 0.
+        public ?string $queueNumber,
         public int $actorId,
         public string $recalledAt,
         public string $correlationId
