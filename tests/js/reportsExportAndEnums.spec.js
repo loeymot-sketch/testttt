@@ -199,6 +199,38 @@ describe('REP-SALES-PAYTYPE-02 — pos payment method map covers TR + counter-de
     });
 });
 
+describe('CDASH-SALESREP-PAY-01 — bare counter-encaissement codes resolve to FR labels (no enum leak)', () => {
+    // SimpleOrderResource:59 exposes `strtoupper(transaction.payment_method)`, so unified
+    // counter encaissement that stores BARE codes (cash/card/split/other/ticket_restaurant)
+    // surfaced verbatim as CASH/CARD/SPLIT/OTHER/TICKET_RESTAURANT on screen — the txMap only
+    // mapped the COUNTER_* prefixed variants. Each bare code must now map to its FR label.
+    const cases = [
+        ['CASH', 'label.cash'],
+        ['CARD', 'label.card'],
+        ['TICKET_RESTAURANT', 'label.ticket_restaurant'],
+        ['MOBILE_BANKING', 'label.mobile_banking'],
+        ['OTHER', 'label.other'],
+        ['SPLIT', 'label.split_payment'],
+        ['COUNTER_DEFERRED', 'label.counter_deferred'],
+    ];
+
+    it.each(cases)('transaction code %s maps to FR label %s', (code, expectedKey) => {
+        const store = makeStore();
+        const wrapper = mountComponent(SalesReportListComponent, store);
+        const order = { source: sourceEnum.POS, transaction: code, pos_payment_method: null, payment_method: null };
+        const label = wrapper.vm.paymentTypeLabel(order);
+        expect(label).toBe(expectedKey);
+        expect(label).not.toBe(code); // no raw enum leak
+    });
+
+    it('a real gateway provider name still passes through unchanged', () => {
+        const store = makeStore();
+        const wrapper = mountComponent(SalesReportListComponent, store);
+        const order = { source: sourceEnum.WEB, transaction: 'STRIPE', pos_payment_method: null, payment_method: null };
+        expect(wrapper.vm.paymentTypeLabel(order)).toBe('STRIPE');
+    });
+});
+
 describe('REP-EXP-ERR-04 — export error decodes the Blob body before alerting', () => {
     it('xls() reject with a Blob does not throw and surfaces a decoded message', async () => {
         const store = makeStore();

@@ -475,12 +475,25 @@ export default {
                 // code (counter_cash/counter_card/counter_ticket_restaurant/counter_mobile_banking/
                 // counter_other) which leaked verbatim into the financial report. Map ALL 5 to FR
                 // (existing label keys, case-robust); real gateway provider names pass through.
+                // [CDASH-SALESREP-PAY-01 FIX 2026-06-13] SimpleOrderResource:59 exposes
+                // strtoupper(transaction.payment_method); some encaissement rows store the BARE
+                // code (cash/card/split/other/ticket_restaurant/mobile_banking) WITHOUT the
+                // counter_ prefix, so CASH/CARD/SPLIT/OTHER/TICKET_RESTAURANT leaked verbatim on
+                // screen AND in the Excel export. Add the bare codes (incl. SPLIT→Multi-paiement
+                // and COUNTER_DEFERRED→À encaisser); real gateway provider names still pass through.
                 const txMap = {
                     COUNTER_CASH: this.$t('label.cash'),
                     COUNTER_CARD: this.$t('label.card'),
                     COUNTER_TICKET_RESTAURANT: this.$t('label.ticket_restaurant'),
                     COUNTER_MOBILE_BANKING: this.$t('label.mobile_banking'),
                     COUNTER_OTHER: this.$t('label.other'),
+                    CASH: this.$t('label.cash'),
+                    CARD: this.$t('label.card'),
+                    TICKET_RESTAURANT: this.$t('label.ticket_restaurant'),
+                    MOBILE_BANKING: this.$t('label.mobile_banking'),
+                    OTHER: this.$t('label.other'),
+                    SPLIT: this.$t('label.split_payment'),
+                    COUNTER_DEFERRED: this.$t('label.counter_deferred'),
                 };
                 return txMap[String(order.transaction).toUpperCase()] || order.transaction;
             }

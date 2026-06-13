@@ -67,6 +67,10 @@ class SalesReportExport implements FromCollection, WithHeadings
         // counter_ticket_restaurant/counter_mobile_banking/counter_other) to FR via the existing
         // pos_payment_method lang so the export matches the on-screen report (was strtoupper()
         // leaking COUNTER_CARD verbatim). Real gateway provider names still pass through uppercased.
+        // [CDASH-SALESREP-PAY-01 FIX 2026-06-13] Some encaissement rows store the BARE code
+        // (cash/card/split/other/ticket_restaurant/mobile_banking) WITHOUT the counter_ prefix,
+        // so CASH/CARD/SPLIT/OTHER/TICKET_RESTAURANT leaked verbatim into the Excel export (matches
+        // the on-screen SalesReportListComponent txMap heal). Map both prefixed and bare codes.
         $method = strtolower((string) ($transaction->payment_method ?? ''));
         $counterMap = [
             'counter_cash'              => PosPaymentMethod::CASH,
@@ -74,9 +78,20 @@ class SalesReportExport implements FromCollection, WithHeadings
             'counter_ticket_restaurant' => PosPaymentMethod::TICKET_RESTAURANT,
             'counter_mobile_banking'   => PosPaymentMethod::MOBILE_BANKING,
             'counter_other'            => PosPaymentMethod::OTHER,
+            'cash'                     => PosPaymentMethod::CASH,
+            'card'                     => PosPaymentMethod::CARD,
+            'ticket_restaurant'        => PosPaymentMethod::TICKET_RESTAURANT,
+            'mobile_banking'           => PosPaymentMethod::MOBILE_BANKING,
+            'other'                    => PosPaymentMethod::OTHER,
+            'counter_deferred'         => PosPaymentMethod::COUNTER_DEFERRED,
         ];
         if (isset($counterMap[$method])) {
             return trans('pos_payment_method.' . $counterMap[$method]);
+        }
+        // `split` has no PosPaymentMethod enum value (multi-tranche encaissement) — render the FR
+        // mixed-payment label directly rather than leaking SPLIT.
+        if ($method === 'split') {
+            return 'Paiement mixte';
         }
         return strtoupper((string) ($transaction->payment_method ?? ''));
     }
