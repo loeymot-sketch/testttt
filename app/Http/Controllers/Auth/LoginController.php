@@ -66,6 +66,20 @@ class LoginController extends Controller
         $request->merge(['status' => Status::ACTIVE]);
 
         if (!Auth::guard('web')->attempt($request->only('email', 'password', 'status'))) {
+            // [SEC-LOGIN-TIMING heal 2026-06-15 — ultra-review] Constant-time on the
+            // failed-login path. Auth::attempt() runs Hash::check ONLY when a user is
+            // found; for an unknown email it returns fast (no bcrypt) → a username-
+            // enumeration timing oracle (~35ms). Burn an equivalent bcrypt verification
+            // against a fixed dummy hash so the response time no longer branches on
+            // account existence. Mirrors the kiosk-login (#3) and forgot-password (UA-P1)
+            // hardening. The result is discarded — this is timing-only.
+            if (!\App\Models\User::where('email', $request->input('email'))->exists()) {
+                \Illuminate\Support\Facades\Hash::check(
+                    (string) $request->input('password'),
+                    '$2y$12$iCTCxFekHaXKl6P5xGvk6eZOWy6HTwGk6DCXW5xj8MuK104fpZh2W'
+                );
+            }
+
             return new JsonResponse([
                 'errors' => ['validation' => trans('all.message.credentials_invalid')]
             ], 400);
