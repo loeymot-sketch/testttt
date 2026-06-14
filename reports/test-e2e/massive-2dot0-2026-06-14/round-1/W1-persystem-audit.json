@@ -1,0 +1,245 @@
+{
+  "summary": "W1 per-system deep audit of spine 7b3f14feb (read-only) + adversarial >=3-skeptic dispute per P0/P1",
+  "agentCount": 19,
+  "logs": [
+    "Audit done: 0 CONFIRMED P0/P1, 3 refuted, 18 P2/P3"
+  ],
+  "result": {
+    "confirmed_p0p1": [],
+    "refuted_p0p1": [
+      {
+        "title": "Offline-queue lost-write race: an order queued (saveOrder) DURING an in-flight syncQueue replay is silently dropped — customer sees a confirmation but the order never reaches the kitchen and never retries",
+        "file_line": "resources/js/helpers/kioskOfflineQueue.js:605 (clobber) + :401 (concurrent saveOrder mutation) + :529 (loop over captured _queueCache)",
+        "votes_confirm": 0
+      },
+      {
+        "title": "CRITICAL-CHECK #1 changeStatus board-release predicate — PRESENT and correct (DELIVERY+UNPAID and POS+UNPAID non-cash are BLOCKED 422)",
+        "file_line": "app/Services/KitchenDisplaySystemOrderService.php:441-446 + app/Domain/Kds/KitchenReleaseRule.php:56-92",
+        "votes_confirm": 0
+      },
+      {
+        "title": "CRITICAL-CHECK #2 allergen food-safety string handling — PRESENT (codes filtered to non-empty strings; never render empty/[object])",
+        "file_line": "resources/js/helpers/kdsCustomization.js:152-155, 238-239 + resources/js/components/admin/kitchenDisplaySystem/KdsOrderLine.vue:107-117",
+        "votes_confirm": 0
+      }
+    ],
+    "p2_p3": [
+      {
+        "severity": "P2",
+        "title": "Allergen collision warning can silently fail (no red alert) due to case-sensitivity mismatch between item codes (lowercased) and customer declared_allergens (not normalized)",
+        "file_line": "resources/js/components/frontend/kiosk/ds/KsAllergenBadge.vue:106 (collisionSet uses customerAllergens verbatim) vs resources/js/helpers/kioskFilters.js:121-124 (extractAllergenCodes lowercases item codes); backend source app/Http/Controllers/Frontend/LoyaltyController.php:1036-1053 (readDeclaredAllergens does strval only, no strtolower)",
+        "reproduction": "A customer profile whose stored `declared_allergens` contains a capitalized/uppercase code (e.g. 'Gluten' or 'GLUTEN'). On the wizard/cart, item allergens are lowercased to 'gluten' by extractAllergenCodes (kioskFilters.js:121 `a.trim().toLowerCase()`), but KsAllergenBadge builds `collisionSet = new Set(this.customerAllergens || [])` WITHOUT lowercasing (line 106). hasCollision (`effectiveAllergens.some(a => collisionSet.has(a))`, line 109) compares 'gluten' against a Set containing 'Gluten' -> no match -> the red role=alert warning (ks-allergen-badge--warning) is NOT rendered, even though the product contains a declared allergen.",
+        "evidence": "KsAllergenBadge.vue:105-107 `collisionSet() { return new Set(this.customerAllergens || []); }` — no normalization. kioskFilters.js:121 `if (typeof a === 'string') return a.trim().toLowerCase();`. Compare with kioskFilters.js:96 getAllergenCollision which DOES lowercase customer codes (`(customerAllergens||[]).map(c => String(c).toLowerCase())`) — the badge component diverges from this safe path. LoyaltyController.php:1041 `array_values(array_filter(array_map('strval', $val)))` confirms backend does not normalize casing. NOTE real-world impact is currently bounded because readDeclaredAllergens is documented as a future migration (LoyaltyController.php:1032 'migration future', fallback returns []) so the column may not yet exist in V1 — latent food-safety defect that activates when declared_allergens ships.",
+        "recommendation": "In KsAllergenBadge.vue normalize both sides: `collisionSet() { return new Set((this.customerAllergens||[]).map(c => String(c).toLowerCase())); }` and ensure effectiveAllergens are lowercased (they already are via extractAllergenCodes). Optionally lowercase at the readDeclaredAllergens backend source for defense-in-depth. Add a unit test asserting collision matches across casing."
+      },
+      {
+        "severity": "P3",
+        "title": "Allergen canonical-order list uses 'poissons' (plural) while icon map and FR UE seeder codes use 'poisson' (singular) — sort fallback only, but indicates code-vocabulary drift that can mis-sort/mis-icon the fish allergen",
+        "file_line": "resources/js/helpers/kioskFilters.js:146 ('poissons') + :147 ('crustaces') vs ds/KsAllergenBadge.vue:53-54 ICONS map ('poisson','crustaces')",
+        "reproduction": "An item carrying code 'poisson' (singular, matching the ICONS map and the badge label key) is sorted by sortAllergenCodesUnique using KIOSK_ALLERGEN_CANONICAL_ORDER which only contains 'poissons' (plural) -> indexOf returns -1 -> the code falls into the alphabetical tail bucket (idx 1000) instead of its canonical UE position. Cosmetic ordering only; icon still resolves because ICONS uses singular.",
+        "evidence": "kioskFilters.js:142-158 KIOSK_ALLERGEN_CANONICAL_ORDER includes 'poissons' and 'anhydride_sulfureux' (and 'sulfites'); KsAllergenBadge.vue ICONS (lines 50-78) define 'poisson' (singular), 'sulfites' but no 'poissons'/'anhydride_sulfureux'. The two vocabularies are not aligned.",
+        "recommendation": "Align the canonical-order vocabulary with the ICONS/seeder codes (use 'poisson' singular consistently, reconcile sulfites vs anhydride_sulfureux). Pure ordering/consistency cleanup, no functional break."
+      },
+      {
+        "severity": "P2",
+        "title": "Kiosk login leaks valid usernames via a bcrypt timing oracle (F3 heal closed the message oracle but not the timing one)",
+        "file_line": "app/Http/Controllers/Auth/KioskMachineLoginController.php:59-76",
+        "reproduction": "POST /api/auth/kiosk-login with header x-api-key:<API_KEY>. Unknown username (username=nope_N&password=x123456) returns in ~16-216ms (no Hash::check). A real username (username=kiosk-lecayenne&password=x123456) returns consistently ~270-320ms (bcrypt cost runs). Both return identical generic 400 body {\"errors\":{\"validation\":\"Identifiants invalides ou compte bloqué\"}} — so the message is generic (good) but the latency cleanly distinguishes existing vs non-existing usernames.",
+        "evidence": "Live (port 8780): UNKNOWN x6 → t:0.031,0.072,0.102,0.016,0.216,0.065 ; EXISTING (kiosk-lecayenne) x6 → t:0.295,0.321,0.274,0.276,0.278,0.272. Code path: line 59 `if (!$kioskMachine) { return ... 400 }` returns BEFORE any Hash::check; line 72 `if (! Hash::check(...))` only runs for a found machine. Comment at lines 65-71 documents the F3 heal closing the *message* enumeration, but the early return at 59 short-circuits bcrypt → timing oracle remains.",
+        "recommendation": "Run a constant-time dummy Hash::check against a fixed bcrypt placeholder when the username is not found, so both branches pay the same bcrypt cost before returning the generic 400. V1-LOCAL single-box lowers exploitability (rate limiter kiosk-login is username|ip keyed at 30/min), hence P2 not P1. Non-frozen file — safe to patch with a regression test."
+      },
+      {
+        "severity": "P2",
+        "title": "WCAG AA contrast failure: white text on brand orange #F4501E is 3.49:1 — fails 4.5:1 for normal-size text across the kiosk (system-wide design token)",
+        "file_line": "resources/css/kiosk/tokens-bold.css:46 (--kiosk-bold-text-on-primary:#FFFFFF) + resources/js/components/frontend/kiosk/KioskCartComponent.vue:1301-1309 (.kiosk-cart-promo-apply)",
+        "reproduction": "Computed WCAG contrast: #FFFFFF on #F4501E = 3.49:1; #FFF5E8 (cream) on #F4501E = 3.24:1. WCAG 2.1 AA requires 4.5:1 for normal text, 3:1 only for large text (≥18.66px or ≥14pt bold). The promo 'Appliquer' button on the customer cart uses background #F4501E + color #fff at font-size:14px font-weight:700 — 14px bold is NOT large text → fails AA.",
+        "evidence": "tokens-bold.css:46 `--kiosk-bold-text-on-primary: #FFFFFF;` over `--kiosk-bold-primary: #F4501E;` (line 55). KioskCartComponent.vue:1306-1309 `background: var(--kiosk-primary, #F4501E); color: #fff; font-weight: 700; font-size: 14px;`. Contrast computed via WCAG relative-luminance formula = 3.49:1 < 4.5:1.",
+        "recommendation": "For normal-size text on orange, either darken the brand orange used as a text-background to ~#C0001A-equivalent that reaches 4.5:1, or bump the affected text to large-text size/weight, or use a dark text token on the lighter orange. Owner brand mandate (#F4501E primary) makes this a design gate — surface to owner; keep large CTAs (≥18.66px or ≥14pt-bold) where 3:1 suffices and remediate the small-text instances (promo-apply 14px). Audit all `text-on-primary` usages under ~18px."
+      },
+      {
+        "severity": "P3",
+        "title": "Counter-collect CASH with received=null bypasses the received>=total guard (no under-billing, but no short-payment detection on the null path)",
+        "file_line": "app/Services/PaymentService.php:315-329",
+        "reproduction": "POST /api/.../pos/counter-collect/{order}/confirm with body {mode: 1 (CASH)} and NO `received` key. Route validation (routes/api.php:842-846) treats received as nullable, so $received arrives null. In confirmCounterPayment the guard `if ($mode === CASH && $received !== null && (float)$received < (float)$total)` (line 315) is skipped because $received===null; line 327-329 then sets pos_received_amount = received ?? total = total.",
+        "evidence": "PaymentService.php:315 `if ($mode === PosPaymentMethod::CASH && $received !== null && (float) $received < (float) $locked->total) {` and 327 `$locked->pos_received_amount = $mode === PosPaymentMethod::CASH ? ($received ?? (float) $locked->total) : null;` — recordCashOrderMovement(line 443) later books $order->total (line 525), so the full total is always recorded as cash IN. No under-billing occurs; the only loss is that a deliberate null-received CASH collect records the full total without proving tender was actually counted.",
+        "recommendation": "Acceptable as-is for V1-LOCAL (full total is always the booked amount, so the drawer is never under-counted). If hardening later: when mode=CASH require received non-null at the route layer (change ['nullable',...] to required-with-mode) so a short tender is always surfaced rather than silently treated as exact. No frozen-zone touch needed (route closure + service guard)."
+      },
+      {
+        "severity": "P3",
+        "title": "Unused/inconsistent cash_movement_skipped_at datetime cast — transient flag is cash_movement_skipped (bool) only, *_at is never written",
+        "file_line": "app/Models/Order.php:100",
+        "reproduction": "grep cash_movement_skipped across PaymentService.php (only sets `$order->cash_movement_skipped = true` at flagCashMovementSkipped:575) vs Order.php casts which declare `'cash_movement_skipped_at' => 'datetime'` (line 100). The *_at variant is cast but never assigned anywhere in S2.",
+        "evidence": "app/Models/Order.php:100 `'cash_movement_skipped_at' => 'datetime',`; PaymentService.php:573-576 sets only `$order->cash_movement_skipped = true;`; OrderDetailsResource.php:104 reads `cash_movement_skipped` (bool). No code path writes cash_movement_skipped_at.",
+        "recommendation": "Cosmetic. Either remove the stale `cash_movement_skipped_at` cast or, if a timestamped trail is wanted, set it alongside the bool in flagCashMovementSkipped. No fiscal impact (the reconciliation gap is already durably surfaced via CashOverviewController::summarizeUnrecordedCash at lines 302-360)."
+      },
+      {
+        "severity": "P3",
+        "title": "Parked-order idempotency UNIQUE omits branch_id (single-box: no impact; V2 multi-tenant collision risk)",
+        "file_line": "database/migrations/2026_04_20_200000_create_pos_parked_orders_table.php:27",
+        "reproduction": "grep the unique index: it is UNIQUE(user_id, idempotency_token). PosParkedOrderService::park() (app/Services/PosParkedOrderService.php:27-35) also looks up an existing parked order by (user_id, idempotency_token) only, not branch_id. In V1 a user belongs to exactly one branch (branch_id>0 enforced at ParkedOrderController.php:93-98), so the (user_id) key is effectively branch-disjoint and there is NO observable defect. Under a future multi-branch operator (V2 SaaS), the same operator parking on two branches with a reused token would collide cross-branch.",
+        "evidence": "$table->unique(['user_id', 'idempotency_token'], 'pos_parked_user_idem_uniq');  // migration line 27\n\nPosParkedOrderService::park(): \\n$existing = PosParkedOrder::query()->where('user_id', $userId)->where('idempotency_token', $token)->first();  // lines 27-30 — no ->where('branch_id', ...)",
+        "recommendation": "V1-LOCAL fence: NOT a V1 blocker (single-box, 1 branch). Track as a V2/cloud-prep backlog item — widen the unique index and the park() lookup to (branch_id, user_id, idempotency_token) when multi-branch operators become possible. No edit needed for V1."
+      },
+      {
+        "severity": "P2",
+        "title": "CRITICAL-CHECK #3 OSS sync — 4xx-vs-5xx backoff PRESENT, but per-listener isolation in _emit ABSENT (one throwing subscriber breaks siblings + reclassifies render error as poll error)",
+        "file_line": "resources/js/services/OssSyncService.js:441-447 (and consequence at 300-315)",
+        "reproduction": "_emit() iterates listeners with `listeners.forEach((handler)=>handler(payload))` and NO per-handler try/catch. The OSS wall subscribes 'sync' → this._hydrateFromRows(rows) (PreparingAndReadyComponent.vue:267-268). If _hydrateFromRows throws on a malformed row, the forEach aborts (later 'ws_state'/'error' listeners for that emit are skipped) AND the exception bubbles out of _emit('sync') at line 300 — which sits INSIDE the _poll try block, so it is caught at line 302 and misclassified as a network/poll error → _emit('error') → wall flips to pollDegraded=true even though the network call succeeded. 5xx backoff itself IS correct (status 500-599 → _handle5xx exponential backoff cap 30s, lines 292-295/308-311/323-332); 4xx falls through to a normal-cadence reschedule (lines 313-315). Only the handler-isolation is missing.",
+        "evidence": "L446: `listeners.forEach((handler) => handler(payload));` (no try/catch) ; L300 `this._emit('sync', { rows, status });` is inside the try (285-301) so a throwing handler hits the catch at L302 `catch (error)` → L314 `this._emit('error', ...)`. Sibling KDS service is unaffected (separate path), but the customer wall self-degrades on any render-time row error.",
+        "recommendation": "Wrap each handler: `listeners.forEach((h)=>{ try { h(payload); } catch(e){ /* isolate; optionally console.warn in dev */ } });`. Pure client-side, non-frozen, no bus/contract change — safe heal. Add a Vitest case feeding a throwing 'sync' subscriber and asserting 'ws_state'/'error' siblings still fire and state stays POLLING."
+      },
+      {
+        "severity": "P2",
+        "title": "allergens_snapshot double-encode latent defect → KitchenDisplaySystemOrderService food-safety hash and KDS line silently drop allergens for double-encoded rows",
+        "file_line": "app/Services/KitchenDisplaySystemOrderService.php:556,590-604 + app/Models/OrderItem.php:107 + app/Http/Resources/KDSOrderItemsResource.php:69-82",
+        "reproduction": "OrderItem casts allergens_snapshot to 'array' (OrderItem.php:107). The KDS merge-key hash calls normalizeAllergensForHash($item['allergens_snapshot']) which returns [] for any non-array input (`if (! is_array($snapshot)) return [];`, line ~592). A double-encoded value (a JSON string of a JSON array) is json_decode'd ONCE by the 'array' cast → yields a JSON STRING, not an array → is_array() false → allergens dropped from the food-safety split hash AND, via KDSOrderItemsResource::safeJsonDecodeArray (which only decodes ONE level), rendered as []. The deep-review of 2026-06-13 empirically confirmed a real double-encoded row (order_item 4391) where safeJsonDecodeArray → []. The creation paths (OrderService.php:885/295 via OrderItem::insert bypassing casts) are single-encoded and SAFE; the double-encode originates from a path that assigns an already-json_encode'd string to the 'array'-cast attribute via Eloquent save/create (re-encode). Could not reproduce live: tinker connects to the stale shared `foodking` DB which lacks the allergens_snapshot column, and the :8780 isolated DB must not be mutated.",
+        "evidence": "OrderItem.php:107 `'allergens_snapshot' => 'array',` ; service L556 `$allergensHash = sha1(json_encode($this->normalizeAllergensForHash($item['allergens_snapshot'] ?? [])));` ; L592 `if (! is_array($snapshot)) { return []; }` ; KDSOrderItemsResource L79-81 single-level `json_decode($value, true)`. Deep-review 2026-06-13 (MEMORY project_deep_review_e2e_2026-06-13) adjudicated this REAL but P2 because the affected order was RETURNED status (outside KitchenReleaseRule::visibleStatuses()) so it never reaches a live KDS board.",
+        "recommendation": "P2 (not P1): bounded to non-visible historical rows on this spine, but a genuine food-safety latent. (1) Harden normalizeAllergensForHash + safeJsonDecodeArray to defensively double-decode: if first decode yields a JSON string, decode again. (2) Add a one-off audit/repair command to detect order_items where json_decode(allergens_snapshot) is a string and re-normalize (NF525: only for non-closed/non-fiscal rows; closed orders are immutable — gate with owner). (3) Add a model-write guard test ensuring any code assigning allergens_snapshot passes an array, never a json_encode'd string, to the 'array'-cast attribute."
+      },
+      {
+        "severity": "P3",
+        "title": "allergen codes that are not strings are silently dropped (filter, not coerce) — theoretical food-safety data loss",
+        "file_line": "resources/js/helpers/kdsCustomization.js:152-153,257-258",
+        "reproduction": "Both renderItem() and orderHasAnyAllergen() filter codes with `typeof c === 'string'`. A numeric or object-shaped allergen code (e.g. an integer allergen id rather than a FR code) would be dropped rather than coerced to a display string, so the ⚠ pill and allergen line would not appear. Today all codes are persisted as FR string codes (backfill migration 2026_04_20_131600 stores string codes), so this is latent/theoretical, but it is a fail-OPEN-to-hidden choice for a food-safety surface.",
+        "evidence": "L153 `.filter((c) => typeof c === 'string' && c.length > 0)` ; L258 `codes.some((c) => typeof c === 'string' && c.length > 0)`",
+        "recommendation": "Coerce instead of filter for the food-safety surface: map non-empty values to String(c) (e.g. `.map(c=>c==null?'':String(c)).filter(s=>s.length>0)`) so an unexpected numeric/object code still surfaces a visible warning rather than vanishing. Pure client, non-frozen."
+      },
+      {
+        "severity": "P2",
+        "title": "Post-commit notif/broadcast Throwable can re-wrap a COMMITTED status bump into a misleading 422",
+        "file_line": "app/Services/KitchenDisplaySystemOrderService.php:470-484",
+        "reproduction": "changeStatus() commits the DB transaction at line 461 (orders.status persisted + order_status_transitions row written). AFTER commit it fires four side-effects: SendOrderMail/Sms/Push::dispatch() (lines 470-472, NOT wrapped) and kdsTicketDispatcher->dispatch() (lines 474-478, wrapped in catch \\Exception only). The three SendOrder* events are synchronous (SendOrderPush.php:9 / SendOrderPushNotification.php:10 implement neither ShouldQueue nor ShouldBroadcast → listeners run inline). Each listener self-protects with catch(\\Exception) (SendOrderMailNotification.php:16, SendOrderSmsNotification.php:16, SendOrderPushNotification.php:17), and the ticket dispatcher catch is also \\Exception (line 476). BUT none catch \\Throwable. A PHP Error/TypeError raised in OrderMail/Sms/PushNotificationBuilder::send() (or in the broadcast path) escapes all inner handlers, bubbles to the service outer catch(Exception) at line 481, and is re-wrapped into `throw new Exception(..., 422)` — even though the bump already committed. Controller (KitchenDisplaySystemController.php:49-51) then returns HTTP 422 to the chef for a bump that DID succeed. The chef re-clicks; the re-click hits the no-op `$fromLocked === $newStatus` branch (line 424) returning 202 silently, or a 409 if another station refreshed — confusing UX on a successful operation.",
+        "evidence": "L461 transaction returns; L470-472 `SendOrderMail::dispatch(...)` / `SendOrderSms::dispatch(...)` / `SendOrderPush::dispatch(...)` with NO try/catch; L474-478 only the ticket dispatcher is guarded (`} catch (\\Exception $e) {`); L481 `} catch (Exception $exception) { ... throw new Exception(QueryExceptionLibrary::message($exception), 422); }`. Events are sync: `app/Events/SendOrderPush.php:9 class SendOrderPush` (no implements). Listeners catch \\Exception not \\Throwable: `app/Listeners/SendOrderPushNotification.php:17 } catch(\\Exception $e)`. .env: QUEUE_CONNECTION=redis but events are sync regardless.",
+        "recommendation": "Wrap the three SendOrder* dispatches in the same post-commit guard already applied to the ticket dispatcher, and broaden all post-commit catches from \\Exception to \\Throwable. The bump is fiscally/operationally complete once the transaction commits; no post-commit side-effect failure (notif gateway down, broadcast error, type error in a builder) should ever surface as a 422 on the bump. Pattern: collect post-commit work into one `try { ... } catch (\\Throwable $e) { Log::warning(...); }` block placed AFTER the outer try/catch, or hoist the success return before side-effects so the outer catch can never re-wrap them."
+      },
+      {
+        "severity": "P2",
+        "title": "Dashboard \"Top du jour\" widget (topItemsOfDay) does NOT net counter-entry refunds — over-counts refunded items vs the Items Report and vs net-realized truth",
+        "file_line": "app/Services/DashboardService.php:847-863",
+        "reproduction": "1) Create + pay a POS/kiosk order for item X (qty N). 2) Post-Z refund it via PosOrderController::refundWithCounterEntry → RefundWithCounterEntryService creates a RETURNED mirror order (payment_status=REFUNDED, line 114) with a NEGATIVE-quantity OrderItem (quantity=-N, total_price negated; RefundWithCounterEntryService.php:114,154,166). 3) Open the admin dashboard \"Top du jour\". topItemsOfDay filters whereHas('order', payment_status=PAID) (DashboardService.php:856), which EXCLUDES the REFUNDED mirror, while the PARENT stays payment_status=PAID (RefundWithCounterEntryService never flips the parent — grep shows only the line:86 read guard, no parent->status/payment_status write). Result: item X still shows qty=N / revenue=full in the Top widget. 4) Open Items Report for the same day: ItemService::itemReport uses ->realizedRevenue() (ItemService.php:643) which INCLUDES the RETURNED mirror's negative qty, netting item X to ~0. The two management screens report different units-sold/revenue for the same refunded item.",
+        "evidence": "DashboardService.php:853-860 `->whereHas('order', function ($q) ... { $q->...->where('payment_status', PaymentStatus::PAID); ...})` — PAID-only, no realizedRevenue()/no mirror inclusion. Contrast ItemService.php:641-648 `->withSum(['orders as units_sold' => fn($q) => $q->whereHas('order', fn($o) => $o->realizedRevenue() ...)], 'quantity')`. Mirror is REFUNDED+negative-qty: RefundWithCounterEntryService.php:114 `'payment_status' => PaymentStatus::REFUNDED`, :154 `'quantity' => -1 * (int) $item->quantity`, :166 `'total_price' => -1 * (float) ($item->total_price ?? 0)`. Parent left PAID/non-terminal (no parent->save of status in the file).",
+        "recommendation": "Make topItemsOfDay net refunds like every other item surface: replace `->where('payment_status', PaymentStatus::PAID)` with the realized-revenue predicate (->realizedRevenue() on the order subquery), so the RETURNED negative-qty mirror is summed in and a refunded item nets out. This is read-only service code (not frozen) — no LOCK needed. Add a regression test asserting topItemsOfDay qty for a refunded item == itemReport units_sold for the same day."
+      },
+      {
+        "severity": "P3",
+        "title": "Hourly-traffic chart (customerStates) counts refund counter-entry mirrors as phantom extra customer visits",
+        "file_line": "app/Services/DashboardService.php:316-322",
+        "reproduction": "1) Refund any order post-Z (creates a RETURNED mirror with its own order_datetime=now, RefundWithCounterEntryService.php:120). 2) Load dashboard \"Clients par heure\" (customerStates). The hour bucket containing the refund instant is incremented by +1 even though no real customer visit occurred. Every sibling count surface (orderStatistics:66, orderSummary:151, totalOrders:385, topCustomers:340/352) explicitly adds ->whereNull('parent_order_id') to drop mirrors; customerStates is the one that omits it.",
+        "evidence": "DashboardService.php:286 `$order = $this->orderQuery();` then :316-321 `(clone $order)->where('order_datetime', ...)->whereTime(...)->count();` — NO whereNull('parent_order_id'). Compare the documented mirror-exclusion at :66 `$order = $this->orderQuery()->whereNull('parent_order_id'); // [DASH-SEM-03 heal] Exclude refund counter-entry mirrors` and identical guard at :151, :385, :340, :352.",
+        "recommendation": "Add ->whereNull('parent_order_id') to the customerStates base query (line 286) for parity with orderStatistics/orderSummary/totalOrders/topCustomers. Non-frozen service code; cosmetic analytics fix, no fiscal impact."
+      },
+      {
+        "severity": "P3",
+        "title": "Sales Report overview total_discounts still shows the full discount of a counter-entry-refunded sale (refund mirror carries discount=0, so the discount is not reversed)",
+        "file_line": "app/Services/OrderService.php:2974",
+        "reproduction": "1) Place a discounted order (discount=D), pay it. 2) Post-Z refund via counter-entry. The parent stays PAID/non-terminal with discount=D (parent untouched); the mirror is created with discount=0 (RefundWithCounterEntryService.php:118). 3) salesReportOverview filters paidOrders = isRealizedRevenueRow (parent INCLUDED, mirror INCLUDED) and sums ->discount. total_earnings nets to ~0 via the negated mirror total, but total_discounts = D + 0 = D — the report shows a discount for a sale that was fully refunded, so total_discounts no longer corresponds to the net realized earnings shown beside it.",
+        "evidence": "OrderService.php:2971-2974 `$paidOrders = $orders->filter(fn ($o) => Order::isRealizedRevenueRow($o)); ... $salesReportArray['total_discounts'] = AppLibrary::currencyAmountFormat($paidOrders->sum('discount'));`. Mirror discount is deliberately 0: RefundWithCounterEntryService.php:118 `'discount' => 0`. isRealizedRevenueRow includes both parent (PAID, non-terminal) and mirror (RETURNED+parent_order_id) — Order.php:315-324. Same pattern in the PDF Total row: resources/views/pdf/sales_report.blade.php:132 `$total_discount += $order->discount;` under the same isRealizedRevenueRow gate.",
+        "recommendation": "Decide the intended semantic for total_discounts on refunded sales. If it must track net realized (consistent with the netted total_earnings beside it), negate the parent discount on the mirror (set mirror discount = -parent->discount) — but that touches the NF525-adjacent RefundWithCounterEntryService and the LOCK_ZREPORT netting contract, so it needs an owner gate + Z-impact review. Lower-risk alternative: label the column \"Remises brutes (hors remboursements)\" so the figure is not read as net. Note: discount is not a signed-Z money figure, so this is a reporting-clarity issue, not a fiscal-correctness break."
+      },
+      {
+        "severity": "P2",
+        "title": "POS barcode lookup ignores per-branch rupture (ItemBranchAvailability) — operator can sell a ruptured item via barcode scan",
+        "file_line": "app/Http/Controllers/Admin/ItemController.php:252-288 (query at :256-267, filter only :259 where('is_available', true))",
+        "reproduction": "POS operator scans/queries GET /api/admin/item/lookup-barcode/{code} for an item that is globally is_available=1 but has an ItemBranchAvailability row is_available=0 / unavailable_reason='stock_rupture' for the operator's branch. The endpoint resolves the item (200 + SimpleItemResource) with no branch availability overlay, so the tile becomes addable to cart; checkout then 422s on the branch-availability guard — the exact failure the index() path explicitly prevents.",
+        "evidence": "lookupBarcode() builds the query: `Item::query()->where('barcode',$code)->where('is_available', true)->where(channels...)` — NO join/where against ItemBranchAvailability and NO $user->branch_id consideration. Contrast index() lines 53-64 which REFUSE surface=pos without branch_id precisely because 'overlay availability inopérant ; ... false-positive cliquabilité tile = perte argent + 422 au checkout' (CV1-POS-AVAILABILITY-LIVE-001). The barcode path bypasses that whole guard. grep-confirmed route live: routes/api.php:721 `Route::get('/lookup-barcode/{code}', [ItemController::class,'lookupBarcode'])`.",
+        "recommendation": "Apply the same per-branch availability overlay as index()/applyBranchAvailabilityOverlay: resolve the caller's branch (forcePosRuntimeBranchScope already exists in this controller) and treat an ItemBranchAvailability row with is_available=0 for that branch as not-found (404) or annotate meta.branch_unavailable=true so the POS tile is non-addable. Single-branch V1 still has branch_id=1 rupture rows, so this is a live correctness gap, not cloud-only."
+      },
+      {
+        "severity": "P2",
+        "title": "Per-branch fiscal audit secret read via raw env() in frozen AuditLogService → silently lost under `php artisan config:cache`, forging a chain under the WRONG secret",
+        "file_line": "app/Services/Fiscal/AuditLogService.php:273",
+        "reproduction": "1. Set a per-branch override `FISCAL_AUDIT_SECRET_BRANCH_1=<strong-secret-A>` in .env, distinct from the shared `FISCAL_AUDIT_SECRET=<strong-secret-B>`. 2. Run `php artisan config:cache` (a standard Laravel prod optimization; the repo's own CI workflow .github/workflows/playwright.yml:96 explicitly documents config:cache as an expected step, and `composer install --optimize-autoloader` runs in deploy/ansible/site.yml:151). 3. After config:cache, `env()` calls OUTSIDE config files return null (Laravel only loads the .env file when config is NOT cached). 4. `secretFor(1)` therefore skips the override branch (line 274 `$override !== ''` is false) and falls through to the shared `Config::get('fiscal.audit_secret')` (line 279) which IS config-cache-safe. 5. Result: rows written for branch 1 are HMAC-signed with secret-B instead of the intended branch-secret-A. Worse, audit rows written BEFORE config:cache (signed with A) and AFTER (signed with B) live in the same per-branch chain → verifyChain() recomputes every row under one resolved secret and reports a `signature_mismatch` tamper on the boundary rows = false-positive NF525 tamper alarm, or a real signing-key inconsistency that masks genuine tampering.",
+        "evidence": "AuditLogService.php:269-285 — only the BASE secret has a config mapping; the per-branch override is a raw runtime env():\n```\n269  private function secretFor(?int $branchId): string\n272      if ($branchId !== null) {\n273          $override = env('FISCAL_AUDIT_SECRET_BRANCH_'.$branchId);\n274          if (is_string($override) && $override !== '') {\n275              return $this->assertProductionSafe($override, ...);\n279      $configured = Config::get('fiscal.audit_secret');   // config-cache-safe\n```\nGrep confirms NO config-file mapping for the per-branch override (only the base key is mapped): `config/fiscal.php:31  'audit_secret' => env('FISCAL_AUDIT_SECRET', '')` — and the per-branch var appears ONLY as a doc comment `config/fiscal.php:28` + the raw env() at `AuditLogService.php:273`. `grep -rn FISCAL_AUDIT_SECRET_BRANCH config/ app/Services/Fiscal/` returns only the comment and the env() line. This is the exact historical bug class flagged in CLAUDE.md §8 ('historical: AuditLogService env() read'); the BASE secret was moved to config but the per-branch override was left on raw env().",
+        "recommendation": "FROZEN ZONE — needs LOCK + owner gate (AuditLogService is in §7 NF525-critical frozen list). The correct fix is config-side, not service-side: add a config mapping in config/fiscal.php that materializes per-branch overrides at config-build time (e.g. `'audit_secret_by_branch' => [1 => env('FISCAL_AUDIT_SECRET_BRANCH_1'), ...]` or a loop), then have secretFor() read `Config::get('fiscal.audit_secret_by_branch.'.$branchId)` instead of env(). The config file is the ONLY place env() survives config:cache. V1-LOCAL impact: single-branch Le Cayenne uses the shared FISCAL_AUDIT_SECRET (the per-branch override is commented out in .env.example:339), so this is LATENT not active for V1 — but it is a live NF525 trap the instant anyone sets a branch override or the multi-branch future arrives, and config:cache is already an expected ops step. Until LOCK+gate, document explicitly that `FISCAL_AUDIT_SECRET_BRANCH_N` MUST NOT be used while config:cache is enabled."
+      },
+      {
+        "severity": "P3",
+        "title": "OrderPaymentStatusChanged is broadcast on private-branch.{id} but no SPA consumer listens (dead broadcast lane)",
+        "file_line": "app/Listeners/PersistOrderPaymentStatusChangedToOutbox.php:61 (broadcast_as 'OrderPaymentStatusChanged'); resources/js/services/eventContract.js:19-32 (BROADCAST_MAP has no 'OrderPaymentStatusChanged' key)",
+        "reproduction": "grep -rn 'OrderPaymentStatusChanged' resources/js/ returns ZERO matches (no channel.listen('.OrderPaymentStatusChanged') anywhere). Producer persists a domain_events row + DispatchDomainEventsJob broadcasts it on private-branch.{id} on every payment_status transition, yet no front surface subscribes.",
+        "evidence": "Producer: PersistOrderPaymentStatusChangedToOutbox.php:61 `'broadcast_as' => 'OrderPaymentStatusChanged'` with channel `json_encode(['private-branch.' . ...])`. Consumer search: `grep -rn \"OrderPaymentStatusChanged\" resources/js/` => (no output). Contrast: every other branch-channel broadcast_as (OrderCreated/OrderStatusChanged/OrderPaidAtCounter/KdsOrderRecalled/LoyaltyBalanceChanged/Item*AvailabilityChanged) IS subscribed.",
+        "recommendation": "Confirm intent: the EventType comment (app/Enums/EventType.php:30-33) says it is consumed server-side by Z-report aggregation, so the broadcast leg is wasted Pusher traffic + outbox rows on a high-frequency event. Either (a) stop setting channel/broadcast_as (persist as audit-only domain event, leaving channel NULL so DispatchDomainEventsJob:100 skips the broadcast) or (b) wire a consumer if real-time payment-status push is wanted. No functional break — purely wasted work. V1-LOCAL single-box: low priority."
+      },
+      {
+        "severity": "P3",
+        "title": "DispatchDomainEventsJob.failed() reports config('queue.default') (defaults to 'sync') as the connection in the terminal-failure pager context, which can mislead ops on a misconfigured box",
+        "file_line": "app/Jobs/DispatchDomainEventsJob.php:225 ; config/queue.php:16",
+        "reproduction": "Job is pinned to lane 'high' via onQueue('high') in the constructor (DispatchDomainEventsJob.php:46) but $this->connection is null unless explicitly set, so failed() logs `'connection' => $this->connection ?? config('queue.default')`. config/queue.php:16 defaults that to 'sync'. The deployed .env sets QUEUE_CONNECTION=redis so the live value is correct, but the fallback in the alert payload is the literal string 'sync' on any box where QUEUE_CONNECTION is unset — the same box where the worker would never run, i.e. exactly when the pager fires.",
+        "evidence": "DispatchDomainEventsJob.php:225 `'connection' => $this->connection ?? config('queue.default'),`. config/queue.php:16 `'default' => env('QUEUE_CONNECTION', 'sync'),`. Live (.env) `QUEUE_CONNECTION=redis` (curl-confirmed app up at :8780, status 200). The 'queue'=>'high' field at line 224 is correct via `$this->queue ?? 'high'`.",
+        "recommendation": "Cosmetic observability nit: pin the connection name explicitly (constructor onConnection or hard-code the lane SSOT) so the terminal-failure log can never report 'sync' when the real lane is redis:high. No correctness impact on the deployed config."
+      }
+    ],
+    "per_system_summary": [
+      {
+        "system": "S1-BORNE",
+        "lens": "logic+sync",
+        "confirmed": 0,
+        "refuted": 1,
+        "p2p3": 2
+      },
+      {
+        "system": "S1-BORNE",
+        "lens": "security+ux",
+        "confirmed": 0,
+        "refuted": 0,
+        "p2p3": 2
+      },
+      {
+        "system": "S2-CAISSE",
+        "lens": "fiscal+cash",
+        "confirmed": 0,
+        "refuted": 0,
+        "p2p3": 2
+      },
+      {
+        "system": "S2-CAISSE",
+        "lens": "logic+security",
+        "confirmed": 0,
+        "refuted": 0,
+        "p2p3": 1
+      },
+      {
+        "system": "S3-KDS",
+        "lens": "release+allergen",
+        "confirmed": 0,
+        "refuted": 2,
+        "p2p3": 3
+      },
+      {
+        "system": "S3-KDS",
+        "lens": "sync+ux",
+        "confirmed": 0,
+        "refuted": 0,
+        "p2p3": 1
+      },
+      {
+        "system": "S4-CENTRAL",
+        "lens": "numbers+reports",
+        "confirmed": 0,
+        "refuted": 0,
+        "p2p3": 3
+      },
+      {
+        "system": "S4-CENTRAL",
+        "lens": "catalogue+rbac",
+        "confirmed": 0,
+        "refuted": 0,
+        "p2p3": 1
+      },
+      {
+        "system": "S5-SHARED",
+        "lens": "fiscal-chain",
+        "confirmed": 0,
+        "refuted": 0,
+        "p2p3": 1
+      },
+      {
+        "system": "S5-SHARED",
+        "lens": "sync-bus+order-core",
+        "confirmed": 0,
+        "refuted": 0,
+        "p2p3": 2
+      }
+    ]
+  }
+}
