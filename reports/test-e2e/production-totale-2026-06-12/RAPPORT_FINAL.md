@@ -103,5 +103,14 @@ Le spine `release/v1-2026-06-10` a continué d'avancer (+18 commits) sous des se
 
 **Tronc final `b19f151e0` (106 commits). Audit final 100% VERT — 0 P0/P1/P2/P3 ouvert hors les 4 gates owner.**
 
+## 6quinquies. ULTRA-REVIEW CODE (2026-06-14) — VALIDATE
+Revue adversariale du DIFF d'intégration (`release/v1-2026-06-10..HEAD`, pas seulement comportemental) : 6 finders deep-code par dimension → vérificateurs perspective-diverse → adjudicateur deep-reasoning (`wf_2a9be29f`).
+- **Adjudicateur : VALIDATE, 0 P0/P1/P2 autonome à healer.** Preuves primaires : frozen 0 drift (8 fichiers byte-identiques shasum ×8, pos-wizard/css/blade byte-identiques base) ; off-book guard P0 avant les 2 branches ; R-1 garde symétrique 409 ; F2-01 plafond redeem sain ; loyalty 1pt/€ SSOT ; suites Loyalty/ItemVariation/Coupon/Offer/EventContract/Outbox/Fiscal/ZReport 407/407 + frontend sentinels 19/19.
+- **Couture de merge la plus à risque revue en profondeur (manuel, deep-reasoning)** : `FrontendOrderService` zone loyalty/coupon (union W4+clients-next+spine dispute-r3). Pattern suspect repéré (`$calculatedDiscount` semblait non-initialisé sur chemin SSOT) → **RÉFUTÉ par preuve** : initialisé l.293 (base SSOT), accumulé par référence (`float &`, `+=`) par loyalty/promo, gate fiscal l.514. Couture COHÉRENTE.
+- **G-BASELINE RÉSOLUE** : commit owner-contresigné `2ff438102` (2026-06-14) réaligne le SHA wizard sur la base (byte-identique, lignée LOCK-W6/CAISSE-01). Sentinelle frozen-sha256 désormais **GREEN** (1/1) → **PHPUnit 3291/0 entièrement vert** (seul résidu = TpeSimulation risky pré-existant, 0 assertion).
+- Honnêteté : 4/6 finders-agents morts sur rate-limit (fiscal/concurrence/coutures/frontend) — leurs dimensions couvertes par l'adjudicateur (fiscal+frozen+suites), ma revue manuelle (coutures), et les 3 cycles W-VAL + audit cross-surface (frontend/concurrence/fiscal comportemental).
+
+**Gates restantes : 2 seulement** (G-BASELINE faite) — **G2** (LOCK caisse frozen) + **G-PUSH** + **G-OVH**.
+
 ## 7. VERDICT
 **Autonome : CONVERGÉ.** Tout ce qui est corrigeable sans gate owner est fixé, testé (suites complètes vertes), et prouvé en live. Le tronc unifié est prêt à push (G-PUSH) et à déployer (G-OVH) une fois les 2 contreseings (G2 frozen caisse, G-BASELINE) posés. La perfection restante (P1 caisse) est **structurellement** entre les mains de l'owner — par conception NF525/frozen, pas par défaut d'exécution.
