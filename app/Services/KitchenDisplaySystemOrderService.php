@@ -589,6 +589,22 @@ class KitchenDisplaySystemOrderService
      */
     private function normalizeAllergensForHash($snapshot): array
     {
+        // [FOOD-SAFETY heal 2026-06-14 — massive-2dot0 #9] Defensively unwrap a
+        // DOUBLE-ENCODED snapshot (a JSON *string* of a JSON array — a legacy
+        // write artifact). The Eloquent 'array' cast decodes only once, so a
+        // double-encoded value arrives here as a string and previously collapsed
+        // to [] → two items with identical allergens hashed differently (split
+        // KDS lines) AND the allergen-aware merge key silently lost the codes,
+        // so the chef could miss a declared allergy. Decode up to twice until we
+        // reach an array, making the food-safety hash robust to encoding depth.
+        if (is_string($snapshot)) {
+            $decoded = json_decode($snapshot, true);
+            if (is_string($decoded)) {
+                $decoded = json_decode($decoded, true);
+            }
+            $snapshot = $decoded;
+        }
+
         if (! is_array($snapshot)) {
             return [];
         }
