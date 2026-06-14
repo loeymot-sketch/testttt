@@ -33,6 +33,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\User;
 use App\Services\DashboardService;
+use App\Services\OrderService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
 use Tests\TestCase;
@@ -144,6 +145,35 @@ class DashboardRevenueNettingSentinelTest extends TestCase
             (int) array_sum($states['total_customers']),
             'Refund counter-entry mirror must not count as a phantom customer visit.'
         );
+    }
+
+    /**
+     * massive-2dot0 supervisor-R2 (#14 over-deferred) — sales-report total_discounts
+     * must NET refunded sales like total_earnings does. Pre-heal: the mirror carries
+     * discount=0 (RefundWithCounterEntryService:118) while total is negated, so a
+     * refunded sale's full discount lingered in total_discounts though its earnings
+     * netted to 0. Z-SAFE read-side fix (no mirror/Z column touched).
+     */
+    public function test_sales_report_discounts_net_refunded_sales(): void
+    {
+        $this->actAsAdmin();
+        $branch = Branch::factory()->create();
+        // Refunded sale: discount 5 then a RETURNED mirror (discount column = 0).
+        $parent = $this->makeOrder($branch, OrderStatus::DELIVERED, PaymentStatus::PAID, 30.0);
+        $parent->update(['discount' => 5.0]);
+        $this->makeOrder($branch, OrderStatus::RETURNED, PaymentStatus::REFUNDED, -30.0, $parent->id);
+        // Clean sale: discount 3 (must remain counted).
+        $clean = $this->makeOrder($branch, OrderStatus::DELIVERED, PaymentStatus::PAID, 20.0);
+        $clean->update(['discount' => 3.0]);
+
+        $report = app(OrderService::class)->salesReportOverview(
+            new Request(['first_date' => '2026-03-01', 'last_date' => '2026-03-31'])
+        );
+
+        // Net realized discounts = 3 (clean only); the refunded sale's 5 nets out.
+        // Pre-heal = 8 (5+3). Currency format uses the integer part.
+        $this->assertStringContainsString('3', (string) $report['total_discounts']);
+        $this->assertStringNotContainsString('8', (string) $report['total_discounts'], 'Refunded sale discount must net out (was 5+3=8).');
     }
 
     private function makeItem(Order $order, Branch $branch, Item $item, int $qty, float $totalPrice): void

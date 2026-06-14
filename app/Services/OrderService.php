@@ -2971,7 +2971,19 @@ class OrderService
             $paidOrders = $orders->filter(fn ($o) => \App\Models\Order::isRealizedRevenueRow($o));
             $salesReportArray['total_orders'] = $orders->count();
             $salesReportArray['total_earnings'] = AppLibrary::currencyAmountFormat($paidOrders->sum('total'));
-            $salesReportArray['total_discounts'] = AppLibrary::currencyAmountFormat($paidOrders->sum('discount'));
+            // [DASH-NET heal 2026-06-14 — massive-2dot0 supervisor-R2 #14] Net
+            // refunded sales out of total_discounts the same way total_earnings
+            // nets via `total`. The refund counter-entry mirror carries discount=0
+            // (RefundWithCounterEntryService) while its total is negated, so a naive
+            // sum kept a refunded sale's full discount even though its earnings
+            // netted to 0. READ-SIDE only — the mirror/Z columns are untouched
+            // (Z-safe): drop the discount of any parent that has a refund mirror in
+            // the realized set, plus the mirrors themselves (discount=0 anyway).
+            $refundedParentIds = $paidOrders->whereNotNull('parent_order_id')->pluck('parent_order_id')->filter()->all();
+            $netDiscounts = $paidOrders
+                ->filter(fn ($o) => $o->parent_order_id === null && ! in_array($o->id, $refundedParentIds))
+                ->sum('discount');
+            $salesReportArray['total_discounts'] = AppLibrary::currencyAmountFormat($netDiscounts);
             $salesReportArray['total_delivery_charges'] = AppLibrary::currencyAmountFormat($paidOrders->sum('delivery_charge'));
 
             return $salesReportArray;
