@@ -76,3 +76,4 @@ missions/**/output_codex.json
 /public/file/*.ppk
 # Allow .htaccess inside public/file/ (defense-in-depth deny rule).
 !/public/file/.htaccess
+.env.2dot0
