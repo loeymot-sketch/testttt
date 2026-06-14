@@ -1,0 +1,52 @@
+{
+  "summary": "Close the DELIVERY/livreur-cash coverage gap — deep audit of the delivery lifecycle + cash + fiscal, adversarially verified",
+  "agentCount": 10,
+  "logs": [
+    "Delivery audit: 4 confirmed P0/P1, 0 P2/P3"
+  ],
+  "result": {
+    "confirmed_p0p1": [
+      {
+        "severity": "P1",
+        "title": "OUT_FOR_DELIVERY / DELIVERED reachable with NO assigned delivery boy (orphan delivery) — no driver-assignment guard in state machine or admin/OSS changeStatus",
+        "file_line": "app/Domain/Order/OrderStateMachine.php:65-74 (PREPARED→OUT_FOR_DELIVERY / PREPARED→DELIVERED); app/Services/OrderService.php:2256-2258 (admin/OSS changeStatus validates ONLY ValidStatusTransition, no delivery_boy_id check); app/Services/OrderService.php:2710-2756 (selectDeliveryBoy is an independent, optional call)",
+        "votes": "2/2",
+        "reproduction": "DB clone foodking_2dot0: `SELECT id,status,payment_status,delivery_boy_id FROM orders WHERE order_type=5 AND status=7` → 21 PAID PREPARING delivery orders ALL with delivery_boy_id=NULL. OrderStateMachine::allows(PREPARED=8, OUT_FOR_DELIVERY=10) returns true unconditionally (line 71) and allows(PREPARED=8, DELIVERED=13) returns true (line 71) with zero inspection of delivery_boy_id. The admin path POST /api/admin/online-order/change-status/{order} (OnlineOrderController→OrderService::changeStatus) and POS path only run ValidStatusTransition (OrderService.php:2256). Nothing requires a driver to be assigned first — an operator can push an order OUT_FOR_DELIVERY (or straight to DELIVERED with pos perm) while delivery_boy_id is still NULL.",
+        "recommendation": "Add an invariant in the changeStatus / OrderStateMachine path: when target status is OUT_FOR_DELIVERY (and for DELIVERED on DELIVERY-type orders) require order.delivery_boy_id IS NOT NULL, else abort(422,'Assign a delivery boy before dispatch'). The driver self-service path (deliveryBoyOrderChangeStatus, OrderService.php:1866) already cannot orphan because its ownership check requires delivery_boy_id == auth id; the gap is purely the admin/OSS path. Frozen-zone note: OrderStateMachine is frozen, so prefer the guard in OrderService::changeStatus (non-frozen) to avoid a LOCK."
+      },
+      {
+        "severity": "P0",
+        "title": "COD delivery order flipped PAID at doorstep is NEVER allocated a fiscal_sequence_no → escapes the Z report entirely (NF525 gap-free / exhaustivity violation)",
+        "file_line": "app/Services/OrderService.php:1861-2009 (deliveryBoyOrderChangeStatus — flips payment_status→PAID at DELIVERED, lines 1870-1899, with NO FiscalSequenceService::next() call anywhere in the method); app/Services/Fiscal/ZReportService.php:337-341 (aggregate() filters ->whereNotNull('fiscal_sequence_no')); app/Services/FrontendOrderService.php:266 (web/mobile DELIVERY+COD created payment_status=UNPAID, fiscal_sequence_no=NULL); FrontendOrderService.php:1345-1351 (fiscal auto-alloc is gated to KIOSK orders only, not web/mobile delivery)",
+        "votes": "2/2",
+        "reproduction": "DB foodking_2dot0: SELECT order_type,status,payment_status,payment_method,COUNT(*),SUM(fiscal_sequence_no IS NULL) FROM orders WHERE order_type=5 GROUP BY status,payment_status,payment_method; → row status=13(DELIVERED) payment_status=5(PAID) payment_method=1(COD) n=1 fiscal_null=1 fiscal_set=0. Order id=113 (LIV-E2E-20260528190638, total 27.50€, PAID COD DELIVERED) has fiscal_sequence_no=NULL. Because ZReportService::aggregate has whereNotNull('fiscal_sequence_no'), this 27.50€ collected sale is invisible to every daily Z — cash entered the till but never appears in the fiscal close.",
+        "recommendation": "In the COD DELIVERED branch (OrderService.php:1870-1886, where payment_status is flipped to PAID inside the locked tx), allocate fiscal_sequence_no via FiscalSequenceService::next((int)$locked->branch_id) when it is null, with the same fiscal_alloc_error_at flag + retry-cron fallback used by the kiosk path (FrontendOrderService.php:1345-1370) — so cash-collected deliveries enter the Z. This is in/adjacent to frozen Fiscal/PricingService zones; report-only + owner gate required. Verify on real (non-test) COD delivery once code allocates: order should gain a sequence at DELIVERED."
+      },
+      {
+        "severity": "P1",
+        "title": "COD cash collected at delivery is only mirrored into the delivery-boy cash session IF an open shift exists; otherwise it is silently skipped → session reconciliation under-counts (expected ≠ Σ COD collected)",
+        "file_line": "app/Services/OrderService.php:1954-1986 (mirror into DeliveryBoyCashSession is best-effort, non-strict 'false' arg at line 1969, wrapped in 'if ($openSession)' line 1961 — no open shift = no movement, no block); app/Services/Delivery/DeliveryBoyCashSessionService.php:228-235 (reconcile computes expected = opening_amount + Σ signedAmount(movements) — it trusts the movements table, never cross-checks order-side COD totals)",
+        "votes": "2/2",
+        "reproduction": "DB foodking_2dot0: SELECT order_id FROM delivery_boy_cash_movements; → ALL 9 movement rows have order_id=NULL (synthetic test seeds: notes like 'order #X paid 20 cash', 'R3-verify-heal5-simulated-delivered'). The one real DELIVERED COD order (id=113, 27.50€) has NO corresponding movement row. So if a real driver delivers COD with no open session, the 27.50€ is collected (order flips PAID) but expected_closing_amount for that shift never includes it.",
+        "recommendation": "Either (a) make the DELIVERED-hook movement mirror STRICT for COD (block DELIVERED with 422 LIVREUR_SHIFT_NOT_OPEN if no open shift — the docblock at DeliveryBoyCashSessionService.php:280 says this was the intent) so cash can never be collected outside a session, or (b) add an independent reconciliation probe in reconcileSession that compares Σ order_collect movements against Σ(DELIVERED COD orders.total for that driver in the shift window) and surfaces a variance. Verify by delivering a COD order with no open shift and confirming the system either blocks or records the variance."
+      },
+      {
+        "severity": "P1",
+        "title": "Refund of a delivered COD order does NOT net in the delivery-boy cash session AND cannot net in the Z (no fiscal_sequence_no → barred from the counter-entry refund-mirror path)",
+        "file_line": "app/Services/Order/RefundWithCounterEntryService.php:59 (throws 'Parent order has no fiscal_sequence_no — use the standard pre-Z RETURNED path instead'); RefundWithCounterEntryService.php:297 (recordMovement targets $cashService = POS CashDrawerService, never DeliveryBoyCashSessionService); app/Services/PaymentService.php:91 cashBack() (credits wallet/counter, no DeliveryBoyCashMovement); grep DeliveryBoyCash over RefundWithCounterEntryService.php + PaymentService.php = no delivery-session linkage",
+        "votes": "2/2",
+        "reproduction": "Because finding P0 leaves COD-delivery orders with fiscal_sequence_no=NULL, RefundWithCounterEntryService:59 rejects them → they fall to the legacy pre-Z RETURNED status-flip, which is evidence-only (M-08, parent_order_id NULL) and is explicitly excluded from Z netting (ZReportService.php:368-384 only nets mirrors WHERE parent_order_id IS NOT NULL). Separately, no code path inserts a change_given/adjustment OUT movement on the driver's session for a refund, so the original order_collect IN (if it was recorded) is never offset.",
+        "recommendation": "When refunding a DELIVERY/COD order, post a compensating OUT movement (TYPE_CHANGE_GIVEN or TYPE_ADJUSTMENT, direction=out) on the driver's open session so reconcile nets it; and ensure the refund goes through the fiscal-aware counter-entry mirror (which depends on P0 fix giving the order a fiscal_sequence_no). Touches frozen Fiscal zone — owner gate. Verify by refunding a delivered COD and confirming both the boy's expected_closing_amount drops by the refund and the Z signed total nets negative."
+      }
+    ],
+    "refuted": [],
+    "p2_p3": [],
+    "info": [
+      "Campaign-described transition path ACCEPT→PREPARING→OUT_FOR_DELIVERY→DELIVERED is NOT what the state machine permits — PREPARING→OUT_FOR_DELIVERY is blocked; canonical path goes through PREPARED",
+      "KitchenReleaseRule correctly gates DELIVERY: UNPAID delivery NOT board-released, PAID delivery IS released — confirmed against clone data",
+      "Branch isolation on delivery-boy read endpoints is sound; deliveredOrderDetails self-check is redundant but not a leak",
+      "OUT_FOR_DELIVERY/DELIVERED correctly fire OrderStatusChanged → outbox (customer tracker/OSS) + loyalty, with proper idempotency",
+      "Delivery FEE is correctly backend-computed (NF525 SSOT) and matches the owner rule exactly — 5€ ≤5km + 1€/km whole-km-up"
+    ]
+  }
+}
