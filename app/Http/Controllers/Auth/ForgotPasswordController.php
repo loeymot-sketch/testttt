@@ -30,40 +30,38 @@ class ForgotPasswordController extends Controller
             return new JsonResponse(['errors' => $validator->errors()], 422);
         }
 
-        $verify = User::where('email', $request->post('email'))->exists();
-
-        if ($verify) {
-            $verify = DB::table('password_resets')->where([
-                ['email', $request->post('email')]
-            ]);
-
-            if ($verify->exists()) {
-                $verify->delete();
+        // [SEC-ENUM heal 2026-06-14 — ultra-audit P1] Do NOT leak account existence.
+        // Pre-heal returned 200 'check_your_email' for a known email vs 400
+        // 'email_does_not_exist' for an unknown one — a definitive enumeration oracle
+        // (distinct status AND body). The DB lookup + token insert + dispatch happen
+        // ONLY for a real user, but the HTTP status/body NEVER branches on existence:
+        // both return an identical neutral 200. Mirrors the kiosk-login hardening.
+        if (User::where('email', $request->post('email'))->exists()) {
+            $existing = DB::table('password_resets')->where('email', $request->post('email'));
+            if ($existing->exists()) {
+                $existing->delete();
             }
 
             $this->pin = random_int(100000, 999999);
 
-            $password_reset = DB::table('password_resets')->insert([
-                'email'      => $request->post('email'),
-                'token'      => $this->pin,
-                'created_at' => Carbon::now()
-            ]);
-
-            if ($password_reset) {
+            try {
+                DB::table('password_resets')->insert([
+                    'email'      => $request->post('email'),
+                    'token'      => $this->pin,
+                    'created_at' => Carbon::now(),
+                ]);
                 SendResetPassword::dispatch(['email' => $request->post('email'), 'pin' => $this->pin]);
-                return new JsonResponse([
-                    'message' => trans('all.message.check_your_email_for_code')
-                ], 200);
-            } else {
-                return new JsonResponse([
-                    'errors' => ['email' => [trans('all.message.token_created_fail')]]
-                ], 400);
+            } catch (\Throwable $e) {
+                // Never let a token-insert failure leak existence via a 400 — log and
+                // return the same neutral 200 as every other branch.
+                \Illuminate\Support\Facades\Log::warning('[ForgotPassword] token insert/dispatch failed: ' . $e->getMessage());
             }
-        } else {
-            return new JsonResponse([
-                'errors' => ['email' => [trans('all.message.email_does_not_exist')]]
-            ], 400);
         }
+
+        // Identical neutral response for known AND unknown emails (no oracle).
+        return new JsonResponse([
+            'message' => trans('all.message.check_your_email_for_code')
+        ], 200);
     }
 
     public function verifyCode(Request $request) : JsonResponse
