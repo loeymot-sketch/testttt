@@ -13,7 +13,17 @@ use Illuminate\Support\Str;
 
 class PersistOrderStatusChangedToOutbox
 {
+    use \App\Listeners\Concerns\GuardsOutboxPersistence;
+
     public function handle(OrderStatusChanged $event): void
+    {
+        // [REACT-NEW-1 heal 2026-06-14] Systemic twin of REACT-A-1: guard the
+        // synchronous outbox persistence so a DB throw cannot halt the cascade and
+        // skip AwardLoyaltyPointsOnDelivery (the sole loyalty-award path).
+        $this->runOutboxPersistenceGuarded(self::class, fn () => $this->project($event));
+    }
+
+    private function project(OrderStatusChanged $event): void
     {
         $order = $event->order;
         $correlationId = $this->resolveCorrelationId();

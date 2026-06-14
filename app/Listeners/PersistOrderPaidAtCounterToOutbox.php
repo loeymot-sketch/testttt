@@ -13,7 +13,18 @@ use Illuminate\Support\Str;
 
 class PersistOrderPaidAtCounterToOutbox
 {
+    use \App\Listeners\Concerns\GuardsOutboxPersistence;
+
     public function handle(OrderPaidAtCounter $event): void
+    {
+        // [REACT-NEW-2 heal 2026-06-14] Systemic twin #3 of REACT-A-1: guard the
+        // synchronous outbox persistence so a DB throw cannot surface a POS 500 on
+        // an already-PAID counter sale (dispatched inline post-commit at
+        // PaymentService::confirmCounterPayment) or skip downstream side effects.
+        $this->runOutboxPersistenceGuarded(self::class, fn () => $this->project($event));
+    }
+
+    private function project(OrderPaidAtCounter $event): void
     {
         $order = $event->order;
 

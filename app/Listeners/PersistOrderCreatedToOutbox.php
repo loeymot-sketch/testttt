@@ -13,7 +13,17 @@ use Illuminate\Support\Str;
 
 class PersistOrderCreatedToOutbox
 {
+    use \App\Listeners\Concerns\GuardsOutboxPersistence;
+
     public function handle(OrderCreated $event): void
+    {
+        // [REACT-A-1 heal 2026-06-14] Guard the synchronous outbox persistence so a
+        // DB throw here can never halt the OrderCreated cascade (stock/availability
+        // decrement run AFTER this listener → an unguarded throw = oversell + POS 500).
+        $this->runOutboxPersistenceGuarded(self::class, fn () => $this->project($event));
+    }
+
+    private function project(OrderCreated $event): void
     {
         $order = $event->order;
 
