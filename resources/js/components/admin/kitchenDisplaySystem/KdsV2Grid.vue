@@ -27,6 +27,7 @@
       :admin-polling-hint="adminPollingHint"
       :bump-local-only-notice="bumpLocalOnlyNotice"
       :reserve-right-gutter="overflowActiveCount > 0"
+      :now="now"
     />
 
     <!-- Empty state (only when NO active orders — served strip below renders independently) -->
@@ -190,8 +191,14 @@ export default {
         visibleOrders() {
             const arr = Array.isArray(this.orders) ? [...this.orders] : [];
             arr.sort((a, b) => {
-                const ta = parseOrderCreatedMs(a);
-                const tb = parseOrderCreatedMs(b);
+                // [#15] Guard against NaN from an unparseable created_at: a NaN
+                // comparator return is treated as 0 by sort, producing unstable
+                // order and bypassing the id tiebreak. Coerce non-finite to
+                // +Infinity (unknown-created sorts last, deterministically).
+                const ra = parseOrderCreatedMs(a);
+                const rb = parseOrderCreatedMs(b);
+                const ta = Number.isFinite(ra) ? ra : Infinity;
+                const tb = Number.isFinite(rb) ? rb : Infinity;
                 if (ta !== tb) {
                     return ta - tb;
                 }

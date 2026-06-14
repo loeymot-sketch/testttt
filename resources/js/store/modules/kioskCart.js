@@ -278,13 +278,18 @@ export const kioskCart = {
                     ...item,
                     quantity: Math.max(1, Math.min(Number.isFinite(rawQty) ? Math.floor(rawQty) : 1, MAX_ITEM_QTY)),
                 };
-                // Ensure total is always present
-                if (!newItem.total) {
-                    const base = parseFloat(newItem.convert_price) || 0;
-                    const varE = parseFloat(newItem.item_variation_total) || 0;
-                    const ext  = parseFloat(newItem.item_extra_total) || 0;
-                    newItem.total = parseFloat(((base + varE + ext) * newItem.quantity).toFixed(2));
-                }
+                // [F1 heal 2026-06-09] ALWAYS recompute the line total from the
+                // CLAMPED quantity. Trusting an incoming `total` let the wizard
+                // recap (whose stepper was unbounded) ship total=line*rawQty for
+                // rawQty > MAX_ITEM_QTY; the clamp above then capped `quantity`
+                // but the stale `total` survived, so the cart line, the subtotal
+                // getter, and the grand total diverged on screen. Recompute is
+                // identical to buildCartItem's formula for qty <= MAX and correct
+                // after the clamp.
+                const base = parseFloat(newItem.convert_price) || 0;
+                const varE = parseFloat(newItem.item_variation_total) || 0;
+                const ext  = parseFloat(newItem.item_extra_total) || 0;
+                newItem.total = parseFloat(((base + varE + ext) * newItem.quantity).toFixed(2));
                 state.items.push(newItem);
             }
         },
@@ -302,12 +307,13 @@ export const kioskCart = {
                 ...item,
                 quantity: Math.max(1, Math.min(Number.isFinite(rawQty) ? Math.floor(rawQty) : 1, MAX_ITEM_QTY)),
             };
-            if (!safeItem.total) {
-                const base = parseFloat(safeItem.convert_price) || 0;
-                const varE = parseFloat(safeItem.item_variation_total) || 0;
-                const ext = parseFloat(safeItem.item_extra_total) || 0;
-                safeItem.total = parseFloat(((base + varE + ext) * safeItem.quantity).toFixed(2));
-            }
+            // [F1 heal 2026-06-09] Always recompute from the clamped quantity
+            // (same rationale as ADD_ITEM) so an edit-mode replace cannot carry a
+            // stale oversized total past the MAX_ITEM_QTY clamp.
+            const base = parseFloat(safeItem.convert_price) || 0;
+            const varE = parseFloat(safeItem.item_variation_total) || 0;
+            const ext = parseFloat(safeItem.item_extra_total) || 0;
+            safeItem.total = parseFloat(((base + varE + ext) * safeItem.quantity).toFixed(2));
             state.items.splice(index, 1, safeItem);
         },
         SET_EDITING(state, { index, snapshot }) {

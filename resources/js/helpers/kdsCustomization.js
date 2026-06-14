@@ -83,11 +83,14 @@ export function categorize(orderItem) {
     if (/frite|onion ring/.test(name)) {
         return 'side';
     }
-    if (/coca|fanta|sprite|eau|coke|water|jus|the|thé|menthe|cafe|café/.test(name)) {
-        return 'drink';
-    }
+    // [#4] Dessert BEFORE drink, and short drink tokens anchored with \b. An
+    // unanchored 'eau' matched 'gâteau'/'plateau'/'château', mislabeling desserts
+    // as drinks (the dessert branch was unreachable for those names).
     if (/dessert|crepe|crêpe|gateau|gâteau|glace|tiramisu/.test(name)) {
         return 'dessert';
+    }
+    if (/coca|fanta|sprite|\beau\b|coke|water|\bjus\b|\bthé?\b|menthe|caf[eé]/.test(name)) {
+        return 'drink';
     }
     return 'other';
 }
@@ -150,7 +153,13 @@ export function renderItem(orderItem) {
     const lines = [];
 
     const allergenCodes = Array.isArray(orderItem?.allergens_snapshot)
-        ? orderItem.allergens_snapshot.filter((c) => typeof c === 'string' && c.length > 0)
+        // [#8] Coerce to string BEFORE filtering — numeric allergen codes (the
+        // backend hash uses strval) were silently dropped, suppressing the
+        // allergen line AND the orange card border. Food-safety: never drop a
+        // non-empty code regardless of its JS type.
+        ? orderItem.allergens_snapshot
+            .map((c) => (c === null || c === undefined ? '' : String(c)))
+            .filter((c) => c.length > 0)
         : [];
     const itemAllergen = allergenCodes.length > 0;
 
@@ -255,7 +264,8 @@ export function orderHasAnyAllergen(orderItems) {
     }
     for (const it of orderItems) {
         const codes = Array.isArray(it?.allergens_snapshot) ? it.allergens_snapshot : [];
-        if (codes.some((c) => typeof c === 'string' && c.length > 0)) {
+        // [#8] Coerce — numeric/non-string codes count as allergens too (food safety).
+        if (codes.some((c) => c !== null && c !== undefined && String(c).length > 0)) {
             return true;
         }
     }

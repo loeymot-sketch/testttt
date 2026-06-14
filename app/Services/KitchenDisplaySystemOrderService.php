@@ -159,10 +159,15 @@ class KitchenDisplaySystemOrderService
                     }
 
                     if (in_array($key, $this->exceptFilter)) {
-                        $explodes = explode('|', $request);
-                        if (is_array($explodes)) {
-                            foreach ($explodes as $explode) {
-                                $query->where('order_type', '!=', $explode);
+                        // [#3] Guard array/non-string input (?excepts[]=x): explode() on a
+                        // non-string raises TypeError, which catch(Exception) does NOT catch
+                        // (TypeError extends Error) → uncaught 500. Skip empty tokens so a
+                        // bare `excepts=` is a no-op rather than where('order_type','!=','').
+                        if (is_string($request) && $request !== '') {
+                            foreach (explode('|', $request) as $explode) {
+                                if ($explode !== '') {
+                                    $query->where('order_type', '!=', $explode);
+                                }
                             }
                         }
                     }
@@ -320,12 +325,17 @@ class KitchenDisplaySystemOrderService
                 abort(422, trans('all.message.kds_recall_window_expired'));
             }
 
-            // Cap N=1 — refuse a second recall for the same order in the same
+            // Cap N=1 — refuse a second recall for the same order within the recall
             // window (PROPOSAL §7 R2). Lookup is cheap (indexed order_id).
+            // [#13] Anchor the dedup to a STABLE sliding window (now - windowSeconds),
+            // NOT to $bumpedAt: updated_at can be advanced by an unrelated write while
+            // status stays PREPARED, which would push the window past the prior
+            // kitchen_recall row and let a 2nd recall slip through. The sliding window
+            // is immune to that and matches the documented "in the same window" intent.
             $alreadyRecalled = OrderStatusTransition::query()
                 ->where('order_id', $locked->id)
                 ->where('reason', 'kitchen_recall')
-                ->where('occurred_at', '>=', $bumpedAt)
+                ->where('occurred_at', '>=', $now->copy()->subSeconds($windowSeconds))
                 ->exists();
 
             if ($alreadyRecalled) {
@@ -450,13 +460,25 @@ class KitchenDisplaySystemOrderService
                 return;
             }
 
-            SendOrderMail::dispatch(['order_id' => $snapshot->id, 'status' => $newStatus]);
-            SendOrderSms::dispatch(['order_id' => $snapshot->id, 'status' => $newStatus]);
-            SendOrderPush::dispatch(['order_id' => $snapshot->id, 'status' => $newStatus]);
+            // [#1] The DB transaction has already COMMITTED. A failure in any of the
+            // post-commit notification dispatches (sync listener throw, queue driver
+            // down) must NOT bubble to the outer catch(Exception) below — that would
+            // re-wrap a SUCCESSFUL bump as HTTP 422 and make the chef retry into a 409.
+            try {
+                SendOrderMail::dispatch(['order_id' => $snapshot->id, 'status' => $newStatus]);
+                SendOrderSms::dispatch(['order_id' => $snapshot->id, 'status' => $newStatus]);
+                SendOrderPush::dispatch(['order_id' => $snapshot->id, 'status' => $newStatus]);
+            } catch (\Throwable $e) {
+                Log::warning('[KDS] Post-commit notification dispatch failed: ' . $e->getMessage());
+            }
 
             try {
                 $this->kdsTicketDispatcher->dispatch($snapshot, $oldStatus, $newStatus);
-            } catch (\Exception $e) {
+            } catch (\Throwable $e) {
+                // [#1 RED] \Throwable, not \Exception: this dispatch is post-commit
+                // too. An \Error here (e.g. TypeError on a malformed snapshot) would
+                // escape \Exception AND the outer catch → uncaught 500 on a committed
+                // bump — the exact class the notification block above closes.
                 Log::warning('[KDS] OrderStatusChanged broadcast failed: ' . $e->getMessage());
             }
         } catch (HttpException $e) {

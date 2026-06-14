@@ -38,6 +38,17 @@
 
     <!-- Actions globales -->
     <div class="ks-vkeyb__row ks-vkeyb__row--actions">
+      <!-- [F5 heal 2026-06-09] Shift/Maj key. Without it `shift` was permanently
+           false (the rows computed never emits a toggle key), so uppercase + the
+           AR tashkeel layer were unreachable. All other machinery (shift data,
+           ROW_DEFS.*.shift, toggleShift, --active styling, auto-off) already exists. -->
+      <button type="button"
+        class="ks-vkeyb__key ks-vkeyb__key--action"
+        :class="{ 'ks-vkeyb__key--active': shift }"
+        :aria-pressed="shift ? 'true' : 'false'"
+        :aria-label="$t('kiosk.a11y.vkeyb_shift')"
+        data-testid="kiosk-vkeyb-shift"
+        @click="toggleShift">⇧</button>
       <button type="button"
         class="ks-vkeyb__key ks-vkeyb__key--action"
         :aria-label="$t('kiosk.a11y.vkeyb_clear')"
@@ -291,7 +302,9 @@ export default {
 }
 
 .ks-vkeyb__row--actions {
-  grid-template-columns: 1fr 4fr 1fr 2fr;
+  /* [F5 heal 2026-06-09] +1 column for the Shift key (was 1fr 4fr 1fr 2fr):
+     shift · clear · space · backspace · submit */
+  grid-template-columns: 1fr 1fr 4fr 1fr 2fr;
 }
 
 .ks-vkeyb__key {

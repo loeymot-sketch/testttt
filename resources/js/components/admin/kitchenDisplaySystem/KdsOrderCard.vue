@@ -22,7 +22,7 @@
     role="region"
     :aria-label="ariaLabel"
     :data-order-id="order.id"
-    @keydown.enter="onCardKeydownEnter"
+    @keydown.enter.self="onCardKeydownEnter"
   >
     <!-- TOP ACCENT STRIPE — dominant 2m signal -->
     <div class="kds-card__stripe" :style="{ background: stripeColor }"></div>
@@ -393,7 +393,13 @@ export default {
         onCta() {
             // [GOAL-2026-05-30 D1] No payment gate — the chef may bump an unpaid (PENDING_COUNTER)
             // order; the "non encaissé" note stays visible and the cashier collects it later.
+            // [#5] Coalesce rapid double-activation (double-click, or click+Enter)
+            // into a single 'ready' emit. Non-reactive flag; the parent normally
+            // removes the card on success well before the reset fires.
+            if (this._ctaInFlight) return;
+            this._ctaInFlight = true;
             this.$emit('ready', this.order.id);
+            setTimeout(() => { this._ctaInFlight = false; }, 1200);
         },
         onCardKeydownEnter() {
             this.onCta();

@@ -290,7 +290,7 @@ class OssSyncService {
 
             const status = this._statusFromResult(result);
             if (status >= 500 && status <= 599) {
-                this._handle5xx();
+                this._handleErrorBackoff(status);
                 return;
             }
 
@@ -305,8 +305,11 @@ class OssSyncService {
             }
 
             const status = this._statusFromError(error);
-            if (status >= 500 && status <= 599) {
-                this._handle5xx();
+            // [#6] Back off on 5xx, on any client error (4xx), AND on network
+            // failures (status 0) — not just 5xx — so a permanent 401/403/404/422
+            // or an unreachable server is rate-limited instead of hammered at 2s.
+            if (status === 0 || status >= 400) {
+                this._handleErrorBackoff(status);
                 return;
             }
 
@@ -320,14 +323,18 @@ class OssSyncService {
         }
     }
 
-    _handle5xx() {
+    // [#6] Exponential backoff for ANY non-recoverable poll outcome — 5xx,
+    // client errors (4xx), and network failures (status 0). Previously only 5xx
+    // backed off, so a persistent 401/403/404/422 or an unreachable server
+    // hammered the endpoint at the 2s disconnected cadence forever.
+    _handleErrorBackoff(status = 500) {
         if (!this._started) {
             return;
         }
         this._state = STATE.BACKOFF;
         const delay = this._currentBackoffMs;
         this._currentBackoffMs = Math.min(this._currentBackoffMs * 2, this._opts.backoffCapMs);
-        this._emit('error', { status: 500, backoffMs: delay });
+        this._emit('error', { status, backoffMs: delay });
         this._scheduleNext(delay);
     }
 
@@ -443,7 +450,20 @@ class OssSyncService {
         if (!listeners) {
             return;
         }
-        listeners.forEach((handler) => handler(payload));
+        // [#7] Never let a throwing listener escape — _emit is called BEFORE the
+        // reschedule in _poll/_handleErrorBackoff, so an uncaught exception here
+        // would unwind past _scheduleNext and freeze the poll loop (no timer ever
+        // re-armed → the wall silently stops updating).
+        listeners.forEach((handler) => {
+            try {
+                handler(payload);
+            } catch (e) {
+                if (typeof console !== 'undefined' && console.warn) {
+                    // eslint-disable-next-line no-console
+                    console.warn('[OSS] listener for "' + eventName + '" threw (swallowed to keep poll loop alive):', e);
+                }
+            }
+        });
     }
 }
 

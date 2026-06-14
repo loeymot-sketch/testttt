@@ -1635,11 +1635,17 @@ export default {
           }));
         })
         .catch((err) => {
-          // Conflict (409) → silent refresh; other errors surface to existing
-          // error-banner flow.
-          if (err?.response?.status === 409) {
+          const httpStatus = err?.response?.status;
+          // [#11] 409 conflict → silent refresh (unchanged behavior). 422
+          // invalid-transition → ALSO refresh so the stale card/CTA self-corrects
+          // instead of waiting for the next passive poll (2-60s), then surface
+          // the banner. Other errors → banner only.
+          if (httpStatus === 409) {
             this._debouncedRefresh();
             return;
+          }
+          if (httpStatus === 422) {
+            this._debouncedRefresh();
           }
           if (this.kdsErrorBanner) {
             this.kdsErrorBanner.visible = true;
@@ -1953,10 +1959,15 @@ export default {
             handler: (parsed) => {
               const orderId = parsed?.payload?.order_id || parsed?.payload?.orderId;
               if (orderId) {
+                // [#9] Anchor the RAPPELÉ window to the broadcast recall instant,
+                // not message-receipt time, so the 60s window stays aligned across
+                // stations under WS latency. Fall back to now only if absent/bad.
+                const recalledRaw = parsed?.payload?.recalled_at || parsed?.payload?.recalledAt;
+                const recalledMs = recalledRaw ? Date.parse(recalledRaw) : NaN;
                 this.onKdsOrderRecalled({
                   orderId: parseInt(orderId, 10),
                   queueNumber: parsed?.payload?.queue_number || null,
-                  recalledAt: Date.now(),
+                  recalledAt: Number.isFinite(recalledMs) ? recalledMs : Date.now(),
                   payload: parsed?.payload || null,
                 });
               }
@@ -2472,6 +2483,13 @@ export default {
   },
   beforeUnmount() {
     this.stopAutoRefresh();
+    // [#2] Clear the debounced-refresh timer — without this, a refresh queued
+    // <300ms before navigation fires _refreshWithCurrentFilter()+items() on the
+    // torn-down component (orphan dispatch + reactive writes on a dead instance).
+    if (this._refreshTimeout) {
+      clearTimeout(this._refreshTimeout);
+      this._refreshTimeout = null;
+    }
     // [Heal-5] Stop the recall TTL ticker.
     if (this._kdsRecallTickerId) {
       window.clearInterval(this._kdsRecallTickerId);

@@ -391,6 +391,14 @@ export default {
 
     markReady() {
       clearInterval(this.pollTimer);
+      // [F6 heal 2026-06-09] Cancel the preparing-state 10s auto-redirect (and the
+      // elapsed/timeout timer) on PREPARED. Otherwise it keeps running and fires
+      // newOrder() at the 10s mark, kicking the customer off the READY screen to
+      // idle before the intended 20s ready auto-reset. The comment on
+      // startPreparingAutoRedirect() claimed stopAll() cleared it on PREPARED, but
+      // markReady() never called stopPreparingAutoRedirect().
+      this.stopPreparingAutoRedirect();
+      clearInterval(this.elapsedTimer);
       this.isReady = true;
       this.playReadySound();
       this.startAutoReset();

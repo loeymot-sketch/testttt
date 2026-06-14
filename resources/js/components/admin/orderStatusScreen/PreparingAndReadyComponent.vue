@@ -97,6 +97,10 @@ export default {
       newReadyIds: new Set(),
       newReadyFlash: false,
       _flashTimer: null,
+      // [#14] Per-order "clear highlight" timers — tracked so they are cleared on
+      // unmount and replaced on rapid re-marks (the inner 6s setTimeout was
+      // previously untracked → post-unmount mutation + timer leak on a 24/7 wall).
+      _readyClearTimers: {},
       // [iter15-mega-fix C-034 round-7 2026-05-10] AudioContext is now
       // lazy-initialized on the first user gesture. Prior implementation
       // created a fresh suspended context on EVERY Echo `prepared` event, which
@@ -158,6 +162,9 @@ export default {
     this._unbindWsService();
     this.stopOssSync();
     if (this._flashTimer) clearTimeout(this._flashTimer);
+    // [#14] Clear any pending per-order highlight timers so none fire post-unmount.
+    Object.values(this._readyClearTimers || {}).forEach((t) => { try { clearTimeout(t); } catch (_) { /* noop */ } });
+    this._readyClearTimers = {};
     // [iter15-mega-fix C-034 round-7 2026-05-10] Tear down audio listeners +
     // close the context so the next mount starts clean.
     try {
@@ -325,21 +332,26 @@ export default {
     // tracks `newReadyIds` exactly.
     _markNewReady(orderId) {
       if (!orderId) return;
-      this.newReadyIds = new Set([...this.newReadyIds, parseInt(orderId)]);
+      const id = parseInt(orderId);
+      this.newReadyIds = new Set([...this.newReadyIds, id]);
       this._playReadySound();
+      // Column-level flash: a single shared 4s timer is fine (the whole column
+      // flashes), so re-marking simply restarts the column flash.
       this.newReadyFlash = true;
       if (this._flashTimer) clearTimeout(this._flashTimer);
-      this._flashTimer = setTimeout(() => {
-        this.newReadyFlash = false;
-        // Clear the highlight after a further 6s so the per-card pulse
-        // persists ~10s total — readable at distance, dismissable before
-        // the next batch arrives.
-        setTimeout(() => {
-          const ids = new Set(this.newReadyIds);
-          ids.delete(parseInt(orderId));
-          this.newReadyIds = ids;
-        }, 6000);
-      }, 4000);
+      this._flashTimer = setTimeout(() => { this.newReadyFlash = false; }, 4000);
+      // [#14] Per-order highlight clear (~10s total) tracked INDEPENDENTLY of the
+      // shared column-flash timer. Nesting it inside _flashTimer (RED cross-order
+      // finding) meant marking a 2nd order <4s later clobbered the shared timer
+      // and the 1st order's clear was never registered → it pulsed forever.
+      // Replaced on a same-id re-mark; all cleared in beforeUnmount.
+      if (this._readyClearTimers[id]) clearTimeout(this._readyClearTimers[id]);
+      this._readyClearTimers[id] = setTimeout(() => {
+        const ids = new Set(this.newReadyIds);
+        ids.delete(id);
+        this.newReadyIds = ids;
+        delete this._readyClearTimers[id];
+      }, 10000);
     },
     // Splash-inspired: 3-tone ascending chime when order is ready
     _playReadySound() {

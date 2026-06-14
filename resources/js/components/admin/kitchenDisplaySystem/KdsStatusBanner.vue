@@ -67,12 +67,19 @@ export default {
         // [FIX-4 C-002 2026-06-02] reserve a right gutter so the banner tag
         // (e.g. "LOCAL") does not sit under the overflow chip in KdsV2Grid.
         reserveRightGutter: { type: Boolean, default: false },
+        // [#10] Reactive clock injected by the parent's 1s ticker so the offline
+        // elapsed counter actually ticks (Date.now() alone is not a reactive dep).
+        now: { type: Number, default: 0 },
     },
     computed: {
         bannerData() {
+            // [#10] Use the reactive `now` prop when provided so the elapsed
+            // counter re-computes each tick; fall back to Date.now() if a caller
+            // hasn't wired the ticker (preserves prior behavior, just non-live).
+            const nowMs = (typeof this.now === 'number' && this.now > 0) ? this.now : Date.now();
             // Priority: error > cap-full > cap-warning > fallback > sync > bump-notice
-            if (this.offlineSince && Date.now() - this.offlineSince > 60_000) {
-                const ms = Date.now() - this.offlineSince;
+            if (this.offlineSince && nowMs - this.offlineSince > 60_000) {
+                const ms = nowMs - this.offlineSince;
                 const m = Math.floor(ms / 60_000);
                 const s = Math.floor((ms % 60_000) / 1000);
                 return {

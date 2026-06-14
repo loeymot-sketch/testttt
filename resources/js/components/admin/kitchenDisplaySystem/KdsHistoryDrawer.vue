@@ -510,6 +510,13 @@ export default {
         } else {
           console.warn('[KDS recall] failed:', status, message || e?.message);
         }
+        // [#12] Honor the documented contract: refetch so the chef sees the
+        // canonical state (409 already-recalled, 422 window-expired, 403
+        // cross-branch). Previously the comments promised this but no fetch()
+        // was ever called, so a stale/out-of-window row lingered until reopen.
+        if (status === 403 || status === 409 || status === 422) {
+          this.fetch();
+        }
       } finally {
         this.recallingIds = this.recallingIds.filter((id) => id !== order.id);
       }

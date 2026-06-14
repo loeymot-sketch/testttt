@@ -160,6 +160,7 @@
         >{{ selections.quantity }}</span>
         <button type="button"
           @click="incrementQty"
+          :disabled="selections.quantity >= maxItemQty"
           :aria-label="$t('kiosk.increase_qty')"
           data-testid="kiosk-order-summary-qty-plus"
         >+</button>
@@ -264,6 +265,13 @@ export default {
     },
     runningTotal() {
       return calculateKioskRunningTotal(this.item, this.selections);
+    },
+    // [F1 heal 2026-06-09] Cap the recap quantity stepper at MAX_ITEM_QTY, in
+    // parity with the cart stepper (KioskCartComponent maxItemQty). Without the
+    // cap a customer could drive quantity past the cap and the line was then
+    // silently clamped by the store with a mismatched total.
+    maxItemQty() {
+      return (typeof window !== 'undefined' && window.foodkingConfig && window.foodkingConfig.maxItemQty) || 20;
     }
   },
   methods: {
@@ -425,7 +433,8 @@ export default {
       return this.$t('kiosk.wizard.summary.drink_fallback_id', { id: boissonId });
     },
     incrementQty() {
-      this.$emit('update', 'quantity', (this.selections.quantity || 1) + 1);
+      const next = Math.min((this.selections.quantity || 1) + 1, this.maxItemQty);
+      this.$emit('update', 'quantity', next);
     },
     decrementQty() {
       if (this.selections.quantity > 1) {

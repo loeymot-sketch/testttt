@@ -526,7 +526,14 @@ export async function syncQueue(postFn) {
                 _refreshLock(owner).catch(() => {});
             }, LOCK_HEARTBEAT_MS);
 
-            for (const entry of _queueCache) {
+            // [F4 heal 2026-06-09] Snapshot the queue we iterate. saveOrder() can
+            // reassign _queueCache (a brand-new array) while we await a network
+            // POST below; iterating a captured snapshot — and re-merging anything
+            // added during the run before the final reassignment — stops those
+            // freshly-queued offline orders from being silently dropped.
+            const _syncSnapshot = _queueCache;
+            const _syncSnapshotKeys = new Set(_syncSnapshot.map((e) => e.localKey));
+            for (const entry of _syncSnapshot) {
                 if (entry.abandoned) {
                     remaining.push(entry);
                     continue;
@@ -587,7 +594,12 @@ export async function syncQueue(postFn) {
                 }
             }
 
-            _queueCache = remaining;
+            // [F4 heal 2026-06-09] Re-merge any entries enqueued via saveOrder()
+            // while this sync was in flight (keys absent from the pre-sync
+            // snapshot). Without this, `_queueCache = remaining` would clobber
+            // them and lose a queued offline order.
+            const _enqueuedDuringSync = _queueCache.filter((e) => !_syncSnapshotKeys.has(e.localKey));
+            _queueCache = _mergeQueue(remaining, _enqueuedDuringSync);
             await _persistQueue();
             return { synced, failed, abandonedNew, skippedByLock: false };
         } finally {
