@@ -2124,6 +2124,38 @@ class OrderService
                                 null,
                                 false,
                             );
+                        } else {
+                            // [G-DELIV-CASH heal 2026-06-15 — owner OD-1: record-anyway, NO auto-open]
+                            // The doorstep cash IS already recorded (the escrow audit row above is the
+                            // NF525 trail). But with no open driver cash session it lands in no session
+                            // balance → reconciliation under-counts. Per owner decision we do NOT
+                            // auto-open a session (that would write a control action no human performed
+                            // into the immutable audit chain). Instead surface a VISIBLE, COUNTABLE
+                            // "unattributed COD collection" signal (audit action + error log) so ops can
+                            // reconcile it manually — previously this case was a silent skip.
+                            Log::error('[DeliveryBoy] unattributed COD collection — cash collected with NO open driver cash session (record-anyway, no auto-open)', [
+                                'event'     => 'cash.delivery.unattributed_collection',
+                                'order_id'  => $cashEscrowMeta['order_id'],
+                                'driver_id' => $cashEscrowMeta['driver_id'],
+                                'branch_id' => $cashEscrowMeta['branch_id'],
+                                'amount'    => $cashEscrowMeta['amount'],
+                            ]);
+                            try {
+                                app(\App\Services\Fiscal\AuditLogService::class)->write([
+                                    'branch_id'   => (int) $cashEscrowMeta['branch_id'],
+                                    'user_id'     => (int) $cashEscrowMeta['driver_id'],
+                                    'action'      => 'cash.delivery.unattributed_collection',
+                                    'resource'    => 'order',
+                                    'resource_id' => (int) $cashEscrowMeta['order_id'],
+                                    'payload'     => [
+                                        'amount_collected' => $cashEscrowMeta['amount'],
+                                        'reason'           => 'no_open_driver_cash_session',
+                                        'policy'           => 'record_anyway_no_auto_open',
+                                    ],
+                                ]);
+                            } catch (\Throwable) {
+                                // best-effort: the escrow row + error log already record the collection
+                            }
                         }
                     }
                 } catch (\Throwable $movementError) {
