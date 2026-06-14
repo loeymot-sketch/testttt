@@ -8,6 +8,7 @@ use App\Models\Item;
 use App\Models\ItemCategory;
 use App\Models\ItemWizardProfile;
 use App\Services\Composer\ComposerDiffService;
+use App\Services\Composer\ComposerProfileProjection;
 use App\Services\Composer\ComposerProfileService;
 use App\Services\Composer\ComposerTemplateService;
 use Illuminate\Http\JsonResponse;
@@ -98,6 +99,55 @@ class ComposerProfileController extends AdminController
         $this->authorizeBranchScope($request, $profile->branch_id_scope);
 
         return response()->json(app(ComposerDiffService::class)->diff($profile));
+    }
+
+    /**
+     * [WIZARD-STUDIO W1 2026-06-14] Read-only DRAFT preview projection for the
+     * visual Wizard Studio. Projects an UNPUBLISHED (draft) profile through the
+     * SAME ComposerProfileProjection the live kiosk uses, so the operator's draft
+     * renders identically to what customers will see — fed into the (frozen,
+     * untouched) KioskWizardComponent mounted read-only in the Studio pane.
+     *
+     * Non-frozen. NF525-safe: GET only, no body, projection emits no price (price
+     * stays catalog SSOT). Read-only: no order/cart path is reachable from here.
+     * Sole deviation from the live shape: `is_published` is forced true so the
+     * frozen consumer gate (KioskWizardComponent: `is_published === false` → null)
+     * accepts the draft — done HERE in new code, never by editing the frozen file.
+     */
+    public function previewProjection(Request $request, ItemWizardProfile $profile): JsonResponse
+    {
+        // Read-only branch authz (same guard as show()/diff(); NOT the writable variant).
+        $this->authorizeBranchScope($request, $profile->branch_id_scope);
+
+        // The projector needs a concrete Item. Item-owned → its item; category-owned
+        // → a representative active item of the category (per-item availability may
+        // differ across the category; the Studio surfaces this caveat in the UI).
+        $item = $profile->item_id
+            ? Item::find($profile->item_id)
+            : optional($profile->category)->items()->first();
+
+        abort_if(! $item, 404, 'Aucun produit disponible pour prévisualiser ce wizard.');
+
+        $branchId = $profile->branch_id_scope ?? (int) ($request->user()?->branch_id ?? 0);
+
+        $projected = app(ComposerProfileProjection::class)->project($profile, $item, 'kiosk', $branchId);
+
+        if ($projected !== null) {
+            // Linchpin: let the FROZEN kiosk consumer gate accept the draft. New code only.
+            $projected['is_published'] = true;
+        }
+
+        return response()->json([
+            'data' => [
+                'item' => [
+                    'id' => (int) $item->id,
+                    'name' => (string) $item->name,
+                    // Display only — NF525 price stays catalog SSOT; never on a step.
+                    'price' => (float) $item->price,
+                    'composer_profile' => $projected,
+                ],
+            ],
+        ]);
     }
 
     /**

@@ -22,18 +22,24 @@
         </div>
 
         <div v-else class="wizard-studio__body">
-            <!-- Vertical portrait preview (W1 will replace this placeholder with the
-                 frozen-faithful kiosk render). -->
+            <!-- [W1] Vertical portrait preview = the REAL frozen KioskWizardComponent rendering
+                 the operator's DRAFT, read-only (onAddToCart no-op → no cart/order path).
+                 Truth by construction: this is literally the component the customer uses, fed the
+                 draft projection (is_published forced true server-side). Zero frozen edit. -->
             <section class="ws-stage" aria-label="Aperçu borne (vertical)">
-                <div class="ws-phone" data-testid="wizard-studio-preview">
-                    <p class="ws-phone__hint">Aperçu vertical de la borne (W1)</p>
-                    <ol class="ws-steps">
-                        <li v-for="step in steps" :key="step.id || step.step_key" class="ws-step">
-                            <span class="ws-step__label">{{ step.label }}</span>
-                            <span class="ws-step__rule">{{ ruleSummary(step) }}</span>
-                        </li>
-                        <li v-if="!steps.length" class="ws-step ws-step--empty">Aucune page configurée</li>
-                    </ol>
+                <div class="ws-phone kiosk-root" data-testid="wizard-studio-preview">
+                    <div v-if="previewLoading" class="ws-phone__hint" data-testid="wizard-studio-preview-loading">Préparation de l'aperçu…</div>
+                    <KioskWizardComponent
+                        v-else-if="draftItem"
+                        :key="previewNonce"
+                        :item="draftItem"
+                        :on-add-to-cart="noop"
+                        :on-close="noop"
+                        data-testid="wizard-studio-live-preview"
+                    />
+                    <div v-else class="ws-phone__hint" data-testid="wizard-studio-preview-empty">
+                        Aucune page configurée — ajoutez une page pour voir l'aperçu.
+                    </div>
                 </div>
             </section>
 
@@ -52,6 +58,11 @@ import axios from 'axios';
 
 export default {
     name: 'WizardStudioComponent',
+    components: {
+        // The FROZEN kiosk wizard, mounted UNCHANGED + read-only. Lazy so it shares the
+        // existing kiosk chunk and only loads when the Studio opens.
+        KioskWizardComponent: () => import(/* webpackChunkName: "kiosk-wizard" */ '../../../frontend/kiosk/KioskWizardComponent.vue'),
+    },
     props: {
         entityType: { type: String, default: 'item' },
         entityId: { type: [String, Number], required: true },
@@ -63,6 +74,10 @@ export default {
             entityName: '',
             profile: null,
             steps: [],
+            // [W1] Live preview state.
+            draftItem: null,
+            previewLoading: false,
+            previewNonce: 0,
         };
     },
     computed: {
@@ -100,12 +115,41 @@ export default {
                 const profile = profileRes?.data?.data ?? profileRes?.data ?? null;
                 this.profile = profile;
                 this.steps = Array.isArray(profile?.steps) ? [...profile.steps].sort((a, b) => (a.position || 0) - (b.position || 0)) : [];
+                if (this.profile?.id) {
+                    await this.fetchPreview();
+                }
             } catch (e) {
                 this.loadError = e?.response?.data?.message || 'Impossible de charger le wizard.';
             } finally {
                 this.loading = false;
             }
         },
+        // [W1] Fetch the DRAFT preview projection and feed it to the live kiosk render.
+        async fetchPreview() {
+            if (!this.profile?.id) {
+                this.draftItem = null;
+                return;
+            }
+            this.previewLoading = true;
+            try {
+                const res = await axios.get(`admin/composer/profiles/${this.profile.id}/preview-projection`);
+                const item = res?.data?.data?.item ?? null;
+                // Only render the wizard when the draft actually has steps.
+                this.draftItem = item && item.composer_profile && Array.isArray(item.composer_profile.steps) && item.composer_profile.steps.length
+                    ? item
+                    : null;
+            } catch (e) {
+                this.draftItem = null;
+            } finally {
+                this.previewLoading = false;
+            }
+        },
+        // [W1] Reload-on-edit (used by W2 step CRUD): remount the wizard with fresh draft.
+        async reloadPreview() {
+            await this.fetchPreview();
+            this.previewNonce += 1;
+        },
+        noop() {},
         ruleSummary(step) {
             const min = Number(step.min_select || 0);
             const max = Number(step.max_select || 0);

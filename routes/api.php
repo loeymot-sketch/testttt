@@ -776,6 +776,11 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
             Route::get('/categories/{category}/profile', [ComposerProfileController::class, 'showForCategory']);
             Route::post('/categories/{category}/profile', [ComposerProfileController::class, 'storeForCategory']);
             Route::post('/categories/{category}/apply-template', [ComposerProfileController::class, 'applyTemplateToCategory']);
+            // [WIZARD-STUDIO W1 2026-06-14] Read-only draft preview projection for the visual
+            // Studio. Deliberately OUTSIDE wizard.per_item_profile_guard: that middleware 404s
+            // item-owned profiles when FEATURE_WIZARD_PER_ITEM_DEMO is off (default), which would
+            // break the primary item-owned preview case. catalog.compose (group) is the only gate.
+            Route::get('/profiles/{profile}/preview-projection', [ComposerProfileController::class, 'previewProjection']);
             Route::middleware('wizard.per_item_profile_guard')->group(function () {
                 Route::match(['put', 'patch'], '/profiles/{profile}', [ComposerProfileController::class, 'update']);
                 Route::get('/profiles/{profile}/diff', [ComposerProfileController::class, 'diff']);
