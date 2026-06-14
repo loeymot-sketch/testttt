@@ -16,7 +16,7 @@
         :key="code"
         :class="[
           'ks-allergen-badge__item',
-          { 'ks-allergen-badge__item--collision': collisionSet.has(code) }
+          { 'ks-allergen-badge__item--collision': collisionSet.has(String(code).toLowerCase()) }
         ]"
         :title="localize(code)"
       >
@@ -103,16 +103,22 @@ export default {
             return Array.isArray(this.allergens) ? this.allergens : [];
         },
         collisionSet() {
-            return new Set(this.customerAllergens || []);
+            // [FOOD-SAFETY heal 2026-06-14 — massive-2dot0 #1] Lowercase the
+            // customer's declared allergen codes. Item codes are lowercased
+            // upstream; keeping customer codes verbatim meant a capitalized
+            // declared allergen ('Gluten' / 'GLUTEN') never matched 'gluten' and
+            // the red collision alert silently failed to fire. Both sides are now
+            // compared case-insensitively (see hasCollision/visibleAllergens).
+            return new Set((this.customerAllergens || []).map((c) => String(c).toLowerCase()));
         },
         hasCollision() {
-            return (this.effectiveAllergens || []).some((a) => this.collisionSet.has(a));
+            return (this.effectiveAllergens || []).some((a) => this.collisionSet.has(String(a).toLowerCase()));
         },
         visibleAllergens() {
             const base = this.effectiveAllergens;
             if (!Array.isArray(base)) return [];
             if (this.compact) {
-                return base.filter((a) => this.collisionSet.has(a));
+                return base.filter((a) => this.collisionSet.has(String(a).toLowerCase()));
             }
             return base;
         },
