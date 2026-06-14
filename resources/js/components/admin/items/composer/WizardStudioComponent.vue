@@ -41,7 +41,7 @@
                 >
                     ⚠ {{ zeroChoiceSteps.length }} page(s) sans option disponible
                     ({{ zeroChoiceSteps.join(', ') }}) — le client ne pourra pas valider.
-                    Corrigez la source de ces pages avant publication.
+                    {{ isPublished ? 'Ces pages sont DÉJÀ visibles des clients — corrigez leur source au plus vite.' : 'Corrigez la source de ces pages avant publication.' }}
                 </p>
                 <div class="ws-phone" data-testid="wizard-studio-preview">
                     <div class="ws-phone__notch" aria-hidden="true"></div>
@@ -88,7 +88,7 @@
                 </ol>
                 <p v-else class="ws-panel__meta">Aucune page pour le moment.</p>
                 <p class="ws-panel__note">ℹ️ L'aperçu à gauche est le rendu RÉEL de la borne : elle peut fusionner, renommer ou masquer des pages selon les données (une page sans option n'apparaît pas ; un récapitulatif est ajouté automatiquement). Cette liste = les pages telles que configurées.</p>
-                <p class="ws-panel__note">✏️ Édition visuelle (ajouter / réordonner les pages, options, images, règles) : à venir en W2→W6. Cet écran est pour l'instant un aperçu fidèle en lecture seule.</p>
+                <p class="ws-panel__note">✏️ Édition visuelle (ajouter / réordonner les pages, options, images, règles) : à venir prochainement. Cet écran est pour l'instant un aperçu fidèle en lecture seule.</p>
             </aside>
         </div>
     </div>
@@ -263,10 +263,10 @@ export default {
 .ws-back { border: 0; background: transparent; font-size: 15px; cursor: pointer; color: #333; border-radius: 6px; padding: 4px 8px; }
 .ws-back:focus-visible { outline: 2px solid #F4501E; outline-offset: 2px; }
 .ws-title { display: flex; flex-direction: column; line-height: 1.25; }
-.ws-eyebrow { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: #F4501E; }
+.ws-eyebrow { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: #A8370E; } /* darker brand-orange: WCAG AA (~4.6:1) on white as small text */
 .ws-source { font-size: 12px; color: #6b6b6b; margin-top: 2px; }
 .ws-badge { margin-left: auto; padding: 5px 12px; border-radius: 999px; background: #ececec; color: #555; font-size: 12px; font-weight: 600; }
-.ws-badge--published { background: #e6f6ec; color: #137a40; }
+.ws-badge--published { background: #e6f6ec; color: #0f6e38; } /* AA ≥4.5:1 on the light-green pill */
 .ws-state { padding: 40px; text-align: center; color: #555; }
 .ws-state--error { color: #b02a1a; }
 .wizard-studio__body { display: grid; grid-template-columns: 1fr 360px; gap: 24px; padding: 24px; align-items: start; }
@@ -298,7 +298,7 @@ export default {
 .ws-steplist { list-style: decimal; margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; }
 .ws-steplist__item { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
 .ws-steplist__label { color: #222; font-size: 14px; }
-.ws-steplist__rule { color: #F4501E; font-size: 11px; white-space: nowrap; }
+.ws-steplist__rule { color: #A8370E; font-size: 11px; white-space: nowrap; } /* WCAG AA on white */
 .ws-steplist__item--hidden .ws-steplist__label { color: #999; }
 .ws-steplist__tag { display: inline-block; margin-left: 6px; padding: 1px 6px; border-radius: 6px; background: #fff4e8; color: #9a4a08; font-size: 10px; vertical-align: middle; }
 @media (max-width: 1024px) {
