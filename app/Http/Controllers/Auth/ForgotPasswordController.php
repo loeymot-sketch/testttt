@@ -131,19 +131,21 @@ class ForgotPasswordController extends Controller
             return new JsonResponse(['errors' => $validator->errors()], 422);
         }
 
+        // [SEC-H15-SIBLING-02 heal 2026-06-14 — ultra-review] Do NOT leak account
+        // existence. Pre-heal an unknown email returned 404 'user_match' while a known
+        // email with a bad token returned 422 'token_is_invalid' — a status+body
+        // enumeration oracle (sibling of the forgot-password UA-P1 leak). Collapse the
+        // no-such-user case INTO the invalid-token case so both are indistinguishable.
         $user = User::where('email', $request->post('email'))->first();
-        if (!$user) {
-            return new JsonResponse([
-                'errors' => ['email' => [trans('all.message.user_match')]]
-            ], 404);
-        }
 
-        $resetRecord = DB::table('password_resets')->where([
-            ['email', $request->post('email')],
-            ['token', $request->post('reset_token')],
-        ])->first();
+        $resetRecord = $user
+            ? DB::table('password_resets')->where([
+                ['email', $request->post('email')],
+                ['token', $request->post('reset_token')],
+            ])->first()
+            : null;
 
-        if (!$resetRecord) {
+        if (!$user || !$resetRecord) {
             return new JsonResponse([
                 'errors' => ['reset_token' => [trans('all.message.token_is_invalid')]]
             ], 422);

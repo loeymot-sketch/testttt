@@ -46,4 +46,46 @@ class ForgotPasswordEnumerationSentinelTest extends TestCase
         $this->assertDatabaseHas('password_resets', ['email' => 'real@lecayenne.fr']);
         $this->assertDatabaseMissing('password_resets', ['email' => 'nope-99999@nowhere.test']);
     }
+
+    /**
+     * SEC-H15-TIMING-01: the reset email must be sent OUT OF BAND (queued) so the
+     * synchronous SMTP latency on the known-email path can't re-open the oracle via
+     * response timing. Lock the listener as ShouldQueue.
+     */
+    public function test_reset_password_notification_is_queued(): void
+    {
+        $this->assertInstanceOf(
+            \Illuminate\Contracts\Queue\ShouldQueue::class,
+            new \App\Listeners\SendResetPasswordNotification(),
+            'SendResetPasswordNotification must be queued so the SMTP send does not leak account existence via timing.'
+        );
+    }
+
+    /**
+     * SEC-H15-SIBLING-02: reset-password must NOT leak account existence — an unknown
+     * email and a known email with a bad token must return the IDENTICAL 422 response
+     * (pre-heal: 404 'user_match' vs 422 'token_is_invalid' = an enumeration oracle).
+     */
+    public function test_reset_password_unknown_email_matches_invalid_token_response(): void
+    {
+        User::factory()->create(['email' => 'real@lecayenne.fr']);
+        $token = str_repeat('a', 64);
+        $payload = fn (string $email) => [
+            'email'                 => $email,
+            'reset_token'           => $token,
+            'password'              => 'longenoughpw1',
+            'password_confirmation' => 'longenoughpw1',
+        ];
+
+        $unknown = $this->postJson('/api/auth/forgot-password/reset-password', $payload('nope-99999@nowhere.test'));
+        $knownBadToken = $this->postJson('/api/auth/forgot-password/reset-password', $payload('real@lecayenne.fr'));
+
+        $unknown->assertStatus(422);
+        $knownBadToken->assertStatus(422);
+        $this->assertSame(
+            $unknown->json(),
+            $knownBadToken->json(),
+            'No account-existence leak: unknown-email and bad-token reset responses must be identical.'
+        );
+    }
 }
