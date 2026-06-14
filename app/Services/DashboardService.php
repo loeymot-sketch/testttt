@@ -445,10 +445,17 @@ class DashboardService
             // daily_sales). Avant : daily_sales/daily_orders mélangeait argent-payé / commandes-toutes
             // → faussé, surtout depuis W-D1 (beaucoup d'orders restent PENDING_COUNTER au moment du
             // rapport car la cuisine prépare avant l'encaissement). daily_orders reste le volume placé.
+            // [DUX-1 heal 2026-06-15 — ultra-review] Denominator must share the numerator's
+            // net-realized base. daily_sales uses realizedRevenue() (drops cancelled-but-paid,
+            // nets refund mirrors); the old `payment_status=PAID` count INCLUDED cancelled-but-
+            // paid orders the numerator already dropped → a ~0-net refund/cancel day showed a
+            // misleading micro-ticket. Use the same realizedRevenue() scope + exclude mirrors
+            // (whereNull parent_order_id) so numerator and denominator agree.
             $daily_paid_orders = $this->orderQuery()
                 ->where('order_datetime', '>=', $startParis)
                 ->where('order_datetime', '<', $endParisExclusive)
-                ->where('payment_status', PaymentStatus::PAID)
+                ->realizedRevenue()
+                ->whereNull('parent_order_id')
                 ->count();
 
             // Ticket Moyen

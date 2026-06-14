@@ -96,4 +96,31 @@ class ItemsReportUnitsSoldSentinelTest extends TestCase
         $this->assertSame(3, $paged->total(), 'paginate=1 path must return a working paginator (count over all items).');
         $this->assertSame(5, (int) ($paged->getCollection()->firstWhere('id', $itemA->id)->units_sold ?? 0));
     }
+
+    /**
+     * DUX-2 (ultra-review 2026-06-15): the management "Rapport Articles" must EXCLUDE the
+     * admin-only internal upsell-vehicle category (Menu / Frites Seules / Boisson Seule),
+     * whose technical combo constructs otherwise out-rank the real products and mislead
+     * the gérant. Items with a normal category OR no category are kept.
+     */
+    public function test_items_report_excludes_internal_upsell_category(): void
+    {
+        $admin = User::factory()->create(['branch_id' => 0]);
+        $admin->assignRole('Admin');
+        $this->actingAs($admin, 'sanctum');
+
+        $internalCat = \App\Models\ItemCategory::factory()->create([
+            'slug' => \Database\Seeders\HideUpsellVehicleItemsFromGridSeeder::INTERNAL_CATEGORY_SLUG,
+        ]);
+        $normalCat = \App\Models\ItemCategory::factory()->create(['slug' => 'sandwich-cayenne']);
+
+        $internalItem = Item::factory()->create(['name' => 'Menu (combo technique)', 'item_category_id' => $internalCat->id]);
+        $realItem = Item::factory()->create(['name' => 'Sandwich Cayenne', 'item_category_id' => $normalCat->id]);
+
+        $report = app(ItemService::class)->itemReport(PaginateRequest::create('/', 'GET', []));
+        $ids = $report->pluck('id')->all();
+
+        $this->assertNotContains($internalItem->id, $ids, 'internal upsell-vehicle item must NOT appear in the report');
+        $this->assertContains($realItem->id, $ids, 'a real product must still appear');
+    }
 }

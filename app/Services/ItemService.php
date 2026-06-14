@@ -638,6 +638,14 @@ class ItemService
                 ? \Carbon\Carbon::parse($requests['to_date'], $appTz)->addDay()->startOfDay() : null;
 
             return Item::with('category')
+                // [DUX-2 heal 2026-06-15 — ultra-review] Exclude the admin-only internal
+                // upsell-vehicle category (Menu / Frites Seules / Boisson Seule live there)
+                // from the management "Rapport Articles": those technical combo constructs
+                // out-rank the real products and mislead the gérant. whereDoesntHave keeps
+                // items with a DIFFERENT category AND items with no category at all.
+                ->whereDoesntHave('category', function ($c) {
+                    $c->where('slug', \Database\Seeders\HideUpsellVehicleItemsFromGridSeeder::INTERNAL_CATEGORY_SLUG);
+                })
                 ->withSum(['orders as units_sold' => function ($q) use ($from, $toExclusive) {
                     $q->whereHas('order', function ($o) use ($from, $toExclusive) {
                         $o->realizedRevenue();
