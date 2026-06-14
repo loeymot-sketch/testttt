@@ -443,7 +443,19 @@ class OssSyncService {
         if (!listeners) {
             return;
         }
-        listeners.forEach((handler) => handler(payload));
+        // [SYNC-RESILIENCE heal 2026-06-14 — massive-2dot0 #8] Isolate each
+        // subscriber: one throwing handler must NOT abort the others. A bare
+        // forEach let a single bad OSS listener break the loop and freeze
+        // status-screen updates for every other subscriber.
+        listeners.forEach((handler) => {
+            try {
+                handler(payload);
+            } catch (e) {
+                if (typeof console !== 'undefined' && console.warn) {
+                    console.warn('[OSS] listener threw (isolated):', e);
+                }
+            }
+        });
     }
 }
 
