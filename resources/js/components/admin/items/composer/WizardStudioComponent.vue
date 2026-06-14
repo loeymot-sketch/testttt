@@ -115,7 +115,12 @@ export default {
             return `${min}–${max}`;
         },
         goBack() {
-            this.$router.push({ name: this.isCategory ? 'admin.items.studio' : 'admin.items.studio' });
+            // Prefer real history; fall back to the catalog studio if opened directly.
+            if (window.history.length > 1) {
+                this.$router.back();
+            } else {
+                this.$router.push({ name: 'admin.items.studio' });
+            }
         },
     },
 };

@@ -51,10 +51,12 @@
 ### D-1 — Copie, pas remplacement (owner mandate)
 Nouveau builder = **nouveaux fichiers non-frozen** montés sur une **nouvelle route** (`/admin/items/:id/wizard-studio` + `/admin/categories/:id/wizard-studio`), **réutilisant les mêmes endpoints API + le même modèle de données** que le builder actuel. Donc : les wizards frozen kiosk/POS **rendent le résultat à l'identique** (même `composer_profile`), et l'ancien builder reste 100% fonctionnel. Aucune régression possible sur l'existant.
 
-### D-2 — Le WYSIWYG = rendu live RÉPLIQUÉ + overlay d'édition
-On construit un composant **`WizardStudioPreview`** = réplique fidèle (tokens CSS, grille, steppers, badges, panneau composition, footer) du rendu kiosk **en lecture seule frozen-faithful**, enrichi d'un **mode édition** (overlay) : renommer un step, réordonner (drag), ajouter/retirer une option, **uploader une image par option**, régler min/max/allow_repeat, choisir le mode de facturation. **Écran vertical** (aspect ratio portrait borne) au centre ; panneau de réglages contextuel à droite. « Page suivante » = ajout/réordonnancement d'un step visible immédiatement.
+### D-2 — Le WYSIWYG = VRAI rendu kiosk live (iframe preview) + panneau de réglages [RÉVISÉ post-audit]
+**Pattern Shopify (theme editor) :** preview live à gauche (écran **vertical** portrait borne) + panneau de réglages à droite. Les édits → save draft → la preview se re-rend instantanément.
 
-> ⚠️ La preview RÉPLIQUE le contrat frozen ; elle ne l'importe pas (sinon couplage au frozen). Un **test de parité** garantit que preview ≈ rendu réel (sentinelle).
+**La preview N'EST PAS une réplique** (l'audit a prouvé que ré-implémenter le rendu kiosk dérive → l'opérateur voit un mensonge). La preview = **le VRAI composant kiosk frozen rendu dans une iframe**, alimenté par un **endpoint backend non-frozen `GET /admin/composer/{item|category}/{id}/preview-projection`** qui passe le **brouillon** par **EXACTEMENT la même projection** (`ComposerProfileProjection`) que le kiosk publié. ⇒ rendu **fidèle par construction**, **zéro modification du frozen**, **zéro dérive** (pas besoin de test de parité fragile). L'iframe charge une route kiosk en mode `preview=<token>` qui lit cette projection au lieu de la projection publiée.
+
+> Édition = dans le chrome du Studio (pas dans l'iframe). « Page suivante » = ajout/réordonnancement d'un step → re-render iframe immédiat. Aucune édition DOM dans l'iframe (isolation = fidélité).
 
 ### D-3 — Moteur de facturation : split non-frozen / gate
 | Mode | Sémantique | Faisable sans toucher frozen ? |
@@ -65,7 +67,12 @@ On construit un composant **`WizardStudioPreview`** = réplique fidèle (tokens 
 | **Quota inclus puis supplément** | généralisation du précédent | ❌ **GATE PricingService** |
 | **Bundle / formule prix fixe** | ratio menu (full/0.6/0.4) ou prix fixe | ❌ **GATE PricingService** (ratios hardcodés/config) |
 
-**Stratégie :** livrer **Gratuit + Chacun-son-prix** 100% autonome (édition du prix sur le construct catalogue par option). Les modes gatés sont **conçus dans l'UI** (configurables) mais leur **enforcement** est marqué *owner-gated* ; tant que le gate n'est pas signé, ces modes restent inactifs/avertis. **Vérif d'exécution G-PRICE-1 :** confirmer en source comment `PricingService` charge actuellement le « 1re sauce gratuite » (catalogue-mappé vs logique spéciale) → détermine si « 1er gratuit » est exprimable via catalogue (sans gate) ou non.
+**[RÉVISÉ post-audit — preuve DB item 41]** Le vrai menu Le Cayenne n'utilise PAS de surcharge runtime « 1er gratuit ». Il modélise :
+- **« N gratuits plafonnés »** = options en **ItemVariation à 0,00€** + `max_select` (ex. sauce bol : 11 variations à 0€, max=2). → 100% data-driven.
+- **« Chacun son prix »** = options en **ItemExtra prix>0** (ex. supplément bol 0,90€/2,00€). → natif.
+- **« 1er gratuit puis payant »** = exprimé par le **pattern 2-steps** (un step « inclus » plafonné + un step « payant » séparé) — déjà la structure réelle. → sans frozen.
+
+`PricingService` est **transport-agnostic** (somme `price × qty` des constructs ; confirmé en source) ⇒ **AUCUN gate facturation requis en V1**. Le « +0,90€ / 1re gratuite » affiché par le kiosk est une **heuristique frozen d'affichage**, pas une vraie charge ici. ❌ **G-PRICE RETIRÉ du chemin critique.** Une surcharge runtime *configurable* (mode avancé futur) toucherait le **marshalling frontend frozen** — hors V1, présenté seulement si owner le demande.
 
 ### D-4 — Images/descriptions par option
 Colonnes additives non-frozen `image_path` (+ `description` optionnel) sur `item_variations` et `item_extras`, exposées dans la projection `composer_profile.choices[].thumb/description`. Stockage : `storage/app/public` + symlink (choix G-MEDIA). **Aucune** rupture du contrat frozen (le kiosk lit déjà `choices[].thumb`).
@@ -77,21 +84,21 @@ La caisse rend via `pos-wizard.js` (frozen) **composer-aware gated** (défaut OF
 
 ## 3. FRONTIÈRE FROZEN / NF525 (règle dure §7/§10)
 **JAMAIS modifiés sans LOCK+gate :** `PricingService.php`, `pos-wizard.js`, `pos-wizard.css`, `admin-pos-v4.blade.php`, `KioskWizardComponent.vue`, `KioskAppComponent.vue`, `KioskUpsellComponent.vue`, services Fiscal, `OrderStateMachine`, `BranchScope`.
-**Gates owner identifiés :**
-- **G-PRICE** : extension PricingService pour modes facturation gatés (1er-gratuit/quota/bundle data-driven).
-- **G-POS-COMPOSER** : flip `FK_POS_WIZARD_COMPOSER_AWARE_ENABLED=true`.
-- **G-MEDIA** : choix stockage images options.
+**Gates owner identifiés [RÉVISÉ post-audit] :**
+- ~~G-PRICE~~ **RETIRÉ** — facturation V1 = 100% non-frozen (preuve DB : free-capped + each-priced). Surcharge runtime configurable = futur hors-V1.
+- **G-POS-COMPOSER** : flip `FK_POS_WIZARD_COMPOSER_AWARE_ENABLED=true` (`config/catalog_v15.php:104` défaut FALSE — confirmé) pour que la caisse rende le composer. Borne non-gatée.
+- **G-MEDIA** : choix stockage images options (défaut proposé : `storage/app/public` + symlink).
 - **G-PUSH** : push de la branche.
 
-Tout le reste (nouveau builder, preview, projection, colonnes média, endpoints) = **non-frozen, autonome**.
+Tout le reste (nouveau builder, preview iframe, **endpoint preview-projection**, projection, colonnes média, endpoints) = **non-frozen, autonome**. ⚠️ La route kiosk `preview` doit rester **read-only** (aucune création d'ordre) et token-gardée admin.
 
 ---
 
 ## 4. VAGUES D'EXÉCUTION (chaque vague : TDD → test technique → capture visuelle analysée → checkpoint commit)
 
-- **W0 — Socle & parité** : scaffolding nouvelle route `wizard-studio` + composant coquille ; **test de parité** preview↔contrat frozen (snapshot des tokens/structure). Captures baseline.
-- **W1 — Preview verticale frozen-faithful (lecture seule)** : réplique fidèle du rendu kiosk (étapes/cartes/steppers/badges/panneau compo/footer Total) alimentée par `composer_profile`. Validée contre `kiosk-02-wizard-step1.png`.
-- **W2 — Édition de structure** : ajout/suppression/réordonnancement de steps en drag, renommage, page suivante visible en direct. Persiste via endpoints existants (draft → publish, 409 lock respecté).
+- **W0 — Socle** ✅ : route `wizard-studio` + composant coquille (fait, `746da44c0` ; goBack corrigé). [Le « test de parité » est ABANDONNÉ — remplacé par iframe-truth, cf. D-2.]
+- **W1 — Preview iframe VRAI rendu kiosk (D-2)** : endpoint `preview-projection` (draft→même projection) + route kiosk `preview` read-only + iframe portrait dans le Studio. Validé : iframe == `kiosk-02-wizard-step1.png` rendu sur le brouillon. **+ Afficher l'héritage** (« hérité de la catégorie X » vs « propre à l'item ») — piège précédence `resolveForItem` CATEGORY-wins.
+- **W2 — Édition de structure** : ajout/suppression/réordonnancement de steps (drag), renommage, page suivante → re-render iframe immédiat. Persiste via endpoints existants. **Gérer 409** (lock version) : UX reload/merge explicite, pas de perte silencieuse.
 - **W3 — Règles de sélection claires** : UI explicite single/multi/requis/répétable (min/max/allow_repeat) avec libellés humains + aperçu de l'effet sur la carte.
 - **W4 — Édition d'options inline + images (D-4)** : ajouter/retirer une option, **uploader image + description**, voir le rendu immédiat. Migration additive + projection.
 - **W5 — Moteur de facturation non-frozen (D-3)** : modes **Gratuit** + **Chacun-son-prix** pleinement configurables (édition prix construct), affichage badges « +X € » / « inclus » comme la borne. Modes gatés présents mais marqués.
