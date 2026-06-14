@@ -283,6 +283,36 @@ class CashAudit2StepDriverFlowSentinelTest extends TestCase
     }
 
     // ───────────────────────────────────────────────────────────────────
+    // Test G-DELIV-FISCAL (P0, owner-gated 2026-06-14) — COD delivery collected
+    // at the doorstep MUST receive a gap-free fiscal_sequence_no, else it escapes
+    // the Z (ZReportService aggregates whereNotNull(fiscal_sequence_no)). NF525
+    // exhaustivity: cash entered the till must appear in the fiscal close.
+    // ───────────────────────────────────────────────────────────────────
+
+    public function test_cod_delivery_at_delivered_allocates_fiscal_sequence_for_z(): void
+    {
+        $branch = Branch::factory()->create();
+        $driver = $this->makeDeliveryBoy($branch->id);
+        $order = $this->makeCodOrder($branch->id, $driver->id, OrderStatus::OUT_FOR_DELIVERY, 27.50);
+        $this->assertNull($order->fiscal_sequence_no, 'Precondition: COD delivery starts with no fiscal sequence.');
+
+        $this->actingAs($driver, 'sanctum');
+        $req = Request::create('/api/frontend/delivery-boy-order/change-status/' . $order->id, 'POST', [
+            'status' => OrderStatus::DELIVERED,
+        ]);
+        app(OrderService::class)->deliveryBoyOrderChangeStatus($order, $req);
+
+        $fresh = $order->fresh();
+        $this->assertSame(PaymentStatus::PAID, (int) $fresh->payment_status, 'COD flips PAID at DELIVERED.');
+        $this->assertNotNull(
+            $fresh->fiscal_sequence_no,
+            'NF525: a COD delivery collected at the doorstep MUST receive a fiscal_sequence_no so it enters the Z.'
+        );
+        $this->assertGreaterThan(0, (int) $fresh->fiscal_sequence_no);
+        $this->assertNull($fresh->fiscal_alloc_error_at, 'Successful allocation clears the retry flag.');
+    }
+
+    // ───────────────────────────────────────────────────────────────────
     // Test 4 — payment_status flip happens AT DELIVERED for CASH_ON_DELIVERY,
     // not at OFD (semantic correctness anchor)
     // ───────────────────────────────────────────────────────────────────

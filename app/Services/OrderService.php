@@ -1977,6 +1977,32 @@ class OrderService
                         if ($atDelivered) {
                             $locked->payment_status = PaymentStatus::PAID;
 
+                            // [G-DELIV-FISCAL heal 2026-06-14 — owner-gated, supervisor P0]
+                            // NF525 EXHAUSTIVITY: a COD delivery collected at the doorstep
+                            // becomes a fiscally-final PAID sale HERE. Without a gap-free
+                            // fiscal_sequence_no it escapes every daily Z (ZReportService
+                            // aggregates whereNotNull('fiscal_sequence_no')) — cash entered
+                            // the till but never appeared in the fiscal close. Allocate now,
+                            // mirroring the kiosk pattern (FrontendOrderService:1345). On
+                            // failure, flag fiscal_alloc_error_at for the retry cron but DO
+                            // NOT roll back: the food was delivered + cash collected, so
+                            // un-delivering is worse than a deferred sequence.
+                            if ($locked->fiscal_sequence_no === null) {
+                                try {
+                                    $locked->fiscal_sequence_no = app(\App\Services\Fiscal\FiscalSequenceService::class)
+                                        ->next((int) $locked->branch_id);
+                                    $locked->fiscal_alloc_error_at = null;
+                                } catch (\Throwable $fiscalError) {
+                                    $locked->fiscal_alloc_error_at = now();
+                                    Log::channel('fiscal')->warning('delivery.cod.fiscal_alloc_failed', [
+                                        'event'     => 'delivery.cod.fiscal_alloc_failed',
+                                        'order_id'  => (int) $locked->id,
+                                        'branch_id' => (int) $locked->branch_id,
+                                        'error'     => $fiscalError->getMessage(),
+                                    ]);
+                                }
+                            }
+
                             // [P0-LIV-02] Record the cash-collection event
                             // for NF525. The escrow row is the audit-trail
                             // anchor between "collected at doorstep" and
