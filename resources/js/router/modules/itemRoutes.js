@@ -8,6 +8,8 @@ const ItemShowComponent = () => import(/* webpackChunkName: "admin-shell" */ "..
 const CatalogStudioComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/items/CatalogStudioComponent.vue");
 const ProductComposerEditorComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/items/composer/ProductComposerEditorComponent.vue");
 const WizardAdvancedLauncherComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/demo/WizardAdvancedLauncherComponent.vue");
+// [WIZARD-STUDIO W0 2026-06-14] New WYSIWYG visual builder (copy alongside the form-based composer).
+const WizardStudioComponent = () => import(/* webpackChunkName: "admin-shell" */ "../../components/admin/items/composer/WizardStudioComponent.vue");
 
 export const isWizardPerItemDemoEnabled = () => (
     typeof window !== 'undefined'
@@ -119,6 +121,36 @@ export default [
             v2Demo: true,
         },
         beforeEnter: requireWizardPerItemDemo,
+    },
+    {
+        // [WIZARD-STUDIO W0] Visual WYSIWYG builder for an item — copy alongside the composer.
+        path: '/admin/items/:id/wizard-studio',
+        component: WizardStudioComponent,
+        name: 'admin.items.wizard-studio',
+        props: (route) => ({ entityType: 'item', entityId: route.params.id }),
+        meta: {
+            isFrontend: false,
+            auth: true,
+            permissionUrl: 'catalog.compose',
+            breadcrumb: 'composer',
+            entityType: 'item',
+            title: 'Wizard Studio',
+        },
+    },
+    {
+        // [WIZARD-STUDIO W0] Visual WYSIWYG builder for a category.
+        path: '/admin/categories/:id/wizard-studio',
+        component: WizardStudioComponent,
+        name: 'admin.categories.wizard-studio',
+        props: (route) => ({ entityType: 'category', entityId: route.params.id }),
+        meta: {
+            isFrontend: false,
+            auth: true,
+            permissionUrl: 'catalog.compose',
+            breadcrumb: 'composer',
+            entityType: 'category',
+            title: 'Wizard Studio',
+        },
     },
     {
         path: '/admin/categories/:id/composer',
