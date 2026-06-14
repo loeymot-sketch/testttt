@@ -386,6 +386,39 @@ class ZReportService
             $this->applyOrderToTotals($mirror, 1, $totalTtc, $byMethod);
         }
 
+        // [FISC-EXH-01 / NF-1 late-salvage — LOCK_FISC-EXH-01_ZREPORT_LATE_SALVAGE 2026-06-15]
+        // A realized PAID sale whose fiscal_sequence_no was allocated AFTER its created_at
+        // window's Z closed (e.g. a COD/non-COD delivery seq allocated by the retry-cron
+        // post-midnight) is placed by created_at in a PRIOR, already-signed (immutable)
+        // window — yet it carried a NULL seq when that Z closed, so $baseQuery's
+        // whereNotNull('fiscal_sequence_no') excluded it there. Result: the sale appears in
+        // NO Z (NF525 exhaustivity violation). Sweep it into THIS window keyed on
+        // fiscal_seq_allocated_at (the allocation instant), exactly like a normal in-window
+        // positive row. THREE DISJOINT WINDOW KEYS prove no double-count:
+        //   - normal $orders: created_at ∈ ($from, $to]
+        //   - this late-salvage: created_at <= $from (prior window) AND
+        //                        fiscal_seq_allocated_at ∈ ($from, $to] (allocated this window)
+        //   - post-Z adjustments: status-terminal (this block is status NON-terminal)
+        // A same-day allocation has created_at in-window → caught by $orders, never here
+        // (created_at <= $from excludes it). Legacy rows are immune (the migration backfilled
+        // allocated_at = created_at, so created_at <= $from ⟹ allocated_at <= $from ⟹ not in
+        // window). Gated on $from (no prior window on the first-ever Z). Forward-only: this
+        // changes only FUTURE aggregation — verifyChain reads STORED totals, so every closed
+        // Z stays byte-identical.
+        $lateSalvageOrders = collect();
+        if ($from) {
+            $lateSalvageOrders = (clone $baseQuery)
+                ->whereNotIn('status', $terminalStatuses)
+                ->where('created_at', '<=', $from)
+                ->where('fiscal_seq_allocated_at', '>', $from)
+                ->where('fiscal_seq_allocated_at', '<=', $to)
+                ->get();
+            foreach ($lateSalvageOrders as $o) {
+                $this->applyOrderToTotals($o, 1, $totalTtc, $byMethod);
+                $orderCount++;
+            }
+        }
+
         // M-08 policy:
         // - pre-Z refund/void rows are evidence counters only; they do
         //   not create positive revenue in the closing Z;
@@ -436,6 +469,10 @@ class ZReportService
         $byTaxRate = $this->taxBreakdownForOrders($counterEntryRefundMirrors, 1, $byTaxRate);
         $adjustmentOrders = $postZCanceled->concat($postZReturned);
         $byTaxRate = $this->taxBreakdownForOrders($adjustmentOrders, -1, $byTaxRate);
+        // [FISC-EXH-01 / NF-1 late-salvage 2026-06-15] Late-salvaged rows are positive
+        // revenue (status non-terminal), so they contribute to the per-rate VAT breakdown
+        // exactly like $orders (+1). Empty collection when there is no prior window.
+        $byTaxRate = $this->taxBreakdownForOrders($lateSalvageOrders, 1, $byTaxRate);
         $byTaxRate = array_map(fn ($v) => round((float) $v, 2), $byTaxRate);
         ksort($byTaxRate);
 
