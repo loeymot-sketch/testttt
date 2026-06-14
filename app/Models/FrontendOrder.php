@@ -32,6 +32,16 @@ class FrontendOrder extends Model implements BroadcastableOrder
                 $order->source_surface = 'delivery';
             }
         });
+
+        // [NF-1-prereq 2026-06-15 — FISC-EXH-01] Mirror of Order::saving — both models
+        // write the `orders` table, so the kiosk allocation path (FrontendOrderService /
+        // finalizePaidKioskOrder uses FrontendOrder) must stamp the allocation timestamp
+        // too. Single source of truth for the ZReportService late-salvage window.
+        static::saving(function (self $order): void {
+            if ($order->fiscal_sequence_no !== null && $order->fiscal_seq_allocated_at === null) {
+                $order->fiscal_seq_allocated_at = $order->freshTimestamp();
+            }
+        });
     }
     protected $fillable = [
         'order_serial_no',
@@ -70,6 +80,7 @@ class FrontendOrder extends Model implements BroadcastableOrder
         // alloc fails inside finalizePaidKioskOrder so a retry cron can pick
         // the order up without losing its PAID+PENDING state.
         'fiscal_alloc_error_at',
+        'fiscal_seq_allocated_at',
     ];
 
     protected $casts = [
@@ -98,6 +109,7 @@ class FrontendOrder extends Model implements BroadcastableOrder
         'source'           => 'integer',
         // [iter14 SPECIALIST-3 / FISCAL-ORPHAN-RETRY]
         'fiscal_alloc_error_at' => 'datetime',
+        'fiscal_seq_allocated_at' => 'datetime',
     ];
 
     public function orderItems(): \Illuminate\Database\Eloquent\Relations\HasMany

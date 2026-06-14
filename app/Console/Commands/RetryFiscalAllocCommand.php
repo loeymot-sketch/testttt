@@ -126,6 +126,11 @@ class RetryFiscalAllocCommand extends Command
                                     ->update([
                                         'fiscal_sequence_no'    => $seq,
                                         'fiscal_alloc_error_at' => null,
+                                        // [NF-1-prereq 2026-06-15 — FISC-EXH-01] Raw DB update
+                                        // bypasses the Order::saving stamp hook → stamp the
+                                        // allocation time explicitly. This is the EXACT path the
+                                        // late-salvage window targets (cron allocating post-Z).
+                                        'fiscal_seq_allocated_at' => now(),
                                         'updated_at'            => now(),
                                     ]);
                                 $retriedOk++;

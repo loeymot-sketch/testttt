@@ -55,6 +55,8 @@ class Order extends Model implements BroadcastableOrder
         // alloc fails inside finalizePaidKioskOrder so a retry cron can pick
         // the order up without losing its PAID+PENDING state.
         'fiscal_alloc_error_at',
+        // [NF-1-prereq 2026-06-15 — FISC-EXH-01] when the fiscal_sequence_no was allocated.
+        'fiscal_seq_allocated_at',
         // [H.1 P1 AMBER 2026-05-24 / H2-HEAL-02] NF525 6-year traceability:
         // cashier attribution on POS-created orders. orders.user_id stores the
         // CUSTOMER (Walking Customer id=2 for anonymous POS sales), not the
@@ -92,6 +94,7 @@ class Order extends Model implements BroadcastableOrder
         'pos_received_amount' => 'decimal:6',
         // [iter14 SPECIALIST-3 / FISCAL-ORPHAN-RETRY]
         'fiscal_alloc_error_at' => 'datetime',
+        'fiscal_seq_allocated_at' => 'datetime',
         // [H.1 P1 AMBER 2026-05-24 / H2-HEAL-02] cashier attribution
         'creator_id' => 'integer',
         // [S16-01] counter-collecting cashier attribution
@@ -162,6 +165,20 @@ class Order extends Model implements BroadcastableOrder
         static::creating(function (self $order) {
             if (empty($order->source_surface) && (int) $order->order_type === \App\Enums\OrderType::DELIVERY) {
                 $order->source_surface = 'delivery';
+            }
+        });
+
+        // [NF-1-prereq 2026-06-15 — FISC-EXH-01] Single source of truth for the fiscal
+        // allocation timestamp. The moment a fiscal_sequence_no is first present on a row
+        // with no stamp yet, record WHEN it was allocated. Covers EVERY model-based
+        // allocation path (kiosk create, COD/non-COD delivery, changePaymentStatus,
+        // counter-collect, refund mirror) without per-site plumbing — the raw-DB salvage
+        // path in RetryFiscalAllocCommand stamps it explicitly. Idempotent: never
+        // overwrites an existing stamp (the migration backfilled legacy rows from
+        // updated_at, so no already-allocated row is ever re-stamped with now()).
+        static::saving(function (self $order): void {
+            if ($order->fiscal_sequence_no !== null && $order->fiscal_seq_allocated_at === null) {
+                $order->fiscal_seq_allocated_at = $order->freshTimestamp();
             }
         });
     }
