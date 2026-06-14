@@ -6,6 +6,7 @@ use App\Enums\Ask;
 use App\Enums\OrderStatus;
 use App\Enums\OrderType;
 use App\Enums\PaymentStatus;
+use App\Enums\PosPaymentMethod;
 use App\Enums\Source;
 use App\Models\Branch;
 use App\Models\Order;
@@ -14,28 +15,20 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * P1 DEFECT: KDS changeStatus endpoint lacks release-rule guard.
- * 
- * KitchenDisplaySystemOrderService::changeStatus() allows bumping ANY order
- * that passes the state-machine transition check, but does NOT verify the order
- * is released for kitchen (i.e., paid or POS cash). This violates the invariant
- * enforced by list(), which only shows released orders.
+ * P1 FIX (was a characterization pair pinning the defect): the KDS
+ * change-status endpoint now enforces the board-release rule.
  *
- * Consequence: An unpaid order can be:
- *  1. Invisible in KDS list() → chef sees "order missing"
- *  2. BUT bumpable via direct API call → chef can mark it PREPARING
- *  3. This triggers SendOrderMail/Sms/Push (lines 453-455) → customer notified
- *  4. Before payment is actually received → UX/correctness breach
+ * KitchenDisplaySystemOrderService::changeStatus() used to allow bumping ANY
+ * order that passed the state-machine transition check, without verifying the
+ * order is released onto the kitchen board. That violated the invariant
+ * enforced by list() (which only surfaces released orders), so an UNPAID order
+ * was invisible to the chef yet still bumpable via a direct API call — firing
+ * SendOrderMail/Sms/Push customer notifications before payment.
  *
- * Reproduction:
- *  - Create unpaid DELIVERY order at ACCEPT status
- *  - POST /api/admin/kds-order/change-status/{id} with ACCEPT→PREPARING
- *  - BUG: succeeds (202) + order status changes + notifications fired
- *  - EXPECTED: fails (422) + order unchanged + no notifications
- *
- * Root cause: Line 424-428 checks KitchenReleaseRule::canTransition() which
- * only validates state machine (ACCEPT→PREPARING valid), not release status.
- * list() correctly filters by KitchenReleaseRule::isReleasedToKitchen() at lines 75-82.
+ * Fix: changeStatus() now applies KitchenReleaseRule::orderIsReleasedForBoard()
+ * — the SSOT mirror of list()'s applyBoardReleaseFilter(). Unreleased orders
+ * (UNPAID delivery, UNPAID non-cash POS) are now blocked with HTTP 422 and the
+ * status is unchanged. PENDING_COUNTER and PAID orders stay bumpable.
  */
 class KdsUnreleasedOrderBumpP1Test extends TestCase
 {
@@ -48,14 +41,29 @@ class KdsUnreleasedOrderBumpP1Test extends TestCase
         $this->seedMinimalSettings();
     }
 
-    public function test_unpaid_delivery_order_can_be_bumped_via_change_status()
+    private function chef(Branch $branch): User
     {
-        $branch = Branch::factory()->create();
         $chef = User::factory()->create(['branch_id' => $branch->id]);
         $chef->assignRole('Chef');
 
-        // Unpaid delivery order — NOT released per KitchenReleaseRule::isReleasedToKitchen()
-        // because payment_status = UNPAID (10) and order_type = DELIVERY (5)
+        return $chef;
+    }
+
+    private function bump(Order $order)
+    {
+        return $this->withHeader('x-api-key', config('app.api_key'))
+            ->postJson('/api/admin/kds-order/change-status/' . $order->id, [
+                'status' => OrderStatus::PREPARING,
+                'expected_status' => OrderStatus::ACCEPT,
+            ]);
+    }
+
+    public function test_unpaid_delivery_order_is_blocked_from_bump(): void
+    {
+        $branch = Branch::factory()->create();
+        $this->actingAs($this->chef($branch), 'sanctum');
+
+        // Unpaid delivery order — NOT released (UNPAID, not POS-cash, not PENDING_COUNTER).
         $order = Order::factory()->create([
             'branch_id' => $branch->id,
             'order_type' => OrderType::DELIVERY,
@@ -67,63 +75,106 @@ class KdsUnreleasedOrderBumpP1Test extends TestCase
             'is_advance_order' => Ask::NO,
         ]);
 
-        $this->actingAs($chef, 'sanctum');
+        $response = $this->bump($order);
 
-        // Attempt bump via direct API endpoint
-        $response = $this->withHeader('x-api-key', config('app.api_key'))
-            ->postJson('/api/admin/kds-order/change-status/' . $order->id, [
-                'status' => OrderStatus::PREPARING,
-                'expected_status' => OrderStatus::ACCEPT,
-            ]);
-
-        // BUG: Response is 202 (success) instead of 422 (unreleasable order)
-        $this->assertEquals(202, $response->status(),
-            'BUG: Unpaid order was bumped (HTTP 202) — should be blocked (HTTP 422)'
-        );
-
-        // BUG: Order status actually changed
-        $updatedOrder = Order::find($order->id);
-        $this->assertEquals(OrderStatus::PREPARING, $updatedOrder->status,
-            'BUG: Order status changed to PREPARING despite being unpaid'
-        );
+        $this->assertEquals(422, $response->status(),
+            'Unpaid delivery order must be blocked (HTTP 422), not bumped.');
+        $this->assertEquals(OrderStatus::ACCEPT, (int) Order::find($order->id)->status,
+            'Status must remain ACCEPT — the unreleased order was not bumped.');
     }
 
-    public function test_unpaid_pos_cash_order_can_be_bumped_via_change_status()
+    public function test_unpaid_non_cash_pos_order_is_blocked_from_bump(): void
     {
         $branch = Branch::factory()->create();
-        $chef = User::factory()->create(['branch_id' => $branch->id]);
-        $chef->assignRole('Chef');
+        $this->actingAs($this->chef($branch), 'sanctum');
 
-        // POS UNPAID order (cash payment) — SHOULD be released per KitchenReleaseRule
-        // because order_type = POS (15) AND pos_payment_method = CASH
-        // BUT let's test with a non-cash POS order that's unpaid
+        // POS UNPAID non-cash — NOT released (cash exemption requires CASH method).
         $order = Order::factory()->create([
             'branch_id' => $branch->id,
             'order_type' => OrderType::POS,
             'source' => Source::POS,
             'status' => OrderStatus::ACCEPT,
             'payment_status' => PaymentStatus::UNPAID,
-            'pos_payment_method' => 5, // Not CASH
+            'pos_payment_method' => PosPaymentMethod::CARD,
             'order_datetime' => now(),
             'is_advance_order' => Ask::NO,
         ]);
 
-        $this->actingAs($chef, 'sanctum');
+        $response = $this->bump($order);
 
-        $response = $this->withHeader('x-api-key', config('app.api_key'))
-            ->postJson('/api/admin/kds-order/change-status/' . $order->id, [
-                'status' => OrderStatus::PREPARING,
-                'expected_status' => OrderStatus::ACCEPT,
-            ]);
+        $this->assertEquals(422, $response->status(),
+            'Unpaid non-cash POS order must be blocked (HTTP 422).');
+        $this->assertEquals(OrderStatus::ACCEPT, (int) Order::find($order->id)->status,
+            'Status must remain ACCEPT — the unreleased order was not bumped.');
+    }
 
-        // BUG: Succeeds even though unpaid POS (non-cash)
+    public function test_paid_order_is_still_bumpable(): void
+    {
+        $branch = Branch::factory()->create();
+        $this->actingAs($this->chef($branch), 'sanctum');
+
+        $order = Order::factory()->create([
+            'branch_id' => $branch->id,
+            'order_type' => OrderType::DELIVERY,
+            'source' => Source::WEB,
+            'status' => OrderStatus::ACCEPT,
+            'payment_status' => PaymentStatus::PAID,
+            'payment_method' => 1,
+            'order_datetime' => now(),
+            'is_advance_order' => Ask::NO,
+        ]);
+
+        $response = $this->bump($order);
+
         $this->assertEquals(202, $response->status(),
-            'BUG: Unpaid non-cash POS order was bumped (HTTP 202)'
-        );
+            'Released (PAID) order must still be bumpable — no over-blocking.');
+        $this->assertEquals(OrderStatus::PREPARING, (int) Order::find($order->id)->status);
+    }
 
-        $updatedOrder = Order::find($order->id);
-        $this->assertEquals(OrderStatus::PREPARING, $updatedOrder->status,
-            'BUG: Order status changed despite not being released'
-        );
+    public function test_pending_counter_order_is_still_bumpable(): void
+    {
+        $branch = Branch::factory()->create();
+        $this->actingAs($this->chef($branch), 'sanctum');
+
+        // Plan B kiosk→counter encashment: chef prepares while customer pays at till.
+        $order = Order::factory()->create([
+            'branch_id' => $branch->id,
+            'order_type' => OrderType::KIOSK,
+            'source' => Source::WEB,
+            'status' => OrderStatus::ACCEPT,
+            'payment_status' => PaymentStatus::PENDING_COUNTER,
+            'order_datetime' => now(),
+            'is_advance_order' => Ask::NO,
+        ]);
+
+        $response = $this->bump($order);
+
+        $this->assertEquals(202, $response->status(),
+            'PENDING_COUNTER order must stay bumpable (Plan B) — list() shows it.');
+        $this->assertEquals(OrderStatus::PREPARING, (int) Order::find($order->id)->status);
+    }
+
+    public function test_pos_cash_unpaid_order_is_still_bumpable(): void
+    {
+        $branch = Branch::factory()->create();
+        $this->actingAs($this->chef($branch), 'sanctum');
+
+        // POS cash collected at close — released before the PAID flag flips.
+        $order = Order::factory()->create([
+            'branch_id' => $branch->id,
+            'order_type' => OrderType::POS,
+            'source' => Source::POS,
+            'status' => OrderStatus::ACCEPT,
+            'payment_status' => PaymentStatus::UNPAID,
+            'pos_payment_method' => PosPaymentMethod::CASH,
+            'order_datetime' => now(),
+            'is_advance_order' => Ask::NO,
+        ]);
+
+        $response = $this->bump($order);
+
+        $this->assertEquals(202, $response->status(),
+            'POS cash order must stay bumpable — released before paid flag.');
+        $this->assertEquals(OrderStatus::PREPARING, (int) Order::find($order->id)->status);
     }
 }

@@ -61,11 +61,15 @@ class KdsUnreleasedOrderBumpTest extends TestCase
         echo "HTTP Response Status: " . $response->status() . "\n";
         echo "Order Status Before: " . $statusBefore . "\n";
         echo "Order Status After: " . $statusAfter . "\n";
-        echo "Bump Succeeded: " . ($statusAfter === OrderStatus::PREPARING ? 'YES - BUG' : 'NO - OK') . "\n";
+        echo "Bump Blocked: " . ($statusAfter === OrderStatus::ACCEPT ? 'YES - OK' : 'NO - BUG') . "\n";
         echo "Order Payment Status: " . $updatedOrder->payment_status . "\n";
         echo "Order Type: " . $updatedOrder->order_type . "\n";
 
-        $this->assertEquals(OrderStatus::PREPARING, $statusAfter, 
-            'BUG: Unpaid delivery order was bumped to PREPARING (should be blocked)');
+        // FIXED: the unpaid (unreleased) delivery order is blocked at the
+        // change-status endpoint — status stays ACCEPT, response is 422.
+        $this->assertEquals(422, $response->status(),
+            'Unpaid delivery order must be blocked with HTTP 422.');
+        $this->assertEquals(OrderStatus::ACCEPT, $statusAfter,
+            'Unpaid delivery order must NOT be bumped — status stays ACCEPT.');
     }
 }

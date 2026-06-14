@@ -71,15 +71,11 @@ class KitchenDisplaySystemOrderService
             // exempt + withTrashed; Order::address() is hasOne with no scope.
             // No isolation risk — relations join via order_id only.
             $query = Order::with(['orderItems', 'address', 'user'])
-                ->whereIn('status', KitchenReleaseRule::visibleStatuses())
-                ->where(function ($query) {
-                    $query->where('payment_status', PaymentStatus::PAID)
-                        ->orWhere('payment_status', PaymentStatus::PENDING_COUNTER)
-                        ->orWhere(function ($cashQuery) {
-                            $cashQuery->where('order_type', OrderType::POS)
-                                ->where('pos_payment_method', PosPaymentMethod::CASH);
-                        });
-                });
+                ->whereIn('status', KitchenReleaseRule::visibleStatuses());
+            // SSOT board-release filter (PAID | PENDING_COUNTER | POS cash) —
+            // shared with changeStatus()'s bump guard via KitchenReleaseRule so
+            // "visible on the board" and "bumpable" stay identical.
+            KitchenReleaseRule::applyBoardReleaseFilter($query);
 
             // [FIX BUG-KDS-SYNC] Admin users have branch_id=0 → show all branches.
             // Branch-specific staff see only their own branch.
@@ -435,6 +431,20 @@ class KitchenDisplaySystemOrderService
                     ! KitchenReleaseRule::canTransition($fromLocked, $newStatus)
                     || ! OrderStateMachine::allows($fromLocked, $newStatus, auth()->user())
                 ) {
+                    throw new Exception(trans('all.message.invalid_status_transition'), 422);
+                }
+
+                // [P1 release-guard] The transition checks above validate the
+                // state-machine move (ACCEPT→PREPARING→PREPARED), but NOT whether
+                // the order is released onto the kitchen board. list() only
+                // surfaces released orders (KitchenReleaseRule::applyBoardReleaseFilter),
+                // so an UNPAID delivery / UNPAID non-cash POS order is invisible
+                // to the chef yet was still bumpable by a direct change-status
+                // call — firing SendOrderMail/Sms/Push (customer "being prepared"
+                // notifications) before payment. Mirror list()'s contract here so
+                // "visible == bumpable". PENDING_COUNTER stays bumpable (Plan B
+                // kiosk→counter encashment: chef prepares while customer pays).
+                if (! KitchenReleaseRule::orderIsReleasedForBoard($locked)) {
                     throw new Exception(trans('all.message.invalid_status_transition'), 422);
                 }
 

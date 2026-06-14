@@ -104,4 +104,50 @@ class KitchenReleaseRuleTest extends TestCase
             PosPaymentMethod::CASH
         ));
     }
+
+    public function test_board_release_admits_pending_counter_and_paid_and_pos_cash(): void
+    {
+        // Board predicate (what list() shows + what changeStatus() lets a chef bump).
+        $this->assertTrue(KitchenReleaseRule::isReleasedForBoard(
+            PaymentStatus::PAID,
+            OrderType::DELIVERY,
+            null
+        ));
+
+        // PENDING_COUNTER — Plan B kiosk→counter encashment: on the board even
+        // though payment is not yet secured. This is the key difference from
+        // isReleasedToKitchen(), which excludes it.
+        $this->assertTrue(KitchenReleaseRule::isReleasedForBoard(
+            PaymentStatus::PENDING_COUNTER,
+            OrderType::KIOSK,
+            null
+        ));
+        $this->assertFalse(KitchenReleaseRule::isReleasedToKitchen(
+            OrderStatus::ACCEPT,
+            PaymentStatus::PENDING_COUNTER,
+            OrderType::KIOSK,
+            null
+        ));
+
+        $this->assertTrue(KitchenReleaseRule::isReleasedForBoard(
+            PaymentStatus::UNPAID,
+            OrderType::POS,
+            PosPaymentMethod::CASH
+        ));
+    }
+
+    public function test_board_release_blocks_unpaid_non_cash_orders(): void
+    {
+        $this->assertFalse(KitchenReleaseRule::isReleasedForBoard(
+            PaymentStatus::UNPAID,
+            OrderType::DELIVERY,
+            null
+        ));
+
+        $this->assertFalse(KitchenReleaseRule::isReleasedForBoard(
+            PaymentStatus::UNPAID,
+            OrderType::POS,
+            PosPaymentMethod::CARD
+        ));
+    }
 }
