@@ -25,8 +25,12 @@ use App\Enums\OrderStatus;
 use App\Enums\OrderType;
 use App\Enums\PaymentStatus;
 use App\Enums\Source;
+use App\Enums\Status;
 use App\Models\Branch;
+use App\Models\Item;
+use App\Models\ItemCategory;
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\User;
 use App\Services\DashboardService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -87,6 +91,58 @@ class DashboardRevenueNettingSentinelTest extends TestCase
             'Net CA must be 100. Got: ' . $result['total_sales']);
         $this->assertStringNotContainsString('180', (string) $result['total_sales']);
         $this->assertStringNotContainsString('150', (string) $result['total_sales']);
+    }
+
+    /**
+     * massive-2dot0 #12 — the EOD "Top du jour" widget (topItemsOfDay) must NET
+     * refund counter-entries like every other money surface. Pre-heal it filtered
+     * payment_status=PAID, so the RETURNED/REFUNDED negative-qty mirror was dropped
+     * and a refunded item was over-counted (showed its full sold qty).
+     */
+    public function test_top_items_of_day_nets_refunded_quantities(): void
+    {
+        $this->actAsAdmin();
+        $branch = Branch::factory()->create();
+        $cat = ItemCategory::forceCreate(['name' => 'NetCat', 'slug' => 'net-cat', 'status' => Status::ACTIVE]);
+        $x = Item::forceCreate(['name' => 'Refunded Item X', 'slug' => 'item-x-net', 'price' => 10, 'status' => Status::ACTIVE, 'item_category_id' => $cat->id]);
+        $y = Item::forceCreate(['name' => 'Clean Item Y', 'slug' => 'item-y-net', 'price' => 5, 'status' => Status::ACTIVE, 'item_category_id' => $cat->id]);
+
+        $parent = $this->makeOrder($branch, OrderStatus::DELIVERED, PaymentStatus::PAID, 30.0);
+        $this->makeItem($parent, $branch, $x, 3, 30.0);
+        $mirror = $this->makeOrder($branch, OrderStatus::RETURNED, PaymentStatus::REFUNDED, -30.0, $parent->id);
+        $this->makeItem($mirror, $branch, $x, -3, -30.0);
+        $clean = $this->makeOrder($branch, OrderStatus::DELIVERED, PaymentStatus::PAID, 5.0);
+        $this->makeItem($clean, $branch, $y, 1, 5.0);
+
+        $top = collect(app(DashboardService::class)->eodSynthesis('2026-03-15')['top_items']);
+        $xRow = $top->firstWhere('name', 'Refunded Item X');
+        $yRow = $top->firstWhere('name', 'Clean Item Y');
+
+        $this->assertSame(0, (int) ($xRow['qty'] ?? 0), 'Refunded item X must net to 0 in Top du jour (was 3 pre-heal).');
+        $this->assertNotNull($yRow, 'Clean item Y must appear.');
+        $this->assertSame(1, (int) $yRow['qty']);
+    }
+
+    private function makeItem(Order $order, Branch $branch, Item $item, int $qty, float $totalPrice): void
+    {
+        OrderItem::forceCreate([
+            'order_id' => $order->id,
+            'branch_id' => $branch->id,
+            'item_id' => $item->id,
+            'quantity' => $qty,
+            'discount' => 0,
+            'tax_name' => 'TVA 10',
+            'tax_rate' => 10,
+            'tax_type' => 2,
+            'tax_amount' => 0,
+            'price' => $item->price,
+            'item_variations' => json_encode([]),
+            'item_extras' => json_encode([]),
+            'item_variation_total' => 0,
+            'item_extra_total' => 0,
+            'total_price' => $totalPrice,
+            'instruction' => null,
+        ]);
     }
 
     public function test_placed_order_counts_exclude_refund_mirror(): void

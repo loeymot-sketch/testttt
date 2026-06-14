@@ -851,9 +851,15 @@ class DashboardService
             ->selectRaw('SUM(quantity) AS qty_sum')
             ->selectRaw('SUM(total_price) AS revenue_sum')
             ->whereHas('order', function ($q) use ($startParis, $endParisExclusive, $branchId) {
+                // [DASH-NET heal 2026-06-14 — massive-2dot0 #12] Net refund
+                // counter-entries like every other money surface (DASH-NET-01).
+                // Pre-heal this filtered payment_status=PAID, dropping the
+                // RETURNED/REFUNDED negative-qty mirror → a refunded item kept its
+                // full sold qty in "Top du jour". realizedRevenue() includes the
+                // mirror so SUM(quantity) nets the refunded units out.
                 $q->where('order_datetime', '>=', $startParis)
                   ->where('order_datetime', '<', $endParisExclusive)
-                  ->where('payment_status', PaymentStatus::PAID);
+                  ->realizedRevenue();
                 if ($branchId !== null) {
                     $q->where('branch_id', $branchId);
                 }
