@@ -9,7 +9,9 @@ use App\Models\ItemCategory;
 use App\Models\ItemWizardProfile;
 use App\Models\ItemWizardStep;
 use App\Models\Tax;
+use Database\Seeders\ComposerPermissionsMinimalSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 /**
@@ -37,6 +39,10 @@ class ComposerPreviewProjectionControllerTest extends TestCase
     {
         $this->seedMinimalSettings();
         $this->seedSpatieRoles();
+        // Grant catalog.compose / catalog.publish to the composer roles (Admin/Branch Admin/…).
+        Role::firstOrCreate(['name' => 'Branch Admin', 'guard_name' => 'sanctum']);
+        Role::firstOrCreate(['name' => 'Tenant Admin', 'guard_name' => 'sanctum']);
+        $this->seed(ComposerPermissionsMinimalSeeder::class);
 
         $branch = Branch::factory()->create();
         $admin = \Database\Factories\UserFactory::new()->create(['branch_id' => $branch->id]);
@@ -151,11 +157,14 @@ class ComposerPreviewProjectionControllerTest extends TestCase
 
         $otherBranch = Branch::factory()->create();
         $branchUser = \Database\Factories\UserFactory::new()->create(['branch_id' => $otherBranch->id]);
-        $branchUser->assignRole('Branch Manager');
+        $branchUser->assignRole('Branch Admin'); // has catalog.compose, but wrong branch
 
+        // Double-gated: WizardProfileBranchScope filters the foreign-branch profile out of the
+        // route-model binding → 404 (existence not even disclosed), which is stricter than the
+        // 403 the in-controller authorizeBranchScope would also raise. 404 ⊇ 403 in safety.
         $this->actingAs($branchUser, 'sanctum')
             ->withHeader('x-api-key', $this->apiKey())
             ->getJson($this->url($profile))
-            ->assertStatus(403);
+            ->assertStatus(404);
     }
 }
