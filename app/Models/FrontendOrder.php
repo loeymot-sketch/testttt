@@ -39,7 +39,11 @@ class FrontendOrder extends Model implements BroadcastableOrder
         // too. Single source of truth for the ZReportService late-salvage window.
         static::saving(function (self $order): void {
             if ($order->fiscal_sequence_no !== null && $order->fiscal_seq_allocated_at === null) {
-                $order->fiscal_seq_allocated_at = $order->freshTimestamp();
+                // Mirror Order::saving — created-with-seq → created_at (never artificially
+                // late); existing row getting a seq (the real allocation paths) → now().
+                $order->fiscal_seq_allocated_at = ($order->exists || empty($order->created_at))
+                    ? $order->freshTimestamp()
+                    : $order->created_at;
             }
         });
     }

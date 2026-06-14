@@ -65,6 +65,7 @@ class RefundDiscountTvaNettingTwoWindowSentinelTest extends TestCase
             'created_at' => $opened->copy()->addHours(2),
         ]);
         $parent->fiscal_sequence_no = 10;
+        $parent->fiscal_seq_allocated_at = $parent->created_at; // [NF-1] realistic: seq allocated at creation, not test-exec time
         $parent->save();
         $item = Item::factory()->create();
         OrderItem::create([
@@ -118,6 +119,7 @@ class RefundDiscountTvaNettingTwoWindowSentinelTest extends TestCase
             'created_at' => $opened->copy()->addHours(2),
         ]);
         $parent->fiscal_sequence_no = 20;
+        $parent->fiscal_seq_allocated_at = $parent->created_at; // [NF-1] realistic: seq allocated at creation, not test-exec time
         $parent->save();
         $item = Item::factory()->create();
         OrderItem::create([

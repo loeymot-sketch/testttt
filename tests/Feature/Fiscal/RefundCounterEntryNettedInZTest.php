@@ -119,6 +119,11 @@ class RefundCounterEntryNettedInZTest extends TestCase
             'created_at'     => $opened->copy()->addHours(2),
         ]);
         $parent->fiscal_sequence_no = 10;
+        // [NF-1 2026-06-15] Realistic: the parent's seq was allocated on its OWN (window-1)
+        // day, not at test-exec time. Without this the saving-hook stamps now() (UPDATE
+        // path), and since this test's refund window extends to Carbon::now() the parent
+        // would be wrongly late-salvaged into window 2 (+50) and cancel the mirror's -50.
+        $parent->fiscal_seq_allocated_at = $parent->created_at;
         $parent->save();
 
         // The REAL service mints the mirror (created_at = now, pre-negated total,

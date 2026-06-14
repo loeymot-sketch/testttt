@@ -27,13 +27,18 @@ return new class extends Migration
             }
         });
 
-        // Backfill: every row that already carries a sequence gets a stamp so the
-        // late-salvage window (which keys on this column) can reason about it. updated_at
-        // is the closest available allocation-time proxy.
+        // Backfill: every already-allocated row gets a stamp. Use created_at (NOT
+        // updated_at) deliberately — this makes legacy rows mathematically IMMUNE to the
+        // NF-1 late-salvage window: that window requires created_at <= $from AND
+        // fiscal_seq_allocated_at ∈ ($from,$to]; with allocated_at = created_at the two
+        // conditions are mutually exclusive, so no already-counted legacy row can ever be
+        // double-swept into a future Z. (updated_at would risk exactly that if a legacy row
+        // were touched after its Z closed.) Late-salvage only fires for FUTURE rows whose
+        // saving-hook stamps the true allocation instant.
         DB::table('orders')
             ->whereNotNull('fiscal_sequence_no')
             ->whereNull('fiscal_seq_allocated_at')
-            ->update(['fiscal_seq_allocated_at' => DB::raw('updated_at')]);
+            ->update(['fiscal_seq_allocated_at' => DB::raw('created_at')]);
     }
 
     public function down(): void

@@ -178,7 +178,15 @@ class Order extends Model implements BroadcastableOrder
         // updated_at, so no already-allocated row is ever re-stamped with now()).
         static::saving(function (self $order): void {
             if ($order->fiscal_sequence_no !== null && $order->fiscal_seq_allocated_at === null) {
-                $order->fiscal_seq_allocated_at = $order->freshTimestamp();
+                // On a NEW row created WITH a seq in one shot, the seq is allocated at the
+                // row's own creation instant → use created_at (so a row placed in the past
+                // is never treated as a "late" allocation). On an UPDATE (existing row
+                // getting its seq — the real kiosk / COD-delivery / changePaymentStatus /
+                // cron pattern), stamp the actual allocation moment (now), which is what the
+                // late-salvage window legitimately keys on for a cross-midnight allocation.
+                $order->fiscal_seq_allocated_at = ($order->exists || empty($order->created_at))
+                    ? $order->freshTimestamp()
+                    : $order->created_at;
             }
         });
     }

@@ -5,7 +5,8 @@
     "audit_session": "supervisor-audit-2026-05-29 / Round 1 + Round 2",
     "update_rule": "Update ONLY when an LOCK_*.md doc explicitly authorizes a frozen-zone touch, AND owner has countersigned per CLAUDE.md §10 human-gate. Re-run the test to capture the new hash and commit baseline alongside the LOCK doc.",
     "_lock_history": [
-      "2026-06-05 — ZReportService.php rebaselined for M6-002 per-tranche Z bucketing. Authority: tasks/pre-cloud-goal/LOCK_ZREPORT_SPLIT_BUCKETING.md §10 APPROVED (explicit owner countersign via AskUserQuestion). Patch commit 59d0ffdf3. Forward-only, chain byte-identical before==after."
+      "2026-06-05 — ZReportService.php rebaselined for M6-002 per-tranche Z bucketing. Authority: tasks/pre-cloud-goal/LOCK_ZREPORT_SPLIT_BUCKETING.md §10 APPROVED (explicit owner countersign via AskUserQuestion). Patch commit 59d0ffdf3. Forward-only, chain byte-identical before==after.",
+      "2026-06-15 — ZReportService.php rebaselined for FISC-EXH-01 late-salvage window (NF-1). Authority: plans/LOCK_FISC_EXH_01_ZREPORT_LATE_SALVAGE_2026_06_15.md APPROVED (owner via AskUserQuestion OD-3 'Approve the LOCK' + /goal 'lance le goal'). Single additive late-salvage block: sweeps a sale whose fiscal_seq_allocated_at lands after its created_at-window's Z closed into the current Z (3 disjoint window keys = no double-count). Forward-only: verifyChain reads STORED totals, every closed Z byte-identical before==after."
     ]
   },
   "resources/js/components/frontend/kiosk/KioskWizardComponent.vue": "763721206d79ae0865139f8794987bf15ba61945a51688fb716ee418d0b961c6",
@@ -17,7 +18,7 @@
   "public/css/pos-wizard.css": "126223abc1b8137be740b6588c85db1634ea81037d4df7c37194a0ca554a9f1e",
   "resources/views/admin-pos-v4.blade.php": "47535c19c7c06ed2a863f03d3bee8335280838740fe30eb51e8044809d48c956",
   "app/Services/Fiscal/FiscalSequenceService.php": "1d8626b81d83d014a9e4562f47357eb0f1e1588f479c4fcd390cba3cdb3302f3",
-  "app/Services/Fiscal/ZReportService.php": "2eaab61c6ccfcd70684528d2f973fe3b818303a39a3a3887b0e36ad597fbfa48",
+  "app/Services/Fiscal/ZReportService.php": "f8f22911e0e3da755e281fd038385feef828ce2591ac6d84e0403af9ffe06041",
   "app/Services/Fiscal/AuditLogService.php": "22180f1e977bd59365847d8a6f3eb8a3c3a1fc085929ca93345e24d75030c9dd",
   "app/Models/Scopes/BranchScope.php": "eff306115030b5d7ef8cd69f6d3da98567839e00ed1b2f086c0be2d6a6cd953c",
   "app/Http/Middleware/IdempotencyKeyMiddleware.php": "0c25898a8150b021f4f787c7eb92d9d0fbbd8503cb863362a120c3c35206673b",
