@@ -93,5 +93,15 @@ Le spine `release/v1-2026-06-10` a continué d'avancer (+18 commits) sous des se
 - Les 3 P1 ultra-review (allergènes KDS food-safety, race offline-queue, OSS 4xx-backoff) = **déjà présents** dans le tronc (via merges W4/clients-next). Vérifié.
 - Sanity Refund+Pos+Catalog 23/23 après ports. ⚠️ Le spine reste actif — un dernier `git merge release/v1-2026-06-10` (docs/playwright-mcp uniquement) au moment du ship gardera le tronc aligné.
 
+## 6quater. AUDIT FINAL CROSS-SURFACE (2026-06-14) — VERT
+3 lanes adversariales + adjudicateur (`wf_94125a32`) sur HEAD `cf05deec8` :
+- **Lane 1 — cross-surface fiscal e2e** (la couture inter-systèmes, jamais testée en un flux) : parcours COMPLET borne→KDS→OSS→encaissement→Z→dashboard, **chaîne NF525 OK à chaque couture**, vérité DB au centime, séquence gap-free → VERT_RÉSIDU_ATTENDU (seul résidu = caisse frozen connu).
+- **Lane 2 — ports R-1/F1 live + stress** : double-remboursement pré-Z → **409 MIRROR_ALREADY_EXISTS, 1 seul cash_back** ; garde Entrée encaissement (specs 25/25) ; **rafale 15 commandes mixtes gap-free, 0 collision**, ventilation Z par TPE → VERT.
+- **Lane 3 — sweep adversarial frais** (coutures, merge, ports, RBAC, i18n) : **rien de nouveau réel** → VERT.
+- **Adjudicateur : verdict global VERT, 0 P0/P1/P2 à healer.**
+- 1 seul P3 nouveau (LANE1-OSS-01 : badge « Connexion lente » chevauchait le n° commande en mode dégradé) → **corrigé** `b19f151e0` (badge bas-centre).
+
+**Tronc final `b19f151e0` (106 commits). Audit final 100% VERT — 0 P0/P1/P2/P3 ouvert hors les 4 gates owner.**
+
 ## 7. VERDICT
 **Autonome : CONVERGÉ.** Tout ce qui est corrigeable sans gate owner est fixé, testé (suites complètes vertes), et prouvé en live. Le tronc unifié est prêt à push (G-PUSH) et à déployer (G-OVH) une fois les 2 contreseings (G2 frozen caisse, G-BASELINE) posés. La perfection restante (P1 caisse) est **structurellement** entre les mains de l'owner — par conception NF525/frozen, pas par défaut d'exécution.
