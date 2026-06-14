@@ -2283,6 +2283,22 @@ class OrderService
                         throw new Exception(trans('all.message.invalid_status_transition'), 422);
                     }
 
+                    // [G-DELIV-ORPHAN heal 2026-06-14 — owner-gated, supervisor P1]
+                    // A DELIVERY order cannot be dispatched OUT_FOR_DELIVERY with no
+                    // assigned driver: "out for delivery" with delivery_boy_id=NULL is
+                    // incoherent — no one is delivering it, COD is never collected, and
+                    // the cash/fiscal trail breaks. The driver self-service path is
+                    // already safe (requires delivery_boy_id==auth); this closes the
+                    // admin/OSS path which validated only branch + transition. Config
+                    // default-on; flip to allow a batch dispatch-then-assign workflow.
+                    if ((int) $locked->order_type === (int) \App\Enums\OrderType::DELIVERY
+                        && (int) $toStatus === (int) OrderStatus::OUT_FOR_DELIVERY
+                        && empty($locked->delivery_boy_id)
+                        && config('pos.require_delivery_driver_before_dispatch', true)
+                    ) {
+                        abort(422, 'Assignez un livreur avant d’envoyer la commande en livraison.');
+                    }
+
                     // [P3] RETURNED — même barrière motif / contrepartie que CANCELED & REJECTED.
                     if (in_array($toStatus, [OrderStatus::REJECTED, OrderStatus::CANCELED, OrderStatus::RETURNED], true)) {
                         $request->validate([

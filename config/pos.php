@@ -37,6 +37,15 @@ return [
     'simulation_hardware' => filter_var(env('POS_SIMULATION_HARDWARE', false), FILTER_VALIDATE_BOOLEAN),
 
     /*
+    | [G-DELIV-ORPHAN heal 2026-06-14 — owner-gated] When true (default), a DELIVERY
+    | order cannot be moved OUT_FOR_DELIVERY via the admin/OSS path unless a driver
+    | (delivery_boy_id) is assigned — "out for delivery" with no driver is incoherent
+    | and breaks the COD cash/fiscal trail. Flip to false to allow a batch
+    | dispatch-then-assign workflow.
+    */
+    'require_delivery_driver_before_dispatch' => filter_var(env('POS_REQUIRE_DELIVERY_DRIVER_BEFORE_DISPATCH', true), FILTER_VALIDATE_BOOLEAN),
+
+    /*
     |--------------------------------------------------------------------------
     | POS API rate-limit knobs (Wave O O-5 P-OWNER-5 heal 2026-05-20)
     |--------------------------------------------------------------------------
