@@ -104,6 +104,47 @@ class RetryFiscalAllocCommand extends Command
                     if (is_null($order->fiscal_sequence_no)
                         && !is_null($order->fiscal_alloc_error_at)
                     ) {
+                        // [P1a heal 2026-06-14 — code-review of G-DELIV-FISCAL] Generic
+                        // salvage: finalizePaidKioskOrder only handles KIOSK+CARD/TICKET.
+                        // A COD delivery flagged by OrderService::deliveryBoyOrderChangeStatus
+                        // (or any other non-kiosk PAID, realized sale) would otherwise loop
+                        // forever PAID+seq=NULL, never entering the Z — defeating the
+                        // degraded-path promise. Allocate the sequence directly for a
+                        // realized paid row, then clear the flag.
+                        $isRealizedPaid = (int) $order->payment_status === PaymentStatus::PAID
+                            && ! in_array((int) $order->status, [
+                                \App\Enums\OrderStatus::CANCELED,
+                                \App\Enums\OrderStatus::REJECTED,
+                                \App\Enums\OrderStatus::RETURNED,
+                            ], true);
+                        if ($isRealizedPaid) {
+                            try {
+                                $seq = app(\App\Services\Fiscal\FiscalSequenceService::class)
+                                    ->next((int) $order->branch_id);
+                                \Illuminate\Support\Facades\DB::table('orders')
+                                    ->where('id', $order->id)
+                                    ->update([
+                                        'fiscal_sequence_no'    => $seq,
+                                        'fiscal_alloc_error_at' => null,
+                                        'updated_at'            => now(),
+                                    ]);
+                                $retriedOk++;
+                                Log::channel('fiscal')->info('generic.fiscal_alloc_retry.success', [
+                                    'event'              => 'generic.fiscal_alloc_retry.success',
+                                    'order_id'           => $order->id,
+                                    'branch_id'          => $order->branch_id,
+                                    'order_type'         => $order->order_type,
+                                    'fiscal_sequence_no' => $seq,
+                                ]);
+                                continue;
+                            } catch (\Throwable $e) {
+                                Log::channel('fiscal')->error('generic.fiscal_alloc_retry.failed', [
+                                    'event'    => 'generic.fiscal_alloc_retry.failed',
+                                    'order_id' => $order->id,
+                                    'error'    => $e->getMessage(),
+                                ]);
+                            }
+                        }
                         $retriedFailed++;
                     } else {
                         $skipped++;

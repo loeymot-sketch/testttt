@@ -77,6 +77,40 @@ class DeliveryDispatchRequiresDriverTest extends TestCase
         );
     }
 
+    /**
+     * P1b (code-review of G-DELIV-FISCAL) — the admin/OSS path must NOT finalize an
+     * UNPAID COD delivery to DELIVERED: that marks it off-book (no PAID flip, no
+     * fiscal_sequence_no, no cash-escrow audit). Only the driver collects COD cash
+     * at the doorstep via the fiscally-correct deliveryBoyOrderChangeStatus path.
+     */
+    public function test_admin_cannot_finalize_unpaid_cod_delivery_to_delivered(): void
+    {
+        $branch = Branch::factory()->create();
+        $driver = User::factory()->create(['branch_id' => $branch->id]);
+        $this->actingAs($this->admin(), 'sanctum');
+        $order = Order::factory()->create([
+            'branch_id'       => $branch->id,
+            'order_type'      => OrderType::DELIVERY,
+            'status'          => OrderStatus::OUT_FOR_DELIVERY,
+            'payment_status'  => PaymentStatus::UNPAID,
+            'payment_method'  => \App\Enums\PaymentGateway::CASH_ON_DELIVERY,
+            'delivery_boy_id' => $driver->id,
+        ]);
+
+        $threw = false;
+        try {
+            $req = OrderStatusRequest::create('/x', 'POST', ['status' => OrderStatus::DELIVERED]);
+            app(OrderService::class)->changeStatus($order, $req);
+        } catch (\Throwable $e) {
+            $threw = true;
+        }
+
+        $this->assertTrue($threw, 'Admin must not finalize an unpaid COD delivery off-book.');
+        $fresh = $order->fresh();
+        $this->assertSame(OrderStatus::OUT_FOR_DELIVERY, (int) $fresh->status, 'Order must not advance to DELIVERED via the admin off-book path.');
+        $this->assertNull($fresh->fiscal_sequence_no, 'No off-book fiscal allocation.');
+    }
+
     public function test_dispatch_to_ofd_succeeds_with_driver_assigned(): void
     {
         $branch = Branch::factory()->create();

@@ -128,6 +128,39 @@ class FiscalAllocOrphanRetryTest extends TestCase
     }
 
     /**
+     * P1a (code-review of G-DELIV-FISCAL) — the retry cron must SALVAGE a flagged
+     * COD-delivery order, not just kiosk orders. finalizePaidKioskOrder early-returns
+     * false for order_type=DELIVERY / payment_method=CASH_ON_DELIVERY, so without a
+     * generic fallback the row loops forever PAID+seq=NULL, never entering the Z.
+     */
+    public function test_retry_alloc_command_salvages_flagged_cod_delivery_order(): void
+    {
+        Event::fake([OrderCreated::class, OrderStatusChanged::class]);
+
+        $branch = Branch::factory()->create();
+        $order = Order::factory()->create([
+            'branch_id'             => $branch->id,
+            'order_type'            => OrderType::DELIVERY,
+            'payment_method'        => PaymentGateway::CASH_ON_DELIVERY,
+            'status'                => OrderStatus::DELIVERED,
+            'payment_status'        => PaymentStatus::PAID,
+            'fiscal_sequence_no'    => null,
+            'fiscal_alloc_error_at' => now()->subMinutes(2),
+        ]);
+
+        $exitCode = $this->artisan('foodking:fiscal:retry-alloc')->run();
+        $this->assertSame(0, $exitCode);
+
+        $persisted = Order::withoutGlobalScopes()->findOrFail($order->id);
+        $this->assertNotNull(
+            $persisted->fiscal_sequence_no,
+            'A flagged COD delivery MUST be salvaged into the Z by the retry cron (NF525 exhaustivity).'
+        );
+        $this->assertNull($persisted->fiscal_alloc_error_at, 'flag cleared on successful salvage.');
+        $this->assertSame(OrderStatus::DELIVERED, (int) $persisted->status, 'status unchanged — already delivered.');
+    }
+
+    /**
      * The retry command short-circuits when no flagged rows exist and
      * does not crash on an empty set.
      */

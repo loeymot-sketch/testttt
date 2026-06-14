@@ -2299,6 +2299,23 @@ class OrderService
                         abort(422, 'Assignez un livreur avant d’envoyer la commande en livraison.');
                     }
 
+                    // [P1b heal 2026-06-14 — code-review of G-DELIV-FISCAL] The admin/OSS
+                    // path finalizes DELIVERED with a bare status save() — no payment flip,
+                    // no fiscal_sequence_no, no cash-collection escrow. For a COD delivery
+                    // still UNPAID that is an OFF-BOOK sale: the cash is collected at the
+                    // doorstep by the DRIVER, who alone runs the fiscally-correct path
+                    // (deliveryBoyOrderChangeStatus: flip PAID + allocate seq + escrow audit
+                    // + cash-session movement). So an admin MUST NOT finalize an unpaid COD
+                    // delivery — route it through the driver. Prepaid / already-PAID
+                    // deliveries are unaffected (admin may still mark those DELIVERED).
+                    if ((int) $locked->order_type === (int) \App\Enums\OrderType::DELIVERY
+                        && (int) $toStatus === (int) OrderStatus::DELIVERED
+                        && (int) $locked->payment_status === (int) PaymentStatus::UNPAID
+                        && (int) $locked->payment_method === (int) \App\Enums\PaymentGateway::CASH_ON_DELIVERY
+                    ) {
+                        abort(422, 'Une livraison payée en espèces doit être finalisée par le livreur (encaissement au pas-de-porte).');
+                    }
+
                     // [P3] RETURNED — même barrière motif / contrepartie que CANCELED & REJECTED.
                     if (in_array($toStatus, [OrderStatus::REJECTED, OrderStatus::CANCELED, OrderStatus::RETURNED], true)) {
                         $request->validate([
