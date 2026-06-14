@@ -41,7 +41,7 @@
                 >
                     ⚠ {{ zeroChoiceSteps.length }} page(s) sans option disponible
                     ({{ zeroChoiceSteps.join(', ') }}) — le client ne pourra pas valider.
-                    Corrigez la source de ces pages (W2).
+                    Corrigez la source de ces pages avant publication.
                 </p>
                 <div class="ws-phone" data-testid="wizard-studio-preview">
                     <div class="ws-phone__notch" aria-hidden="true"></div>
@@ -73,12 +73,21 @@
                 <h2 class="ws-panel__title">Pages du wizard</h2>
                 <p class="ws-panel__meta">{{ steps.length }} page(s) · v{{ version }} · {{ isPublished ? 'publié' : 'brouillon' }}</p>
                 <ol v-if="steps.length" class="ws-steplist">
-                    <li v-for="s in steps" :key="s.id || s.step_key" class="ws-steplist__item">
-                        <span class="ws-steplist__label">{{ s.label }}</span>
+                    <li
+                        v-for="s in steps"
+                        :key="s.id || s.step_key"
+                        class="ws-steplist__item"
+                        :class="{ 'ws-steplist__item--hidden': !stepRenders(s) }"
+                    >
+                        <span class="ws-steplist__label">
+                            {{ s.label }}
+                            <span v-if="!stepRenders(s)" class="ws-steplist__tag" title="Page sans option disponible : la borne ne l'affichera pas">non affichée · 0 option</span>
+                        </span>
                         <span class="ws-steplist__rule">{{ ruleSummary(s) }}</span>
                     </li>
                 </ol>
                 <p v-else class="ws-panel__meta">Aucune page pour le moment.</p>
+                <p class="ws-panel__note">ℹ️ L'aperçu à gauche est le rendu RÉEL de la borne : elle peut fusionner, renommer ou masquer des pages selon les données (une page sans option n'apparaît pas ; un récapitulatif est ajouté automatiquement). Cette liste = les pages telles que configurées.</p>
                 <p class="ws-panel__note">✏️ Édition visuelle (ajouter / réordonner les pages, options, images, règles) : à venir en W2→W6. Cet écran est pour l'instant un aperçu fidèle en lecture seule.</p>
             </aside>
         </div>
@@ -157,19 +166,23 @@ export default {
                 const entityUrl = this.isCategory
                     ? `admin/setting/item-category/show/${this.entityId}`
                     : `admin/item/show/${this.entityId}`;
-                // Fetch the entity first with a context-correct not-found message (the backend's
-                // generic 404 body says "Commande introuvable" which is wrong for a category/product).
+                // Fire both fetches in PARALLEL (no extra round-trip), but await the entity first
+                // so we can show a context-correct not-found message (the backend's generic 404
+                // body says "Commande introuvable" which is wrong for a category/product).
+                const entityP = axios.get(entityUrl);
+                const profileP = axios.get(this.profileEndpoint)
+                    .catch((e) => (e.response && e.response.status === 404 ? { data: null } : Promise.reject(e)));
                 let entityRes;
                 try {
-                    entityRes = await axios.get(entityUrl);
+                    entityRes = await entityP;
                 } catch (e) {
+                    profileP.catch(() => {}); // swallow the in-flight profile promise (entity failed)
                     this.loadError = (e?.response?.status === 404)
                         ? (this.isCategory ? 'Catégorie introuvable.' : 'Produit introuvable.')
                         : (e?.response?.data?.message || 'Impossible de charger le wizard.');
                     return;
                 }
-                const profileRes = await axios.get(this.profileEndpoint)
-                    .catch((e) => (e.response && e.response.status === 404 ? { data: null } : Promise.reject(e)));
+                const profileRes = await profileP;
                 this.entityName = entityRes?.data?.data?.name ?? entityRes?.data?.name ?? '';
                 const profile = profileRes?.data?.data ?? profileRes?.data ?? null;
                 this.profile = profile;
@@ -219,6 +232,11 @@ export default {
             this.previewNonce += 1;
         },
         noop() {},
+        // A configured step that resolves to 0 options is dropped from the live borne rail.
+        stepRenders(step) {
+            const label = step.label || step.step_key;
+            return !this.zeroChoiceSteps.includes(label);
+        },
         ruleSummary(step) {
             const min = Number(step.min_select || 0);
             const max = Number(step.max_select || 0);
@@ -254,14 +272,20 @@ export default {
 .wizard-studio__body { display: grid; grid-template-columns: 1fr 360px; gap: 24px; padding: 24px; align-items: start; }
 .ws-stage { display: flex; flex-direction: column; align-items: center; gap: 12px; }
 .ws-warn { width: 100%; max-width: 420px; margin: 0; padding: 10px 14px; border-radius: 10px; background: #fff4e8; border: 1px solid #f6c89a; color: #9a4a08; font-size: 13px; line-height: 1.35; }
-/* Realistic portrait device: dark shell + 9:16 screen the kiosk render is bounded to. */
-.ws-phone { position: relative; width: 390px; background: #1a1a1a; border-radius: 36px; padding: 14px; box-shadow: 0 16px 48px rgba(20,20,20,.22); }
+/* Realistic portrait device: dark shell + 9:16 screen the kiosk render is bounded to.
+   transform establishes a containing block so the frozen wizard's position:fixed abandon
+   overlay (z-index 120) is bounded to the device frame instead of covering the admin page (F7). */
+.ws-phone { position: relative; width: 390px; background: #1a1a1a; border-radius: 36px; padding: 14px; box-shadow: 0 16px 48px rgba(20,20,20,.22); transform: translateZ(0); }
 .ws-phone__notch { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); width: 120px; height: 18px; background: #1a1a1a; border-radius: 0 0 14px 14px; z-index: 2; }
 .ws-phone__screen { width: 362px; height: 644px; overflow: auto; background: #fff; border-radius: 24px; -webkit-overflow-scrolling: touch; }
 /* The FROZEN kiosk wizard renders at 100vw (fullscreen borne). Inside the device frame we
    override it to a realistic kiosk-portrait width and scale it down with `zoom` so the
    operator sees the true borne proportions, fit-to-frame, instead of a clipped desktop slice. */
-.ws-phone__screen :deep(.kiosk-wizard) { width: 724px !important; min-width: 724px; zoom: 0.5; }
+/* Override BOTH frozen viewport dims: width:100vw → 724px AND height:100vh → 1288px, so
+   zoom:0.5 maps to exactly the 362×644 frame regardless of admin viewport size. Without the
+   height override the wizard stays 100vh (viewport-dependent) and its sticky footer/CTA pins
+   off-frame (F1). With it, the kiosk scrolls its own step-content and pins the footer in-frame. */
+.ws-phone__screen :deep(.kiosk-wizard) { width: 724px !important; min-width: 724px; height: 1288px !important; max-height: 1288px !important; zoom: 0.5; }
 .ws-phone__hint { display: flex; align-items: center; justify-content: center; gap: 8px; height: 100%; min-height: 200px; text-align: center; color: #777; font-size: 13px; padding: 24px; }
 .ws-phone__hint--error { color: #b02a1a; }
 .ws-spinner { width: 16px; height: 16px; border: 2px solid #f0d9cf; border-top-color: #F4501E; border-radius: 50%; display: inline-block; animation: ws-spin 0.8s linear infinite; }
@@ -275,6 +299,8 @@ export default {
 .ws-steplist__item { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
 .ws-steplist__label { color: #222; font-size: 14px; }
 .ws-steplist__rule { color: #F4501E; font-size: 11px; white-space: nowrap; }
+.ws-steplist__item--hidden .ws-steplist__label { color: #999; }
+.ws-steplist__tag { display: inline-block; margin-left: 6px; padding: 1px 6px; border-radius: 6px; background: #fff4e8; color: #9a4a08; font-size: 10px; vertical-align: middle; }
 @media (max-width: 1024px) {
     .wizard-studio__body { grid-template-columns: 1fr; }
     .ws-panel { order: -1; position: static; }
