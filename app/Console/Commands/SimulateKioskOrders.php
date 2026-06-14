@@ -27,6 +27,15 @@ class SimulateKioskOrders extends Command
      */
     public function handle()
     {
+        // [PROD-GUARD heal 2026-06-14 — ultra-audit P2] This dev/E2E load command
+        // creates REAL PAID orders (fake revenue) and fires notifications. It must
+        // NEVER run in production — a stray invocation would pollute the NF525
+        // sales/Z chain with fictitious sales. Hard-refuse outside dev/test/e2e.
+        if (app()->environment('production')) {
+            $this->error('Refused: kiosk:simulate-orders injects fake PAID orders and must not run in production.');
+            return self::FAILURE;
+        }
+
         $count = $this->argument('count');
         $this->info("Début de la simulation de $count commandes simultanées Kiosk...");
 
