@@ -12,6 +12,9 @@
 - [x] W1 LIVE PREVIEW DONE — `48fb029d0`+`5cb5311ec`+`de6d2a5a5`. Backend `previewProjection` endpoint (read-only, NF525-safe, route OUTSIDE per-item guard); frontend direct-mounts the REAL frozen KioskWizardComponent fed the draft (defineAsyncComponent). VISUALLY PROVEN live on foodking_e2e (category 1 'Sandwich Cayenne', 6 steps vertical render, 0 console errors). Vitest 3/3 + PHPUnit artifact. Frozen diff 0. Screenshot: wizstudio-03-category-live-fixed.png.
   - NOTE item-studio needs FEATURE_WIZARD_PER_ITEM_DEMO (existing gate G-WIZ-1); CATEGORY studio works unflagged (V1 path).
   - WORKTREE SERVE NOTE: needed real vendor (cp -Rc un-shadow — symlink caused vendor-shadow), worktree .env (APP_ENV=local to skip boot guards, DB=foodking_e2e), + storage/framework dirs. Server :8766 = worktree code on foodking_e2e (local env). admin@lecayenne.fr / 123456.
+- [x] ULTRA-AUDIT (hidden/reactive/security/sync/history) — `wf_60c5cf12-ea1`, 11 agents. VERDICT: 0 P0/0 P1, SAFE. Headline "logout" REFUTED→P3 (403 not 401, interceptor ignores 403). Sync 100% passive (no Echo → no collision w/ central session). NF525/history zero writes. Healed P2: PHPUnit 5/5 (was RED — missing ComposerPermissionsMinimalSeeder + 403→404 assertion). Doc: ULTRA_AUDIT_VERDICT_2026-06-14.md. Commits 85f74c719.
+  - DOCUMENTED frozen-side (gate to fix): pricing-preview 403 on mount (graceful), focus-trap document listeners on admin page → iframe-containment is the future mitigation (re-weigh direct-mount vs iframe in W2).
+  - PRE-EXISTING (not mine): 5 composer PHPUnit fails (FritesWizardComposerTest×3, ProfilePublishMidCartRejectionTest×2) — PricingService/publish, not preview-projection.
 - [ ] W2 structure edit (drag/add/reorder) + reloadPreview() wired + 409 UX
 - [ ] W3 selection rules UI
 - [ ] W4 inline options + images (additive migration)
