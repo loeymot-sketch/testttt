@@ -310,6 +310,22 @@ if [[ $FISCAL_RC -ne 0 ]] || ! grep -qE 'SWEEP COMPLETE.*CHAIN OK' <<<"$FISCAL_O
 fi
 echo "  OK — NF525 chain intact across all branches."
 
+# [NF-4 2026-06-14 — ultra-review] NF525 Z-membership EXHAUSTIVITY detector (read-only).
+# verify-chain proves the chain is untampered; verify-z-membership proves every realized
+# sale landed in SOME Z (catches the cross-Z-window orphan class — e.g. a late-allocated
+# COD seq). WARN-and-surface on these first deploys: the heuristic has benign
+# post-Z-status-flip false positives, so it must not block a deploy until the candidate
+# list has been reviewed empty (owner gate G-ZMEMBER-THRESHOLD → then flip to a hard abort).
+echo "[10b/12] NF525 Z-membership exhaustivity check (read-only, non-fatal)..."
+set +e
+ZMEMBER_OUT="$(sudo -u "$APP_USER" php "$APP_DIR/artisan" fiscal:verify-z-membership 2>&1)"
+ZMEMBER_RC=$?
+set -e
+echo "$ZMEMBER_OUT"
+if [[ $ZMEMBER_RC -ne 0 ]]; then
+    echo "::warning::[fiscal:verify-z-membership] cross-Z-window orphan candidate(s) detected — review the list above (NON-FATAL this deploy; escalate to abort per G-ZMEMBER-THRESHOLD once reviewed empty)."
+fi
+
 # ---------- 11. Permissions ---------------------------------------------------
 
 echo "[11/12] Setting permissions on storage/ + bootstrap/cache/..."

@@ -20,8 +20,13 @@ class ApiKeyMiddleware
         // [SEC-FIX] Use config() not env() — env() returns null after php artisan config:cache
         $validApiKey = config('app.api_key');
 
-        if ($request->hasHeader('x-api-key')) {
-            if ($request->header('x-api-key') === $validApiKey) {
+        // [SEC-APIKEY-TIMING heal 2026-06-14 — ultra-review] Constant-time compare.
+        // `===` on strings short-circuits at the first differing byte, leaking the
+        // shared API key one byte at a time via response timing. hash_equals compares
+        // in time independent of the match position. Guard the null/empty-config case
+        // (hash_equals requires two strings) so a misconfigured key never grants access.
+        if ($request->hasHeader('x-api-key') && is_string($validApiKey) && $validApiKey !== '') {
+            if (hash_equals($validApiKey, (string) $request->header('x-api-key'))) {
                 return $next($request);
             }
         }
