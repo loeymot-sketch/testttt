@@ -143,9 +143,17 @@
                         : $t('admin.stock_mgmt.empty') }}
                 </p>
 
+                <!-- [Wave M1 round-4 A-012b collapse regression 2026-06-14]
+                     ROOT CAUSE: a fixed 3-col grid (`lg:grid-cols-3`) made each
+                     card ~191px on a small-laptop / split-screen pane. The
+                     horizontal row [image(48) | name | toggle(~86)] then starved
+                     the name to ~9px (illegible, single-letter). Fix: an
+                     auto-fill min-width floor — columns only form when a card has
+                     room to stay readable (≥230px), so the name column always
+                     keeps usable width regardless of viewport. -->
                 <div
                     v-else
-                    class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
+                    class="grid gap-3 grid-cols-[repeat(auto-fill,minmax(230px,1fr))]"
                 >
                     <article
                         v-for="product in filteredProducts"
@@ -166,9 +174,14 @@
                                 class="h-12 w-12 rounded bg-slate-100 flex items-center justify-center text-xl flex-shrink-0"
                                 aria-hidden="true"
                             >📦</span>
-                            <span class="name text-sm font-medium text-slate-800 min-w-0 flex-1" :title="product.name">
-                                {{ product.name }}
-                            </span>
+                            <!-- Defense-in-depth: a plain block wrapper owns the
+                                 flex-grow so the `-webkit-box` clamp span never has to
+                                 stretch itself (it clamps at width:100% inside). The
+                                 actual collapse cause was the too-narrow card width —
+                                 fixed by the grid min-width floor above. -->
+                            <div class="min-w-0 flex-1">
+                                <span class="name text-sm font-medium text-slate-800" :title="product.name">{{ product.name }}</span>
+                            </div>
                         </div>
 
                         <button
@@ -676,7 +689,10 @@ export default {
  * Replace with a 2-line clamp + word-break so longer names wrap gracefully
  * inside the card width. The :title attribute remains for hover affordance. */
 .stock-mgmt-v2 .product-card .name {
+    /* width:100% pins the clamp box to the (reliably-grown) flex wrapper so
+     * the -webkit-box never collapses to min-content. See markup comment. */
     display: -webkit-box;
+    width: 100%;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;

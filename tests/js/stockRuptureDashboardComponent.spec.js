@@ -95,4 +95,28 @@ describe('Stock management v2 component — Mission 1 unified catalogue browser'
         expect(source).not.toMatch(/admin\/stock\/bulk/);
         expect(source).not.toMatch(/admin\/menu\/availability\/bulk/);
     });
+
+    // [Wave M1 round-4 A-012b 2026-06-14] ROOT CAUSE of the illegible single-letter
+    // names (adversarial round-2 P1): a fixed 3-col grid made cards ~191px on a
+    // small pane, and the horizontal [image | name | toggle] row starved the name
+    // column to ~9px. Fix = a grid min-width floor (auto-fill minmax) so cards never
+    // shrink below a readable width, PLUS defense-in-depth decoupling of the clamp
+    // box from flex-grow. Lock both so the collapse cannot regress.
+    it('uses a card min-width floor instead of a fixed 3-col grid (no name starvation)', () => {
+        // No fixed column count in a class attribute that can squeeze cards.
+        expect(source).not.toMatch(/class="[^"]*grid-cols-3/);
+        // Auto-fill min-width floor keeps every card readable.
+        expect(source).toMatch(/grid-cols-\[repeat\(auto-fill,minmax\(\d{3}px,1fr\)\)\]/);
+    });
+
+    it('decouples line-clamp from flex-grow so product names cannot collapse', () => {
+        // The clamp box (.name) must NOT itself be the flex-grow item.
+        expect(source).not.toMatch(/class="name[^"]*\bflex-1\b/);
+        // A block wrapper owns the flex sizing and immediately wraps the name.
+        expect(source).toMatch(
+            /<div class="min-w-0 flex-1">\s*<span class="name[^"]*"[^>]*>\{\{\s*product\.name\s*\}\}<\/span>\s*<\/div>/
+        );
+        // The clamp box pins to its wrapper width (defends the -webkit-box).
+        expect(source).toMatch(/\.product-card \.name \{[^}]*width:\s*100%/);
+    });
 });
