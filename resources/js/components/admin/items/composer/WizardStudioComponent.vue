@@ -248,7 +248,11 @@ export default {
 /* Realistic portrait device: dark shell + 9:16 screen the kiosk render is bounded to. */
 .ws-phone { position: relative; width: 390px; background: #1a1a1a; border-radius: 36px; padding: 14px; box-shadow: 0 16px 48px rgba(20,20,20,.22); }
 .ws-phone__notch { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); width: 120px; height: 18px; background: #1a1a1a; border-radius: 0 0 14px 14px; z-index: 2; }
-.ws-phone__screen { aspect-ratio: 9 / 16; width: 100%; overflow: auto; background: #fff; border-radius: 24px; -webkit-overflow-scrolling: touch; }
+.ws-phone__screen { width: 362px; height: 644px; overflow: auto; background: #fff; border-radius: 24px; -webkit-overflow-scrolling: touch; }
+/* The FROZEN kiosk wizard renders at 100vw (fullscreen borne). Inside the device frame we
+   override it to a realistic kiosk-portrait width and scale it down with `zoom` so the
+   operator sees the true borne proportions, fit-to-frame, instead of a clipped desktop slice. */
+.ws-phone__screen :deep(.kiosk-wizard) { width: 724px !important; min-width: 724px; zoom: 0.5; }
 .ws-phone__hint { display: flex; align-items: center; justify-content: center; gap: 8px; height: 100%; min-height: 200px; text-align: center; color: #777; font-size: 13px; padding: 24px; }
 .ws-phone__hint--error { color: #b02a1a; }
 .ws-spinner { width: 16px; height: 16px; border: 2px solid #f0d9cf; border-top-color: #F4501E; border-radius: 50%; display: inline-block; animation: ws-spin 0.8s linear infinite; }
