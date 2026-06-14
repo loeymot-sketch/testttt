@@ -117,4 +117,36 @@ class KdsUnreleasedOrderBumpGuardTest extends TestCase
         $this->bump($order)->assertSuccessful();
         $this->assertSame(OrderStatus::PREPARING, (int) $order->fresh()->status);
     }
+
+    /**
+     * BUMP-RESILIENCE (massive-2dot0 #11) — once the status transition is COMMITTED,
+     * a failure in the post-commit notification dispatch (mail/sms/push) must NOT be
+     * re-wrapped into a 422. Pre-heal the unguarded SendOrder* dispatches threw into
+     * the outer catch → the chef saw a 422 on a bump that actually persisted, then
+     * re-bumped in confusion. The transaction already committed; notifications are
+     * fire-and-forget. (recordTransition does not dispatch, so the Bus mock isolates
+     * the failure to the post-commit path only.)
+     */
+    public function test_committed_bump_survives_post_commit_notification_failure(): void
+    {
+        $order = $this->makeOrder([
+            'order_type'     => OrderType::POS,
+            'payment_status' => PaymentStatus::PAID,
+        ]);
+
+        // SendOrderMail/Sms/Push are events (Foundation\Events\Dispatchable);
+        // a synchronous listener throwing simulates a notification backend outage
+        // on the post-commit leg. This is isolated to the SendOrderMail event.
+        \Illuminate\Support\Facades\Event::listen(
+            \App\Events\SendOrderMail::class,
+            function () { throw new \RuntimeException('notif backend down'); }
+        );
+
+        $this->bump($order)->assertSuccessful();
+        $this->assertSame(
+            OrderStatus::PREPARING,
+            (int) $order->fresh()->status,
+            'A committed bump must persist even when post-commit notifications fail.'
+        );
+    }
 }

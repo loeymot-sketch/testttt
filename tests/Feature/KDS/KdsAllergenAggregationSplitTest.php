@@ -234,6 +234,33 @@ class KdsAllergenAggregationSplitTest extends TestCase
         $this->assertCount(2, $matching, 'Inter-order allergen groups MUST NOT merge into one line');
     }
 
+    /**
+     * FOOD-SAFETY (massive-2dot0 #9) — a DOUBLE-ENCODED allergens_snapshot (a JSON
+     * *string* of a JSON array, a legacy-write artifact) MUST normalize to the same
+     * hash as the correctly-encoded identical allergens, so the two items merge.
+     * Before the heal the Eloquent 'array' cast decoded only once → the value
+     * arrived at normalizeAllergensForHash as a string → collapsed to [] → the two
+     * identical-allergen items split into 2 lines AND the allergen-aware merge key
+     * silently lost the codes (chef could miss a declared allergy).
+     */
+    public function test_double_encoded_allergens_snapshot_merges_with_correctly_encoded(): void
+    {
+        $this->makeBurger(['gluten']);            // correctly stored ["gluten"]
+        $this->makeBurger(['gluten']);            // will be corrupted to double-encoded below
+        $second = OrderItem::where('order_id', $this->order->id)->latest('id')->first();
+        // Raw column becomes "[\"gluten\"]" — a JSON string of the array. The
+        // 'array' cast decodes once on read → a string reaches the hash function.
+        \Illuminate\Support\Facades\DB::table('order_items')
+            ->where('id', $second->id)
+            ->update(['allergens_snapshot' => json_encode(json_encode(['gluten']))]);
+
+        $items = $this->actingAsChefAndCallOrderItems();
+        $matching = $items->where('item_id', $this->burgerItem->id);
+
+        $this->assertCount(1, $matching, 'Double-encoded allergens MUST normalize and merge with the identical correctly-encoded allergens');
+        $this->assertSame(2, (int) $matching->first()['quantity']);
+    }
+
     private function makeBurger(?array $allergens): void
     {
         OrderItem::forceCreate([
