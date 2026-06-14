@@ -157,10 +157,19 @@ export default {
                 const entityUrl = this.isCategory
                     ? `admin/setting/item-category/show/${this.entityId}`
                     : `admin/item/show/${this.entityId}`;
-                const [entityRes, profileRes] = await Promise.all([
-                    axios.get(entityUrl),
-                    axios.get(this.profileEndpoint).catch((e) => (e.response && e.response.status === 404 ? { data: null } : Promise.reject(e))),
-                ]);
+                // Fetch the entity first with a context-correct not-found message (the backend's
+                // generic 404 body says "Commande introuvable" which is wrong for a category/product).
+                let entityRes;
+                try {
+                    entityRes = await axios.get(entityUrl);
+                } catch (e) {
+                    this.loadError = (e?.response?.status === 404)
+                        ? (this.isCategory ? 'Catégorie introuvable.' : 'Produit introuvable.')
+                        : (e?.response?.data?.message || 'Impossible de charger le wizard.');
+                    return;
+                }
+                const profileRes = await axios.get(this.profileEndpoint)
+                    .catch((e) => (e.response && e.response.status === 404 ? { data: null } : Promise.reject(e)));
                 this.entityName = entityRes?.data?.data?.name ?? entityRes?.data?.name ?? '';
                 const profile = profileRes?.data?.data ?? profileRes?.data ?? null;
                 this.profile = profile;
@@ -257,7 +266,7 @@ export default {
 .ws-phone__hint--error { color: #b02a1a; }
 .ws-spinner { width: 16px; height: 16px; border: 2px solid #f0d9cf; border-top-color: #F4501E; border-radius: 50%; display: inline-block; animation: ws-spin 0.8s linear infinite; }
 @keyframes ws-spin { to { transform: rotate(360deg); } }
-.ws-stage__caption { margin: 0; font-size: 12px; color: #8a8a8a; }
+.ws-stage__caption { margin: 0; font-size: 12px; color: #6b6b6b; } /* WCAG AA ≥4.5:1 on #faf7f2 */
 .ws-panel { background: #fff; border-radius: 16px; padding: 18px; box-shadow: 0 4px 18px rgba(20,20,20,.06); position: sticky; top: 24px; }
 .ws-panel__title { margin: 0 0 6px; font-size: 16px; }
 .ws-panel__meta { color: #555; font-size: 13px; margin: 0 0 12px; }
