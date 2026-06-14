@@ -120,6 +120,17 @@
                         <th>{{ trans('all.label.total') }}</th>
                     </tr>
                 </thead>
+                @php
+                    // [R-NET-PDF-01 heal 2026-06-14 — ultra-review] Mirror the on-screen
+                    // card's refund netting EXACTLY (OrderService::salesReportOverview).
+                    // Revenue ($total) nets via the negative refund mirror, but the mirror
+                    // carries discount=0 / delivery_charge=0 (RefundWithCounterEntryService),
+                    // so the refunded PARENT's full discount/delivery used to leak into the
+                    // Total row here while the card excluded it — PDF and card disagreed.
+                    // READ-SIDE display only (mirror/Z columns untouched, Z-safe).
+                    $realizedOrders = collect($orders)->filter(fn ($o) => \App\Models\Order::isRealizedRevenueRow($o));
+                    $refundedParentIds = $realizedOrders->whereNotNull('parent_order_id')->pluck('parent_order_id')->filter()->all();
+                @endphp
                 <tbody>
                     @foreach ($orders as $order)
                         @php
@@ -129,8 +140,12 @@
                             // listed for every order; only the aggregate is netted.
                             if (\App\Models\Order::isRealizedRevenueRow($order)) {
                                 $total += $order->total;
-                                $total_discount += $order->discount;
-                                $total_delivery_charge += $order->delivery_charge;
+                                // Discount/delivery net like the card: exclude refund mirrors AND
+                                // any parent that has a refund mirror in the realized set.
+                                if ($order->parent_order_id === null && ! in_array($order->id, $refundedParentIds)) {
+                                    $total_discount += $order->discount;
+                                    $total_delivery_charge += $order->delivery_charge;
+                                }
                             }
                          @endphp
                         <tr>

@@ -57,6 +57,42 @@ class SalesReportNetTotalSentinelTest extends TestCase
         $this->assertFalse(Order::isRealizedRevenueRow($unpaid), 'pending-counter unpaid not realized revenue');
     }
 
+    /**
+     * R-NET-PDF-01 (ultra-review 2026-06-14): the PDF "Total" row must net refunded
+     * sales' discount + delivery the SAME way the on-screen card does — the refund
+     * mirror carries discount=0/delivery=0, so without excluding the refunded parent
+     * the PDF over-counted them and diverged from the card. Distinctive amounts make
+     * the netted vs buggy totals unambiguous.
+     */
+    public function test_pdf_total_row_nets_refunded_discount_and_delivery(): void
+    {
+        $branch = Branch::factory()->create();
+
+        $mk = fn (int $status, int $pay, float $total, float $disc, float $deliv, ?int $parent = null) => Order::factory()->create([
+            'branch_id' => $branch->id, 'status' => $status, 'payment_status' => $pay,
+            'order_type' => OrderType::KIOSK, 'order_datetime' => '2026-03-15 12:00:00',
+            'total' => $total, 'discount' => $disc, 'delivery_charge' => $deliv,
+            'parent_order_id' => $parent, 'is_advance_order' => Ask::NO, 'source' => Source::APP,
+        ]);
+
+        $clean  = $mk(OrderStatus::DELIVERED, PaymentStatus::PAID, 60.0, 11.0, 13.0);
+        $parent = $mk(OrderStatus::DELIVERED, PaymentStatus::PAID, 500.0, 500.0, 700.0);
+        $mk(OrderStatus::RETURNED, PaymentStatus::REFUNDED, -500.0, 0.0, 0.0, $parent->id); // refund mirror
+
+        $orders     = Order::query()->whereIn('id', [$clean->id, $parent->id])
+            ->orWhere('parent_order_id', $parent->id)->get();
+        $company    = ['company_name' => 'Le Cayenne', 'company_address' => ''];
+        $copyright  = 'test';
+        $theme_logo = '';
+
+        $html = view('pdf.sales_report', compact('orders', 'company', 'copyright', 'theme_logo'))->render();
+
+        // Net discount = 11 (refunded parent's 500 excluded); buggy = 511.
+        $this->assertStringNotContainsString('511', $html, 'PDF must NOT count the refunded parent discount (buggy 511).');
+        // Net delivery = 13 (refunded parent's 700 excluded); buggy = 713.
+        $this->assertStringNotContainsString('713', $html, 'PDF must NOT count the refunded parent delivery (buggy 713).');
+    }
+
     public function test_overview_card_total_is_net_realized(): void
     {
         $branch = Branch::factory()->create();
