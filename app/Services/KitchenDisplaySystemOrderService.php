@@ -467,13 +467,23 @@ class KitchenDisplaySystemOrderService
                 return;
             }
 
-            SendOrderMail::dispatch(['order_id' => $snapshot->id, 'status' => $newStatus]);
-            SendOrderSms::dispatch(['order_id' => $snapshot->id, 'status' => $newStatus]);
-            SendOrderPush::dispatch(['order_id' => $snapshot->id, 'status' => $newStatus]);
+            // [BUMP-RESILIENCE heal 2026-06-14 — massive-2dot0 #11] The transition
+            // is COMMITTED above; these notifications are fire-and-forget. An
+            // unguarded throw here fell into the outer catch and re-wrapped a
+            // SUCCESSFUL bump into a 422 — the chef saw "échec" on a bump that
+            // actually persisted and re-bumped in confusion. Guard them (log-only,
+            // \Throwable) exactly like the ticket dispatcher below.
+            try {
+                SendOrderMail::dispatch(['order_id' => $snapshot->id, 'status' => $newStatus]);
+                SendOrderSms::dispatch(['order_id' => $snapshot->id, 'status' => $newStatus]);
+                SendOrderPush::dispatch(['order_id' => $snapshot->id, 'status' => $newStatus]);
+            } catch (\Throwable $e) {
+                Log::warning('[KDS] post-commit notification dispatch failed (bump already persisted): ' . $e->getMessage());
+            }
 
             try {
                 $this->kdsTicketDispatcher->dispatch($snapshot, $oldStatus, $newStatus);
-            } catch (\Exception $e) {
+            } catch (\Throwable $e) {
                 Log::warning('[KDS] OrderStatusChanged broadcast failed: ' . $e->getMessage());
             }
         } catch (HttpException $e) {
