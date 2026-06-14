@@ -249,7 +249,7 @@ class ItemController extends AdminController
     /**
      * POS: resolve an item by exact barcode (available + visible on pos channel).
      */
-    public function lookupBarcode(string $code)
+    public function lookupBarcode(\Illuminate\Http\Request $request, string $code)
     {
         try {
             $code = rawurldecode($code);
@@ -270,6 +270,28 @@ class ItemController extends AdminController
             if (! $item) {
                 return response()->json(['error' => 'not_found'], 404);
             }
+
+            // [STOCK-RUPTURE heal 2026-06-14 — massive-2dot0 #15] index() applies a
+            // per-branch ItemBranchAvailability overlay so a ruptured SKU is hidden
+            // for the operator's branch; the barcode lookup bypassed it, letting a
+            // globally-available item that is is_available=0 for THIS branch resolve
+            // 200 and be sold. Enforce the same per-branch rupture server-side (the
+            // POS wizard is frozen, so the block must live here): refuse with 404 so
+            // the ruptured item cannot be added regardless of the client.
+            $branchId = $this->forcePosRuntimeBranchScope($request);
+            if ($branchId !== null && $branchId >= 1) {
+                $branchRow = \App\Models\ItemBranchAvailability::query()
+                    ->where('branch_id', $branchId)
+                    ->where('item_id', $item->id)
+                    ->first();
+                if ($branchRow && ! (bool) $branchRow->is_available) {
+                    return response()->json([
+                        'error' => 'branch_unavailable',
+                        'reason' => $branchRow->unavailable_reason,
+                    ], 404);
+                }
+            }
+
             if ($count > 1) {
                 Log::warning('POS barcode lookup: multiple available items share barcode', [
                     'barcode' => $code,

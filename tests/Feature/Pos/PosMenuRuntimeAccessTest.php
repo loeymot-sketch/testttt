@@ -94,6 +94,46 @@ class PosMenuRuntimeAccessTest extends TestCase
             ->assertNotFound();
     }
 
+    /**
+     * STOCK-RUPTURE (massive-2dot0 #15) — a POS operator MUST NOT be able to sell
+     * (via barcode lookup) an item that is ruptured for THEIR branch. index()
+     * applies a per-branch ItemBranchAvailability overlay; lookup-barcode bypassed
+     * it, resolving a globally-available item 200 even when is_available=0 for the
+     * operator's branch. The barcode endpoint must refuse (404) so the ruptured
+     * item cannot be added — enforced server-side because pos-wizard.js is frozen.
+     */
+    public function test_pos_operator_cannot_lookup_barcode_of_item_ruptured_at_their_branch(): void
+    {
+        $this->seedMinimalSettings();
+        $this->seedSpatieRoles();
+
+        $branch = Branch::factory()->create();
+        $operator = User::factory()->create(['branch_id' => $branch->id]);
+        $operator->assignRole('POS Operator');
+        [, , $itemA] = $this->menuFixture();
+
+        // Sanity: available at this branch -> resolves 200.
+        $this->actingAs($operator, 'sanctum')
+            ->getJson('/api/admin/item/lookup-barcode/POS-RUNTIME-001')
+            ->assertOk()
+            ->assertJsonPath('data.id', $itemA->id);
+
+        // Mark ruptured for this branch.
+        ItemBranchAvailability::create([
+            'branch_id' => $branch->id,
+            'item_id' => $itemA->id,
+            'is_available' => false,
+            'unavailable_reason' => 'stock_rupture',
+            'daily_reset_at' => now()->toDateString(),
+        ]);
+
+        // Ruptured -> must NOT be sellable via barcode.
+        $this->actingAs($operator, 'sanctum')
+            ->getJson('/api/admin/item/lookup-barcode/POS-RUNTIME-001')
+            ->assertNotFound()
+            ->assertJsonPath('error', 'branch_unavailable');
+    }
+
     public function test_pos_runtime_menu_reads_force_cashier_branch_scope_even_if_forged(): void
     {
         $this->seedMinimalSettings();
