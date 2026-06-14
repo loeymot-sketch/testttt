@@ -1,0 +1,132 @@
+{
+  "summary": "W1 abusive adversarial audit — Securite x Sync x Gestion + hidden/reactive surface, 4 lenses, dispute + completeness-critic",
+  "agentCount": 13,
+  "logs": [
+    "Ultra-audit: 1 confirmed P0/P1, 10 P2/P3"
+  ],
+  "result": {
+    "confirmed_p0p1": [
+      {
+        "severity": "P1",
+        "lane": "SEC-HARDEN (securite-backend)",
+        "title": "Username/account enumeration oracle on admin forgot-password (distinct 400 vs 200 message) — kiosk login was hardened but this path was not",
+        "file_line": "app/Http/Controllers/Auth/ForgotPasswordController.php:33-66 (route routes/api.php:170-173, throttle:3,60 IP-keyed); lang/en/all.php:276 'email_does_not_exist'",
+        "votes": "2/2",
+        "reproduction": "Live :8780 with valid x-api-key (config/app.php:63 MIX_API_KEY). POST /api/auth/forgot-password {\"email\":\"nope-xyz-99999@nowhere.test\"} -> HTTP 400 {\"errors\":{\"email\":[\"Cet email n'existe pas.\"]}}. POST same with {\"email\":\"admin@lecayenne.fr\"} (real seeded user) -> HTTP 200 {\"message\":\"Veuillez vérifier votre email pour le code.\"}. The 400-vs-200 + distinct body is a definitive existence oracle. Secondary corroboration: login endpoint POST /api/auth/login non-existent email ~0.225s vs existing-email+wrong-pw ~0.260s (Auth::attempt skips bcrypt when user absent) = ~35ms timing oracle on LoginController.php:68.",
+        "recommendation": "Return an identical neutral 200 response ('Si cet email existe, un code a été envoyé') for BOTH existing and non-existing emails; perform the DB lookup + insert + dispatch only when the user exists but never branch the HTTP status/body on existence. Mirror the kiosk-login enumeration hardening. Add an enumeration sentinel test asserting status+body parity. For the login timing oracle, run a dummy Hash::check against a fixed bcrypt hash when the user is absent (constant-work) — but this is in LoginController, not frozen, safe to edit. Tighten forgot-password throttle to also key by lowercased email (like login-lockout RouteServiceProvider.php:247-266) so per-target attempts are bounded regardless of IP."
+      }
+    ],
+    "refuted": [
+      {
+        "lane": "REACTIVE-HIDDEN",
+        "title": "Kiosk loyalty redeem ledger does NOT reconcile — points redeemed against a ZERO balance (phantom discount granted)",
+        "votes": "0/2"
+      }
+    ],
+    "p2_p3": [
+      {
+        "severity": "P2",
+        "lane": "SEC-HARDEN (securite-backend)",
+        "title": "env() runtime reads outside config break under config:cache (prod-mandated) for currency display label — distinct from frozen AuditLogService #16",
+        "file_line": "app/Http/Resources/OrderItemResource.php:52 `env('CURRENCY')`; app/Libraries/AppLibrary.php:289,298,299,308,313,427 env('CURRENCY_DECIMAL_POINT'|'CURRENCY_SYMBOL'|'CURRENCY_POSITION')"
+      },
+      {
+        "severity": "P3",
+        "lane": "SEC-HARDEN (securite-backend)",
+        "title": "ApiKeyMiddleware uses non-constant-time === comparison for the API key",
+        "file_line": "app/Http/Middleware/ApiKeyMiddleware.php:24"
+      },
+      {
+        "severity": "P2",
+        "lane": "SYNC-LISTENERS",
+        "title": "PersistOrderCreatedToOutbox runs FIRST in the OrderCreated cascade with an UNGUARDED firstOrCreate() insert — a DB-layer throw there halts the sync dispatcher and skips stock/availability decrement (overselling) + 500 to POS",
+        "file_line": "app/Listeners/PersistOrderCreatedToOutbox.php:26-50 (firstOrCreate, no surrounding try/catch); EventServiceProvider.php:178-181 (registered FIRST, before DecrementItemAvailabilityOnOrder:179, DecrementStockOnOrderCreated:180, SendFcmOnOrderCreated, PrintPosReceiptOnOrderCreated)"
+      },
+      {
+        "severity": "P2",
+        "lane": "SYNC-CRON (backend reactive/scheduled commands + jobs)",
+        "title": "CleanupStalePendingKioskOrders notification suppression keyed on a DIFFERENT column than the job selector (source==10 vs source_surface='kiosk') — auto-reject can fire Mail/SMS/Push",
+        "file_line": "app/Jobs/CleanupStalePendingKioskOrders.php:62-141 (selector source_surface='kiosk', dispatches SendOrderMail/Sms/Push at :135-138) vs app/Services/OrderMailNotificationBuilder.php:31-34, app/Services/OrderSmsNotificationBuilder.php:29-31, app/Services/OrderPushNotificationBuilder.php:30-32 (suppression gate `order->source == 10`)"
+      },
+      {
+        "severity": "P2",
+        "lane": "SYNC-CRON (backend reactive/scheduled commands + jobs)",
+        "title": "kiosk:simulate-orders has NO production guard — injects fake PAID orders (revenue) directly and fires real Mail/SMS/Push to admin",
+        "file_line": "app/Console/Commands/SimulateKioskOrders.php:14 (signature, no env guard), :55-69 (Order::create payment_status=5 PAID, total=16.50), :71-73 (SendOrderGotPush/Mail/Sms dispatch)"
+      },
+      {
+        "severity": "P3",
+        "lane": "GES-NUMBERS (backend-code, indirect/reactive money aggregates)",
+        "title": "ZReportCashEnrichmentService: divergent previous-Z-close window boundary (`<=`+id-exclusion vs strict `<`) between persistForClosedReport and enrichClose can split the POS-cash window from the delivery-cash window for the SAME Z report",
+        "file_line": "app/Services/Fiscal/ZReportCashEnrichmentService.php:256-257 (persistForClosedReport: `->where('id','!=',$report->id)->where('closed_at','<=',$closedAt)`) vs app/Services/Fiscal/ZReportCashEnrichmentService.php:327 (enrichClose: `->where('closed_at','<',$closeAt)`)"
+      },
+      {
+        "severity": "P2",
+        "lane": "GES-MGMT-UX",
+        "title": "Rapport Articles (gérant) inclut les items de catégorie interne admin-only — combo upsell technique classé #1 et écrase les vrais produits",
+        "file_line": "app/Http/Controllers/Admin/ItemsReportController.php:34-41 → app/Services/ItemService.php:622 (itemReport, query Item::with('category')->withSum(...'quantity'))"
+      },
+      {
+        "severity": "P2",
+        "lane": "GES-MGMT-UX",
+        "title": "WCAG AA contrast fail — texte blanc sur CTA brand #F4501E (3.49:1 < 4.5:1) sur toutes les surfaces gestion",
+        "file_line": "resources/js/components/admin/items/ItemListComponent.vue (CTA catalogue) + palette brand globale #F4501E (config CLAUDE.md §3bis). Mesuré sur boutons 'Ajouter Une Catégorie D'articles' / 'Ajouter Un Article' page /admin/items/studio."
+      },
+      {
+        "severity": "P2",
+        "lane": "GES-MGMT-UX",
+        "title": "RBAC nav fail-open — userHasPermissionUrl renvoie true sur payload vide OU entrée permission absente (liens orphelins potentiels pour POS-operator)",
+        "file_line": "resources/js/components/layouts/backend/BackendMenuComponent.vue:235-247 (userHasPermissionUrl) + 120-140 (permissionUrlForSidebarPath)"
+      },
+      {
+        "severity": "P3",
+        "lane": "GES-MGMT-UX",
+        "title": "Format heure 12h AM/PM (non-FR) dans Historique et Rapport des ventes",
+        "file_line": "Surfaces /admin/historique et /admin/sales-report (colonne DATE) — format issu de la config TIME_FORMAT (DB settings), pas d'un littéral code."
+      }
+    ],
+    "per_lane": [
+      {
+        "lane": "SEC-AUTHZ (securite-backend + backend-code)",
+        "p0p1": 0,
+        "p2p3": 0
+      },
+      {
+        "lane": "SEC-HARDEN (securite-backend)",
+        "p0p1": 1,
+        "p2p3": 2
+      },
+      {
+        "lane": "SYNC-LISTENERS",
+        "p0p1": 0,
+        "p2p3": 1
+      },
+      {
+        "lane": "SYNC-CRON (backend reactive/scheduled commands + jobs)",
+        "p0p1": 0,
+        "p2p3": 2
+      },
+      {
+        "lane": "SYNC-CLIENT (frontend-code + sync)",
+        "p0p1": 0,
+        "p2p3": 0
+      },
+      {
+        "lane": "GES-NUMBERS (backend-code, indirect/reactive money aggregates)",
+        "p0p1": 0,
+        "p2p3": 1
+      },
+      {
+        "lane": "GES-MGMT-UX",
+        "p0p1": 0,
+        "p2p3": 4
+      },
+      {
+        "lane": "REACTIVE-HIDDEN",
+        "p0p1": 1,
+        "p2p3": 0
+      }
+    ],
+    "completeness_critic": "Default connection points to `foodking` (empty/wrong). The isolated DB is `foodking_2dot0`. The structural confirmation (grep: 0 vs 3 writes) is sufficient evidence — the DB probe is just for sizing. The finding stands on code analysis. Let me compile the final report.\n\n## ULTRA-AUDIT — Hidden/Indirect/Reactive surface (completeness critic + new findings)\n\nSpine `release/v1-integration @ 1dc5785a5`. Read-only, grep/Read-confirmed. The forgot-password enumeration oracle (already in your confirmed set) is independently re-verified real: `ForgotPasswordController.php:33` returns `400 'email_does_not_exist'` for unknown email vs `200 'check_your_email_for_code'` for known — distinct status AND message, throttle `3,60` IP-keyed only (route `routes/api.php:172-173`).\n\n### NEW finding I can grep-confirm right now\n\n**P2 — Asymmetric stock-release ledger: `stock_levels.on_hand` can be double-credited on cancel-then-refund (or refund-then-cancel) of the same order.**\n- `app/Listeners/ReleaseStockOnOrderCanceled.php:15` and `ReleaseStockOnRefundCreated.php:15` both call `StockService::releaseForOrder($order, <reason>, ...)` with different `$reason` (`order_canceled` vs `refund`).\n- `app/Services/Stock/StockService.php:349-440` (`releaseForOrderInTransaction`) is the dedup authority for the `on_hand` ledger. Its idempotency key embeds `$reason` AND `'released:'.$orderItem->released_qty.':delta:'.$deltaLineQty` (line 408-411). It **reads** `released_qty` (line 381) but **NEVER writes it** — confirmed: `grep -c \"released_qty' =>|update.*released_qty|increment.*released_qty\"` on StockService = **0**, on `AvailabilityService.php` = **3** (`:772` is the only writer).\n- The EventServiceProvider comment (`EventServiceProvider.php:199`) explicitly claims OrderCanceled is \"Idempotent via order_items.released_qty ledger inside AvailabilityService\" — but that ledger only guards the **availability** path (`daily_consumed_qty`). The **StockService `on_hand`** path's only cross-event guard is the per-reason movement key. Because `order_canceled` and `refund` hash to different keys (`movementKey` line 327 includes `$reason`) and `released_qty` stays 0 from StockService's view, both events release the FULL line quantity → `on_hand` inflated by the order's stock requirements.\n- Repro path exists: `OrderCanceled::dispatch` (PaymentService.php:825, OrderService.php:2226/2448, FrontendOrderService.php:816) and `RefundCreated::dispatch` (PaymentService.php:213, RefundWithCounterEntryService.php:436) can both fire for one order across its lifecycle. V1-LOCAL: not money/NF525 (stock count drift, self-corrects at next inventory) → **P2**, not blocking. Frozen-zone-free fix surface (StockService is not frozen).\n\n### Surfaces the 8 lanes likely MISSED — concrete next-audit targets\n\n1. **`app/Listeners/AwardLoyaltyPointsOnDelivery.php:103` vs `ClawbackLoyaltyPointsOnRefund` proportionality.** Award = `round($orderTotal * $rate)` on FULL total; clawback (`ClawbackLoyaltyPointsOnRefund.php:51`, `LoyaltyService::clawbackEarnedPoints:150`) claws back the **FULL** `loyalty_points_awarded` on ANY `RefundCreated`, including a **partial** refund. Clawback is per-order idempotent (`type='manual_deduct'` dedup) so it won't double-fire — but a partial refund (e.g. one item of a 5-item order) zeroes the WHOLE earned balance. Verify whether partial-refund flows pass `refundedItems` and whether clawback should be proportional. Not yet opened by the loyalty lane.\n\n2. **`app/Console/Commands/Stripe/DrainStrandedCpnCommand.php` (scheduled `stripe:drain-stranded-cpn`, Kernel:238) — coverage gap, not correctness.** It flips only `Order` (CARD) to PAID via `PaymentService::payment()` (correct, fiscal-allocating). But kiosk Stripe orders are `FrontendOrder` — if a kiosk card payment strands, this command (Order-only `where`) never drains it. Trace whether any kiosk/FrontendOrder card path can strand. SYNC-CRON lane appears to have traced outbox crons but not this money cron's model coverage.\n\n3. **Z auto-close/open cron timing drift (`Kernel.php:401` close `dailyAt('23:59')`, `:446` open `dailyAt('00:01')`).** Code = ~2-min orphan window; surrounding comments variously claim \"23:55+00:05\" (10-min) and \"23:59:55+00:00:05\" (10-sec). The window is bridged by `fiscal_alloc_error_at` + `foodking:fiscal:retry-alloc` (scheduled :266), so it's the accepted degraded path — but the **stale/contradictory comments** mean no one has re-verified the actual residual orphan window. Worth a fiscal-lane re-trace.\n\n4. **`app/Observers/UserObserver.php:17` `updating()` → `setBranch()` on every User save** (`DefaultAccessModelTrait::setBranch:32`). Re-derives `branch_id` from `Auth::user()` on any update. Loyalty increments use query-builder (`User::where()->increment()`) which bypasses observers — safe. But verify no admin/staff User-edit flow silently rewrites `branch_id` (P3 single-box; would matter at V2 multi-tenant). SEC-AUTHZ lane likely audited controllers, not this model observer.\n\n5. **Unverified reactive listeners no lane named:** `EscalateOutboxBroadcastSwallowed`, `RevokeTokensOnBranchDeactivated` (branch-deactivation → token revocation: confirm it can't revoke the single-box branch_id=1's own kiosk tokens), `NotifyStockLowOnStockLevelChanged` (threshold spam under the cancel/refund double-release above), and the FCM trio `SendFcmOnOrderCreated`/`SendFcmOnOrderStatusChange` (verify payload carries no customer PII to a misconfigured topic). None appear in the 8-lane confirmed set.\n\n6. **`app/Jobs/CleanupStalePendingKioskOrders.php:143` dispatches `OrderCanceled` from a queued job** → triggers the full stock/availability release cascade asynchronously. Combined with finding #P2 above: a stale-kiosk auto-cancel that later gets manually refunded is a concrete realization of the double-release. Trace the SLA window (`CleanupStalePendingKioskOrders`) against refund eligibility.\n\nHighest-value next step: open the **partial-refund loyalty proportionality** (#1) and the **StockService released_qty asymmetry** (P2) together — both live in non-frozen service code and share the refund cascade."
+  }
+}
