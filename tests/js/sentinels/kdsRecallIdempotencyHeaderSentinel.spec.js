@@ -25,8 +25,22 @@ describe('KDS recall ("Annuler bump") — idempotency header + honest 422 handli
   });
 
   it('does NOT fake a recalled badge on a 422 (only 409 marks recalled)', () => {
-    // The old bug: `if (status === 409 || status === 422) { recalledMap = ... }`.
-    expect(src).not.toMatch(/status\s*===\s*409\s*\|\|\s*status\s*===\s*422/);
-    expect(src).toMatch(/if\s*\(\s*status\s*===\s*409\s*\)/);
+    // The old bug FAKED a RAPPELÉ badge on 422: it set recalledMap from a
+    // branch whose guard included 422, e.g.
+    //   if (status === 409 || status === 422) { recalledMap = ... }
+    // The invariant is about the BADGE WRITE, not about the literal substring
+    // "409 || 422" appearing anywhere — the legit #12 refetch trigger
+    //   if (status === 403 || status === 409 || status === 422) { this.fetch(); }
+    // is a resync, NOT a badge fake, and must be allowed.
+    //
+    // Assert precisely on the BADGE WRITE:
+    //  (a) the catch-block badge set IS guarded by a bare `status === 409`, and
+    //  (b) NO recalledMap badge set is guarded by a condition containing 422.
+    // The legit #12 refetch `if (... || status === 422) { this.fetch(); }`
+    // has no recalledMap in its body, so it is correctly allowed.
+    expect(src, '409-only badge guard present')
+      .toMatch(/if\s*\(\s*status\s*===\s*409\s*\)\s*\{[^}]*recalledMap\s*=/);
+    expect(src, 'no badge fake under a 422 guard')
+      .not.toMatch(/if\s*\([^)]*422[^)]*\)\s*\{[^}]*recalledMap\s*=/);
   });
 });

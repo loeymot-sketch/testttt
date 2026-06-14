@@ -47,7 +47,12 @@ describe('Keyboard navigation — KDS bump (FK-L5.3-001)', () => {
     });
 
     it('KdsOrderCard binds @keydown.enter on the card root', () => {
-        expect(kdsOrderCard).toMatch(/@keydown\.enter="onCardKeydownEnter"/);
+        // `.self` is allowed (and preferred): it fires bump only when the card
+        // ROOT is the keydown target, so Enter bubbling up from a focusable
+        // child (e.g. an inner CTA button) does not double-trigger onCta. The
+        // primary a11y path — focus card (tabindex=0), press Enter — is
+        // unchanged because the root IS the target.
+        expect(kdsOrderCard).toMatch(/@keydown\.enter(\.self)?="onCardKeydownEnter"/);
     });
 
     it('KdsOrderCard onCardKeydownEnter bumps via onCta (no cash-pending gate — GOAL-2026-05-30 D1)', () => {

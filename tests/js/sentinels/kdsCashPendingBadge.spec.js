@@ -67,7 +67,9 @@ describe('KDS cash-pending NOTE (non-blocking) — owner reversal GOAL-2026-05-3
     });
 
     it('Card root @keydown.enter is wired to onCardKeydownEnter', () => {
-        expect(cardSource).toMatch(/@keydown\.enter="onCardKeydownEnter"/);
+        // `.self` modifier allowed — fires only when the card root is the
+        // keydown target, preventing a double-bump from a bubbled child Enter.
+        expect(cardSource).toMatch(/@keydown\.enter(\.self)?="onCardKeydownEnter"/);
     });
 
     it('KdsV2Grid.onKey [A]–[H] does NOT skip cash-pending slots', () => {
