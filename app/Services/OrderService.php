@@ -2024,6 +2024,30 @@ class OrderService
                         // Non-COD methods preserve the legacy flip semantics
                         // (flip at OFD-or-DELIVERED, no escrow row).
                         $locked->payment_status = PaymentStatus::PAID;
+
+                        // [DV-T1 heal 2026-06-14 — NF525 exhaustivity, twin of
+                        // G-DELIV-FISCAL caught by ultra-review]. A non-COD delivery
+                        // that reached the driver still UNPAID (e.g. late card capture)
+                        // becomes a fiscally-final PAID sale HERE. Like the COD branch
+                        // it MUST carry a gap-free fiscal_sequence_no or it escapes
+                        // every daily Z (ZReportService aggregates whereNotNull(seq)).
+                        // Allocate now; on failure flag for the retry cron, never roll
+                        // back (the order/payment is real regardless of the deferred seq).
+                        if ($locked->fiscal_sequence_no === null) {
+                            try {
+                                $locked->fiscal_sequence_no = app(\App\Services\Fiscal\FiscalSequenceService::class)
+                                    ->next((int) $locked->branch_id);
+                                $locked->fiscal_alloc_error_at = null;
+                            } catch (\Throwable $fiscalError) {
+                                $locked->fiscal_alloc_error_at = now();
+                                Log::channel('fiscal')->warning('delivery.noncod.fiscal_alloc_failed', [
+                                    'event'     => 'delivery.noncod.fiscal_alloc_failed',
+                                    'order_id'  => (int) $locked->id,
+                                    'branch_id' => (int) $locked->branch_id,
+                                    'error'     => $fiscalError->getMessage(),
+                                ]);
+                            }
+                        }
                     }
                 }
 
@@ -2508,6 +2532,42 @@ class OrderService
     /**
      * @throws Exception
      */
+    /**
+     * [FISC-EXH-CPS-01 heal 2026-06-14 — NF525 exhaustivity, defense-in-depth].
+     * When changePaymentStatus flips an order to PAID via a non-fiscal tender trace
+     * (OrderPayment / Transaction recorded without a sequence — e.g. a gateway-style
+     * capture), the assertPaidTransitionHasTenderTrace guard lets it through, but the
+     * now-realized PAID sale would carry fiscal_sequence_no=NULL and escape every Z
+     * (ZReportService aggregates whereNotNull(seq)) — and the retry-cron never sees it
+     * (no fiscal_alloc_error_at). Allocate a gap-free seq HERE when one is missing,
+     * mirroring the kiosk (FrontendOrderService) and COD-delivery (DV-T1/G-DELIV-FISCAL)
+     * paths. No-op when a seq already exists, so legitimate counter/kiosk flows that
+     * allocated upstream are never double-sequenced. On failure, flag for the retry
+     * cron and DO NOT roll back the settlement.
+     */
+    private function allocateFiscalSequenceIfPaidAndMissing(Order $locked, int $targetPaymentStatus): void
+    {
+        if ($targetPaymentStatus !== \App\Enums\PaymentStatus::PAID) {
+            return;
+        }
+        if ($locked->fiscal_sequence_no !== null) {
+            return;
+        }
+        try {
+            $locked->fiscal_sequence_no = app(\App\Services\Fiscal\FiscalSequenceService::class)
+                ->next((int) $locked->branch_id);
+            $locked->fiscal_alloc_error_at = null;
+        } catch (\Throwable $fiscalError) {
+            $locked->fiscal_alloc_error_at = now();
+            Log::channel('fiscal')->warning('changepaymentstatus.fiscal_alloc_failed', [
+                'event'     => 'changepaymentstatus.fiscal_alloc_failed',
+                'order_id'  => (int) $locked->id,
+                'branch_id' => (int) $locked->branch_id,
+                'error'     => $fiscalError->getMessage(),
+            ]);
+        }
+    }
+
     public function changePaymentStatus(Order $order, PaymentStatusRequest $request, bool $auth = false): Order|array
     {
         try {
@@ -2543,6 +2603,7 @@ class OrderService
                             return $locked;
                         }
                         $locked->payment_status = $request->payment_status;
+                        $this->allocateFiscalSequenceIfPaidAndMissing($locked, $targetPaymentStatus);
                         $locked->save();
                         return $locked;
                     });
@@ -2651,6 +2712,7 @@ class OrderService
                 \App\Domain\Order\PaymentStateMachine::assertCanTransition($freshOld, $targetPaymentStatus);
 
                 $locked->payment_status = $request->payment_status;
+                $this->allocateFiscalSequenceIfPaidAndMissing($locked, $targetPaymentStatus);
                 $locked->save();
 
                 \App\Models\ActionLog::create([
