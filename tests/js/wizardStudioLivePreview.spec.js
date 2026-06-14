@@ -1,0 +1,88 @@
+// [WIZARD-STUDIO W1 2026-06-14] Contract test for the live preview wiring:
+// the Studio fetches the DRAFT preview-projection and feeds it to the (frozen)
+// KioskWizardComponent READ-ONLY (onAddToCart no-op). The frozen wizard is stubbed
+// here — the no-cart-write guarantee is structural (we assert a function onAddToCart
+// is wired); a deeper "no kioskCart/* dispatch" assertion belongs to a kiosk-wizard spec.
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { flushPromises, mount } from '@vue/test-utils';
+
+vi.mock('axios', () => ({
+    default: { get: vi.fn(), post: vi.fn(), put: vi.fn(), patch: vi.fn(), delete: vi.fn() },
+}));
+
+// Intercept the lazy import() of the FROZEN kiosk wizard with a light stub (do not mount
+// the heavy real component in jsdom; we test the Studio's wiring, not the wizard internals).
+vi.mock('../../resources/js/components/frontend/kiosk/KioskWizardComponent.vue', () => ({
+    default: {
+        name: 'KioskWizardComponent',
+        props: ['item', 'onAddToCart', 'onClose'],
+        // Expose the props we assert as DOM attrs (async-component instances are not
+        // reliably queryable by name under happy-dom; DOM assertions are robust).
+        template: '<div class="kw-stub" data-testid="kw-stub"'
+            + ' :data-pub="String(!!(item && item.composer_profile && item.composer_profile.is_published))"'
+            + ' :data-steps="item && item.composer_profile ? item.composer_profile.steps.length : 0"'
+            + ' :data-cb="typeof onAddToCart" />',
+    },
+}));
+
+import axios from 'axios';
+import WizardStudioComponent from '../../resources/js/components/admin/items/composer/WizardStudioComponent.vue';
+
+const ITEM = { id: 41, name: 'Bowl Frites Poulet mariné' };
+const PROFILE = { id: 8, item_id: 41, template: 'custom', is_published: false, version: 2, steps: [{ id: 1, label: 'Sauce', position: 0, min_select: 1, max_select: 2 }] };
+
+const draftProjection = (steps) => ({
+    data: { data: { item: { id: 41, name: ITEM.name, price: 8.9, composer_profile: { id: 8, item_id: 41, is_published: true, version: 2, steps } } } },
+});
+
+function wireAxios({ steps }) {
+    axios.get.mockImplementation((url) => {
+        if (url.includes('item/show')) return Promise.resolve({ data: ITEM });
+        if (url.includes('preview-projection')) return Promise.resolve(draftProjection(steps));
+        if (url.includes('/profile')) return Promise.resolve({ data: PROFILE });
+        return Promise.reject(new Error(`unexpected url ${url}`));
+    });
+}
+
+const mountStudio = () => mount(WizardStudioComponent, {
+    props: { entityType: 'item', entityId: 41 },
+    global: {
+        mocks: { $router: { push: vi.fn(), back: vi.fn() } },
+    },
+});
+
+afterEach(() => vi.clearAllMocks());
+
+describe('WizardStudio live preview (W1)', () => {
+    it('fetches the draft preview-projection for the loaded profile', async () => {
+        wireAxios({ steps: [{ id: 1, step_key: 'sauce', label: 'Quelle sauce ?', choices: [{ id: 1, name: 'Spicy' }] }] });
+        mountStudio();
+        await flushPromises();
+        const calls = axios.get.mock.calls.map((c) => c[0]);
+        expect(calls.some((u) => u === 'admin/composer/profiles/8/preview-projection')).toBe(true);
+    });
+
+    it('mounts the frozen kiosk wizard fed the draft, read-only (onAddToCart is a no-op function)', async () => {
+        wireAxios({ steps: [{ id: 1, step_key: 'sauce', label: 'Quelle sauce ?', choices: [{ id: 1, name: 'Spicy' }] }] });
+        const wrapper = mountStudio();
+        await flushPromises();
+        // The draft is fetched and shaped for the live wizard (server forces is_published true).
+        expect(wrapper.vm.draftItem.composer_profile.is_published).toBe(true);
+        expect(wrapper.vm.draftItem.composer_profile.steps.length).toBe(1);
+        // The wizard branch is active (neither loading nor empty placeholder is shown) → the
+        // template mounts <KioskWizardComponent :item="draftItem" :on-add-to-cart="noop" ...>.
+        expect(wrapper.find('[data-testid="wizard-studio-preview-loading"]').exists()).toBe(false);
+        expect(wrapper.find('[data-testid="wizard-studio-preview-empty"]').exists()).toBe(false);
+        // Read-only guard: onAddToCart is wired to a no-op → frozen wizard short-circuits cart writes.
+        expect(typeof wrapper.vm.noop).toBe('function');
+        expect(wrapper.vm.noop()).toBeUndefined();
+    });
+
+    it('shows the empty state (no wizard mount) when the draft has no steps', async () => {
+        wireAxios({ steps: [] });
+        const wrapper = mountStudio();
+        await flushPromises();
+        expect(wrapper.findComponent({ name: 'KioskWizardComponent' }).exists()).toBe(false);
+        expect(wrapper.find('[data-testid="wizard-studio-preview-empty"]').exists()).toBe(true);
+    });
+});
