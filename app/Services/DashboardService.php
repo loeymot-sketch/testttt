@@ -283,7 +283,11 @@ class DashboardService
 
     public function customerStates(Request $request)
     {
-        $order = $this->orderQuery();
+        // [DASH-NET heal 2026-06-14 — massive-2dot0 #13] Exclude refund
+        // counter-entry mirrors from the hourly-traffic chart, for parity with
+        // orderStatistics/totalOrders/topCustomers. A RETURNED mirror is not a
+        // customer visit; counting it doubled the hour's footfall.
+        $order = $this->orderQuery()->whereNull('parent_order_id');
         // [GOAL-G2-HEAL-04 2026-05-23] TZ-generation alignment to Wave T R5
         // Paris bounds — see orderStatistics() comment for full rationale.
         $appTz = config('app.timezone');

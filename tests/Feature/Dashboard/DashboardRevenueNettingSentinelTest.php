@@ -123,6 +123,29 @@ class DashboardRevenueNettingSentinelTest extends TestCase
         $this->assertSame(1, (int) $yRow['qty']);
     }
 
+    /**
+     * massive-2dot0 #13 — the hourly-traffic chart (customerStates) must exclude
+     * refund counter-entry mirrors, for parity with orderStatistics/totalOrders.
+     * Pre-heal the mirror was counted as a phantom extra customer visit.
+     */
+    public function test_hourly_traffic_excludes_refund_mirror(): void
+    {
+        $this->actAsAdmin();
+        $branch = Branch::factory()->create();
+        $parent = $this->makeOrder($branch, OrderStatus::DELIVERED, PaymentStatus::PAID, 30.0);
+        $this->makeOrder($branch, OrderStatus::RETURNED, PaymentStatus::REFUNDED, -30.0, $parent->id);
+
+        $states = app(DashboardService::class)->customerStates(
+            new Request(['first_date' => '2026-03-15', 'last_date' => '2026-03-15'])
+        );
+
+        $this->assertSame(
+            1,
+            (int) array_sum($states['total_customers']),
+            'Refund counter-entry mirror must not count as a phantom customer visit.'
+        );
+    }
+
     private function makeItem(Order $order, Branch $branch, Item $item, int $qty, float $totalPrice): void
     {
         OrderItem::forceCreate([
