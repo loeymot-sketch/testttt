@@ -304,28 +304,27 @@ class EmailQueueResilienceSentinelTest extends TestCase
             $contents
         );
 
-        // BASELINE TODAY: imports ShouldQueue, does NOT implement it.
-        // If the listener is healed (adds `implements ShouldQueue`):
-        //   1. Update SYNCHRONOUS_MAILABLES (remove ResetPassword if also queued)
-        //   2. Update REQUIRED_SUPERVISOR_LANES (add 'mail' lane)
-        //   3. Update this test's expected state from (true, false) to (true, true).
-        // If the dead import is removed without implementing:
-        //   1. Update this test's expected state from (true, false) to (false, false).
-        // Either way: explicit gate.
-        if ($importsShouldQueue && !$classImplementsShouldQueue) {
-            // BASELINE LOCK — current state. Sentinel passes silently.
-            $this->assertTrue(true, 'Listener dead-import state matches L9.4 baseline (P2 V1.0.X).');
+        // BASELINE (updated 2026-06-14 — SEC-H15-TIMING-01 heal): the listener now
+        // BOTH imports AND implements ShouldQueue. It was healed deliberately: the
+        // synchronous SMTP send leaked account existence on the forgot-password path
+        // via response timing (the endpoint returns a neutral 200 for all emails but
+        // only dispatched the reset mail for a real user). Queuing the listener moves
+        // the SMTP send out of band. The ResetPassword *mailable* itself stays in
+        // SYNCHRONOUS_MAILABLES (the mailable class is not ShouldQueue; only the
+        // listener that sends it is now async), so no other sentinel constant changes.
+        // If the listener regresses to non-queued, re-open the timing oracle → fail.
+        if ($importsShouldQueue && $classImplementsShouldQueue) {
+            $this->assertTrue(true, 'Listener is queued (SEC-H15-TIMING-01 healed — SMTP send out of band).');
             return;
         }
 
         $this->fail(
-            'SendResetPasswordNotification ShouldQueue state drifted from L9.4 baseline ('
-            . 'imports=true, implements=false). '
+            'SendResetPasswordNotification ShouldQueue state regressed from the SEC-H15-TIMING-01 '
+            . 'healed baseline (imports=true, implements=true). '
             . 'Current state: imports=' . ($importsShouldQueue ? 'true' : 'false')
             . ', implements=' . ($classImplementsShouldQueue ? 'true' : 'false') . '. '
-            . 'Update this sentinel + SYNCHRONOUS_MAILABLES + REQUIRED_SUPERVISOR_LANES '
-            . 'and the L9.4 findings doc together. See reports/test-e2e/goal-2026-05-23/'
-            . 'phase-l/L9.4-email-queue-findings.json#MAIL-FIX-01.'
+            . 'The listener MUST stay queued or the forgot-password timing oracle re-opens. '
+            . 'See tests/Feature/Security/ForgotPasswordEnumerationSentinelTest.php.'
         );
     }
 
