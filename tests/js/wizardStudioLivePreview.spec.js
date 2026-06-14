@@ -10,21 +10,6 @@ vi.mock('axios', () => ({
     default: { get: vi.fn(), post: vi.fn(), put: vi.fn(), patch: vi.fn(), delete: vi.fn() },
 }));
 
-// Intercept the lazy import() of the FROZEN kiosk wizard with a light stub (do not mount
-// the heavy real component in jsdom; we test the Studio's wiring, not the wizard internals).
-vi.mock('../../resources/js/components/frontend/kiosk/KioskWizardComponent.vue', () => ({
-    default: {
-        name: 'KioskWizardComponent',
-        props: ['item', 'onAddToCart', 'onClose'],
-        // Expose the props we assert as DOM attrs (async-component instances are not
-        // reliably queryable by name under happy-dom; DOM assertions are robust).
-        template: '<div class="kw-stub" data-testid="kw-stub"'
-            + ' :data-pub="String(!!(item && item.composer_profile && item.composer_profile.is_published))"'
-            + ' :data-steps="item && item.composer_profile ? item.composer_profile.steps.length : 0"'
-            + ' :data-cb="typeof onAddToCart" />',
-    },
-}));
-
 import axios from 'axios';
 import WizardStudioComponent from '../../resources/js/components/admin/items/composer/WizardStudioComponent.vue';
 
@@ -44,9 +29,14 @@ function wireAxios({ steps }) {
     });
 }
 
+// Stub the frozen kiosk wizard by its registered name (no real lazy import, no template
+// compilation, no module-mock proxy) — we assert on the Studio's own vm/DOM, not the wizard.
+const STUBS = { KioskWizardComponent: true };
+
 const mountStudio = () => mount(WizardStudioComponent, {
     props: { entityType: 'item', entityId: 41 },
     global: {
+        stubs: STUBS,
         mocks: { $router: { push: vi.fn(), back: vi.fn() } },
     },
 });
@@ -93,7 +83,7 @@ describe('WizardStudio live preview (W1)', () => {
         });
         const wrapper = mount(WizardStudioComponent, {
             props: { entityType: 'category', entityId: 6 },
-            global: { mocks: { $router: { push: vi.fn(), back: vi.fn() } } },
+            global: { stubs: STUBS, mocks: { $router: { push: vi.fn(), back: vi.fn() } } },
         });
         await flushPromises();
         // operator-safety computeds: zero-choice step detected (drives the DOM warning banner

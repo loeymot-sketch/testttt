@@ -33,3 +33,6 @@
 ## Next action
 Start W0: scaffold `WizardStudio` route + shell component (copy, new route), parity-test stub.
 </content>
+
+- [x] TEST-E2E MASSIF (4 rounds, GStack-live + adversaire-indépendant workflows, ultracode) — CONVERGÉ P0+P1=0.
+  R1 live: device-frame P1 + msg P2 + contraste P3 + read-only prouvé (47 clics→cart0). R2 adversaire: caught a P1 I missed (device-frame height viewport-dependent) + 4 P2 healed. R3: F1 reclassed non-defect (db-main scrolls) + banner context-aware + AA contrast (orange 6.53:1, green 5.67:1) + jargon removed. R4 independent: P0+P1=0 CONFIRMED; healed CI false-green (vitest EXIT 1→0). Commits 40b683434/7c34eb0ab/cd5827565/0b14317ad/+test-fix. Report: reports/test-e2e/wizard-studio-massive-2026-06-14/CONVERGENCE_FINAL.md. Vitest 4/4 EXIT0, PHPUnit 5/5, frozen 0.
