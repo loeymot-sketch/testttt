@@ -520,7 +520,20 @@ export class KdsSyncService {
             return;
         }
 
-        listeners.forEach((callback) => callback(payload));
+        // [SYNC-RESILIENCE heal 2026-06-14 — massive-2dot0 supervisor R1] Isolate
+        // each subscriber: one throwing handler must NOT abort the others. A bare
+        // forEach let a single bad listener break the loop and freeze KDS board
+        // updates for every other subscriber (sync/state_change/reconnect_storm).
+        // Twin of the OssSyncService #8 heal, on the more-critical kitchen surface.
+        listeners.forEach((callback) => {
+            try {
+                callback(payload);
+            } catch (e) {
+                if (typeof console !== 'undefined' && console.warn) {
+                    console.warn('[KDS-sync] listener threw (isolated):', e);
+                }
+            }
+        });
     }
 
     _jitter(max) {
