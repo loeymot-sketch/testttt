@@ -15,12 +15,19 @@ use Illuminate\Support\Str;
 
 class PersistCatalogChangedToOutbox
 {
+    use \App\Listeners\Concerns\GuardsOutboxPersistence;
+
     public function __construct(
         private readonly MenuSnapshot $snapshot,
     ) {
     }
 
     public function handle(object $event): void
+    {
+        $this->runOutboxPersistenceGuarded(self::class, fn () => $this->project($event));
+    }
+
+    private function project(object $event): void
     {
         $catalogEvent = CatalogChanged::fromMenuMutation($event);
         if ($catalogEvent === null) {

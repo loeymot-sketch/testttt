@@ -37,7 +37,14 @@ use Illuminate\Support\Str;
  */
 class PersistBranchStatusChangedToOutbox
 {
+    use \App\Listeners\Concerns\GuardsOutboxPersistence;
+
     public function handle(BranchStatusChanged $event): void
+    {
+        $this->runOutboxPersistenceGuarded(self::class, fn () => $this->project($event));
+    }
+
+    private function project(BranchStatusChanged $event): void
     {
         // Guard 1 : no-op si pas de transition réelle (sibling pattern).
         if ($event->oldStatus === $event->newStatus) {

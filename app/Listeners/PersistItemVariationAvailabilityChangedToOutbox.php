@@ -19,7 +19,14 @@ use Illuminate\Support\Str;
  */
 class PersistItemVariationAvailabilityChangedToOutbox
 {
+    use \App\Listeners\Concerns\GuardsOutboxPersistence;
+
     public function handle(ItemVariationAvailabilityChanged $event): void
+    {
+        $this->runOutboxPersistenceGuarded(self::class, fn () => $this->project($event));
+    }
+
+    private function project(ItemVariationAvailabilityChanged $event): void
     {
         $payload = [
             'variation_id' => $event->variationId,

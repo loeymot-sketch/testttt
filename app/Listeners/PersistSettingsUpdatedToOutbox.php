@@ -24,7 +24,14 @@ use Illuminate\Support\Str;
  */
 class PersistSettingsUpdatedToOutbox
 {
+    use \App\Listeners\Concerns\GuardsOutboxPersistence;
+
     public function handle(SettingsUpdated $event): void
+    {
+        $this->runOutboxPersistenceGuarded(self::class, fn () => $this->project($event));
+    }
+
+    private function project(SettingsUpdated $event): void
     {
         $branchIds = $event->branchId !== null
             ? collect([(int) $event->branchId])

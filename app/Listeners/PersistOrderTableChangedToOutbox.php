@@ -26,7 +26,14 @@ use Illuminate\Support\Str;
  */
 class PersistOrderTableChangedToOutbox
 {
+    use \App\Listeners\Concerns\GuardsOutboxPersistence;
+
     public function handle(OrderTableChanged $event): void
+    {
+        $this->runOutboxPersistenceGuarded(self::class, fn () => $this->project($event));
+    }
+
+    private function project(OrderTableChanged $event): void
     {
         $order = $event->order;
         $correlationId = $this->resolveCorrelationId();

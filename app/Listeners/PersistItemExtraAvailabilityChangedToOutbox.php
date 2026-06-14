@@ -20,7 +20,14 @@ use Illuminate\Support\Str;
  */
 class PersistItemExtraAvailabilityChangedToOutbox
 {
+    use \App\Listeners\Concerns\GuardsOutboxPersistence;
+
     public function handle(ItemExtraAvailabilityChanged $event): void
+    {
+        $this->runOutboxPersistenceGuarded(self::class, fn () => $this->project($event));
+    }
+
+    private function project(ItemExtraAvailabilityChanged $event): void
     {
         $payload = [
             'extra_id'     => $event->extraId,

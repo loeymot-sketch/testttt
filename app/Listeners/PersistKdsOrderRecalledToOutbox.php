@@ -30,7 +30,14 @@ use Illuminate\Support\Str;
  */
 class PersistKdsOrderRecalledToOutbox
 {
+    use \App\Listeners\Concerns\GuardsOutboxPersistence;
+
     public function handle(KdsOrderRecalled $event): void
+    {
+        $this->runOutboxPersistenceGuarded(self::class, fn () => $this->project($event));
+    }
+
+    private function project(KdsOrderRecalled $event): void
     {
         $correlationId = $event->correlationId ?: $this->resolveCorrelationId();
 

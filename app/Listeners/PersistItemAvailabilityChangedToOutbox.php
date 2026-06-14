@@ -14,7 +14,14 @@ use Illuminate\Support\Str;
 
 class PersistItemAvailabilityChangedToOutbox
 {
+    use \App\Listeners\Concerns\GuardsOutboxPersistence;
+
     public function handle(ItemAvailabilityChanged $event): void
+    {
+        $this->runOutboxPersistenceGuarded(self::class, fn () => $this->project($event));
+    }
+
+    private function project(ItemAvailabilityChanged $event): void
     {
         // [F-04bis] All payloads (global and branch-scoped) MUST include the same
         // contract keys so frontend handlers can rely on `is_available`, `branch_id`

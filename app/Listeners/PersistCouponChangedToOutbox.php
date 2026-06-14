@@ -20,7 +20,14 @@ use Illuminate\Support\Str;
  */
 class PersistCouponChangedToOutbox
 {
+    use \App\Listeners\Concerns\GuardsOutboxPersistence;
+
     public function handle(CouponChanged $event): void
+    {
+        $this->runOutboxPersistenceGuarded(self::class, fn () => $this->project($event));
+    }
+
+    private function project(CouponChanged $event): void
     {
         // Si le coupon a un scope de branches, on borne aux branches du scope.
         // Sinon, on broadcast à toutes les branches actives.

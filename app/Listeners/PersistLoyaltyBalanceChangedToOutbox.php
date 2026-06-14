@@ -23,7 +23,14 @@ use Illuminate\Support\Str;
  */
 class PersistLoyaltyBalanceChangedToOutbox
 {
+    use \App\Listeners\Concerns\GuardsOutboxPersistence;
+
     public function handle(LoyaltyBalanceChanged $event): void
+    {
+        $this->runOutboxPersistenceGuarded(self::class, fn () => $this->project($event));
+    }
+
+    private function project(LoyaltyBalanceChanged $event): void
     {
         $correlationId = $event->correlationId ?: $this->resolveCorrelationId();
 

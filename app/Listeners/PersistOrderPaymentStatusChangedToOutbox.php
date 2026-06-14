@@ -20,7 +20,14 @@ use Illuminate\Support\Str;
  */
 class PersistOrderPaymentStatusChangedToOutbox
 {
+    use \App\Listeners\Concerns\GuardsOutboxPersistence;
+
     public function handle(OrderPaymentStatusChanged $event): void
+    {
+        $this->runOutboxPersistenceGuarded(self::class, fn () => $this->project($event));
+    }
+
+    private function project(OrderPaymentStatusChanged $event): void
     {
         $order = $event->order;
         $correlationId = $this->resolveCorrelationId();

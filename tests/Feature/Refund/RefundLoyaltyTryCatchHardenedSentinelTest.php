@@ -167,11 +167,20 @@ class RefundLoyaltyTryCatchHardenedSentinelTest extends TestCase
         // closure so we can introspect the structured payload AFTER the
         // service runs (channel-tap mock would be over-engineered for
         // the default-channel default-error case).
+        // [ultra-review 2026-06-14] The refund flow now also runs GUARDED
+        // Persist*ToOutbox listeners (RefundCreated → availability release →
+        // ItemAvailabilityChanged → outbox), each of which may emit its own
+        // isolated swallow log (GuardsOutboxPersistence). Capture ONLY the
+        // RefundWithCounterEntryService loyalty-isolation error this test asserts,
+        // so the assertion stays robust to those additional (correct) defensive logs
+        // instead of grabbing "the last error" emitted in the flow. ->once() relaxed
+        // for the same reason — the system now logs more defensively, not less.
         $logCapture = null;
         Log::shouldReceive('error')
-            ->once()
             ->andReturnUsing(function (string $message, array $context = []) use (&$logCapture): void {
-                $logCapture = ['message' => $message, 'context' => $context];
+                if (str_contains($message, 'RefundWithCounterEntryService')) {
+                    $logCapture = ['message' => $message, 'context' => $context];
+                }
             });
         // Other log facade methods may be invoked during the mirror
         // creation path (e.g. fiscal channel info log) — allow them
