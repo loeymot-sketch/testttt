@@ -73,7 +73,7 @@ class OtpManagerService
     {
         try {
             // env('DEMO') === 'false' est truthy en PHP — utiliser un booléen réel
-            if (filter_var(env('DEMO', false), FILTER_VALIDATE_BOOLEAN)) {
+            if (config('app.demo_mode')) {
                 return true;
             }
 

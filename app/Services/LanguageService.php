@@ -109,7 +109,7 @@ class LanguageService
     {
         try {
             if (Settings::group('site')->get("site_default_language") != $language->id) {
-                if (!env('DEMO') && $language->id !== 1) {
+                if (!config('app.demo_mode') && $language->id !== 1) {
                     AppLibrary::deleteDir(base_path("lang/{$language->code}"));
                     if (file_exists(base_path("resources/js/languages/{$language->code}.json"))) {
                         unlink(base_path("resources/js/languages/{$language->code}.json"));

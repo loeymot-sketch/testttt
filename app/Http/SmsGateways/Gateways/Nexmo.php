@@ -40,7 +40,7 @@ class Nexmo extends SmsAbstract
     public function send($code, $phone, $message): void
     {
         try {
-            $this->gateway->sms()->send(new SMS($code . $phone, env('APP_NAME'), $message));
+            $this->gateway->sms()->send(new SMS($code . $phone, config('app.name'), $message));
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
         }

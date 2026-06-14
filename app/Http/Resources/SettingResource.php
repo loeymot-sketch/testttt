@@ -92,7 +92,7 @@ class SettingResource extends JsonResource
             'image_four_zero_three_page'           => asset('/images/accessible/403.gif'),
             'image_order_not_found'                => asset('/images/default/not-found.png'),
             'item_not_found'                       => asset('/images/item/item-not-found.png'),
-            'demo'                                 => env('DEMO'),
+            'demo'                                 => config('app.demo_mode'),
 
             // [KIOSK-12-1] Alias logo for kiosk idle screen — uses theme_logo as the restaurant logo
             // KioskIdleScreenComponent reads logo_full_path, theme_logo is the canonical source

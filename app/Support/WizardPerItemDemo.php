@@ -27,7 +27,7 @@ final class WizardPerItemDemo
         }
 
         // Opt-in E2E (Playwright) when APP_ENV n’est pas `local` (ex. machine dev en staging).
-        if (filter_var(env('FOODKING_E2E_WIZARD_HEADER', false), FILTER_VALIDATE_BOOL)) {
+        if (config('features.e2e_wizard_header')) {
             return true;
         }
 

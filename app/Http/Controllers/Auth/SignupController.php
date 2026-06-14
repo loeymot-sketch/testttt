@@ -59,7 +59,7 @@ class SignupController extends Controller
             ['phone', $request->post('phone')]
         ]);
 
-        if (env('DEMO')) {
+        if (config('app.demo_mode')) {
             $flag = true;
         } else {
             if (Settings::group('site')->get('site_phone_verification') == Activity::DISABLE) {

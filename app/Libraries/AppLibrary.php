@@ -21,7 +21,7 @@ class AppLibrary
     public static function date($date, $pattern = null): string
     {
         if (!$pattern) {
-            $pattern = env('DATE_FORMAT', 'd-m-Y');
+            $pattern = config('localization.date_format');
         }
         return Carbon::parse($date)->format($pattern);
     }
@@ -29,7 +29,7 @@ class AppLibrary
     public static function time($time, $pattern = null): string
     {
         if (!$pattern) {
-            $pattern = env('TIME_FORMAT', 'H:i');
+            $pattern = config('localization.time_format');
         }
         return Carbon::parse($time)->format($pattern);
     }
@@ -37,7 +37,7 @@ class AppLibrary
     public static function datetime($dateTime, $pattern = null): string
     {
         if (!$pattern) {
-            $pattern = env('TIME_FORMAT', 'H:i') . ', ' . env('DATE_FORMAT', 'd-m-Y');
+            $pattern = config('localization.time_format') . ', ' . config('localization.date_format');
         }
         return Carbon::parse($dateTime)->format($pattern);
     }
@@ -45,7 +45,7 @@ class AppLibrary
     public static function increaseDate($dateTime, $days, $pattern = null): string
     {
         if (!$pattern) {
-            $pattern = env('DATE_FORMAT', 'd-m-Y');
+            $pattern = config('localization.date_format');
         }
         return Carbon::parse($dateTime)->addDays($days)->format($pattern);
     }
@@ -53,7 +53,7 @@ class AppLibrary
     public static function deliveryTime($dateTime, $pattern = null): string
     {
         if (!$pattern) {
-            $pattern = env('TIME_FORMAT', 'H:i');
+            $pattern = config('localization.time_format');
         }
         $explode = explode('-', $dateTime);
         if (count($explode) == 2) {
@@ -286,7 +286,7 @@ class AppLibrary
         // contract is preserved for the fallback branch — admins keep control
         // if they want a non-EUR display in some downstream surface.
         $amount = (float) $amount;
-        $decimal = (int) (env('CURRENCY_DECIMAL_POINT') ?? 2);
+        $decimal = (int) config('currency.decimal_point');
 
         if (class_exists('NumberFormatter')) {
             $fmt = new \NumberFormatter('fr_FR', \NumberFormatter::CURRENCY);
@@ -295,8 +295,8 @@ class AppLibrary
         }
 
         // Fallback: manual FR layout (virgule + nbsp + symbol).
-        $symbol    = env('CURRENCY_SYMBOL', '€');
-        $position  = env('CURRENCY_POSITION') ?? CurrencyPosition::RIGHT;
+        $symbol    = config('currency.symbol');
+        $position  = config('currency.position');
         $formatted = number_format($amount, $decimal, ',', "\xC2\xA0");
         return $position == CurrencyPosition::LEFT
             ? $symbol . "\xC2\xA0" . $formatted
@@ -305,12 +305,12 @@ class AppLibrary
 
     public static function flatAmountFormat($amount): string
     {
-        return number_format($amount, (int) (env('CURRENCY_DECIMAL_POINT') ?? 2), '.', '');
+        return number_format($amount, (int) config('currency.decimal_point'), '.', '');
     }
 
     public static function convertAmountFormat($amount): float
     {
-        return (float)number_format($amount, (int) (env('CURRENCY_DECIMAL_POINT') ?? 2), '.', '');
+        return (float)number_format($amount, (int) config('currency.decimal_point'), '.', '');
     }
 
     /**
@@ -424,7 +424,7 @@ class AppLibrary
 
     public static function reportCurrencyAmountFormat($amount): string
     {
-        return number_format($amount, (int) (env('CURRENCY_DECIMAL_POINT') ?? 2), '.', ',');
+        return number_format($amount, (int) config('currency.decimal_point'), '.', ',');
     }
 
     public static function textShortener($text, $number = 30)
@@ -452,7 +452,7 @@ class AppLibrary
                     return "Now";
                 } else {
                     if (!$pattern) {
-                        $pattern = env('TIME_FORMAT', 'H:i');
+                        $pattern = config('localization.time_format');
                     }
                     $explode = explode('-', $dateTime);
                     if (count($explode) == 2) {

@@ -31,7 +31,7 @@ class SiteController extends AdminController
     public function update(SiteRequest $request): SiteResource | \Illuminate\Http\Response | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory
     {
         try {
-            if (env('DEMO')) {
+            if (config('app.demo_mode')) {
                 $resource = new SiteResource($this->siteService->update($request));
             } else {
                 $resource = new SiteResource($this->siteService->update($request));

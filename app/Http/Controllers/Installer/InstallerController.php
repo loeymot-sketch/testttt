@@ -26,7 +26,7 @@ class InstallerController extends Controller
         $this->installerPermissionCheckerService   = $installerPermissionCheckerService;
 
         if (file_exists(storage_path('installed'))) {
-            Redirect::to(env('APP_URL'))->send();
+            Redirect::to(config('app.url'))->send();
         }
     }
 
@@ -132,7 +132,7 @@ class InstallerController extends Controller
     {
         try {
             $this->installerService->finalSetup();
-            return redirect(env('APP_URL'));
+            return redirect(config('app.url'));
         } catch (Exception $e) {
             return redirect(route('installer.site'))->withErrors(['global' => $e->getMessage()]);
         }

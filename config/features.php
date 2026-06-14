@@ -49,4 +49,11 @@ return [
     */
     'staff_only_mode' => filter_var(env('STAFF_ONLY_MODE', true), FILTER_VALIDATE_BOOLEAN),
 
+    /*
+    | e2e_wizard_header — dev/E2E-only flag (WizardPerItemDemo). Migrated from a
+    | request-time env() read (UNI-03 2026-06-14) so it is config:cache-safe and
+    | swept by the no-request-time-env sentinel. Defaults false (prod-correct).
+    */
+    'e2e_wizard_header' => filter_var(env('FOODKING_E2E_WIZARD_HEADER', false), FILTER_VALIDATE_BOOLEAN),
+
 ];
