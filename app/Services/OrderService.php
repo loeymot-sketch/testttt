@@ -3038,12 +3038,16 @@ class OrderService
             // netted to 0. READ-SIDE only — the mirror/Z columns are untouched
             // (Z-safe): drop the discount of any parent that has a refund mirror in
             // the realized set, plus the mirrors themselves (discount=0 anyway).
+            // [#14 + sibling — code-review] Net refunded sales out of BOTH
+            // total_discounts AND total_delivery_charges (the mirror carries
+            // discount=0 / delivery_charge=0 while its total is negated, so a naive
+            // sum kept the refunded sale's full figure). Same realized-non-refunded
+            // set for both; READ-SIDE only (mirror/Z columns untouched, Z-safe).
             $refundedParentIds = $paidOrders->whereNotNull('parent_order_id')->pluck('parent_order_id')->filter()->all();
-            $netDiscounts = $paidOrders
-                ->filter(fn ($o) => $o->parent_order_id === null && ! in_array($o->id, $refundedParentIds))
-                ->sum('discount');
-            $salesReportArray['total_discounts'] = AppLibrary::currencyAmountFormat($netDiscounts);
-            $salesReportArray['total_delivery_charges'] = AppLibrary::currencyAmountFormat($paidOrders->sum('delivery_charge'));
+            $realizedNonRefunded = $paidOrders
+                ->filter(fn ($o) => $o->parent_order_id === null && ! in_array($o->id, $refundedParentIds));
+            $salesReportArray['total_discounts'] = AppLibrary::currencyAmountFormat($realizedNonRefunded->sum('discount'));
+            $salesReportArray['total_delivery_charges'] = AppLibrary::currencyAmountFormat($realizedNonRefunded->sum('delivery_charge'));
 
             return $salesReportArray;
         } catch (Exception $exception) {

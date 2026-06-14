@@ -160,11 +160,11 @@ class DashboardRevenueNettingSentinelTest extends TestCase
         $branch = Branch::factory()->create();
         // Refunded sale: discount 5 then a RETURNED mirror (discount column = 0).
         $parent = $this->makeOrder($branch, OrderStatus::DELIVERED, PaymentStatus::PAID, 30.0);
-        $parent->update(['discount' => 5.0]);
+        $parent->update(['discount' => 5.0, 'delivery_charge' => 4.0]);
         $this->makeOrder($branch, OrderStatus::RETURNED, PaymentStatus::REFUNDED, -30.0, $parent->id);
-        // Clean sale: discount 3 (must remain counted).
+        // Clean sale: discount 3 + delivery 2 (must remain counted).
         $clean = $this->makeOrder($branch, OrderStatus::DELIVERED, PaymentStatus::PAID, 20.0);
-        $clean->update(['discount' => 3.0]);
+        $clean->update(['discount' => 3.0, 'delivery_charge' => 2.0]);
 
         $report = app(OrderService::class)->salesReportOverview(
             new Request(['first_date' => '2026-03-01', 'last_date' => '2026-03-31'])
@@ -174,6 +174,9 @@ class DashboardRevenueNettingSentinelTest extends TestCase
         // Pre-heal = 8 (5+3). Currency format uses the integer part.
         $this->assertStringContainsString('3', (string) $report['total_discounts']);
         $this->assertStringNotContainsString('8', (string) $report['total_discounts'], 'Refunded sale discount must net out (was 5+3=8).');
+        // #14 sibling: delivery charges net the same way → 2 (clean only), not 6 (4+2).
+        $this->assertStringContainsString('2', (string) $report['total_delivery_charges']);
+        $this->assertStringNotContainsString('6', (string) $report['total_delivery_charges'], 'Refunded sale delivery charge must net out (was 4+2=6).');
     }
 
     private function makeItem(Order $order, Branch $branch, Item $item, int $qty, float $totalPrice): void
