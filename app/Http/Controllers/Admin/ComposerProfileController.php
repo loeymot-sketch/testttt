@@ -124,9 +124,13 @@ class ComposerProfileController extends AdminController
         // differ across the category; the Studio surfaces this caveat in the UI).
         $item = $profile->item_id
             ? Item::find($profile->item_id)
-            : optional($profile->category)->items()->first();
+            : optional($profile->category)->items()->orderBy('id')->first(); // deterministic representative
 
         abort_if(! $item, 404, 'Aucun produit disponible pour prévisualiser ce wizard.');
+
+        // Eager-load the relations the projection walks per step, to avoid N+1 (this endpoint
+        // is hit on every Studio reload). Mirrors availableSources()'s loadMissing.
+        $item->loadMissing(['variations.itemAttribute', 'extras', 'addons.addonItem']);
 
         $branchId = $profile->branch_id_scope ?? (int) ($request->user()?->branch_id ?? 0);
 

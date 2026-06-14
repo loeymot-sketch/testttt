@@ -78,6 +78,32 @@ describe('WizardStudio live preview (W1)', () => {
         expect(wrapper.vm.noop()).toBeUndefined();
     });
 
+    it('warns when a step resolves to zero options + labels category inheritance', async () => {
+        // draft with one normal step + one step that has NO choices (misconfiguration).
+        axios.get.mockImplementation((url) => {
+            if (url.includes('item-category/show') || url.includes('item/show')) return Promise.resolve({ data: { name: 'Sandwich Cayenne' } });
+            if (url.includes('preview-projection')) return Promise.resolve({
+                data: { data: { item: { id: 41, name: ITEM.name, price: 8.9, composer_profile: { id: 8, item_id: null, item_category_id: 6, is_published: true, version: 2, steps: [
+                    { id: 1, step_key: 'sauce', label: 'Quelle sauce ?', is_active: true, choices: [{ id: 1, name: 'Spicy' }] },
+                    { id: 2, step_key: 'viande', label: 'Quelle viande ?', is_active: true, choices: [] },
+                ] } } } },
+            });
+            if (url.includes('/profile')) return Promise.resolve({ data: { ...PROFILE, item_id: null, item_category_id: 6 } });
+            return Promise.reject(new Error(`unexpected url ${url}`));
+        });
+        const wrapper = mount(WizardStudioComponent, {
+            props: { entityType: 'category', entityId: 6 },
+            global: { mocks: { $router: { push: vi.fn(), back: vi.fn() } } },
+        });
+        await flushPromises();
+        // operator-safety computeds: zero-choice step detected (drives the DOM warning banner
+        // via v-if) + category inheritance is made explicit in the header.
+        expect(wrapper.vm.draftItem).not.toBe(null);
+        expect(wrapper.vm.zeroChoiceSteps).toContain('Quelle viande ?');
+        expect(wrapper.vm.zeroChoiceSteps).not.toContain('Quelle sauce ?');
+        expect(wrapper.vm.inheritanceLabel).toContain('catégorie');
+    });
+
     it('shows the empty state (no wizard mount) when the draft has no steps', async () => {
         wireAxios({ steps: [] });
         const wrapper = mountStudio();
