@@ -57,6 +57,20 @@ class KioskMachineLoginController extends Controller
             ->first();
 
         if (!$kioskMachine) {
+            // [TIMING-ORACLE heal 2026-06-14 — massive-2dot0] The F3 heal closed the
+            // *message* enumeration but the early return here ran BEFORE any
+            // Hash::check, so an unknown username returned ~16-200ms while a real
+            // one paid the bcrypt cost (~270-320ms) — a clean timing oracle for
+            // username enumeration. Pay the identical bcrypt cost (matching the
+            // machine-password rounds) on the not-found path so latency no longer
+            // distinguishes valid usernames. V1-LOCAL is rate-limited (kiosk-login
+            // 30/min) so this is defense-in-depth + cloud-ready; constant must stay
+            // a valid bcrypt hash at the configured cost (12).
+            Hash::check(
+                (string) $request->post('password'),
+                '$2y$12$iCTCxFekHaXKl6P5xGvk6eZOWy6HTwGk6DCXW5xj8MuK104fpZh2W'
+            );
+
             return response()->json([
                 'errors' => ['validation' => trans('all.message.credentials_invalid')],
             ], 400);

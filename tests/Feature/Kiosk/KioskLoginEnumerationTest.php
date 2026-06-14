@@ -8,6 +8,7 @@ use App\Models\Branch;
 use App\Enums\Ask;
 use App\Models\KioskMachine;
 use App\Enums\Status;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithoutMiddleware;
 
@@ -85,5 +86,20 @@ class KioskLoginEnumerationTest extends TestCase
         $this->makeMachine(Status::ACTIVE);
         $this->postJson('/api/auth/kiosk-login', ['username' => 'borne1', 'password' => 'secret123'])
             ->assertStatus(201);
+    }
+
+    /**
+     * Constant-time (TIMING-ORACLE heal 2026-06-14): an UNKNOWN username must STILL
+     * run a bcrypt Hash::check so its response latency is indistinguishable from a
+     * real username's. Before the heal the not-found branch returned 400 before any
+     * Hash::check, leaking valid usernames via a timing oracle even though the
+     * message was already generic (F3). Non-flaky guard via facade spy.
+     */
+    public function test_unknown_username_still_pays_bcrypt_cost(): void
+    {
+        Hash::spy();
+        $this->postJson('/api/auth/kiosk-login', ['username' => 'nope-' . uniqid(), 'password' => 'whatever123'])
+            ->assertStatus(400);
+        Hash::shouldHaveReceived('check')->once();
     }
 }
