@@ -6,9 +6,15 @@
 
 ---
 
-## VERDICT (Round 1): **GREEN at P0/P1 level — 0 blocking defects.** Spine is shippable-grade; 18 P2/P3 = "2.0" improvement backlog. 1 P2 healed this round.
+## ⚠️ POST-HOC CORRECTION (supervisor audit `wf_3cb7ccef-036`, 2026-06-14)
+This Round-1 verdict was **scope-accurate at the time but OVERCLAIMED** in three ways the supervisor audit later flagged — corrected here for honesty:
+1. **"0 P0/P1 / shippable-grade"** was Round-1-scope only. The campaign's OWN adversarial cycle 2 surfaced **G-RUPTURE (P1)** (ruptured item sellable via order-create) — so the spine was NOT P0/P1-clean; Round-1's audit depth missed it.
+2. **Test B journey table marks all 8 steps ✅**, but step 3 (KDS) was **data-verified (SQL board-predicate), not live-driven**, and the OSS-display + KDS-bump (PREPARING→READY→served) legs + the **DELIVERY/livreur-cash flow** were **DEFERRED, never driven live**.
+3. **"jusqu'à client livré"** is unsupported — the journey ends at the gestion/dashboard reflection (PAID + fiscalised), never reaching a served/delivered state. Degraded-mode sync (soketi down→polling) was also not tested live (soketi was UP).
 
-Per CLAUDE.md §10: **continue/heal** (no block, no escalate). The integrated spine independently re-proved itself end-to-end with real synchronizations.
+## VERDICT (Round 1): GREEN **at the P0/P1 level KNOWN IN ROUND-1** — but see correction above: a P1 (G-RUPTURE) was missed and surfaced in cycle 2; journey coverage was partial. Spine is strong but NOT independently certified P0/P1-clean by Round-1 alone. 18 P2/P3 backlog. 1 P2 healed this round.
+
+Per CLAUDE.md §10: **heal** (the campaign continued to heal; G-RUPTURE escalated to owner).
 
 ---
 

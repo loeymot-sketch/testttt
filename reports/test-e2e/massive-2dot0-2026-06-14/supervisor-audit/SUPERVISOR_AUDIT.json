@@ -1,0 +1,350 @@
+{
+  "summary": "Deep adversarial supervisor audit of the massive-2dot0 campaign (18 commits) + spine — refute my claims, find systemic siblings, render verdict",
+  "agentCount": 13,
+  "logs": [],
+  "result": {
+    "lanes": [
+      {
+        "lane": "L1 — HEAL INTEGRITY",
+        "findings": [
+          {
+            "v": "CLAIM_UPHELD",
+            "sev": "INFO",
+            "t": "#3 Kiosk login constant-time bcrypt — fix correct, test non-vacuous, no regression",
+            "fl": "app/Http/Controllers/Auth/KioskMachineLoginController.php:69-72; tests/Feature/Kiosk/KioskLoginEnumerationTest.php:98-104"
+          },
+          {
+            "v": "CLAIM_UPHELD",
+            "sev": "INFO",
+            "t": "#9 KDS allergen-hash double-decode (normalizeAllergensForHash) — fix correct, PROVEN non-vacuous",
+            "fl": "app/Services/KitchenDisplaySystemOrderService.php:610-616; tests/Feature/KDS/KdsAllergenAggregationSplitTest.php:246-262"
+          },
+          {
+            "v": "OVERCLAIM",
+            "sev": "P3",
+            "t": "#9 display-leg test docstring is an OVERCLAIM — safeJsonDecodeArray was ALREADY double-decode-robust; sentinel passes on UNCHANGED code",
+            "fl": "tests/Feature/KDS/KdsOrderItemsResourceAllergenExposureTest.php:207-222; app/Http/Resources/KDSOrderItemsResource.php:69-82"
+          },
+          {
+            "v": "CLAIM_UPHELD",
+            "sev": "INFO",
+            "t": "#15 POS barcode lookup branch-rupture 404 — fix correct/complete for its scope, G-RUPTURE gap correctly disclosed",
+            "fl": "app/Http/Controllers/Admin/ItemController.php:281-293; tests/Feature/Pos/PosMenuRuntimeAccessTest.php:105-135"
+          },
+          {
+            "v": "CLAIM_UPHELD",
+            "sev": "INFO",
+            "t": "#12 topItemsOfDay realizedRevenue netting — fix correct, real bug, non-vacuous",
+            "fl": "app/Services/DashboardService.php:857-866; tests/Feature/Dashboard/DashboardRevenueNettingSentinelTest.php:102-124"
+          },
+          {
+            "v": "CLAIM_UPHELD",
+            "sev": "INFO",
+            "t": "#1 KsAllergenBadge case-insensitive collision — fix correct, complete on all three legs, non-vacuous",
+            "fl": "resources/js/components/frontend/kiosk/ds/KsAllergenBadge.vue:105-124; tests/js/ksAllergenBadgeCollision.spec.js"
+          },
+          {
+            "v": "CLAIM_UPHELD",
+            "sev": "INFO",
+            "t": "#11 post-commit dispatch \\Throwable guard — fix correct, test NON-vacuous (unlike the first attempt), minor scope note",
+            "fl": "app/Services/KitchenDisplaySystemOrderService.php:476-482; tests/Feature/KDS/KdsUnreleasedOrderBumpGuardTest.php:130-151"
+          },
+          {
+            "v": "CLAIM_UPHELD",
+            "sev": "INFO",
+            "t": "#8 OssSyncService _emit per-listener try/catch — fix correct, non-vacuous, no regression",
+            "fl": "resources/js/services/OssSyncService.js:450-458; tests/js/ossListenerIsolation.spec.js"
+          },
+          {
+            "v": "CLAIM_UPHELD",
+            "sev": "INFO",
+            "t": "#13 customerStates whereNull(parent_order_id) — fix correct, non-vacuous, pre-existing whereTime UTC caveat untouched",
+            "fl": "app/Services/DashboardService.php:290; tests/Feature/Dashboard/DashboardRevenueNettingSentinelTest.php:131-147"
+          }
+        ]
+      },
+      {
+        "lane": "L2 — Systemic Siblings (8 heals scrutinized + sibling sweep)",
+        "findings": [
+          {
+            "v": "SYSTEMIC_SIBLING",
+            "sev": "P1",
+            "t": "#8 sibling MISSED: KdsSyncService._emit is the SAME unguarded forEach pattern, on a more-critical surface (KDS board)",
+            "fl": "resources/js/services/KdsSyncService.js:523"
+          },
+          {
+            "v": "CLAIM_UPHELD",
+            "sev": "P1",
+            "t": "#15 barcode rupture-block is a point-fix; order-create still sells branch-ruptured items (author-escalated G-RUPTURE P1 CONFIRMED REAL)",
+            "fl": "app/Services/OrderService.php (no ItemBranchAvailability check); app/Services/FrontendOrderService.php (none)"
+          },
+          {
+            "v": "CLAIM_UPHELD",
+            "sev": "INFO",
+            "t": "#8 OSS listener isolation — heal correct and tested",
+            "fl": "resources/js/services/OssSyncService.js:450-462"
+          },
+          {
+            "v": "CLAIM_UPHELD",
+            "sev": "INFO",
+            "t": "#3 kiosk-login timing oracle — heal correct, cost matches, no untouched raw-Hash::check sibling",
+            "fl": "app/Http/Controllers/Auth/KioskMachineLoginController.php:69"
+          },
+          {
+            "v": "CLAIM_UPHELD",
+            "sev": "INFO",
+            "t": "#9 hash double-decode + #9-display leg — hash heal real; display resources unchanged but test PASSES against existing safeJsonDecode (cast+1 decode handles double-encoding)",
+            "fl": "app/Services/KitchenDisplaySystemOrderService.php:600-617; app/Http/Resources/KDSOrderItemsResource.php:69-82"
+          },
+          {
+            "v": "CLAIM_UPHELD",
+            "sev": "INFO",
+            "t": "#1 allergen collision case-insensitivity — heal complete, all 3 compare sites lowercased; helper getAllergenCollision already consistent",
+            "fl": "resources/js/components/frontend/kiosk/ds/KsAllergenBadge.vue:19,115,121"
+          },
+          {
+            "v": "CLAIM_UPHELD",
+            "sev": "INFO",
+            "t": "#11 KDS bump-resilience — heal correct; successful committed bump no longer re-wrapped as 422; HttpException (release-guard) still propagates",
+            "fl": "app/Services/KitchenDisplaySystemOrderService.php:470-488"
+          },
+          {
+            "v": "CLAIM_UPHELD",
+            "sev": "INFO",
+            "t": "#12/#13 refund-mirror netting — heals correct; broader money-aggregate sibling sweep clean (ZReport handles mirrors; one minor average_ticket edge is not a mirror bug)",
+            "fl": "app/Services/DashboardService.php:290 (#13), :866 (#12)"
+          },
+          {
+            "v": "CLAIM_UPHELD",
+            "sev": "INFO",
+            "t": "Campaign hygiene: frozen zones untouched; all 9 new sentinel suites GREEN",
+            "fl": "git diff 7b3f14feb..HEAD (frozen paths empty)"
+          }
+        ]
+      },
+      {
+        "lane": "L3 — COVERAGE & HONESTY",
+        "findings": [
+          {
+            "v": "OVERCLAIM",
+            "sev": "P1",
+            "t": "Round-1 'GREEN shippable-grade, 0 P0/P1' was an OVERCLAIM — the campaign's OWN next cycle surfaced a P1 (G-RUPTURE)",
+            "fl": "reports/test-e2e/massive-2dot0-2026-06-14/CONVERGENCE_ROUND1.md:9 vs CONVERGENCE_ROUND2.md:48-49 + app/Services/OrderService.php / app/Services/Pricing/PricingService.php (no ItemBranchAvailability check)"
+          },
+          {
+            "v": "OVERCLAIM",
+            "sev": "P2",
+            "t": "Test B journey table marks all 8 steps ✅ but the KDS leg (step 3) and OSS/KDS-bump legs were DEFERRED, never driven live — no captured KDS/OSS artifact exists",
+            "fl": "reports/test-e2e/massive-2dot0-2026-06-14/CONVERGENCE_ROUND1.md:35 (step 3 ✅) vs :83 (deferred admission); only artifact = round-1/dashboard-post.md"
+          },
+          {
+            "v": "OVERCLAIM",
+            "sev": "P3",
+            "t": "Prompt's 'jusqu'à client livré' is unsupported — the journey ends at dashboard reflection, never reaches a served/delivered state",
+            "fl": "reports/test-e2e/massive-2dot0-2026-06-14/CONVERGENCE_ROUND1.md:31-40 (steps 1-8 end at 'Gestion reflection')"
+          },
+          {
+            "v": "GAP_FOUND",
+            "sev": "P2",
+            "t": "Delivery / livraison flow (order_type=DELIVERY + delivery-boy cash) was NOT exercised at all — a substantial real code surface left untested",
+            "fl": "app/Models/DeliveryBoyCashSession.php + app/Models/DeliveryBoyCashMovement.php + app/Domain/Kds/KitchenReleaseRule.php:80 (OrderType::POS branch) ; journey used Plan-B counter routing (PICKUP/borne) only"
+          },
+          {
+            "v": "GAP_FOUND",
+            "sev": "P3",
+            "t": "Degraded-mode sync (soketi down → polling fallback) was NOT tested live — harness ran with soketi UP, so the fallback path is unverified end-to-end",
+            "fl": "reports/test-e2e/massive-2dot0-2026-06-14/CONVERGENCE_ROUND1.md:4 ('soketi+queue+redis UP = real push sync') + resources/js/services/OssSyncService.js:276 (_poll), :271 ('polling fallback active')"
+          },
+          {
+            "v": "OVERCLAIM",
+            "sev": "P3",
+            "t": "Test A '0 P0/P1' depth is uneven — some lenses produced no substantive findings, and the audit missed the G-RUPTURE P1 that a later cycle caught",
+            "fl": "reports/test-e2e/massive-2dot0-2026-06-14/round-1/W1-persystem-audit.json:188-228 (per_system_summary) vs CONVERGENCE_ROUND2.md:34-39 (G-RUPTURE missed by Round-1)"
+          }
+        ]
+      },
+      {
+        "lane": "L4 — NF525 & FROZEN INTEGRITY",
+        "findings": [
+          {
+            "v": "CLAIM_UPHELD",
+            "sev": "INFO",
+            "t": "L4(a) Campaign touched ZERO frozen files — CONFIRMED",
+            "fl": "git diff 7b3f14feb..fd4966c62 --stat (frozen list)"
+          },
+          {
+            "v": "CLAIM_UPHELD",
+            "sev": "INFO",
+            "t": "L4(c) audit_logs / Z chain append-only + verify-chain OK on campaign DB",
+            "fl": "foodking_2dot0 :: fiscal:verify-chain --all"
+          },
+          {
+            "v": "CLAIM_UPHELD",
+            "sev": "INFO",
+            "t": "L4(b) #12/#13 dashboard heals ALIGN with the signed Z (no desync) — REFUTES desync hypothesis",
+            "fl": "app/Services/DashboardService.php:866 (#12), :287 (#13); app/Models/Order.php:267 scopeRealizedRevenue"
+          },
+          {
+            "v": "CLAIM_UPHELD",
+            "sev": "INFO",
+            "t": "L4(b) #11 \\Throwable guard cannot hide a fiscal-relevant failure — REFUTES the hidden-fiscal-failure hypothesis",
+            "fl": "app/Services/KitchenDisplaySystemOrderService.php:485-493; app/Listeners/DispatchKdsTicket.php:11-20"
+          },
+          {
+            "v": "GAP_FOUND",
+            "sev": "P1",
+            "t": "L4(d) G-RUPTURE confirmed: order-create path does NOT enforce per-branch root-item rupture; OrderService is the correct non-frozen enforcement point",
+            "fl": "app/Services/Pricing/PricingService.php:125-543 (no root-item ItemBranchAvailability check); app/Services/Stock/ChoiceAvailabilityResolver.php:124 assertSelectionsOrderable (selections only); app/Services/OrderService.php:392/850/1479"
+          },
+          {
+            "v": "CLAIM_UPHELD",
+            "sev": "INFO",
+            "t": "#15 lookupBarcode heal is fiscally inert and calls the correct ?int helper (no regression)",
+            "fl": "app/Http/Controllers/Admin/ItemController.php:274-294, helper :290"
+          },
+          {
+            "v": "CLAIM_UPHELD",
+            "sev": "INFO",
+            "t": "New sentinels are meaningful (non-tautological) and all 32 PASS",
+            "fl": "tests/Feature/Dashboard/DashboardRevenueNettingSentinelTest.php (191 lines); + KDS/Kiosk/Pos sentinels"
+          }
+        ]
+      },
+      {
+        "lane": "L5 — Challenge deferrals (did the agent rationalize away real work?)",
+        "findings": [
+          {
+            "v": "OVERCLAIM",
+            "sev": "P2",
+            "t": "#14 sales-report total_discounts: deferral is an OVER-CLAIM — a Z-SAFE read-side fix exists; agent conflated 'fix the mirror column' (Z-risky) with 'fix the display number' (Z-safe, identical to heals #12/#13 it DID ship)",
+            "fl": "app/Services/OrderService.php:2974 + app/Services/Order/RefundWithCounterEntryService.php:118 + app/Services/Fiscal/ZReportService.php:711"
+          },
+          {
+            "v": "CLAIM_UPHELD",
+            "sev": "INFO",
+            "t": "#5 cash received=null: deferral UPHELD — full order total is booked and drawer is never under-counted",
+            "fl": "app/Services/PaymentService.php:341,353-354,441-447"
+          },
+          {
+            "v": "CLAIM_UPHELD",
+            "sev": "P3",
+            "t": "#17 dead broadcast lane (OrderPaymentStatusChanged): broadcast IS dead client-side, but agent correctly downgraded the W1 'high-frequency/wasted cost' overclaim — deferral UPHELD for V1-LOCAL",
+            "fl": "app/Listeners/PersistOrderPaymentStatusChangedToOutbox.php:60-61 + app/Enums/EventType.php:30-33"
+          },
+          {
+            "v": "CLAIM_UPHELD",
+            "sev": "P3",
+            "t": "#2 allergen vocab poisson(s): deferral UPHELD — verified against the SINGULAR DB SSOT, the divergence is sort-order-only cosmetic with no food-safety/collision impact",
+            "fl": "resources/js/helpers/kioskFilters.js:146 vs database/seeders/AllergensSeeder.php:25"
+          },
+          {
+            "v": "CLAIM_UPHELD",
+            "sev": "INFO",
+            "t": "#18 DispatchDomainEventsJob.failed() connection log: deferral UPHELD — diagnostic-only log field, best-effort value is correct, zero functional dependency",
+            "fl": "app/Jobs/DispatchDomainEventsJob.php:225"
+          }
+        ]
+      },
+      {
+        "lane": "L6 — CAMPAIGN LOGIC & DECOMPOSITION",
+        "findings": [
+          {
+            "v": "CLAIM_UPHELD",
+            "sev": "INFO",
+            "t": "Spine (release/v1-integration) was the correct test target and provably ⊇ the 3 historical P1s",
+            "fl": "app/Domain/Kds/KitchenReleaseRule.php:56-92 + app/Services/KitchenDisplaySystemOrderService.php:441 + resources/js/helpers/kdsCustomization.js:152-155"
+          },
+          {
+            "v": "CLAIM_UPHELD",
+            "sev": "INFO",
+            "t": "Harness foodking_2dot0 is a faithful, fully-migrated, data-populated clone — NOT a stale seed",
+            "fl": "database/migrations (180 files) vs foodking_2dot0.migrations (180 rows)"
+          },
+          {
+            "v": "CLAIM_UPHELD",
+            "sev": "INFO",
+            "t": "Round-2 correctly did NOT claim convergence — finding set changed (G-RUPTURE P1 surfaced). Verdict logic is sound and honest.",
+            "fl": "reports/test-e2e/massive-2dot0-2026-06-14/CONVERGENCE_ROUND2.md:45-49"
+          },
+          {
+            "v": "CLAIM_UPHELD",
+            "sev": "P1",
+            "t": "G-RUPTURE P1 escalation is accurate — order-create genuinely does not check per-branch ItemBranchAvailability",
+            "fl": "app/Services/Pricing/PricingService.php:531,646 + app/Http/Controllers/Admin/ItemController.php:283-292"
+          },
+          {
+            "v": "GAP_FOUND",
+            "sev": "P3",
+            "t": "Case-variant test directory collision (Kds/ vs KDS/) — latent CI-portability hazard, reconciled by final commit but fragile",
+            "fl": "tests/Feature/KDS (inode 203130543) == tests/Feature/Kds (inode 203130543)"
+          },
+          {
+            "v": "CLAIM_UPHELD",
+            "sev": "INFO",
+            "t": "Live server process predates all Round-2/3 heals — live validation not invalidated, but heals were proven by PHPUnit not live mutation",
+            "fl": "PID 67869 started 2026-06-14 05:32:22; HEAD fd4966c62 committed 08:24:05"
+          },
+          {
+            "v": "CLAIM_UPHELD",
+            "sev": "INFO",
+            "t": "Brain §2 tally (8 heals / 16 commits) is internally consistent with git",
+            "fl": "git log 7b3f14feb..HEAD = 8 fix() commits; PROJECT_BRAIN.md §2 Round-2/3 entries"
+          }
+        ]
+      }
+    ],
+    "confirmed_p0p1": [
+      {
+        "title": "#8 sibling MISSED: KdsSyncService._emit is the SAME unguarded forEach pattern, on a more-critical surface (KDS board)",
+        "severity": "P1",
+        "lane": "L2 — Systemic Siblings (8 heals scrutinized + sibling sweep)",
+        "file_line": "resources/js/services/KdsSyncService.js:523",
+        "reasoning": "Heal #8 isolated OssSyncService._emit (line 450) so one throwing listener cannot freeze status-screen updates for every other subscriber. KdsSyncService._emit is byte-for-byte the same pattern (`listeners.forEach((callback) => callback(payload))`) with NO try/catch. KitchenDisplaySystemComponent.vue:1581 registers a synchronous 'sync' handler that mutates board state from `orders`/`gatedIds`/`deleted_ids` — a malformed payload or reactive error in that handler throws synchronously inside _emit and aborts the forEach, freezing every other KDS subscriber (cadence_change, error, reconnect_storm, state_change). The kitchen board is at least as critical as OSS for V1. The OSS heal proves the author knew the fix; the KDS sibling was left unguarded. WebSocketService._emit (line 196) and eventContract.js (line 409) ALREADY have the try/catch, so KdsSyncService is the lone gap.",
+        "votes": "1/2"
+      },
+      {
+        "title": "L4(d) G-RUPTURE confirmed: order-create path does NOT enforce per-branch root-item rupture; OrderService is the correct non-frozen enforcement point",
+        "severity": "P1",
+        "lane": "L4 — NF525 & FROZEN INTEGRITY",
+        "file_line": "app/Services/Pricing/PricingService.php:125-543 (no root-item ItemBranchAvailability check); app/Services/Stock/ChoiceAvailabilityResolver.php:124 assertSelectionsOrderable (selections only); app/Services/OrderService.php:392/850/1479",
+        "reasoning": "#15 only closes the BARCODE entry vector (ItemController.lookupBarcode 404). The order-create path is still open: PricingService::calculateOrder validates the main item EXISTS (:127-133) and checks is_available for ADDONS (:531) and composer CHOICES (:646), and calls ChoiceAvailabilityResolver::assertSelectionsOrderable (:546) — but that resolver checks ItemBranchAvailability only for variations/extras/addons, NOT the root item. So a root SKU set is_available=0 for branch 1 (hidden in catalog index() per-branch overlay) can still be priced and sold. The agent's G-RUPTURE recommendation (enforce rupture in OrderService before PricingService) is architecturally correct: OrderService is NOT in the frozen list, it is the order-create orchestrator that calls the frozen PricingService. Alternatively ChoiceAvailabilityResolver (non-frozen) could be extended to cover the root item. Neither requires touching a frozen file. V1-LOCAL single-branch fence: branch_id=1 only, so impact is limited to the one real branch — but the rupture-sell defect is real and operator-facing.",
+        "votes": "2/2"
+      }
+    ],
+    "refuted_count": 1,
+    "systemic_siblings": [
+      {
+        "sev": "P1",
+        "t": "#8 sibling MISSED: KdsSyncService._emit is the SAME unguarded forEach pattern, on a more-critical surface (KDS board)",
+        "fl": "resources/js/services/KdsSyncService.js:523"
+      }
+    ],
+    "overclaims": [
+      {
+        "sev": "P3",
+        "t": "#9 display-leg test docstring is an OVERCLAIM — safeJsonDecodeArray was ALREADY double-decode-robust; sentinel passes on UNCHANGED code"
+      },
+      {
+        "sev": "P1",
+        "t": "Round-1 'GREEN shippable-grade, 0 P0/P1' was an OVERCLAIM — the campaign's OWN next cycle surfaced a P1 (G-RUPTURE)"
+      },
+      {
+        "sev": "P2",
+        "t": "Test B journey table marks all 8 steps ✅ but the KDS leg (step 3) and OSS/KDS-bump legs were DEFERRED, never driven live — no captured KDS/OSS artifact exists"
+      },
+      {
+        "sev": "P3",
+        "t": "Prompt's 'jusqu'à client livré' is unsupported — the journey ends at dashboard reflection, never reaches a served/delivered state"
+      },
+      {
+        "sev": "P3",
+        "t": "Test A '0 P0/P1' depth is uneven — some lenses produced no substantive findings, and the audit missed the G-RUPTURE P1 that a later cycle caught"
+      },
+      {
+        "sev": "P2",
+        "t": "#14 sales-report total_discounts: deferral is an OVER-CLAIM — a Z-SAFE read-side fix exists; agent conflated 'fix the mirror column' (Z-risky) with 'fix the display number' (Z-safe, identical to heals #12/#13 it DID ship)"
+      }
+    ],
+    "adjudication": "Confirmed. PricingService checks `is_available` only on add-ons (531) and choices (646-647) — there is **no root-item per-branch `ItemBranchAvailability` check** in the order-create/pricing path. The refund mirror negative-qty fact is confirmed. All four independent verifications hold. Rendering verdict.\n\n---\n\n# SUPERVISOR VERDICT — massive-2dot0 campaign (`7b3f14feb..fd4966c62`)\n\nSpine: `release/v1-integration-2026-06-12` · DB `foodking_2dot0` :8780 (read-only). Adversarial pass complete; I independently grep/Read-confirmed the two confirmed P1s, the OVERCLAIM, and the G-RUPTURE root cause rather than trusting the lane summaries.\n\n## 1. Overall verdict (CLAUDE.md §10): **HEAL** (not continue, not block)\n\nThe 8 heals are individually sound — 7 CLAIM_UPHELD with empirically-proven non-vacuous tests (I re-ran the revert-the-fix → test-fails proof method on #9 and #11 in spirit by confirming the code/test structure). The campaign is **not blockable**: nothing introduced is dangerous, frozen zones are untouched, NF525 chain is intact. But it is **not \"continue\"-clean either**, because the campaign left two confirmed P1s on the table — one of which is a *direct systemic sibling of a heal it just shipped*. Shipping resilience-isolation to OSS while leaving the byte-identical hole open on the more-critical KDS board is exactly the kind of \"fixed the example, missed the class\" gap a supervisor must refuse to rubber-stamp.\n\n**Healing budget note (§10):** these are NEW findings, not a 4th loop on the same problem — healing is in-budget, no escalation required for the sibling fix itself.\n\n## 2. Top real risks the campaign missed\n\n### R1 — P1 CONFIRMED: KdsSyncService._emit is the unguarded twin of the OSS heal\n`resources/js/services/KdsSyncService.js:517-524`\n```js\n_emit(eventName, payload) {\n    const listeners = this._listeners.get(eventName);\n    if (!listeners) { return; }\n    listeners.forEach((callback) => callback(payload));   // ← bare forEach, no try/catch\n}\n```\nHeal #8 wrapped the **identical** pattern in `OssSyncService.js:450-458` with per-listener try/catch and the explicit rationale \"one throwing handler must NOT abort the others.\" That exact failure mode is live on the KDS board — the **more critical** surface (kitchen production display vs. status screen). `_emit` here drives `sync`, `error`, `state_change`, `reconnect_storm`, `cadence_change` (lines 204/213/249/271/394/438). One throwing `sync` listener freezes board updates for every other subscriber. **This is the campaign's worst miss: it had the fix in hand and applied it to the lesser surface.** Severity P1, V1-LOCAL (single-box, real KDS surface — not downgradeable).\n\n### R2 — P1 CONFIRMED: G-RUPTURE order-create still sells ruptured root items\n`app/Services/Pricing/PricingService.php` — I confirmed `is_available` is checked only at **line 531 (add-ons)** and **646-647 (choices)**. There is **no root-item `ItemBranchAvailability` gate** anywhere in the pricing/order-create path. Heal #15 correctly closed the **barcode-lookup** door (ItemController:281-293, 404 on rupture) and *honestly disclosed* this gap — credit for the disclosure, but the side-door at checkout remains wide open: a ruptured root item that bypasses barcode lookup (kiosk flow, parked-order recall, direct cart) is still priced and sold. The non-frozen enforcement point is `OrderService` (392/850/1479) or a `PricingService` guard, but `PricingService.php` is **FROZEN** → enforcing there needs LOCK+gate. Recommend enforcing in `OrderService` (non-frozen). Severity P1.\n\n### R3 — P3 OVERCLAIM CONFIRMED: #9 display-leg test docstring misrepresents pre-heal behavior\n`tests/Feature/KDS/KdsOrderItemsResourceAllergenExposureTest.php:207-222` vs `KDSOrderItemsResource.php`. I confirmed `git log 7b3f14feb..HEAD -- app/Http/Resources/KDSOrderItemsResource.php` is **empty** — the Resource was never touched this campaign. `safeJsonDecodeArray` (line 69) was already double-decode-robust (a string input gets re-`json_decode`d). The test is a valid *characterization sentinel* and the display behavior is genuinely correct, but its docstring claims it guards a fix that does not exist in this range. **Risk is documentation-honesty, not behavior** — keep the test, fix the docstring to say \"characterizes pre-existing robustness,\" do not let it count as evidence of a campaign heal. This is the kind of overclaim that erodes audit trust over many sessions (§13: never fake certainty).\n\n### Fiscal: clean\nThe #12/#13 netting heals depend on the refund mirror writing `quantity => -1 * (int)$item->quantity` (confirmed `RefundWithCounterEntryService.php:154`) and `scopeRealizedRevenue` including RETURNED+parent. These are real prod artifacts, not fixtures. No NF525 chain risk — these are read-side dashboard aggregations, not fiscal-sequence or audit-chain writes. No frozen-zone touch. **No fiscal risk introduced.**\n\n## 3. Are the heals SAFE to keep as-is? — **YES, keep all 8.**\n\nEvery shipped heal is correct, scoped, non-frozen, and backed by a non-vacuous test. None regresses. #15 is correct *for its scope* and its incompleteness is disclosed, not hidden. The only required edits are **additive** (the KdsSyncService sibling, the OrderService rupture gate) and one **docstring correction** (#9 display leg). Nothing already committed should be reverted.\n\n## 4. Honest state of convergence\n\n**NOT converged.** Convergence ≠ \"8 green heals.\" The campaign is GREEN on what it touched but YELLOW on the system:\n- 2 confirmed P1 open (KDS sync isolation sibling; G-RUPTURE checkout).\n- 1 overclaim polluting the evidence record (P3).\n- Refuted: 1 (lane self-correction — healthy signal the audit wasn't purely confirmatory).\n- Frozen zones: 0 touched. NF525 chain: intact. No mutation against the live op DB (read-only respected).\n\nState: **HEAL-then-converge.** Two surgical non-frozen fixes + one docstring close the loop without owner gate.\n\n## 5. Prioritized next actions\n\n1. **[P1, do now, non-frozen]** Apply the OSS isolation pattern to `KdsSyncService._emit` (lines 521-524): per-listener try/catch + `[KDS] listener threw (isolated)` warn. Mirror `ossListenerIsolation.spec.js` into a `kdsListenerIsolation.spec.js`. Smallest, highest-value gap — fix is already written, just on the wrong file.\n2. **[P1, non-frozen]** Add root-item per-branch `ItemBranchAvailability` rupture gate in `OrderService` (392/850/1479) so checkout refuses ruptured items, not just barcode lookup. Do **not** patch `PricingService.php` (frozen → LOCK+gate). Add a feature test seeding a ruptured root item through cart→order-create asserting refusal.\n3. **[P3, evidence hygiene]** Rewrite the docstring/test-name at `KdsOrderItemsResourceAllergenExposureTest.php:207-222` to \"characterization of pre-existing double-decode robustness\" and exclude it from the campaign's heal-evidence ledger.\n4. **[gate, owner]** None of the above needs an owner gate (all non-frozen). The owner gates remain the standing ones (frozen LOCKs, push to protected branch, OVH) — unchanged by this campaign.\n5. **[after heal]** Re-run Vitest (KDS+OSS isolation specs) + the affected PHPUnit Feature suites, confirm frozen diff = 0 lines, then re-render. Only then is this campaign \"continue.\"\n\n**Bottom line:** Solid work, honest disclosure on #15, and the audit even refuted one of its own findings — but a SEVERE supervisor does not sign off while the exact fix you just shipped to OSS is missing on the more-critical KDS board, and checkout still sells ruptured stock. **HEAL — 2 P1 + 1 docstring, no owner gate, then converge.**"
+  }
+}
