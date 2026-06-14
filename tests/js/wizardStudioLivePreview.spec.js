@@ -31,7 +31,11 @@ function wireAxios({ steps }) {
 
 // Stub the frozen kiosk wizard by its registered name (no real lazy import, no template
 // compilation, no module-mock proxy) — we assert on the Studio's own vm/DOM, not the wizard.
-const STUBS = { KioskWizardComponent: true };
+// draggable: render-fn passthrough (renders its slot rows without sortablejs/template compiler).
+const STUBS = {
+    KioskWizardComponent: true,
+    draggable: { inheritAttrs: false, emits: ['end', 'update:modelValue'], render() { return this.$slots.default ? this.$slots.default() : null; } },
+};
 
 const mountStudio = () => mount(WizardStudioComponent, {
     props: { entityType: 'item', entityId: 41 },
@@ -100,5 +104,89 @@ describe('WizardStudio live preview (W1)', () => {
         await flushPromises();
         expect(wrapper.findComponent({ name: 'KioskWizardComponent' }).exists()).toBe(false);
         expect(wrapper.find('[data-testid="wizard-studio-preview-empty"]').exists()).toBe(true);
+    });
+});
+
+// [WIZARD-STUDIO W2 2026-06-15] EDIT pillar: page CRUD/reorder via bulk PUT + live refresh.
+const CAT_PROFILE = { id: 8, item_id: null, item_category_id: 6, template: 'custom', is_published: false, version: 2, steps: [
+    { id: 1, step_key: 'pain', label: 'Pain', position: 0, min_select: 1, max_select: 1 },
+    { id: 2, step_key: 'sauce', label: 'Sauce', position: 1, min_select: 1, max_select: 2 },
+] };
+
+function wireCategoryEdit() {
+    axios.get.mockImplementation((url) => {
+        if (url.includes('item-category/show')) return Promise.resolve({ data: { name: 'Sandwich Cayenne' } });
+        if (url.includes('preview-projection')) return Promise.resolve(draftProjection([{ id: 1, step_key: 'pain', label: 'Pain', is_active: true, choices: [{ id: 1, name: 'Galette' }] }]));
+        if (url.includes('/profile')) return Promise.resolve({ data: CAT_PROFILE });
+        return Promise.reject(new Error(`unexpected url ${url}`));
+    });
+    // bulk PUT echoes back a bumped profile so the component re-hydrates.
+    axios.put.mockImplementation((url, payload) => Promise.resolve({
+        data: { ...CAT_PROFILE, version: (payload.version || 2) + 1, steps: payload.steps.map((s, i) => ({ ...s, id: 100 + i })) },
+    }));
+}
+
+const mountCat = () => mount(WizardStudioComponent, {
+    props: { entityType: 'category', entityId: 6 },
+    global: { stubs: STUBS, mocks: { $router: { push: vi.fn(), back: vi.fn() } } },
+});
+
+describe('WizardStudio edit (W2)', () => {
+    it('addPage appends a step, bulk-PUTs the profile (no price field), and refreshes the preview', async () => {
+        wireCategoryEdit();
+        const wrapper = mountCat();
+        await flushPromises();
+        const previewCallsBefore = axios.get.mock.calls.filter((c) => String(c[0]).includes('preview-projection')).length;
+        expect(wrapper.vm.steps.length).toBe(2);
+
+        await wrapper.vm.addPage();
+        await flushPromises();
+
+        // one bulk PUT to the profile endpoint
+        expect(axios.put).toHaveBeenCalledTimes(1);
+        const [url, payload] = axios.put.mock.calls[0];
+        expect(url).toBe('admin/composer/profiles/8');
+        expect(payload.steps.length).toBe(3);
+        expect(payload.version).toBe(2);
+        // NF525: no price on any step payload
+        expect(JSON.stringify(payload.steps)).not.toMatch(/"price"|"amount"|"unit_price"/);
+        // preview refreshed after save
+        const previewCallsAfter = axios.get.mock.calls.filter((c) => String(c[0]).includes('preview-projection')).length;
+        expect(previewCallsAfter).toBe(previewCallsBefore + 1);
+        // re-hydrated from server (version bumped)
+        expect(wrapper.vm.version).toBe(3);
+    });
+
+    it('removePage drops the step and bulk-PUTs the shorter list', async () => {
+        wireCategoryEdit();
+        const wrapper = mountCat();
+        await flushPromises();
+        await wrapper.vm.removePage(wrapper.vm.steps[0]);
+        await flushPromises();
+        expect(axios.put).toHaveBeenCalledTimes(1);
+        expect(axios.put.mock.calls[0][1].steps.length).toBe(1);
+    });
+
+    it('onReorder persists new positions (0,1,2…) via bulk PUT', async () => {
+        wireCategoryEdit();
+        const wrapper = mountCat();
+        await flushPromises();
+        // simulate draggable having reordered the array
+        wrapper.vm.steps = [wrapper.vm.steps[1], wrapper.vm.steps[0]];
+        await wrapper.vm.onReorder();
+        await flushPromises();
+        const payload = axios.put.mock.calls[0][1];
+        expect(payload.steps.map((s) => s.position)).toEqual([0, 1]);
+        expect(payload.steps[0].step_key).toBe('sauce'); // the formerly-second step is now first
+    });
+
+    it('surfaces a 409 version conflict instead of silently losing edits', async () => {
+        wireCategoryEdit();
+        axios.put.mockRejectedValueOnce({ response: { status: 409, data: { message: 'conflict' } } });
+        const wrapper = mountCat();
+        await flushPromises();
+        await wrapper.vm.addPage();
+        await flushPromises();
+        expect(wrapper.vm.conflictDetected).toBe(true);
     });
 });

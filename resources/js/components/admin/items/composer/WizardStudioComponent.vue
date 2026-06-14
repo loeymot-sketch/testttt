@@ -68,27 +68,54 @@
                 <p class="ws-stage__caption">Aperçu borne — écran vertical, exactement ce que voit le client</p>
             </section>
 
-            <!-- Read-only page inspector. Visual EDITING (add/reorder/images/rules) lands in W2→W6. -->
+            <!-- [W2] Editable page list: drag-reorder + inline rename + delete + add → bulk PUT → live refresh. -->
             <aside class="ws-panel" aria-label="Pages du wizard">
-                <h2 class="ws-panel__title">Pages du wizard</h2>
+                <div class="ws-panel__head">
+                    <h2 class="ws-panel__title">Pages du wizard</h2>
+                    <span v-if="savingDraft" class="ws-saving" data-testid="wizard-studio-saving">Enregistrement…</span>
+                </div>
                 <p class="ws-panel__meta">{{ steps.length }} page(s) · v{{ version }} · {{ isPublished ? 'publié' : 'brouillon' }}</p>
-                <ol v-if="steps.length" class="ws-steplist">
-                    <li
-                        v-for="s in steps"
-                        :key="s.id || s.step_key"
-                        class="ws-steplist__item"
-                        :class="{ 'ws-steplist__item--hidden': !stepRenders(s) }"
+
+                <p v-if="conflictDetected" class="ws-warn" role="alert" data-testid="wizard-studio-conflict">
+                    ⚠ Ce wizard a été modifié ailleurs. <button type="button" class="ws-link" @click="reloadAll">Recharger</button> pour repartir de la dernière version.
+                </p>
+
+                <draggable
+                    v-if="steps.length"
+                    v-model="steps"
+                    item-key="_uid"
+                    handle=".ws-step-drag"
+                    class="ws-steplist"
+                    ghost-class="ws-steprow--ghost"
+                    @end="onReorder"
+                >
+                    <div
+                        v-for="(s, i) in steps"
+                        :key="s._uid"
+                        class="ws-steprow"
+                        :class="{ 'ws-steprow--hidden': !stepRenders(s) }"
+                        :data-testid="`ws-steprow-${i}`"
                     >
-                        <span class="ws-steplist__label">
-                            {{ s.label }}
-                            <span v-if="!stepRenders(s)" class="ws-steplist__tag" title="Page sans option disponible : la borne ne l'affichera pas">non affichée · 0 option</span>
-                        </span>
-                        <span class="ws-steplist__rule">{{ ruleSummary(s) }}</span>
-                    </li>
-                </ol>
-                <p v-else class="ws-panel__meta">Aucune page pour le moment.</p>
-                <p class="ws-panel__note">ℹ️ L'aperçu à gauche est le rendu RÉEL de la borne : elle peut fusionner, renommer ou masquer des pages selon les données (une page sans option n'apparaît pas ; un récapitulatif est ajouté automatiquement). Cette liste = les pages telles que configurées.</p>
-                <p class="ws-panel__note">✏️ Édition visuelle (ajouter / réordonner les pages, options, images, règles) : à venir prochainement. Cet écran est pour l'instant un aperçu fidèle en lecture seule.</p>
+                        <button type="button" class="ws-step-drag" aria-label="Réordonner la page" tabindex="-1">⠿</button>
+                        <input
+                            class="ws-step-name"
+                            :value="s.label"
+                            :aria-label="`Nom de la page ${i + 1}`"
+                            :data-testid="`ws-step-name-${i}`"
+                            @input="onRename(s, $event.target.value)"
+                            @change="saveStudioDraft"
+                            @keyup.enter="$event.target.blur()"
+                        />
+                        <span class="ws-steprow__rule">{{ ruleSummary(s) }}</span>
+                        <span v-if="!stepRenders(s)" class="ws-steplist__tag" title="Page sans option : la borne ne l'affichera pas">0 option</span>
+                        <button type="button" class="ws-step-del" :aria-label="`Supprimer la page ${i + 1}`" :data-testid="`ws-step-del-${i}`" @click="removePage(s)">🗑</button>
+                    </div>
+                </draggable>
+                <p v-else class="ws-panel__meta">Aucune page — ajoutez-en une pour commencer.</p>
+
+                <button type="button" class="ws-add" data-testid="wizard-studio-add-page" @click="addPage">+ Ajouter une page</button>
+
+                <p class="ws-panel__note">ℹ️ L'aperçu à gauche est le rendu RÉEL de la borne : elle peut masquer une page sans option ou ajouter un récapitulatif. Glissez pour réordonner ; renommez en cliquant le nom. Le binding des options (images, prix, règles) arrive dans les prochaines vagues.</p>
             </aside>
         </div>
     </div>
@@ -96,6 +123,7 @@
 
 <script>
 import { defineAsyncComponent } from 'vue';
+import { VueDraggableNext } from 'vue-draggable-next';
 import axios from 'axios';
 
 export default {
@@ -104,6 +132,8 @@ export default {
         // The FROZEN kiosk wizard, mounted UNCHANGED + read-only. Lazy (defineAsyncComponent,
         // Vue 3) so it shares the existing kiosk chunk and only loads when the Studio opens.
         KioskWizardComponent: defineAsyncComponent(() => import(/* webpackChunkName: "kiosk-wizard" */ '../../../frontend/kiosk/KioskWizardComponent.vue')),
+        // [W2] drag-reorder the page list (same lib as the existing composer builder).
+        draggable: VueDraggableNext,
     },
     props: {
         entityType: { type: String, default: 'item' },
@@ -121,6 +151,10 @@ export default {
             previewLoading: false,
             previewError: '',
             previewNonce: 0,
+            // [W2] Edit state.
+            savingDraft: false,
+            conflictDetected: false,
+            _uidSeq: 0,
         };
     },
     computed: {
@@ -186,7 +220,7 @@ export default {
                 this.entityName = entityRes?.data?.data?.name ?? entityRes?.data?.name ?? '';
                 const profile = profileRes?.data?.data ?? profileRes?.data ?? null;
                 this.profile = profile;
-                this.steps = Array.isArray(profile?.steps) ? [...profile.steps].sort((a, b) => (a.position || 0) - (b.position || 0)) : [];
+                this.steps = this.hydrateSteps(profile);
                 if (this.profile?.id) {
                     await this.fetchPreview();
                 } else if (!this.isCategory) {
@@ -253,6 +287,97 @@ export default {
                 this.$router.push({ name: 'admin.items.studio' });
             }
         },
+
+        // ---- [W2] EDIT pillar: page CRUD/reorder, all via the bulk profile PUT + live refresh ----
+        hydrateSteps(profile) {
+            const arr = Array.isArray(profile?.steps)
+                ? [...profile.steps].sort((a, b) => (a.position || 0) - (b.position || 0))
+                : [];
+            return arr.map((s) => ({ ...s, _uid: `u${++this._uidSeq}` }));
+        },
+        onRename(step, value) {
+            // local label update only; persisted on blur (@change) to avoid mid-typing re-hydrate.
+            step.label = value;
+        },
+        addPage() {
+            const n = this.steps.length + 1;
+            this.steps = [...this.steps, {
+                _uid: `u${++this._uidSeq}`,
+                // unique stable key (avoids UNIQUE(profile_id, step_key) collisions); rename keeps the key.
+                step_key: `page_${Math.random().toString(36).slice(2, 8)}`,
+                label: `Nouvelle page ${n}`,
+                source_type: 'item_attribute',
+                source_ref: '',
+                min_select: 0,
+                max_select: 1,
+                allow_repeat: false,
+                visible_on: ['pos', 'kiosk'],
+                stockable_choices: false,
+                is_active: true,
+                position: this.steps.length,
+            }];
+            this.saveStudioDraft();
+        },
+        async removePage(step) {
+            this.steps = this.steps.filter((s) => s._uid !== step._uid);
+            await this.saveStudioDraft();
+        },
+        onReorder() {
+            // vue-draggable-next already mutated this.steps order; persist new positions.
+            this.saveStudioDraft();
+        },
+        // Build the NF525-safe step payload (no price — price lives on catalog constructs).
+        payloadForStep(s, i) {
+            const min = Number(s.min_select || 0);
+            const max = Math.max(Number(s.max_select || 0), min);
+            return {
+                step_key: s.step_key || `page_${i + 1}`, // keep the stable key (preserves kiosk rendering)
+                label: s.label || `Page ${i + 1}`,
+                source_type: ['item_attribute', 'extra_group', 'addon'].includes(s.source_type) ? s.source_type : 'item_attribute',
+                source_ref: s.source_ref == null ? '' : String(s.source_ref),
+                min_select: min,
+                max_select: max,
+                allow_repeat: Boolean(s.allow_repeat),
+                visible_on: Array.isArray(s.visible_on) ? s.visible_on : ['pos', 'kiosk'],
+                stockable_choices: Boolean(s.stockable_choices),
+                position: i,
+                is_active: s.is_active !== false,
+                addon_role: s.addon_role || null,
+            };
+        },
+        async saveStudioDraft() {
+            if (!this.profile?.id || this.savingDraft) return;
+            this.savingDraft = true;
+            this.conflictDetected = false;
+            this.previewError = '';
+            try {
+                const payload = {
+                    template: this.profile.template || 'custom',
+                    branch_id_scope: this.profile.branch_id_scope ?? null,
+                    steps: this.steps.map((s, i) => this.payloadForStep(s, i)),
+                    version: this.version,
+                };
+                const res = await axios.put(`admin/composer/profiles/${this.profile.id}`, payload);
+                const updated = res?.data?.data ?? res?.data ?? null;
+                if (updated) {
+                    this.profile = updated;
+                    this.steps = this.hydrateSteps(updated);
+                }
+                await this.reloadPreview(); // refresh the live borne render
+            } catch (e) {
+                if (e?.response?.status === 409) {
+                    this.conflictDetected = true; // optimistic-lock clash → operator reloads
+                    return;
+                }
+                this.previewError = e?.response?.data?.message || 'Enregistrement impossible.';
+            } finally {
+                this.savingDraft = false;
+            }
+        },
+        async reloadAll() {
+            this.conflictDetected = false;
+            await this.load();
+        },
     },
 };
 </script>
@@ -295,12 +420,26 @@ export default {
 .ws-panel__title { margin: 0 0 6px; font-size: 16px; }
 .ws-panel__meta { color: #555; font-size: 13px; margin: 0 0 12px; }
 .ws-panel__note { color: #777; font-size: 12px; line-height: 1.4; margin-top: 12px; }
-.ws-steplist { list-style: decimal; margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; }
-.ws-steplist__item { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
-.ws-steplist__label { color: #222; font-size: 14px; }
-.ws-steplist__rule { color: #A8370E; font-size: 11px; white-space: nowrap; } /* WCAG AA on white */
-.ws-steplist__item--hidden .ws-steplist__label { color: #999; }
-.ws-steplist__tag { display: inline-block; margin-left: 6px; padding: 1px 6px; border-radius: 6px; background: #fff4e8; color: #9a4a08; font-size: 10px; vertical-align: middle; }
+.ws-panel__head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.ws-saving { font-size: 11px; color: #0f6e38; }
+.ws-link { border: 0; background: transparent; color: #A8370E; text-decoration: underline; cursor: pointer; font: inherit; padding: 0; }
+.ws-steplist { margin: 0 0 10px; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+/* [W2] editable page row */
+.ws-steprow { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid #eee6d9; border-radius: 10px; background: #fff; }
+.ws-steprow--ghost { opacity: .4; }
+.ws-steprow--hidden { background: #faf6f0; }
+.ws-step-drag { border: 0; background: transparent; cursor: grab; color: #9aa39e; font-size: 16px; line-height: 1; padding: 2px 4px; }
+.ws-step-name { flex: 1; min-width: 0; border: 1px solid transparent; border-radius: 6px; padding: 4px 6px; font-size: 14px; color: #222; background: transparent; }
+.ws-step-name:hover { border-color: #e3ddd2; }
+.ws-step-name:focus { border-color: #F4501E; outline: none; background: #fff; }
+.ws-steprow__rule { color: #A8370E; font-size: 11px; white-space: nowrap; }
+.ws-step-del { border: 0; background: transparent; cursor: pointer; font-size: 14px; padding: 2px 4px; border-radius: 6px; }
+.ws-step-del:hover { background: #fdecea; }
+.ws-step-del:focus-visible { outline: 2px solid #b02a1a; outline-offset: 1px; }
+.ws-add { width: 100%; border: 1px dashed #d9c9bb; background: #fff8f1; color: #A8370E; border-radius: 10px; padding: 10px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.ws-add:hover { background: #fff1e4; }
+.ws-add:focus-visible { outline: 2px solid #F4501E; outline-offset: 2px; }
+.ws-steplist__tag { display: inline-block; padding: 1px 6px; border-radius: 6px; background: #fff4e8; color: #9a4a08; font-size: 10px; white-space: nowrap; }
 @media (max-width: 1024px) {
     .wizard-studio__body { grid-template-columns: 1fr; }
     .ws-panel { order: -1; position: static; }
