@@ -198,6 +198,29 @@ class KdsOrderItemsResourceAllergenExposureTest extends TestCase
         );
     }
 
+    /**
+     * FOOD-SAFETY (massive-2dot0 #9 display leg) — a DOUBLE-ENCODED allergens_snapshot
+     * (JSON string of a JSON array, a legacy-write artifact) MUST still expose the real
+     * codes on the wire so the chef's displayed allergen list is not silently blanked.
+     * Pre-heal safeJsonDecodeArray decoded once -> a string -> [] -> empty display.
+     */
+    public function test_kds_order_items_resource_unwraps_double_encoded_allergens(): void
+    {
+        $orderItem = $this->makeBurger(['gluten', 'arachides']);
+        \Illuminate\Support\Facades\DB::table('order_items')
+            ->where('id', $orderItem->id)
+            ->update(['allergens_snapshot' => json_encode(json_encode(['gluten', 'arachides']))]);
+        $fresh = OrderItem::find($orderItem->id);
+
+        $payload = (new KDSOrderItemsResource($fresh))->toArray(Request::create('/'));
+
+        $this->assertEqualsCanonicalizing(
+            ['gluten', 'arachides'],
+            $payload['allergens_snapshot'],
+            'Double-encoded allergens_snapshot MUST still expose the real codes (food-safety display), not blank to [].'
+        );
+    }
+
     private function makeBurger(?array $allergens): OrderItem
     {
         return OrderItem::forceCreate([
