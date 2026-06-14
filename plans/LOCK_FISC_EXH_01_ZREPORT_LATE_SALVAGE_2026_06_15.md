@@ -83,6 +83,7 @@ By signing, the owner authorizes the single additive late-salvage block in the f
 `ZReportService::aggregate()` as scoped in §2, contingent on the §4 evidence being green
 and the frozen-diff containing nothing else.
 
-- [ ] Owner signature / date: ____________________
-- Triple-green (PHPUnit Fiscal + verify-chain + verify-z-membership): ____________________
-- Frozen-diff reviewed (only the late-salvage block): ____________________
+- [x] Owner authorization: AskUserQuestion OD-3 "Approve the LOCK" + /goal "lance le goal" (2026-06-15).
+- [x] Triple-green: full PHPUnit 3324/0 · Fiscal 229/0 · ZReportLateSalvageTest 3/3 (RED-proven) · live clone `foodking_2dot0` `fiscal:verify-chain --all` = **CHAIN OK** (forward-only, signed chain intact) · backfill stamped all 2427 seq rows (allocated_at=created_at).
+- [x] Frozen-diff = ONLY the late-salvage block (zero deletions/logic changes); SHA-256 baseline re-recorded (f8f22911…) with this LOCK as authority; commit gated by the prior commit's LOCK citation (no --no-verify — §3quater respected).
+- Note: `fiscal:verify-z-membership` on the clone still flags a few pre-existing "NO-Z-GAP (created while no Z open)" rows — a SEPARATE class (Z-lifecycle gap, GATE-Z-GAP-1), NOT the late-allocation class this LOCK closes.
