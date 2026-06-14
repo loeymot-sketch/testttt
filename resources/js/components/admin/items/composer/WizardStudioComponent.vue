@@ -54,14 +54,15 @@
 </template>
 
 <script>
+import { defineAsyncComponent } from 'vue';
 import axios from 'axios';
 
 export default {
     name: 'WizardStudioComponent',
     components: {
-        // The FROZEN kiosk wizard, mounted UNCHANGED + read-only. Lazy so it shares the
-        // existing kiosk chunk and only loads when the Studio opens.
-        KioskWizardComponent: () => import(/* webpackChunkName: "kiosk-wizard" */ '../../../frontend/kiosk/KioskWizardComponent.vue'),
+        // The FROZEN kiosk wizard, mounted UNCHANGED + read-only. Lazy (defineAsyncComponent,
+        // Vue 3) so it shares the existing kiosk chunk and only loads when the Studio opens.
+        KioskWizardComponent: defineAsyncComponent(() => import(/* webpackChunkName: "kiosk-wizard" */ '../../../frontend/kiosk/KioskWizardComponent.vue')),
     },
     props: {
         entityType: { type: String, default: 'item' },
