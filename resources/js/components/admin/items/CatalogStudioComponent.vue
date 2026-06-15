@@ -48,6 +48,14 @@
                         <i class="lab lab-cog"></i>
                         <span>{{ t("studio.category_wizard_button", "Wizard de la catégorie") }}</span>
                     </button>
+                    <!-- [WIZARD-STUDIO WS-2] Entry point to the new visual WYSIWYG Studio (live borne preview). -->
+                    <router-link
+                        :to="{ name: 'admin.categories.wizard-studio', params: { id: selectedCategoryId } }"
+                        class="db-btn py-2 bg-orange-600 text-white"
+                        data-testid="catalog-studio-category-studio-link">
+                        <i class="lab lab-eye"></i>
+                        <span>{{ t("studio.category_studio_button", "Wizard Studio — aperçu live") }}</span>
+                    </router-link>
                 </div>
 
                 <div v-for="category in categories" :key="category.id" class="catalog-studio__category-row"
