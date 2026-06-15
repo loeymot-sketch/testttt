@@ -161,7 +161,7 @@
                             <!-- [W4c] read-only option inspector — what the customer will actually see -->
                             <div class="ws-options" :data-testid="`ws-options-${i}`">
                                 <template v-if="optionsForStep(s).length">
-                                    <span class="ws-options__title">{{ optionsForStep(s).length }} option(s) — ce que verra le client :</span>
+                                    <span class="ws-options__title">{{ optionsForStep(s).length }} option(s) liée(s) à cette page <small>(l'aperçu borne à gauche est le rendu final)</small> :</span>
                                     <ul class="ws-options__list">
                                         <li
                                             v-for="o in optionsForStep(s)"
@@ -170,7 +170,7 @@
                                             :class="{ 'ws-option--off': o.is_available === false }"
                                             :title="o.is_available === false ? (o.unavailable_reason || 'Indisponible') : o.name"
                                         >
-                                            <img v-if="o.thumb" :src="o.thumb" :alt="o.name" class="ws-option__img" loading="lazy" />
+                                            <img v-if="o.thumb" :src="o.thumb" :alt="o.name" class="ws-option__img" loading="lazy" @error="onOptionImgError" />
                                             <span v-else class="ws-option__img ws-option__img--ph" aria-hidden="true"></span>
                                             <span class="ws-option__name">{{ o.name }}</span>
                                             <span v-if="o.is_available === false" class="ws-option__off">rupture</span>
@@ -544,6 +544,18 @@ export default {
             if (!Array.isArray(projSteps)) return [];
             const match = projSteps.find((s) => s.step_key === step.step_key);
             return Array.isArray(match?.choices) ? match.choices : [];
+        },
+        // [W4c] a missing/broken option image (e.g. a custom image_path with no file) must not show
+        // a broken-image icon — swap to the neutral placeholder, keep the name.
+        onOptionImgError(event) {
+            const el = event?.target;
+            if (el) {
+                el.style.display = 'none';
+                const ph = document.createElement('span');
+                ph.className = 'ws-option__img ws-option__img--ph';
+                ph.setAttribute('aria-hidden', 'true');
+                el.parentNode?.insertBefore(ph, el);
+            }
         },
         setSource(step, key) {
             const src = this.sourceOptions.find((s) => s.key === key);
