@@ -45,3 +45,11 @@ Start W0: scaffold `WizardStudio` route + shell component (copy, new route), par
 - [ ] W5 billing Free/Each-priced (edit option catalog price) · W6 templates source_ref auto-fill · W7 POS preview tab (G-POS-COMPOSER) · W8 final e2e + gates
 - [x] W6 source binding DONE: availableSourcesForCategory endpoint (non-gated, ma lane) + route + Studio Source picker in rule editor (setSource → source_type/ref/role → save → reload). Fixes turnkey source_ref='' (no more forced 0-option pages). Vitest 15/15, PHPUnit 6/6, endpoint verified on clone (cat2 real sources), frozen 0.
 - REMAINING (all OWNER-GATED or cross-lane, not auto-signable): W4b image upload (G-MEDIA) · W5 billing = edit catalog price (CENTRAL lane, price-sensitive) · W7 POS tab (G-POS-COMPOSER) · G-PUSH branch.
+
+- [x] FINAL MAX-VALIDATION campaign (adversarial team TECH/SYNC/UI/UX + completeness, wf_be0c2d92): found 3 P1 + P2/P3, ALL healed:
+  - WS-1 (P1) category wizards never reached live borne → ported category-inheritance-at-render to KioskMenuService+MenuProjectionService (item-owned wins else category-owned). PHPUnit 3/3 lock, live-proven (cat2 both items inherit). `5abff7f09`
+  - WS-2 (P1) no UI entry point → router-link from CatalogStudio. Live-verified click→Studio. `2b0752572`
+  - WS-3 (P1→P2) live-edit on published → '⚡ Édition en direct' banner. WS-5 dirty-flag (_pendingSave). WS-4 keyboard reorder (a11y). WS-7 fillable image_path/desc. IDOR→honest (catalog global V1). phantom 'Source actuelle'. step_key deterministic. `fc1335118`
+  - Architecture doc WIZARD_STUDIO_ARCHITECTURE.md (sync path: update→ComposerProfileChanged when published→cache invalidation→borne). SYNC confirmed: reuses existing contract, no realtime subscription, no central-session collision.
+  - Vitest 17/17 EXIT0 · PHPUnit 12/12 (sqlite) · frozen diff 0 · clone restored.
+  - Confirming round wf_852e8b8d running for 2nd-clean-cycle convergence.
