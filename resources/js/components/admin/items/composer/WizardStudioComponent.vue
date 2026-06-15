@@ -79,7 +79,7 @@
                 <p v-if="conflictDetected" class="ws-warn" role="alert" data-testid="wizard-studio-conflict">
                     ⚠ Ce wizard a été modifié ailleurs. <button type="button" class="ws-link" @click="reloadAll">Recharger</button> pour repartir de la dernière version (vos modifications non enregistrées seront écartées).
                 </p>
-                <p v-if="isPublished" class="ws-live" data-testid="wizard-studio-live-edit">
+                <p v-if="isPublished && !conflictDetected" class="ws-live" data-testid="wizard-studio-live-edit">
                     ⚡ Édition en direct — ce wizard est <strong>publié</strong> : chaque changement est aussitôt visible des clients sur la borne.
                 </p>
 
