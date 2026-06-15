@@ -121,6 +121,7 @@
                 <p v-if="conflictDetected" class="ws-warn" role="alert" data-testid="wizard-studio-conflict">
                     ⚠ Ce wizard a été modifié ailleurs. <button type="button" class="ws-link" @click="reloadAll">Recharger</button> pour repartir de la dernière version (vos modifications non enregistrées seront écartées).
                 </p>
+                <p v-if="saveError && !conflictDetected" class="ws-warn" role="alert" data-testid="wizard-studio-save-error">⚠ {{ saveError }} — réessayez votre modification.</p>
                 <p v-if="publishError && !conflictDetected" class="ws-warn" role="alert" data-testid="wizard-studio-publish-error">{{ publishError }}</p>
                 <p v-if="isPublished && !conflictDetected && !publishError" class="ws-live" data-testid="wizard-studio-live-edit">
                     ⚡ <strong>En ligne</strong> — chaque modification est immédiatement visible des clients sur la borne.
@@ -286,6 +287,7 @@ export default {
             _pendingSave: false, // [WS-5] coalesce edits made while a save is in flight
             saveAnnounce: '', // [A11Y-04] screen-reader announcement for save/publish state
             structureAnnounce: '', // [A11Y-E2] assertive SR announcement for reorder/add/delete
+            saveError: '', // [WS-SAVEERR-IN-PREVIEW] panel-side save failure (NOT routed to the preview frame)
             justSaved: false, // [VIS-PREVIEW] brief visible "✓ Enregistré" confirmation for sighted operators
             // [W8] lifecycle state.
             creating: false,
@@ -342,6 +344,15 @@ export default {
             return steps
                 .filter((s) => s.is_active !== false && (!Array.isArray(s.choices) || s.choices.length === 0))
                 .map((s) => s.label || s.step_key);
+        },
+        // [WS-STEPRENDERS-LABEL-KEY] match by the UNIQUE step_key (label is operator-editable + non-unique →
+        // duplicate labels would false-flag a well-configured page as "Sans option"). Labels stay for the banner.
+        zeroChoiceStepKeys() {
+            const steps = this.draftItem?.composer_profile?.steps;
+            if (!Array.isArray(steps)) return [];
+            return steps
+                .filter((s) => s.is_active !== false && (!Array.isArray(s.choices) || s.choices.length === 0))
+                .map((s) => s.step_key);
         },
     },
     async created() {
@@ -429,15 +440,18 @@ export default {
         noop() {},
         // A configured step that resolves to 0 options is dropped from the live borne rail.
         stepRenders(step) {
-            const label = step.label || step.step_key;
-            return !this.zeroChoiceSteps.includes(label);
+            // [WS-STEPRENDERS-LABEL-KEY] match on step_key (unique), not the editable label.
+            return !this.zeroChoiceStepKeys.includes(step.step_key);
         },
         ruleSummary(step) {
             const min = Number(step.min_select || 0);
-            const max = Number(step.max_select || 0);
+            // [WS-MAX] use the EFFECTIVE max actually persisted by payloadForStep (Math.max(raw,min)):
+            // the backend rejects max<min (ComposerStepService), so "min≥1 + unlimited" is unsupported and
+            // is saved as "exactly min". Display the saved truth, not a "sans limite" the borne won't honour.
+            const max = Math.max(Number(step.max_select || 0), min);
+            if (max === 0) return 'Facultatif · sans limite'; // max===0 ⇒ min===0 (optional, no upper bound)
             if (min === 0 && max === 1) return 'Facultatif · 1 choix max';
-            if (min === max && min > 0) return min === 1 ? 'Obligatoire · 1 choix' : `Obligatoire · ${min} choix`;
-            if (max === 0) return `Min ${min} choix · sans limite`;
+            if (min === max) return min === 1 ? 'Obligatoire · 1 choix' : `Obligatoire · ${min} choix`;
             return `De ${min} à ${max} choix`;
         },
         goBack() {
@@ -556,7 +570,7 @@ export default {
             if (this.savingDraft) { this._pendingSave = true; return; }
             this.savingDraft = true;
             this.conflictDetected = false;
-            this.previewError = '';
+            this.saveError = '';
             this.saveAnnounce = 'Enregistrement…'; // [A11Y-04]
             try {
                 const payload = {
@@ -592,11 +606,11 @@ export default {
                     this.saveAnnounce = 'Conflit : ce wizard a été modifié ailleurs'; // [A11Y-04]
                     return;
                 }
-                // Non-409 failure (500/network/422): surface the error. The next edit safely RE-ATTEMPTS
-                // the save — the server's optimistic version lock (assertVersionMatches → 409) catches a
-                // concurrent server change, and validation re-rejects an invalid payload every time, so a
-                // retry can only persist the operator's own intended state or fall into the 409 path.
-                this.previewError = e?.response?.data?.message || 'Enregistrement impossible.';
+                // [WS-SAVEERR-IN-PREVIEW] Non-409 failure (500/network/422): surface on the PANEL side
+                // (saveError), NOT previewError — routing it to previewError would unmount the still-valid
+                // live preview and show the save error inside the device frame. The next edit safely
+                // RE-ATTEMPTS the save (the server's version lock + validation keep retries safe).
+                this.saveError = e?.response?.data?.message || 'Enregistrement impossible.';
                 this.saveAnnounce = 'Échec de l’enregistrement — réessayez'; // [A11Y-04]
             } finally {
                 this.savingDraft = false;
@@ -612,6 +626,7 @@ export default {
         async reloadAll() {
             this.conflictDetected = false;
             this.previewError = '';
+            this.saveError = '';
             await this.load();
         },
 
@@ -653,7 +668,13 @@ export default {
                 await this.reloadPreview();
             } catch (e) {
                 const status = e?.response?.status;
-                if (status === 422) {
+                if (status === 409) {
+                    // [WS-PUBLISH-409] optimistic-lock clash (another tab/session bumped the version).
+                    // Route to the same 'Recharger' recovery as the save path, else this.version stays
+                    // stale and every retry re-409s forever. reloadAll re-fetches the fresh profile+version.
+                    this.conflictDetected = true;
+                    this.saveAnnounce = 'Conflit : ce wizard a été modifié ailleurs';
+                } else if (status === 422) {
                     // assertPublishable: empty/invalid wizard cannot go live.
                     const errs = e.response.data?.errors;
                     const first = errs ? Object.values(errs)[0] : null;

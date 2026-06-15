@@ -369,7 +369,8 @@ describe('WizardStudio adversarial heals (WS-4 / WS-5)', () => {
         await wrapper.vm.addPage(); // optimistic mutation + a PUT that fails 500
         await flushPromises();
         expect(wrapper.vm.conflictDetected).toBe(false); // not the 409 path
-        expect(wrapper.vm.previewError).toBeTruthy(); // error surfaced per-attempt
+        expect(wrapper.vm.saveError).toBeTruthy(); // [WS-SAVEERR] error surfaced on the PANEL, not the preview frame
+        expect(wrapper.vm.previewError).toBe(''); // preview channel untouched → live preview stays mounted
         const putsAfterFail = axios.put.mock.calls.length; // 1
 
         // A subsequent edit RE-ATTEMPTS the save (not blocked) — the server's optimistic version lock
@@ -499,7 +500,9 @@ describe('WizardStudio UI/UX elevations (review round)', () => {
         expect(wrapper.vm.ruleSummary({ min_select: 1, max_select: 1 })).toBe('Obligatoire · 1 choix');
         expect(wrapper.vm.ruleSummary({ min_select: 0, max_select: 1 })).toBe('Facultatif · 1 choix max');
         expect(wrapper.vm.ruleSummary({ min_select: 1, max_select: 4 })).toBe('De 1 à 4 choix');
-        expect(wrapper.vm.ruleSummary({ min_select: 2, max_select: 0 })).toBe('Min 2 choix · sans limite');
+        // [WS-MAX] min≥1 + max=0 is saved as "exactly min" (backend rejects max<min) → display the saved truth.
+        expect(wrapper.vm.ruleSummary({ min_select: 2, max_select: 0 })).toBe('Obligatoire · 2 choix');
+        expect(wrapper.vm.ruleSummary({ min_select: 0, max_select: 0 })).toBe('Facultatif · sans limite');
     });
 
     it('IA-06: inheritanceLabel is a terse provenance token (still contains "catégorie")', async () => {
@@ -562,6 +565,30 @@ describe('WizardStudio UI/UX elevations (review round)', () => {
         // the <transition> @after-enter hook hands focusRulePanel the entered .ws-rule element.
         wrapper.vm.focusRulePanel({ querySelector: (s) => (s.includes('select') ? { focus: focused } : null) });
         expect(focused).toHaveBeenCalled();
+    });
+
+    it('WS-PUBLISH-409: a publish version-conflict routes to the Recharger recovery (not a dead-end)', async () => {
+        wireCategoryEdit();
+        axios.post.mockImplementation((url) => (url.endsWith('/publish')
+            ? Promise.reject({ response: { status: 409, data: { message: 'Profile version conflict' } } })
+            : Promise.resolve({ data: CAT_PROFILE })));
+        const wrapper = mountCat();
+        await flushPromises();
+        await wrapper.vm.togglePublish();
+        await flushPromises();
+        expect(wrapper.vm.conflictDetected).toBe(true); // surfaces the 'Recharger' affordance instead of a stale-version loop
+        expect(wrapper.vm.isPublished).toBe(false); // not flipped on conflict
+    });
+
+    it('WS-SAVEERR: a non-409 save failure surfaces on the panel (saveError), not inside the preview frame', async () => {
+        wireCategoryEdit();
+        const wrapper = mountCat();
+        await flushPromises();
+        axios.put.mockRejectedValueOnce({ response: { status: 500, data: { message: 'boom' } } });
+        await wrapper.vm.addPage();
+        await flushPromises();
+        expect(wrapper.vm.saveError).toBeTruthy();
+        expect(wrapper.vm.previewError).toBe(''); // preview channel untouched → the live preview stays mounted
     });
 
     it('VIS-PREVIEW: a successful save flips justSaved for the visible "Enregistré" confirmation', async () => {
