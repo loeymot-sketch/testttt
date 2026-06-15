@@ -12,7 +12,7 @@ class ItemExtra extends Model
     use HasFactory, SoftDeletes;
 
     protected $table = "item_extras";
-    protected $fillable = ['item_id', 'name', 'status', 'price', 'visible_on', 'group_label', 'is_available', 'unavailable_reason'];
+    protected $fillable = ['item_id', 'name', 'status', 'price', 'visible_on', 'group_label', 'is_available', 'unavailable_reason', 'image_path', 'description']; // [WIZARD-STUDIO W4] additive per-option image+description
     protected $casts = [
         'id'                 => 'integer',
         'item_id'            => 'integer',

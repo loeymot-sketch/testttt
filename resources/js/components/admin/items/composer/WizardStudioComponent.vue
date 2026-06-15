@@ -77,7 +77,10 @@
                 <p class="ws-panel__meta">{{ steps.length }} page(s) · v{{ version }} · {{ isPublished ? 'publié' : 'brouillon' }}</p>
 
                 <p v-if="conflictDetected" class="ws-warn" role="alert" data-testid="wizard-studio-conflict">
-                    ⚠ Ce wizard a été modifié ailleurs. <button type="button" class="ws-link" @click="reloadAll">Recharger</button> pour repartir de la dernière version.
+                    ⚠ Ce wizard a été modifié ailleurs. <button type="button" class="ws-link" @click="reloadAll">Recharger</button> pour repartir de la dernière version (vos modifications non enregistrées seront écartées).
+                </p>
+                <p v-if="isPublished" class="ws-live" data-testid="wizard-studio-live-edit">
+                    ⚡ Édition en direct — ce wizard est <strong>publié</strong> : chaque changement est aussitôt visible des clients sur la borne.
                 </p>
 
                 <draggable
@@ -97,7 +100,14 @@
                         :data-testid="`ws-steprow-${i}`"
                     >
                         <div class="ws-steprow__head">
-                            <button type="button" class="ws-step-drag" aria-label="Réordonner la page" tabindex="-1">⠿</button>
+                            <button
+                                type="button"
+                                class="ws-step-drag"
+                                :aria-label="`Réordonner la page ${i + 1} — flèches haut/bas`"
+                                :data-testid="`ws-step-drag-${i}`"
+                                @keydown.up.prevent="movePage(s, -1)"
+                                @keydown.down.prevent="movePage(s, 1)"
+                            >⠿</button>
                             <input
                                 class="ws-step-name"
                                 :value="s.label"
@@ -126,7 +136,7 @@
                             <label v-if="sourceOptions.length" class="ws-rule__field ws-rule__field--wide">
                                 <span>Source</span>
                                 <select :value="currentSourceKey(s)" :data-testid="`ws-rule-source-${i}`" @change="setSource(s, $event.target.value)">
-                                    <option v-if="!sourceOptions.some((o) => o.key === currentSourceKey(s))" :value="currentSourceKey(s)">— à lier —</option>
+                                    <option v-if="!sourceOptions.some((o) => o.key === currentSourceKey(s))" :value="currentSourceKey(s)">{{ s.source_ref ? `Source actuelle : ${s.source_ref}` : '— à lier —' }}</option>
                                     <option v-for="o in sourceOptions" :key="o.key" :value="o.key">{{ o.label }}</option>
                                 </select>
                             </label>
@@ -194,6 +204,7 @@ export default {
             savingDraft: false,
             conflictDetected: false,
             _uidSeq: 0,
+            _pendingSave: false, // [WS-5] coalesce edits made while a save is in flight
             // [W3] which page's rule editor is open.
             expandedUid: null,
             // [W6] bindable sources for this category (item_attribute / extra_group / addon).
@@ -358,8 +369,8 @@ export default {
             const n = this.steps.length + 1;
             this.steps = [...this.steps, {
                 _uid: `u${++this._uidSeq}`,
-                // unique stable key (avoids UNIQUE(profile_id, step_key) collisions); rename keeps the key.
-                step_key: `page_${Math.random().toString(36).slice(2, 8)}`,
+                // deterministically-unique stable key (avoids UNIQUE(profile_id, step_key)); rename keeps the key.
+                step_key: `page_${Date.now().toString(36)}${++this._uidSeq}`,
                 label: `Nouvelle page ${n}`,
                 source_type: 'item_attribute',
                 source_ref: '',
@@ -379,6 +390,16 @@ export default {
         },
         onReorder() {
             // vue-draggable-next already mutated this.steps order; persist new positions.
+            this.saveStudioDraft();
+        },
+        // [WS-4] keyboard-accessible reorder (arrow up/down on the focused drag handle).
+        movePage(step, dir) {
+            const i = this.steps.findIndex((s) => s._uid === step._uid);
+            const j = i + dir;
+            if (i < 0 || j < 0 || j >= this.steps.length) return;
+            const arr = [...this.steps];
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+            this.steps = arr;
             this.saveStudioDraft();
         },
         // Build the NF525-safe step payload (no price — price lives on catalog constructs).
@@ -401,7 +422,9 @@ export default {
             };
         },
         async saveStudioDraft() {
-            if (!this.profile?.id || this.savingDraft) return;
+            if (!this.profile?.id) return;
+            // [WS-5] an edit made during an in-flight save is not dropped: queue a trailing re-save.
+            if (this.savingDraft) { this._pendingSave = true; return; }
             this.savingDraft = true;
             this.conflictDetected = false;
             this.previewError = '';
@@ -427,6 +450,13 @@ export default {
                 this.previewError = e?.response?.data?.message || 'Enregistrement impossible.';
             } finally {
                 this.savingDraft = false;
+                // flush a queued edit, unless we hit a version conflict (would just re-409).
+                if (this._pendingSave && !this.conflictDetected) {
+                    this._pendingSave = false;
+                    this.$nextTick(() => this.saveStudioDraft());
+                } else {
+                    this._pendingSave = false;
+                }
             }
         },
         async reloadAll() {
@@ -556,7 +586,9 @@ export default {
 .ws-rule__field input[type="number"] { width: 52px; }
 .ws-rule__check { display: flex; align-items: center; gap: 4px; font-size: 12px; color: #555; }
 .ws-rule__hint { flex-basis: 100%; margin: 2px 0 0; font-size: 11px; color: #A8370E; }
-.ws-step-drag { border: 0; background: transparent; cursor: grab; color: #9aa39e; font-size: 16px; line-height: 1; padding: 2px 4px; }
+.ws-live { margin: 0 0 10px; padding: 8px 12px; border-radius: 10px; background: #fff4e8; border: 1px solid #f6c89a; color: #9a4a08; font-size: 12px; line-height: 1.35; }
+.ws-step-drag { border: 0; background: transparent; cursor: grab; color: #9aa39e; font-size: 16px; line-height: 1; padding: 2px 4px; border-radius: 6px; }
+.ws-step-drag:focus-visible { outline: 2px solid #F4501E; outline-offset: 1px; }
 .ws-step-name { flex: 1; min-width: 0; border: 1px solid transparent; border-radius: 6px; padding: 4px 6px; font-size: 14px; color: #222; background: transparent; }
 .ws-step-name:hover { border-color: #e3ddd2; }
 .ws-step-name:focus { border-color: #F4501E; outline: none; background: #fff; }

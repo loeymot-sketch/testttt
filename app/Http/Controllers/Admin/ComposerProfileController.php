@@ -261,8 +261,12 @@ class ComposerProfileController extends AdminController
      */
     public function availableSourcesForCategory(Request $request, ItemCategory $category): JsonResponse
     {
-        $this->authorizeBranchScope($request, null);
-
+        // Gate = permission:catalog.compose (route group). The catalog (categories/items/variations/
+        // extras/addons) is GLOBAL in V1 LOCAL (no BranchScope — branch isolation applies to
+        // operational data: orders/stock/sessions, not the menu). So any catalog.compose author may
+        // read a category's bindable sources; no per-branch scoping applies (and nothing here is
+        // branch-private). V2-SaaS NOTE: when the catalog becomes multi-tenant, add branch scoping
+        // to ItemCategory/Item and gate this endpoint accordingly (tracked with the BranchScope V2 backlog).
         $item = $category->items()->orderBy('id')->first();
         abort_if(! $item, 404, 'Aucun produit dans cette catégorie pour proposer des sources.');
         $item->loadMissing(['variations.itemAttribute', 'extras', 'addons.addonItem']);

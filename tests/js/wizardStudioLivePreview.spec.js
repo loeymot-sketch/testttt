@@ -302,3 +302,29 @@ describe('WizardStudio source binding (W6)', () => {
         expect(put.source_ref).not.toBe('');
     });
 });
+
+describe('WizardStudio adversarial heals (WS-4 / WS-5)', () => {
+    it('WS-4: keyboard movePage reorders + persists 0-based positions', async () => {
+        wireCategoryEdit();
+        const wrapper = mountCat();
+        await flushPromises();
+        const first = wrapper.vm.steps[0].step_key; // 'pain'
+        await wrapper.vm.movePage(wrapper.vm.steps[0], 1); // move pain down
+        await flushPromises();
+        const payload = axios.put.mock.calls.at(-1)[1];
+        expect(payload.steps.map((s) => s.position)).toEqual([0, 1]);
+        expect(payload.steps[1].step_key).toBe(first); // pain is now second
+    });
+
+    it('WS-5: an edit during an in-flight save is queued (not dropped) and not lost', async () => {
+        wireCategoryEdit();
+        const wrapper = mountCat();
+        await flushPromises();
+        axios.put.mockClear();
+        // simulate a save in flight
+        wrapper.vm.savingDraft = true;
+        await wrapper.vm.saveStudioDraft(); // should NOT issue a PUT, should queue
+        expect(axios.put).not.toHaveBeenCalled();
+        expect(wrapper.vm._pendingSave).toBe(true);
+    });
+});

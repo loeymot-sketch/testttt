@@ -24,6 +24,10 @@ class ItemVariation extends Model
         'caution',
         'status',
         'visible_on',
+        // [WIZARD-STUDIO W4] additive per-option image + description (nullable). Writable so the
+        // future option-edit UI can set them; the projection already reads them (prefers image_path).
+        'image_path',
+        'description',
     ];
     protected $casts = [
         'id'                => 'integer',
