@@ -95,13 +95,18 @@ class ComposerProfileController extends AdminController
     {
         $this->authorizeWritableBranchScope($request, $profile->branch_id_scope);
 
-        return new ComposerProfileResource($this->profiles->publish($profile));
+        // [WS-PUB-VERSION] Honour the optimistic-lock version the Studio sends (publish() asserts it),
+        // so taking a wizard live over a concurrent edit 409s instead of silently publishing a
+        // version the operator never saw. Backward-compatible: absent version → check skipped.
+        return new ComposerProfileResource($this->profiles->publish($profile, $request->only('version')));
     }
 
     public function unpublish(Request $request, ItemWizardProfile $profile)
     {
         $this->authorizeWritableBranchScope($request, $profile->branch_id_scope);
 
+        // Unpublish is intentionally UNCONDITIONAL (no version gate): taking a wizard DOWN must always
+        // succeed, even if it changed under the operator — a take-down is never the wrong call.
         return new ComposerProfileResource($this->profiles->unpublish($profile));
     }
 

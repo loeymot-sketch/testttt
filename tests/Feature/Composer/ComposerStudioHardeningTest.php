@@ -113,6 +113,29 @@ class ComposerStudioHardeningTest extends TestCase
             ->assertSuccessful();
     }
 
+    public function test_wspub_publish_honours_the_optimistic_version_lock(): void
+    {
+        // [WS-PUB-VERSION] The Studio sends {version} on publish; the controller now forwards it so
+        // publishing over a concurrent edit 409s (assertVersionMatches runs before assertPublishable).
+        Event::fake([ComposerProfileChanged::class]);
+        Branch::factory()->create(['id' => 1]);
+        $user = User::factory()->create(['branch_id' => 1]);
+        $user->assignRole('Branch Manager'); // holds catalog.publish
+
+        $draft = ItemWizardProfile::factory()->create([
+            'item_id' => null,
+            'item_category_id' => ItemCategory::factory(),
+            'is_published' => false,
+            'branch_id_scope' => 1,
+            'version' => 3,
+        ]);
+
+        $this->actingAs($user, 'sanctum')
+            ->postJson("/api/admin/composer/profiles/{$draft->id}/publish", ['version' => 1]) // stale
+            ->assertStatus(409);
+        $this->assertFalse((bool) $draft->fresh()->is_published, 'a stale-version publish must not take the wizard live');
+    }
+
     public function test_gap3_idempotent_create_returns_same_profile_on_double_submit(): void
     {
         $category = ItemCategory::factory()->create();
