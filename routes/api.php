@@ -786,7 +786,10 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
             Route::middleware('wizard.per_item_profile_guard')->group(function () {
                 Route::match(['put', 'patch'], '/profiles/{profile}', [ComposerProfileController::class, 'update']);
                 Route::get('/profiles/{profile}/diff', [ComposerProfileController::class, 'diff']);
-                Route::post('/profiles/{profile}/unpublish', [ComposerProfileController::class, 'unpublish']);
+                // [WIZARD-STUDIO W8] unpublish gated by catalog.publish — consistent with publish
+                // (taking a wizard live OR down is a publish-level action, not a compose-level one).
+                Route::post('/profiles/{profile}/unpublish', [ComposerProfileController::class, 'unpublish'])
+                    ->middleware('permission:catalog.publish');
                 Route::post('/profiles/{profile}/steps', [ComposerStepController::class, 'store']);
                 Route::match(['put', 'patch'], '/steps/{step}', [ComposerStepController::class, 'update']);
                 Route::delete('/steps/{step}', [ComposerStepController::class, 'destroy']);

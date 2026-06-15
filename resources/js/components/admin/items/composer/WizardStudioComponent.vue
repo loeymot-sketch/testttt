@@ -551,13 +551,16 @@ export default {
                 this.profile = res?.data?.data ?? res?.data ?? this.profile;
                 await this.reloadPreview();
             } catch (e) {
-                if (e?.response?.status === 422) {
+                const status = e?.response?.status;
+                if (status === 422) {
                     // assertPublishable: empty/invalid wizard cannot go live.
                     const errs = e.response.data?.errors;
-                    const first = errs && Object.values(errs)[0];
-                    this.publishError = (Array.isArray(first) ? first[0] : first)
-                        || e.response.data?.message
-                        || 'Impossible de publier : une page n\'a pas d\'option, ou une page obligatoire est vide.';
+                    const first = errs ? Object.values(errs)[0] : null;
+                    const msg = Array.isArray(first) ? first[0] : (typeof first === 'string' ? first : null);
+                    this.publishError = msg || e.response.data?.message
+                        || "Impossible de publier : une page n'a pas d'option, ou une page obligatoire est vide.";
+                } else if (status === 403) {
+                    this.publishError = "Vous n'avez pas la permission de publier / dépublier ce wizard.";
                 } else {
                     this.publishError = e?.response?.data?.message || 'Action impossible.';
                 }
