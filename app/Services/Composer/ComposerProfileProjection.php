@@ -94,6 +94,9 @@ final class ComposerProfileProjection
                         'source_type' => 'variation',
                         'item_attribute_id' => $variation->item_attribute_id !== null ? (int) $variation->item_attribute_id : null,
                         'status' => (int) $variation->status,
+                        // [W4] per-option image (Studio-uploaded) preferred, else the config thumb accessor.
+                        'thumb' => $variation->image_path ? asset('storage/'.$variation->image_path) : ($variation->thumb ?? null),
+                        'description' => $variation->description ?: null,
                         'is_available' => $availability['is_available'],
                         'unavailable_reason' => $availability['unavailable_reason'],
                     ];
@@ -118,6 +121,9 @@ final class ComposerProfileProjection
                         'source_type' => 'extra',
                         'group_label' => $extra->group_label,
                         'status' => (int) $extra->status,
+                        // [W4] per-option image (Studio-uploaded) preferred, else the config thumb accessor.
+                        'thumb' => $extra->image_path ? asset('storage/'.$extra->image_path) : ($extra->thumb ?? null),
+                        'description' => $extra->description ?: null,
                         'is_available' => $availability['is_available'],
                         'unavailable_reason' => $availability['unavailable_reason'],
                     ];

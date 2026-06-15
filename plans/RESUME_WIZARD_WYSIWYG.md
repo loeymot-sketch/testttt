@@ -39,3 +39,7 @@ Start W0: scaffold `WizardStudio` route + shell component (copy, new route), par
 
 - [x] W2 EDIT pillar DONE + e2e-proven (678fd6210): drag-reorder/rename/delete/add page → bulk PUT → reloadPreview. Live proof cat2: add→6/v3 + kiosk rail refreshed (wsW2-add-page.png); delete→5/v4 restored (clone clean). Vitest 8/8 EXIT0, frozen 0, 409 handled. Server :8766 worktree/foodking_e2e (real vendor un-shadowed, .env APP_ENV=local). admin@lecayenne.fr/123456.
 - [ ] W3 selection rules UI (single/multi/required/min/max/allow_repeat per page — fields exist, payloadForStep sends them) ← IN PROGRESS
+- [x] W3 selection rules DONE (22283bf9d): per-page single/multi·required·min/max·repeat editor. Vitest 13/13, live-proven, frozen 0.
+- [x] W4a images/desc BACKEND DONE: additive migration (image_path+description on item_variations/item_extras, sqlite-safe) + ComposerProfileProjection emits thumb (prefers image_path, fallback config) + description. Live-proven on clone (var5 image_path→thumb storage URL + desc; restored) + PHPUnit 8/8. Frozen 0, NF525 no-price holds.
+- [ ] W4b option-edit UI + image UPLOAD (G-MEDIA gate: storage choice) + catalog PATCH endpoint for variation/extra image_path/description
+- [ ] W5 billing Free/Each-priced (edit option catalog price) · W6 templates source_ref auto-fill · W7 POS preview tab (G-POS-COMPOSER) · W8 final e2e + gates
