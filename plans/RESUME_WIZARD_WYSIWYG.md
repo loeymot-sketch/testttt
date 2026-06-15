@@ -36,3 +36,6 @@ Start W0: scaffold `WizardStudio` route + shell component (copy, new route), par
 
 - [x] TEST-E2E MASSIF (4 rounds, GStack-live + adversaire-indépendant workflows, ultracode) — CONVERGÉ P0+P1=0.
   R1 live: device-frame P1 + msg P2 + contraste P3 + read-only prouvé (47 clics→cart0). R2 adversaire: caught a P1 I missed (device-frame height viewport-dependent) + 4 P2 healed. R3: F1 reclassed non-defect (db-main scrolls) + banner context-aware + AA contrast (orange 6.53:1, green 5.67:1) + jargon removed. R4 independent: P0+P1=0 CONFIRMED; healed CI false-green (vitest EXIT 1→0). Commits 40b683434/7c34eb0ab/cd5827565/0b14317ad/+test-fix. Report: reports/test-e2e/wizard-studio-massive-2026-06-14/CONVERGENCE_FINAL.md. Vitest 4/4 EXIT0, PHPUnit 5/5, frozen 0.
+
+- [x] W2 EDIT pillar DONE + e2e-proven (678fd6210): drag-reorder/rename/delete/add page → bulk PUT → reloadPreview. Live proof cat2: add→6/v3 + kiosk rail refreshed (wsW2-add-page.png); delete→5/v4 restored (clone clean). Vitest 8/8 EXIT0, frozen 0, 409 handled. Server :8766 worktree/foodking_e2e (real vendor un-shadowed, .env APP_ENV=local). admin@lecayenne.fr/123456.
+- [ ] W3 selection rules UI (single/multi/required/min/max/allow_repeat per page — fields exist, payloadForStep sends them) ← IN PROGRESS

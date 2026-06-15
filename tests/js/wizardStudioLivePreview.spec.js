@@ -190,3 +190,77 @@ describe('WizardStudio edit (W2)', () => {
         expect(wrapper.vm.conflictDetected).toBe(true);
     });
 });
+
+describe('WizardStudio selection rules (W3)', () => {
+    const lastPutSteps = () => axios.put.mock.calls.at(-1)[1].steps;
+
+    it('single↔multi toggles max_select and persists', async () => {
+        wireCategoryEdit();
+        const wrapper = mountCat();
+        await flushPromises();
+        const sauce = wrapper.vm.steps.find((s) => s.step_key === 'sauce'); // starts min1 max2 (multi)
+        expect(wrapper.vm.isMulti(sauce)).toBe(true);
+
+        await wrapper.vm.setChoiceType(sauce, 'single');
+        await flushPromises();
+        expect(sauce.max_select).toBe(1);
+        expect(lastPutSteps().find((s) => s.step_key === 'sauce').max_select).toBe(1);
+
+        await wrapper.vm.setChoiceType(sauce, 'multi');
+        await flushPromises();
+        expect(sauce.max_select).toBeGreaterThanOrEqual(2);
+    });
+
+    it('required toggle sets/clears min_select and keeps min ≤ max', async () => {
+        wireCategoryEdit();
+        const wrapper = mountCat();
+        await flushPromises();
+        const pain = wrapper.vm.steps.find((s) => s.step_key === 'pain'); // min1 max1
+        await wrapper.vm.setRequired(pain, false);
+        await flushPromises();
+        expect(pain.min_select).toBe(0);
+        await wrapper.vm.setRequired(pain, true);
+        await flushPromises();
+        expect(pain.min_select).toBeGreaterThanOrEqual(1);
+        expect(pain.max_select).toBeGreaterThanOrEqual(pain.min_select);
+    });
+
+    it('setBound enforces min ≤ max coherence and persists', async () => {
+        wireCategoryEdit();
+        const wrapper = mountCat();
+        await flushPromises();
+        const sauce = wrapper.vm.steps.find((s) => s.step_key === 'sauce');
+        await wrapper.vm.setBound(sauce, 'min_select', '5'); // min 5 > max 2 → max bumped to 5
+        await flushPromises();
+        expect(sauce.min_select).toBe(5);
+        expect(sauce.max_select).toBeGreaterThanOrEqual(5);
+        const put = lastPutSteps().find((s) => s.step_key === 'sauce');
+        expect(put.min_select).toBe(5);
+        expect(put.max_select).toBeGreaterThanOrEqual(5);
+    });
+
+    it('repeat toggle persists allow_repeat (NF525: still no price on the step)', async () => {
+        wireCategoryEdit();
+        const wrapper = mountCat();
+        await flushPromises();
+        const sauce = wrapper.vm.steps.find((s) => s.step_key === 'sauce');
+        await wrapper.vm.setRepeat(sauce, true);
+        await flushPromises();
+        expect(sauce.allow_repeat).toBe(true);
+        const put = lastPutSteps().find((s) => s.step_key === 'sauce');
+        expect(put.allow_repeat).toBe(true);
+        expect(JSON.stringify(lastPutSteps())).not.toMatch(/"price"|"amount"/);
+    });
+
+    it('toggleRule opens then closes the rule editor', async () => {
+        wireCategoryEdit();
+        const wrapper = mountCat();
+        await flushPromises();
+        const s = wrapper.vm.steps[0];
+        expect(wrapper.vm.expandedUid).toBe(null);
+        wrapper.vm.toggleRule(s);
+        expect(wrapper.vm.expandedUid).toBe(s._uid);
+        wrapper.vm.toggleRule(s);
+        expect(wrapper.vm.expandedUid).toBe(null);
+    });
+});

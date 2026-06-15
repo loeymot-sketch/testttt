@@ -96,19 +96,51 @@
                         :class="{ 'ws-steprow--hidden': !stepRenders(s) }"
                         :data-testid="`ws-steprow-${i}`"
                     >
-                        <button type="button" class="ws-step-drag" aria-label="Réordonner la page" tabindex="-1">⠿</button>
-                        <input
-                            class="ws-step-name"
-                            :value="s.label"
-                            :aria-label="`Nom de la page ${i + 1}`"
-                            :data-testid="`ws-step-name-${i}`"
-                            @input="onRename(s, $event.target.value)"
-                            @change="saveStudioDraft"
-                            @keyup.enter="$event.target.blur()"
-                        />
-                        <span class="ws-steprow__rule">{{ ruleSummary(s) }}</span>
-                        <span v-if="!stepRenders(s)" class="ws-steplist__tag" title="Page sans option : la borne ne l'affichera pas">0 option</span>
-                        <button type="button" class="ws-step-del" :aria-label="`Supprimer la page ${i + 1}`" :data-testid="`ws-step-del-${i}`" @click="removePage(s)">🗑</button>
+                        <div class="ws-steprow__head">
+                            <button type="button" class="ws-step-drag" aria-label="Réordonner la page" tabindex="-1">⠿</button>
+                            <input
+                                class="ws-step-name"
+                                :value="s.label"
+                                :aria-label="`Nom de la page ${i + 1}`"
+                                :data-testid="`ws-step-name-${i}`"
+                                @input="onRename(s, $event.target.value)"
+                                @change="saveStudioDraft"
+                                @keyup.enter="$event.target.blur()"
+                            />
+                            <span class="ws-steprow__rule">{{ ruleSummary(s) }}</span>
+                            <span v-if="!stepRenders(s)" class="ws-steplist__tag" title="Page sans option : la borne ne l'affichera pas">0 option</span>
+                            <button
+                                type="button"
+                                class="ws-step-cog"
+                                :class="{ 'ws-step-cog--on': expandedUid === s._uid }"
+                                :aria-label="`Règles de la page ${i + 1}`"
+                                :aria-expanded="expandedUid === s._uid ? 'true' : 'false'"
+                                :data-testid="`ws-step-cog-${i}`"
+                                @click="toggleRule(s)"
+                            >⚙</button>
+                            <button type="button" class="ws-step-del" :aria-label="`Supprimer la page ${i + 1}`" :data-testid="`ws-step-del-${i}`" @click="removePage(s)">🗑</button>
+                        </div>
+
+                        <!-- [W3] selection-rule editor -->
+                        <div v-if="expandedUid === s._uid" class="ws-rule" :data-testid="`ws-rule-${i}`">
+                            <label class="ws-rule__field">
+                                <span>Choix</span>
+                                <select :value="isMulti(s) ? 'multi' : 'single'" :data-testid="`ws-rule-type-${i}`" @change="setChoiceType(s, $event.target.value)">
+                                    <option value="single">Un seul</option>
+                                    <option value="multi">Plusieurs</option>
+                                </select>
+                            </label>
+                            <label class="ws-rule__check">
+                                <input type="checkbox" :checked="Number(s.min_select) >= 1" :data-testid="`ws-rule-required-${i}`" @change="setRequired(s, $event.target.checked)" />
+                                Obligatoire
+                            </label>
+                            <template v-if="isMulti(s)">
+                                <label class="ws-rule__field"><span>Min</span><input type="number" min="0" :value="s.min_select" :data-testid="`ws-rule-min-${i}`" @change="setBound(s, 'min_select', $event.target.value)" /></label>
+                                <label class="ws-rule__field"><span>Max</span><input type="number" min="0" :value="s.max_select" :data-testid="`ws-rule-max-${i}`" @change="setBound(s, 'max_select', $event.target.value)" /></label>
+                                <label class="ws-rule__check"><input type="checkbox" :checked="!!s.allow_repeat" @change="setRepeat(s, $event.target.checked)" /> Répétable</label>
+                            </template>
+                            <p class="ws-rule__hint">{{ ruleSummary(s) }} · {{ isMulti(s) ? 'plusieurs choix' : 'un seul choix' }}</p>
+                        </div>
                     </div>
                 </draggable>
                 <p v-else class="ws-panel__meta">Aucune page — ajoutez-en une pour commencer.</p>
@@ -155,6 +187,8 @@ export default {
             savingDraft: false,
             conflictDetected: false,
             _uidSeq: 0,
+            // [W3] which page's rule editor is open.
+            expandedUid: null,
         };
     },
     computed: {
@@ -293,7 +327,10 @@ export default {
             const arr = Array.isArray(profile?.steps)
                 ? [...profile.steps].sort((a, b) => (a.position || 0) - (b.position || 0))
                 : [];
-            return arr.map((s) => ({ ...s, _uid: `u${++this._uidSeq}` }));
+            // Preserve _uid across re-hydrate (match by step_key) so the open rule editor / input
+            // focus survive a save (no row remount).
+            const prev = new Map((this.steps || []).map((s) => [s.step_key, s._uid]));
+            return arr.map((s) => ({ ...s, _uid: prev.get(s.step_key) || `u${++this._uidSeq}` }));
         },
         onRename(step, value) {
             // local label update only; persisted on blur (@change) to avoid mid-typing re-hydrate.
@@ -378,6 +415,40 @@ export default {
             this.conflictDetected = false;
             await this.load();
         },
+
+        // ---- [W3] selection rules (single/multi · required · min/max · repeat) ----
+        isMulti(step) {
+            return Number(step.max_select || 0) !== 1;
+        },
+        toggleRule(step) {
+            this.expandedUid = this.expandedUid === step._uid ? null : step._uid;
+        },
+        setChoiceType(step, type) {
+            if (type === 'single') {
+                step.max_select = 1;
+                if (Number(step.min_select) > 1) step.min_select = 1;
+            } else {
+                step.max_select = Math.max(2, Number(step.max_select) || 2);
+            }
+            this.saveStudioDraft();
+        },
+        setRequired(step, required) {
+            step.min_select = required ? Math.max(1, Number(step.min_select) || 1) : 0;
+            if (Number(step.max_select) < Number(step.min_select)) step.max_select = step.min_select;
+            this.saveStudioDraft();
+        },
+        setBound(step, field, value) {
+            const n = Math.max(0, parseInt(value, 10) || 0);
+            step[field] = n;
+            // keep min ≤ max coherent
+            if (field === 'min_select' && Number(step.max_select) < n) step.max_select = n;
+            if (field === 'max_select' && n > 0 && Number(step.min_select) > n) step.min_select = n;
+            this.saveStudioDraft();
+        },
+        setRepeat(step, value) {
+            step.allow_repeat = !!value;
+            this.saveStudioDraft();
+        },
     },
 };
 </script>
@@ -425,9 +496,20 @@ export default {
 .ws-link { border: 0; background: transparent; color: #A8370E; text-decoration: underline; cursor: pointer; font: inherit; padding: 0; }
 .ws-steplist { margin: 0 0 10px; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 /* [W2] editable page row */
-.ws-steprow { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid #eee6d9; border-radius: 10px; background: #fff; }
+.ws-steprow { display: flex; flex-direction: column; padding: 8px 10px; border: 1px solid #eee6d9; border-radius: 10px; background: #fff; }
+.ws-steprow__head { display: flex; align-items: center; gap: 8px; }
 .ws-steprow--ghost { opacity: .4; }
 .ws-steprow--hidden { background: #faf6f0; }
+.ws-step-cog { border: 0; background: transparent; cursor: pointer; font-size: 14px; padding: 2px 4px; border-radius: 6px; color: #66756e; }
+.ws-step-cog--on { background: #fff1e4; color: #A8370E; }
+.ws-step-cog:focus-visible { outline: 2px solid #F4501E; outline-offset: 1px; }
+/* [W3] rule editor */
+.ws-rule { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 8px; padding-top: 8px; border-top: 1px dashed #eee6d9; }
+.ws-rule__field { display: flex; align-items: center; gap: 4px; font-size: 12px; color: #555; }
+.ws-rule__field select, .ws-rule__field input { font-size: 12px; padding: 3px 6px; border: 1px solid #d9dfdc; border-radius: 6px; }
+.ws-rule__field input[type="number"] { width: 52px; }
+.ws-rule__check { display: flex; align-items: center; gap: 4px; font-size: 12px; color: #555; }
+.ws-rule__hint { flex-basis: 100%; margin: 2px 0 0; font-size: 11px; color: #A8370E; }
 .ws-step-drag { border: 0; background: transparent; cursor: grab; color: #9aa39e; font-size: 16px; line-height: 1; padding: 2px 4px; }
 .ws-step-name { flex: 1; min-width: 0; border: 1px solid transparent; border-radius: 6px; padding: 4px 6px; font-size: 14px; color: #222; background: transparent; }
 .ws-step-name:hover { border-color: #e3ddd2; }
