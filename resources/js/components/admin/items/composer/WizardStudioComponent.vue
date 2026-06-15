@@ -20,11 +20,31 @@
             >
                 {{ isPublished ? 'Publié — visible clients' : 'Brouillon' }}
             </span>
+            <button
+                v-if="hasProfile"
+                type="button"
+                class="ws-pub"
+                :class="{ 'ws-pub--unpub': isPublished }"
+                :disabled="publishing"
+                data-testid="wizard-studio-publish-toggle"
+                @click="togglePublish"
+            >
+                {{ publishing ? '…' : (isPublished ? 'Dépublier' : 'Publier') }}
+            </button>
         </header>
 
         <div v-if="loading" class="ws-state" data-testid="wizard-studio-loading">Chargement…</div>
         <div v-else-if="loadError" class="ws-state ws-state--error" data-testid="wizard-studio-error">
             {{ loadError }}
+        </div>
+
+        <!-- [W8] category without a wizard yet → create-from-scratch. -->
+        <div v-else-if="isCategory && !hasProfile" class="ws-state" data-testid="wizard-studio-create">
+            <p>Cette catégorie n'a pas encore de wizard de composition.</p>
+            <button type="button" class="ws-add ws-add--cta" :disabled="creating" data-testid="wizard-studio-create-btn" @click="createStudioProfile">
+                {{ creating ? 'Création…' : '+ Créer un wizard pour cette catégorie' }}
+            </button>
+            <p v-if="publishError" class="ws-state--error" data-testid="wizard-studio-create-error">{{ publishError }}</p>
         </div>
 
         <div v-else class="wizard-studio__body">
@@ -79,6 +99,7 @@
                 <p v-if="conflictDetected" class="ws-warn" role="alert" data-testid="wizard-studio-conflict">
                     ⚠ Ce wizard a été modifié ailleurs. <button type="button" class="ws-link" @click="reloadAll">Recharger</button> pour repartir de la dernière version (vos modifications non enregistrées seront écartées).
                 </p>
+                <p v-if="publishError" class="ws-warn" role="alert" data-testid="wizard-studio-publish-error">{{ publishError }}</p>
                 <p v-if="isPublished && !conflictDetected" class="ws-live" data-testid="wizard-studio-live-edit">
                     ⚡ Édition en direct — ce wizard est <strong>publié</strong> : chaque changement est aussitôt visible des clients sur la borne.
                 </p>
@@ -227,6 +248,10 @@ export default {
             conflictDetected: false,
             _uidSeq: 0,
             _pendingSave: false, // [WS-5] coalesce edits made while a save is in flight
+            // [W8] lifecycle state.
+            creating: false,
+            publishing: false,
+            publishError: '',
             // [W3] which page's rule editor is open.
             expandedUid: null,
             // [W6] bindable sources for this category (item_attribute / extra_group / addon).
@@ -247,6 +272,13 @@ export default {
             return this.isCategory
                 ? `admin/composer/categories/${this.entityId}/profile`
                 : `admin/composer/items/${this.entityId}/profile`;
+        },
+        // [W8] same URL for POST-create (storeForCategory / store).
+        createProfileEndpoint() {
+            return this.profileEndpoint;
+        },
+        hasProfile() {
+            return !!(this.profile && this.profile.id);
         },
         // Where does the rendered wizard come from? (category-inherited vs item-owned).
         inheritanceLabel() {
@@ -486,6 +518,54 @@ export default {
             await this.load();
         },
 
+        // ---- [W8] lifecycle: create from scratch + publish/unpublish ----
+        async createStudioProfile() {
+            if (this.creating || this.hasProfile) return;
+            this.creating = true;
+            this.publishError = '';
+            try {
+                const res = await axios.post(this.createProfileEndpoint, {
+                    template: 'custom',
+                    branch_id_scope: null,
+                    steps: [],
+                });
+                this.profile = res?.data?.data ?? res?.data ?? null;
+                this.steps = this.hydrateSteps(this.profile);
+                if (this.profile?.id) {
+                    if (this.isCategory) await this.fetchSources();
+                    await this.fetchPreview();
+                }
+            } catch (e) {
+                this.publishError = e?.response?.data?.message || 'Création impossible.';
+            } finally {
+                this.creating = false;
+            }
+        },
+        async togglePublish() {
+            if (!this.profile?.id || this.publishing) return;
+            this.publishing = true;
+            this.publishError = '';
+            const action = this.isPublished ? 'unpublish' : 'publish';
+            try {
+                const res = await axios.post(`admin/composer/profiles/${this.profile.id}/${action}`, { version: this.version });
+                this.profile = res?.data?.data ?? res?.data ?? this.profile;
+                await this.reloadPreview();
+            } catch (e) {
+                if (e?.response?.status === 422) {
+                    // assertPublishable: empty/invalid wizard cannot go live.
+                    const errs = e.response.data?.errors;
+                    const first = errs && Object.values(errs)[0];
+                    this.publishError = (Array.isArray(first) ? first[0] : first)
+                        || e.response.data?.message
+                        || 'Impossible de publier : une page n\'a pas d\'option, ou une page obligatoire est vide.';
+                } else {
+                    this.publishError = e?.response?.data?.message || 'Action impossible.';
+                }
+            } finally {
+                this.publishing = false;
+            }
+        },
+
         // ---- [W3] selection rules (single/multi · required · min/max · repeat) ----
         isMulti(step) {
             return Number(step.max_select || 0) !== 1;
@@ -575,6 +655,11 @@ export default {
 .ws-source { font-size: 12px; color: #6b6b6b; margin-top: 2px; }
 .ws-badge { margin-left: auto; padding: 5px 12px; border-radius: 999px; background: #ececec; color: #555; font-size: 12px; font-weight: 600; }
 .ws-badge--published { background: #e6f6ec; color: #0f6e38; } /* AA ≥4.5:1 on the light-green pill */
+.ws-pub { border: 0; border-radius: 999px; padding: 6px 14px; font-size: 12px; font-weight: 600; cursor: pointer; background: #137a40; color: #fff; }
+.ws-pub--unpub { background: #fff; color: #b02a1a; border: 1px solid #e7c3bd; }
+.ws-pub:disabled { opacity: .6; cursor: default; }
+.ws-pub:focus-visible { outline: 2px solid #F4501E; outline-offset: 2px; }
+.ws-add--cta { max-width: 360px; margin: 14px auto 0; }
 .ws-state { padding: 40px; text-align: center; color: #555; }
 .ws-state--error { color: #b02a1a; }
 .wizard-studio__body { display: grid; grid-template-columns: 1fr 360px; gap: 24px; padding: 24px; align-items: start; }

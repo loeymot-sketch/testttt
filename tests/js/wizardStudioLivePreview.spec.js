@@ -328,6 +328,59 @@ describe('WizardStudio adversarial heals (WS-4 / WS-5)', () => {
         expect(wrapper.vm._pendingSave).toBe(true);
     });
 
+    it('W8: createStudioProfile POSTs to the category endpoint and sets the new profile', async () => {
+        // category with NO profile yet (profile fetch 404 → null)
+        axios.get.mockImplementation((url) => {
+            if (url.includes('item-category/show')) return Promise.resolve({ data: { name: 'Nouvelle Cat' } });
+            if (url.includes('available-sources')) return Promise.resolve({ data: { data: { category_id: 6, ...SOURCES } } });
+            if (url.includes('preview-projection')) return Promise.resolve(draftProjection([]));
+            if (url.includes('/profile')) return Promise.reject({ response: { status: 404 } });
+            return Promise.reject(new Error(`unexpected ${url}`));
+        });
+        axios.post.mockResolvedValueOnce({ data: { id: 99, item_id: null, item_category_id: 6, template: 'custom', is_published: false, version: 1, steps: [] } });
+        const wrapper = mountCat();
+        await flushPromises();
+        expect(wrapper.vm.hasProfile).toBe(false); // create CTA state
+        await wrapper.vm.createStudioProfile();
+        await flushPromises();
+        expect(axios.post).toHaveBeenCalledWith('admin/composer/categories/6/profile', expect.objectContaining({ template: 'custom', steps: [] }));
+        expect(wrapper.vm.hasProfile).toBe(true);
+        expect(wrapper.vm.profile.id).toBe(99);
+    });
+
+    it('W8: togglePublish publishes a draft then unpublishes (live ⇄ draft workflow)', async () => {
+        wireCategoryEdit(); // CAT_PROFILE is a draft (is_published false)
+        axios.post.mockImplementation((url) => {
+            if (url.endsWith('/publish')) return Promise.resolve({ data: { ...CAT_PROFILE, is_published: true, version: 3 } });
+            if (url.endsWith('/unpublish')) return Promise.resolve({ data: { ...CAT_PROFILE, is_published: false, version: 4 } });
+            return Promise.resolve({ data: CAT_PROFILE });
+        });
+        const wrapper = mountCat();
+        await flushPromises();
+        expect(wrapper.vm.isPublished).toBe(false);
+        await wrapper.vm.togglePublish(); // publish
+        await flushPromises();
+        expect(axios.post.mock.calls.some((c) => String(c[0]).endsWith('/publish'))).toBe(true);
+        expect(wrapper.vm.isPublished).toBe(true);
+        await wrapper.vm.togglePublish(); // unpublish
+        await flushPromises();
+        expect(axios.post.mock.calls.some((c) => String(c[0]).endsWith('/unpublish'))).toBe(true);
+        expect(wrapper.vm.isPublished).toBe(false);
+    });
+
+    it('W8: a 422 assertPublishable error is surfaced (cannot publish a broken wizard)', async () => {
+        wireCategoryEdit();
+        axios.post.mockImplementation((url) => (url.endsWith('/publish')
+            ? Promise.reject({ response: { status: 422, data: { errors: { steps: ['Une page obligatoire est vide.'] } } } })
+            : Promise.resolve({ data: CAT_PROFILE })));
+        const wrapper = mountCat();
+        await flushPromises();
+        await wrapper.vm.togglePublish();
+        await flushPromises();
+        expect(wrapper.vm.publishError).toContain('obligatoire');
+        expect(wrapper.vm.isPublished).toBe(false); // not flipped on failure
+    });
+
     it('W4c: optionsForStep surfaces the live projected choices (name+thumb) for a page', async () => {
         // wire a preview whose 'pain' step resolves two real choices
         axios.get.mockImplementation((url) => {
