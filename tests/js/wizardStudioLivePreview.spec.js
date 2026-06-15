@@ -490,3 +490,49 @@ describe('WizardStudio adversarial heals (WS-4 / WS-5)', () => {
         expect(wrapper.vm.optionsForStep({ step_key: 'nope' })).toEqual([]);
     });
 });
+
+describe('WizardStudio UI/UX elevations (review round)', () => {
+    it('IA-02: ruleSummary speaks "choix" for every selection state', async () => {
+        wireCategoryEdit();
+        const wrapper = mountCat();
+        await flushPromises();
+        expect(wrapper.vm.ruleSummary({ min_select: 1, max_select: 1 })).toBe('Obligatoire · 1 choix');
+        expect(wrapper.vm.ruleSummary({ min_select: 0, max_select: 1 })).toBe('Facultatif · 1 choix max');
+        expect(wrapper.vm.ruleSummary({ min_select: 1, max_select: 4 })).toBe('De 1 à 4 choix');
+        expect(wrapper.vm.ruleSummary({ min_select: 2, max_select: 0 })).toBe('Min 2 choix · sans limite');
+    });
+
+    it('IA-06: inheritanceLabel is a terse provenance token (still contains "catégorie")', async () => {
+        wireCategoryEdit();
+        const wrapper = mountCat();
+        await flushPromises();
+        expect(wrapper.vm.inheritanceLabel).toBe('Hérité de la catégorie');
+    });
+
+    it('A11Y-E2: movePage announces the new position to assistive tech', async () => {
+        wireCategoryEdit();
+        const wrapper = mountCat();
+        await flushPromises();
+        await wrapper.vm.movePage(wrapper.vm.steps[0], 1);
+        await flushPromises();
+        expect(wrapper.vm.structureAnnounce).toMatch(/position 2 sur 2/);
+    });
+
+    it('A11Y-E3: removePage announces the deletion (and does not throw on focus handoff)', async () => {
+        wireCategoryEdit();
+        const wrapper = mountCat();
+        await flushPromises();
+        await wrapper.vm.removePage(wrapper.vm.steps[0]);
+        await flushPromises();
+        expect(wrapper.vm.structureAnnounce).toContain('supprimée');
+    });
+
+    it('VIS-PREVIEW: a successful save flips justSaved for the visible "Enregistré" confirmation', async () => {
+        wireCategoryEdit();
+        const wrapper = mountCat();
+        await flushPromises();
+        await wrapper.vm.addPage();
+        await flushPromises();
+        expect(wrapper.vm.justSaved).toBe(true);
+    });
+});

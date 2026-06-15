@@ -8,9 +8,9 @@
         <header class="wizard-studio__bar">
             <button type="button" class="ws-back" data-testid="wizard-studio-back" @click="goBack">‹ Retour</button>
             <div class="ws-title">
-                <span class="ws-eyebrow">Wizard Studio</span>
+                <span class="ws-eyebrow">Composition produit · Borne &amp; Caisse</span>
                 <strong>{{ entityName || '…' }}</strong>
-                <span class="ws-source" data-testid="wizard-studio-source">{{ inheritanceLabel }}</span>
+                <span class="ws-source" :title="isCategory ? 'Hérité par tous les produits de la catégorie' : 'Spécifique à ce produit'" data-testid="wizard-studio-source">{{ inheritanceLabel }}</span>
             </div>
             <span
                 class="ws-badge"
@@ -31,7 +31,7 @@
                 data-testid="wizard-studio-publish-toggle"
                 @click="togglePublish"
             >
-                {{ publishing ? '…' : (isPublished ? 'Dépublier' : 'Publier') }}
+                {{ publishing ? '…' : (isPublished ? 'Retirer de la borne' : 'Mettre en ligne') }}
             </button>
         </header>
 
@@ -42,9 +42,9 @@
 
         <!-- [W8] category without a wizard yet → create-from-scratch. -->
         <div v-else-if="isCategory && !hasProfile" class="ws-state" data-testid="wizard-studio-create">
-            <p>Cette catégorie n'a pas encore de wizard de composition.</p>
+            <p>Cette catégorie n'a pas encore d'étapes de composition.</p>
             <button type="button" class="ws-add ws-add--cta" :disabled="creating" data-testid="wizard-studio-create-btn" @click="createStudioProfile">
-                {{ creating ? 'Création…' : '+ Créer un wizard pour cette catégorie' }}
+                {{ creating ? 'Création…' : '+ Créer la composition de cette catégorie' }}
             </button>
             <p v-if="publishError" class="ws-state--error" data-testid="wizard-studio-create-error">{{ publishError }}</p>
         </div>
@@ -68,22 +68,31 @@
                 <div class="ws-phone" data-testid="wizard-studio-preview">
                     <div class="ws-phone__notch" aria-hidden="true"></div>
                     <div class="ws-phone__screen kiosk-root">
-                        <div v-if="previewLoading" class="ws-phone__hint" data-testid="wizard-studio-preview-loading">
+                        <!-- [VIS-PREVIEW-STABILITY] crossfade between renders instead of a hard remount blink.
+                             [A11Y-E1] the preview is the FROZEN kiosk wizard mounted read-only (noop handlers):
+                             aria-hidden + inert keep keyboard/SR users out of its dead controls — the section
+                             label + caption are the human-readable substitute. Zero frozen-file edit. -->
+                        <transition name="ws-preview" mode="out-in">
+                            <KioskWizardComponent
+                                v-if="draftItem && !previewError"
+                                :key="previewNonce"
+                                :item="draftItem"
+                                :on-add-to-cart="noop"
+                                :on-close="noop"
+                                aria-hidden="true"
+                                inert
+                                data-testid="wizard-studio-live-preview"
+                            />
+                            <div v-else-if="previewError" key="ws-err" class="ws-phone__hint ws-phone__hint--error" role="alert" data-testid="wizard-studio-preview-error">
+                                {{ previewError }}
+                            </div>
+                            <div v-else key="ws-empty" class="ws-phone__hint" data-testid="wizard-studio-preview-empty">
+                                Aucune page configurée — ajoutez une page pour voir l'aperçu.
+                            </div>
+                        </transition>
+                        <!-- loading sits as an overlay so a save-refresh never blanks the frame. -->
+                        <div v-if="previewLoading" class="ws-phone__hint ws-phone__hint--overlay" data-testid="wizard-studio-preview-loading">
                             <span class="ws-spinner" aria-hidden="true"></span> Préparation de l'aperçu…
-                        </div>
-                        <div v-else-if="previewError" class="ws-phone__hint ws-phone__hint--error" role="alert" data-testid="wizard-studio-preview-error">
-                            {{ previewError }}
-                        </div>
-                        <KioskWizardComponent
-                            v-else-if="draftItem"
-                            :key="previewNonce"
-                            :item="draftItem"
-                            :on-add-to-cart="noop"
-                            :on-close="noop"
-                            data-testid="wizard-studio-live-preview"
-                        />
-                        <div v-else class="ws-phone__hint" data-testid="wizard-studio-preview-empty">
-                            Aucune page configurée — ajoutez une page (W2) pour voir l'aperçu.
                         </div>
                     </div>
                 </div>
@@ -95,18 +104,22 @@
                 <div class="ws-panel__head">
                     <h2 class="ws-panel__title">Pages du wizard</h2>
                     <span v-if="savingDraft" class="ws-saving" data-testid="wizard-studio-saving">Enregistrement…</span>
+                    <span v-else-if="justSaved" class="ws-saved" data-testid="wizard-studio-saved">✓ Enregistré</span>
                 </div>
-                <!-- [A11Y-04] persistent live region: announces save/publish state to screen readers
-                     (a v-if'd indicator alone is not reliably announced). -->
+                <!-- [A11Y-04] persistent live region: announces save/publish state to screen readers.
+                     [A11Y-E2] a SEPARATE assertive region announces structure changes (reorder/add/delete)
+                     so they don't clobber, and aren't clobbered by, the save-state string. -->
                 <span class="ws-sr-only" role="status" aria-live="polite">{{ saveAnnounce }}</span>
+                <span class="ws-sr-only" role="status" aria-live="assertive">{{ structureAnnounce }}</span>
                 <p class="ws-panel__meta">{{ steps.length }} page(s) · v{{ version }} · {{ isPublished ? 'publié' : 'brouillon' }}</p>
+                <p class="ws-panel__lede">Chaque page = une étape que le client parcourt sur la borne.</p>
 
                 <p v-if="conflictDetected" class="ws-warn" role="alert" data-testid="wizard-studio-conflict">
                     ⚠ Ce wizard a été modifié ailleurs. <button type="button" class="ws-link" @click="reloadAll">Recharger</button> pour repartir de la dernière version (vos modifications non enregistrées seront écartées).
                 </p>
                 <p v-if="publishError && !conflictDetected" class="ws-warn" role="alert" data-testid="wizard-studio-publish-error">{{ publishError }}</p>
                 <p v-if="isPublished && !conflictDetected && !publishError" class="ws-live" data-testid="wizard-studio-live-edit">
-                    ⚡ Édition en direct — ce wizard est <strong>publié</strong> : chaque changement est aussitôt visible des clients sur la borne.
+                    ⚡ <strong>En ligne</strong> — chaque modification est immédiatement visible des clients sur la borne.
                 </p>
 
                 <draggable
@@ -115,7 +128,10 @@
                     item-key="_uid"
                     handle=".ws-step-drag"
                     class="ws-steplist"
+                    role="list"
+                    :animation="180"
                     ghost-class="ws-steprow--ghost"
+                    drag-class="ws-steprow--dragging"
                     @end="onReorder"
                 >
                     <div
@@ -123,6 +139,9 @@
                         :key="s._uid"
                         class="ws-steprow"
                         :class="{ 'ws-steprow--hidden': !stepRenders(s) }"
+                        role="listitem"
+                        :aria-setsize="steps.length"
+                        :aria-posinset="i + 1"
                         :data-testid="`ws-steprow-${i}`"
                     >
                         <div class="ws-steprow__head">
@@ -133,32 +152,39 @@
                                 :data-testid="`ws-step-drag-${i}`"
                                 @keydown.up.prevent="movePage(s, -1)"
                                 @keydown.down.prevent="movePage(s, 1)"
-                            >⠿</button>
+                            ><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor"><circle cx="6" cy="4" r="1.25"/><circle cx="10" cy="4" r="1.25"/><circle cx="6" cy="8" r="1.25"/><circle cx="10" cy="8" r="1.25"/><circle cx="6" cy="12" r="1.25"/><circle cx="10" cy="12" r="1.25"/></svg></button>
                             <input
                                 class="ws-step-name"
                                 :value="s.label"
+                                :ref="(el) => setRowRef(s._uid, el)"
                                 :aria-label="`Nom de la page ${i + 1}`"
                                 :data-testid="`ws-step-name-${i}`"
                                 @input="onRename(s, $event.target.value)"
                                 @change="saveStudioDraft"
                                 @keyup.enter="$event.target.blur()"
                             />
-                            <span class="ws-steprow__rule">{{ ruleSummary(s) }}</span>
-                            <span v-if="!stepRenders(s)" class="ws-steplist__tag" title="Page sans option : la borne ne l'affichera pas">0 option</span>
                             <button
                                 type="button"
                                 class="ws-step-cog"
                                 :class="{ 'ws-step-cog--on': expandedUid === s._uid }"
                                 :aria-label="`Règles de la page ${i + 1}`"
                                 :aria-expanded="expandedUid === s._uid ? 'true' : 'false'"
+                                :aria-controls="`ws-rule-panel-${s._uid}`"
                                 :data-testid="`ws-step-cog-${i}`"
                                 @click="toggleRule(s)"
-                            >⚙</button>
-                            <button type="button" class="ws-step-del" :aria-label="`Supprimer la page ${i + 1}`" :data-testid="`ws-step-del-${i}`" @click="removePage(s)">🗑</button>
+                            ><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2.5 5h6M11 5h2.5M2.5 11h2.5M7.5 11h6"/><circle cx="9.5" cy="5" r="1.7"/><circle cx="5.5" cy="11" r="1.7"/></svg></button>
+                            <button type="button" class="ws-step-del" :aria-label="`Supprimer la page ${i + 1}`" :data-testid="`ws-step-del-${i}`" @click="removePage(s)"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.6 8a1 1 0 0 0 1 .9h3.8a1 1 0 0 0 1-.9l.6-8"/></svg></button>
                         </div>
 
-                        <!-- [W3] selection-rule editor (+ [W6] source binding) -->
-                        <div v-if="expandedUid === s._uid" class="ws-rule" :data-testid="`ws-rule-${i}`">
+                        <!-- [VIS-05] rule chip + 0-option flag on their own meta line so the page NAME keeps full width. -->
+                        <div class="ws-steprow__meta">
+                            <span class="ws-steprow__rule">{{ ruleSummary(s) }}</span>
+                            <button v-if="!stepRenders(s)" type="button" class="ws-steplist__tag ws-steplist__tag--btn" :data-testid="`ws-steprow-fix-${i}`" title="Aucune option : choisissez une source pour réparer" @click="toggleRule(s)">Sans option — corriger</button>
+                        </div>
+
+                        <!-- [W3] selection-rule editor (+ [W6] source binding); [VIS-MOTION] expand/collapse fade -->
+                        <transition name="ws-rule">
+                        <div v-if="expandedUid === s._uid" class="ws-rule" :id="`ws-rule-panel-${s._uid}`" :data-testid="`ws-rule-${i}`">
                             <label v-if="sourceOptions.length" class="ws-rule__field ws-rule__field--wide">
                                 <span>Source</span>
                                 <select :value="currentSourceKey(s)" :data-testid="`ws-rule-source-${i}`" @change="setSource(s, $event.target.value)">
@@ -182,7 +208,7 @@
                                 <label class="ws-rule__field"><span>Max</span><input type="number" min="0" :value="s.max_select" :data-testid="`ws-rule-max-${i}`" @change="setBound(s, 'max_select', $event.target.value)" /></label>
                                 <label class="ws-rule__check"><input type="checkbox" :checked="!!s.allow_repeat" @change="setRepeat(s, $event.target.checked)" /> Répétable</label>
                             </template>
-                            <p class="ws-rule__hint">{{ ruleSummary(s) }} · {{ isMulti(s) ? 'plusieurs choix' : 'un seul choix' }}</p>
+                            <p class="ws-rule__hint">{{ ruleSummary(s) }}</p>
 
                             <!-- [W4c] read-only option inspector — what the customer will actually see -->
                             <div class="ws-options" :data-testid="`ws-options-${i}`">
@@ -206,13 +232,14 @@
                                 <p v-else class="ws-options__empty">Aucune option résolue — choisissez une « Source » ci-dessus pour que cette page propose des choix.</p>
                             </div>
                         </div>
+                        </transition>
                     </div>
                 </draggable>
                 <p v-else class="ws-panel__meta">Aucune page — ajoutez-en une pour commencer.</p>
 
                 <button type="button" class="ws-add" data-testid="wizard-studio-add-page" @click="addPage">+ Ajouter une page</button>
 
-                <p class="ws-panel__note">ℹ️ L'aperçu à gauche est le rendu RÉEL de la borne : elle peut masquer une page sans option ou ajouter un récapitulatif. Glissez pour réordonner ; renommez en cliquant le nom. Le binding des options (images, prix, règles) arrive dans les prochaines vagues.</p>
+                <p class="ws-panel__note">ℹ️ L'aperçu à gauche est le rendu réel de la borne — une page sans option y est masquée. Glissez pour réordonner, cliquez le nom pour renommer.</p>
             </aside>
         </div>
     </div>
@@ -254,6 +281,8 @@ export default {
             _uidSeq: 0,
             _pendingSave: false, // [WS-5] coalesce edits made while a save is in flight
             saveAnnounce: '', // [A11Y-04] screen-reader announcement for save/publish state
+            structureAnnounce: '', // [A11Y-E2] assertive SR announcement for reorder/add/delete
+            justSaved: false, // [VIS-PREVIEW] brief visible "✓ Enregistré" confirmation for sighted operators
             // [W8] lifecycle state.
             creating: false,
             publishing: false,
@@ -290,9 +319,9 @@ export default {
         inheritanceLabel() {
             if (!this.profile) return '';
             if (this.profile.item_category_id && !this.profile.item_id) {
-                return 'Wizard de catégorie — hérité par tous les produits de la catégorie';
+                return 'Hérité de la catégorie';
             }
-            return 'Wizard propre à ce produit';
+            return 'Propre à ce produit';
         },
         // [W6] flattened bindable sources for the page Source picker.
         sourceOptions() {
@@ -397,10 +426,10 @@ export default {
         ruleSummary(step) {
             const min = Number(step.min_select || 0);
             const max = Number(step.max_select || 0);
-            if (min === 0 && max === 1) return 'optionnel · 1 max';
-            if (min === max && min > 0) return `obligatoire · ${min}`;
-            if (max === 0) return `min ${min} · illimité`;
-            return `${min}–${max}`;
+            if (min === 0 && max === 1) return 'Facultatif · 1 choix max';
+            if (min === max && min > 0) return min === 1 ? 'Obligatoire · 1 choix' : `Obligatoire · ${min} choix`;
+            if (max === 0) return `Min ${min} choix · sans limite`;
+            return `De ${min} à ${max} choix`;
         },
         goBack() {
             // Prefer real history; fall back to the catalog studio if opened directly.
@@ -425,10 +454,16 @@ export default {
             // local label update only; persisted on blur (@change) to avoid mid-typing re-hydrate.
             step.label = value;
         },
+        // [A11Y-E3] track each row's name input so CRUD can move focus deterministically.
+        setRowRef(uid, el) {
+            (this._rowRefs ||= {});
+            if (el) this._rowRefs[uid] = el; else delete this._rowRefs[uid];
+        },
         addPage() {
             const n = this.steps.length + 1;
+            const uid = `u${++this._uidSeq}`;
             this.steps = [...this.steps, {
-                _uid: `u${++this._uidSeq}`,
+                _uid: uid,
                 // deterministically-unique stable key (avoids UNIQUE(profile_id, step_key)); rename keeps the key.
                 step_key: `page_${Date.now().toString(36)}${++this._uidSeq}`,
                 label: `Nouvelle page ${n}`,
@@ -443,14 +478,29 @@ export default {
                 position: this.steps.length,
             }];
             this.saveStudioDraft();
+            // [A11Y-E3] move focus onto the new row's name field + announce it (no silent append).
+            this.$nextTick(() => {
+                this._rowRefs?.[uid]?.focus?.();
+                this.structureAnnounce = 'Page ajoutée — saisissez son nom.';
+            });
         },
         async removePage(step) {
+            // [A11Y-E3] capture the neighbour BEFORE removal so focus doesn't fall to <body>.
+            const i = this.steps.findIndex((s) => s._uid === step._uid);
+            const neighbour = this.steps[i + 1] || this.steps[i - 1] || null;
             this.steps = this.steps.filter((s) => s._uid !== step._uid);
             await this.saveStudioDraft();
+            this.$nextTick(() => {
+                const target = (neighbour && this._rowRefs?.[neighbour._uid])
+                    || this.$el?.querySelector?.('[data-testid="wizard-studio-add-page"]');
+                target?.focus?.();
+                this.structureAnnounce = 'Page supprimée.';
+            });
         },
         onReorder() {
             // vue-draggable-next already mutated this.steps order; persist new positions.
             this.saveStudioDraft();
+            this.structureAnnounce = 'Ordre des pages mis à jour.';
         },
         // [WS-4] keyboard-accessible reorder (arrow up/down on the focused drag handle).
         movePage(step, dir) {
@@ -461,6 +511,10 @@ export default {
             [arr[i], arr[j]] = [arr[j], arr[i]];
             this.steps = arr;
             this.saveStudioDraft();
+            // [A11Y-E2] announce the outcome (where it landed) — the visual move is invisible to SR.
+            this.structureAnnounce = `Page « ${step.label || i + 1} » déplacée en position ${j + 1} sur ${this.steps.length}.`;
+            // keep the handle focused so the operator can keep arrowing.
+            this.$nextTick(() => this.$el?.querySelector?.(`[data-testid="ws-step-drag-${j}"]`)?.focus?.());
         },
         // Build the NF525-safe step payload (no price — price lives on catalog constructs).
         payloadForStep(s, i) {
@@ -512,6 +566,10 @@ export default {
                 if (!this._pendingSave) {
                     await this.reloadPreview(); // refresh the live borne render (the queued flush will reload)
                     this.saveAnnounce = 'Modifications enregistrées'; // [A11Y-04]
+                    // [VIS-PREVIEW] brief visible "✓ Enregistré" so sighted operators get positive confirmation.
+                    this.justSaved = true;
+                    clearTimeout(this._justSavedT);
+                    this._justSavedT = setTimeout(() => { this.justSaved = false; }, 1800);
                 }
             } catch (e) {
                 if (e?.response?.status === 409) {
@@ -602,7 +660,14 @@ export default {
             return Number(step.max_select || 0) !== 1;
         },
         toggleRule(step) {
-            this.expandedUid = this.expandedUid === step._uid ? null : step._uid;
+            const opening = this.expandedUid !== step._uid;
+            this.expandedUid = opening ? step._uid : null;
+            // [A11Y-E4] on open, move focus into the disclosed panel (first control) so SR users land on it.
+            if (opening) {
+                this.$nextTick(() => {
+                    this.$el?.querySelector?.(`#ws-rule-panel-${step._uid} select, #ws-rule-panel-${step._uid} input`)?.focus?.();
+                });
+            }
         },
         setChoiceType(step, type) {
             if (type === 'single') {
@@ -683,7 +748,8 @@ export default {
 .ws-back:focus-visible { outline: 2px solid #F4501E; outline-offset: 2px; }
 .ws-title { display: flex; flex-direction: column; line-height: 1.25; }
 .ws-eyebrow { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: #A8370E; } /* darker brand-orange: WCAG AA (~4.6:1) on white as small text */
-.ws-source { font-size: 12px; color: #6b6b6b; margin-top: 2px; }
+.ws-source { font-size: 12px; color: #6b6b6b; margin-top: 2px; } /* [IA-06] terse provenance token */
+.ws-source::before { content: '↳ '; color: #A8370E; }
 .ws-badge { margin-left: auto; padding: 5px 12px; border-radius: 999px; background: #ececec; color: #555; font-size: 12px; font-weight: 600; }
 .ws-badge--published { background: #e6f6ec; color: #0f6e38; } /* AA ≥4.5:1 on the light-green pill */
 .ws-pub { border: 0; border-radius: 999px; padding: 6px 14px; font-size: 12px; font-weight: 600; cursor: pointer; background: #137a40; color: #fff; }
@@ -693,15 +759,20 @@ export default {
 .ws-add--cta { max-width: 360px; margin: 14px auto 0; }
 .ws-state { padding: 40px; text-align: center; color: #555; }
 .ws-state--error { color: #b02a1a; }
-.wizard-studio__body { display: grid; grid-template-columns: 1fr 360px; gap: 24px; padding: 24px; align-items: start; }
-.ws-stage { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.wizard-studio__body { display: grid; grid-template-columns: minmax(0, 520px) 380px; justify-content: center; gap: 24px; padding: 24px; align-items: start; }
+/* [VIS-01] cap the preview track + sticky-center the device on a deliberate "lit canvas" so the
+   frame reads as intentional, not floating in dead beige. */
+.ws-stage { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; position: sticky; top: 24px; align-self: start; min-height: calc(100vh - 150px); padding: 28px; border-radius: 20px; background: radial-gradient(120% 120% at 50% 0%, #fffaf4 0%, #f1e8da 100%); box-shadow: inset 0 1px 0 rgba(255,255,255,.7), 0 2px 14px rgba(20,20,20,.05); border: 1px solid #efe6d8; }
 .ws-warn { width: 100%; max-width: 420px; margin: 0; padding: 10px 14px; border-radius: 10px; background: #fff4e8; border: 1px solid #f6c89a; color: #9a4a08; font-size: 13px; line-height: 1.35; }
 /* Realistic portrait device: dark shell + 9:16 screen the kiosk render is bounded to.
    transform establishes a containing block so the frozen wizard's position:fixed abandon
    overlay (z-index 120) is bounded to the device frame instead of covering the admin page (F7). */
-.ws-phone { position: relative; width: 390px; background: #1a1a1a; border-radius: 36px; padding: 14px; box-shadow: 0 16px 48px rgba(20,20,20,.22); transform: translateZ(0); }
-.ws-phone__notch { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); width: 120px; height: 18px; background: #1a1a1a; border-radius: 0 0 14px 14px; z-index: 2; }
-.ws-phone__screen { width: 362px; height: 644px; overflow: auto; background: #fff; border-radius: 24px; -webkit-overflow-scrolling: touch; }
+/* [VIS-03] premium device: graphite bezel + highlight rim + faint brand ambient glow on a stand. */
+.ws-phone { position: relative; width: 420px; background: linear-gradient(150deg, #2a2a2a 0%, #141414 60%); border-radius: 42px; padding: 16px; box-shadow: 0 24px 60px rgba(20,20,20,.28), 0 0 0 1px rgba(255,255,255,.06) inset, 0 -2px 0 rgba(255,255,255,.04) inset; transform: translateZ(0); }
+.ws-phone::after { content: ''; position: absolute; inset: -28px; border-radius: 60px; background: radial-gradient(60% 50% at 50% 38%, rgba(244,80,30,.10), transparent 70%); z-index: -1; }
+.ws-phone__notch { position: absolute; top: 16px; left: 50%; transform: translateX(-50%); width: 124px; height: 18px; background: #141414; border-radius: 0 0 14px 14px; z-index: 2; }
+.ws-phone__screen { position: relative; width: 388px; height: 690px; overflow: auto; background: #fff; border-radius: 30px; box-shadow: 0 0 0 2px #000 inset; -webkit-overflow-scrolling: touch; }
+.ws-phone__hint--overlay { position: absolute; inset: 0; background: rgba(255,255,255,.82); }
 /* The FROZEN kiosk wizard renders at 100vw (fullscreen borne). Inside the device frame we
    override it to a realistic kiosk-portrait width and scale it down with `zoom` so the
    operator sees the true borne proportions, fit-to-frame, instead of a clipped desktop slice. */
@@ -709,7 +780,7 @@ export default {
    zoom:0.5 maps to exactly the 362×644 frame regardless of admin viewport size. Without the
    height override the wizard stays 100vh (viewport-dependent) and its sticky footer/CTA pins
    off-frame (F1). With it, the kiosk scrolls its own step-content and pins the footer in-frame. */
-.ws-phone__screen :deep(.kiosk-wizard) { width: 724px !important; min-width: 724px; height: 1288px !important; max-height: 1288px !important; zoom: 0.5; }
+.ws-phone__screen :deep(.kiosk-wizard) { width: 776px !important; min-width: 776px; height: 1380px !important; max-height: 1380px !important; zoom: 0.5; } /* 776×.5=388, 1380×.5=690 → fits the screen 9:16 */
 .ws-phone__hint { display: flex; align-items: center; justify-content: center; gap: 8px; height: 100%; min-height: 200px; text-align: center; color: #6b6b6b; font-size: 13px; padding: 24px; } /* [A11Y-03] ≥4.5:1 AA */
 .ws-phone__hint--error { color: #b02a1a; }
 .ws-spinner { width: 16px; height: 16px; border: 2px solid #f0d9cf; border-top-color: #F4501E; border-radius: 50%; display: inline-block; animation: ws-spin 0.8s linear infinite; }
@@ -717,23 +788,30 @@ export default {
 .ws-stage__caption { margin: 0; font-size: 12px; color: #6b6b6b; } /* WCAG AA ≥4.5:1 on #faf7f2 */
 .ws-panel { background: #fff; border-radius: 16px; padding: 18px; box-shadow: 0 4px 18px rgba(20,20,20,.06); position: sticky; top: 24px; }
 .ws-panel__title { margin: 0 0 6px; font-size: 16px; }
-.ws-panel__meta { color: #555; font-size: 13px; margin: 0 0 12px; }
+.ws-panel__meta { color: #555; font-size: 13px; margin: 0 0 4px; }
+.ws-panel__lede { margin: 0 0 12px; font-size: 13px; color: #1A1A1A; font-weight: 600; } /* [IA-01] state the mental model once */
 .ws-panel__note { color: #6b6b6b; font-size: 12px; line-height: 1.4; margin-top: 12px; } /* [A11Y-03] ≥4.5:1 AA */
 .ws-panel__head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .ws-saving { font-size: 11px; color: #0f6e38; }
 .ws-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; } /* [A11Y-04] visually-hidden persistent live region */
 .ws-link { border: 0; background: transparent; color: #A8370E; text-decoration: underline; cursor: pointer; font: inherit; padding: 0; }
-.ws-steplist { margin: 0 0 10px; padding: 0; display: flex; flex-direction: column; gap: 8px; }
-/* [W2] editable page row */
-.ws-steprow { display: flex; flex-direction: column; padding: 8px 10px; border: 1px solid #eee6d9; border-radius: 10px; background: #fff; }
+.ws-steplist { margin: 0 0 10px; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+/* [W2] editable page row — [VIS-05] rhythm + hover, [VIS-MOTION] reorder tween */
+.ws-steprow { display: flex; flex-direction: column; padding: 10px 12px; border: 1px solid #eee6d9; border-radius: 12px; background: #fff; transition: border-color .12s ease, box-shadow .12s ease, transform .18s ease; }
+.ws-steprow:hover { border-color: #e3d5c2; box-shadow: 0 2px 8px rgba(20,20,20,.05); }
 .ws-steprow__head { display: flex; align-items: center; gap: 8px; }
-.ws-steprow--ghost { opacity: .4; }
-.ws-steprow--hidden { background: #faf6f0; }
-.ws-step-cog { border: 0; background: transparent; cursor: pointer; font-size: 14px; padding: 2px 4px; border-radius: 6px; color: #66756e; }
+.ws-steprow__meta { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin: 6px 0 0 36px; } /* [VIS-05] aligns under the name, past the 28px drag handle */
+/* [VIS-07] drag ghost lifts instead of just fading */
+.ws-steprow--ghost { opacity: .5; background: #fff8f1; border-style: dashed; }
+.ws-steprow--dragging { box-shadow: 0 8px 24px rgba(20,20,20,.18); transform: scale(1.02); }
+/* [VIS-04] 0-option page = the customer literally cannot proceed → brand-yellow rail + warm bg (not color-only). */
+.ws-steprow--hidden { background: #fffaf0; border-color: #f6c89a; box-shadow: inset 3px 0 0 #FFB800; }
+.ws-step-cog { border: 0; background: transparent; cursor: pointer; font-size: 14px; border-radius: 8px; color: #66756e; width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; padding: 0; transition: background .12s ease, transform .08s ease; }
+.ws-step-cog:hover { background: #fff1e4; }
 .ws-step-cog--on { background: #fff1e4; color: #A8370E; }
 .ws-step-cog:focus-visible { outline: 2px solid #F4501E; outline-offset: 1px; }
-/* [W3] rule editor */
-.ws-rule { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 8px; padding-top: 8px; border-top: 1px dashed #eee6d9; }
+/* [W3] rule editor — [VIS-05] contained nested surface */
+.ws-rule { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 10px; padding: 12px; border: 1px solid #efe6d8; border-radius: 10px; background: #faf7f2; }
 .ws-rule__field { display: flex; align-items: center; gap: 4px; font-size: 12px; color: #555; }
 .ws-rule__field--wide { flex-basis: 100%; }
 .ws-rule__field--wide select { flex: 1; }
@@ -753,21 +831,50 @@ export default {
 .ws-option__name { line-height: 1; }
 .ws-option__off { font-size: 9px; color: #b02a1a; background: #fdecea; padding: 1px 5px; border-radius: 6px; }
 .ws-live { margin: 0 0 10px; padding: 8px 12px; border-radius: 10px; background: #fff4e8; border: 1px solid #f6c89a; color: #9a4a08; font-size: 12px; line-height: 1.35; }
-.ws-step-drag { border: 0; background: transparent; cursor: grab; color: #6b756e; font-size: 16px; line-height: 1; padding: 2px 4px; border-radius: 6px; } /* [A11Y-02] ≥3:1 on #fff (WCAG 1.4.11) */
+/* [A11Y-02] ≥3:1 on #fff (WCAG 1.4.11); [VIS-02/07] balanced hit-target + hover/active parity */
+.ws-step-drag { border: 0; background: transparent; cursor: grab; color: #6b756e; line-height: 1; border-radius: 8px; width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; padding: 0; transition: background .12s ease, transform .08s ease; }
+.ws-step-drag:hover { background: #f4efe7; }
 .ws-step-drag:focus-visible { outline: 2px solid #F4501E; outline-offset: 1px; }
-.ws-step-name { flex: 1; min-width: 0; border: 1px solid transparent; border-radius: 6px; padding: 4px 6px; font-size: 14px; color: #222; background: transparent; }
+.ws-step-name { flex: 1; min-width: 0; border: 1px solid transparent; border-radius: 8px; padding: 4px 6px; font-size: 15px; font-weight: 600; color: #222; background: transparent; }
 .ws-step-name:hover { border-color: #e3ddd2; }
 .ws-step-name:focus { border-color: #F4501E; outline: none; background: #fff; }
-.ws-steprow__rule { color: #A8370E; font-size: 11px; white-space: nowrap; }
-.ws-step-del { border: 0; background: transparent; cursor: pointer; font-size: 14px; padding: 2px 4px; border-radius: 6px; }
-.ws-step-del:hover { background: #fdecea; }
+/* [VIS-05] rule summary as a quiet pill, anchored on "choix" (IA-02) */
+.ws-steprow__rule { display: inline-flex; align-items: center; padding: 2px 9px; border-radius: 999px; background: #fdf2ea; color: #A8370E; font-size: 11px; font-weight: 600; white-space: nowrap; }
+.ws-step-del { border: 0; background: transparent; cursor: pointer; border-radius: 8px; width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; padding: 0; color: #8a7f73; transition: background .12s ease, color .12s ease, transform .08s ease; }
+.ws-step-del:hover { background: #fdecea; color: #b02a1a; }
 .ws-step-del:focus-visible { outline: 2px solid #b02a1a; outline-offset: 1px; }
-.ws-add { width: 100%; border: 1px dashed #d9c9bb; background: #fff8f1; color: #A8370E; border-radius: 10px; padding: 10px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.ws-add { width: 100%; border: 1px dashed #d9c9bb; background: #fff8f1; color: #A8370E; border-radius: 12px; padding: 11px; cursor: pointer; font-size: 13px; font-weight: 600; transition: background .12s ease; }
 .ws-add:hover { background: #fff1e4; }
 .ws-add:focus-visible { outline: 2px solid #F4501E; outline-offset: 2px; }
-.ws-steplist__tag { display: inline-block; padding: 1px 6px; border-radius: 6px; background: #fff4e8; color: #9a4a08; font-size: 10px; white-space: nowrap; }
+/* [VIS-04] 0-option flag promoted to brand yellow + actionable (click → open the rule editor to fix). */
+.ws-steplist__tag { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 999px; background: #FFB800; color: #1A1A1A; font-size: 11px; font-weight: 700; white-space: nowrap; }
+.ws-steplist__tag--btn { border: 0; cursor: pointer; font-family: inherit; }
+.ws-steplist__tag--btn:hover { background: #f0ab00; }
+.ws-steplist__tag--btn:focus-visible { outline: 2px solid #1A1A1A; outline-offset: 1px; }
+/* [VIS-02] inline-SVG icons render pixel-identically + inherit color; kill baseline gap. */
+.ws-step-drag svg, .ws-step-cog svg, .ws-step-del svg { display: block; flex: none; }
+/* [VIS-07] press feedback + [VIS-PREVIEW] visible save confirmation */
+.ws-pub:active:not(:disabled), .ws-add:active { transform: translateY(1px); }
+.ws-step-cog:active, .ws-step-del:active, .ws-step-drag:active { transform: scale(.92); }
+.ws-saved { font-size: 11px; color: #0f6e38; font-weight: 600; }
+/* [VIS-PREVIEW-STABILITY] crossfade the preview instead of a hard remount blink; [VIS-MOTION] rule expand */
+.ws-preview-enter-active, .ws-preview-leave-active { transition: opacity .18s ease; }
+.ws-preview-enter-from, .ws-preview-leave-to { opacity: 0; }
+.ws-rule-enter-active, .ws-rule-leave-active { transition: opacity .16s ease, transform .16s ease; }
+.ws-rule-enter-from, .ws-rule-leave-to { opacity: 0; transform: translateY(-4px); }
+/* [VIS-MOTION] WCAG 2.3.3 — one guard disables every animation the component ships. */
+@media (prefers-reduced-motion: reduce) {
+    .ws-spinner { animation: none; border-top-color: #F4501E; }
+    .ws-preview-enter-active, .ws-preview-leave-active, .ws-rule-enter-active, .ws-rule-leave-active,
+    .ws-steprow, .ws-step-cog, .ws-step-del, .ws-step-drag, .ws-pub, .ws-add, .ws-saved { transition: none !important; animation: none !important; }
+}
 @media (max-width: 1024px) {
-    .wizard-studio__body { grid-template-columns: 1fr; }
+    .wizard-studio__body { grid-template-columns: 1fr; justify-content: stretch; }
+    /* edit list first on narrow screens; the preview follows as a compact, non-sticky stage. */
     .ws-panel { order: -1; position: static; }
+    .ws-stage { position: static; min-height: 0; padding: 16px; }
+    .ws-phone { width: 300px; }
+    .ws-phone__screen { width: 268px; height: 477px; }
+    .ws-phone__screen :deep(.kiosk-wizard) { width: 776px !important; min-width: 776px; height: 1380px !important; max-height: 1380px !important; zoom: 0.3454; }
 }
 </style>
