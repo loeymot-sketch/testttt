@@ -358,28 +358,26 @@ describe('WizardStudio adversarial heals (WS-4 / WS-5)', () => {
         expect(wrapper.vm.steps[0].label).toBe('PENDING-EDIT');
     });
 
-    it('STATE-05: a non-409 save failure blocks further saves (no silent re-commit of divergent state) until reload', async () => {
+    it('STATE-05: a non-409 save failure does NOT latch — the next edit safely re-attempts the save (version lock guards concurrency)', async () => {
         wireCategoryEdit();
         const wrapper = mountCat();
         await flushPromises();
         axios.put.mockClear();
+        // First save fails (transient 500); subsequent saves succeed (default wireCategoryEdit impl).
         axios.put.mockRejectedValueOnce({ response: { status: 500, data: { message: 'boom' } } });
 
-        await wrapper.vm.addPage(); // optimistic local mutation + a PUT that fails 500
+        await wrapper.vm.addPage(); // optimistic mutation + a PUT that fails 500
         await flushPromises();
-        expect(wrapper.vm.saveFailed).toBe(true);
-        expect(wrapper.vm.conflictDetected).toBe(false); // distinct from the 409 path
+        expect(wrapper.vm.conflictDetected).toBe(false); // not the 409 path
+        expect(wrapper.vm.previewError).toBeTruthy(); // error surfaced per-attempt
         const putsAfterFail = axios.put.mock.calls.length; // 1
 
-        // A subsequent edit must NOT silently re-PUT the divergent local state.
+        // A subsequent edit RE-ATTEMPTS the save (not blocked) — the server's optimistic version lock
+        // (assertVersionMatches → 409) is the guard against committing over a concurrent change.
         await wrapper.vm.addPage();
         await flushPromises();
-        expect(axios.put.mock.calls.length).toBe(putsAfterFail); // still blocked → no second PUT
-
-        // Reloading restores server truth and unblocks saving.
-        await wrapper.vm.reloadAll();
-        await flushPromises();
-        expect(wrapper.vm.saveFailed).toBe(false);
+        expect(axios.put.mock.calls.length).toBe(putsAfterFail + 1); // retried
+        expect(wrapper.vm.previewError).toBe(''); // cleared on the successful retry
     });
 
     it('STATE-04: togglePublish bails while a save is QUEUED (_pendingSave), closing the microtask window', async () => {
