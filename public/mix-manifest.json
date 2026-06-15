@@ -1,15 +1,15 @@
 {
-    "/js/pos-app.js": "/js/pos-app.js?id=92cd492476462bb71a5dcbff8f18da68",
-    "/js/app.js": "/js/app.js?id=235263bbcb4cdaba3b3015303c705c57",
-    "/js/manifest.js": "/js/manifest.js?id=6dbb4534e7d3f8d22f4c810b8d72a8c1",
-    "/js/pos-shell.js": "/js/pos-shell.js?id=117ff992b03f8703ba5cc71bbdd17d33",
-    "/js/admin-shell.js": "/js/admin-shell.js?id=b9c0747ad09d46363c1f2b4893a85561",
-    "/js/admin-reports.js": "/js/admin-reports.js?id=e3e52e30a51a67e767fa7e6e2acc74c2",
-    "/js/admin-kds.js": "/js/admin-kds.js?id=53e484fbc7746fac67da749b401d7df8",
-    "/js/admin-oss.js": "/js/admin-oss.js?id=01b45650b4a32e11b60b7b8d27b7761a",
-    "/js/kiosk-shell.js": "/js/kiosk-shell.js?id=23f17014e9625b405b39cf6404237c27",
-    "/js/kiosk-wizard.js": "/js/kiosk-wizard.js?id=15a4a62599251904bace09e7e78df794",
-    "/js/kiosk-wizard-step.js": "/js/kiosk-wizard-step.js?id=93a5100dd98ce5415929ddebfca03b48",
+    "/js/pos-app.js": "/js/pos-app.js?id=e64e866dd6d04d2ca1a61a2ec1d5a434",
+    "/js/app.js": "/js/app.js?id=a5943d2681a8630d3a0538a414f90518",
+    "/js/manifest.js": "/js/manifest.js?id=d1bb3cc50ce1cdef0e6896f93b140630",
+    "/js/pos-shell.js": "/js/pos-shell.js?id=ba8f13c6c12b1826b166a94dfaf077b1",
+    "/js/admin-shell.js": "/js/admin-shell.js?id=8abf633862429c34a5e544ab97423af7",
+    "/js/admin-reports.js": "/js/admin-reports.js?id=eeb68275b5512644e7f399387e2bc9bc",
+    "/js/admin-kds.js": "/js/admin-kds.js?id=574ecf08c824751de409cd23d01c17bc",
+    "/js/admin-oss.js": "/js/admin-oss.js?id=fea02d90b1ccc7736f4812df59fa7b75",
+    "/js/kiosk-shell.js": "/js/kiosk-shell.js?id=e36deba650d50ce3818d6f0401a5b558",
+    "/js/kiosk-wizard.js": "/js/kiosk-wizard.js?id=c787a5963552d5c8c198238a1a9e593c",
+    "/js/kiosk-wizard-step.js": "/js/kiosk-wizard-step.js?id=01a38712950742877bd89bb7ead1e73f",
     "/css/app.css": "/css/app.css?id=7a962c152dd7126c6e7265f82700a781",
-    "/js/vendor.js": "/js/vendor.js?id=bec39c2e3e51384a2eb4c06e04ebb135"
+    "/js/vendor.js": "/js/vendor.js?id=4ca020de21e875d18a65875b070f08de"
 }
