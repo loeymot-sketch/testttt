@@ -25,7 +25,8 @@
                 type="button"
                 class="ws-pub"
                 :class="{ 'ws-pub--unpub': isPublished }"
-                :disabled="publishing"
+                :disabled="publishing || savingDraft"
+                :title="savingDraft ? 'Enregistrement en cours…' : ''"
                 data-testid="wizard-studio-publish-toggle"
                 @click="togglePublish"
             >
@@ -99,8 +100,8 @@
                 <p v-if="conflictDetected" class="ws-warn" role="alert" data-testid="wizard-studio-conflict">
                     ⚠ Ce wizard a été modifié ailleurs. <button type="button" class="ws-link" @click="reloadAll">Recharger</button> pour repartir de la dernière version (vos modifications non enregistrées seront écartées).
                 </p>
-                <p v-if="publishError" class="ws-warn" role="alert" data-testid="wizard-studio-publish-error">{{ publishError }}</p>
-                <p v-if="isPublished && !conflictDetected" class="ws-live" data-testid="wizard-studio-live-edit">
+                <p v-if="publishError && !conflictDetected" class="ws-warn" role="alert" data-testid="wizard-studio-publish-error">{{ publishError }}</p>
+                <p v-if="isPublished && !conflictDetected && !publishError" class="ws-live" data-testid="wizard-studio-live-edit">
                     ⚡ Édition en direct — ce wizard est <strong>publié</strong> : chaque changement est aussitôt visible des clients sur la borne.
                 </p>
 
@@ -542,7 +543,9 @@ export default {
             }
         },
         async togglePublish() {
-            if (!this.profile?.id || this.publishing) return;
+            // Block while a draft save is in flight: publish reads this.version, which the in-flight
+            // save will bump on success → a concurrent publish would 409 on a stale version.
+            if (!this.profile?.id || this.publishing || this.savingDraft) return;
             this.publishing = true;
             this.publishError = '';
             const action = this.isPublished ? 'unpublish' : 'publish';

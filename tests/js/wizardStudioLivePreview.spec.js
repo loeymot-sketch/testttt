@@ -368,6 +368,22 @@ describe('WizardStudio adversarial heals (WS-4 / WS-5)', () => {
         expect(wrapper.vm.isPublished).toBe(false);
     });
 
+    it('WS-8race: togglePublish is a no-op while a draft save is in flight (version race guard)', async () => {
+        wireCategoryEdit(); // CAT_PROFILE is a draft (is_published false)
+        let publishCalled = false;
+        axios.post.mockImplementation((url) => {
+            if (url.endsWith('/publish')) { publishCalled = true; return Promise.resolve({ data: { ...CAT_PROFILE, is_published: true, version: 3 } }); }
+            return Promise.resolve({ data: CAT_PROFILE });
+        });
+        const wrapper = mountCat();
+        await flushPromises();
+        wrapper.vm.savingDraft = true; // a bulk-PUT is in flight (will bump version)
+        await wrapper.vm.togglePublish(); // must bail — publishing now would 409 on a stale version
+        await flushPromises();
+        expect(publishCalled).toBe(false);
+        expect(wrapper.vm.isPublished).toBe(false); // unchanged
+    });
+
     it('W8: a 422 assertPublishable error is surfaced (cannot publish a broken wizard)', async () => {
         wireCategoryEdit();
         axios.post.mockImplementation((url) => (url.endsWith('/publish')
