@@ -2375,7 +2375,9 @@ export default {
         }).catch((err) => {
           this.loading.isActive = false;
           if (err?.response?.status === 409) {
-            alertService.error(this.$t("message.kds_status_conflict"));
+            // [B-KDS-03 2026-06-14] 409 = double-bump bénin (idempotency /
+            // state-machine a déjà appliqué la transition). Aligné sur
+            // onV2ChangeStatus — refresh silencieux, PAS de toast d'erreur.
             this._debouncedRefresh();
             return;
           }
