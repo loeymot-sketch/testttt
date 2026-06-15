@@ -1,10 +1,12 @@
 <template>
-    <!-- [WIZARD-STUDIO W0 2026-06-14] New WYSIWYG visual builder — COPY alongside the
-         existing form-based ProductComposerEditorComponent. Reuses the SAME composer API
-         + data model (item_wizard_profiles/steps -> composer_profile) so the FROZEN kiosk/POS
-         wizards render the result identically. Non-frozen. Vertical portrait preview = the
-         operator edits exactly what the customer sees on the borne. -->
     <div class="wizard-studio" data-testid="wizard-studio-root">
+        <!-- [WS-INT-01] The root MUST be the literal first node of <template> (no leading comment):
+             a leading comment makes the SFC a multi-root fragment so this.$el becomes the comment node
+             (no querySelector) and movePage/removePage focus handoffs silently no-op. Keep doc comments INSIDE.
+             [WIZARD-STUDIO W0 2026-06-14] New WYSIWYG visual builder — COPY alongside the existing
+             form-based ProductComposerEditorComponent. Reuses the SAME composer API + data model
+             (item_wizard_profiles/steps -> composer_profile) so the FROZEN kiosk/POS wizards render
+             identically. Non-frozen. Vertical portrait preview = exactly what the customer sees. -->
         <header class="wizard-studio__bar">
             <button type="button" class="ws-back" data-testid="wizard-studio-back" @click="goBack">‹ Retour</button>
             <div class="ws-title">
@@ -86,7 +88,9 @@
                             <div v-else-if="previewError" key="ws-err" class="ws-phone__hint ws-phone__hint--error" role="alert" data-testid="wizard-studio-preview-error">
                                 {{ previewError }}
                             </div>
-                            <div v-else key="ws-empty" class="ws-phone__hint" data-testid="wizard-studio-preview-empty">
+                            <!-- [WS-PREVIEW-EMPTY-BLEED] gate on !previewLoading so the empty hint can't bleed
+                                 through the translucent loading overlay during an initial fetch / save refresh. -->
+                            <div v-else-if="!previewLoading" key="ws-empty" class="ws-phone__hint" data-testid="wizard-studio-preview-empty">
                                 Aucune page configurée — ajoutez une page pour voir l'aperçu.
                             </div>
                         </transition>
@@ -343,6 +347,11 @@ export default {
     async created() {
         await this.load();
     },
+    beforeUnmount() {
+        // [WS-JUSTSAVED-TIMER-LEAK] don't let the "✓ Enregistré" timer fire on a torn-down instance
+        // (operator saves then clicks ‹ Retour within 1.8s).
+        clearTimeout(this._justSavedT);
+    },
     methods: {
         async load() {
             this.loading = true;
@@ -454,6 +463,12 @@ export default {
             // local label update only; persisted on blur (@change) to avoid mid-typing re-hydrate.
             step.label = value;
         },
+        // [A11Y-STRUCT-ANNOUNCE-REPEAT] aria-live only re-announces when the text CHANGES, so identical
+        // consecutive structure ops (2nd delete, 2nd reorder) would be silent. Clear first, then set.
+        announceStructure(msg) {
+            this.structureAnnounce = '';
+            this.$nextTick(() => { this.structureAnnounce = msg; });
+        },
         // [A11Y-E3] track each row's name input so CRUD can move focus deterministically.
         setRowRef(uid, el) {
             (this._rowRefs ||= {});
@@ -481,7 +496,7 @@ export default {
             // [A11Y-E3] move focus onto the new row's name field + announce it (no silent append).
             this.$nextTick(() => {
                 this._rowRefs?.[uid]?.focus?.();
-                this.structureAnnounce = 'Page ajoutée — saisissez son nom.';
+                this.announceStructure('Page ajoutée — saisissez son nom.');
             });
         },
         async removePage(step) {
@@ -494,13 +509,13 @@ export default {
                 const target = (neighbour && this._rowRefs?.[neighbour._uid])
                     || this.$el?.querySelector?.('[data-testid="wizard-studio-add-page"]');
                 target?.focus?.();
-                this.structureAnnounce = 'Page supprimée.';
+                this.announceStructure('Page supprimée.');
             });
         },
         onReorder() {
             // vue-draggable-next already mutated this.steps order; persist new positions.
             this.saveStudioDraft();
-            this.structureAnnounce = 'Ordre des pages mis à jour.';
+            this.announceStructure('Ordre des pages mis à jour.');
         },
         // [WS-4] keyboard-accessible reorder (arrow up/down on the focused drag handle).
         movePage(step, dir) {
@@ -512,7 +527,7 @@ export default {
             this.steps = arr;
             this.saveStudioDraft();
             // [A11Y-E2] announce the outcome (where it landed) — the visual move is invisible to SR.
-            this.structureAnnounce = `Page « ${step.label || i + 1} » déplacée en position ${j + 1} sur ${this.steps.length}.`;
+            this.announceStructure(`Page « ${step.label || i + 1} » déplacée en position ${j + 1} sur ${this.steps.length}.`);
             // keep the handle focused so the operator can keep arrowing.
             this.$nextTick(() => this.$el?.querySelector?.(`[data-testid="ws-step-drag-${j}"]`)?.focus?.());
         },

@@ -527,6 +527,33 @@ describe('WizardStudio UI/UX elevations (review round)', () => {
         expect(wrapper.vm.structureAnnounce).toContain('supprimée');
     });
 
+    it('WS-INT-01: movePage actually lands focus on the drag handle at the new position (real DOM, $el is an element now)', async () => {
+        wireCategoryEdit();
+        const wrapper = mount(WizardStudioComponent, {
+            props: { entityType: 'category', entityId: 6 },
+            attachTo: document.body, // real DOM so focus() has effect + $el must be an element (not a fragment comment)
+            global: { stubs: STUBS, mocks: { $router: { push: vi.fn(), back: vi.fn() } } },
+        });
+        await flushPromises();
+        expect(wrapper.vm.$el.nodeType).toBe(1); // ELEMENT — regression guard for the leading-comment fragment bug
+        await wrapper.vm.movePage(wrapper.vm.steps[0], 1);
+        await flushPromises();
+        const handle = wrapper.vm.$el.querySelector('[data-testid="ws-step-drag-1"]');
+        expect(document.activeElement).toBe(handle); // focus stayed on the handle at its new index
+        wrapper.unmount();
+    });
+
+    it('A11Y-STRUCT-ANNOUNCE-REPEAT: announceStructure re-announces an identical message by clearing first', async () => {
+        wireCategoryEdit();
+        const wrapper = mountCat();
+        await flushPromises();
+        wrapper.vm.structureAnnounce = 'Page supprimée.';
+        wrapper.vm.announceStructure('Page supprimée.');
+        expect(wrapper.vm.structureAnnounce).toBe(''); // cleared synchronously → forces an aria-live content change
+        await wrapper.vm.$nextTick();
+        expect(wrapper.vm.structureAnnounce).toBe('Page supprimée.'); // re-set → re-announced even though identical
+    });
+
     it('A11Y-E4: focusRulePanel focuses the first control of the entered rule panel (post-transition)', async () => {
         wireCategoryEdit();
         const wrapper = mountCat();
