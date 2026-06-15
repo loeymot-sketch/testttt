@@ -113,23 +113,119 @@ class ComposerStudioHardeningTest extends TestCase
             ->assertSuccessful();
     }
 
-    public function test_gap3_create_for_category_is_idempotent_on_double_submit(): void
+    public function test_gap3_idempotent_create_returns_same_profile_on_double_submit(): void
     {
         $category = ItemCategory::factory()->create();
         $svc = app(ComposerProfileService::class);
 
-        $first = $svc->createForCategory($category, ['template' => 'custom', 'branch_id_scope' => null, 'steps' => []]);
-        $second = $svc->createForCategory($category, ['template' => 'custom', 'branch_id_scope' => null, 'steps' => []]);
+        // The Studio CTA path passes idempotent=true (storeForCategory).
+        $first = $svc->createForCategory($category, ['template' => 'custom', 'branch_id_scope' => null, 'steps' => []], true);
+        $second = $svc->createForCategory($category, ['template' => 'custom', 'branch_id_scope' => null, 'steps' => []], true);
 
-        $this->assertSame($first->id, $second->id, 'second create must return the same profile, not a duplicate');
+        $this->assertSame($first->id, $second->id, 'second idempotent create must return the same profile, not a duplicate');
         $this->assertSame(
             1,
             ItemWizardProfile::query()->where('item_category_id', $category->id)->count(),
-            'a second create must not orphan a duplicate profile row'
+            'a second idempotent create must not orphan a duplicate profile row'
         );
         $this->assertDatabaseHas('item_categories', [
             'id' => $category->id,
             'wizard_profile_id' => $first->id, // pointer still anchored to the live profile
         ]);
+    }
+
+    public function test_gap3_non_idempotent_create_still_applies_steps_when_a_profile_exists(): void
+    {
+        // Regression guard: apply-template uses the DEFAULT (non-idempotent) path. The idempotency
+        // fix must NOT swallow the template's steps when the category already has a profile.
+        $category = ItemCategory::factory()->create();
+        $svc = app(ComposerProfileService::class);
+
+        $svc->createForCategory($category, ['template' => 'custom', 'branch_id_scope' => null, 'steps' => []], true); // pre-existing draft
+
+        $withSteps = $svc->createForCategory($category, [
+            'template' => 'tacos',
+            'branch_id_scope' => null,
+            'steps' => [
+                ['step_key' => 'base', 'label' => 'Base', 'source_type' => 'item_attribute', 'source_ref' => 'Base'],
+                ['step_key' => 'sauce', 'label' => 'Sauce', 'source_type' => 'extra_group', 'source_ref' => 'sauce'],
+            ],
+        ]); // default $idempotent=false → applyTemplate behaviour
+
+        $this->assertSame(2, $withSteps->steps()->count(), 'template steps must be applied, not silently discarded');
+        $this->assertSame('tacos', $withSteps->template);
+    }
+
+    public function test_sec01_sibling_compose_only_user_cannot_add_step_to_published_profile(): void
+    {
+        Event::fake([ComposerProfileChanged::class]);
+        Branch::factory()->create(['id' => 1]);
+
+        $composeOnly = Role::firstOrCreate(['name' => 'ComposeOnly', 'guard_name' => 'sanctum']);
+        $composeOnly->givePermissionTo(Permission::findByName('catalog.compose', 'sanctum'));
+        $user = User::factory()->create(['branch_id' => 1]);
+        $user->assignRole('ComposeOnly');
+
+        $published = ItemWizardProfile::factory()->create([
+            'item_id' => null,
+            'item_category_id' => ItemCategory::factory(),
+            'is_published' => true,
+            'branch_id_scope' => 1,
+            'version' => 1,
+        ]);
+
+        // The step endpoints broadcast live exactly like update() — must require catalog.publish.
+        $this->actingAs($user, 'sanctum')
+            ->postJson("/api/admin/composer/profiles/{$published->id}/steps", [
+                'step_key' => 'sauce', 'label' => 'Sauce', 'source_type' => 'extra_group', 'source_ref' => 'sauce',
+            ])
+            ->assertForbidden();
+    }
+
+    public function test_sec01_sibling_compose_only_user_may_add_step_to_a_draft(): void
+    {
+        Branch::factory()->create(['id' => 1]);
+
+        $composeOnly = Role::firstOrCreate(['name' => 'ComposeOnly', 'guard_name' => 'sanctum']);
+        $composeOnly->givePermissionTo(Permission::findByName('catalog.compose', 'sanctum'));
+        $user = User::factory()->create(['branch_id' => 1]);
+        $user->assignRole('ComposeOnly');
+
+        $draft = ItemWizardProfile::factory()->create([
+            'item_id' => null,
+            'item_category_id' => ItemCategory::factory(),
+            'is_published' => false,
+            'branch_id_scope' => 1,
+            'version' => 1,
+        ]);
+
+        $this->actingAs($user, 'sanctum')
+            ->postJson("/api/admin/composer/profiles/{$draft->id}/steps", [
+                'step_key' => 'sauce', 'label' => 'Sauce', 'source_type' => 'extra_group', 'source_ref' => 'sauce',
+            ])
+            ->assertSuccessful(); // editing a draft's steps stays compose-level
+    }
+
+    public function test_sec01_sibling_publish_capable_user_may_add_step_to_published_profile(): void
+    {
+        Event::fake([ComposerProfileChanged::class]);
+        Branch::factory()->create(['id' => 1]);
+
+        $user = User::factory()->create(['branch_id' => 1]);
+        $user->assignRole('Branch Manager'); // holds catalog.publish
+
+        $published = ItemWizardProfile::factory()->create([
+            'item_id' => null,
+            'item_category_id' => ItemCategory::factory(),
+            'is_published' => true,
+            'branch_id_scope' => 1,
+            'version' => 1,
+        ]);
+
+        $this->actingAs($user, 'sanctum')
+            ->postJson("/api/admin/composer/profiles/{$published->id}/steps", [
+                'step_key' => 'sauce', 'label' => 'Sauce', 'source_type' => 'extra_group', 'source_ref' => 'sauce',
+            ])
+            ->assertSuccessful();
     }
 }

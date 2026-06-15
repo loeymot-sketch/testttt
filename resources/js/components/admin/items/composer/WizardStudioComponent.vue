@@ -26,7 +26,7 @@
                 class="ws-pub"
                 :class="{ 'ws-pub--unpub': isPublished }"
                 :disabled="publishing || savingDraft || _pendingSave"
-                :aria-busy="(publishing || savingDraft) ? 'true' : 'false'"
+                :aria-busy="(publishing || savingDraft || _pendingSave) ? 'true' : 'false'"
                 :title="(savingDraft || _pendingSave) ? 'Enregistrement en cours…' : ''"
                 data-testid="wizard-studio-publish-toggle"
                 @click="togglePublish"
@@ -104,8 +104,11 @@
                 <p v-if="conflictDetected" class="ws-warn" role="alert" data-testid="wizard-studio-conflict">
                     ⚠ Ce wizard a été modifié ailleurs. <button type="button" class="ws-link" @click="reloadAll">Recharger</button> pour repartir de la dernière version (vos modifications non enregistrées seront écartées).
                 </p>
-                <p v-if="publishError && !conflictDetected" class="ws-warn" role="alert" data-testid="wizard-studio-publish-error">{{ publishError }}</p>
-                <p v-if="isPublished && !conflictDetected && !publishError" class="ws-live" data-testid="wizard-studio-live-edit">
+                <p v-if="saveFailed && !conflictDetected" class="ws-warn" role="alert" data-testid="wizard-studio-save-failed">
+                    ⚠ Enregistrement échoué — les dernières modifications ne sont pas sauvegardées. <button type="button" class="ws-link" @click="reloadAll">Recharger</button> pour repartir de la dernière version enregistrée.
+                </p>
+                <p v-if="publishError && !conflictDetected && !saveFailed" class="ws-warn" role="alert" data-testid="wizard-studio-publish-error">{{ publishError }}</p>
+                <p v-if="isPublished && !conflictDetected && !publishError && !saveFailed" class="ws-live" data-testid="wizard-studio-live-edit">
                     ⚡ Édition en direct — ce wizard est <strong>publié</strong> : chaque changement est aussitôt visible des clients sur la borne.
                 </p>
 
@@ -253,6 +256,7 @@ export default {
             conflictDetected: false,
             _uidSeq: 0,
             _pendingSave: false, // [WS-5] coalesce edits made while a save is in flight
+            saveFailed: false, // [STATE-05] a non-409 save failed → block further saves until reload (no silent re-commit of divergent local steps)
             saveAnnounce: '', // [A11Y-04] screen-reader announcement for save/publish state
             // [W8] lifecycle state.
             creating: false,
@@ -483,6 +487,10 @@ export default {
         },
         async saveStudioDraft() {
             if (!this.profile?.id) return;
+            // [STATE-05] A prior save failed (non-409). Local steps may diverge from the server and
+            // the version was NOT bumped, so re-PUTing would silently commit the divergent state on
+            // top of the server. Block until the operator reloads (clears saveFailed → server truth).
+            if (this.saveFailed) return;
             // [WS-5] an edit made during an in-flight save is not dropped: queue a trailing re-save.
             if (this.savingDraft) { this._pendingSave = true; return; }
             this.savingDraft = true;
@@ -519,12 +527,16 @@ export default {
                     this.saveAnnounce = 'Conflit : ce wizard a été modifié ailleurs'; // [A11Y-04]
                     return;
                 }
+                // [STATE-05] Non-409 failure (500/network/422): the optimistic local mutation stayed
+                // applied but did NOT persist. Flag sticky so further saves are blocked (no silent
+                // re-commit) and surface a reload affordance — coherent with the 409 path.
+                this.saveFailed = true;
                 this.previewError = e?.response?.data?.message || 'Enregistrement impossible.';
                 this.saveAnnounce = 'Échec de l’enregistrement'; // [A11Y-04]
             } finally {
                 this.savingDraft = false;
-                // flush a queued edit, unless we hit a version conflict (would just re-409).
-                if (this._pendingSave && !this.conflictDetected) {
+                // flush a queued edit, unless we hit a version conflict or a save failure (would just re-fail / re-409).
+                if (this._pendingSave && !this.conflictDetected && !this.saveFailed) {
                     this._pendingSave = false;
                     this.$nextTick(() => this.saveStudioDraft());
                 } else {
@@ -534,6 +546,8 @@ export default {
         },
         async reloadAll() {
             this.conflictDetected = false;
+            this.saveFailed = false; // [STATE-05] reloading restores server truth → saves unblocked
+            this.previewError = '';
             await this.load();
         },
 

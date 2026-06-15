@@ -358,6 +358,30 @@ describe('WizardStudio adversarial heals (WS-4 / WS-5)', () => {
         expect(wrapper.vm.steps[0].label).toBe('PENDING-EDIT');
     });
 
+    it('STATE-05: a non-409 save failure blocks further saves (no silent re-commit of divergent state) until reload', async () => {
+        wireCategoryEdit();
+        const wrapper = mountCat();
+        await flushPromises();
+        axios.put.mockClear();
+        axios.put.mockRejectedValueOnce({ response: { status: 500, data: { message: 'boom' } } });
+
+        await wrapper.vm.addPage(); // optimistic local mutation + a PUT that fails 500
+        await flushPromises();
+        expect(wrapper.vm.saveFailed).toBe(true);
+        expect(wrapper.vm.conflictDetected).toBe(false); // distinct from the 409 path
+        const putsAfterFail = axios.put.mock.calls.length; // 1
+
+        // A subsequent edit must NOT silently re-PUT the divergent local state.
+        await wrapper.vm.addPage();
+        await flushPromises();
+        expect(axios.put.mock.calls.length).toBe(putsAfterFail); // still blocked → no second PUT
+
+        // Reloading restores server truth and unblocks saving.
+        await wrapper.vm.reloadAll();
+        await flushPromises();
+        expect(wrapper.vm.saveFailed).toBe(false);
+    });
+
     it('STATE-04: togglePublish bails while a save is QUEUED (_pendingSave), closing the microtask window', async () => {
         wireCategoryEdit();
         let publishCalled = false;

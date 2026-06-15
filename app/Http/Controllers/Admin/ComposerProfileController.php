@@ -69,7 +69,8 @@ class ComposerProfileController extends AdminController
     {
         $this->authorizeWritableBranchScope($request, $request->integer('branch_id_scope') ?: null);
 
-        return new ComposerProfileResource($this->profiles->createForCategory($category, $request->validated()));
+        // [GAP-3] idempotent: the Studio CTA may double-submit; never orphan a duplicate profile.
+        return new ComposerProfileResource($this->profiles->createForCategory($category, $request->validated(), true));
     }
 
     public function update(ComposerProfileRequest $request, ItemWizardProfile $profile)
