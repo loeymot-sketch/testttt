@@ -546,15 +546,11 @@ export default {
             return Array.isArray(match?.choices) ? match.choices : [];
         },
         // [W4c] a missing/broken option image (e.g. a custom image_path with no file) must not show
-        // a broken-image icon — swap to the neutral placeholder, keep the name.
+        // a broken-image icon — just hide it (the chip keeps the name). No manual DOM insertion:
+        // an orphaned node would survive Vue's vdom reconciliation on the next re-render.
         onOptionImgError(event) {
-            const el = event?.target;
-            if (el) {
-                el.style.display = 'none';
-                const ph = document.createElement('span');
-                ph.className = 'ws-option__img ws-option__img--ph';
-                ph.setAttribute('aria-hidden', 'true');
-                el.parentNode?.insertBefore(ph, el);
+            if (event?.target) {
+                event.target.style.display = 'none';
             }
         },
         setSource(step, key) {
