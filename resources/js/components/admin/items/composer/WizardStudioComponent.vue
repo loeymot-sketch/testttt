@@ -25,8 +25,9 @@
                 type="button"
                 class="ws-pub"
                 :class="{ 'ws-pub--unpub': isPublished }"
-                :disabled="publishing || savingDraft"
-                :title="savingDraft ? 'Enregistrement en cours…' : ''"
+                :disabled="publishing || savingDraft || _pendingSave"
+                :aria-busy="(publishing || savingDraft) ? 'true' : 'false'"
+                :title="(savingDraft || _pendingSave) ? 'Enregistrement en cours…' : ''"
                 data-testid="wizard-studio-publish-toggle"
                 @click="togglePublish"
             >
@@ -95,6 +96,9 @@
                     <h2 class="ws-panel__title">Pages du wizard</h2>
                     <span v-if="savingDraft" class="ws-saving" data-testid="wizard-studio-saving">Enregistrement…</span>
                 </div>
+                <!-- [A11Y-04] persistent live region: announces save/publish state to screen readers
+                     (a v-if'd indicator alone is not reliably announced). -->
+                <span class="ws-sr-only" role="status" aria-live="polite">{{ saveAnnounce }}</span>
                 <p class="ws-panel__meta">{{ steps.length }} page(s) · v{{ version }} · {{ isPublished ? 'publié' : 'brouillon' }}</p>
 
                 <p v-if="conflictDetected" class="ws-warn" role="alert" data-testid="wizard-studio-conflict">
@@ -249,6 +253,7 @@ export default {
             conflictDetected: false,
             _uidSeq: 0,
             _pendingSave: false, // [WS-5] coalesce edits made while a save is in flight
+            saveAnnounce: '', // [A11Y-04] screen-reader announcement for save/publish state
             // [W8] lifecycle state.
             creating: false,
             publishing: false,
@@ -483,6 +488,7 @@ export default {
             this.savingDraft = true;
             this.conflictDetected = false;
             this.previewError = '';
+            this.saveAnnounce = 'Enregistrement…'; // [A11Y-04]
             try {
                 const payload = {
                     template: this.profile.template || 'custom',
@@ -493,16 +499,28 @@ export default {
                 const res = await axios.put(`admin/composer/profiles/${this.profile.id}`, payload);
                 const updated = res?.data?.data ?? res?.data ?? null;
                 if (updated) {
+                    // Adopt the bumped version so the trailing save chains the optimistic lock.
                     this.profile = updated;
-                    this.steps = this.hydrateSteps(updated);
+                    // [STATE-01] A queued edit changed this.steps AFTER this PUT was snapshotted.
+                    // Re-hydrating from this (now-stale) echo would silently DROP that edit — the
+                    // trailing _pendingSave flush must persist the operator's pending steps, not the
+                    // server copy of the previous save. Keep local steps when a save is queued.
+                    if (!this._pendingSave) {
+                        this.steps = this.hydrateSteps(updated);
+                    }
                 }
-                await this.reloadPreview(); // refresh the live borne render
+                if (!this._pendingSave) {
+                    await this.reloadPreview(); // refresh the live borne render (the queued flush will reload)
+                    this.saveAnnounce = 'Modifications enregistrées'; // [A11Y-04]
+                }
             } catch (e) {
                 if (e?.response?.status === 409) {
                     this.conflictDetected = true; // optimistic-lock clash → operator reloads
+                    this.saveAnnounce = 'Conflit : ce wizard a été modifié ailleurs'; // [A11Y-04]
                     return;
                 }
                 this.previewError = e?.response?.data?.message || 'Enregistrement impossible.';
+                this.saveAnnounce = 'Échec de l’enregistrement'; // [A11Y-04]
             } finally {
                 this.savingDraft = false;
                 // flush a queued edit, unless we hit a version conflict (would just re-409).
@@ -543,9 +561,11 @@ export default {
             }
         },
         async togglePublish() {
-            // Block while a draft save is in flight: publish reads this.version, which the in-flight
-            // save will bump on success → a concurrent publish would 409 on a stale version.
-            if (!this.profile?.id || this.publishing || this.savingDraft) return;
+            // Block while a draft save is in flight OR queued: publish reads this.version, which the
+            // in-flight/trailing save bumps on success → a concurrent publish would 409 on a stale
+            // version. [STATE-04] _pendingSave covers the microtask window after savingDraft clears
+            // but before the queued flush re-sets it.
+            if (!this.profile?.id || this.publishing || this.savingDraft || this._pendingSave) return;
             this.publishing = true;
             this.publishError = '';
             const action = this.isPublished ? 'unpublish' : 'publish';
@@ -685,7 +705,7 @@ export default {
    height override the wizard stays 100vh (viewport-dependent) and its sticky footer/CTA pins
    off-frame (F1). With it, the kiosk scrolls its own step-content and pins the footer in-frame. */
 .ws-phone__screen :deep(.kiosk-wizard) { width: 724px !important; min-width: 724px; height: 1288px !important; max-height: 1288px !important; zoom: 0.5; }
-.ws-phone__hint { display: flex; align-items: center; justify-content: center; gap: 8px; height: 100%; min-height: 200px; text-align: center; color: #777; font-size: 13px; padding: 24px; }
+.ws-phone__hint { display: flex; align-items: center; justify-content: center; gap: 8px; height: 100%; min-height: 200px; text-align: center; color: #6b6b6b; font-size: 13px; padding: 24px; } /* [A11Y-03] ≥4.5:1 AA */
 .ws-phone__hint--error { color: #b02a1a; }
 .ws-spinner { width: 16px; height: 16px; border: 2px solid #f0d9cf; border-top-color: #F4501E; border-radius: 50%; display: inline-block; animation: ws-spin 0.8s linear infinite; }
 @keyframes ws-spin { to { transform: rotate(360deg); } }
@@ -693,9 +713,10 @@ export default {
 .ws-panel { background: #fff; border-radius: 16px; padding: 18px; box-shadow: 0 4px 18px rgba(20,20,20,.06); position: sticky; top: 24px; }
 .ws-panel__title { margin: 0 0 6px; font-size: 16px; }
 .ws-panel__meta { color: #555; font-size: 13px; margin: 0 0 12px; }
-.ws-panel__note { color: #777; font-size: 12px; line-height: 1.4; margin-top: 12px; }
+.ws-panel__note { color: #6b6b6b; font-size: 12px; line-height: 1.4; margin-top: 12px; } /* [A11Y-03] ≥4.5:1 AA */
 .ws-panel__head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .ws-saving { font-size: 11px; color: #0f6e38; }
+.ws-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; } /* [A11Y-04] visually-hidden persistent live region */
 .ws-link { border: 0; background: transparent; color: #A8370E; text-decoration: underline; cursor: pointer; font: inherit; padding: 0; }
 .ws-steplist { margin: 0 0 10px; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 /* [W2] editable page row */
@@ -718,7 +739,7 @@ export default {
 /* [W4c] option inspector */
 .ws-options { flex-basis: 100%; margin-top: 6px; }
 .ws-options__title { font-size: 11px; color: #555; }
-.ws-options__empty { margin: 4px 0 0; font-size: 11px; color: #777; }
+.ws-options__empty { margin: 4px 0 0; font-size: 11px; color: #6b6b6b; } /* [A11Y-03] ≥4.5:1 AA */
 .ws-options__list { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
 .ws-option { display: flex; align-items: center; gap: 6px; padding: 3px 8px 3px 3px; border: 1px solid #e6ddd0; border-radius: 999px; background: #fff; font-size: 12px; color: #333; }
 .ws-option--off { opacity: .55; }
@@ -727,7 +748,7 @@ export default {
 .ws-option__name { line-height: 1; }
 .ws-option__off { font-size: 9px; color: #b02a1a; background: #fdecea; padding: 1px 5px; border-radius: 6px; }
 .ws-live { margin: 0 0 10px; padding: 8px 12px; border-radius: 10px; background: #fff4e8; border: 1px solid #f6c89a; color: #9a4a08; font-size: 12px; line-height: 1.35; }
-.ws-step-drag { border: 0; background: transparent; cursor: grab; color: #9aa39e; font-size: 16px; line-height: 1; padding: 2px 4px; border-radius: 6px; }
+.ws-step-drag { border: 0; background: transparent; cursor: grab; color: #6b756e; font-size: 16px; line-height: 1; padding: 2px 4px; border-radius: 6px; } /* [A11Y-02] ≥3:1 on #fff (WCAG 1.4.11) */
 .ws-step-drag:focus-visible { outline: 2px solid #F4501E; outline-offset: 1px; }
 .ws-step-name { flex: 1; min-width: 0; border: 1px solid transparent; border-radius: 6px; padding: 4px 6px; font-size: 14px; color: #222; background: transparent; }
 .ws-step-name:hover { border-color: #e3ddd2; }

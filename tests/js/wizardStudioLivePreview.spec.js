@@ -328,6 +328,52 @@ describe('WizardStudio adversarial heals (WS-4 / WS-5)', () => {
         expect(wrapper.vm._pendingSave).toBe(true);
     });
 
+    it('STATE-01: an edit made during an in-flight save is PERSISTED by the trailing flush (not clobbered by the stale echo)', async () => {
+        wireCategoryEdit();
+        const wrapper = mountCat();
+        await flushPromises();
+        axios.put.mockClear();
+        // Hold the FIRST PUT in flight so a second edit can land while it runs. It echoes the
+        // ORIGINAL labels (snapshot of the first save), exactly like the real backend would.
+        let resolveFirst;
+        const firstEcho = { data: { ...CAT_PROFILE, version: 50, steps: CAT_PROFILE.steps.map((s, i) => ({ ...s, id: 200 + i })) } };
+        axios.put.mockImplementationOnce(() => new Promise((res) => { resolveFirst = () => res(firstEcho); }));
+        // Trailing PUT echoes whatever payload it is sent.
+        axios.put.mockImplementation((url, payload) => Promise.resolve({ data: { ...CAT_PROFILE, version: 51, steps: payload.steps.map((s, i) => ({ ...s, id: 300 + i })) } }));
+
+        const p1 = wrapper.vm.saveStudioDraft(); // in flight (not awaited)
+        wrapper.vm.steps[0].label = 'PENDING-EDIT'; // operator edits DURING the save
+        wrapper.vm.saveStudioDraft(); // coalesced → queued
+        expect(wrapper.vm._pendingSave).toBe(true);
+
+        resolveFirst();
+        await p1;
+        await flushPromises();
+        await flushPromises();
+
+        expect(axios.put).toHaveBeenCalledTimes(2); // in-flight save + trailing flush
+        // The trailing PUT must carry the operator's pending edit (the bug: stale echo overwrote it).
+        expect(axios.put.mock.calls[1][1].steps[0].label).toBe('PENDING-EDIT');
+        // …and local state must still reflect the pending edit, not the first save's server copy.
+        expect(wrapper.vm.steps[0].label).toBe('PENDING-EDIT');
+    });
+
+    it('STATE-04: togglePublish bails while a save is QUEUED (_pendingSave), closing the microtask window', async () => {
+        wireCategoryEdit();
+        let publishCalled = false;
+        axios.post.mockImplementation((url) => {
+            if (url.endsWith('/publish')) { publishCalled = true; return Promise.resolve({ data: { ...CAT_PROFILE, is_published: true, version: 3 } }); }
+            return Promise.resolve({ data: CAT_PROFILE });
+        });
+        const wrapper = mountCat();
+        await flushPromises();
+        wrapper.vm._pendingSave = true; // a trailing save is queued though savingDraft already cleared
+        await wrapper.vm.togglePublish();
+        await flushPromises();
+        expect(publishCalled).toBe(false);
+        expect(wrapper.vm.isPublished).toBe(false);
+    });
+
     it('W8: createStudioProfile POSTs to the category endpoint and sets the new profile', async () => {
         // category with NO profile yet (profile fetch 404 → null)
         axios.get.mockImplementation((url) => {

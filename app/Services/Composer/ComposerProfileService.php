@@ -82,6 +82,24 @@ class ComposerProfileService
     public function createForCategory(ItemCategory $category, array $payload): ItemWizardProfile
     {
         return DB::transaction(function () use ($category, $payload): ItemWizardProfile {
+            $scope = $payload['branch_id_scope'] ?? null;
+
+            // [GAP-3] Idempotent create: a category+scope has exactly one profile. A double-submit
+            // (double-click, two operators) must NOT spawn an orphan row + repoint
+            // category.wizard_profile_id away from what the borne actually renders (render resolves
+            // by latest('id'), ignoring the pointer). Return the existing profile instead.
+            $existing = ItemWizardProfile::query()->with('steps')
+                ->where('item_category_id', $category->id)
+                ->when($scope === null,
+                    fn ($q) => $q->whereNull('branch_id_scope'),
+                    fn ($q) => $q->where('branch_id_scope', $scope))
+                ->latest('id')
+                ->first();
+            if ($existing !== null) {
+                $category->update(['wizard_profile_id' => $existing->id]); // re-anchor the pointer defensively
+                return $existing;
+            }
+
             $profile = ItemWizardProfile::query()->create([
                 'item_id' => null,
                 'item_category_id' => $category->id,

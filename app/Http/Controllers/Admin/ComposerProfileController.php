@@ -77,6 +77,16 @@ class ComposerProfileController extends AdminController
         $this->authorizeWritableBranchScope($request, $profile->branch_id_scope);
         $this->authorizeWritableBranchScope($request, $request->integer('branch_id_scope') ?: null);
 
+        // [SEC-01] Least-privilege: editing a DRAFT is a compose-level action, but mutating an
+        // already-PUBLISHED profile pushes the change live to every borne (ComposerProfileChanged
+        // → cache invalidation + outbox). That live broadcast must require the publish permission,
+        // consistent with the publish/unpublish gates — not be reachable with catalog.compose alone.
+        abort_unless(
+            $profile->is_published === false || $request->user()?->can('catalog.publish'),
+            403,
+            'Modifier un wizard publié (diffusion en direct) requiert la permission de publication.'
+        );
+
         return new ComposerProfileResource($this->profiles->update($profile, $request->validated()));
     }
 

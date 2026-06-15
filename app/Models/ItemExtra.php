@@ -12,7 +12,10 @@ class ItemExtra extends Model
     use HasFactory, SoftDeletes;
 
     protected $table = "item_extras";
-    protected $fillable = ['item_id', 'name', 'status', 'price', 'visible_on', 'group_label', 'is_available', 'unavailable_reason', 'image_path', 'description']; // [WIZARD-STUDIO W4] additive per-option image+description
+    // [WIZARD-STUDIO W4 / DATA-01] image_path + description columns exist (nullable) and the projection
+    // READS them, but are intentionally NOT $fillable (no validated writer; the item-update `extras`
+    // blob is not key-whitelisted). A future Studio option-edit endpoint sets them explicitly. Reads unaffected.
+    protected $fillable = ['item_id', 'name', 'status', 'price', 'visible_on', 'group_label', 'is_available', 'unavailable_reason'];
     protected $casts = [
         'id'                 => 'integer',
         'item_id'            => 'integer',
