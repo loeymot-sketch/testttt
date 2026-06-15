@@ -527,6 +527,16 @@ describe('WizardStudio UI/UX elevations (review round)', () => {
         expect(wrapper.vm.structureAnnounce).toContain('supprimée');
     });
 
+    it('A11Y-E4: focusRulePanel focuses the first control of the entered rule panel (post-transition)', async () => {
+        wireCategoryEdit();
+        const wrapper = mountCat();
+        await flushPromises();
+        const focused = vi.fn();
+        // the <transition> @after-enter hook hands focusRulePanel the entered .ws-rule element.
+        wrapper.vm.focusRulePanel({ querySelector: (s) => (s.includes('select') ? { focus: focused } : null) });
+        expect(focused).toHaveBeenCalled();
+    });
+
     it('VIS-PREVIEW: a successful save flips justSaved for the visible "Enregistré" confirmation', async () => {
         wireCategoryEdit();
         const wrapper = mountCat();

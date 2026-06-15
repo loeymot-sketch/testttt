@@ -183,7 +183,7 @@
                         </div>
 
                         <!-- [W3] selection-rule editor (+ [W6] source binding); [VIS-MOTION] expand/collapse fade -->
-                        <transition name="ws-rule">
+                        <transition name="ws-rule" @after-enter="focusRulePanel">
                         <div v-if="expandedUid === s._uid" class="ws-rule" :id="`ws-rule-panel-${s._uid}`" :data-testid="`ws-rule-${i}`">
                             <label v-if="sourceOptions.length" class="ws-rule__field ws-rule__field--wide">
                                 <span>Source</span>
@@ -660,14 +660,13 @@ export default {
             return Number(step.max_select || 0) !== 1;
         },
         toggleRule(step) {
-            const opening = this.expandedUid !== step._uid;
-            this.expandedUid = opening ? step._uid : null;
-            // [A11Y-E4] on open, move focus into the disclosed panel (first control) so SR users land on it.
-            if (opening) {
-                this.$nextTick(() => {
-                    this.$el?.querySelector?.(`#ws-rule-panel-${step._uid} select, #ws-rule-panel-${step._uid} input`)?.focus?.();
-                });
-            }
+            this.expandedUid = this.expandedUid === step._uid ? null : step._uid;
+        },
+        // [A11Y-E4] move focus into the rule panel only AFTER its enter-transition completes (it isn't
+        // reliably focusable mid-enter from $nextTick/rAF). The <transition> @after-enter hook passes the
+        // entered panel element, so focusing its first control here lands every time.
+        focusRulePanel(el) {
+            el?.querySelector?.('select, input, button')?.focus?.();
         },
         setChoiceType(step, type) {
             if (type === 'single') {
