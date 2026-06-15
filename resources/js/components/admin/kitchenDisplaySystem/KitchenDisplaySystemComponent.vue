@@ -1947,11 +1947,19 @@ export default {
       if (!ws) return;
       this._onWsConnected = () => {
         this.wsConnected = true;
+        // [B-KDS-02 2026-06-14] Clear the V2 offline chrono on reconnect.
+        this.v2OfflineSince = null;
         this.refreshOrderList();
         this._restartPolling();
       };
       this._onWsDisconnected = () => {
         this.wsConnected = false;
+        // [B-KDS-02 2026-06-14] Arm the V2 offline chrono once (=== null guard
+        // so the 60s threshold is measured from the FIRST drop, not reset on
+        // each disconnect event). Legacy keeps its own kdsErrorBanner.
+        if (this.useV2Layout && this.v2OfflineSince === null) {
+          this.v2OfflineSince = Date.now();
+        }
         this._restartPolling();
       };
       ws.on('connected', this._onWsConnected);
@@ -2124,12 +2132,19 @@ export default {
           // [test-e2e round-2 C-001] Successful poll → dismiss the persistent
           // error banner (kitchen connection restored).
           this._clearKdsErrorBanner();
+          // [B-KDS-02 2026-06-14] Successful poll proves connectivity → clear
+          // the V2 offline chrono (avoids false-positive on transient <60s blips).
+          this.v2OfflineSince = null;
 	        })
         .catch((err) => {
           this.loading.isActive = false;
           // [test-e2e round-2 C-001] Persistent banner instead of ephemeral
           // toast — kitchen operator at 1m+ glance must NOT miss this.
           this._raiseKdsErrorBanner(err);
+          // [B-KDS-02 2026-06-14] Poll failed → arm the V2 offline chrono once.
+          if (this.useV2Layout && this.v2OfflineSince === null) {
+            this.v2OfflineSince = Date.now();
+          }
         });
     },
     openFilterSlide(event) {
@@ -2163,12 +2178,18 @@ export default {
           // [test-e2e round-2 C-001] Auto-dismiss the persistent banner
           // on next successful /api/admin/kds-order response.
           this._clearKdsErrorBanner();
+          // [B-KDS-02 2026-06-14] Successful response → clear the V2 offline chrono.
+          this.v2OfflineSince = null;
         })
         .catch((err) => {
           this.loading.isActive = false;
           // [test-e2e round-2 C-001] Persistent banner instead of ephemeral
           // toast — see _raiseKdsErrorBanner / kdsErrorBanner data prop.
           this._raiseKdsErrorBanner(err);
+          // [B-KDS-02 2026-06-14] Failed list → arm the V2 offline chrono once.
+          if (this.useV2Layout && this.v2OfflineSince === null) {
+            this.v2OfflineSince = Date.now();
+          }
         });
     },
     _raiseKdsErrorBanner(err) {
