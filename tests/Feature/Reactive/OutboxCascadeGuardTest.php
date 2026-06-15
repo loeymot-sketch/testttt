@@ -47,6 +47,34 @@ class OutboxCascadeGuardTest extends TestCase
         $this->assertTrue(true, 'OrderCreated outbox persistence failure was swallowed (cascade preserved).');
     }
 
+    /**
+     * [WS-2 / B-1 fault-injection 2026-06-15] The strong proof: a listener registered AFTER
+     * the (throwing) outbox listener STILL runs. PersistOrderCreatedToOutbox is registered
+     * FIRST in the real EventServiceProvider cascade; if its outbox-fault propagated, Laravel's
+     * synchronous dispatcher would abort and every downstream listener (stock decrement,
+     * receipt) would be skipped — oversell. This injects a real outbox fault and proves the
+     * cascade continues to a trailing listener.
+     */
+    public function test_cascade_continues_to_downstream_listener_after_real_outbox_fault(): void
+    {
+        $downstreamRan = false;
+        // Appended AFTER the provider's listeners (incl. the first-in-cascade outbox listener).
+        \Illuminate\Support\Facades\Event::listen(OrderCreated::class, function () use (&$downstreamRan): void {
+            $downstreamRan = true;
+        });
+
+        $order = Order::factory()->create();
+        $this->breakOutboxTable(); // the real PersistOrderCreatedToOutbox::firstOrCreate will now throw
+
+        // Fire the REAL cascade through the dispatcher (not a direct handle() call).
+        OrderCreated::dispatch($order);
+
+        $this->assertTrue(
+            $downstreamRan,
+            'A listener after the throwing outbox listener MUST still run — the guard kept the cascade alive (no oversell).'
+        );
+    }
+
     public function test_order_status_changed_outbox_failure_does_not_propagate(): void
     {
         $order = Order::factory()->create();
