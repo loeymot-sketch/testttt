@@ -327,4 +327,29 @@ describe('WizardStudio adversarial heals (WS-4 / WS-5)', () => {
         expect(axios.put).not.toHaveBeenCalled();
         expect(wrapper.vm._pendingSave).toBe(true);
     });
+
+    it('W4c: optionsForStep surfaces the live projected choices (name+thumb) for a page', async () => {
+        // wire a preview whose 'pain' step resolves two real choices
+        axios.get.mockImplementation((url) => {
+            if (url.includes('item-category/show')) return Promise.resolve({ data: { name: 'Sandwich Cayenne' } });
+            if (url.includes('available-sources')) return Promise.resolve({ data: { data: { category_id: 6, ...SOURCES } } });
+            if (url.includes('preview-projection')) return Promise.resolve(draftProjection([
+                { id: 1, step_key: 'pain', label: 'Pain', is_active: true, choices: [
+                    { id: 11, name: 'Galette', thumb: '/storage/g.png', is_available: true },
+                    { id: 12, name: 'Pain brioché', thumb: null, is_available: false, unavailable_reason: 'ingredient_rupture' },
+                ] },
+            ]));
+            if (url.includes('/profile')) return Promise.resolve({ data: CAT_PROFILE });
+            return Promise.reject(new Error(`unexpected url ${url}`));
+        });
+        const wrapper = mountCat();
+        await flushPromises();
+        const pain = wrapper.vm.steps.find((s) => s.step_key === 'pain');
+        const opts = wrapper.vm.optionsForStep(pain);
+        expect(opts.map((o) => o.name)).toEqual(['Galette', 'Pain brioché']);
+        expect(opts[0].thumb).toBe('/storage/g.png');
+        expect(opts[1].is_available).toBe(false);
+        // an unbound/unknown step → no options
+        expect(wrapper.vm.optionsForStep({ step_key: 'nope' })).toEqual([]);
+    });
 });

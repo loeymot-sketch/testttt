@@ -157,6 +157,28 @@
                                 <label class="ws-rule__check"><input type="checkbox" :checked="!!s.allow_repeat" @change="setRepeat(s, $event.target.checked)" /> Répétable</label>
                             </template>
                             <p class="ws-rule__hint">{{ ruleSummary(s) }} · {{ isMulti(s) ? 'plusieurs choix' : 'un seul choix' }}</p>
+
+                            <!-- [W4c] read-only option inspector — what the customer will actually see -->
+                            <div class="ws-options" :data-testid="`ws-options-${i}`">
+                                <template v-if="optionsForStep(s).length">
+                                    <span class="ws-options__title">{{ optionsForStep(s).length }} option(s) — ce que verra le client :</span>
+                                    <ul class="ws-options__list">
+                                        <li
+                                            v-for="o in optionsForStep(s)"
+                                            :key="o.id"
+                                            class="ws-option"
+                                            :class="{ 'ws-option--off': o.is_available === false }"
+                                            :title="o.is_available === false ? (o.unavailable_reason || 'Indisponible') : o.name"
+                                        >
+                                            <img v-if="o.thumb" :src="o.thumb" :alt="o.name" class="ws-option__img" loading="lazy" />
+                                            <span v-else class="ws-option__img ws-option__img--ph" aria-hidden="true"></span>
+                                            <span class="ws-option__name">{{ o.name }}</span>
+                                            <span v-if="o.is_available === false" class="ws-option__off">rupture</span>
+                                        </li>
+                                    </ul>
+                                </template>
+                                <p v-else class="ws-options__empty">Aucune option résolue — choisissez une « Source » ci-dessus pour que cette page propose des choix.</p>
+                            </div>
                         </div>
                     </div>
                 </draggable>
@@ -515,6 +537,14 @@ export default {
         currentSourceKey(step) {
             return `${step.source_type}:${step.source_ref == null ? '' : step.source_ref}`;
         },
+        // [W4c] Read-only option inspector: the real choices the borne resolves for this page
+        // (name + image + rupture), pulled from the live preview projection. No mutation.
+        optionsForStep(step) {
+            const projSteps = this.draftItem?.composer_profile?.steps;
+            if (!Array.isArray(projSteps)) return [];
+            const match = projSteps.find((s) => s.step_key === step.step_key);
+            return Array.isArray(match?.choices) ? match.choices : [];
+        },
         setSource(step, key) {
             const src = this.sourceOptions.find((s) => s.key === key);
             if (!src) return;
@@ -586,6 +616,17 @@ export default {
 .ws-rule__field input[type="number"] { width: 52px; }
 .ws-rule__check { display: flex; align-items: center; gap: 4px; font-size: 12px; color: #555; }
 .ws-rule__hint { flex-basis: 100%; margin: 2px 0 0; font-size: 11px; color: #A8370E; }
+/* [W4c] option inspector */
+.ws-options { flex-basis: 100%; margin-top: 6px; }
+.ws-options__title { font-size: 11px; color: #555; }
+.ws-options__empty { margin: 4px 0 0; font-size: 11px; color: #777; }
+.ws-options__list { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.ws-option { display: flex; align-items: center; gap: 6px; padding: 3px 8px 3px 3px; border: 1px solid #e6ddd0; border-radius: 999px; background: #fff; font-size: 12px; color: #333; }
+.ws-option--off { opacity: .55; }
+.ws-option__img { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; background: #f1ece4; }
+.ws-option__img--ph { display: inline-block; }
+.ws-option__name { line-height: 1; }
+.ws-option__off { font-size: 9px; color: #b02a1a; background: #fdecea; padding: 1px 5px; border-radius: 6px; }
 .ws-live { margin: 0 0 10px; padding: 8px 12px; border-radius: 10px; background: #fff4e8; border: 1px solid #f6c89a; color: #9a4a08; font-size: 12px; line-height: 1.35; }
 .ws-step-drag { border: 0; background: transparent; cursor: grab; color: #9aa39e; font-size: 16px; line-height: 1; padding: 2px 4px; border-radius: 6px; }
 .ws-step-drag:focus-visible { outline: 2px solid #F4501E; outline-offset: 1px; }
