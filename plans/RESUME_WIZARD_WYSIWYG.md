@@ -53,3 +53,7 @@ Start W0: scaffold `WizardStudio` route + shell component (copy, new route), par
   - Architecture doc WIZARD_STUDIO_ARCHITECTURE.md (sync path: update→ComposerProfileChanged when published→cache invalidation→borne). SYNC confirmed: reuses existing contract, no realtime subscription, no central-session collision.
   - Vitest 17/17 EXIT0 · PHPUnit 12/12 (sqlite) · frozen diff 0 · clone restored.
   - Confirming round wf_852e8b8d running for 2nd-clean-cycle convergence.
+
+- [x] W4c Option Inspector (read-only, no gate): each page's real choices with images + rupture, from the live projection. Abused→2 heals (honest label vs frozen-render divergence, broken-image fallback) + cycle-2 agent caught a P1 in my heal (manual DOM→vdom orphan→display:none). Live-proven (source-change 4→9 chips, 404 hidden no orphan). `510ddd1b8`/`c55808c26`/`e53ff7673`.
+- [x] W8 LIFECYCLE (create + publish/unpublish, draft⇄live): closes the gap — create a wizard for a category with none; Publier/Dépublier toggle (422 assertPublishable surfaced). Resolves WS-3 (draft = not live). Live-proven full cycle (clone restored). Adversarial agent: REFUTED its hallucinated P0 (preview-projection exists/live) + false double-create race; CONFIRMED+healed P1 unpublish-gate asymmetry (+catalog.publish) + 422/403 parsing. `e9b8aed66`/`fa009a502`.
+- BILAN: Vitest 21/21 EXIT0 · PHPUnit 23/23 · frozen diff 0 · NF525 intact · ~34 commits. Studio = VOIR (preview+inspector) + MODIFIER (pages/règles/sources) + CYCLE DE VIE (create/publish). Reste owner-gated: G-MEDIA, W5, G-POS-COMPOSER, G-PUSH.
