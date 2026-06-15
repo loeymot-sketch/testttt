@@ -364,7 +364,7 @@ export default {
                     profileP.catch(() => {}); // swallow the in-flight profile promise (entity failed)
                     this.loadError = (e?.response?.status === 404)
                         ? (this.isCategory ? 'Catégorie introuvable.' : 'Produit introuvable.')
-                        : (e?.response?.data?.message || 'Impossible de charger le wizard.');
+                        : (e?.response?.data?.message || 'Impossible de charger la composition.');
                     return;
                 }
                 const profileRes = await profileP;
@@ -378,10 +378,10 @@ export default {
                 } else if (!this.isCategory) {
                     // Item profile fetch 404'd (swallowed above). The per-item composer endpoint is
                     // gated by FEATURE_WIZARD_PER_ITEM_DEMO — surface that instead of a silent empty.
-                    this.loadError = "Le Wizard Studio par produit nécessite l'activation de la fonctionnalité (FEATURE_WIZARD_PER_ITEM_DEMO). Les wizards par catégorie sont disponibles sans activation.";
+                    this.loadError = "La composition par produit nécessite l'activation de la fonctionnalité (FEATURE_WIZARD_PER_ITEM_DEMO). Les compositions par catégorie sont disponibles sans activation.";
                 }
             } catch (e) {
-                this.loadError = e?.response?.data?.message || 'Impossible de charger le wizard.';
+                this.loadError = e?.response?.data?.message || 'Impossible de charger la composition.';
             } finally {
                 this.loading = false;
             }
@@ -646,7 +646,7 @@ export default {
                     this.publishError = msg || e.response.data?.message
                         || "Impossible de publier : une page n'a pas d'option, ou une page obligatoire est vide.";
                 } else if (status === 403) {
-                    this.publishError = "Vous n'avez pas la permission de publier / dépublier ce wizard.";
+                    this.publishError = "Vous n'avez pas la permission de mettre en ligne / retirer cette composition.";
                 } else {
                     this.publishError = e?.response?.data?.message || 'Action impossible.';
                 }
@@ -749,7 +749,8 @@ export default {
 .ws-title { display: flex; flex-direction: column; line-height: 1.25; }
 .ws-eyebrow { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: #A8370E; } /* darker brand-orange: WCAG AA (~4.6:1) on white as small text */
 .ws-source { font-size: 12px; color: #6b6b6b; margin-top: 2px; } /* [IA-06] terse provenance token */
-.ws-source::before { content: '↳ '; color: #A8370E; }
+.ws-source:empty { display: none; } /* no profile (create state) → no stray breadcrumb */
+.ws-source:not(:empty)::before { content: '↳ '; color: #A8370E; }
 .ws-badge { margin-left: auto; padding: 5px 12px; border-radius: 999px; background: #ececec; color: #555; font-size: 12px; font-weight: 600; }
 .ws-badge--published { background: #e6f6ec; color: #0f6e38; } /* AA ≥4.5:1 on the light-green pill */
 .ws-pub { border: 0; border-radius: 999px; padding: 6px 14px; font-size: 12px; font-weight: 600; cursor: pointer; background: #137a40; color: #fff; }
