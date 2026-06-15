@@ -29,6 +29,7 @@ class KitchenDisplaySystemOrderService
 {
     public object $order;
     private bool $lastListOverflow = false;
+    private int $lastListBacklog = 0;
     private DispatchKdsTicket $kdsTicketDispatcher;
 
     public function __construct(?DispatchKdsTicket $kdsTicketDispatcher = null)
@@ -57,6 +58,7 @@ class KitchenDisplaySystemOrderService
         try {
             $requests = $request->all();
             $this->lastListOverflow = false;
+            $this->lastListBacklog = 0;
             $allowedColumns = ['id', 'order_datetime', 'queue_number', 'order_serial_no', 'status', 'created_at'];
             $requestedColumn = (string) ($request->get('order_column') ?? 'id');
             $orderColumn = in_array($requestedColumn, $allowedColumns, true) ? $requestedColumn : 'id';
@@ -167,13 +169,26 @@ class KitchenDisplaySystemOrderService
                         }
                     }
                 }
-            })->orderBy($orderColumn, $orderType)
-            ->limit(51)
-            ->get();
+            });
 
-            $this->lastListOverflow = $orders->count() > 50;
+            // [B-KDS-01 2026-06-14] FIFO cap. The active board must surface the
+            // OLDEST orders first (kitchen FIFO), NOT the 50 most recent.
+            // Count the real backlog BEFORE truncating (clone the fully-filtered
+            // + TZ-windowed query), then serve the 50 OLDEST (id asc).
+            $totalActive = (clone $query)->count();
+            $this->lastListBacklog = max(0, $totalActive - 50);
+            $this->lastListOverflow = $totalActive > 50;
 
-            return $orders->take(50)->values();
+            $orders = $query->orderBy('id', 'asc')->limit(50)->get();
+
+            // Re-apply the requested display order on the retained subset
+            // (in-memory). The V2 board re-sorts FIFO client-side anyway; the
+            // server order only matters for legacy/filtered surfaces.
+            if ($orderColumn === 'id' && $orderType === 'desc') {
+                $orders = $orders->sortByDesc('id')->values();
+            }
+
+            return $orders->values();
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
@@ -183,6 +198,11 @@ class KitchenDisplaySystemOrderService
     public function lastListOverflow(): bool
     {
         return $this->lastListOverflow;
+    }
+
+    public function lastListBacklog(): int
+    {
+        return $this->lastListBacklog;
     }
 
     /**

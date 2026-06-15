@@ -31,6 +31,7 @@ class KitchenDisplaySystemController extends AdminController
             return KDSOrderDetailsResource::collection($orders)->additional([
                 'meta' => [
                     'overflow' => $this->kitchenDisplaySystemOrderService->lastListOverflow(),
+                    'backlog' => $this->kitchenDisplaySystemOrderService->lastListBacklog(),
                     'limit' => 50,
                 ],
             ]);
