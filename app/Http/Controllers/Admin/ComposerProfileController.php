@@ -251,4 +251,62 @@ class ComposerProfileController extends AdminController
             ],
         ]);
     }
+
+    /**
+     * [WIZARD-STUDIO W6 2026-06-15] Bindable sources for a CATEGORY wizard (unflagged V1 path),
+     * resolved from a representative active item. Each entry carries the exact (source_type,
+     * source_ref) the builder must persist so the page resolves to real, distinct options
+     * (source_ref by attribute NAME so it matches every item in the category, not one item's id).
+     * NF525-neutral, read-only.
+     */
+    public function availableSourcesForCategory(Request $request, ItemCategory $category): JsonResponse
+    {
+        $this->authorizeBranchScope($request, null);
+
+        $item = $category->items()->orderBy('id')->first();
+        abort_if(! $item, 404, 'Aucun produit dans cette catégorie pour proposer des sources.');
+        $item->loadMissing(['variations.itemAttribute', 'extras', 'addons.addonItem']);
+
+        $attributes = $item->variations
+            ->pluck('itemAttribute')
+            ->filter()
+            ->unique('id')
+            ->map(fn ($attr) => [
+                'id' => (int) $attr->id,
+                'name' => (string) $attr->name,
+                'source_type' => 'item_attribute',
+                'source_ref' => (string) $attr->name, // match by name across the whole category
+            ])->values();
+
+        $extras = $item->extras
+            ->groupBy(fn ($extra) => (string) ($extra->group_label ?? 'default'))
+            ->map(fn ($group, $label) => [
+                'id' => (string) $label,
+                'name' => $label === 'default' ? 'Extras' : (string) $label,
+                'source_type' => 'extra_group',
+                'source_ref' => $label === 'default' ? '' : (string) $label,
+                'count' => $group->count(),
+            ])->values();
+
+        $addons = $item->addons
+            ->filter(fn ($addon) => $addon->role !== null)
+            ->unique('role')
+            ->map(fn ($addon) => [
+                'id' => (string) $addon->role,
+                'name' => $addon->addonItem?->name ?? ucfirst((string) $addon->role),
+                'source_type' => 'addon',
+                'source_ref' => (string) $addon->role,
+                'addon_role' => $addon->role,
+            ])->values();
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'category_id' => (int) $category->id,
+                'item_attribute' => $attributes,
+                'extra_group' => $extras,
+                'addon' => $addons,
+            ],
+        ]);
+    }
 }

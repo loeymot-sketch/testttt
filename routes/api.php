@@ -781,6 +781,8 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
             // item-owned profiles when FEATURE_WIZARD_PER_ITEM_DEMO is off (default), which would
             // break the primary item-owned preview case. catalog.compose (group) is the only gate.
             Route::get('/profiles/{profile}/preview-projection', [ComposerProfileController::class, 'previewProjection']);
+            // [WIZARD-STUDIO W6] Bindable sources for a CATEGORY wizard (non-gated; item one stays demo-gated above).
+            Route::get('/categories/{category}/available-sources', [ComposerProfileController::class, 'availableSourcesForCategory']);
             Route::middleware('wizard.per_item_profile_guard')->group(function () {
                 Route::match(['put', 'patch'], '/profiles/{profile}', [ComposerProfileController::class, 'update']);
                 Route::get('/profiles/{profile}/diff', [ComposerProfileController::class, 'diff']);

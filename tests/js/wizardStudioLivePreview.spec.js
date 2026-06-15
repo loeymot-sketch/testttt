@@ -113,9 +113,16 @@ const CAT_PROFILE = { id: 8, item_id: null, item_category_id: 6, template: 'cust
     { id: 2, step_key: 'sauce', label: 'Sauce', position: 1, min_select: 1, max_select: 2 },
 ] };
 
+const SOURCES = {
+    item_attribute: [{ id: 7, name: 'Pain', source_type: 'item_attribute', source_ref: 'Pain' }, { id: 9, name: 'Sauce', source_type: 'item_attribute', source_ref: 'Sauce' }],
+    extra_group: [{ id: 'supplement', name: 'supplement', source_type: 'extra_group', source_ref: 'supplement', count: 3 }],
+    addon: [{ id: 'drink', name: 'Boisson', source_type: 'addon', source_ref: 'drink', addon_role: 'drink' }],
+};
+
 function wireCategoryEdit() {
     axios.get.mockImplementation((url) => {
         if (url.includes('item-category/show')) return Promise.resolve({ data: { name: 'Sandwich Cayenne' } });
+        if (url.includes('available-sources')) return Promise.resolve({ data: { data: { category_id: 6, ...SOURCES } } });
         if (url.includes('preview-projection')) return Promise.resolve(draftProjection([{ id: 1, step_key: 'pain', label: 'Pain', is_active: true, choices: [{ id: 1, name: 'Galette' }] }]));
         if (url.includes('/profile')) return Promise.resolve({ data: CAT_PROFILE });
         return Promise.reject(new Error(`unexpected url ${url}`));
@@ -262,5 +269,36 @@ describe('WizardStudio selection rules (W3)', () => {
         expect(wrapper.vm.expandedUid).toBe(s._uid);
         wrapper.vm.toggleRule(s);
         expect(wrapper.vm.expandedUid).toBe(null);
+    });
+});
+
+describe('WizardStudio source binding (W6)', () => {
+    it('loads category sources and exposes them as flattened options', async () => {
+        wireCategoryEdit();
+        const wrapper = mountCat();
+        await flushPromises();
+        const calls = axios.get.mock.calls.map((c) => c[0]);
+        expect(calls.some((u) => u === 'admin/composer/categories/6/available-sources')).toBe(true);
+        const keys = wrapper.vm.sourceOptions.map((o) => o.key);
+        expect(keys).toContain('item_attribute:Sauce');
+        expect(keys).toContain('extra_group:supplement');
+        expect(keys).toContain('addon:drink');
+    });
+
+    it('setSource binds the page to a real source (type+ref+role) and persists', async () => {
+        wireCategoryEdit();
+        const wrapper = mountCat();
+        await flushPromises();
+        const pain = wrapper.vm.steps.find((s) => s.step_key === 'pain');
+        await wrapper.vm.setSource(pain, 'addon:drink');
+        await flushPromises();
+        expect(pain.source_type).toBe('addon');
+        expect(pain.source_ref).toBe('drink');
+        expect(pain.addon_role).toBe('drink');
+        const put = axios.put.mock.calls.at(-1)[1].steps.find((s) => s.step_key === 'pain');
+        expect(put.source_type).toBe('addon');
+        expect(put.source_ref).toBe('drink');
+        // turnkey: source_ref is no longer '' → the page can resolve real options
+        expect(put.source_ref).not.toBe('');
     });
 });

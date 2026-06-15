@@ -149,6 +149,30 @@ class ComposerPreviewProjectionControllerTest extends TestCase
         $this->assertDoesNotMatchRegularExpression('/"(price|amount|unit_price)"\s*:/', $encoded);
     }
 
+    public function test_category_available_sources_requires_auth_and_permission(): void
+    {
+        [$admin, , $item] = $this->bootstrap();
+        $catId = $item->item_category_id;
+
+        // unauth → 401
+        $this->withHeader('x-api-key', $this->apiKey())
+            ->getJson("/api/admin/composer/categories/{$catId}/available-sources")
+            ->assertStatus(401);
+
+        // no catalog.compose → 403
+        $noPerm = \Database\Factories\UserFactory::new()->create(['branch_id' => 0]);
+        $this->actingAs($noPerm, 'sanctum')->withHeader('x-api-key', $this->apiKey())
+            ->getJson("/api/admin/composer/categories/{$catId}/available-sources")
+            ->assertStatus(403);
+
+        // admin → 200 with the bindable-source shape (no price field — NF525-neutral)
+        $res = $this->actingAs($admin, 'sanctum')->withHeader('x-api-key', $this->apiKey())
+            ->getJson("/api/admin/composer/categories/{$catId}/available-sources")
+            ->assertOk();
+        $res->assertJsonStructure(['data' => ['category_id', 'item_attribute', 'extra_group', 'addon']]);
+        $this->assertDoesNotMatchRegularExpression('/"(price|amount|unit_price)"\s*:/', json_encode($res->json('data')));
+    }
+
     public function test_branch_user_cannot_preview_foreign_branch_draft(): void
     {
         [, , $item] = $this->bootstrap();

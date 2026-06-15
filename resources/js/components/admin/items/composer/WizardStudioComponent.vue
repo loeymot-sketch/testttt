@@ -121,8 +121,15 @@
                             <button type="button" class="ws-step-del" :aria-label="`Supprimer la page ${i + 1}`" :data-testid="`ws-step-del-${i}`" @click="removePage(s)">🗑</button>
                         </div>
 
-                        <!-- [W3] selection-rule editor -->
+                        <!-- [W3] selection-rule editor (+ [W6] source binding) -->
                         <div v-if="expandedUid === s._uid" class="ws-rule" :data-testid="`ws-rule-${i}`">
+                            <label v-if="sourceOptions.length" class="ws-rule__field ws-rule__field--wide">
+                                <span>Source</span>
+                                <select :value="currentSourceKey(s)" :data-testid="`ws-rule-source-${i}`" @change="setSource(s, $event.target.value)">
+                                    <option v-if="!sourceOptions.some((o) => o.key === currentSourceKey(s))" :value="currentSourceKey(s)">— à lier —</option>
+                                    <option v-for="o in sourceOptions" :key="o.key" :value="o.key">{{ o.label }}</option>
+                                </select>
+                            </label>
                             <label class="ws-rule__field">
                                 <span>Choix</span>
                                 <select :value="isMulti(s) ? 'multi' : 'single'" :data-testid="`ws-rule-type-${i}`" @change="setChoiceType(s, $event.target.value)">
@@ -189,6 +196,8 @@ export default {
             _uidSeq: 0,
             // [W3] which page's rule editor is open.
             expandedUid: null,
+            // [W6] bindable sources for this category (item_attribute / extra_group / addon).
+            sources: { item_attribute: [], extra_group: [], addon: [] },
         };
     },
     computed: {
@@ -213,6 +222,14 @@ export default {
                 return 'Wizard de catégorie — hérité par tous les produits de la catégorie';
             }
             return 'Wizard propre à ce produit';
+        },
+        // [W6] flattened bindable sources for the page Source picker.
+        sourceOptions() {
+            const out = [];
+            (this.sources.item_attribute || []).forEach((s) => out.push({ key: `item_attribute:${s.source_ref}`, label: `Attribut · ${s.name}`, source_type: 'item_attribute', source_ref: s.source_ref, addon_role: null }));
+            (this.sources.extra_group || []).forEach((s) => out.push({ key: `extra_group:${s.source_ref}`, label: `Suppléments · ${s.name}`, source_type: 'extra_group', source_ref: s.source_ref, addon_role: null }));
+            (this.sources.addon || []).forEach((s) => out.push({ key: `addon:${s.source_ref}`, label: `Add-on · ${s.name}`, source_type: 'addon', source_ref: s.source_ref, addon_role: s.addon_role || s.source_ref }));
+            return out;
         },
         // Steps that resolve to zero selectable options = customer cannot proceed (misconfig).
         zeroChoiceSteps() {
@@ -256,6 +273,7 @@ export default {
                 this.profile = profile;
                 this.steps = this.hydrateSteps(profile);
                 if (this.profile?.id) {
+                    if (this.isCategory) await this.fetchSources();
                     await this.fetchPreview();
                 } else if (!this.isCategory) {
                     // Item profile fetch 404'd (swallowed above). The per-item composer endpoint is
@@ -449,6 +467,32 @@ export default {
             step.allow_repeat = !!value;
             this.saveStudioDraft();
         },
+
+        // ---- [W6] source binding (fixes the turnkey source_ref='' → 0-option pages) ----
+        async fetchSources() {
+            try {
+                const res = await axios.get(`admin/composer/categories/${this.entityId}/available-sources`);
+                const d = res?.data?.data ?? {};
+                this.sources = {
+                    item_attribute: d.item_attribute || [],
+                    extra_group: d.extra_group || [],
+                    addon: d.addon || [],
+                };
+            } catch (e) {
+                this.sources = { item_attribute: [], extra_group: [], addon: [] };
+            }
+        },
+        currentSourceKey(step) {
+            return `${step.source_type}:${step.source_ref == null ? '' : step.source_ref}`;
+        },
+        setSource(step, key) {
+            const src = this.sourceOptions.find((s) => s.key === key);
+            if (!src) return;
+            step.source_type = src.source_type;
+            step.source_ref = src.source_ref;
+            step.addon_role = src.addon_role;
+            this.saveStudioDraft();
+        },
     },
 };
 </script>
@@ -506,6 +550,8 @@ export default {
 /* [W3] rule editor */
 .ws-rule { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 8px; padding-top: 8px; border-top: 1px dashed #eee6d9; }
 .ws-rule__field { display: flex; align-items: center; gap: 4px; font-size: 12px; color: #555; }
+.ws-rule__field--wide { flex-basis: 100%; }
+.ws-rule__field--wide select { flex: 1; }
 .ws-rule__field select, .ws-rule__field input { font-size: 12px; padding: 3px 6px; border: 1px solid #d9dfdc; border-radius: 6px; }
 .ws-rule__field input[type="number"] { width: 52px; }
 .ws-rule__check { display: flex; align-items: center; gap: 4px; font-size: 12px; color: #555; }
