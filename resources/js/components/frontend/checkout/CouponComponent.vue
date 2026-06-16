@@ -35,7 +35,7 @@
         <div class="modal-dialog max-w-[360px]">
             <div class="modal-header border-none pb-0">
                 <h3 class="capitalize font-medium">{{ $t('label.coupon_code') }}</h3>
-                <button @click.prevent="couponModalHide" class="modal-close fa-regular fa-circle-xmark"></button>
+                <button aria-label="Fermer" @click.prevent="couponModalHide" class="modal-close fa-regular fa-circle-xmark"></button>
             </div>
             <div class="modal-body">
                 <form @submit.prevent="couponChecking" class="flex w-full h-12">

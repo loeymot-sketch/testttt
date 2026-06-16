@@ -175,7 +175,7 @@
         <div class="modal-dialog max-w-xs">
             <div class="modal-header">
                 <h3 class="modal-title">{{ $t('menu.languages') }}</h3>
-                <button class="modal-close fa-regular fa-circle-xmark" @click="hideLanguageModal()"></button>
+                <button aria-label="Fermer" class="modal-close fa-regular fa-circle-xmark" @click="hideLanguageModal()"></button>
             </div>
             <nav class="p-2">
                 <button @click="changeLanguage(language.id, language.code)" v-for="language in languages" type="button"
@@ -189,7 +189,7 @@
 
     <div id="order" v-if="orderNotificationStatus" ref="orderNotificationModal" class="modal active ff-modal">
         <div class="modal-dialog max-w-[360px] p-6 text-center relative">
-            <button @click.prevent="closeOrderNotificationModal" class="modal-close absolute top-4 right-4">
+            <button aria-label="Fermer" @click.prevent="closeOrderNotificationModal" class="modal-close absolute top-4 right-4">
                 <i class="fa-regular fa-circle-xmark"></i>
             </button>
             <h3 class="text-[18px] font-semibold leading-8 mb-6">

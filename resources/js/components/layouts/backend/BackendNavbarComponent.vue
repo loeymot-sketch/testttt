@@ -187,7 +187,7 @@
 
     <div id="order" v-if="orderNotificationStatus" ref="orderNotificationModal" class="modal active ff-modal">
         <div class="modal-dialog max-w-[360px] p-6 text-center relative">
-            <button @click.prevent="closeOrderNotificationModal" class="modal-close absolute top-4 right-4">
+            <button aria-label="Fermer" @click.prevent="closeOrderNotificationModal" class="modal-close absolute top-4 right-4">
                 <i class="fa-regular fa-circle-xmark"></i>
             </button>
             <h3 class="text-[18px] font-semibold leading-8 mb-6">

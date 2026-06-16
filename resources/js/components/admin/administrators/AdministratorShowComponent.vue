@@ -126,7 +126,7 @@
                             </div>
 
                             <div class="form-col-12 sm:form-col-6">
-                                <label for="password" class="db-field-title required">{{
+                                <label for="confirm_password" class="db-field-title required">{{
                                     $t("label.confirm_password")
                                 }}</label>
                                 <input v-model="password.props.form.password_confirmation"

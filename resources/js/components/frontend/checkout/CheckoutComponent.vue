@@ -289,7 +289,7 @@
         <div class="modal-dialog">
             <div class="flex items-center justify-between gap-4 py-3.5 px-4 border-b border-slate-100">
                 <h3 class="text-lg font-semibold capitalize">{{ $t('label.select_time_schedule') }}</h3>
-                <button class="modal-close fa-regular fa-circle-xmark" @click="resetTimeSlotModal"></button>
+                <button aria-label="Fermer" class="modal-close fa-regular fa-circle-xmark" @click="resetTimeSlotModal"></button>
             </div>
 
             <div v-if="todayTimeSlots.length > 0 || tomorrowTimeSlots.length > 0" class="p-4 border-b border-gray-100">

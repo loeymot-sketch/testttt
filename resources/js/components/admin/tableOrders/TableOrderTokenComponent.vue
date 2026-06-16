@@ -27,7 +27,7 @@
                         </div>
                         <div class="form-col-12">
                             <div class="modal-btns">
-                                <button type="button" class="modal-btn-outline modal-close" @click.prevent="resetModal">
+                                <button aria-label="Fermer" type="button" class="modal-btn-outline modal-close" @click.prevent="resetModal">
                                     <i class="lab lab-close"></i>
                                     <span>{{ $t("button.close") }}</span>
                                 </button>

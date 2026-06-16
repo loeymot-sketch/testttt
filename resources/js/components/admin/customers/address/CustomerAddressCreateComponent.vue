@@ -6,7 +6,7 @@
     <div class="modal-dialog">
       <div class="modal-header">
         <h3 class="modal-title">{{ $t("label.address") }}</h3>
-        <button class="modal-close fa-solid fa-xmark text-xl text-slate-400 hover:text-red-500" @click="reset"></button>
+        <button aria-label="Fermer" class="modal-close fa-solid fa-xmark text-xl text-slate-400 hover:text-red-500" @click="reset"></button>
       </div>
       <div class="modal-body">
         <form @submit.prevent="save">
@@ -87,7 +87,7 @@
 
             <div class="form-col-12">
               <div class="modal-btns">
-                <button type="button" class="modal-btn-outline modal-close" @click="reset">
+                <button aria-label="Fermer" type="button" class="modal-btn-outline modal-close" @click="reset">
                   <i class="lab lab-close"></i>
                   <span>{{ $t("button.close") }}</span>
                 </button>

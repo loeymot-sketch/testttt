@@ -72,7 +72,7 @@
         <div class="modal-dialog" v-if="itemInfo">
             <div class="modal-header flex items-start gap-3">
                 <h3 class="modal-title text-base font-medium">{{ itemInfo.name }}</h3>
-                <button class="modal-close fa-regular fa-circle-xmark" @click.prevent="infoModalHide"></button>
+                <button aria-label="Fermer" class="modal-close fa-regular fa-circle-xmark" @click.prevent="infoModalHide"></button>
             </div>
             <div class="modal-body">
                 {{ itemInfo.caution }}
