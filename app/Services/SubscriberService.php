@@ -113,8 +113,12 @@ class SubscriberService
             $subscribers = Subscriber::pluck('email');
 
             if ($subscribers->isNotEmpty()) {
+                // [GENIE Wave1 T1.3 2026-06-16] queue() instead of send() — a synchronous BCC blast to the
+                // whole subscriber table blocked the HTTP request on the SMTP round-trip (DoS-ish + slow UX).
+                // Queuing moves the send off the request thread (the app already runs a queue worker for the
+                // outbox). Same single BCC mail, just dispatched asynchronously.
                 Mail::bcc($subscribers->toArray())
-                    ->send(new SubscriberMail($request->subject, $request->message));
+                    ->queue(new SubscriberMail($request->subject, $request->message));
             }
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
