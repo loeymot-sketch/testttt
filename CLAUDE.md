@@ -327,7 +327,7 @@ Un test technique vert ne prouve PAS que l'UI est OK.
 - `http://127.0.0.1:8000/admin/pos` — POS Caisse
 - `http://127.0.0.1:8000/login` — Admin login
 - `http://127.0.0.1:8000/admin/items` — Catalogue
-- `http://127.0.0.1:8000/admin/stock-rupture-dashboard` — Stock dashboard
+- `http://127.0.0.1:8000/admin/stock/rupture` — Stock dashboard (corrigé 2026-06-16 : l'ancienne route `/admin/stock-rupture-dashboard` 404 → vraie route `stockRoutes.js:7`)
 - `http://127.0.0.1:8000/kds` — Kitchen Display System
 - `http://127.0.0.1:8000/admin/order-status-screen` — OSS
 
@@ -394,7 +394,7 @@ Loi de Finance France — non-négociable, prison time si violé.
 - L'abstract invariant ("forbidden") est doublé par une `RuntimeException`
   au boot — pas de silent override possible.
 - **Note (verified 2026-05-21)**: the cache-driver forbidden list at
-  `AppServiceProvider.php:215` covers `array`/`null` only — `file` and
+  `AppServiceProvider.php:295` (réf corrigée 2026-06-16, ex-`:215`) covers `array`/`null` only — `file` and
   `database` PASS the guard. Block comment says "redis or memcached"
   but the implementation is narrower than the stated intent. Tracked
   as **V1.0.X cloud-prep backlog item UNI-03** (defer to cloud cutover
