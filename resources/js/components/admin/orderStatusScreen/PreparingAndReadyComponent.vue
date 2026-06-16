@@ -422,7 +422,13 @@ export default {
         })
         .catch((err) => {
           this.loading.isActive = false;
-          alertService.error(err?.response?.data?.message || this.$t('message.something_wrong'));
+          // [OSS-01] Only toast on the ATTENDED staff surface. The public customer TV wall
+          // (authBranchId() <= 0) is unattended and polls every 5s, so a transient blip would
+          // stack toasts no human can dismiss — matching this component's own gating used by
+          // _playReadySound and the wakeLock wiring. The last-good rows stay rendered regardless.
+          if (this.authBranchId() > 0) {
+            alertService.error(err?.response?.data?.message || this.$t('message.something_wrong'));
+          }
         });
     },
   },
