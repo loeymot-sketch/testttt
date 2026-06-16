@@ -39,3 +39,20 @@ La dispute finale a **attrapé 1 VRAIE régression P1 dans MON heal CAISSE-S1** 
 **Extraire/supprimer une variable → grep TOUS ses consommateurs + lancer le test du CONTROLLER, pas juste du service.** Mon « frozen 0 + test ciblé » a raté la régression ; c'est la **dispute adversaire finale** (PHASE 3) qui l'a attrapée. Le test-vert-sur-service ne prouve pas l'UI/controller. La boucle plan→exécute→**dispute**→corrige a fonctionné exactement comme l'owner l'a conçue.
 
 **Système fast-food actuel : validé, plus robuste, intact, prêt pour évolution future progressive.** Reste = gates owner (push).
+
+---
+
+## PHASE 4 — ABUS de vérification/validation (demande owner « complète en étant adversaire et abuse les verification et validation »)
+Workflow validation-abuse (11 agents, run `wdlh4g596`) sur le batch 8-heals : **8/8 heals re-prouvés en LANÇANT les tests** (pas en lisant le code), grep de TOUS les consommateurs propre, `fully_validated: true`. **1 seul écart trouvé = VGAP-01 (P3), une faiblesse de QUALITÉ-DE-PREUVE, PAS une régression** : 2 heals (OSS-01, KDS-02) prouvés par source-grep uniquement, jamais exercés au runtime.
+
+### VGAP-01 FERMÉ (commit `6b835b562`, test-only, frozen 0)
+- **KDS-02** : `KdsControllerHttpExceptionPreservedTest` étend `orderItems()` + `historyToday()` au **runtime** (AccessDeniedHttpException mockée → 403 pas 422) + 2 cas-garde « un `\Exception` simple aplatit TOUJOURS en 422 » (prouve que le nouveau catch HttpException n'a pas élargi/avalé la branche générique). `index()` était la seule méthode couverte avant. **6/6**.
+- **OSS-01** : nouveau `ossPublicWallErrorToastGatingRuntime.spec.js` invoque le vrai `list().catch` (dispatch rejeté + `authBranchId` contrôlable) → toast **SUPPRIMÉ** sur mur public (≤0), **TIRÉ** pour staff (>0), + fallback i18n. **3/3**.
+- **Preuve que le runtime a des dents (mutation-probe)** : en déplaçant `alertService.error` HORS de la garde, la spec source-grep reste **VERTE** (aveugle à cette classe de régression) tandis que la nouvelle spec runtime passe **ROUGE**. Fichier composant git-reverté propre après la sonde (`CLEAN-POST-REVERT`).
+
+### Preuves finales PHASE 4
+- Vitest complet **1960 passed / 3 skipped** (288 fichiers, +3 nouvelles spec runtime) · frozen diff **0** (15 fichiers) · NF525 intact.
+- KDS dir : 7 échecs = exactement les 2 fichiers baseline (`KdsUnreleasedOrderBumpP1Test` ×3, `KitchenRecallEndpointSentinelTest` ×4) — JAMAIS touchés par moi ; **mon fichier hors du set d'échecs**. Net-new = **0**.
+- Cette passe N'AJOUTE QUE des tests (0 code prod, 0 frozen, 0 changement de comportement) → ferme la classe de vérification exacte que la leçon CAISSE-S1 dénonce (source-grep ≠ preuve du consommateur).
+
+## VERDICT FINAL : ✅ CONVERGÉ + VÉRIFICATION ABUSÉE — 0 régression, 0 P0/P1, preuves source→runtime. Reste = gate owner (push).
