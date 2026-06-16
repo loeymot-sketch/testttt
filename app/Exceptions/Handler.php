@@ -127,6 +127,11 @@ class Handler extends ExceptionHandler
         }
 
         if ($e instanceof HttpException) {
+            // [GENIE A1-bis note] the hardcoded 422 here flattens a real 403/404/429 at the GLOBAL handler
+            // (same class as the controller-level KDS-02 fix). Left as-is intentionally: route-level closures
+            // already convert the important typed cases (e.g. 409 counter-collect) ABOVE this fallback, and a
+            // global status change is broad-blast — deferred to a dedicated gated change. The message is an
+            // intentional abort() string (not a raw leak), so it stays.
             return new JsonResponse(
                 [
                     'success' => false,
@@ -137,10 +142,16 @@ class Handler extends ExceptionHandler
         }
 
         if ($e instanceof QueryException) {
+            // [GENIE A1-bis 2026-06-16] A QueryException's getMessage() carries raw SQL + constraint/table
+            // names — NEVER leak that to the client. Log it server-side, return a generic translated 422.
+            \Illuminate\Support\Facades\Log::error('[A1-bis] unhandled QueryException at the global handler', [
+                'message'   => $e->getMessage(),
+                'exception' => get_class($e),
+            ]);
             return new JsonResponse(
                 [
                     'success' => false,
-                    'message' => $e->getMessage()
+                    'message' => __('all.message.something_wrong'),
                 ],
                 422
             );
