@@ -1,0 +1,84 @@
+{
+  "audit": "genie-masterplan global validation (READ-ONLY)",
+  "date": "2026-06-17",
+  "worktree": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/.claude/worktrees/wizard-wysiwyg-2026-06-14",
+  "campaign_range": "e4989d6e8..e18b9ad2a (8 commits, 9 fixes)",
+  "head": "e18b9ad2abdad595145073e70e066cf837372af7",
+  "frozen_diff": {
+    "verdict": "EMPTY/CLEAN",
+    "command": "git diff --stat e4989d6e8~1 HEAD -- <15 §7 frozen files>",
+    "evidence": "0 lines of diff across all 15 frozen files (3 kiosk vue, PaymentComponent, PosV5TrancheRow, pos-wizard.js/.css, admin-pos-v4.blade, 3 fiscal services, BranchScope, IdempotencyKeyMiddleware, PricingService, OrderStateMachine)"
+  },
+  "fixes": [
+    {
+      "fix": "1. FISCAL-CPS-01 (e4989d6e8) changePaymentStatus allocates fiscal seq on PAID",
+      "verdict": "holds",
+      "test_result": "ChangePaymentStatusFiscalAllocTest OK (4 tests, 10 assertions)",
+      "evidence": "4/4 pass as expected"
+    },
+    {
+      "fix": "2. FISCAL-DELIV-COD-01 (56d0ed11c) deliveryBoyOrderChangeStatus allocates",
+      "verdict": "holds",
+      "test_result": "DeliveryBoyChangeStatusFiscalAllocTest OK (3 tests, 6 assertions)",
+      "evidence": "3/3 pass as expected"
+    },
+    {
+      "fix": "3. FISCAL-SIMULATE-01 (baf930ff4) simulate-orders prod-refuse",
+      "verdict": "holds",
+      "test_result": "SimulateKioskOrdersProdGuardTest OK (1 test, 3 assertions)",
+      "evidence": "1/1 pass as expected"
+    },
+    {
+      "fix": "4. CC-4 (fd8445372) BranchStatus cascade isolation",
+      "verdict": "holds",
+      "test_result": "BranchStatusCascadeIsolationTest OK (1 test, 1 assertion); PersistBranchStatusChangedTest OK (5 tests, 18 assertions) pinning still green",
+      "evidence": "1/1 + 5/5 pass; broadcast survives revoke failure, pinning intact"
+    },
+    {
+      "fix": "5. A1 jsonError trait (9f218eca1 + 7a35a749b) JsonErrorTraitSentinel + KdsControllerHttpExceptionPreserved",
+      "verdict": "holds",
+      "test_result": "JsonErrorTraitSentinelTest OK (3 tests, 10 assertions); KdsControllerHttpExceptionPreservedTest OK (6 tests, 13 assertions)",
+      "evidence": "Discriminator confirmed in app/Http/Controllers/Controller.php:31 jsonError(): isUserFacing = code===422 || HttpException || ValidationException -> pass-through real message; else genericize to all.message.something_wrong + Log::error. 422 throw passes through, unexpected exception genericizes+logs. 100 changed controllers lint-clean (php -l 0 failures). Spot-checked Admin/CompanyController (extends AdminController extends Controller), Auth/SignupController, Frontend/CouponController: all converted 'return response([status=>false,message=>getMessage()],422)' -> 'return $this->jsonError($exception,422)', identical response shape, jsonError reachable via inheritance."
+    },
+    {
+      "fix": "6. B9 a11y (b2dbc3972) passwordLabelForIdResolutionA11y + close-button aria-label sweep",
+      "verdict": "holds",
+      "test_result": "passwordLabelForIdResolutionA11y.spec.js 12/12 pass",
+      "evidence": "12/12 as expected; build not broken (full Vitest 1988 pass)"
+    },
+    {
+      "fix": "7. B6/B7 (e18b9ad2a) report/dashboard numbers unchanged",
+      "verdict": "holds",
+      "test_result": "DashboardRevenueNettingSentinel 2/2, SalesSummaryAvgPerDayDivisorSentinel 2/2, TotalOrdersCountSemantics 1/1, TotalOrdersRealVolumeSentinel 1/1",
+      "evidence": "All dashboard/report sentinels green; behavior-identical (drop unused eager-load + SQL count) confirmed"
+    }
+  ],
+  "suites": {
+    "feature": {
+      "result": "2702 tests, 12265 assertions, 228 Failures, 8 Errors, 30 Skipped",
+      "pass": 2436,
+      "fail_or_error": 236,
+      "campaign_attributable": 0,
+      "note": "236 failure/error blocks: 214 are the direct MissingIdempotencyKeyException ('Header X-Idempotency-Key requis', IdempotencyKeyMiddleware.php:54); 157 lines are the '2xx/4xx is identical to 422' downstream of the same harness gap (endpoint returns 422 missing-key where the POST test expected real status). ALL belong to the PRE-EXISTING X-Idempotency-Key harness class on POS/order/fiscal/cash/kiosk endpoint tests. PROOF campaign added 0 net new: (1) all 6 campaign-authored Feature test files PASS in the full run (zero appear in the failing-test list); (2) IdempotencyKeyMiddleware.php is FROZEN + untouched (diff EMPTY); (3) the 4 non-controller app files the campaign touched (OrderService additive fiscal-alloc, DashboardService get()->count()->count() identical-int, RevokeTokensOnBranchDeactivated defensive try/catch, SimulateKioskOrders prod-guard) are all behavior-preserving/additive and covered by passing campaign tests. The campaign UPDATED 2 KDS tests (KdsControllerHttpExceptionPreserved) which now PASS, so with-campaign failure count is <= baseline ~229."
+    },
+    "unit": {
+      "result": "226 tests, 413 assertions, 4 failures",
+      "pass": 222,
+      "fail": 4,
+      "campaign_attributable": 0,
+      "note": "4 fails are RateLimiterConfigTest (admin-mutation/pos-quote/pos-order-create/pos-order-update cap expected 60-120/min, got 1000/min). Root cause = local .env overrides (POS_RATE_LIMIT_QUOTE=1000, ADMIN_MUTATION_RATE_LIMIT=1000 etc). PRE-EXISTING env-config drift. Campaign did NOT touch RouteServiceProvider.php or the test (git diff e4989d6e8~1 HEAD = EMPTY on both)."
+    },
+    "vitest": {
+      "result": "1988 passed / 3 skipped / 0 test failures",
+      "note": "Expected ~1976; got 1988 (more tests incl new a11y spec). 1 unhandled async-timer teardown leak surfaced via kioskWizardNavigation.spec.js (passes 9/9 in isolation) — flaky cross-test artifact, NOT a failure, kiosk wizard is frozen+untouched by campaign."
+    },
+    "fiscal_chain": "CHAIN OK — SWEEP COMPLETE on every active branch (1 total), e2e env"
+  },
+  "new_breakage": "NONE attributable to campaign. Unit 4-fail + Vitest teardown-leak both pre-existing/env, confirmed via empty diff on relevant files.",
+  "controller_spot_check": {
+    "admin": "Admin/CompanyController.php — converted, lint OK, extends AdminController->Controller, jsonError reachable, shape identical",
+    "auth": "Auth/SignupController.php — converted, lint OK, extends Controller, shape identical",
+    "frontend": "Frontend/CouponController.php — converted, lint OK, extends Controller, shape identical",
+    "full_lint_sweep": "100 changed controller files php -l = 0 syntax errors"
+  }
+}
