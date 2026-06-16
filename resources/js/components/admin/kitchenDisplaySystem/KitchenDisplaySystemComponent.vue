@@ -1546,7 +1546,14 @@ export default {
         const hasFreshOrders = orders.some((o) => !gatedIds.includes(o.id));
         const hasDeletes = (deleted_ids || []).length > 0;
         this.syncNowTick = Date.now();
-        if (hasFreshOrders || hasDeletes) {
+        // [GENIE Wave6 B3 2026-06-16] De-duplicate the WS-down double full-board refetch. When
+        // wsConnected === false the coarse auto-refresh poll is already running at 5s
+        // (_pollingInterval) and is the freshness source-of-truth, so the delta-triggered
+        // _debouncedRefresh here is a redundant SECOND full refetch — skip it (worst-case latency
+        // stays the documented ≤5s of the 5s poll). In ANY other state (connected/degraded/unknown,
+        // where the coarse poll is the passive 60s drift) we KEEP the delta-driven refresh as the
+        // primary fresh signal — the guard is `!== false`, so an ambiguous state always refreshes.
+        if ((hasFreshOrders || hasDeletes) && this.wsConnected !== false) {
           this._debouncedRefresh && this._debouncedRefresh();
         }
       })
