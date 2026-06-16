@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Resources\SimpleItemResource;
 use App\Http\Resources\TopCustomerResource;
 use Exception;
+use Illuminate\Support\Facades\Log;
 use App\Libraries\AppLibrary;
 use App\Services\ItemService;
 use App\Services\DashboardService;
@@ -239,6 +240,10 @@ class DashboardController extends AdminController
                 ]
             );
         } catch (Exception $exception) {
+            // [CENTRAL-02] this fiscal EOD-recap PDF (permission:pos-manage-fiscal, read-only, does NOT
+            // touch the NF525 chain) previously swallowed render/aggregation failures with no server log.
+            // Add a server-side trace; the 422 response is byte-identical.
+            Log::error('eod-pdf recap failed', ['exception' => $exception]);
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }
     }
