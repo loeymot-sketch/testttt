@@ -1,0 +1,55 @@
+{
+  "verifier": "adversarial-convergence-verifier",
+  "date": "2026-06-16",
+  "worktree": "wizard-wysiwyg-2026-06-14",
+  "commits_verified": {
+    "B4": "13df183ee",
+    "A2": "22bf57230",
+    "B10": "ae492fdd4"
+  },
+  "test_counts": {
+    "phpunit_kds_dir": "49 tests, 7 fail (all 2 known baseline classes; 0 new)",
+    "phpunit_i18n_no_empty_key_sentinel": "3 pass / 6 assertions",
+    "vitest_full": "1976 pass / 3 skip (293 files); 1 unhandled teardown error (pre-existing, frozen KioskWizardComponent.vue:2215, not a failure)",
+    "vitest_a2_b10_new_specs": "appServiceCurrencyFormatFr 5/5, couponI18nKeyParity 2/2",
+    "vitest_i18n_parity_sentinels": "labelKeyParityFrontend 1/1, studioFrontendI18nParity 8/8, menuParentGroupI18nKeysSentinel 30/30, couponI18nKeyParity 2/2 = 41/41",
+    "vitest_money_payment_specs": "98/98 (paymentComponent401Retry, paymentComponentPropMutation, posPaymentComponentContract, posReceiptBuilder, posReceiptPrintFlow, posCurrencyFormatFr, posSplitPaymentBidirectional, posSplitPaymentValidation, checkoutGeocodeError)"
+  },
+  "frozen_diff": "0 frozen files touched across all 3 commits (git diff 13df183ee~1 ae492fdd4 --name-only | frozen-grep = empty)",
+  "entries": [
+    {
+      "fix": "B4",
+      "severity": "P2-perf",
+      "title": "KDS board N+1 eager-load (orderItems.orderItem + diningTable) is byte-identical output",
+      "verdict": "holds",
+      "evidence": "KDSOrderDetailsResource already lazy-resolved both relations: order_items uses $this->orderItems->loadMissing('orderItem') (line ~50) and table_name uses $this->diningTable?->name (line ~52). Eager-loading them in the with() is a strict SUPERSET of the prior load -> identical rendered payload, just fewer SELECTs. withTrashed Item via orderItems.orderItem changes nothing: loadMissing already pulled the same withTrashed Item lazily before. New KdsBoardEagerLoadNoN1Test PASSES ('Rendering the kds board resource fires zero lazy queries'). phpunit tests/Feature/KDS = 49 tests / 7 fail; the 7 are exactly KdsUnreleasedOrderBumpP1Test x3 + KitchenRecallEndpointSentinelTest x4, ALL failing on 'Header X-Idempotency-Key requis pour cette operation' (a harness-level baseline cause unrelated to eager-loading).",
+      "reproduction": "1) git checkout 13df183ee~1 -- app/Services/Kds*.php app/Services/Kitchen*.php; vendor/bin/phpunit tests/Feature/KDS/KdsUnreleasedOrderBumpP1Test.php -> 5 tests/3 fail (SAME failures, pre-existing B4). 2) git checkout 13df183ee -- (restore); full KDS dir = 49/7-fail, new test green. 3) git show 13df183ee --name-only shows only the 2 service files + new test touched (neither baseline test class touched)."
+    },
+    {
+      "fix": "A2",
+      "severity": "P2-robustness",
+      "title": "appService.currencyFormat Intl fr-FR; no consumer reparses output; frozen PaymentComponent display-only change",
+      "verdict": "holds",
+      "evidence": "Grepped all ~31 currencyFormat( consumers (Checkout/Coupon/Item/FrontendNav+Cart/Table*/Pos*/Payment). NONE parse output back to a number, concatenate into a numeric field, or send to backend: grep for assignment/reparse ('= ...currencyFormat(', 'parseFloat(...currencyFormat', 'Number(...currencyFormat', currencyFormat().replace) = EMPTY. All consumers render the string in {{ }} or in *Display computed getters used only for display. PaymentComponent.vue (FROZEN) IS a consumer (line 536 delegates to appService.currencyFormat) -> its on-screen money DISPLAY now renders FR, but its file is unchanged (git diff 13df183ee~5 = empty) and its payment math (cashChange:411, onCashInput, pos_received_amount:702, props.form.total) reads RAW input/props, never the formatted string -> NO mischarge path. Edge cases verified via node: -5.30->'-5,30 NBSP€', 0->'0,00 NBSP€', 1234567.89->'1 234 567,89 NBSP€', decimal0 1234->'1 234 NBSP€', LEFT 7->'€ NBSP7,00', NaN/undefined/null->'0,00 NBSP€' (guarded, no throw). appServiceCurrencyFormatFr 5/5; money+payment+receipt+split specs 98/98.",
+      "reproduction": "grep -rn 'currencyFormat(' resources/js (consumers) + grep for reparse patterns (empty). git diff 13df183ee~5 -- resources/js/components/admin/pos/PaymentComponent.vue (empty). npx vitest run appServiceCurrencyFormatFr posPaymentComponentContract posSplitPaymentBidirectional posReceiptBuilder -> all green. node edge-case replication confirms no throw/misformat."
+    },
+    {
+      "fix": "A2-note",
+      "severity": "P3-observation",
+      "title": "Frozen PaymentComponent behaviour-couples to A2 via runtime delegation (file unchanged, output changes)",
+      "verdict": "holds",
+      "evidence": "PaymentComponent.vue:536 'return appService.currencyFormat(...)'. Because A2 edits appService, the frozen component's RENDERED money now reads FR comma/NBSP. The fix file itself is untouched (frozen diff = 0), and the change is presentation-only (no math, no payload, no NF525 impact -- backend stays pricing SSOT). Reported as an observation, not a defect: the displayed amounts are now MORE correct (FR), and PaymentComponent already delegated to this exact function before A2. No P0/P1.",
+      "reproduction": "grep -n currencyFormat resources/js/components/admin/pos/PaymentComponent.vue -> line 535-536 delegator to appService; line 411 cashChange computes from parseFloat(cashReceivedRaw)/props.form.total (raw), not from formatted output."
+    },
+    {
+      "fix": "B10",
+      "severity": "P2-i18n",
+      "title": "16 coupon label.* keys added to fr.json+en.json; JSON valid; exactly ONE label.branch_scope; no real duplicate/collision",
+      "verdict": "holds",
+      "evidence": "Both files parse as VALID JSON (node JSON.parse). Strict char-walk duplicate-key detector: NO duplicate key within ANY object in either file. The two 'branch_scope' hits resolve to DISTINCT full paths: label.branch_scope ('Surfaces de vente'/'Sales surfaces', the B10 add) vs label.composer.branch_scope ('Portee branche'/'Branch scope', pre-existing nested under label.composer) -> different i18n keys, NO shadowing. Coupon UI references the correct keys: CouponCreateComponent.vue uses $t('label.branch_scope'), label.branch_scope_help, label.max_uses_global, label.valid_hours_start, label.valid_days_of_week, label.surfaces, label.monday_short..sunday_short; CouponListComponent.vue uses label.surface. All 16 keys are real consumers. Sentinels: labelKeyParityFrontend 1/1, studioFrontendI18nParity 8/8, couponI18nKeyParity 2/2, menuParentGroupI18nKeysSentinel 30/30; phpunit I18nNoEmptyKeySentinelTest 3/3.",
+      "reproduction": "node JSON.parse both files (valid). /tmp/dupcheck.js strict object-scoped dup scan -> 0 dups. node group-resolver -> label.branch_scope (line 438 fr) + label.composer.branch_scope (line 492 fr) distinct paths. grep coupon components for the 16 keys -> all referenced. npx vitest run labelKeyParityFrontend studioFrontendI18nParity couponI18nKeyParity sentinels/menuParentGroupI18nKeysSentinel -> 41/41. vendor/bin/phpunit --filter I18nNoEmptyKeySentinel -> 3/3."
+    }
+  ],
+  "new_p0_p1_introduced": "NONE. No new P0/P1 found in or around the 3 fixes.",
+  "verdict": "ALL 3 FIXES HOLD"
+}

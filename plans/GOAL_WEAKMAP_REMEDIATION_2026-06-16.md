@@ -26,3 +26,17 @@
 - **B8** `SETTINGS_CACHE_ENABLED` → **REFUSÉ** : `set()` n'invalide PAS le cache group-`all()` (`Settings.php:234` forget(key) seul) → config admin **stale** sur le frontend. Régression fonctionnelle. Ne pas activer sans patch d'invalidation du package (upstream/gate).
 - **Bundles** (app.js 7,4 Mo…) → config build + câblage frozen `pos-wizard.js` = gate.
 - **B10 dead-code purge** → vérifier orphan-ness 2× avant suppression ; bénin → après W1-W4 si budget.
+
+---
+
+## CONVERGENCE (adversarial pass — run `a08309e0b13a36c7e`) : ✅ les 3 fixes TIENNENT, 0 P0/P1 nouveau
+Vérificateur adversaire a LANCÉ les tests (pas inféré) et tenté de réfuter chaque fix :
+- **B4 HOLDS** — sortie byte-identique (la resource lazy-résolvait déjà `orderItem` + `diningTable` → with() = sur-ensemble strict, juste moins de SELECT) ; KDS dir 49 tests / 7 fails = **les 2 classes baseline uniquement** (prouvé pré-existant en revertant les 2 services au parent → mêmes 3 fails) ; pas de fuite withTrashed (déjà lazy avant).
+- **A2 HOLDS** — aucun des ~31 consommateurs ne reparse la sortie (grep vide) ; edge-cases OK (`-5,30 €`, `1 234 567,89 €`, decimal=0, NaN→`0,00 €`, aucune exception) ; suite money/payment/receipt/split **98/98**.
+- **B10 HOLDS** — JSON valide ×2, **pas de vrai doublon** (`label.branch_scope` [mon ajout] ≠ `label.composer.branch_scope` [pré-existant] = chemins distincts) ; sentinelles i18n 41/41 vitest + 3/3 phpunit.
+- **Full Vitest 1976/3skip** (293 fichiers) · **frozen diff 0** sur les 3 commits · 1 unhandled error = flake pré-existant (`KioskWizardComponent.spec` setTimeout-after-teardown, fichier frozen intouché) — pas un échec.
+
+### ⚠️ DIVULGATION HONNÊTE (owner-awareness — G-PAYMENT-DISPLAY)
+Le `PaymentComponent.vue` **FROZEN** est un consommateur runtime de `appService.currencyFormat` (ligne 536 délègue). Donc A2 a **changé l'AFFICHAGE money de l'écran de paiement gelé en FR** (`0,00 €` au lieu de l'en-US `0.00€` = POS-ERG-07) — **SANS modifier le fichier gelé** (diff 0) et **sans toucher le calcul** (`cashChange`/`pos_received_amount`/`total` lisent les props/input bruts, jamais la chaîne formatée ; backend reste SSOT prix). Effet : A2 **soigne incidemment la dette gelée POS-ERG-07**. Risque = nul (présentation, math intacte, format FR = le correct), MAIS comme ça touche la SORTIE d'un composant gelé payment-critical, **je le signale pour ta validation** : si tu veux que l'écran paiement reste en en-US, il faudrait scoper A2 (réintroduirait le défaut) ; sinon c'est un bonus.
+
+**VERDICT : CONVERGÉ.** 4 fixes livrés (B4/A2/B10/DOC), adversaire-vérifiés, frozen 0, no-harm respecté. Reste = gate owner (push + validation G-PAYMENT-DISPLAY). Déférés documentés ci-dessus avec raisons.
