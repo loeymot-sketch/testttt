@@ -34,6 +34,10 @@ class KitchenDisplaySystemController extends AdminController
                     'limit' => 50,
                 ],
             ]);
+        } catch (HttpException $e) {
+            // [KDS-02] preserve a real 403/throttle status instead of flattening it to a 422 "data
+            // error" — matches changeStatus()/recall() in this file + the sibling OSS controller.
+            return response(['status' => false, 'message' => $e->getMessage()], $e->getStatusCode());
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }
@@ -55,6 +59,8 @@ class KitchenDisplaySystemController extends AdminController
     {
         try {
             return KDSOrderItemsResource::collection($this->kitchenDisplaySystemOrderService->orderItems());
+        } catch (HttpException $e) {
+            return response(['status' => false, 'message' => $e->getMessage()], $e->getStatusCode()); // [KDS-02]
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }
@@ -73,6 +79,8 @@ class KitchenDisplaySystemController extends AdminController
     {
         try {
             return KDSOrderDetailsResource::collection($this->kitchenDisplaySystemOrderService->historyToday());
+        } catch (HttpException $e) {
+            return response(['status' => false, 'message' => $e->getMessage()], $e->getStatusCode()); // [KDS-02]
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }
