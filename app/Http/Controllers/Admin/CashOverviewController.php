@@ -7,6 +7,7 @@ use App\Models\CashDrawerSession;
 use App\Models\Order;
 use App\Models\Scopes\BranchScope;
 use App\Models\Transaction;
+use App\Services\Cash\CashDrawerService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -77,7 +78,7 @@ class CashOverviewController extends AdminController
     /**
      * GET /api/admin/cash-overview
      */
-    public function index(Request $request): JsonResponse
+    public function index(Request $request, CashDrawerService $cashDrawerService): JsonResponse
     {
         $user = $request->user();
         abort_if(! $user, Response::HTTP_UNAUTHORIZED);
@@ -232,11 +233,8 @@ class CashOverviewController extends AdminController
             // into this drawer's expected (CASH-JOIN-01) and (b) summed only positive
             // order-payments, ignoring cashback/cash-OUT movements (CASH-SEM-02) → it
             // overstated the physical drawer the cashier reconciles against.
-            $movementsSum = (float) \App\Models\CashMovement::query()
-                ->where('cash_drawer_session_id', $cashSession->id)
-                ->get()
-                ->sum(fn (\App\Models\CashMovement $m) => $m->signedAmount());
-            $expectedCash = round((float) $cashSession->opening_amount + $movementsSum, 2);
+            // [CAISSE-S1] shared read-model — identical to CashDrawerService::reconcileSession's gate.
+            $expectedCash = $cashDrawerService->expectedCashForSession($cashSession);
             $cashSessionPayload = [
                 'id'               => (int) $cashSession->id,
                 'branch_id'        => $sessionBranchId,

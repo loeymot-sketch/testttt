@@ -222,6 +222,25 @@ class CashDrawerService
      * @throws HttpException 422 si session OPEN (doit être CLOSED d'abord)
      * @throws CashVarianceRequiresApprovalException 422 si variance > threshold sans gate
      */
+    /**
+     * [CAISSE-S1] Single read-model for a session's expected physical cash:
+     * opening_amount + Σ signed cash movements (rounded to 2). This is the
+     * authoritative formula used by BOTH reconcileSession() (which fires the
+     * variance gate) and the live cash-overview display column — extracted here
+     * so the cashier-displayed expected can never silently drift from the value
+     * the reconciliation gates against. Pure read; identical output to the prior
+     * inline computation.
+     */
+    public function expectedCashForSession(CashDrawerSession $session): float
+    {
+        $movementsSum = CashMovement::query()
+            ->where('cash_drawer_session_id', $session->id)
+            ->get()
+            ->sum(fn (CashMovement $m) => $m->signedAmount());
+
+        return round((float) $session->opening_amount + (float) $movementsSum, 2);
+    }
+
     public function reconcileSession(
         int $sessionId,
         ?string $varianceReason = null,
@@ -254,12 +273,7 @@ class CashDrawerService
                 ];
             }
 
-            $movementsSum = CashMovement::query()
-                ->where('cash_drawer_session_id', $session->id)
-                ->get()
-                ->sum(fn (CashMovement $m) => $m->signedAmount());
-
-            $expected = round((float) $session->opening_amount + (float) $movementsSum, 2);
+            $expected = $this->expectedCashForSession($session); // [CAISSE-S1] shared read-model
             $variance = round((float) $session->closing_amount - $expected, 2);
 
             // [Sprint 1D / F-4] Variance gate.

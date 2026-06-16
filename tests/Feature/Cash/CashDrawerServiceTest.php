@@ -135,6 +135,22 @@ class CashDrawerServiceTest extends TestCase
         $this->assertSame(CashDrawerSession::STATUS_RECONCILED, $result['session']->status);
     }
 
+    /** [CAISSE-S1] SSOT drift-lock: the extracted expectedCashForSession() read-model (used by the
+     *  live cash-overview display) returns exactly the value reconcileSession gates the variance against. */
+    public function test_expected_cash_for_session_matches_reconcile_expected(): void
+    {
+        $session = $this->service->openSession($this->branch->id, $this->user->id, 100.00);
+        $this->service->recordMovement($session->id, CashMovement::TYPE_ORDER_PAYMENT, 10.00, CashMovement::DIRECTION_IN);
+        $this->service->recordMovement($session->id, CashMovement::TYPE_ORDER_PAYMENT, 10.00, CashMovement::DIRECTION_IN);
+        $this->service->recordMovement($session->id, CashMovement::TYPE_CASHBACK, 5.00, CashMovement::DIRECTION_OUT);
+
+        $readModel = $this->service->expectedCashForSession($session->fresh()); // the overview display formula
+
+        $this->assertSame(115.00, $readModel); // 100 + (10 + 10 - 5)
+        $this->service->closeSession($session->id, $readModel);
+        $this->assertSame($readModel, $this->service->reconcileSession($session->id)['expected']); // display == gate
+    }
+
     /** I3 — variance négative possible */
     public function test_reconcile_session_supports_negative_variance(): void
     {
