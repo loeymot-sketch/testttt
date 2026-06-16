@@ -134,11 +134,8 @@ class ItemController extends AdminController
     public function store(ItemRequest $request) : \Illuminate\Http\Response | ItemResource | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory
     {
         try {
-            if (env('DEMO')) {
-                return new ItemResource($this->itemService->store($request));
-            } else {
-                    return new ItemResource($this->itemService->store($request));
-            }
+            // [CENTRAL-01] collapsed dead env('DEMO') if/else — both arms were byte-identical (no-op).
+            return new ItemResource($this->itemService->store($request));
         } catch (Exception $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], 422);
         }

@@ -31,11 +31,8 @@ class SiteController extends AdminController
     public function update(SiteRequest $request): SiteResource | \Illuminate\Http\Response | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory
     {
         try {
-            if (env('DEMO')) {
-                $resource = new SiteResource($this->siteService->update($request));
-            } else {
-                $resource = new SiteResource($this->siteService->update($request));
-            }
+            // [CENTRAL-01] collapsed dead env('DEMO') if/else — both arms were byte-identical (no-op).
+            $resource = new SiteResource($this->siteService->update($request));
             // [Wave 5G R9 heal 2026-05-17] Fan-out settings.updated -> outbox.
             SettingsUpdated::dispatch(['site']);
             return $resource;
