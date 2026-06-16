@@ -1,0 +1,123 @@
+{
+  "audit": "WAVE0 FISCAL-CPS-01 adversarial verify + sibling hunt",
+  "branch": "goal/wizard-wysiwyg-builder-2026-06-14",
+  "head": "e4989d6e8",
+  "baseline": "cbb13a495 (HEAD~1)",
+  "date": "2026-06-16",
+  "verifier": "read-only adversarial",
+  "findings": [
+    {
+      "job": 1,
+      "path": "OrderService::changePaymentStatus staff path (~:2426) + self-service path (~:2311)",
+      "file": "app/Services/OrderService.php:2436,2314",
+      "verdict": "fix_holds",
+      "evidence": "Allocation `next()` executes BEFORE `$locked->save()`, both inside the existing locked DB::transaction. FiscalSequenceService::next() is READ-ONLY (returns MAX(fiscal_sequence_no)+1, no persist) and throws on lock-acquire failure -> outer tx rolls back -> order stays in prior state, never off-book PAID. Guard `$targetPaymentStatus === PaymentStatus::PAID(=5)` with $targetPaymentStatus = (int)$request->payment_status; REFUNDED(20)/UNPAID(10) cannot match -> no wrong allocation on non-PAID. Idempotency: lockForUpdate re-fetch + `$freshOld===$targetPaymentStatus` early-return + `fiscal_sequence_no === null` skip-guard -> no double-allocate on concurrent/double-flip, no re-alloc on pre-allocated (counter/kiosk).",
+      "reproduction": "ChangePaymentStatusFiscalAllocTest 4/4 PASS (unpaid->paid allocates; enters Z window; pre-allocated not reallocated; monotonic per branch)."
+    },
+    {
+      "job": 1,
+      "path": "Regression baseline (Order/ + Fiscal/)",
+      "file": "tests/Feature/Order/ + tests/Feature/Fiscal/",
+      "verdict": "fix_holds",
+      "evidence": "revert-and-rerun in isolated git worktree at HEAD~1 (without the heal): identical 10 fails (CancelReasonEnforceTest x5, ChangePaymentStatusOutboxTest x2, ChangePaymentStatusTransactionalTest x3) on BOTH HEAD and HEAD~1. ZERO new fails introduced by e4989d6e8. The 10 pre-existing fails are env/config-driven baseline, unrelated to fiscal allocation.",
+      "reproduction": "git worktree add /tmp/fk-baseline-head1 HEAD~1; php artisan test tests/Feature/Order/ tests/Feature/Fiscal/ -> 10 failed/34 passed on both."
+    },
+    {
+      "job": 2,
+      "path": "OrderService::deliveryBoyOrderChangeStatus COD at DELIVERED (~:1872)",
+      "file": "app/Services/OrderService.php:1872",
+      "verdict": "sibling_hole",
+      "severity": "P0",
+      "id": "FISCAL-DELIV-COD-01",
+      "evidence": "COD delivery order at DELIVERED is flipped payment_status=PAID(5) with NO fiscal_sequence_no allocation anywhere in the method (grep 1700-1912 = NONE) and NO post-commit allocation. Order model NOT covered by RetryFiscalAllocCommand (queries FrontendOrder only, filters fiscal_alloc_error_at NOT NULL — never set on this path). Permanent off-book orphan excluded from every Z (ZReportService whereNotNull('fiscal_sequence_no')). Same class/blast-radius as FISCAL-CPS-01. The heal commit body itself names this: 'Sibling of the delivery-COD hole' — known but NOT healed on this branch (healed only on heal/massive-2dot0 branch).",
+      "reproduction": "tinker (foodking_e2e): create Order(order_type=5,payment_method=CASH_ON_DELIVERY,payment_status=UNPAID,status=OUT_FOR_DELIVERY); deliveryBoyOrderChangeStatus(status=DELIVERED) -> AFTER pay=5 fiscal=NULL. CONFIRMED."
+    },
+    {
+      "job": 2,
+      "path": "OrderService::deliveryBoyOrderChangeStatus non-COD late-card at OFD/DELIVERED (~:1894)",
+      "file": "app/Services/OrderService.php:1894",
+      "verdict": "sibling_hole",
+      "severity": "P1",
+      "id": "FISCAL-DELIV-LATECARD-01",
+      "evidence": "Same method, else-branch: a CARD/EWALLET/PAYPAL/TICKET order that reached the driver still UNPAID is flipped PAID with no allocation. Same off-book + cron-unreachable orphan. Lower likelihood (unusual edge: card auth captured late) but same defect class.",
+      "reproduction": "tinker: Order(order_type=5,payment_method=CARD,payment_status=UNPAID,status=OUT_FOR_DELIVERY); deliveryBoyOrderChangeStatus(DELIVERED) -> pay=5 fiscal=NULL. CONFIRMED."
+    },
+    {
+      "job": 2,
+      "path": "PaymentService::payment() gateway flip (:64) + myOrderStore online creation",
+      "file": "app/Services/PaymentService.php:64",
+      "verdict": "sibling_hole",
+      "severity": "P1-latent",
+      "id": "FISCAL-GATEWAY-ONLINE-01",
+      "evidence": "PaymentService::payment() sets payment_status=PAID + saves with NO fiscal allocation. myOrderStore (online web orders, :367) does NOT pre-allocate fiscal_sequence_no (only posOrderStore :1117 does). So Stripe/Credit/PayPal-paid online orders persist PAID with fiscal_sequence_no=NULL. Callers: Stripe.php:381/payment, Credit.php, Paypal.php, DrainStrandedCpnCommand:178. MITIGATION/REACHABILITY: Stripe gateway is INACTIVE/dormant in V1 LOCAL Le Cayenne (per BRAIN: PRSM-01/02 'gateway INACTIVE'); active money paths (kiosk-card via finalizePaidKioskOrder, POS-cash/counter via posOrderStore/confirmCounterPayment) are SAFE. Classify as latent — becomes live the moment any online gateway is enabled.",
+      "reproduction": "tinker: Order(payment_method=CARD,UNPAID,no seq) -> emulate PaymentService::payment 2 writes -> pay=5 fiscal=NULL. CONFIRMED (path), gateway dormant in V1."
+    },
+    {
+      "job": 2,
+      "path": "DrainStrandedCpnCommand Stripe drain (:178)",
+      "file": "app/Console/Commands/Stripe/DrainStrandedCpnCommand.php:181",
+      "verdict": "sibling_hole",
+      "severity": "P2-latent",
+      "id": "FISCAL-DRAIN-CPN-01",
+      "evidence": "Calls PaymentService::payment() to flip stranded Stripe CARD orders PAID -> inherits FISCAL-GATEWAY-ONLINE-01 (no allocation). Stripe-only, dormant gateway in V1.",
+      "reproduction": "Inherits PaymentService::payment hole; same NULL outcome."
+    },
+    {
+      "job": 2,
+      "path": "SimulateKioskOrders command (:65)",
+      "file": "app/Console/Commands/SimulateKioskOrders.php:65",
+      "verdict": "sibling_hole",
+      "severity": "P3-dev",
+      "id": "FISCAL-SIMULATE-01",
+      "evidence": "Order::create(payment_status=5) with NO fiscal_sequence_no and NO production guard (grep environment|production|abort = NONE in file). Dev/E2E load command, but writes off-book PAID rows into whatever DB it runs against. Sibling command kiosk:simulate-orders was hard-refused in prod on heal/massive-2dot0 (156976cb2); THIS command has no such guard on this branch.",
+      "reproduction": "php artisan with this command creates payment_status=5 fiscal=NULL orders; no env guard."
+    },
+    {
+      "path": "OrderService::posOrderStore (:783 PAID, :1117 alloc)",
+      "file": "app/Services/OrderService.php:1117",
+      "verdict": "safe",
+      "evidence": "Allocates fiscal_sequence_no in the same POS create tx (unless intentionally deferred-to-counter, where confirmCounterPayment allocates at collection). Reference-correct."
+    },
+    {
+      "path": "PaymentService::confirmCounterPayment (:325 PAID, :322 alloc)",
+      "file": "app/Services/PaymentService.php:322",
+      "verdict": "safe",
+      "evidence": "Allocates `if fiscal_sequence_no === null` BEFORE PAID flip, in-tx. This is the pattern the heal mirrors."
+    },
+    {
+      "path": "OrderController::confirmPayment kiosk FrontendOrder (:215 PAID)",
+      "file": "app/Http/Controllers/Frontend/OrderController.php:215",
+      "verdict": "safe",
+      "evidence": "FrontendOrder kiosk path: allocation via finalizePaidKioskOrder() post-commit + RetryFiscalAllocCommand salvage on failure (sets fiscal_alloc_error_at). Established kiosk Plan-B path."
+    },
+    {
+      "path": "PaymentReconcileController kiosk reconcile (:211 PAID)",
+      "file": "app/Http/Controllers/Frontend/PaymentReconcileController.php:211",
+      "verdict": "safe",
+      "evidence": "Same kiosk FrontendOrder path -> finalizePaidKioskOrder + retry cron. Re-reads DB to confirm fiscal_sequence_no before declaring success."
+    },
+    {
+      "path": "Listeners/PersistOrderPaymentStatusChangedOnRefundCreated (:102)",
+      "file": "app/Listeners/PersistOrderPaymentStatusChangedOnRefundCreated.php:102",
+      "verdict": "safe",
+      "evidence": "Writes REFUNDED (20), not PAID. Refund counter-entry, no allocation needed (already-sequenced order being refunded)."
+    },
+    {
+      "path": "deliveryBoyOrderChangeStatus COD-at-OFD (leaves UNPAID)",
+      "file": "app/Services/OrderService.php:1888",
+      "verdict": "safe",
+      "evidence": "COD at OFD intentionally leaves payment_status=UNPAID; flip deferred to DELIVERED. Not a PAID writer here."
+    }
+  ],
+  "verdict_summary": {
+    "fix_holds": true,
+    "new_regressions": 0,
+    "fiscal_alloc_test": "4/4 PASS",
+    "sibling_p0_found": true,
+    "sibling_p0_id": "FISCAL-DELIV-COD-01 (deliveryBoyOrderChangeStatus COD@DELIVERED)",
+    "total_paid_writers": 13,
+    "safe_writers": 7,
+    "hole_writers": 5,
+    "note": "5 holes are all the SAME FISCAL-CPS-01 class. COD-delivery (FISCAL-DELIV-COD-01) is a live V1-reachable P0 (delivery boy seeded, route wired). The 3 gateway/drain/simulate holes are dormant-in-V1 (Stripe inactive / dev command). The heal commit explicitly named the COD hole as a known sibling but left it unhealed on this branch."
+  }
+}

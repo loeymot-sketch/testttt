@@ -1895,6 +1895,19 @@ class OrderService
                     }
                 }
 
+                // [GENIE Wave0 FISCAL-DELIV-COD-01 / -LATECARD-01 2026-06-16] NF525 exhaustivity, sibling
+                // of FISCAL-CPS-01. The COD-at-DELIVERED flip (:1872) and the non-COD late-card flip (:1894)
+                // above set payment_status=PAID but never allocated a fiscal sequence → off-book orphan
+                // excluded from every Z (ZReportService whereNotNull) and unreachable by the kiosk-only retry
+                // cron. Allocate here, INSIDE this locked tx so an alloc failure rolls the whole transition
+                // back (never an off-book PAID), idempotent on a pre-allocated (counter/kiosk) order. The
+                // G-DELIV-FISCAL heal lived only on heal/massive-2dot0; this branch never received it.
+                if ((int) $locked->payment_status === PaymentStatus::PAID
+                    && $locked->fiscal_sequence_no === null
+                ) {
+                    $locked->fiscal_sequence_no = app(FiscalSequenceService::class)->next((int) $locked->branch_id);
+                }
+
                 $locked->status = $newStatus;
                 $locked->save();
 
