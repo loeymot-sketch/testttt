@@ -132,6 +132,28 @@ class RetryFiscalAllocCommand extends Command
             $skipped
         ));
 
+        // [GENIE Wave1 T1.2 2026-06-16] Age-based escalation. The cron previously returned SUCCESS
+        // unconditionally — a kiosk order stuck PAID + fiscal_alloc_error_at for many ticks (DB/trigger
+        // issue) sat off-book forever with no pager. Surface orphans older than the threshold + exit
+        // FAILURE so the scheduler/monitoring alerts (mirrors MonitorOutboxStaleness).
+        $escalateMinutes = (int) config('fiscal.alloc_orphan_escalate_minutes', 30);
+        $stuck = FrontendOrder::query()
+            ->withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
+            ->where('payment_status', PaymentStatus::PAID)
+            ->whereNull('fiscal_sequence_no')
+            ->whereNotNull('fiscal_alloc_error_at')
+            ->where('fiscal_alloc_error_at', '<', now()->subMinutes($escalateMinutes))
+            ->count();
+        if ($stuck > 0) {
+            Log::channel('fiscal')->error('kiosk.fiscal_alloc_retry.orphans_stuck', [
+                'event'             => 'kiosk.fiscal_alloc_retry.orphans_stuck',
+                'stuck_count'       => $stuck,
+                'threshold_minutes' => $escalateMinutes,
+            ]);
+            $this->error("fiscal-retry-alloc: {$stuck} orphan(s) stuck past {$escalateMinutes}min — escalating.");
+            return self::FAILURE;
+        }
+
         return self::SUCCESS;
     }
 }
