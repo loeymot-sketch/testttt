@@ -2762,7 +2762,10 @@ class OrderService
             $orderColumn = $this->sanitizeOrderColumn((string) ($request->get('order_column') ?? 'id'));
             $orderType = $this->sanitizeOrderDirection((string) ($request->get('order_by') ?? 'desc'));
 
-            $orders = Order::with('transaction', 'orderItems')->where(function ($query) use ($requests) {
+            // [GENIE Wave4 B6 2026-06-16] dropped the 'orderItems' eager-load — it is never dereferenced
+            // in this method (money is summed from the scalar total/discount/delivery_charge columns), so
+            // eager-loading every report row's items was pure waste. Zero numeric change.
+            $orders = Order::with('transaction')->where(function ($query) use ($requests) {
                 if (!empty($requests['from_date']) && !empty($requests['to_date'])) {
                     // [GOAL-G2-HEAL-04 2026-05-23] TZ-generation alignment to
                     // Wave T R5 Paris bounds — sibling of list() above, keep

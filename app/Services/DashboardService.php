@@ -311,7 +311,9 @@ class DashboardService
                 ->where('order_datetime', '<', $endParisExclusive)
                 ->whereTime('order_datetime', '>=', Carbon::parse($first_time))
                 ->whereTime('order_datetime', '<=', Carbon::parse($last_time))
-                ->get()->count();
+                // [GENIE Wave4 B7 2026-06-16] ->count() (SQL COUNT) instead of ->get()->count()
+                // which hydrated every matching Order model into memory just to count it. Same int.
+                ->count();
             $totalCustomerArray[] = $total_customer;
         }
 
