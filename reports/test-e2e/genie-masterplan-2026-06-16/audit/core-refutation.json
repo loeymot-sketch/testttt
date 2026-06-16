@@ -1,0 +1,66 @@
+{
+  "meta": {
+    "audit": "READ-ONLY adversarial red-team of supervisor 'core is SOLID' claim",
+    "date": "2026-06-16",
+    "worktree": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/.claude/worktrees/wizard-wysiwyg-2026-06-14",
+    "server": "http://127.0.0.1:8766 (DB foodking_e2e clone)",
+    "verdict": "SOLID-CORE CLAIM BROKEN — 1 CONFIRMED P0 (NF525 fiscal exhaustivity hole via admin changePaymentStatus)",
+    "headline_finding": "FISCAL-CPS-01"
+  },
+  "findings": [
+    {
+      "id": "FISCAL-CPS-01",
+      "vector": "2 — Fiscal allocation hole (sibling of the healed delivery-COD hole)",
+      "file": "app/Services/OrderService.php:2292-2471 (changePaymentStatus); app/Domain/Order/PaymentStateMachine.php:9-19; app/Services/Fiscal/ZReportService.php:337-341 (aggregate window requires whereNotNull fiscal_sequence_no); app/Console/Commands/RetryFiscalAllocCommand.php:65-69 (retry cron predicate); app/Http/Controllers/Admin/{OnlineOrderController.php:103,TableOrderController.php:72,PosOrderController.php:323}",
+      "severity": "P0",
+      "status": "confirmed",
+      "reproduction": "Live HTTP POST /api/admin/online-order/change-payment-status/4945 with admin Sanctum token + x-api-key + X-Idempotency-Key, body {\"payment_status\":5}. Returned HTTP 200. Order 4945 transitioned UNPAID(10) -> PAID(5). DB after: payment_status=5, fiscal_sequence_no=NULL, fiscal_alloc_error_at=NULL. Ran `php artisan foodking:fiscal:retry-alloc --branch=1 --limit=200`: order STILL orphaned (seq NULL). ZReportService::aggregate(1,null,future) order_count=2375 — query is whereNotNull('fiscal_sequence_no') so order 4945's 8.00 EUR is EXCLUDED from every Z window.",
+      "evidence": "PaymentStateMachine::TRANSITIONS allows UNPAID->PAID and PENDING_COUNTER->PAID. changePaymentStatus saves payment_status=PAID, writes ActionLog+AuditLog (AuditLog payload line 2450 reads $locked->fiscal_sequence_no which is NULL), dispatches OrderPaymentStatusChanged — but NEVER calls FiscalSequenceService::next(). The ONLY fiscal allocation lives in PaymentService::321-322 (counter encashment) and FrontendOrderService::finalizePaidKioskOrder (kiosk). changePaymentStatus reaches neither. The retry-alloc cron targets ONLY FrontendOrder rows with fiscal_alloc_error_at IS NOT NULL; admin-flipped Order rows have that flag NULL, so the degraded-salvage path can NEVER catch them. ZReportService::warnOnOrphanedPaidOrders (line 611) is observability-only (comment: 'the rows are correctly excluded from the aggregate either way — the warn is observability, not correctness') and does NOT abort the close or count the revenue. Result: an Order marked PAID via the admin/staff change-payment-status endpoint (gated by permission:online-orders / table-orders / pos-orders, reachable by Branch Manager) is permanently PAID + fiscal_sequence_no NULL = revenue that escapes the NF525 Z exhaustivity invariant ('every PAID fiscal sale appears in exactly one Z'). Snapshot: 61 such cron-unreachable orphan Order rows (PAID + NULL seq + NULL alloc_error) already in foodking_e2e; 60 pre-existed before my single repro. This is a direct SIBLING of the delivery-COD hole healed last month — same class, different reachable path. The Z-loop-gap comment in app/Console/Kernel.php:419-421 even names fiscal_alloc_error_at+retry-cron as the intended fallback for orphans — a fallback this path structurally bypasses."
+    },
+    {
+      "id": "FISCAL-ZGAP-01",
+      "vector": "5 — NF525 Z window exhaustivity (inter-session dead-time gap)",
+      "file": "app/Services/Fiscal/ZReportService.php:231 (close passes $open->opened_at as window lower bound, not previous Z closed_at); app/Console/Kernel.php:401-451 (close 23:59 / open 00:01)",
+      "severity": "P2",
+      "status": "refuted",
+      "reproduction": "A sub-agent reported 2127 fiscally-sequenced PAID orders in inter-Z gaps in foodking_e2e (e.g. a 9.76-day gap between Z seq 6 close and Z seq 7 open) and order id=267 in zero Z windows. Verified the window IS anchored to opened_at not previous closed_at.",
+      "evidence": "REFUTED AS A NEW DEFECT: this is a KNOWN, DOCUMENTED, owner-gated, partially-mitigated pre-existing item, not a missed hole. app/Console/Kernel.php:396-400 + 443-445 carry an explicit 'GAP-HUNT 2026-05-25 PROPOSAL-Z-LOOP-GAP Path A' note: close moved to 23:59 + open to 00:01 reduces the production orphan window to ~2 min (~99.97% reduction from the original 10 min); Path B (business_date SSOT) is explicitly DEFERRED to V1.0.X behind a LOCK. The 2127-order figure is a TEST-HARNESS ARTIFACT: the e2e clone has manually opened/closed Z reports leaving multi-day dead time that does not occur under the scheduled 2-min production window. The sub-agent's own caveat flagged it could not isolate harness vs. ops. In real ops the residual ~2 min gap is the documented, accepted V1 posture. Note: this finding's existence actually REINFORCES FISCAL-CPS-01 — the documented fallback for gap-orphans (fiscal_alloc_error_at + retry cron) is exactly what changePaymentStatus bypasses."
+    },
+    {
+      "id": "PRICING-LEGACY-PATH-01",
+      "vector": "1 — Pricing SSOT bypass",
+      "file": "app/Services/OrderService.php:558-572 (web), 1040-1057 (pos), 1573-1583 (table); app/Services/FrontendOrderService.php:511-513; config/pricing.php use_ssot_service",
+      "severity": "P3",
+      "status": "refuted",
+      "reproduction": "grep of all ->total= writes on Order. Confirmed PRICING_USE_SSOT defaults true, PRICING_TAX_INCLUSIVE defaults true.",
+      "evidence": "REFUTED. There is a legacy inline pricing branch (flag pricing.use_ssot_service, default TRUE) that recomputes total = realSubtotal(+tax)+delivery-discount instead of calling PricingService::calculateOrder. However (a) the default is the SSOT path; (b) even the legacy branch recomputes EVERY financial field server-side from DB item/variation/extra/tax rows and IGNORES client-sent totals/discounts (coupon resolved server-side via CouponService, manual discount validated via assertPosManualDiscountAllowed) — it is a parallel implementation, NOT a client-trust bypass. No order-create path sets total from a client-supplied value. The supervisor's 'pricing is backend SSOT' holds; the only real risk is dual-implementation drift between the legacy branch and PricingService, which is a maintainability concern, not a P0/P1 mispricing hole."
+    },
+    {
+      "id": "BRANCH-MESSAGE-01",
+      "vector": "3 — Branch isolation leak on BranchScope-exempt models",
+      "file": "app/Services/MessageService.php:30-32 (list reads client-supplied $request->branch_id, no clamp); app/Http/Controllers/Admin/MessageController.php:25,43 (permission:messages gate held by Branch Manager; show(Message) route-binds with no branch check); routes/api.php:1138-1145",
+      "severity": "P2",
+      "status": "theoretical",
+      "reproduction": "Static + role analysis (sub-agent could not produce live cross-branch rows: V1 has 1 branch, messages table holds only branch[1] rows, so no 2nd-branch message exists to leak).",
+      "evidence": "9/10 exempt models REFUTED (ZReport resolveBranchIdForRead+abort_if; AuditLog/OrderDiscountLog manual where(branch_id); KioskPromo/UpsellRule branch-scoped methods; ActionLog/DiningTableAuditLog write-only; DomainEvent resolveBranchScope 403 + Admin-only outbox; FrontendDiningTable public-QR not staff). Message is the one genuine gap: MessageService::list() trusts $request->branch_id with no clamp and MessageController::show(Message) route-binds with no branch check, while the codebase's own AdminController::authorizeBranchScope guard is simply not wired into MessageController. A non-admin Branch Manager (permission:messages) WOULD read another branch's messages the instant a 2nd branch exists. THEORETICAL in single-branch V1 (cannot reproduce a real cross-branch read), matches the exemption's stated 'V1-low-risk / V2-SaaS-blocker' posture. Not a V1 P0/P1."
+    },
+    {
+      "id": "IDEMPOTENCY-CPS-01",
+      "vector": "4 — Idempotency gap on mutating POST",
+      "file": "app/Http/Middleware/IdempotencyKeyMiddleware.php; app/Services/OrderService.php:2330-2347,2392-2466 (service-level cache + lockForUpdate)",
+      "severity": "n/a",
+      "status": "refuted",
+      "reproduction": "Live: POST change-payment-status WITHOUT X-Idempotency-Key returned 422 MISSING_IDEMPOTENCY_KEY. WITH key returned 200.",
+      "evidence": "REFUTED. The change-payment-status endpoints REQUIRE X-Idempotency-Key (HTTP middleware 422 if absent) AND have a service-level defense (cache marker + DB::transaction + lockForUpdate re-read with target==current idempotent early-return). Double-click cannot double-flip or double-dispatch. Note: this idempotency protection does NOT mitigate FISCAL-CPS-01 — it correctly prevents a DOUBLE flip, but a SINGLE flip already creates the fiscal orphan."
+    },
+    {
+      "id": "AUDIT-CHAIN-01",
+      "vector": "5 — audit_logs HMAC chain fork under concurrency",
+      "file": "app/Services/Fiscal/AuditLogService.php:100-192; migration 2026_04_22_100000 UNIQUE(branch_id, prev_hash)",
+      "severity": "n/a",
+      "status": "refuted",
+      "reproduction": "tinker chain-fork query (group by branch_id,prev_hash having count>1) + fiscal:verify-chain --all",
+      "evidence": "REFUTED by sub-agent + live: Cache::lock per branch + DB::transaction + UNIQUE(branch_id, prev_hash) index + retry-once. Live foodking_e2e: 0 chain forks, exactly one genesis (NULL-prev) row per branch. `fiscal:verify-chain` CHAIN OK on branch 1. Z-close is lock-guarded (Cache::lock z_report_b{n} + lockForUpdate on open row + OPEN-uniqueness + max(seq)+1) — no double-Z / seq-gap race. Order::restoring() hard-throws so withTrashed() cannot double-count a restored order."
+    }
+  ]
+}

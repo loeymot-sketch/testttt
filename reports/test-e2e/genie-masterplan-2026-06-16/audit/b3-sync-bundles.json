@@ -1,0 +1,222 @@
+{
+  "meta": {
+    "audit_id": "B3-SYNC-BUNDLES",
+    "date": "2026-06-16",
+    "mode": "READ-ONLY (no edits applied)",
+    "worktree": "/Users/1millnonstop/Downloads/projet/foodking-web/web/testttt/.claude/worktrees/wizard-wysiwyg-2026-06-14",
+    "scope": "V1 LOCAL FR single-box; soketi WS :6001 frequently down in dev -> polling fallback",
+    "all_findings_grep_or_read_confirmed": true
+  },
+
+  "B3_kds_dual_parallel_poll": {
+    "summary": "When WS is down, KitchenDisplaySystemComponent runs TWO independent poll loops at once: (1) a coarse setInterval at _pollingInterval() (5000ms WS-down / 60000ms WS-up) that fetches the FULL uncached board via Vuex kitchenDisplaySystemOrder/lists -> GET admin/kds-order; (2) the adaptive delta loop via kdsSyncService (cached 5s server-side, GET /api/admin/kds-order/sync) whose 'sync' listener also triggers _debouncedRefresh() which re-fetches the SAME full board. Net: redundant full-board fetches plus a delta fetch every WS-down tick.",
+
+    "loop_1_coarse_board_poll": {
+      "role": "Full uncached board refetch (the redundant one)",
+      "interval_definition": "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue:1900-1908 _pollingInterval() => this.wsConnected ? 60000 : 5000",
+      "interval_arming": "KitchenDisplaySystemComponent.vue:1913-1919 startAutoRefresh() => this.autoRefreshInterval = setInterval(() => this.refreshOrderList(), this._pollingInterval())",
+      "started_at": "KitchenDisplaySystemComponent.vue:1492 mounted() this.startAutoRefresh()",
+      "restart_on_ws_change": "KitchenDisplaySystemComponent.vue:1909-1912 _restartPolling() = stopAutoRefresh()+startAutoRefresh(); bound to ws connected/disconnected at :1880-1889 (_bindWsService)",
+      "what_it_fetches": "KitchenDisplaySystemComponent.vue:1999-2004 refreshOrderList() -> this.items() (GET admin/kds-order/items) + this._refreshWithCurrentFilter()",
+      "board_fetch_detail": "KitchenDisplaySystemComponent.vue:2051-2073 _refreshWithCurrentFilter() dispatches kitchenDisplaySystemOrder/lists with this.props.search",
+      "vuex_action": "resources/js/store/modules/kitchenDisplaySystemOrder.js:21-36 lists() -> axios.get('admin/kds-order' + requestHandler(payload)) ; NO since-param, NO client cache, full board",
+      "stop": "KitchenDisplaySystemComponent.vue:2081-2085 stopAutoRefresh(); :2490 beforeUnmount()",
+      "cadence_note": "Hardcoded per-surface (NOT config-read) by deliberate HEAL B.3 2026-05-19 anchor at :1901-1907. 5s WS-down protects ~5s kitchen-staleness budget."
+    },
+
+    "loop_2_delta_sync_poll": {
+      "role": "Adaptive delta sync (cached, the one that should be sole fallback)",
+      "client": "resources/js/services/KdsSyncService.js (class KdsSyncService, singleton export :501-503)",
+      "started_at": "KitchenDisplaySystemComponent.vue:1557-1559 kdsSyncService.start(this.authBranchId())",
+      "endpoint": "KdsSyncService.js:145 GET /api/admin/kds-order/sync?since=...&branch_id=...&include_deleted=true",
+      "cadence_formula": "KdsSyncService.js:297-320 _baseCadence(): WS CONNECTED => Infinity (drift-only 60s timer at :353-362); WS RECONNECTING/DEGRADED => degradedBaseMs 5000 + jitter 2000 (or highActivity 3000+1000); WS DISCONNECTED/SESSION_INVALID => disconnectedBaseMs 10000 + jitter 3000 (or highActivity 3000+1000)",
+      "defaults": "KdsSyncService.js:28-35 DEFAULT_CADENCE_OPTIONS {highActivityBaseMs:3000, degradedBaseMs:5000, disconnectedBaseMs:10000}",
+      "clamps": "KdsSyncService.js:25-27 CADENCE_FLOOR_MS 250 / CADENCE_CEILING_MS 60000 / JITTER_CEILING_MS 30000 (anti-misconfig DoS, Wave 3/3b)",
+      "server_side_cache": "app/Services/KdsSyncService.php:42-49 Cache::remember('kds.sync.{branch}.{minuteBucket}.{md5(since|includeDeleted)}', 5, ...) -> 5s TTL coalesces concurrent stations",
+      "delta_query": "app/Services/KdsSyncService.php:98-119 active statuses [ACCEPT,PREPARING,PREPARED], where updated_at >= since, today-window (sargable whereBetween, TZ-aware Paris-local :91-94), limit 50, eager-loads orderItems.orderItem/address/user/diningTable (:96-98)",
+      "leaves_window": "app/Services/KdsSyncService.php:136-155 deleted_ids = softDeleted(deleted_at>=since) merged with left-window (status in DELIVERED/CANCELED/REJECTED)",
+      "what_happens_on_delta": "KdsSyncService.js:204 _emit('sync', payload) -> KitchenDisplaySystemComponent.vue:1544-1553 listener: if hasFreshOrders||hasDeletes -> this._debouncedRefresh()"
+    },
+
+    "the_redundancy_crux": {
+      "debounced_refresh": "KitchenDisplaySystemComponent.vue:2443-2451 _debouncedRefresh() => 300ms setTimeout -> _refreshWithCurrentFilter() + items() (i.e. the SAME full uncached board fetch as loop 1)",
+      "double_count_when_ws_down": "Every WS-down tick: (a) loop-1 setInterval at 5s fires refreshOrderList() = full board; (b) loop-2 delta poll (5-10s) returns deltas; if any fresh/deleted, its 'sync' listener fires _debouncedRefresh() = ANOTHER full board fetch. So the cheap delta is consumed only to TRIGGER a full uncached board fetch, while loop-1 already does the full fetch on its own clock. The delta's bandwidth/cache win is largely thrown away.",
+      "confirmed_parallel": "Both started unconditionally in the same mounted() hook: startAutoRefresh() at :1492 AND kdsSyncService.start() at :1558. Neither gates on the other.",
+      "oss_is_NOT_dual": "OrderStatusScreenComponent.vue mounted() (:45-47) only closeSidebar() - NO board poll on the OSS surface. The OSS poll is the SINGLE OssSyncService loop (resources/js/services/OssSyncService.js) which dispatches orderStatusScreenOrder/lists. So the dual-parallel defect is KDS-only; OSS is the reference single-loop pattern."
+    },
+
+    "oss_sync_reference_for_design": {
+      "single_loop": "OssSyncService.js:276-324 _poll() -> store.dispatch('orderStatusScreenOrder/lists'); self-reschedules via _scheduleNormalCadence (:341-354)",
+      "cadence": "OssSyncService.js:8-27 intervalMsWhenConnected 60000 / intervalMsWhenDisconnected 2000; backoff 5000->30000; visibility burst-poll (:208-252); throwing-listener guard (:448-467 #7)",
+      "why_2s_disconnected": "OssSyncService.js:10-16 tightened 5000->2000 to meet SYNC-2 8s budget (POS pay -> OSS visible) on polling-only fallback; clamp [250,60000] (:34-35,:437-442)",
+      "lesson": "OSS proves a single adaptive loop CAN meet the staleness budget on WS-down. KDS can converge to the same shape."
+    },
+
+    "minimal_safe_fix_options": {
+      "option_A_preferred": {
+        "title": "Make the delta loop the SOLE WS-down fallback; suspend the coarse board setInterval while delta is the live driver",
+        "change": "In _pollingInterval()/startAutoRefresh(): when WS is down, do NOT arm the 5s full-board setInterval (or set it to a slow safety-net e.g. 60s drift-poll mirroring KdsSyncService _schedule Infinity-branch). Keep loop-1 only as a coarse drift/safety re-sync, let kdsSyncService deltas drive _debouncedRefresh as today. Keeps server cache benefit, removes the every-5s full uncached board fetch.",
+        "files": ["resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue (1900-1919, 1544-1553)"],
+        "risk": "Must guarantee delta loop ALWAYS runs on this surface (it does: started unconditionally :1558) and that a first-load full board still happens (it does: mounted() refreshOrderList() :1491). Edge: if kdsSyncService errors silently the board could stale -> keep a slow (60s) safety setInterval as drift backstop, NOT the 5s one."
+      },
+      "option_B_alternative": {
+        "title": "Cache list() server-side (mirror KdsSyncService.php Cache::remember on the admin/kds-order full-board endpoint)",
+        "change": "Add a short (e.g. 2-5s) Cache::remember to the KitchenDisplaySystemOrderService::list path so the 5s coarse poll and the _debouncedRefresh full fetch coalesce instead of hitting the DB twice. Less elegant: keeps both loops but de-duplicates DB cost.",
+        "risk": "list() returns filter-dependent payload (props.search) -> cache key must salt branch_id + status filter + today-window bucket; staleness must stay <= 5s budget. Touches a backend service in the KDS read path."
+      },
+      "recommendation": "Option A (suspend/slow the redundant coarse loop, delta becomes the sole active WS-down fallback with a 60s drift safety-net). Smaller blast radius, no new backend cache key, mirrors the OSS single-loop shape and KdsSyncService's own Infinity/drift pattern."
+    },
+
+    "why_gated_sync_contract_invariant": {
+      "shared_zone": "CLAUDE.md section 6 / SYNC_CONTRACT.md: KDS<->OSS<->customer-tracker realtime sync is a SHARED zone (LOCK+gate). Polling cadence is the WS-down degradation path of that contract.",
+      "invariant_at_risk": "Kitchen-staleness budget: orders MUST surface on the KDS board within ~5s of payment when WS is down (anchor comment KitchenDisplaySystemComponent.vue:1901-1907). If Option A wrongly removed BOTH the 5s board poll AND failed to guarantee delta-driven refresh, the kitchen would go blind during a WS outage -> orders never cook -> customer waits -> NF525-adjacent operational failure. Symmetric risk: OSS customer wall (SYNC-2 8s budget, OssSyncService.js:11-16) and the tracker depend on the same payment->display chain.",
+      "cross_surface": "A naive change to KdsSyncService.php delta query (e.g. window/limit/eager-load) would ALSO affect any other consumer of /api/admin/kds-order/sync and the OSS budget that assumes the kitchen progresses. Hence: change the CLIENT loop arming (Option A) NOT the shared delta contract, and gate the LOCK on SYNC_CONTRACT.",
+      "verdict": "OWNER GATE required because it modifies the WS-down degradation behavior of a SYNC-CONTRACT shared zone, even though no NF525/frozen file is touched."
+    },
+
+    "test_strategy_B3": {
+      "existing_to_reuse": [
+        "tests/Feature/KDS/KdsSyncTzAwareTest.php (delta window TZ correctness)",
+        "tests/Feature/KDS/KdsSyncSargableTest.php (index use at 50+ orders)",
+        "tests/Feature/Admin/KdsSyncControllerTest.php (deltas, branch isolation 403, server_now monotonic, cache key isolation, 400 missing since)",
+        "tests/Feature/Sentinels/KdsTodayWindowTzSentinelTest.php",
+        "tests/js/kdsSyncCadence.spec.js, tests/js/kdsCadenceFloor.spec.js (KdsSyncService cadence formula + clamps)"
+      ],
+      "reference_pattern": "tests/js/sentinels/posKioskPollingCadenceSentinel.spec.js — synthetic-this behavioural test of _kioskPollingInterval() + self-recursive setTimeout re-evaluation. SAME pattern fits KDS _pollingInterval()/startAutoRefresh.",
+      "new_test_needed": {
+        "name": "tests/js/sentinels/kdsPollCadenceSentinel.spec.js (NEW)",
+        "asserts": [
+          "WS-down: coarse board setInterval is NOT armed at 5s (or is armed only at the slow 60s drift safety) — proves redundancy removed",
+          "WS-down: kdsSyncService.start() IS invoked in mounted() (delta is the sole active fallback)",
+          "WS-up: drift-only behavior preserved (60s)",
+          "_debouncedRefresh still fires on delta 'sync' with fresh/deleted (kitchen still updates)",
+          "first-paint full board still fetched once at mount (no blind start)",
+          "source-string structural backstop on the new arming logic + HEAL anchor comment"
+        ],
+        "backend": "Re-run KdsSyncControllerTest + KdsSyncSargableTest unchanged (delta contract MUST NOT change under Option A)."
+      }
+    }
+  },
+
+  "bundles": {
+    "summary": "The 7MB+ figures are DEV (unminified, mode=development via `mix` / `npm run development`). A production build (`mix --production` / `npm run production`) minifies + tree-shakes and would cut these dramatically. vendor.js IS extracted and IS loaded by the blades before app/pos-app, but pos-app.js still appears to inline the Vue runtime (vendor not fully deduped from the second entry).",
+
+    "build_mode_reality": {
+      "current_build_is_dev": "package.json scripts: 'development':'mix' (default 'dev'), 'production':'mix --production'. The on-disk bundles are the dev build.",
+      "measured_dev_sizes_bytes": {
+        "public/js/app.js": 7429688,
+        "public/js/pos-app.js": 7072711,
+        "public/js/admin-shell.js": 6712975,
+        "public/js/vendor.js": 1940262,
+        "public/js/pos-shell.js": 1625028,
+        "public/js/manifest.js": 13228,
+        "public/js/pos-wizard.js": 296912
+      },
+      "gzip_of_dev_app_js_bytes": 1137756,
+      "gzip_of_dev_vendor_js_bytes": 420623,
+      "note": "gzip of the DEV bundle already ~1.1MB for app.js; a --production build minifies first (drops comments/whitespace/dead code, Vue feature-flag DCE already wired at webpack.mix.js:11-19) THEN gzips, so realistic prod-gzip is materially smaller again. The 7MB raw number is not the shipped weight even today (gzip on the wire), and is a dev artifact."
+    },
+
+    "chunk_architecture": {
+      "mix_entries": ["resources/js/app.js (webpack.mix.js:57-81, with .extract([...]) + .version())", "resources/js/pos-app.js (webpack.mix.js:55, .vue() NO extract)"],
+      "extract_list": "webpack.mix.js:59-79 — vue, vuex, vue-router, axios, vue-toastification, vue3-simple-alert, vue-next-select, vue3-apexcharts, apexcharts, vue-i18n, vuex-persistedstate, laravel-echo, pusher-js, dompurify, vue-element-loading, swiper -> emitted as vendor.js + manifest.js",
+      "admin_shell_kds_oss_kiosk_are_dynamic_chunks_NOT_entries": "admin-shell.js / admin-kds.js / admin-oss.js / admin-reports.js / kiosk-*.js are lazy webpack chunks produced by dynamic import() with webpackChunkName, e.g. resources/js/router/modules/administratorRoutes.js:5-8 import(/* webpackChunkName: \"admin-shell\" */ ...). They are code-split OUT of app.js and loaded on-route. They are NOT separate mix.js() calls -> a single `mix --production` minifies all of them.",
+      "vendor_not_fully_shared_into_pos_app": "grep: public/js/pos-app.js contains 4 'Vue warn' string hits + 2 webpackChunk markers; vendor.js contains 0 'Vue warn'. Comment webpack.mix.js:48-54 acknowledges Mix applies extract() GLOBALLY so it SHOULD govern pos-app.js too, but the dev bundle shows Vue inlined in pos-app.js. This matches the prompt's 'vendor.js not shared into entries' observation for the POS entry — worth confirming post-`--production` whether pos-app dedups against vendor.js (CI guard tools/lint/pos_app_size.mjs referenced at webpack.mix.js:53 asserts a gz ceiling)."
+    },
+
+    "frozen_pos_wizard_wiring": {
+      "pos_wizard_is_NOT_a_mix_entry": "CONFIRMED: `grep pos-wizard public/mix-manifest.json` => 0 hits. pos-wizard.js (296912 bytes) is hand-written Vanilla JS, NOT compiled by Mix.",
+      "loaded_via_asset_not_mix": "resources/views/admin-pos-v4.blade.php:136 <script src=\"{{ asset('js/pos-wizard.js') }}?v=9-{{ time() }}\"> ; CSS at :35 asset('css/pos-wizard.css'). Also master.blade.php:272 / :47.",
+      "implication": "A `mix --production` run does NOT touch, re-minify, re-hash, or re-wire pos-wizard.js or pos-wizard.css — they are served raw via asset() with a time()-based cache-bust, completely outside the Mix pipeline. FROZEN zone (CLAUDE.md section 7) is therefore NOT affected by a production build of the Mix entries.",
+      "blade_load_order_critical": "admin-pos-v4.blade.php:118-120 manifest.js -> vendor.js -> pos-app.js (all via mix()); pos-wizard.js loaded later at :136 via asset(). master.blade.php:255-257 manifest->vendor->app.js. The mix() helper resolves the hashed filename from mix-manifest.json, so .version() content-hashes are honored as long as the build regenerates mix-manifest.json."
+    },
+
+    "webpack_mix_change_safe_vs_gated": {
+      "webpack.mix.js_is_NOT_in_frozen_list": "grep -i 'webpack' CLAUDE.md / CONSTITUTION.md => 0 hits. webpack.mix.js is not enumerated in the section-7 frozen list.",
+      "SAFE_no_owner_gate": [
+        "Running `npm run production` (mix --production) to produce minified bundles — pure build artifact, no source/behavior change, does NOT touch frozen pos-wizard.js (it is not a Mix entry).",
+        "Adding/extending the vendor extract([]) list at webpack.mix.js:59-79 with libs already imported (pure caching optimization; emits to vendor.js which blades already load).",
+        "Verifying/raising the CI gz ceiling guard tools/lint/pos_app_size.mjs."
+      ],
+      "GATED_or_caution": [
+        "Adding `.extract()` to the pos-app.js chain (webpack.mix.js:55) to force vendor dedup from the POS entry: comment :48-54 warns Mix extract() is GLOBAL and per-entry extract semantics are version-fragile; a regression here changes what the FROZEN-wiring POS surface (admin-pos-v4.blade.php) loads -> verify blade load order (manifest->vendor->pos-app) still holds and pos-wizard.js shim still initializes against the (now possibly reordered) globals. Treat as caution + visual/Playwright proof on /admin/pos-v4, not silent.",
+        "Any change to blade asset ordering on admin-pos-v4.blade.php or master.blade.php -> those blades are in/adjacent to the FROZEN POS-wizard wiring (CLAUDE.md section 7 lists admin-pos-v4.blade.php as frozen) -> OWNER GATE."
+      ],
+      "key_clarification": "admin-pos-v4.blade.php IS listed FROZEN in CLAUDE.md section 7. So editing the blade = gated. But running `mix --production` and editing webpack.mix.js (non-frozen) to improve extraction does NOT require editing that blade, because mix() already reads hashed names from mix-manifest.json. The production build is therefore largely SAFE; only a blade edit or a pos-app extract() change crosses into gated territory."
+    }
+  },
+
+  "owner_gate_classification": {
+    "B3_kds_dual_poll": {
+      "WHO": "Owner (human gate) — SYNC_CONTRACT shared-zone change",
+      "WHAT": "Change the WS-down degradation cadence of the KDS board (suspend/slow the redundant 5s full-board setInterval so the cached delta loop is the sole active fallback). Modifies the realtime-sync degradation path even though no NF525/frozen FILE is edited.",
+      "WHERE": "resources/js/components/admin/kitchenDisplaySystem/KitchenDisplaySystemComponent.vue (1900-1919, 1544-1553). Delta contract files (KdsSyncService.js / KdsSyncService.php / admin/kds-order/sync) MUST stay unchanged. Requires SYNC_CONTRACT LOCK doc + owner sign-off.",
+      "gate_level": "OWNER GATE (CLAUDE.md section 6 shared zone)"
+    },
+    "bundles_production_build": {
+      "WHO": "Autonomous (no gate) for the build run + webpack.mix.js extract tuning",
+      "WHAT": "Run `npm run production`; optionally extend extract([]) at webpack.mix.js:59-79. Produces minified, hashed bundles; regenerates mix-manifest.json.",
+      "WHERE": "webpack.mix.js (NOT frozen), generated files under public/js + public/mix-manifest.json. pos-wizard.js untouched (not a Mix entry).",
+      "gate_level": "SAFE"
+    },
+    "bundles_pos_app_extract_or_blade_edit": {
+      "WHO": "Owner (human gate)",
+      "WHAT": "Adding .extract() to pos-app.js chain OR any edit to admin-pos-v4.blade.php / master.blade.php asset wiring.",
+      "WHERE": "webpack.mix.js:55 (pos-app chain) and/or resources/views/admin-pos-v4.blade.php (FROZEN section 7).",
+      "gate_level": "OWNER GATE / FROZEN"
+    }
+  },
+
+  "wave_decomposition": {
+    "W1_bundle_production_build_SAFE": {
+      "gate": "none",
+      "steps": [
+        "Run `npm run production` (mix --production).",
+        "Diff public/mix-manifest.json hashes; confirm pos-wizard.js absent from manifest (unchanged frozen vanilla).",
+        "Measure minified+gz sizes of app.js / pos-app.js / vendor.js / admin-shell.js vs dev baseline; record reduction.",
+        "Confirm tools/lint/pos_app_size.mjs gz ceiling still passes."
+      ],
+      "test": "Vitest full suite (build must not break specs); Playwright visual on /admin/pos-v4, /kds, /admin/order-status-screen, /admin/items to confirm no broken assets; console/network clean.",
+      "evidence": "size table (dev vs prod-gz), mix-manifest diff, screenshots Read+analyzed."
+    },
+    "W2_vendor_extraction_tuning_SAFE": {
+      "gate": "none (webpack.mix.js only)",
+      "steps": [
+        "Audit which already-imported libs are NOT in extract([]) and are large (analyze, do not over-extract app-specific code).",
+        "Extend webpack.mix.js extract list conservatively; rebuild production.",
+        "Verify vendor.js still loads first via blades (already wired)."
+      ],
+      "test": "Vitest; Playwright cross-surface; verify vendor.js dedup (grep 'Vue warn'/'createApp' should NOT appear in app.js after extraction).",
+      "evidence": "before/after chunk sizes, no behavior change."
+    },
+    "W3_pos_app_dedup_GATED": {
+      "gate": "OWNER (pos-app extract / frozen blade adjacency)",
+      "steps": [
+        "Investigate why pos-app.js inlines Vue despite global extract() (webpack.mix.js:48-54 caveat).",
+        "If a fix needs .extract() on pos-app chain or a blade load-order tweak -> write LOCK doc, escalate to owner.",
+        "Do NOT proceed without sign-off."
+      ],
+      "test": "Playwright on /admin/pos-v4 proving the FROZEN pos-wizard.js shim still initializes (open wizard, compose item, add to cart); Vitest; visual.",
+      "evidence": "wizard E2E pass + size delta; LOCK sign-off."
+    },
+    "W4_kds_dual_poll_dedup_GATED": {
+      "gate": "OWNER (SYNC_CONTRACT shared zone LOCK)",
+      "steps": [
+        "Write LOCK_KDS_POLL_DEDUP doc citing SYNC_CONTRACT invariant (5s kitchen-staleness budget).",
+        "Implement Option A: WS-down -> do not arm the 5s full-board setInterval; keep delta loop as sole active fallback + a 60s drift safety-net setInterval; preserve mount-time first-paint full fetch + _debouncedRefresh on delta.",
+        "Leave KdsSyncService.js / KdsSyncService.php / admin/kds-order/sync delta contract UNCHANGED."
+      ],
+      "test": "NEW tests/js/sentinels/kdsPollCadenceSentinel.spec.js (assertions listed above); re-run tests/js/kdsSyncCadence.spec.js + kdsCadenceFloor.spec.js; backend KdsSyncControllerTest + KdsSyncSargableTest + KdsSyncTzAwareTest MUST stay green (delta contract intact); Playwright /kds WS-down simulation proving an order paid surfaces on the board within ~5s (budget held) with only ONE full-board fetch per cycle (network panel).",
+      "evidence": "network capture (delta-only WS-down, no redundant 5s full board), staleness-budget E2E, sentinel green, owner LOCK sign-off."
+    }
+  },
+
+  "verification_notes": {
+    "all_paths_confirmed_via": "Read (KitchenDisplaySystemComponent.vue, KdsSyncService.js, KdsSyncService.php, OssSyncService.js, kitchenDisplaySystemOrder.js, webpack.mix.js, admin-pos-v4.blade.php, posKioskPollingCadenceSentinel.spec.js) + grep (mix-manifest, blade asset loads, bundle sizes, chunk markers).",
+    "no_files_edited": true,
+    "corrections_to_prompt_premise": [
+      "The prompt references 'OssSyncService' for KDS cadence — the KDS cadence lives in KdsSyncService.js (client) + KdsSyncService.php (server); OssSyncService.js is the OSS analog. The DUAL-PARALLEL defect is KDS-only (OrderStatusScreenComponent.vue runs no board poll; OSS has a single OssSyncService loop).",
+      "vendor.js IS extracted and IS loaded by blades before the entries; the 'not shared into entries' is specifically observable on pos-app.js which still inlines Vue (W3)."
+    ]
+  }
+}

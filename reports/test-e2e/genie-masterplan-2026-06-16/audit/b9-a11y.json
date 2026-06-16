@@ -1,0 +1,690 @@
+[
+  {
+    "file": "resources/js/components/admin/customers/address/CustomerAddressCreateComponent.vue",
+    "issue": "icon-only modal-close <button> line 9: no accessible name (icon class only, no text/aria-label)",
+    "real_bug": true,
+    "wave": "W1",
+    "fix": "Replace with new shared <SmModalCloseComponent> (components/buttons/) carrying :aria-label/$t('button.close')+title+FR fallback 'Fermer'; mirrors SmIconModalEditComponent",
+    "risk": "LOW - button in modal-header OUTSIDE <form>; additive aria-label, no submit/behaviour change"
+  },
+  {
+    "file": "resources/js/components/admin/settings/KioskMachine/KioskMachineCreateComponent.vue",
+    "issue": "icon-only modal-close <button> line 9: no accessible name (icon class only, no text/aria-label)",
+    "real_bug": true,
+    "wave": "W1",
+    "fix": "Replace with new shared <SmModalCloseComponent> (components/buttons/) carrying :aria-label/$t('button.close')+title+FR fallback 'Fermer'; mirrors SmIconModalEditComponent",
+    "risk": "LOW - button in modal-header OUTSIDE <form>; additive aria-label, no submit/behaviour change"
+  },
+  {
+    "file": "resources/js/components/admin/settings/PaymentTerminals/PaymentTerminalsComponent.vue",
+    "issue": "icon-only modal-close <button> line 75: no accessible name (icon class only, no text/aria-label)",
+    "real_bug": true,
+    "wave": "W1",
+    "fix": "Replace with new shared <SmModalCloseComponent> (components/buttons/) carrying :aria-label/$t('button.close')+title+FR fallback 'Fermer'; mirrors SmIconModalEditComponent",
+    "risk": "LOW - button in modal-header OUTSIDE <form>; additive aria-label, no submit/behaviour change"
+  },
+  {
+    "file": "resources/js/components/admin/settings/Page/PageCreateComponent.vue",
+    "issue": "icon-only modal-close <button> line 9: no accessible name (icon class only, no text/aria-label)",
+    "real_bug": true,
+    "wave": "W1",
+    "fix": "Replace with new shared <SmModalCloseComponent> (components/buttons/) carrying :aria-label/$t('button.close')+title+FR fallback 'Fermer'; mirrors SmIconModalEditComponent",
+    "risk": "LOW - button in modal-header OUTSIDE <form>; additive aria-label, no submit/behaviour change"
+  },
+  {
+    "file": "resources/js/components/admin/settings/Role/RoleCreateComponent.vue",
+    "issue": "icon-only modal-close <button> line 9: no accessible name (icon class only, no text/aria-label)",
+    "real_bug": true,
+    "wave": "W1",
+    "fix": "Replace with new shared <SmModalCloseComponent> (components/buttons/) carrying :aria-label/$t('button.close')+title+FR fallback 'Fermer'; mirrors SmIconModalEditComponent",
+    "risk": "LOW - button in modal-header OUTSIDE <form>; additive aria-label, no submit/behaviour change"
+  },
+  {
+    "file": "resources/js/components/admin/settings/Branch/BranchCreateComponent.vue",
+    "issue": "icon-only modal-close <button> line 9: no accessible name (icon class only, no text/aria-label)",
+    "real_bug": true,
+    "wave": "W1",
+    "fix": "Replace with new shared <SmModalCloseComponent> (components/buttons/) carrying :aria-label/$t('button.close')+title+FR fallback 'Fermer'; mirrors SmIconModalEditComponent",
+    "risk": "LOW - button in modal-header OUTSIDE <form>; additive aria-label, no submit/behaviour change"
+  },
+  {
+    "file": "resources/js/components/admin/settings/Branch/BranchCreateComponent.vue",
+    "issue": "icon-only modal-close <button> line 142: no accessible name (icon class only, no text/aria-label)",
+    "real_bug": true,
+    "wave": "W1",
+    "fix": "Replace with new shared <SmModalCloseComponent> (components/buttons/) carrying :aria-label/$t('button.close')+title+FR fallback 'Fermer'; mirrors SmIconModalEditComponent",
+    "risk": "LOW - button in modal-header OUTSIDE <form>; additive aria-label, no submit/behaviour change"
+  },
+  {
+    "file": "resources/js/components/admin/settings/Tax/TaxCreateComponent.vue",
+    "issue": "icon-only modal-close <button> line 9: no accessible name (icon class only, no text/aria-label)",
+    "real_bug": true,
+    "wave": "W1",
+    "fix": "Replace with new shared <SmModalCloseComponent> (components/buttons/) carrying :aria-label/$t('button.close')+title+FR fallback 'Fermer'; mirrors SmIconModalEditComponent",
+    "risk": "LOW - button in modal-header OUTSIDE <form>; additive aria-label, no submit/behaviour change"
+  },
+  {
+    "file": "resources/js/components/admin/settings/Slider/SliderCreateComponent.vue",
+    "issue": "icon-only modal-close <button> line 9: no accessible name (icon class only, no text/aria-label)",
+    "real_bug": true,
+    "wave": "W1",
+    "fix": "Replace with new shared <SmModalCloseComponent> (components/buttons/) carrying :aria-label/$t('button.close')+title+FR fallback 'Fermer'; mirrors SmIconModalEditComponent",
+    "risk": "LOW - button in modal-header OUTSIDE <form>; additive aria-label, no submit/behaviour change"
+  },
+  {
+    "file": "resources/js/components/admin/settings/Language/LanguageCreateComponent.vue",
+    "issue": "icon-only modal-close <button> line 9: no accessible name (icon class only, no text/aria-label)",
+    "real_bug": true,
+    "wave": "W1",
+    "fix": "Replace with new shared <SmModalCloseComponent> (components/buttons/) carrying :aria-label/$t('button.close')+title+FR fallback 'Fermer'; mirrors SmIconModalEditComponent",
+    "risk": "LOW - button in modal-header OUTSIDE <form>; additive aria-label, no submit/behaviour change"
+  },
+  {
+    "file": "resources/js/components/admin/settings/TimeSlot/TimeSlotCreateComponent.vue",
+    "issue": "icon-only modal-close <button> line 9: no accessible name (icon class only, no text/aria-label)",
+    "real_bug": true,
+    "wave": "W1",
+    "fix": "Replace with new shared <SmModalCloseComponent> (components/buttons/) carrying :aria-label/$t('button.close')+title+FR fallback 'Fermer'; mirrors SmIconModalEditComponent",
+    "risk": "LOW - button in modal-header OUTSIDE <form>; additive aria-label, no submit/behaviour change"
+  },
+  {
+    "file": "resources/js/components/admin/settings/ItemAttribute/ItemAttributeCreateComponent.vue",
+    "issue": "icon-only modal-close <button> line 9: no accessible name (icon class only, no text/aria-label)",
+    "real_bug": true,
+    "wave": "W1",
+    "fix": "Replace with new shared <SmModalCloseComponent> (components/buttons/) carrying :aria-label/$t('button.close')+title+FR fallback 'Fermer'; mirrors SmIconModalEditComponent",
+    "risk": "LOW - button in modal-header OUTSIDE <form>; additive aria-label, no submit/behaviour change"
+  },
+  {
+    "file": "resources/js/components/admin/settings/ItemCategory/CategoryUploadComponent.vue",
+    "issue": "icon-only modal-close <button> line 7: no accessible name (icon class only, no text/aria-label)",
+    "real_bug": true,
+    "wave": "W1",
+    "fix": "Replace with new shared <SmModalCloseComponent> (components/buttons/) carrying :aria-label/$t('button.close')+title+FR fallback 'Fermer'; mirrors SmIconModalEditComponent",
+    "risk": "LOW - button in modal-header OUTSIDE <form>; additive aria-label, no submit/behaviour change"
+  },
+  {
+    "file": "resources/js/components/admin/settings/ItemCategory/ItemCategoryCreateComponent.vue",
+    "issue": "icon-only modal-close <button> line 9: no accessible name (icon class only, no text/aria-label)",
+    "real_bug": true,
+    "wave": "W1",
+    "fix": "Replace with new shared <SmModalCloseComponent> (components/buttons/) carrying :aria-label/$t('button.close')+title+FR fallback 'Fermer'; mirrors SmIconModalEditComponent",
+    "risk": "LOW - button in modal-header OUTSIDE <form>; additive aria-label, no submit/behaviour change"
+  },
+  {
+    "file": "resources/js/components/admin/settings/Currency/CurrencyCreateComponent.vue",
+    "issue": "icon-only modal-close <button> line 9: no accessible name (icon class only, no text/aria-label)",
+    "real_bug": true,
+    "wave": "W1",
+    "fix": "Replace with new shared <SmModalCloseComponent> (components/buttons/) carrying :aria-label/$t('button.close')+title+FR fallback 'Fermer'; mirrors SmIconModalEditComponent",
+    "risk": "LOW - button in modal-header OUTSIDE <form>; additive aria-label, no submit/behaviour change"
+  },
+  {
+    "file": "resources/js/components/admin/settings/analytics/AnalyticCreateComponent.vue",
+    "issue": "icon-only modal-close <button> line 9: no accessible name (icon class only, no text/aria-label)",
+    "real_bug": true,
+    "wave": "W1",
+    "fix": "Replace with new shared <SmModalCloseComponent> (components/buttons/) carrying :aria-label/$t('button.close')+title+FR fallback 'Fermer'; mirrors SmIconModalEditComponent",
+    "risk": "LOW - button in modal-header OUTSIDE <form>; additive aria-label, no submit/behaviour change"
+  },
+  {
+    "file": "resources/js/components/admin/settings/analytics/analyticSection/AnalyticSectionCreateComponent.vue",
+    "issue": "icon-only modal-close <button> line 9: no accessible name (icon class only, no text/aria-label)",
+    "real_bug": true,
+    "wave": "W1",
+    "fix": "Replace with new shared <SmModalCloseComponent> (components/buttons/) carrying :aria-label/$t('button.close')+title+FR fallback 'Fermer'; mirrors SmIconModalEditComponent",
+    "risk": "LOW - button in modal-header OUTSIDE <form>; additive aria-label, no submit/behaviour change"
+  },
+  {
+    "file": "resources/js/components/admin/offers/item/OfferItemCreateComponent.vue",
+    "issue": "icon-only modal-close <button> line 13: no accessible name (icon class only, no text/aria-label)",
+    "real_bug": true,
+    "wave": "W1",
+    "fix": "Replace with new shared <SmModalCloseComponent> (components/buttons/) carrying :aria-label/$t('button.close')+title+FR fallback 'Fermer'; mirrors SmIconModalEditComponent",
+    "risk": "LOW - button in modal-header OUTSIDE <form>; additive aria-label, no submit/behaviour change"
+  },
+  {
+    "file": "resources/js/components/admin/posOrders/PosOrderMapComponent.vue",
+    "issue": "icon-only modal-close <button> line 11: no accessible name (icon class only, no text/aria-label)",
+    "real_bug": true,
+    "wave": "W1",
+    "fix": "Replace with new shared <SmModalCloseComponent> (components/buttons/) carrying :aria-label/$t('button.close')+title+FR fallback 'Fermer'; mirrors SmIconModalEditComponent",
+    "risk": "LOW - button in modal-header OUTSIDE <form>; additive aria-label, no submit/behaviour change"
+  },
+  {
+    "file": "resources/js/components/admin/waiters/address/WaiterAddressCreateComponent.vue",
+    "issue": "icon-only modal-close <button> line 9: no accessible name (icon class only, no text/aria-label)",
+    "real_bug": true,
+    "wave": "W1",
+    "fix": "Replace with new shared <SmModalCloseComponent> (components/buttons/) carrying :aria-label/$t('button.close')+title+FR fallback 'Fermer'; mirrors SmIconModalEditComponent",
+    "risk": "LOW - button in modal-header OUTSIDE <form>; additive aria-label, no submit/behaviour change"
+  },
+  {
+    "file": "resources/js/components/admin/deliveryBoys/address/DeliveryBoyAddressCreateComponent.vue",
+    "issue": "icon-only modal-close <button> line 9: no accessible name (icon class only, no text/aria-label)",
+    "real_bug": true,
+    "wave": "W1",
+    "fix": "Replace with new shared <SmModalCloseComponent> (components/buttons/) carrying :aria-label/$t('button.close')+title+FR fallback 'Fermer'; mirrors SmIconModalEditComponent",
+    "risk": "LOW - button in modal-header OUTSIDE <form>; additive aria-label, no submit/behaviour change"
+  },
+  {
+    "file": "resources/js/components/admin/pos/CreateCustomerAddressComponent.vue",
+    "issue": "icon-only modal-close <button> line 7: no accessible name (icon class only, no text/aria-label)",
+    "real_bug": true,
+    "wave": "W1",
+    "fix": "Replace with new shared <SmModalCloseComponent> (components/buttons/) carrying :aria-label/$t('button.close')+title+FR fallback 'Fermer'; mirrors SmIconModalEditComponent",
+    "risk": "LOW - button in modal-header OUTSIDE <form>; additive aria-label, no submit/behaviour change"
+  },
+  {
+    "file": "resources/js/components/admin/pos/ItemComponent.vue",
+    "issue": "icon-only modal-close <button> line 56: no accessible name (icon class only, no text/aria-label)",
+    "real_bug": true,
+    "wave": "W1",
+    "fix": "Replace with new shared <SmModalCloseComponent> (components/buttons/) carrying :aria-label/$t('button.close')+title+FR fallback 'Fermer'; mirrors SmIconModalEditComponent",
+    "risk": "LOW - button in modal-header OUTSIDE <form>; additive aria-label, no submit/behaviour change"
+  },
+  {
+    "file": "resources/js/components/admin/pos/ItemComponent.vue",
+    "issue": "icon-only modal-close <button> line 91: no accessible name (icon class only, no text/aria-label)",
+    "real_bug": true,
+    "wave": "W1",
+    "fix": "Replace with new shared <SmModalCloseComponent> (components/buttons/) carrying :aria-label/$t('button.close')+title+FR fallback 'Fermer'; mirrors SmIconModalEditComponent",
+    "risk": "LOW - button in modal-header OUTSIDE <form>; additive aria-label, no submit/behaviour change"
+  },
+  {
+    "file": "resources/js/components/admin/tableOrders/TableOrderTokenComponent.vue",
+    "issue": "icon-only modal-close <button> line 12: no accessible name (icon class only, no text/aria-label)",
+    "real_bug": true,
+    "wave": "W1",
+    "fix": "Replace with new shared <SmModalCloseComponent> (components/buttons/) carrying :aria-label/$t('button.close')+title+FR fallback 'Fermer'; mirrors SmIconModalEditComponent",
+    "risk": "LOW - button in modal-header OUTSIDE <form>; additive aria-label, no submit/behaviour change"
+  },
+  {
+    "file": "resources/js/components/admin/tableOrders/TableOrderReasonComponent.vue",
+    "issue": "icon-only modal-close <button> line 13: no accessible name (icon class only, no text/aria-label)",
+    "real_bug": true,
+    "wave": "W1",
+    "fix": "Replace with new shared <SmModalCloseComponent> (components/buttons/) carrying :aria-label/$t('button.close')+title+FR fallback 'Fermer'; mirrors SmIconModalEditComponent",
+    "risk": "LOW - button in modal-header OUTSIDE <form>; additive aria-label, no submit/behaviour change"
+  },
+  {
+    "file": "resources/js/components/admin/items/ItemUploadComponent.vue",
+    "issue": "icon-only modal-close <button> line 7: no accessible name (icon class only, no text/aria-label)",
+    "real_bug": true,
+    "wave": "W1",
+    "fix": "Replace with new shared <SmModalCloseComponent> (components/buttons/) carrying :aria-label/$t('button.close')+title+FR fallback 'Fermer'; mirrors SmIconModalEditComponent",
+    "risk": "LOW - button in modal-header OUTSIDE <form>; additive aria-label, no submit/behaviour change"
+  },
+  {
+    "file": "resources/js/components/admin/items/variation/ItemVariationCreateComponent.vue",
+    "issue": "icon-only modal-close <button> line 9: no accessible name (icon class only, no text/aria-label)",
+    "real_bug": true,
+    "wave": "W1",
+    "fix": "Replace with new shared <SmModalCloseComponent> (components/buttons/) carrying :aria-label/$t('button.close')+title+FR fallback 'Fermer'; mirrors SmIconModalEditComponent",
+    "risk": "LOW - button in modal-header OUTSIDE <form>; additive aria-label, no submit/behaviour change"
+  },
+  {
+    "file": "resources/js/components/admin/items/extra/ItemExtraCreateComponent.vue",
+    "issue": "icon-only modal-close <button> line 13: no accessible name (icon class only, no text/aria-label)",
+    "real_bug": true,
+    "wave": "W1",
+    "fix": "Replace with new shared <SmModalCloseComponent> (components/buttons/) carrying :aria-label/$t('button.close')+title+FR fallback 'Fermer'; mirrors SmIconModalEditComponent",
+    "risk": "LOW - button in modal-header OUTSIDE <form>; additive aria-label, no submit/behaviour change"
+  },
+  {
+    "file": "resources/js/components/admin/items/addon/ItemAddonCreateComponent.vue",
+    "issue": "icon-only modal-close <button> line 13: no accessible name (icon class only, no text/aria-label)",
+    "real_bug": true,
+    "wave": "W1",
+    "fix": "Replace with new shared <SmModalCloseComponent> (components/buttons/) carrying :aria-label/$t('button.close')+title+FR fallback 'Fermer'; mirrors SmIconModalEditComponent",
+    "risk": "LOW - button in modal-header OUTSIDE <form>; additive aria-label, no submit/behaviour change"
+  },
+  {
+    "file": "resources/js/components/admin/chefs/address/ChefAddressCreateComponent.vue",
+    "issue": "icon-only modal-close <button> line 9: no accessible name (icon class only, no text/aria-label)",
+    "real_bug": true,
+    "wave": "W1",
+    "fix": "Replace with new shared <SmModalCloseComponent> (components/buttons/) carrying :aria-label/$t('button.close')+title+FR fallback 'Fermer'; mirrors SmIconModalEditComponent",
+    "risk": "LOW - button in modal-header OUTSIDE <form>; additive aria-label, no submit/behaviour change"
+  },
+  {
+    "file": "resources/js/components/admin/onlineOrders/OnlineOrderMapComponent.vue",
+    "issue": "icon-only modal-close <button> line 11: no accessible name (icon class only, no text/aria-label)",
+    "real_bug": true,
+    "wave": "W1",
+    "fix": "Replace with new shared <SmModalCloseComponent> (components/buttons/) carrying :aria-label/$t('button.close')+title+FR fallback 'Fermer'; mirrors SmIconModalEditComponent",
+    "risk": "LOW - button in modal-header OUTSIDE <form>; additive aria-label, no submit/behaviour change"
+  },
+  {
+    "file": "resources/js/components/admin/onlineOrders/OnlineOrderReasonComponent.vue",
+    "issue": "icon-only modal-close <button> line 13: no accessible name (icon class only, no text/aria-label)",
+    "real_bug": true,
+    "wave": "W1",
+    "fix": "Replace with new shared <SmModalCloseComponent> (components/buttons/) carrying :aria-label/$t('button.close')+title+FR fallback 'Fermer'; mirrors SmIconModalEditComponent",
+    "risk": "LOW - button in modal-header OUTSIDE <form>; additive aria-label, no submit/behaviour change"
+  },
+  {
+    "file": "resources/js/components/admin/administrators/address/AdministratorAddressCreateComponent.vue",
+    "issue": "icon-only modal-close <button> line 9: no accessible name (icon class only, no text/aria-label)",
+    "real_bug": true,
+    "wave": "W1",
+    "fix": "Replace with new shared <SmModalCloseComponent> (components/buttons/) carrying :aria-label/$t('button.close')+title+FR fallback 'Fermer'; mirrors SmIconModalEditComponent",
+    "risk": "LOW - button in modal-header OUTSIDE <form>; additive aria-label, no submit/behaviour change"
+  },
+  {
+    "file": "resources/js/components/admin/employees/address/EmployeeAddressCreateComponent.vue",
+    "issue": "icon-only modal-close <button> line 9: no accessible name (icon class only, no text/aria-label)",
+    "real_bug": true,
+    "wave": "W1",
+    "fix": "Replace with new shared <SmModalCloseComponent> (components/buttons/) carrying :aria-label/$t('button.close')+title+FR fallback 'Fermer'; mirrors SmIconModalEditComponent",
+    "risk": "LOW - button in modal-header OUTSIDE <form>; additive aria-label, no submit/behaviour change"
+  },
+  {
+    "file": "resources/js/components/admin/customers/CustomerCreateComponent.vue",
+    "issue": "icon-only close-btn <button> line 8: 2nd copy-pasted X-close family ('fa-solid fa-xmark close-btn'), no accessible name",
+    "real_bug": true,
+    "wave": "W1",
+    "fix": "Same shared <SmModalCloseComponent> (class prop variant) OR mechanical :aria-label=$t('button.close'); 12 byte-identical instances",
+    "risk": "LOW - outside <form>, additive only"
+  },
+  {
+    "file": "resources/js/components/admin/offers/OfferCreateComponent.vue",
+    "issue": "icon-only close-btn <button> line 8: 2nd copy-pasted X-close family ('fa-solid fa-xmark close-btn'), no accessible name",
+    "real_bug": true,
+    "wave": "W1",
+    "fix": "Same shared <SmModalCloseComponent> (class prop variant) OR mechanical :aria-label=$t('button.close'); 12 byte-identical instances",
+    "risk": "LOW - outside <form>, additive only"
+  },
+  {
+    "file": "resources/js/components/admin/waiters/WaiterCreateComponent.vue",
+    "issue": "icon-only close-btn <button> line 8: 2nd copy-pasted X-close family ('fa-solid fa-xmark close-btn'), no accessible name",
+    "real_bug": true,
+    "wave": "W1",
+    "fix": "Same shared <SmModalCloseComponent> (class prop variant) OR mechanical :aria-label=$t('button.close'); 12 byte-identical instances",
+    "risk": "LOW - outside <form>, additive only"
+  },
+  {
+    "file": "resources/js/components/admin/deliveryBoys/DeliveryBoyCreateComponent.vue",
+    "issue": "icon-only close-btn <button> line 8: 2nd copy-pasted X-close family ('fa-solid fa-xmark close-btn'), no accessible name",
+    "real_bug": true,
+    "wave": "W1",
+    "fix": "Same shared <SmModalCloseComponent> (class prop variant) OR mechanical :aria-label=$t('button.close'); 12 byte-identical instances",
+    "risk": "LOW - outside <form>, additive only"
+  },
+  {
+    "file": "resources/js/components/admin/coupons/CouponCreateComponent.vue",
+    "issue": "icon-only close-btn <button> line 8: 2nd copy-pasted X-close family ('fa-solid fa-xmark close-btn'), no accessible name",
+    "real_bug": true,
+    "wave": "W1",
+    "fix": "Same shared <SmModalCloseComponent> (class prop variant) OR mechanical :aria-label=$t('button.close'); 12 byte-identical instances",
+    "risk": "LOW - outside <form>, additive only"
+  },
+  {
+    "file": "resources/js/components/admin/subscribers/SubscriberMailComponent.vue",
+    "issue": "icon-only close-btn <button> line 8: 2nd copy-pasted X-close family ('fa-solid fa-xmark close-btn'), no accessible name",
+    "real_bug": true,
+    "wave": "W1",
+    "fix": "Same shared <SmModalCloseComponent> (class prop variant) OR mechanical :aria-label=$t('button.close'); 12 byte-identical instances",
+    "risk": "LOW - outside <form>, additive only"
+  },
+  {
+    "file": "resources/js/components/admin/items/ItemCreateComponent.vue",
+    "issue": "icon-only close-btn <button> line 8: 2nd copy-pasted X-close family ('fa-solid fa-xmark close-btn'), no accessible name",
+    "real_bug": true,
+    "wave": "W1",
+    "fix": "Same shared <SmModalCloseComponent> (class prop variant) OR mechanical :aria-label=$t('button.close'); 12 byte-identical instances",
+    "risk": "LOW - outside <form>, additive only"
+  },
+  {
+    "file": "resources/js/components/admin/pushNotification/PushNotificationCreateComponent.vue",
+    "issue": "icon-only close-btn <button> line 8: 2nd copy-pasted X-close family ('fa-solid fa-xmark close-btn'), no accessible name",
+    "real_bug": true,
+    "wave": "W1",
+    "fix": "Same shared <SmModalCloseComponent> (class prop variant) OR mechanical :aria-label=$t('button.close'); 12 byte-identical instances",
+    "risk": "LOW - outside <form>, additive only"
+  },
+  {
+    "file": "resources/js/components/admin/chefs/ChefCreateComponent.vue",
+    "issue": "icon-only close-btn <button> line 8: 2nd copy-pasted X-close family ('fa-solid fa-xmark close-btn'), no accessible name",
+    "real_bug": true,
+    "wave": "W1",
+    "fix": "Same shared <SmModalCloseComponent> (class prop variant) OR mechanical :aria-label=$t('button.close'); 12 byte-identical instances",
+    "risk": "LOW - outside <form>, additive only"
+  },
+  {
+    "file": "resources/js/components/admin/diningTable/DiningTableCreateComponent.vue",
+    "issue": "icon-only close-btn <button> line 9: 2nd copy-pasted X-close family ('fa-solid fa-xmark close-btn'), no accessible name",
+    "real_bug": true,
+    "wave": "W1",
+    "fix": "Same shared <SmModalCloseComponent> (class prop variant) OR mechanical :aria-label=$t('button.close'); 12 byte-identical instances",
+    "risk": "LOW - outside <form>, additive only"
+  },
+  {
+    "file": "resources/js/components/admin/administrators/AdministratorCreateComponent.vue",
+    "issue": "icon-only close-btn <button> line 8: 2nd copy-pasted X-close family ('fa-solid fa-xmark close-btn'), no accessible name",
+    "real_bug": true,
+    "wave": "W1",
+    "fix": "Same shared <SmModalCloseComponent> (class prop variant) OR mechanical :aria-label=$t('button.close'); 12 byte-identical instances",
+    "risk": "LOW - outside <form>, additive only"
+  },
+  {
+    "file": "resources/js/components/admin/employees/EmployeeCreateComponent.vue",
+    "issue": "icon-only close-btn <button> line 8: 2nd copy-pasted X-close family ('fa-solid fa-xmark close-btn'), no accessible name",
+    "real_bug": true,
+    "wave": "W1",
+    "fix": "Same shared <SmModalCloseComponent> (class prop variant) OR mechanical :aria-label=$t('button.close'); 12 byte-identical instances",
+    "risk": "LOW - outside <form>, additive only"
+  },
+  {
+    "file": "resources/js/components/admin/administrators/AdministratorShowComponent.vue",
+    "issue": "confirm-password <label for=\"password\"> line 129 DANGLES: confirm input is id=\"confirm_password\"; label mis-associates onto first password field; confirm input has NO label",
+    "real_bug": true,
+    "wave": "W2",
+    "fix": "Change confirm label to for=\"confirm_password\" (matches existing input id). One-attr edit per file.",
+    "risk": "LOW - no getElementById/querySelector or test pins these DOM ids; PHP tests use 'password_confirmation' as request FIELD name not DOM id"
+  },
+  {
+    "file": "resources/js/components/admin/chefs/ChefShowComponent.vue",
+    "issue": "confirm-password <label for=\"password\"> line 130 DANGLES: confirm input is id=\"confirm_password\"; label mis-associates onto first password field; confirm input has NO label",
+    "real_bug": true,
+    "wave": "W2",
+    "fix": "Change confirm label to for=\"confirm_password\" (matches existing input id). One-attr edit per file.",
+    "risk": "LOW - no getElementById/querySelector or test pins these DOM ids; PHP tests use 'password_confirmation' as request FIELD name not DOM id"
+  },
+  {
+    "file": "resources/js/components/admin/customers/CustomerShowComponent.vue",
+    "issue": "confirm-password <label for=\"password\"> line 130 DANGLES: confirm input is id=\"confirm_password\"; label mis-associates onto first password field; confirm input has NO label",
+    "real_bug": true,
+    "wave": "W2",
+    "fix": "Change confirm label to for=\"confirm_password\" (matches existing input id). One-attr edit per file.",
+    "risk": "LOW - no getElementById/querySelector or test pins these DOM ids; PHP tests use 'password_confirmation' as request FIELD name not DOM id"
+  },
+  {
+    "file": "resources/js/components/admin/deliveryBoys/DeliveryBoyShowComponent.vue",
+    "issue": "confirm-password <label for=\"password\"> line 124 DANGLES: confirm input is id=\"confirm_password\"; label mis-associates onto first password field; confirm input has NO label",
+    "real_bug": true,
+    "wave": "W2",
+    "fix": "Change confirm label to for=\"confirm_password\" (matches existing input id). One-attr edit per file.",
+    "risk": "LOW - no getElementById/querySelector or test pins these DOM ids; PHP tests use 'password_confirmation' as request FIELD name not DOM id"
+  },
+  {
+    "file": "resources/js/components/admin/employees/EmployeeShowComponent.vue",
+    "issue": "confirm-password <label for=\"password\"> line 130 DANGLES: confirm input is id=\"confirm_password\"; label mis-associates onto first password field; confirm input has NO label",
+    "real_bug": true,
+    "wave": "W2",
+    "fix": "Change confirm label to for=\"confirm_password\" (matches existing input id). One-attr edit per file.",
+    "risk": "LOW - no getElementById/querySelector or test pins these DOM ids; PHP tests use 'password_confirmation' as request FIELD name not DOM id"
+  },
+  {
+    "file": "resources/js/components/admin/waiters/WaiterShowComponent.vue",
+    "issue": "confirm-password <label for=\"password\"> line 130 DANGLES: confirm input is id=\"confirm_password\"; label mis-associates onto first password field; confirm input has NO label",
+    "real_bug": true,
+    "wave": "W2",
+    "fix": "Change confirm label to for=\"confirm_password\" (matches existing input id). One-attr edit per file.",
+    "risk": "LOW - no getElementById/querySelector or test pins these DOM ids; PHP tests use 'password_confirmation' as request FIELD name not DOM id"
+  },
+  {
+    "file": "resources/js/components/admin/profile/ProfileChangePasswordComponent.vue",
+    "issue": "for=password investigated: for=confirm_password -> id=confirm_password MATCHES",
+    "real_bug": false,
+    "wave": "W0-skip",
+    "fix": "No change - for/id already resolve correctly",
+    "risk": "NONE - false positive, leave untouched"
+  },
+  {
+    "file": "resources/js/components/admin/administrators/AdministratorCreateComponent.vue",
+    "issue": "for=password investigated: confirm label for=password_confirmation -> id=password_confirmation MATCHES",
+    "real_bug": false,
+    "wave": "W0-skip",
+    "fix": "No change - for/id already resolve correctly",
+    "risk": "NONE - false positive, leave untouched"
+  },
+  {
+    "file": "resources/js/components/admin/chefs/ChefCreateComponent.vue",
+    "issue": "for=password investigated: for=password_confirmation -> id=password_confirmation MATCHES",
+    "real_bug": false,
+    "wave": "W0-skip",
+    "fix": "No change - for/id already resolve correctly",
+    "risk": "NONE - false positive, leave untouched"
+  },
+  {
+    "file": "resources/js/components/admin/customers/CustomerCreateComponent.vue",
+    "issue": "for=password investigated: for=password_confirmation -> id=password_confirmation MATCHES",
+    "real_bug": false,
+    "wave": "W0-skip",
+    "fix": "No change - for/id already resolve correctly",
+    "risk": "NONE - false positive, leave untouched"
+  },
+  {
+    "file": "resources/js/components/admin/deliveryBoys/DeliveryBoyCreateComponent.vue",
+    "issue": "for=password investigated: for=password_confirmation -> id=password_confirmation MATCHES",
+    "real_bug": false,
+    "wave": "W0-skip",
+    "fix": "No change - for/id already resolve correctly",
+    "risk": "NONE - false positive, leave untouched"
+  },
+  {
+    "file": "resources/js/components/admin/employees/EmployeeCreateComponent.vue",
+    "issue": "for=password investigated: for=password_confirmation -> id=password_confirmation MATCHES",
+    "real_bug": false,
+    "wave": "W0-skip",
+    "fix": "No change - for/id already resolve correctly",
+    "risk": "NONE - false positive, leave untouched"
+  },
+  {
+    "file": "resources/js/components/admin/waiters/WaiterCreateComponent.vue",
+    "issue": "for=password investigated: for=password_confirmation -> id=password_confirmation MATCHES",
+    "real_bug": false,
+    "wave": "W0-skip",
+    "fix": "No change - for/id already resolve correctly",
+    "risk": "NONE - false positive, leave untouched"
+  },
+  {
+    "file": "resources/js/components/admin/settings/PaymentTerminals/PaymentTerminalsComponent.vue",
+    "issue": "icon-only button line 46: <button type=\"button\" class=\"db-btn-outline sm primary m-0.5\"",
+    "real_bug": true,
+    "wave": "W3",
+    "fix": "aria-label per button: SmTimeSloteDeleteComponent->$t('button.delete'); map->label.view_on_map; search-reset->button.clear; message submit->button.send; info-btn->label.allergen_info",
+    "risk": "LOW-MEDIUM - additive. SmTimeSloteDeleteComponent shared (one fix). Map/submit buttons keep type, add aria-label only."
+  },
+  {
+    "file": "resources/js/components/admin/settings/PaymentTerminals/PaymentTerminalsComponent.vue",
+    "issue": "icon-only button line 50: <button type=\"button\" class=\"db-btn-outline sm danger m-0.5\"",
+    "real_bug": true,
+    "wave": "W3",
+    "fix": "aria-label per button: SmTimeSloteDeleteComponent->$t('button.delete'); map->label.view_on_map; search-reset->button.clear; message submit->button.send; info-btn->label.allergen_info",
+    "risk": "LOW-MEDIUM - additive. SmTimeSloteDeleteComponent shared (one fix). Map/submit buttons keep type, add aria-label only."
+  },
+  {
+    "file": "resources/js/components/admin/settings/Branch/BranchCreateComponent.vue",
+    "issue": "icon-only button line 35: <button @click=\"add\" v-on:click=\"isMap = true\" type=\"button\"",
+    "real_bug": true,
+    "wave": "W3",
+    "fix": "aria-label per button: SmTimeSloteDeleteComponent->$t('button.delete'); map->label.view_on_map; search-reset->button.clear; message submit->button.send; info-btn->label.allergen_info",
+    "risk": "LOW-MEDIUM - additive. SmTimeSloteDeleteComponent shared (one fix). Map/submit buttons keep type, add aria-label only."
+  },
+  {
+    "file": "resources/js/components/admin/messages/MessageListComponent.vue",
+    "issue": "icon-only button line 10: <button type=\"submit\">",
+    "real_bug": true,
+    "wave": "W3",
+    "fix": "aria-label per button: SmTimeSloteDeleteComponent->$t('button.delete'); map->label.view_on_map; search-reset->button.clear; message submit->button.send; info-btn->label.allergen_info",
+    "risk": "LOW-MEDIUM - additive. SmTimeSloteDeleteComponent shared (one fix). Map/submit buttons keep type, add aria-label only."
+  },
+  {
+    "file": "resources/js/components/admin/messages/MessageListComponent.vue",
+    "issue": "icon-only button line 15: <button @click.prevent=\"resetName\" type=\"button\" v-if=\"props.search.na",
+    "real_bug": true,
+    "wave": "W3",
+    "fix": "aria-label per button: SmTimeSloteDeleteComponent->$t('button.delete'); map->label.view_on_map; search-reset->button.clear; message submit->button.send; info-btn->label.allergen_info",
+    "risk": "LOW-MEDIUM - additive. SmTimeSloteDeleteComponent shared (one fix). Map/submit buttons keep type, add aria-label only."
+  },
+  {
+    "file": "resources/js/components/admin/messages/MessageListComponent.vue",
+    "issue": "icon-only button line 103: <button type=\"submit\" class=\"chat-footer-sent\">",
+    "real_bug": true,
+    "wave": "W3",
+    "fix": "aria-label per button: SmTimeSloteDeleteComponent->$t('button.delete'); map->label.view_on_map; search-reset->button.clear; message submit->button.send; info-btn->label.allergen_info",
+    "risk": "LOW-MEDIUM - additive. SmTimeSloteDeleteComponent shared (one fix). Map/submit buttons keep type, add aria-label only."
+  },
+  {
+    "file": "resources/js/components/admin/posOrders/PosOrderMapComponent.vue",
+    "issue": "icon-only button line 2: <button @click.prevent=\"mapModal\" data-modal=\"#mapModal\" type=\"button\"",
+    "real_bug": true,
+    "wave": "W3",
+    "fix": "aria-label per button: SmTimeSloteDeleteComponent->$t('button.delete'); map->label.view_on_map; search-reset->button.clear; message submit->button.send; info-btn->label.allergen_info",
+    "risk": "LOW-MEDIUM - additive. SmTimeSloteDeleteComponent shared (one fix). Map/submit buttons keep type, add aria-label only."
+  },
+  {
+    "file": "resources/js/components/admin/components/MapComponent.vue",
+    "issue": "icon-only button line 9: <button v-if=\"setting.currentLocation\" id=\"map-current-location\" type=",
+    "real_bug": true,
+    "wave": "W3",
+    "fix": "aria-label per button: SmTimeSloteDeleteComponent->$t('button.delete'); map->label.view_on_map; search-reset->button.clear; message submit->button.send; info-btn->label.allergen_info",
+    "risk": "LOW-MEDIUM - additive. SmTimeSloteDeleteComponent shared (one fix). Map/submit buttons keep type, add aria-label only."
+  },
+  {
+    "file": "resources/js/components/admin/components/buttons/SmTimeSloteDeleteComponent.vue",
+    "issue": "icon-only button line 2: <button type=\"button\" class=\"absolute -top-2 -right-2 text-red-500\">",
+    "real_bug": true,
+    "wave": "W3",
+    "fix": "aria-label per button: SmTimeSloteDeleteComponent->$t('button.delete'); map->label.view_on_map; search-reset->button.clear; message submit->button.send; info-btn->label.allergen_info",
+    "risk": "LOW-MEDIUM - additive. SmTimeSloteDeleteComponent shared (one fix). Map/submit buttons keep type, add aria-label only."
+  },
+  {
+    "file": "resources/js/components/admin/pos/PosOrdersTrackerComponent.vue",
+    "issue": "icon-only button line 243 (POS-adjacent): <button                                         type=\"button\"",
+    "real_bug": true,
+    "wave": "W4",
+    "fix": "aria-label per button (quantity +/- => button.increase/decrease, info => label.allergen_info, expand). Defer: POS high-churn, visual mandate.",
+    "risk": "MEDIUM - POS surface (not in CLAUDE.md §7 frozen list but adjacent); quantity steppers in cart UI. Needs Playwright visual + mount test; verify no @click submit reliance."
+  },
+  {
+    "file": "resources/js/components/admin/pos/PosOrdersTrackerComponent.vue",
+    "issue": "icon-only button line 260 (POS-adjacent): <button                                         v-if=\"col.id !== 'deli",
+    "real_bug": true,
+    "wave": "W4",
+    "fix": "aria-label per button (quantity +/- => button.increase/decrease, info => label.allergen_info, expand). Defer: POS high-churn, visual mandate.",
+    "risk": "MEDIUM - POS surface (not in CLAUDE.md §7 frozen list but adjacent); quantity steppers in cart UI. Needs Playwright visual + mount test; verify no @click submit reliance."
+  },
+  {
+    "file": "resources/js/components/admin/pos/PosComponent.vue",
+    "issue": "icon-only button line 705 (POS-adjacent): <button                                     v-if=\"deliveryInline.confi",
+    "real_bug": true,
+    "wave": "W4",
+    "fix": "aria-label per button (quantity +/- => button.increase/decrease, info => label.allergen_info, expand). Defer: POS high-churn, visual mandate.",
+    "risk": "MEDIUM - POS surface (not in CLAUDE.md §7 frozen list but adjacent); quantity steppers in cart UI. Needs Playwright visual + mount test; verify no @click submit reliance."
+  },
+  {
+    "file": "resources/js/components/admin/pos/PosComponent.vue",
+    "issue": "icon-only button line 1191 (POS-adjacent): <button                     type=\"button\"                     class=\"k",
+    "real_bug": true,
+    "wave": "W4",
+    "fix": "aria-label per button (quantity +/- => button.increase/decrease, info => label.allergen_info, expand). Defer: POS high-churn, visual mandate.",
+    "risk": "MEDIUM - POS surface (not in CLAUDE.md §7 frozen list but adjacent); quantity steppers in cart UI. Needs Playwright visual + mount test; verify no @click submit reliance."
+  },
+  {
+    "file": "resources/js/components/admin/pos/ParkedOrdersComponent.vue",
+    "issue": "icon-only button line 10 (POS-adjacent): <button type=\"button\" class=\"parked-orders-close\" @click=\"closeDrawer\"",
+    "real_bug": true,
+    "wave": "W4",
+    "fix": "aria-label per button (quantity +/- => button.increase/decrease, info => label.allergen_info, expand). Defer: POS high-churn, visual mandate.",
+    "risk": "MEDIUM - POS surface (not in CLAUDE.md §7 frozen list but adjacent); quantity steppers in cart UI. Needs Playwright visual + mount test; verify no @click submit reliance."
+  },
+  {
+    "file": "resources/js/components/admin/pos/ItemComponent.vue",
+    "issue": "icon-only button line 81 (POS-adjacent): <button v-if=\"item.caution\" type=\"button\" class=\"info-btn mt-0.5 flex",
+    "real_bug": true,
+    "wave": "W4",
+    "fix": "aria-label per button (quantity +/- => button.increase/decrease, info => label.allergen_info, expand). Defer: POS high-churn, visual mandate.",
+    "risk": "MEDIUM - POS surface (not in CLAUDE.md §7 frozen list but adjacent); quantity steppers in cart UI. Needs Playwright visual + mount test; verify no @click submit reliance."
+  },
+  {
+    "file": "resources/js/components/admin/pos/ItemComponent.vue",
+    "issue": "icon-only button line 99 (POS-adjacent): <button @click.prevent=\"quantityDecrement\"",
+    "real_bug": true,
+    "wave": "W4",
+    "fix": "aria-label per button (quantity +/- => button.increase/decrease, info => label.allergen_info, expand). Defer: POS high-churn, visual mandate.",
+    "risk": "MEDIUM - POS surface (not in CLAUDE.md §7 frozen list but adjacent); quantity steppers in cart UI. Needs Playwright visual + mount test; verify no @click submit reliance."
+  },
+  {
+    "file": "resources/js/components/admin/pos/ItemComponent.vue",
+    "issue": "icon-only button line 104 (POS-adjacent): <button @click.prevent=\"quantityIncrement\"",
+    "real_bug": true,
+    "wave": "W4",
+    "fix": "aria-label per button (quantity +/- => button.increase/decrease, info => label.allergen_info, expand). Defer: POS high-churn, visual mandate.",
+    "risk": "MEDIUM - POS surface (not in CLAUDE.md §7 frozen list but adjacent); quantity steppers in cart UI. Needs Playwright visual + mount test; verify no @click submit reliance."
+  },
+  {
+    "file": "resources/js/components/admin/pos/ItemComponent.vue",
+    "issue": "icon-only button line 178 (POS-adjacent): <button @click.prevent=\"decrementVariation(itemAttribute, variation)\"",
+    "real_bug": true,
+    "wave": "W4",
+    "fix": "aria-label per button (quantity +/- => button.increase/decrease, info => label.allergen_info, expand). Defer: POS high-churn, visual mandate.",
+    "risk": "MEDIUM - POS surface (not in CLAUDE.md §7 frozen list but adjacent); quantity steppers in cart UI. Needs Playwright visual + mount test; verify no @click submit reliance."
+  },
+  {
+    "file": "resources/js/components/admin/pos/ItemComponent.vue",
+    "issue": "icon-only button line 184 (POS-adjacent): <button @click.prevent=\"incrementVariation(itemAttribute, variation)\"",
+    "real_bug": true,
+    "wave": "W4",
+    "fix": "aria-label per button (quantity +/- => button.increase/decrease, info => label.allergen_info, expand). Defer: POS high-churn, visual mandate.",
+    "risk": "MEDIUM - POS surface (not in CLAUDE.md §7 frozen list but adjacent); quantity steppers in cart UI. Needs Playwright visual + mount test; verify no @click submit reliance."
+  },
+  {
+    "file": "resources/js/components/admin/pos/ItemComponent.vue",
+    "issue": "icon-only button line 211 (POS-adjacent): <button @click.prevent=\"decrementExtra(extra)\"",
+    "real_bug": true,
+    "wave": "W4",
+    "fix": "aria-label per button (quantity +/- => button.increase/decrease, info => label.allergen_info, expand). Defer: POS high-churn, visual mandate.",
+    "risk": "MEDIUM - POS surface (not in CLAUDE.md §7 frozen list but adjacent); quantity steppers in cart UI. Needs Playwright visual + mount test; verify no @click submit reliance."
+  },
+  {
+    "file": "resources/js/components/admin/pos/ItemComponent.vue",
+    "issue": "icon-only button line 217 (POS-adjacent): <button @click.prevent=\"incrementExtra(extra)\"",
+    "real_bug": true,
+    "wave": "W4",
+    "fix": "aria-label per button (quantity +/- => button.increase/decrease, info => label.allergen_info, expand). Defer: POS high-churn, visual mandate.",
+    "risk": "MEDIUM - POS surface (not in CLAUDE.md §7 frozen list but adjacent); quantity steppers in cart UI. Needs Playwright visual + mount test; verify no @click submit reliance."
+  },
+  {
+    "file": "resources/js/components/admin/pos/ItemComponent.vue",
+    "issue": "icon-only button line 264 (POS-adjacent): <button type=\"button\" class=\"info-btn\" data-modal=\"#item-info-modal\"",
+    "real_bug": true,
+    "wave": "W4",
+    "fix": "aria-label per button (quantity +/- => button.increase/decrease, info => label.allergen_info, expand). Defer: POS high-churn, visual mandate.",
+    "risk": "MEDIUM - POS surface (not in CLAUDE.md §7 frozen list but adjacent); quantity steppers in cart UI. Needs Playwright visual + mount test; verify no @click submit reliance."
+  },
+  {
+    "file": "resources/js/components/admin/pos/ItemComponent.vue",
+    "issue": "icon-only button line 271 (POS-adjacent): <button @click.prevent=\"addonQuantityDecrement(addon.id)\"",
+    "real_bug": true,
+    "wave": "W4",
+    "fix": "aria-label per button (quantity +/- => button.increase/decrease, info => label.allergen_info, expand). Defer: POS high-churn, visual mandate.",
+    "risk": "MEDIUM - POS surface (not in CLAUDE.md §7 frozen list but adjacent); quantity steppers in cart UI. Needs Playwright visual + mount test; verify no @click submit reliance."
+  },
+  {
+    "file": "resources/js/components/admin/pos/ItemComponent.vue",
+    "issue": "icon-only button line 278 (POS-adjacent): <button @click.prevent=\"addonQuantityIncrement(addon.id)\"",
+    "real_bug": true,
+    "wave": "W4",
+    "fix": "aria-label per button (quantity +/- => button.increase/decrease, info => label.allergen_info, expand). Defer: POS high-churn, visual mandate.",
+    "risk": "MEDIUM - POS surface (not in CLAUDE.md §7 frozen list but adjacent); quantity steppers in cart UI. Needs Playwright visual + mount test; verify no @click submit reliance."
+  },
+  {
+    "file": "resources/js/components/admin/items/composer/ComposerTemplatePickerModal.vue",
+    "issue": "icon-only button line 13: <button type=\"button\" class=\"db-btn-outline !px-3\" data-testid=\"compos",
+    "real_bug": true,
+    "wave": "W3",
+    "fix": "aria-label per button: SmTimeSloteDeleteComponent->$t('button.delete'); map->label.view_on_map; search-reset->button.clear; message submit->button.send; info-btn->label.allergen_info",
+    "risk": "LOW-MEDIUM - additive. SmTimeSloteDeleteComponent shared (one fix). Map/submit buttons keep type, add aria-label only."
+  },
+  {
+    "file": "resources/js/components/admin/onlineOrders/OnlineOrderMapComponent.vue",
+    "issue": "icon-only button line 2: <button @click.prevent=\"mapModal\" data-modal=\"#mapModal\" type=\"button\"",
+    "real_bug": true,
+    "wave": "W3",
+    "fix": "aria-label per button: SmTimeSloteDeleteComponent->$t('button.delete'); map->label.view_on_map; search-reset->button.clear; message submit->button.send; info-btn->label.allergen_info",
+    "risk": "LOW-MEDIUM - additive. SmTimeSloteDeleteComponent shared (one fix). Map/submit buttons keep type, add aria-label only."
+  }
+]
