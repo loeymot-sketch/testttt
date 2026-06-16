@@ -70,7 +70,10 @@ class KitchenDisplaySystemOrderService
             // DELIVERY orders (chef + livreur). Order::user() is BranchScope-
             // exempt + withTrashed; Order::address() is hasOne with no scope.
             // No isolation risk — relations join via order_id only.
-            $query = Order::with(['orderItems', 'address', 'user'])
+            // [abuse-e2e B4 2026-06-16] also eager-load the nested catalog Item (orderItems.orderItem)
+            // and diningTable so KDSOrderDetailsResource (loadMissing('orderItem') + $this->diningTable?->name)
+            // does NOT fire 1 SELECT/order on every 5s board poll. Superset of the prior load — board unchanged.
+            $query = Order::with(['orderItems.orderItem', 'address', 'user', 'diningTable'])
                 ->whereIn('status', KitchenReleaseRule::visibleStatuses());
             // SSOT board-release filter (PAID | PENDING_COUNTER | POS cash) —
             // shared with changeStatus()'s bump guard via KitchenReleaseRule so
@@ -227,7 +230,9 @@ class KitchenDisplaySystemOrderService
             $todayStart = Carbon::today($appTz);
             $tomorrowStart = Carbon::tomorrow($appTz);
 
-            $query = Order::with(['orderItems', 'address', 'user'])
+            // [abuse-e2e B4 2026-06-16] historyToday also renders via KDSOrderDetailsResource — eager-load
+            // orderItems.orderItem + diningTable to kill the same per-order N+1.
+            $query = Order::with(['orderItems.orderItem', 'address', 'user', 'diningTable'])
                 ->whereIn('status', [
                     OrderStatus::PREPARED,
                     OrderStatus::OUT_FOR_DELIVERY,

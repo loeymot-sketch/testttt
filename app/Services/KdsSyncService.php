@@ -93,7 +93,9 @@ class KdsSyncService
             $todayEnd = Carbon::today($appTz)->endOfDay();
             $tomorrowStart = Carbon::tomorrow($appTz);
 
-            $ordersQuery = Order::with(['orderItems', 'address', 'user'])
+            // [abuse-e2e B4 2026-06-16] eager-load orderItems.orderItem + diningTable so the delta-sync
+            // payload (KDSOrderDetailsResource) does not N+1 per order on the WS-down fallback poll.
+            $ordersQuery = Order::with(['orderItems.orderItem', 'address', 'user', 'diningTable'])
                 ->whereIn('status', $activeStatuses)
                 ->where('updated_at', '>=', $sinceForDb)
                 ->where(function ($q) use ($todayStart, $todayEnd, $tomorrowStart) {
