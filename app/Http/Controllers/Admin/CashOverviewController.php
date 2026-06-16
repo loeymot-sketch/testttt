@@ -233,8 +233,15 @@ class CashOverviewController extends AdminController
             // into this drawer's expected (CASH-JOIN-01) and (b) summed only positive
             // order-payments, ignoring cashback/cash-OUT movements (CASH-SEM-02) → it
             // overstated the physical drawer the cashier reconciles against.
-            // [CAISSE-S1] shared read-model — identical to CashDrawerService::reconcileSession's gate.
+            // [CAISSE-S1] shared read-model for expected_cash — identical to reconcileSession's gate.
             $expectedCash = $cashDrawerService->expectedCashForSession($cashSession);
+            // [CAISSE-S1 FIX] cash_collected is the NET movement (Σ signedAmount) — a DIFFERENT value than
+            // expected_cash (opening + Σ). The CAISSE-S1 extraction removed this Σ but cash_collected still
+            // needed it; re-source it explicitly so the display column is unchanged (byte-identical restore).
+            $movementsSum = (float) \App\Models\CashMovement::query()
+                ->where('cash_drawer_session_id', $cashSession->id)
+                ->get()
+                ->sum(fn (\App\Models\CashMovement $m) => $m->signedAmount());
             $cashSessionPayload = [
                 'id'               => (int) $cashSession->id,
                 'branch_id'        => $sessionBranchId,
