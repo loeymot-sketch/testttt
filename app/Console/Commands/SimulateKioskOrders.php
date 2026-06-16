@@ -27,6 +27,15 @@ class SimulateKioskOrders extends Command
      */
     public function handle()
     {
+        // [GENIE Wave0 FISCAL-SIMULATE-01 2026-06-16] HARD-REFUSE in production. This dev/E2E load tool
+        // creates payment_status=PAID orders WITHOUT a fiscal sequence (off-book) — harmless on a dev/e2e
+        // DB, catastrophic in prod (fake PAID orders pollute the NF525 trail + escape every Z). It must
+        // never run against a production database.
+        if (app()->environment('production')) {
+            $this->error('kiosk:simulate-orders is a dev/E2E load tool and is FORBIDDEN in production.');
+            return self::FAILURE;
+        }
+
         $count = $this->argument('count');
         $this->info("Début de la simulation de $count commandes simultanées Kiosk...");
 
