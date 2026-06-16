@@ -194,7 +194,10 @@ describe('Keyboard navigation — focus-visible CSS contract (FK-L5.3-001)', () 
 
     it('Global :focus-visible ring is defined for buttons and [role=button]', () => {
         expect(appCss).toMatch(/button:focus-visible/);
-        expect(appCss).toMatch(/\[role="button"\]:focus-visible/);
+        // [GENIE 2026-06-16] tolerate the minifier stripping attribute-selector quotes in a production
+        // build ([role="button"] → [role=button]) — both are the same valid selector. (Was quote-only,
+        // which made this sentinel fail on `mix --production` / CI prod CSS.)
+        expect(appCss).toMatch(/\[role=["']?button["']?\]:focus-visible/);
     });
 
     it('Kiosk touch surfaces declare a focus-visible outline (WCAG 2.4.7)', () => {
