@@ -299,6 +299,8 @@ class EventServiceProvider extends ServiceProvider
         // broadcast and refresh their `frontend/setting` payload live.
         SettingsUpdated::class => [
             PersistSettingsUpdatedToOutbox::class,
+            // [GENIE B8 2026-06-16] forget the cached /frontend/setting payload on any settings save.
+            \App\Listeners\ForgetFrontendSettingsCache::class,
         ],
         // [Wave 5G R10 heal 2026-05-17] Branch status flip -> revoke Sanctum
         // tokens for users of that branch when new status === INACTIVE.
