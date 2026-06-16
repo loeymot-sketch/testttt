@@ -254,7 +254,7 @@ class PosOrderController extends AdminController
         try {
             return SimpleOrderResource::collection($this->orderService->list($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -280,7 +280,7 @@ class PosOrderController extends AdminController
         } catch (HttpException $http) {
             throw $http;
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -295,7 +295,7 @@ class PosOrderController extends AdminController
             // HTTP status codes from abort() must reach the client intact.
             throw $http;
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -305,7 +305,7 @@ class PosOrderController extends AdminController
         try {
             return Excel::download(new OrderExport($this->orderService, $request), 'POS-Order.xlsx');
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -316,7 +316,7 @@ class PosOrderController extends AdminController
         try {
             return new OrderDetailsResource($this->orderService->changeStatus($order, $request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -327,7 +327,7 @@ class PosOrderController extends AdminController
         try {
             return new OrderDetailsResource($this->orderService->changePaymentStatus($order, $request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -342,7 +342,7 @@ class PosOrderController extends AdminController
             // generic 422 would defeat the multi-tenant security signal.
             throw $http;
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -378,7 +378,7 @@ class PosOrderController extends AdminController
                 'cart_items' => $cartItems,
             ]);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 

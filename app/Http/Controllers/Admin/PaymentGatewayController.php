@@ -32,7 +32,7 @@ class PaymentGatewayController extends AdminController
         try {
             return PaymentGatewayResource::collection($this->paymentGatewayService->list($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -46,7 +46,7 @@ class PaymentGatewayController extends AdminController
         try {
             return new PaymentGatewayResource($this->paymentGatewayService->update($validationRequests));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

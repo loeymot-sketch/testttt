@@ -28,7 +28,7 @@ class TransactionController extends AdminController
         } catch (HttpException $http) {
             throw $http;
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -39,7 +39,7 @@ class TransactionController extends AdminController
         } catch (HttpException $http) {
             throw $http;
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

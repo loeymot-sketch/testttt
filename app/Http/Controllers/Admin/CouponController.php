@@ -34,7 +34,7 @@ class CouponController extends AdminController
         try {
             return CouponResource::collection($this->couponService->list($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -45,7 +45,7 @@ class CouponController extends AdminController
             $this->dispatchCouponChanged($coupon, CouponChanged::CHANGE_CREATED);
             return new CouponResource($coupon);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -55,7 +55,7 @@ class CouponController extends AdminController
         try {
             return new CouponResource($this->couponService->show($coupon));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -69,7 +69,7 @@ class CouponController extends AdminController
             $this->dispatchCouponChanged($updated, CouponChanged::CHANGE_UPDATED);
             return new CouponResource($updated);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -82,7 +82,7 @@ class CouponController extends AdminController
             $this->dispatchCouponChanged($snapshot, CouponChanged::CHANGE_DELETED);
             return response('', 202);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -91,7 +91,7 @@ class CouponController extends AdminController
         try {
             return Excel::download(new CouponExport($this->couponService, $request), 'Coupons.xlsx');
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -105,7 +105,7 @@ class CouponController extends AdminController
             $this->dispatchCouponChanged($updated, CouponChanged::CHANGE_STATUS_TOGGLED);
             return new CouponResource($updated);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
