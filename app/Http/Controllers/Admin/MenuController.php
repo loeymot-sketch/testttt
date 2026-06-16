@@ -21,7 +21,7 @@ class MenuController extends AdminController
             $menus = app(MenuService::class)->menu($role);
             return new JsonResponse(['data' => $menus], 201);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 

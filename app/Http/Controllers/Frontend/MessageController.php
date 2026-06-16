@@ -24,7 +24,7 @@ class MessageController extends Controller
         try {
             return MessageResource::collection($this->messageService->list($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -34,7 +34,7 @@ class MessageController extends Controller
         try {
             return new MessageResource($this->messageService->show($message));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -43,7 +43,7 @@ class MessageController extends Controller
         try {
             return new MessageResource($this->messageService->store($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -53,7 +53,7 @@ class MessageController extends Controller
             $this->messageService->destroy($message);
             return response('', 202);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

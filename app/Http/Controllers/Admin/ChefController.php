@@ -42,7 +42,7 @@ class ChefController extends AdminController
         try {
             return ChefResource::collection($this->chefService->list($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -51,7 +51,7 @@ class ChefController extends AdminController
         try {
             return new ChefResource($this->chefService->store($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -62,7 +62,7 @@ class ChefController extends AdminController
         try {
             return new ChefResource($this->chefService->update($request, $chef));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -72,7 +72,7 @@ class ChefController extends AdminController
             $this->chefService->destroy($chef);
             return response('', 202);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -81,7 +81,7 @@ class ChefController extends AdminController
         try {
             return new ChefResource($this->chefService->show($chef));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -91,7 +91,7 @@ class ChefController extends AdminController
         try {
             return Excel::download(new ChefExport($this->chefService, $request), 'Chef.xlsx');
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -102,7 +102,7 @@ class ChefController extends AdminController
         try {
             return new ChefResource($this->chefService->changePassword($request, $chef));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -113,7 +113,7 @@ class ChefController extends AdminController
         try {
             return new ChefResource($this->chefService->changeImage($request, $chef));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -124,7 +124,7 @@ class ChefController extends AdminController
         try {
             return UserOrderResource::collection($this->orderService->userOrder($request, $chef));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

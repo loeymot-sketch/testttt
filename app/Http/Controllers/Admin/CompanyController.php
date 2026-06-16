@@ -24,7 +24,7 @@ class CompanyController extends AdminController
         try {
             return new CompanyResource($this->companyService->list());
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -36,7 +36,7 @@ class CompanyController extends AdminController
             SettingsUpdated::dispatch(['company']);
             return $resource;
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

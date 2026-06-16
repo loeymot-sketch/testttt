@@ -22,7 +22,7 @@ class LanguageController extends Controller
         try {
             return LanguageResource::collection($this->languageService->list($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -30,7 +30,7 @@ class LanguageController extends Controller
         try {
             return new LanguageResource($this->languageService->show($language));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

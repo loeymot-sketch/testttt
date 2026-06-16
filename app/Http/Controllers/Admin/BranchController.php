@@ -29,7 +29,7 @@ class BranchController extends AdminController
         try {
             return BranchResource::collection($this->branchService->list($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -40,7 +40,7 @@ class BranchController extends AdminController
         try {
             return new BranchResource($this->branchService->show($branch));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -50,7 +50,7 @@ class BranchController extends AdminController
         try {
             return new BranchResource($this->branchService->store($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -74,7 +74,7 @@ class BranchController extends AdminController
 
             return new BranchResource($updated);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -100,7 +100,7 @@ class BranchController extends AdminController
 
             return response('', 202);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -109,7 +109,7 @@ class BranchController extends AdminController
         try {
             return new BranchResource($this->branchService->updateZone($request, $branch));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -118,7 +118,7 @@ class BranchController extends AdminController
         try {
             return new BranchResource($this->branchService->branchShowByLatLong($request, $branch));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

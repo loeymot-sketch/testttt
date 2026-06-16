@@ -26,7 +26,7 @@ class OrderController extends Controller
         try {
             return new OrderDetailsResource($this->orderService->tableOrderStore($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -35,7 +35,7 @@ class OrderController extends Controller
         try {
             return new OrderDetailsResource($frontendOrder);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

@@ -44,7 +44,7 @@ class CustomerController extends AdminController
         try {
             return CustomerResource::collection($this->customerService->list($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -53,7 +53,7 @@ class CustomerController extends AdminController
         try {
             return new CustomerResource($this->customerService->store($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -64,7 +64,7 @@ class CustomerController extends AdminController
         try {
             return new CustomerResource($this->customerService->update($request, $customer));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -74,7 +74,7 @@ class CustomerController extends AdminController
             $this->customerService->destroy($customer);
             return response('', 202);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -83,7 +83,7 @@ class CustomerController extends AdminController
         try {
             return new CustomerResource($this->customerService->show($customer));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -93,7 +93,7 @@ class CustomerController extends AdminController
         try {
             return Excel::download(new CustomerExport($this->customerService, $request), 'Customer.xlsx');
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -104,7 +104,7 @@ class CustomerController extends AdminController
         try {
             return new CustomerResource($this->customerService->changePassword($request, $customer));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -115,7 +115,7 @@ class CustomerController extends AdminController
         try {
             return new CustomerResource($this->customerService->changeImage($request, $customer));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -126,7 +126,7 @@ class CustomerController extends AdminController
         try {
             return UserOrderResource::collection($this->orderService->userOrder($request, $customer));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

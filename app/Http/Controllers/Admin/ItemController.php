@@ -103,7 +103,7 @@ class ItemController extends AdminController
                 'meta' => $meta,
             ]);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -127,7 +127,7 @@ class ItemController extends AdminController
 
             return $resource;
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -137,7 +137,7 @@ class ItemController extends AdminController
             // [CENTRAL-01] collapsed dead env('DEMO') if/else — both arms were byte-identical (no-op).
             return new ItemResource($this->itemService->store($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -146,7 +146,7 @@ class ItemController extends AdminController
         try {
             return new ItemResource($this->itemService->update($request, $item));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -156,7 +156,7 @@ class ItemController extends AdminController
             $copy = $this->itemService->duplicate($item);
             return new ItemResource($copy);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -176,7 +176,7 @@ class ItemController extends AdminController
                 ], 409);
             }
 
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -188,7 +188,7 @@ class ItemController extends AdminController
         try {
             return new ItemResource($this->itemService->changeImage($request, $item));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -197,7 +197,7 @@ class ItemController extends AdminController
         try {
             return Excel::download(new ItemExport($this->itemService, $request), 'Item.xlsx');
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -206,7 +206,7 @@ class ItemController extends AdminController
         try {
             return Response::download(public_path('/file/itemImportSample.xlsx'));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -216,7 +216,7 @@ class ItemController extends AdminController
             Excel::import(new ItemImport($request->file('file')), $request->file('file'));
             return response('', 202);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -239,7 +239,7 @@ class ItemController extends AdminController
         try {
            return new NormalItemResource($this->itemService->itemDetails($item));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -280,7 +280,7 @@ class ItemController extends AdminController
                 ],
             ]);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 

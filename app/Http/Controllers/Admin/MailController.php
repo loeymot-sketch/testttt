@@ -27,7 +27,7 @@ class MailController extends AdminController
         try {
             return new MailResource($this->mailService->list());
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -36,7 +36,7 @@ class MailController extends AdminController
         try {
             return new MailResource($this->mailService->update($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

@@ -22,7 +22,7 @@ class SliderController extends Controller
         try {
             return SliderResource::collection($this->sliderService->list($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

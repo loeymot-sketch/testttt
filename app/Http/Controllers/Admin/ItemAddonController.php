@@ -27,7 +27,7 @@ class ItemAddonController extends AdminController
         try {
             return ItemAddonResource::collection($this->itemAddonService->list($request, $item));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -37,7 +37,7 @@ class ItemAddonController extends AdminController
         try {
             return new ItemAddonResource($this->itemAddonService->store($request, $item));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -47,7 +47,7 @@ class ItemAddonController extends AdminController
             $this->itemAddonService->destroy($item, $itemAddon);
             return response('', 202);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

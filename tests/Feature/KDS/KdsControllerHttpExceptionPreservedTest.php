@@ -90,7 +90,10 @@ class KdsControllerHttpExceptionPreservedTest extends TestCase
         $this->actingAs($this->chef, 'sanctum')
             ->getJson('/api/admin/kds-order/items')
             ->assertStatus(422)
-            ->assertJsonPath('message', 'boom');
+            // [GENIE Wave2 A1] the controller now routes the unexpected exception through
+            // Controller::jsonError → status still 422, but the raw 'boom' is genericized (no leak).
+            ->assertJsonPath('message', __('all.message.something_wrong'))
+            ->assertJsonMissing(['message' => 'boom']);
     }
 
     public function test_history_today_still_flattens_plain_exception_to_422(): void
@@ -102,6 +105,9 @@ class KdsControllerHttpExceptionPreservedTest extends TestCase
         $this->actingAs($this->chef, 'sanctum')
             ->getJson('/api/admin/kds-order/history-today')
             ->assertStatus(422)
-            ->assertJsonPath('message', 'boom');
+            // [GENIE Wave2 A1] the controller now routes the unexpected exception through
+            // Controller::jsonError → status still 422, but the raw 'boom' is genericized (no leak).
+            ->assertJsonPath('message', __('all.message.something_wrong'))
+            ->assertJsonMissing(['message' => 'boom']);
     }
 }

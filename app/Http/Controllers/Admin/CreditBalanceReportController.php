@@ -46,7 +46,7 @@ class CreditBalanceReportController extends AdminController
         try {
             return CreditBalanceUserResource::collection($this->userService->list($this->customerScoped($request)));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -55,7 +55,7 @@ class CreditBalanceReportController extends AdminController
         try {
             return Excel::download(new CreditBalanceReportExport($this->userService, $this->customerScoped($request)), 'Credit-balance-Report.xlsx');
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

@@ -25,7 +25,7 @@ class KioskSetupController extends AdminController
         try {
             return new KioskSetupResource($this->kioskSetupService->list());
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -34,7 +34,7 @@ class KioskSetupController extends AdminController
         try {
             return new KioskSetupResource($this->kioskSetupService->update($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

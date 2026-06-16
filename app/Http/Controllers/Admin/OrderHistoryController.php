@@ -55,7 +55,7 @@ class OrderHistoryController extends AdminController
         try {
             return SimpleOrderResource::collection($this->orderService->list($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -92,7 +92,7 @@ class OrderHistoryController extends AdminController
         } catch (HttpException $http) {
             throw $http;
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

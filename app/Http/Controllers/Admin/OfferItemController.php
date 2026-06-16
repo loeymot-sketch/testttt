@@ -40,7 +40,7 @@ class OfferItemController extends AdminController
         try {
             return OfferItemResource::collection($this->offerItemService->list($request, $offer));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -52,7 +52,7 @@ class OfferItemController extends AdminController
         try {
             return new OfferItemResource($this->offerItemService->store($request, $offer));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -64,7 +64,7 @@ class OfferItemController extends AdminController
             $this->offerItemService->destroy($offer, $offerItem);
             return response('', 202);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

@@ -47,7 +47,7 @@ class PermissionController extends AdminController
             $permissions     = AppLibrary::numericToAssociativeArrayBuilder($permissions->toArray());
             return new JsonResponse(['data' => $permissions], 201);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -56,7 +56,7 @@ class PermissionController extends AdminController
         try {
             return new RoleResource($this->permissionService->update($request, $role));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

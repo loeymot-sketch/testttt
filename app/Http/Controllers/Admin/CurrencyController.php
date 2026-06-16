@@ -26,7 +26,7 @@ class CurrencyController extends AdminController
         try {
             return CurrencyResource::collection($this->currencyService->list($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -38,7 +38,7 @@ class CurrencyController extends AdminController
             SettingsUpdated::dispatch(['currency']);
             return $resource;
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -50,7 +50,7 @@ class CurrencyController extends AdminController
             SettingsUpdated::dispatch(['currency']);
             return $resource;
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -62,7 +62,7 @@ class CurrencyController extends AdminController
             SettingsUpdated::dispatch(['currency']);
             return response('', 202);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -71,7 +71,7 @@ class CurrencyController extends AdminController
         try {
             return new CurrencyResource($currency);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

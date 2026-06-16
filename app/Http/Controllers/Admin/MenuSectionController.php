@@ -24,7 +24,7 @@ class MenuSectionController extends AdminController
         try {
             return MenuSectionResource::collection($this->menuSectionService->list($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

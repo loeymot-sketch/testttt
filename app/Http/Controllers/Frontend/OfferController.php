@@ -29,7 +29,7 @@ class OfferController extends Controller
         try {
             return SimpleOfferListResource::collection($this->offerService->activeWise($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -39,7 +39,7 @@ class OfferController extends Controller
         try {
             return new OfferItemByDateResource($this->offerService->offerItemByDate($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -50,7 +50,7 @@ class OfferController extends Controller
             $offer = Offer::where(['slug' => $slug])->first();
             return new OfferResource($this->offerService->show($offer));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

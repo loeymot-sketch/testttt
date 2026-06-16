@@ -39,7 +39,7 @@ class OrderController extends Controller
         try {
             return UserOrderResource::collection($this->frontendOrderService->myOrder($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -64,7 +64,7 @@ class OrderController extends Controller
         } catch (HttpException $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], $exception->getStatusCode());
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -74,7 +74,7 @@ class OrderController extends Controller
         try {
             return new OrderDetailsResource($this->frontendOrderService->show($frontendOrder));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -83,7 +83,7 @@ class OrderController extends Controller
         try {
             return new OrderDetailsResource($this->frontendOrderService->changeStatus($frontendOrder, $request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -308,7 +308,7 @@ class OrderController extends Controller
         } catch (HttpException $exception) {
             throw $exception;
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

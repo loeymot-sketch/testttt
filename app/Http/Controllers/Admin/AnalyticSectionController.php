@@ -31,7 +31,7 @@ class AnalyticSectionController extends AdminController
         try {
             return AnalyticSectionResource::collection($this->analyticSectionService->list($request, $analytic));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -41,7 +41,7 @@ class AnalyticSectionController extends AdminController
         try {
             return new AnalyticSectionResource($this->analyticSectionService->store($request, $analytic));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -50,7 +50,7 @@ class AnalyticSectionController extends AdminController
         try {
             return new AnalyticSectionResource($this->analyticSectionService->update($request, $analytic, $analyticSection));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -60,7 +60,7 @@ class AnalyticSectionController extends AdminController
             $this->analyticSectionService->destroy($analytic, $analyticSection);
             return response('', 202);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -69,7 +69,7 @@ class AnalyticSectionController extends AdminController
         try {
             return new AnalyticSectionResource($this->analyticSectionService->show($analytic, $analyticSection));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

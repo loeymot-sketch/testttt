@@ -32,7 +32,7 @@ class SliderController extends AdminController
         try {
             return SliderResource::collection($this->sliderService->list($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -47,7 +47,7 @@ class SliderController extends AdminController
         try {
             return new SliderResource($this->sliderService->store($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -62,7 +62,7 @@ class SliderController extends AdminController
         try {
             return new SliderResource($this->sliderService->show($slider));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -78,7 +78,7 @@ class SliderController extends AdminController
         try {
             return new SliderResource($this->sliderService->update($request, $slider));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -94,7 +94,7 @@ class SliderController extends AdminController
             $this->sliderService->destroy($slider);
             return response('', 202);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

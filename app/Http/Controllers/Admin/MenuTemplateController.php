@@ -34,7 +34,7 @@ class MenuTemplateController extends AdminController
         try {
             return MenuTemplateResource::collection($this->menuTemplateService->list($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -43,7 +43,7 @@ class MenuTemplateController extends AdminController
         try {
             return new MenuTemplateResource($this->menuTemplateService->store($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -52,7 +52,7 @@ class MenuTemplateController extends AdminController
         try {
             return new MenuTemplateResource($this->menuTemplateService->show($menuTemplate));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -63,7 +63,7 @@ class MenuTemplateController extends AdminController
         try {
             return new MenuTemplateResource($this->menuTemplateService->update($request, $menuTemplate));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -73,7 +73,7 @@ class MenuTemplateController extends AdminController
             $this->menuTemplateService->destroy($menuTemplate);
             return response('', 202);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

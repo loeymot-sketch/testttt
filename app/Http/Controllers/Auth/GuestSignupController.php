@@ -53,7 +53,7 @@ class GuestSignupController extends Controller
             $this->otpManagerService->otp($request);
             return response(['status' => true, 'message' => trans("all.message.check_your_phone_for_code")]);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -76,7 +76,7 @@ class GuestSignupController extends Controller
                 );
             }
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
 
         return response()->json([

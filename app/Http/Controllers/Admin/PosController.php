@@ -70,7 +70,7 @@ class PosController extends AdminController
         } catch (HttpException $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], $exception->getStatusCode());
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 

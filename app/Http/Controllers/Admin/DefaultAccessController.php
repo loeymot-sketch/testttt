@@ -31,7 +31,7 @@ class DefaultAccessController extends AdminController
         try {
             return new DefaultAccessResource($this->defaultAccessService->show());
         } catch( Exception $exception ) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -40,7 +40,7 @@ class DefaultAccessController extends AdminController
         try {
             return new DefaultAccessResource($this->defaultAccessService->storeOrUpdate($request->all()));
         } catch( Exception $exception ) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

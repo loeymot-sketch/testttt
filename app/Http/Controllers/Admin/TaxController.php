@@ -27,7 +27,7 @@ class TaxController extends AdminController
         try {
             return TaxResource::collection($this->taxService->list($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -39,7 +39,7 @@ class TaxController extends AdminController
             SettingsUpdated::dispatch(['tax']);
             return $resource;
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -51,7 +51,7 @@ class TaxController extends AdminController
             SettingsUpdated::dispatch(['tax']);
             return $resource;
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -63,7 +63,7 @@ class TaxController extends AdminController
             SettingsUpdated::dispatch(['tax']);
             return response('', 202);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -72,7 +72,7 @@ class TaxController extends AdminController
         try {
             return new TaxResource($this->taxService->show($tax));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

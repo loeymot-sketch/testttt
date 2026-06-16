@@ -23,7 +23,7 @@ class CookiesController extends AdminController
         try {
             return new CookiesResource($this->cookiesService->list());
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -32,7 +32,7 @@ class CookiesController extends AdminController
         try {
             return new CookiesResource($this->cookiesService->update($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

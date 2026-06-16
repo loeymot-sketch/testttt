@@ -29,7 +29,7 @@ class CouponController extends Controller
         try {
             return CouponResource::collection($this->couponService->couponDateWise());
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -38,7 +38,7 @@ class CouponController extends Controller
         try {
             return new CouponCheckResource($this->couponService->couponChecking($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

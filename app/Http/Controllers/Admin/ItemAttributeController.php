@@ -27,7 +27,7 @@ class ItemAttributeController extends AdminController
         try {
             return ItemAttributeResource::collection($this->itemAttributeService->list($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -37,7 +37,7 @@ class ItemAttributeController extends AdminController
         try {
             return new ItemAttributeResource($this->itemAttributeService->show($itemAttribute));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -46,7 +46,7 @@ class ItemAttributeController extends AdminController
         try {
             return new ItemAttributeResource($this->itemAttributeService->store($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -58,7 +58,7 @@ class ItemAttributeController extends AdminController
         try {
             return new ItemAttributeResource($this->itemAttributeService->update($request, $itemAttribute));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -68,7 +68,7 @@ class ItemAttributeController extends AdminController
             $this->itemAttributeService->destroy($itemAttribute);
             return response('', 202);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

@@ -24,7 +24,7 @@ class NotificationAlertController extends AdminController
         try {
             return NotificationAlertResource::collection($this->notificationAlertService->list());
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -33,7 +33,7 @@ class NotificationAlertController extends AdminController
         try {
             return NotificationAlertResource::collection($this->notificationAlertService->update($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

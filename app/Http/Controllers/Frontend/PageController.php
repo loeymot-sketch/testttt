@@ -24,7 +24,7 @@ class PageController extends Controller
         try {
             return PageResource::collection($this->pageService->list($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -33,7 +33,7 @@ class PageController extends Controller
         try {
             return new PageResource($this->pageService->show($page));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -42,7 +42,7 @@ class PageController extends Controller
         try {
             return new PageResource($this->pageService->show($page));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

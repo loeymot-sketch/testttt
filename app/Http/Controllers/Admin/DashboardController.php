@@ -66,7 +66,7 @@ class DashboardController extends AdminController
         try {
             return ['data' => ['total_sales' => AppLibrary::currencyAmountFormat($this->dashboardService->totalSales())]];
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -75,7 +75,7 @@ class DashboardController extends AdminController
         try {
             return ['data' => ['total_orders' => $this->dashboardService->totalOrders()]];
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -84,7 +84,7 @@ class DashboardController extends AdminController
         try {
             return ['data' => ['total_customers' => $this->dashboardService->totalCustomers()]];
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -93,7 +93,7 @@ class DashboardController extends AdminController
         try {
             return ['data' => ['total_menu_items' => $this->dashboardService->totalMenuItems()]];
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -103,7 +103,7 @@ class DashboardController extends AdminController
         try {
             return new OrderStatisticsResource($this->dashboardService->orderStatistics($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -113,7 +113,7 @@ class DashboardController extends AdminController
         try {
             return new SalesSummaryResource($this->dashboardService->salesSummary($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -123,7 +123,7 @@ class DashboardController extends AdminController
         try {
             return new OrderSummaryResource($this->dashboardService->orderSummary($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -133,7 +133,7 @@ class DashboardController extends AdminController
         try {
             return new CustomerStatesResource($this->dashboardService->customerStates($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -142,7 +142,7 @@ class DashboardController extends AdminController
         try {
             return TopCustomerResource::collection($this->dashboardService->topCustomers());
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -151,7 +151,7 @@ class DashboardController extends AdminController
         try {
             return SimpleItemResource::collection($this->itemService->featuredItems());
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -160,7 +160,7 @@ class DashboardController extends AdminController
         try {
             return SimpleItemResource::collection($this->itemService->mostPopularItems());
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -169,7 +169,7 @@ class DashboardController extends AdminController
         try {
             return response()->json(['data' => $this->dashboardService->realtimeReport()]);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -178,7 +178,7 @@ class DashboardController extends AdminController
         try {
             return response()->json(['data' => $this->dashboardService->slaAlerts()]);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -187,7 +187,7 @@ class DashboardController extends AdminController
         try {
             return response()->json(['data' => $this->dashboardService->channelStatistics()]);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -196,7 +196,7 @@ class DashboardController extends AdminController
         try {
             return response()->json(['data' => $this->dashboardService->auditTrail()]);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -244,7 +244,7 @@ class DashboardController extends AdminController
             // touch the NF525 chain) previously swallowed render/aggregation failures with no server log.
             // Add a server-side trace; the 422 response is byte-identical.
             Log::error('eod-pdf recap failed', ['exception' => $exception]);
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

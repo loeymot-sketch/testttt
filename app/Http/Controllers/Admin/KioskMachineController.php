@@ -27,7 +27,7 @@ class KioskMachineController extends AdminController
         try {
             return KioskMachineResource::collection($this->kioskMachineService->list($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -36,7 +36,7 @@ class KioskMachineController extends AdminController
         try {
             return new KioskMachineResource($this->kioskMachineService->store($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -45,7 +45,7 @@ class KioskMachineController extends AdminController
         try {
             return new KioskMachineResource($this->kioskMachineService->update($request, $kioskMachine));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -55,7 +55,7 @@ class KioskMachineController extends AdminController
             $this->kioskMachineService->destroy($kioskMachine);
             return response('', 202);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -64,7 +64,7 @@ class KioskMachineController extends AdminController
         try {
             return new KioskMachineResource($this->kioskMachineService->show($kioskMachine));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -74,7 +74,7 @@ class KioskMachineController extends AdminController
             $this->kioskMachineService->logout($kioskMachine);
             return response(trans('all.message.logout_success'), 200);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -84,7 +84,7 @@ class KioskMachineController extends AdminController
             $this->kioskMachineService->changeStatus($kioskMachine, $request);
             return response('', 202);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

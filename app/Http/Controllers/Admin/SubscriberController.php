@@ -31,7 +31,7 @@ class SubscriberController extends AdminController
         try {
             return SubscriberResource::collection($this->subscriberService->list($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -41,7 +41,7 @@ class SubscriberController extends AdminController
             $this->subscriberService->destroy($subscriber);
             return response('', 202);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -50,7 +50,7 @@ class SubscriberController extends AdminController
         try {
             return Excel::download(new SubscriberExport($this->subscriberService, $request), 'Subscribers.xlsx');
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -60,7 +60,7 @@ class SubscriberController extends AdminController
             $this->subscriberService->sendEmail($request);
             return response(['status' => true, 'message' => trans('all.message.email_send')], 200);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

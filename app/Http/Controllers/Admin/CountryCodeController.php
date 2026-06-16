@@ -21,7 +21,7 @@ class CountryCodeController extends AdminController
         try {
             return $this->countryCodeService->list();
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -35,7 +35,7 @@ class CountryCodeController extends AdminController
 
             return new CountryCodeResource($model);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

@@ -28,7 +28,7 @@ class DeliveryBoyOrderController extends Controller
         try {
             return SimpleDeliveryBoyOrderResource::collection($this->orderService->deliveryBoyOrder($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -39,7 +39,7 @@ class DeliveryBoyOrderController extends Controller
         } catch (HttpExceptionInterface $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], $exception->getStatusCode());
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -48,7 +48,7 @@ class DeliveryBoyOrderController extends Controller
         try {
             return new DeliveryBoyOrderCountResource($this->orderService->deliveryBoyOrderCount());
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -80,7 +80,7 @@ class DeliveryBoyOrderController extends Controller
         } catch (HttpExceptionInterface $exception) {
             return response(['status' => false, 'message' => $exception->getMessage()], $exception->getStatusCode());
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

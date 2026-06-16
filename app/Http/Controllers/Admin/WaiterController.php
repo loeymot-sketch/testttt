@@ -47,7 +47,7 @@ class WaiterController extends AdminController
         try {
             return WaiterResource::collection($this->waiterService->list($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -56,7 +56,7 @@ class WaiterController extends AdminController
         try {
             return new WaiterResource($this->waiterService->store($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -67,7 +67,7 @@ class WaiterController extends AdminController
         try {
             return new WaiterResource($this->waiterService->update($request, $waiter));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -77,7 +77,7 @@ class WaiterController extends AdminController
             $this->waiterService->destroy($waiter);
             return response('', 202);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -86,7 +86,7 @@ class WaiterController extends AdminController
         try {
             return new WaiterResource($this->waiterService->show($waiter));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -96,7 +96,7 @@ class WaiterController extends AdminController
         try {
             return Excel::download(new WaiterExport($this->waiterService, $request), 'Waiter.xlsx');
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -107,7 +107,7 @@ class WaiterController extends AdminController
         try {
             return new WaiterResource($this->waiterService->changePassword($request, $waiter));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -118,7 +118,7 @@ class WaiterController extends AdminController
         try {
             return new WaiterResource($this->waiterService->changeImage($request, $waiter));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -129,7 +129,7 @@ class WaiterController extends AdminController
         try {
             return UserOrderResource::collection($this->orderService->userOrder($request, $waiter));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

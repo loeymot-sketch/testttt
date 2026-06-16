@@ -25,7 +25,7 @@ class OrderSetupController extends AdminController
         try {
             return new OrderSetupResource($this->orderSetupService->list());
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -37,7 +37,7 @@ class OrderSetupController extends AdminController
             SettingsUpdated::dispatch(['order_setup']);
             return $resource;
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

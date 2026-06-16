@@ -23,7 +23,7 @@ class TimeSlotController extends Controller
         try {
             return FrontendTimeSlotResource::collection($this->frontendTimeSlotService->todayTimeSlot());
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -33,7 +33,7 @@ class TimeSlotController extends Controller
         try {
             return FrontendTimeSlotResource::collection($this->frontendTimeSlotService->tomorrowTimeSlot());
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

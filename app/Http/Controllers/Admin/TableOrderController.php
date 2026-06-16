@@ -38,7 +38,7 @@ class TableOrderController extends AdminController
         try {
             return OrderResource::collection($this->orderService->list($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -47,7 +47,7 @@ class TableOrderController extends AdminController
         try {
             return new OrderDetailsResource($this->orderService->show($order, false));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -56,7 +56,7 @@ class TableOrderController extends AdminController
         try {
             return Excel::download(new OrderExport($this->orderService, $request), 'Table-Order.xlsx');
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -65,7 +65,7 @@ class TableOrderController extends AdminController
         try {
             return new OrderDetailsResource($this->orderService->changeStatus($order, $request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -74,7 +74,7 @@ class TableOrderController extends AdminController
         try {
             return new OrderDetailsResource($this->orderService->changePaymentStatus($order, $request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -83,7 +83,7 @@ class TableOrderController extends AdminController
         try {
             return new OrderDetailsResource($this->orderService->tokenCreate($order, $request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

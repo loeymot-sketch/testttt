@@ -48,7 +48,7 @@ class OfferController extends AdminController
         try {
             return SimpleOfferListResource::collection($this->offerService->list($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -57,7 +57,7 @@ class OfferController extends AdminController
         try {
             return new OfferResource($this->offerService->store($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -66,7 +66,7 @@ class OfferController extends AdminController
         try {
             return new OfferResource($this->offerService->show($offer));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -75,7 +75,7 @@ class OfferController extends AdminController
         try {
             return new OfferResource($this->offerService->update($request, $offer));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -85,7 +85,7 @@ class OfferController extends AdminController
             $this->offerService->destroy($offer);
             return response('', 202);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -94,7 +94,7 @@ class OfferController extends AdminController
         try {
             return Excel::download(new OfferExport($this->offerService, $request), 'Offers.xlsx');
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -105,7 +105,7 @@ class OfferController extends AdminController
         try {
             return new OfferResource($this->offerService->changeImage($request, $offer));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

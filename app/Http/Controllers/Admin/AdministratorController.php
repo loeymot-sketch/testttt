@@ -40,7 +40,7 @@ class AdministratorController extends AdminController
         try {
             return AdministratorResource::collection($this->administratorService->list($request));
         } catch (\Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -49,7 +49,7 @@ class AdministratorController extends AdminController
         try {
             return new AdministratorResource($this->administratorService->store($request));
         } catch (\Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -58,7 +58,7 @@ class AdministratorController extends AdminController
         try {
             return new AdministratorResource($this->administratorService->update($request, $administrator));
         } catch (\Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -68,7 +68,7 @@ class AdministratorController extends AdminController
             $this->administratorService->destroy($administrator);
             return response('', 202);
         } catch (\Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -77,7 +77,7 @@ class AdministratorController extends AdminController
         try {
             return new AdministratorResource($this->administratorService->show($administrator));
         } catch (\Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
     public function export(PaginateRequest $request) : \Illuminate\Http\Response | \Symfony\Component\HttpFoundation\BinaryFileResponse | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory
@@ -85,7 +85,7 @@ class AdministratorController extends AdminController
         try {
             return Excel::download(new AdministratorExport($this->administratorService, $request), 'Administrator.xlsx');
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -94,7 +94,7 @@ class AdministratorController extends AdminController
         try {
             return new AdministratorResource($this->administratorService->changePassword($request, $administrator));
         } catch (\Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -103,7 +103,7 @@ class AdministratorController extends AdminController
         try {
             return new AdministratorResource($this->administratorService->changeImage($request, $administrator));
         } catch (\Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -112,7 +112,7 @@ class AdministratorController extends AdminController
         try {
             return UserOrderResource::collection($this->orderService->userOrder($request, $administrator));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

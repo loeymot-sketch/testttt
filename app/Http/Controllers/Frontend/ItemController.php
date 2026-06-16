@@ -27,7 +27,7 @@ class ItemController extends Controller
         try {
             return SimpleItemResource::collection($this->itemService->simpleList($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -36,7 +36,7 @@ class ItemController extends Controller
         try {
             return SimpleItemResource::collection($this->itemService->featuredItems());
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -45,7 +45,7 @@ class ItemController extends Controller
         try {
             return SimpleItemResource::collection($this->itemService->mostPopularItems());
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -54,7 +54,7 @@ class ItemController extends Controller
         try {
             return new NormalItemResource($this->itemService->itemDetails($item));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -103,7 +103,7 @@ class ItemController extends Controller
 
             return SimpleItemResource::collection($upsellItems);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -134,7 +134,7 @@ class ItemController extends Controller
 
             return SimpleItemResource::collection($suggested);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 

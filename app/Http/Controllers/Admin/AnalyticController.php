@@ -31,7 +31,7 @@ class AnalyticController extends AdminController
         try {
             return AnalyticResource::collection($this->analyticService->list($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -41,7 +41,7 @@ class AnalyticController extends AdminController
         try {
             return new AnalyticResource($this->analyticService->store($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -50,7 +50,7 @@ class AnalyticController extends AdminController
         try {
             return new AnalyticResource($this->analyticService->update($request, $analytic));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -60,7 +60,7 @@ class AnalyticController extends AdminController
         try {
             return new AnalyticResource($this->analyticService->show($analytic));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -71,7 +71,7 @@ class AnalyticController extends AdminController
             $this->analyticService->destroy($analytic);
             return response('', 202);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

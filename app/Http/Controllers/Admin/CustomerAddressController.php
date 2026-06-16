@@ -27,7 +27,7 @@ class CustomerAddressController extends AdminController
         try {
             return AddressResource::collection($this->userAddressService->list($request, $customer));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -36,7 +36,7 @@ class CustomerAddressController extends AdminController
         try {
             return new AddressResource($this->userAddressService->store($request, $customer));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -45,7 +45,7 @@ class CustomerAddressController extends AdminController
         try {
             return new AddressResource($this->userAddressService->update($request, $customer, $address));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -55,7 +55,7 @@ class CustomerAddressController extends AdminController
             $this->userAddressService->destroy($customer, $address);
             return response('', 202);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -64,7 +64,7 @@ class CustomerAddressController extends AdminController
         try {
             return new AddressResource($this->userAddressService->show($customer, $address));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

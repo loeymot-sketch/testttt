@@ -39,7 +39,7 @@ class KitchenDisplaySystemController extends AdminController
             // error" — matches changeStatus()/recall() in this file + the sibling OSS controller.
             return response(['status' => false, 'message' => $e->getMessage()], $e->getStatusCode());
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -51,7 +51,7 @@ class KitchenDisplaySystemController extends AdminController
         } catch (HttpException $e) {
             return response(['status' => false, 'message' => $e->getMessage()], $e->getStatusCode());
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -62,7 +62,7 @@ class KitchenDisplaySystemController extends AdminController
         } catch (HttpException $e) {
             return response(['status' => false, 'message' => $e->getMessage()], $e->getStatusCode()); // [KDS-02]
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -82,7 +82,7 @@ class KitchenDisplaySystemController extends AdminController
         } catch (HttpException $e) {
             return response(['status' => false, 'message' => $e->getMessage()], $e->getStatusCode()); // [KDS-02]
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -124,7 +124,7 @@ class KitchenDisplaySystemController extends AdminController
         } catch (HttpException $e) {
             return response(['status' => false, 'message' => $e->getMessage()], $e->getStatusCode());
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

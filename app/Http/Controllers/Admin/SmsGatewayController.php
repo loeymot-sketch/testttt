@@ -32,7 +32,7 @@ class SmsGatewayController extends AdminController
         try {
             return SmsGatewayResource::collection($this->smsGatewayService->list($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -46,7 +46,7 @@ class SmsGatewayController extends AdminController
         try {
             return new SmsGatewayResource($this->smsGatewayService->update($validationRequests));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

@@ -31,7 +31,7 @@ class MessageController extends AdminController
         try {
             return MessageResource::collection($this->messageService->list($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -42,7 +42,7 @@ class MessageController extends AdminController
         try {
             return new MessageResource($this->messageService->show($message));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -54,7 +54,7 @@ class MessageController extends AdminController
             $this->messageService->store($request);
             return MessageResource::collection($this->messageService->list($request2));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -66,7 +66,7 @@ class MessageController extends AdminController
             $this->messageService->destroy($message);
             return response('', 202);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -77,7 +77,7 @@ class MessageController extends AdminController
             $this->messageService->changeStatus($message, $customer);
             return response('', 202);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

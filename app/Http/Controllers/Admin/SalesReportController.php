@@ -45,7 +45,7 @@ class SalesReportController extends AdminController
         try {
             return SimpleOrderResource::collection($this->orderService->list($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -54,7 +54,7 @@ class SalesReportController extends AdminController
         try {
             return Excel::download(new SalesReportExport($this->orderService, $request), 'Sales-Report.xlsx');
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -78,7 +78,7 @@ class SalesReportController extends AdminController
                 ]
             );
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -87,7 +87,7 @@ class SalesReportController extends AdminController
         try {
             return new SalesReportOverviewResource($this->orderService->salesReportOverview($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

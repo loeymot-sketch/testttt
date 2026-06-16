@@ -27,7 +27,7 @@ class AdministratorAddressController extends AdminController
         try {
             return AddressResource::collection($this->userAddressService->list($request, $administrator));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -36,7 +36,7 @@ class AdministratorAddressController extends AdminController
         try {
             return new AddressResource($this->userAddressService->store($request, $administrator));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -45,7 +45,7 @@ class AdministratorAddressController extends AdminController
         try {
             return new AddressResource($this->userAddressService->update($request, $administrator, $address));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -55,7 +55,7 @@ class AdministratorAddressController extends AdminController
             $this->userAddressService->destroy($administrator, $address);
             return response('', 202);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -64,7 +64,7 @@ class AdministratorAddressController extends AdminController
         try {
             return new AddressResource($this->userAddressService->show($administrator, $address));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }

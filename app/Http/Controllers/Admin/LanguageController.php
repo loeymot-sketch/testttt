@@ -32,7 +32,7 @@ class LanguageController extends AdminController
         try {
             return LanguageResource::collection($this->languageService->list($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -41,7 +41,7 @@ class LanguageController extends AdminController
         try {
             return new LanguageResource($this->languageService->store($request));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -50,7 +50,7 @@ class LanguageController extends AdminController
         try {
             return new LanguageResource($this->languageService->show($language));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -59,7 +59,7 @@ class LanguageController extends AdminController
         try {
             return new LanguageResource($this->languageService->update($request, $language));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -69,7 +69,7 @@ class LanguageController extends AdminController
             $this->languageService->destroy($language);
             return response('', 202);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -79,7 +79,7 @@ class LanguageController extends AdminController
         try {
             return LanguageFileListResource::collection($this->languageService->fileList($language));
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -95,7 +95,7 @@ class LanguageController extends AdminController
                 }
             }
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 
@@ -105,7 +105,7 @@ class LanguageController extends AdminController
             $this->languageService->fileTextStore($request);
             return response('', 202);
         } catch (Exception $exception) {
-            return response(['status' => false, 'message' => $exception->getMessage()], 422);
+            return $this->jsonError($exception, 422);
         }
     }
 }
