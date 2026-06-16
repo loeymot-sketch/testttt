@@ -1474,6 +1474,11 @@ import { normalizeRealtimeOrderEvent, shouldNotifyPosRealtimeOrder } from "../..
 import debounce from "lodash/debounce";
 import { createBarcodeDetector, createFKeyShortcuts } from "../../../helpers/posBarcode";
 import { calculateDeliveryChargeFromDistance } from "../../../helpers/deliveryCharge";
+// [abuse-e2e CAISSE-FMT-01 2026-06-16] Canonical FR EUR renderer (Intl fr-FR, NBSP →
+// "0,00 €"). The POS ticket totals/cart lines were the last admin spots still rendering
+// via appService.currencyFormat, which hardcodes en-US "0.00€" (period, glued, no NBSP)
+// — inconsistent with the rest of the FR-locale caisse. See helpers/formatPrice.js WT-D-R1.
+import { formatPrice } from "../../../helpers/formatPrice";
 // [POS-V5-DESIGN-CONVERGENCE 2026-05-02] Primitives unifiées POS V5.
 // Doc plan : plans/PLAN_POS_V5_DESIGN_CONVERGENCE_2026-05-02.md §4.
 import PosV5Button from "./v5/PosV5Button.vue";
@@ -3359,8 +3364,16 @@ export default {
         floatNumber: function (e) {
             return appService.floatNumber(e);
         },
-        currencyFormat: function (amount, decimal, currency, position) {
-            return appService.currencyFormat(amount, decimal, currency, position);
+        currencyFormat: function (amount) {
+            // [abuse-e2e CAISSE-FMT-01 2026-06-16] Route the POS caisse currency display
+            // through the canonical FR EUR SSOT formatPrice() ("0,00 €", Intl fr-FR + NBSP)
+            // instead of appService.currencyFormat() which emits en-US "0.00€" (period,
+            // glued). All 7 call sites in this component pass NUMERIC values, so formatPrice
+            // (number|string-numeric → FR) is a safe display-only swap. Le Cayenne is FR EUR
+            // single-restaurant (V1), so the dropped decimal/currency/position args are the
+            // formatPrice defaults anyway. appService.currencyFormat is left untouched so the
+            // frozen PaymentComponent + customer frontend surfaces are unaffected.
+            return formatPrice(amount);
         },
         openCanvas: function (id) {
             return appService.openCanvas(id);
