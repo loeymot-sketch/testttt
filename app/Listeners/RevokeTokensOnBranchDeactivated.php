@@ -32,37 +32,58 @@ class RevokeTokensOnBranchDeactivated
             return;
         }
 
-        $userIds = User::query()
-            ->where('branch_id', $event->branchId)
-            ->pluck('id')
-            ->all();
+        // [GENIE Wave1 CC-4 2026-06-16] Listener isolation. This runs FIRST in the
+        // BranchStatusChanged cascade (security: revoke before broadcast), so an unhandled
+        // throw here previously HALTED the sync dispatcher and the next listener
+        // (PersistBranchStatusChangedToOutbox) never ran → the "branch INACTIVE" broadcast
+        // never fired and POS/Kiosk kept operating on a disabled branch. Isolate the failure:
+        // log it (so the residual security gap — tokens not revoked — is visible to ops) but
+        // do NOT rethrow, so the more-critical broadcast still persists.
+        try {
+            $userIds = User::query()
+                ->where('branch_id', $event->branchId)
+                ->pluck('id')
+                ->all();
 
-        if ($userIds === []) {
-            Log::channel(config('logging.channels.security') ? 'security' : 'stack')->info(
-                '[R10] Branch deactivated, 0 tokens to revoke (no users in branch)',
+            if ($userIds === []) {
+                Log::channel(config('logging.channels.security') ? 'security' : 'stack')->info(
+                    '[R10] Branch deactivated, 0 tokens to revoke (no users in branch)',
+                    [
+                        'event'     => 'branch.status_changed',
+                        'branch_id' => $event->branchId,
+                        'gate'      => 'wave-5g-r10-heal',
+                    ]
+                );
+                return;
+            }
+
+            $revokedCount = PersonalAccessToken::query()
+                ->where('tokenable_type', User::class)
+                ->whereIn('tokenable_id', $userIds)
+                ->delete();
+
+            Log::channel(config('logging.channels.security') ? 'security' : 'stack')->warning(
+                '[R10] Branch deactivated, Sanctum tokens revoked',
                 [
-                    'event'     => 'branch.status_changed',
-                    'branch_id' => $event->branchId,
-                    'gate'      => 'wave-5g-r10-heal',
+                    'event'         => 'branch.status_changed.tokens_revoked',
+                    'branch_id'     => $event->branchId,
+                    'user_count'    => count($userIds),
+                    'revoked_count' => (int) $revokedCount,
+                    'gate'          => 'wave-5g-r10-heal',
                 ]
             );
-            return;
+        } catch (\Throwable $e) {
+            // [CC-4] Do NOT let a token-revocation failure halt the cascade — the INACTIVE
+            // broadcast (next listener) MUST still fire. Surface the security gap to ops.
+            Log::channel(config('logging.channels.security') ? 'security' : 'stack')->error(
+                '[CC-4] Branch token revocation FAILED — broadcast preserved, tokens may still be live',
+                [
+                    'event'     => 'branch.status_changed.tokens_revoke_failed',
+                    'branch_id' => $event->branchId,
+                    'exception' => $e->getMessage(),
+                    'gate'      => 'genie-wave1-cc4',
+                ]
+            );
         }
-
-        $revokedCount = PersonalAccessToken::query()
-            ->where('tokenable_type', User::class)
-            ->whereIn('tokenable_id', $userIds)
-            ->delete();
-
-        Log::channel(config('logging.channels.security') ? 'security' : 'stack')->warning(
-            '[R10] Branch deactivated, Sanctum tokens revoked',
-            [
-                'event'         => 'branch.status_changed.tokens_revoked',
-                'branch_id'     => $event->branchId,
-                'user_count'    => count($userIds),
-                'revoked_count' => (int) $revokedCount,
-                'gate'          => 'wave-5g-r10-heal',
-            ]
-        );
     }
 }
