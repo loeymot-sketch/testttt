@@ -69,11 +69,29 @@ export default {
     },
 
     currencyFormat(amount, decimal, currency, position) {
-        if (position === currencyPositionEnum.LEFT) {
-            return currency + parseFloat(amount).toFixed(decimal);
-        } else {
-            return parseFloat(amount).toFixed(decimal) + currency;
+        // [abuse-e2e A2 2026-06-16] FR-locale rendering (comma decimal + NBSP thousands grouping)
+        // honoring the configured symbol/position/decimal. Was en-US `parseFloat().toFixed()+symbol`
+        // → "0.00€" / "37063.00€" (period, glued, no grouping) which clashed with the kiosk
+        // formatPrice() SSOT and the whole FR app. Presentation-only — backend stays pricing SSOT,
+        // and no caller parses this output back (verified). NBSP ( ) between number and symbol
+        // matches French typography (and Intl's own grouping separator).
+        const d = Number.isFinite(parseInt(decimal, 10)) ? parseInt(decimal, 10) : 2;
+        const n = parseFloat(amount);
+        const safe = Number.isFinite(n) ? n : 0;
+        let formatted;
+        try {
+            formatted = new Intl.NumberFormat('fr-FR', {
+                minimumFractionDigits: d,
+                maximumFractionDigits: d,
+            }).format(safe);
+        } catch (_e) {
+            // Locale/Intl unavailable (very old runtime) — manual FR fallback.
+            formatted = safe.toFixed(d).replace('.', ',');
         }
+        const NBSP = String.fromCharCode(0x00A0); // non-breaking space (FR typography)
+        return position === currencyPositionEnum.LEFT
+            ? currency + NBSP + formatted
+            : formatted + NBSP + currency;
     },
     logoutConfirmation: function () {
         return new VueSimpleAlert.confirm(
