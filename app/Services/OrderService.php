@@ -2309,6 +2309,13 @@ class OrderService
                             return $locked;
                         }
                         $locked->payment_status = $request->payment_status;
+                        // [GENIE Wave0 FISCAL-CPS-01] Same NF525 allocation on the customer self-service
+                        // PAID transition — a self-paid order must also enter the Z (idempotent + in-tx).
+                        if ($targetPaymentStatus === \App\Enums\PaymentStatus::PAID
+                            && $locked->fiscal_sequence_no === null
+                        ) {
+                            $locked->fiscal_sequence_no = app(FiscalSequenceService::class)->next((int) $locked->branch_id);
+                        }
                         $locked->save();
                         return $locked;
                     });
@@ -2417,6 +2424,21 @@ class OrderService
                 \App\Domain\Order\PaymentStateMachine::assertCanTransition($freshOld, $targetPaymentStatus);
 
                 $locked->payment_status = $request->payment_status;
+
+                // [GENIE Wave0 FISCAL-CPS-01 2026-06-16] NF525 exhaustivity P0. An order flipped into
+                // PAID here previously persisted with fiscal_sequence_no=NULL → excluded from every Z
+                // (ZReportService aggregate whereNotNull('fiscal_sequence_no')) and unreachable by the
+                // kiosk-only retry cron → permanent off-book orphan. Sibling of the delivery-COD hole.
+                // Allocate a gap-free sequence at the PAID transition, INSIDE this locked tx so a
+                // FiscalSequenceService failure rolls the whole transition back (the order stays in its
+                // prior state rather than becoming an off-book PAID — never a silent orphan). Idempotent:
+                // skip if a sequence already exists (counter/kiosk pre-allocation). Mirrors PaymentService.
+                if ($targetPaymentStatus === \App\Enums\PaymentStatus::PAID
+                    && $locked->fiscal_sequence_no === null
+                ) {
+                    $locked->fiscal_sequence_no = app(FiscalSequenceService::class)->next((int) $locked->branch_id);
+                }
+
                 $locked->save();
 
                 \App\Models\ActionLog::create([
