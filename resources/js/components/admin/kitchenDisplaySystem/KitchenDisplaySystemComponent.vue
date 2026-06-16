@@ -1876,11 +1876,16 @@ export default {
       if (!ws) return;
       this._onWsConnected = () => {
         this.wsConnected = true;
+        this.v2OfflineSince = null; // [KDS-01] clear the V2 offline stamp on reconnect
         this.refreshOrderList();
         this._restartPolling();
       };
       this._onWsDisconnected = () => {
         this.wsConnected = false;
+        // [KDS-01] stamp the offline start so the V2 grid's already-built red "connexion perdue >60s"
+        // banner (KdsStatusBanner gates on offline-since) becomes reachable. Was declared+bound but never
+        // assigned → the escalated OFFLINE state was structurally dead on the opt-in V2 layout.
+        if (this.v2OfflineSince === null) this.v2OfflineSince = Date.now();
         this._restartPolling();
       };
       ws.on('connected', this._onWsConnected);
