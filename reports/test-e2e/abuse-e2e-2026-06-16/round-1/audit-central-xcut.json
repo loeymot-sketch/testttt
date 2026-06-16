@@ -1,0 +1,83 @@
+[
+  {
+    "severity": "P2",
+    "system": "CENTRAL",
+    "file": "resources/js/components/admin/components/buttons/SmIconModalEditComponent.vue:2-5, resources/js/components/admin/components/buttons/SmIconSidebarModalEditComponent.vue:2-5",
+    "title": "Table-row EDIT (and QR-code) action buttons have no accessible name — screen-reader invisible across every admin table",
+    "reproduction": "Login admin@lecayenne.fr -> http://127.0.0.1:8766/admin/items (Catalogue). The edit pencil on each row is <button class=\"db-table-action edit\"><i class=\"lab lab-edit-line\"></i><span class=\"db-tooltip\">{{ $t('button.edit') }}</span></button>. The only text node is the .db-tooltip span which is CSS `visibility: hidden` by default (public/css/app.css:5365 `.db-tooltip{visibility:hidden}`, only `visible` on :hover). Per WAI-ARIA accessible-name computation, visibility:hidden content is excluded -> the button exposes NO accessible name. Live DOM check at /admin/items returned 10x `db-table-action edit` buttons with empty innerText, no aria-label, no title. SmIconQrCodeComponent.vue has the identical gap.",
+    "evidence": "Sibling components in the SAME folder were already fixed (SmIconDeleteComponent.vue has `:aria-label=\"deleteLabel\"`, SmIconViewComponent.vue has `:aria-label=\"$t('button.view')\"` + `<i aria-hidden>`), but the EDIT and QR-code variants were left unlabeled — an incomplete a11y pass. SmIconSidebarModalEditComponent is imported by 23 admin list components including ItemListComponent.vue:241, CustomerListComponent, CouponListComponent, OfferListComponent, AdministratorListComponent, EmployeeListComponent, ItemVariation/Addon/Extra lists. CSS proof: public/css/app.css:5365-5366 visibility:hidden; app.css:5412 :hover -> visible.",
+    "fix_proposal": "Add `:aria-label=\"$t('button.edit')\"` to the <button> in SmIconModalEditComponent.vue and SmIconSidebarModalEditComponent.vue, and `:aria-label=\"$t('button.qr')\"` to the <a> in SmIconQrCodeComponent.vue, mirroring the already-fixed SmIconViewComponent/SmIconDeleteComponent. Mark the <i> aria-hidden=\"true\" for consistency. One-line change per file, no behavior change."
+  },
+  {
+    "severity": "P2",
+    "system": "XCUT",
+    "file": "app/Http/Controllers/Admin/* (75 controllers, ~360 catch sites) e.g. CurrencyController.php:29/41/53/65/74, DashboardController.php:136/145/154, ItemsReportController.php:40/49/78",
+    "title": "Admin controllers catch bare \\Exception and return $exception->getMessage() to the client (info leak) without server-side logging (observability gap)",
+    "reproduction": "Any admin mutation that throws a non-validation exception. The universal idiom is `catch (Exception $exception) { return response(['status'=>false,'message'=>$exception->getMessage()], 422); }`. Because the catch is bare \\Exception, a QueryException/PDOException leaks SQL fragments, column/table names, or constraint text into the JSON `message` field shown to the authenticated admin client. Most sites also have NO Log::error, so the failure is invisible server-side. Verified pattern present in 75 Admin controllers (grep `getMessage()], 422` -> 75 files).",
+    "evidence": "CurrencyController.php:29 `'message' => $exception->getMessage()], 422` inside `catch (Exception $exception)` (CurrencyController.php:28). DashboardController.php:136/145/154 identical. The CENTRAL-02 heal added Log::error to exactly 2 of these (DashboardController::eodPdf and ItemsReportController::pdf) but BOTH still return the raw getMessage() to the client (ItemsReportController.php:78 keeps the leak after logging at :77). All other ~358 sites neither log nor sanitize. Auth+permission middleware gates these routes (lowers severity from P1), but an authenticated operator/manager can still surface internal SQL/schema and failures go untraced.",
+    "fix_proposal": "Standardize the admin catch to (a) Log::error('<ctx> failed', ['exception'=>$e]) and (b) return a generic FR client message (e.g. trans('error.something_wrong')) instead of $e->getMessage(); optionally include the real message only when config('app.debug'). Could be centralized in a shared trait or in app/Exceptions/Handler render() for the /api/admin prefix so the 360 sites collapse to one policy."
+  },
+  {
+    "severity": "P3",
+    "system": "CENTRAL",
+    "file": "resources/js/components/admin/items/CatalogStudioComponent.vue:151-152 (key) + resources/js/languages/fr.json (missing key)",
+    "title": "Missing i18n key 'studio.product_composer_button' floods the console with 92 vue-i18n 'Not found' warnings on the Catalogue (items studio) page",
+    "reproduction": "Login -> http://127.0.0.1:8766/admin/items/studio. Console shows 92 warnings: `[intlify] Not found 'studio.product_composer_button' key in 'fr' locale messages`. Confirmed key ABSENT from fr.json/en.json/ar.json (python json lookup MISSING in all three).",
+    "evidence": "CatalogStudioComponent.vue:151 `:title=\"t('studio.product_composer_button', 'Composer / wizard')\"` and :152 `:aria-label=\"t(...)\"`. The 2nd arg 'Composer / wizard' is used as vue-i18n default-message, so NO raw key leaks to the visible UI (live DOM check found 0 visible raw keys / 0 leaked title/aria attrs) — but the missing key still logs 92 warnings (console pollution) and the fallback 'Composer / wizard' is English-flavoured jargon used as the button's accessible name in a FR-only app (ADR-007).",
+    "fix_proposal": "Add `studio.product_composer_button` to the existing `studio` block in fr.json (and en/ar) with a proper FR label e.g. 'Composer / assistant produit'. Removes the 92-warning console spam and gives a FR accessible name."
+  },
+  {
+    "severity": "P3",
+    "system": "CENTRAL",
+    "file": "resources/js/components/admin/components/MapComponent.vue:7",
+    "title": "Hardcoded English placeholder 'Enter a location' on the address/branch map autocomplete input (FR-only app, ADR-007)",
+    "reproduction": "Open any address-create form or settings/branch create that embeds the map, e.g. Settings -> Branch create (BranchCreateComponent.vue uses MapComponent), or admin customer/employee/chef/delivery-boy address create. The location autocomplete input renders the English placeholder.",
+    "evidence": "MapComponent.vue:7 `<input v-if=\"setting.autocomplete\" id=\"map-autocomplete-input\" type=\"text\" placeholder=\"Enter a location\" ...>` — literal English, not wrapped in $t. MapComponent is imported by BranchCreateComponent and 9+ address-create components (all reachable admin forms). Whole rest of admin is FR.",
+    "fix_proposal": "Replace with `:placeholder=\"$t('label.enter_a_location')\"` (or 'Saisir une adresse') and add the FR key to fr.json."
+  },
+  {
+    "severity": "P3",
+    "system": "CENTRAL",
+    "file": "resources/js/components/admin/dashboard/AuditTrailComponent.vue:33",
+    "title": "Hardcoded English tooltip 'Chain HMAC SHA-256 prefix — full hash hidden for security' on the dashboard NF525 audit-trail table",
+    "reproduction": "Login -> http://127.0.0.1:8766/admin/dashboard, scroll to the Audit Trail / fiscal-chain widget; hover a hash cell. The native title tooltip is English in a FR-only admin.",
+    "evidence": "AuditTrailComponent.vue:33 `:title=\"'Chain HMAC SHA-256 prefix — full hash hidden for security'\"` — literal English string, not $t. Confirmed via Read.",
+    "fix_proposal": "Wrap in $t with a FR string e.g. 'Empreinte HMAC SHA-256 (préfixe) — hash complet masqué par sécurité' and add the key to fr.json."
+  },
+  {
+    "severity": "P3",
+    "system": "CENTRAL",
+    "file": "app/Http/Controllers/Admin/DashboardController.php (eodPdf), method body validation branch",
+    "title": "EOD fiscal-recap PDF returns hardcoded English validation message 'Invalid date format. Expected YYYY-MM-DD.' in a FR app",
+    "reproduction": "GET the EOD-recap PDF endpoint (permission:pos-manage-fiscal) with a malformed ?date=foo. Response 422 body message is English.",
+    "evidence": "DashboardController::eodPdf: `if ($date !== null && !preg_match('/^\\d{4}-\\d{2}-\\d{2}$/', $date)) { return response(['status'=>false,'message'=>'Invalid date format. Expected YYYY-MM-DD.'], 422); }` — literal English. Low severity: only triggers on a malformed query param (developer/automation error, not a normal UI path).",
+    "fix_proposal": "Return trans('...') FR message e.g. 'Format de date invalide. Attendu : AAAA-MM-JJ.'"
+  },
+  {
+    "severity": "P3",
+    "system": "CENTRAL",
+    "file": "resources/js/components/admin/items/wizard/ProductCreateWizardComponent.vue:27,30,57,88,111 (keys) + fr.json/en.json/ar.json (all missing)",
+    "title": "Orphan ProductCreateWizardComponent references 'admin.product_wizard.*' i18n keys absent from ALL locale files — would render raw keys IF mounted",
+    "reproduction": "Component uses {{ $t('admin.product_wizard.title') }}, .subtitle, .progress, .finish, .steps.<key>. None exist in fr/en/ar.json. vue-i18n (no custom missing handler in i18n.js) returns the raw key string on miss -> would print 'admin.product_wizard.title' literally.",
+    "evidence": "grep confirms the 5 $t calls in ProductCreateWizardComponent.vue and python json lookup shows admin.product_wizard MISSING in fr/en/ar.json. HOWEVER this component is NOT registered, NOT imported, and NOT route-bound anywhere (grep of app.js + router/modules/itemRoutes.js shows the live item routes use CatalogStudioComponent/ItemListComponent/ProductComposerEditorComponent/WizardStudioComponent, never ProductCreateWizard). So it is dead code and does NOT currently surface to users — downgraded to P3 hygiene, NOT a live leak.",
+    "fix_proposal": "Either delete the orphan ProductCreateWizardComponent.vue (dead code) or, if it is intended to be wired, add the admin.product_wizard.* keys to all three locale files before routing it."
+  },
+  {
+    "severity": "P3",
+    "system": "XCUT",
+    "file": "resources/js/app.js (SPA boot) — /login dashboard prefetch",
+    "title": "SPA fires authenticated /api/admin/dashboard/* XHR before the auth guard redirects, producing 30-50 console 401 errors on the public /login page",
+    "reproduction": "Open http://127.0.0.1:8766/login (logged out). Console shows ~34-56 errors: repeated `Failed to load resource: 401 (Unauthorized) @ /api/admin/dashboard/total-sales|total-orders|realtime-report|audit-trail|...` plus AxiosError 401 stacks.",
+    "evidence": "console log capture on first /login load: 34 errors growing to 56, all 401 on /api/admin/default-access, /api/admin/setting/branch, and ~10 /api/admin/dashboard/* endpoints. Functionally harmless (the guard then redirects/blocks) but pollutes the console and wastes round-trips on the unauthenticated entry page.",
+    "fix_proposal": "Gate the dashboard data-fetch (and default-access/branch settings prefetch) behind an is-authenticated check before dispatching, or lazy-mount the dashboard widgets only after the auth guard resolves, so logged-out /login makes zero /api/admin calls."
+  },
+  {
+    "severity": "P3",
+    "system": "CENTRAL",
+    "file": "resources/js/components/admin/salesReport/* (vue-datepicker input) — Sales Report filter",
+    "title": "Date-range picker input on the Sales Report has no associated label/aria-label",
+    "reproduction": "Login -> http://127.0.0.1:8766/admin/sales-report. Live DOM scan found 1 unlabeled input: `<input class=\"dp__pointer dp__input_readonly dp__input ...\" inputmode=\"none\" placeholder=...>` (the @vuepic/vue-datepicker control) with no <label for>, no aria-label, no aria-labelledby.",
+    "evidence": "browser_evaluate on /admin/sales-report returned exactly one unlabeledInput, the dp__input date-range control. This is the 3rd-party datepicker default; screen-reader users get no field name for the report date filter.",
+    "fix_proposal": "Pass `aria-label` (e.g. 'Période du rapport') via the vue-datepicker `input-class`/`text-input-options`/`aria-labels` prop, or wrap the control with a visible <label for>. Note: money/date FORMATTING on this page is correct FR (verified '37 063,87 €' grouped with NBSP, dates dd/mm/yyyy) — only the input label is missing."
+  }
+]
