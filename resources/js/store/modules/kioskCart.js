@@ -709,8 +709,16 @@ export const kioskCart = {
                 // Stored in state so retries/double-tap reuse the same key.
                 let idempotencyKey = state.idempotencyKey;
                 if (!idempotencyKey) {
+                    // [BORNE-02] crypto.getRandomValues is only guaranteed in a SECURE context (https/localhost).
+                    // On a misconfigured plain-http webview it is undefined and would throw synchronously here,
+                    // rejecting order placement before any retry/offline logic. Idempotency keys are per-session
+                    // collision-avoidance (not secrets), so guard with a Math.random byte fallback — the happy
+                    // path is byte-identical when crypto is present (matches the repo idiom in idempotencyHeaders.js).
+                    const randByte = (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function')
+                        ? () => crypto.getRandomValues(new Uint8Array(1))[0]
+                        : () => Math.floor(Math.random() * 256);
                     idempotencyKey = ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
-                        (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16));
+                        (c ^ randByte() & 15 >> c / 4).toString(16));
                     commit('SET_IDEMPOTENCY_KEY', idempotencyKey);
                 }
 
