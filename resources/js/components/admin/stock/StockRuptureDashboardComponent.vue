@@ -157,7 +157,7 @@
 
                 <div
                     v-else
-                    class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
+                    class="stock-product-grid grid gap-3"
                 >
                     <article
                         v-for="product in filteredProducts"
@@ -626,6 +626,16 @@ export default {
 </script>
 
 <style scoped>
+/* [abuse-e2e STOCK-GRID-01 2026-06-16] Column count must follow the GRID container width, not
+ * the viewport. The page sits behind a 260px category panel + the app nav, so at a ~1200px laptop
+ * the grid is only ~600px wide while `lg:grid-cols-3` (viewport ≥1024px) still forced 3 columns →
+ * 191px cards. After the 12px padding + 85px "EN STOCK" toggle + 48px thumbnail, the flex-1 name
+ * collapsed to ~9px and "Sandwich Cayenne" rendered as "S a" — operator could not identify the
+ * product. auto-fill + minmax(220px,1fr) keeps every card ≥220px (2 cols at ~600px, more when
+ * wider) so the name always has room. Display-only; toggle behaviour unchanged. */
+.stock-mgmt-v2 .stock-product-grid {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+}
 .stock-mgmt-v2 .product-card {
     transition: box-shadow 0.15s ease;
 }
