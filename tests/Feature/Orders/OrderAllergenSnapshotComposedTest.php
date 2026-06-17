@@ -153,8 +153,10 @@ class OrderAllergenSnapshotComposedTest extends TestCase
             ->assertOk()
             ->json('data');
 
+        // [prod-finale 2026-06-17] /api/frontend/order is idempotency-guarded (frozen middleware; live UI sends it).
         $response = $this
             ->withHeader('x-api-key', '123456')
+            ->withHeader('X-Idempotency-Key', (string) \Illuminate\Support\Str::uuid())
             ->postJson('/api/frontend/order', $payload + [
                 'quote_token' => $quote['quote_token'],
                 'quote_signature' => $quote['signature'],

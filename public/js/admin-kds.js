@@ -1930,7 +1930,9 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
         }
         if (_this2.kdsErrorBanner) {
           _this2.kdsErrorBanner.visible = true;
-          _this2.kdsErrorBanner.message = _this2.$t('label.kds_status_conflict');
+          // [prod-finale 2026-06-17 P2] the key lives under message.* (see sibling at :2303); the
+          // label.* path was a raw-key leak ('label.kds_status_conflict') on the KDS conflict banner.
+          _this2.kdsErrorBanner.message = _this2.$t('message.kds_status_conflict');
         }
       });
     },

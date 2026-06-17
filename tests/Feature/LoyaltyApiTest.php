@@ -88,10 +88,13 @@ class LoyaltyApiTest extends TestCase
             'status' => 1
         ]);
 
-        $response = $this->actingAs($admin, 'sanctum')->postJson('/api/frontend/loyalty/add-points', [
-            'code' => 'ADD99',
-            'points' => 20
-        ]);
+        // [prod-finale 2026-06-17] add-points is now idempotency-guarded (symmetric to /redeem) → send the key.
+        $response = $this->actingAs($admin, 'sanctum')
+            ->withHeader('X-Idempotency-Key', (string) \Illuminate\Support\Str::uuid())
+            ->postJson('/api/frontend/loyalty/add-points', [
+                'code' => 'ADD99',
+                'points' => 20
+            ]);
 
         $response->assertStatus(200);
         $this->assertDatabaseHas('users', ['loyalty_code' => 'ADD99', 'loyalty_points' => 30]);

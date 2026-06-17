@@ -79,6 +79,8 @@ return [
         // per B-02 spec but server ignored before this commit. Network retry
         // would double-debit loyalty points balance.
         'api/frontend/loyalty/redeem',
+        // [prod-finale 2026-06-17 P3] Symmetric credit path — see routes/api.php add-points.
+        'api/frontend/loyalty/add-points',
         // [Wave E-1 / 2026-05-19] POS cashier loyalty redeem at-payment.
         // Route declared `idempotency` middleware in routes/api.php but was
         // missing from required_routes — WE-4 final convergence sentinel

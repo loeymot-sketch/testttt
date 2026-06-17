@@ -742,7 +742,13 @@ class DashboardService
                 $kiosk['total'] += (float) $order->total;
                 continue;
             }
-            if ((int) $order->source === \App\Enums\Source::POS) {
+            // [prod-finale 2026-06-17 P2] Mirror channelStatistics' positive surface marker: real POS rows
+            // carry source_surface='pos' with the client-posted source int = 1, NOT Source::POS(15). Keying
+            // ONLY on ===POS let the bulk of POS revenue (1343 surface='pos' rows vs 292 source=15) fall
+            // through to the Web/App bucket on the EOD fiscal recap PDF (per-channel attribution wrong;
+            // grand total unaffected). Same partition fix already shipped in channelStatistics (6c4c5f75b).
+            if ((string) ($order->source_surface ?? '') === 'pos'
+                || (int) $order->source === \App\Enums\Source::POS) {
                 $pos['count']++;
                 $pos['total'] += (float) $order->total;
                 continue;

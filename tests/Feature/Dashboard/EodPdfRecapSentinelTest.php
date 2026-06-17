@@ -186,10 +186,15 @@ class EodPdfRecapSentinelTest extends TestCase
         $this->actingAs($admin, 'sanctum');
 
         // Seed one paid POS order.
+        // [prod-finale 2026-06-17 P2] Seed the PRODUCTION data shape: real POS rows carry
+        // source_surface='pos' with the client-posted source int = 1 (NOT Source::POS=15). The old
+        // fixture used source=Source::POS which masked the bucketChannels mis-attribution bug (a
+        // realistic source=1 row fell through to the Web/App bucket on the EOD recap PDF).
         Order::factory()->create([
             'branch_id'           => $this->branch->id,
             'order_type'          => OrderType::POS,
-            'source'              => Source::POS,
+            'source'              => 1,
+            'source_surface'      => 'pos',
             'payment_status'      => PaymentStatus::PAID,
             'status'              => OrderStatus::DELIVERED,
             'pos_payment_method'  => PosPaymentMethod::CASH,
@@ -214,5 +219,15 @@ class EodPdfRecapSentinelTest extends TestCase
         $this->assertIsArray($synthesis['by_payment']);
         $this->assertGreaterThan(0, count($synthesis['by_payment']),
             'by_payment MUST contain at least the CASH bucket from the seeded POS order.');
+
+        // [prod-finale 2026-06-17 P2] Lock the channel attribution: the seeded production-shape POS row
+        // (source_surface='pos', source=1) MUST land in the 'POS Caisse' channel, NOT 'Web/App'. Before the
+        // bucketChannels fix this row fell through to Web/App on the EOD recap PDF.
+        $byChannel = collect($synthesis['by_channel']);
+        $posChannel = $byChannel->firstWhere('label', 'POS Caisse');
+        $this->assertNotNull($posChannel, "EOD recap by_channel MUST contain the 'POS Caisse' bucket for a surface='pos' order.");
+        $this->assertSame(1, (int) $posChannel['count'], 'The POS order must be attributed to POS Caisse, not Web/App.');
+        $this->assertNull($byChannel->firstWhere('label', 'Web/App'),
+            'No Web/App bucket should exist when the only order is a POS-surface order (it was leaking there).');
     }
 }

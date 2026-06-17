@@ -95,16 +95,16 @@
         <div class="report">
             <p style="margin: 0px 0px 8px 0px;font-size: 16px;font-weight: bold">{{ App\Libraries\AppLibrary::textShortener($company['company_name'], 60) }}</p>
             <p>{{ App\Libraries\AppLibrary::textShortener($company['company_address'],60) }}</p>
-            <p  style="color: #ff006b;margin: 0px 0px 8px 0px;font-size: 16px;font-weight: bold;">{{ trans('all.label.online_orders', [], 'en') }}</p>
+            <p  style="color: #ff006b;margin: 0px 0px 8px 0px;font-size: 16px;font-weight: bold;">{{ trans('all.label.online_orders') }}</p>
             <table>
                 <thead>
                     <tr>
-                        <th>{{ trans('all.label.order_serial_no', [], 'en') }}</th>
-                        <th>{{ trans('all.label.order_type', [], 'en') }}</th>
-                        <th>{{ trans('all.label.customer', [], 'en') }}</th>
-                        <th>{{ trans('all.label.date', [], 'en') }}</th>
-                        <th>{{ trans('all.label.status', [], 'en') }}</th>
-                        <th>{{ trans('all.label.amount', [], 'en') }}</th>
+                        <th>{{ trans('all.label.order_serial_no') }}</th>
+                        <th>{{ trans('all.label.order_type') }}</th>
+                        <th>{{ trans('all.label.customer') }}</th>
+                        <th>{{ trans('all.label.date') }}</th>
+                        <th>{{ trans('all.label.status') }}</th>
+                        <th>{{ trans('all.label.amount') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -120,7 +120,7 @@
                         </tr>
                     @endforeach
                     <tr class="total">
-                        <td colspan="5">{{ trans('all.label.total', [], 'en') }}</td>
+                        <td colspan="5">{{ trans('all.label.total') }}</td>
                         <td>{{ App\Libraries\AppLibrary::reportCurrencyAmountFormat($total) }}</td>
                     </tr>
                 </tbody>

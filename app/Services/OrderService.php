@@ -1393,6 +1393,11 @@ class OrderService
                     // it so a coupon-discounted table order cannot sign a fiscally-
                     // incorrect Z. Mirrors posOrderStore's in-SSOT gate (~813). [round-4 P0]
                     $this->assertDiscretionaryDiscountAllowed((float) $calculatedDiscount);
+                    // [prod-finale 2026-06-17 P1 food-safety] Freeze the allergen snapshot on the QR-table
+                    // dine-in path too. posOrderStore (:852) and FrontendOrderService hydrate before insert;
+                    // tableOrderStore did NOT in either branch, so KDS rendered gluten/allergen items with NO
+                    // warning line / no orange border for table orders. Mirror the POS sibling exactly.
+                    $itemsArray = OrderItemAllergenSnapshot::hydrate($itemsArray);
                     if (!blank($itemsArray)) {
                         OrderItem::insert($itemsArray);
                     }
@@ -1537,6 +1542,9 @@ class OrderService
                         }
                     }
 
+                    // [prod-finale 2026-06-17 P1 food-safety] hydrate the allergen snapshot on the legacy
+                    // (non-SSOT) table branch too — same fix as the SSOT branch above + posOrderStore:852.
+                    $itemsArray = OrderItemAllergenSnapshot::hydrate($itemsArray);
                     if (!blank($itemsArray)) {
                         OrderItem::insert($itemsArray);
                     }

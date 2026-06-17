@@ -214,8 +214,10 @@ class PosOrderBL1WireInTest extends TestCase
             ]),
         ];
 
+        // [prod-finale 2026-06-17] /api/admin/pos is idempotency-guarded (frozen middleware; live UI sends it).
         $response = $this->actingAs($admin)
             ->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) \Illuminate\Support\Str::uuid())
             ->postJson('/api/admin/pos', $this->payloadWithPosQuote($admin, $payload));
 
         $this->assertContains(

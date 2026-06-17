@@ -1656,7 +1656,9 @@ export default {
           }
           if (this.kdsErrorBanner) {
             this.kdsErrorBanner.visible = true;
-            this.kdsErrorBanner.message = this.$t('label.kds_status_conflict');
+            // [prod-finale 2026-06-17 P2] the key lives under message.* (see sibling at :2303); the
+            // label.* path was a raw-key leak ('label.kds_status_conflict') on the KDS conflict banner.
+            this.kdsErrorBanner.message = this.$t('message.kds_status_conflict');
           }
         });
     },

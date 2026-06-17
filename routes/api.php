@@ -1425,7 +1425,11 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
         Route::get('/config', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'config']);
     });
     Route::prefix('loyalty')->name('loyalty.auth.')->middleware(['auth:sanctum'])->group(function () {
-        Route::post('/add-points', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'addPoints']);
+        // [prod-finale 2026-06-17 P3] Symmetric to /redeem: a network-retry/double-submit of a manual
+        // point CREDIT would double-credit (increment runs twice). The debit path (/redeem) was hardened
+        // in LCS-S-002 but the symmetric credit path was missed. Added to config/idempotency.php too.
+        Route::post('/add-points', [\App\Http\Controllers\Frontend\LoyaltyController::class, 'addPoints'])
+            ->middleware('idempotency');
         // [LCS-S-002 / 2026-05-19] Idempotency middleware on loyalty redeem.
         // Mobile sends Idempotency-Key header per B-02 spec but server ignored
         // it before this commit. Network retry = double-debit of points.

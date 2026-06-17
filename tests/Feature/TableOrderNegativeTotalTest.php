@@ -274,4 +274,66 @@ class TableOrderNegativeTotalTest extends TestCase
             'A coupon-discounted table order must be refused entirely in V1 (no persisted order).'
         );
     }
+
+    /**
+     * [prod-finale 2026-06-17 P1 food-safety] tableOrderStore (QR dining-order) MUST freeze the immutable
+     * allergen snapshot on each order_item at creation, exactly like posOrderStore (:852) and the
+     * frontend/kiosk path. Before this fix tableOrderStore hydrated neither branch → order_item
+     * allergens_snapshot persisted NULL → KDSOrderItemsResource decoded [] → orderHasAnyAllergen() false →
+     * the chef saw an allergen-bearing item with NO warning line and no orange card border. This sentinel
+     * locks the snapshot so a regression re-surfaces as a RED test, not a silent food-safety hole.
+     */
+    public function test_table_dining_order_freezes_item_allergen_snapshot(): void
+    {
+        $branch = \Database\Factories\BranchFactory::new()->create();
+        $customer = UserFactory::new()->create(['branch_id' => $branch->id]);
+        $table = DiningTable::factory()->create([
+            'branch_id' => $branch->id,
+            'status' => Status::ACTIVE,
+        ]);
+        $category = ItemCategoryFactory::new()->create();
+        $item = ItemFactory::new()->create([
+            'item_category_id' => $category->id,
+            'price' => 12.00,
+        ]);
+
+        $gluten = \App\Models\Allergen::forceCreate(['code' => 'gluten', 'name_key' => 'allergens.gluten', 'sort' => 1]);
+        $item->allergens()->sync([$gluten->id => ['is_trace' => false]]);
+
+        $payload = [
+            'order_type' => OrderType::DINING_TABLE,
+            'dining_table_id' => $table->id,
+            'subtotal' => 12.00,
+            'total' => 12.00,
+            'source' => Source::POS,
+            'customer_id' => $customer->id,
+            'branch_id' => $branch->id,
+            'is_advance_order' => Ask::NO,
+            'items' => json_encode([[
+                'item_id' => $item->id,
+                'price' => 12.00,
+                'quantity' => 1,
+            ]]),
+        ];
+
+        $response = $this->withHeader('x-api-key', config('app.api_key', env('MIX_API_KEY', 'test-api-key')))
+            ->postJson('/api/table/dining-order', $payload);
+
+        $this->assertContains($response->status(), [200, 201], 'Valid allergen-bearing table order should be created.');
+
+        $order = \App\Models\FrontendOrder::query()
+            ->where('dining_table_id', $table->id)
+            ->latest('id')
+            ->first();
+        $this->assertNotNull($order, 'Table order should be persisted.');
+
+        $snapshotRaw = \Illuminate\Support\Facades\DB::table('order_items')
+            ->where('order_id', $order->id)
+            ->value('allergens_snapshot');
+        $snapshot = json_decode((string) $snapshotRaw, true);
+
+        $this->assertIsArray($snapshot, 'allergens_snapshot MUST be a JSON array frozen at creation, not null (KDS food-safety).');
+        $this->assertContains('gluten', $snapshot,
+            'The QR-table order_item MUST carry the gluten snapshot so the KDS card shows the allergen warning — parity with POS/kiosk.');
+    }
 }
