@@ -12,6 +12,7 @@ use App\Models\ItemCategory;
 use App\Models\KioskMachine;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Laravel\Sanctum\Sanctum;
 use Smartisan\Settings\Facades\Settings;
 use Tests\TestCase;
@@ -135,7 +136,9 @@ class KioskDineInDisabledV1SentinelTest extends TestCase
         $this->setDineInEnabled(false);
         Sanctum::actingAs($this->kioskUser, ['kiosk:order']);
 
-        $resp = $this->postJson('/api/frontend/order', $this->withQuote($this->basePayload(OrderType::KIOSK)));
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+        $resp = $this->withHeader('X-Idempotency-Key', (string) Str::uuid())
+            ->postJson('/api/frontend/order', $this->withQuote($this->basePayload(OrderType::KIOSK)));
 
         $resp->assertStatus(422);
         $resp->assertJsonValidationErrors(['order_type']);
@@ -149,7 +152,8 @@ class KioskDineInDisabledV1SentinelTest extends TestCase
         $this->setDineInEnabled(false);
         Sanctum::actingAs($this->kioskUser, ['kiosk:order']);
 
-        $resp = $this->postJson('/api/frontend/order', $this->withQuote($this->basePayload(OrderType::DINING_TABLE)));
+        $resp = $this->withHeader('X-Idempotency-Key', (string) Str::uuid())
+            ->postJson('/api/frontend/order', $this->withQuote($this->basePayload(OrderType::DINING_TABLE)));
 
         $resp->assertStatus(422);
         $resp->assertJsonValidationErrors(['order_type']);
@@ -160,7 +164,8 @@ class KioskDineInDisabledV1SentinelTest extends TestCase
         $this->setDineInEnabled(false);
         Sanctum::actingAs($this->kioskUser, ['kiosk:order']);
 
-        $resp = $this->postJson('/api/frontend/order', $this->withQuote($this->basePayload(OrderType::TAKEAWAY)));
+        $resp = $this->withHeader('X-Idempotency-Key', (string) Str::uuid())
+            ->postJson('/api/frontend/order', $this->withQuote($this->basePayload(OrderType::TAKEAWAY)));
 
         // 201 = order created; 200 = duplicate idempotency. Either non-422 is acceptable
         // — what we forbid is a 422 from the new dine-in guard on TAKEAWAY.
@@ -178,7 +183,8 @@ class KioskDineInDisabledV1SentinelTest extends TestCase
         $this->setDineInEnabled(true);
         Sanctum::actingAs($this->kioskUser, ['kiosk:order']);
 
-        $resp = $this->postJson('/api/frontend/order', $this->withQuote($this->basePayload(OrderType::KIOSK)));
+        $resp = $this->withHeader('X-Idempotency-Key', (string) Str::uuid())
+            ->postJson('/api/frontend/order', $this->withQuote($this->basePayload(OrderType::KIOSK)));
 
         $this->assertNotSame(422, $resp->status(),
             'KIOSK (sur place) must succeed when dine_in is enabled (V1.x rollout path).');

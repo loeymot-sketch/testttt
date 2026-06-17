@@ -12,6 +12,7 @@ use App\Models\Order;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class PaymentConfirmMachineResolverTest extends TestCase
@@ -45,12 +46,15 @@ class PaymentConfirmMachineResolverTest extends TestCase
 
         $token = $kioskUser->createToken('kiosk', ['kiosk:order'])->plainTextToken;
 
-        $this->withToken($token)->postJson('/api/frontend/order/'.$order->id.'/payment-confirm', [
-            'transaction_id' => 'FK-M06-MACHINE-BRANCH',
-            'card_type' => 'visa',
-            'payment_method' => PaymentGateway::CARD,
-            'amount_cents' => (int) round($order->fresh()->total * 100),
-        ])->assertOk();
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+        $this->withToken($token)
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
+            ->postJson('/api/frontend/order/'.$order->id.'/payment-confirm', [
+                'transaction_id' => 'FK-M06-MACHINE-BRANCH',
+                'card_type' => 'visa',
+                'payment_method' => PaymentGateway::CARD,
+                'amount_cents' => (int) round($order->fresh()->total * 100),
+            ])->assertOk();
 
         $this->assertDatabaseHas('orders', [
             'id' => $order->id,

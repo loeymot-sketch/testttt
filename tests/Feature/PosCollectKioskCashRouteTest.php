@@ -14,6 +14,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class PosCollectKioskCashRouteTest extends TestCase
@@ -50,11 +51,17 @@ class PosCollectKioskCashRouteTest extends TestCase
             'fiscal_sequence_no' => null,
         ]);
 
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+        // DISTINCT keys per POST: the second collect must REACH the controller so the assertion below (event dispatched
+        // exactly once + fiscal_sequence_no=1) proves the CONTROLLER's own no-op-on-already-PAID guard. A shared key would
+        // short-circuit the second POST as a cached 2xx replay in the middleware and never exercise that guard.
         $this->actingAs($operator, 'sanctum')
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos/collect-kiosk-cash/'.$order->id)
             ->assertSuccessful();
 
         $this->actingAs($operator, 'sanctum')
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos/collect-kiosk-cash/'.$order->id)
             ->assertSuccessful();
 

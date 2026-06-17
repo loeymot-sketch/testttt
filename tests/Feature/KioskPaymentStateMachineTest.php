@@ -21,6 +21,7 @@ use App\Models\User;
 use App\Services\FrontendOrderService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Str;
 use Smartisan\Settings\Facades\Settings;
 use Tests\TestCase;
 
@@ -142,9 +143,11 @@ class KioskPaymentStateMachineTest extends TestCase
     {
         Event::fake([OrderCreated::class, OrderStatusChanged::class]);
 
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $response = $this
             ->actingAs($this->kioskUser, 'sanctum')
             ->withHeader('x-api-key', '123456')
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/frontend/order', $this->kioskPayloadWithQuote(PaymentGateway::CARD));
 
         $this->assertContains($response->status(), [200, 201]);
@@ -172,6 +175,7 @@ class KioskPaymentStateMachineTest extends TestCase
         $confirm = $this
             ->actingAs($this->kioskUser, 'sanctum')
             ->withHeader('x-api-key', '123456')
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson("/api/frontend/order/{$orderId}/payment-confirm", [
                 'transaction_id' => 'TXN-STATE-001',
                 'card_type' => 'VISA',
@@ -214,6 +218,7 @@ class KioskPaymentStateMachineTest extends TestCase
         $response = $this
             ->actingAs($this->kioskUser, 'sanctum')
             ->withHeader('x-api-key', '123456')
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/frontend/order', $this->kioskPayloadWithQuote(PaymentGateway::CASH_ON_DELIVERY));
 
         $this->assertContains($response->status(), [200, 201]);
@@ -268,6 +273,7 @@ class KioskPaymentStateMachineTest extends TestCase
         $response = $this
             ->actingAs($this->kioskUser, 'sanctum')
             ->withHeader('x-api-key', '123456')
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson("/api/frontend/order/{$order->id}/payment-confirm", [
                 'transaction_id' => 'TXN-STATE-ALREADY',
                 'card_type' => 'VISA',

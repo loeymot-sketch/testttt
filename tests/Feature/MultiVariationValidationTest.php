@@ -16,6 +16,7 @@ use App\Models\User;
 use App\Rules\MultiVariationConstraint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\App;
+use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
@@ -234,7 +235,8 @@ class MultiVariationValidationTest extends TestCase
         $attr = $this->makeAttribute('Taille', 0, 2, false);
         $v = $this->makeVariation($this->item, $attr, 'XL', 1.00);
 
-        $this->authedKiosk()->postJson('/api/frontend/order', [
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+        $this->authedKiosk()->withHeader('X-Idempotency-Key', (string) Str::uuid())->postJson('/api/frontend/order', [
             'branch_id' => $this->branch->id,
             'order_type' => \App\Enums\OrderType::KIOSK,
             'is_advance_order' => Ask::NO,

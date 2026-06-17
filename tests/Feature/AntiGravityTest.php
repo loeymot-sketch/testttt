@@ -12,6 +12,7 @@ use App\Models\ItemCategory;
 use App\Models\Tax;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use App\Enums\TaxType;
+use Illuminate\Support\Str;
 use Tests\Feature\Concerns\HasPosQuoteBinding;
 use Tests\Feature\Pos\Traits\SeedsOpenCashDrawerSession;
 
@@ -169,8 +170,10 @@ class AntiGravityTest extends TestCase
             'items' => json_encode([['item_id' => $item->id, 'price' => 10, 'quantity' => 1]])
         ];
 
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $response = $this->actingAs($user)
             ->withHeader('x-api-key', $this->apiKey())
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/frontend/order', $this->withKioskQuote($user, $payload));
         $this->assertTrue(in_array($response->status(), [200, 201]));
         if (in_array($response->status(), [200, 201])) {
@@ -194,7 +197,9 @@ class AntiGravityTest extends TestCase
         $item = \Database\Factories\ItemFactory::new()->create(['price' => 10]);
 
         // Client sends forged price (0.01) — API must recalculate from DB and store 10
-        $response = $this->actingAs($user)->postJson('/api/frontend/order', [
+        $response = $this->actingAs($user)
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
+            ->postJson('/api/frontend/order', [
             'order_type' => 5,
             'subtotal' => 0.01,
             'total' => 0.01,
@@ -219,7 +224,9 @@ class AntiGravityTest extends TestCase
 
         // API recalculates total server-side — a forged total is silently corrected, not rejected.
         // This test verifies the order is accepted and the stored total matches DB price, not client input.
-        $response = $this->actingAs($user)->postJson('/api/frontend/order', [
+        $response = $this->actingAs($user)
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
+            ->postJson('/api/frontend/order', [
             'order_type' => 5,
             'subtotal' => 10,
             'total' => 0.01,
@@ -243,7 +250,9 @@ class AntiGravityTest extends TestCase
 
         // API uses coupon_id (integer), not coupon_code (string).
         // Invalid coupon_id must now reject the order instead of being silently ignored.
-        $response = $this->actingAs($user)->postJson('/api/frontend/order', [
+        $response = $this->actingAs($user)
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
+            ->postJson('/api/frontend/order', [
             'order_type' => 5,
             'subtotal' => 10,
             'total' => 10,
@@ -281,6 +290,7 @@ class AntiGravityTest extends TestCase
 
         $response = $this->actingAs($admin)
             ->withHeader('x-api-key', $this->apiKey())
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos-order/change-status/' . $order->id, [
                 'status' => \App\Enums\OrderStatus::ACCEPT // 4
             ]);
@@ -294,6 +304,7 @@ class AntiGravityTest extends TestCase
 
         $response = $this->actingAs($admin)
             ->withHeader('x-api-key', $this->apiKey())
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos-order/change-status/' . $order->id, [
                 'status' => 14 // PREPARED
             ]);
@@ -329,6 +340,7 @@ class AntiGravityTest extends TestCase
 
         $response = $this->actingAs($chef)
             ->withHeader('x-api-key', $this->apiKey())
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/kds-order/change-status/' . $order->id, [
                 'status' => 14 // DELIVERED
             ]);
@@ -390,10 +402,11 @@ class AntiGravityTest extends TestCase
         ];
         $response = $this->actingAs($admin)
             ->withHeader('x-api-key', $this->apiKey())
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos', $this->payloadWithPosQuote($admin, $payload));
-        
+
         $response->assertStatus(201);
-        
+
         // Vérifier commande créée avec prix DB (10.00), pas 0.01
         $order = \App\Models\Order::latest()->first();
         $this->assertNotNull($order);
@@ -440,10 +453,11 @@ class AntiGravityTest extends TestCase
         ];
         $response = $this->actingAs($admin)
             ->withHeader('x-api-key', $this->apiKey())
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos', $this->payloadWithPosQuote($admin, $payload));
-        
+
         $response->assertStatus(201);
-        
+
         // Vérifier notifications dispatchées
         \Illuminate\Support\Facades\Event::assertDispatched(\App\Events\SendOrderGotPush::class);
         \Illuminate\Support\Facades\Event::assertDispatched(\App\Events\SendOrderGotMail::class);

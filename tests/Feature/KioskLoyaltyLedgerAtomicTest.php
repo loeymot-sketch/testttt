@@ -15,6 +15,7 @@ use App\Models\LoyaltyTransaction;
 use App\Models\Order;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Laravel\Sanctum\Sanctum;
 use RuntimeException;
 use Smartisan\Settings\Facades\Settings;
@@ -93,7 +94,9 @@ class KioskLoyaltyLedgerAtomicTest extends TestCase
         });
 
         try {
-            $response = $this->postJson('/api/frontend/order', $this->orderPayload());
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            $response = $this->withHeader('X-Idempotency-Key', (string) Str::uuid())
+                ->postJson('/api/frontend/order', $this->orderPayload());
         } finally {
             LoyaltyTransaction::flushEventListeners();
         }
@@ -108,7 +111,8 @@ class KioskLoyaltyLedgerAtomicTest extends TestCase
     {
         Sanctum::actingAs($this->kioskUser, ['kiosk:order']);
 
-        $response = $this->postJson('/api/frontend/order', $this->orderPayload());
+        $response = $this->withHeader('X-Idempotency-Key', (string) Str::uuid())
+            ->postJson('/api/frontend/order', $this->orderPayload());
 
         $response->assertCreated();
         $orderId = (int) $response->json('data.id');
@@ -141,7 +145,10 @@ class KioskLoyaltyLedgerAtomicTest extends TestCase
         });
 
         try {
-            $response = $this->postJson('/api/frontend/order', $this->orderPayload());
+            // Single HTTP POST: the "duplicate" is an in-process LoyaltyTransaction::creating hook (not an
+            // HTTP replay), so one fresh idempotency key is correct here.
+            $response = $this->withHeader('X-Idempotency-Key', (string) Str::uuid())
+                ->postJson('/api/frontend/order', $this->orderPayload());
         } finally {
             LoyaltyTransaction::flushEventListeners();
         }

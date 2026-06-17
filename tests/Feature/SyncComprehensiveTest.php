@@ -16,6 +16,7 @@ use App\Enums\PaymentGateway;
 use App\Enums\TaxType;
 use App\Enums\OrderStatus;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Tests\Feature\Concerns\HasPosQuoteBinding;
 use Tests\Feature\Pos\Traits\SeedsOpenCashDrawerSession;
 
@@ -114,12 +115,14 @@ class SyncComprehensiveTest extends TestCase
                 'quantity' => 1,
             ]]),
         ];
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $orderResponse = $this->actingAs($kioskUser)
             ->withHeader('x-api-key', $this->apiKey())
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/frontend/order', $this->payloadWithKioskQuote($kioskUser, $payload));
-        
+
         $this->assertTrue(in_array($orderResponse->status(), [200, 201]));
-        
+
         // Accepter la commande pour qu'elle apparaisse dans KDS
         $order = Order::first();
         $order->update(['status' => \App\Enums\OrderStatus::ACCEPT]);
@@ -177,8 +180,9 @@ class SyncComprehensiveTest extends TestCase
         ];
         $posResponse = $this->actingAs($admin)
             ->withHeader('x-api-key', $this->apiKey())
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos', $this->payloadWithPosQuote($admin, $payload));
-        
+
         $posResponse->assertStatus(201);
         $order = Order::first();
         $this->assertNotNull($order);
@@ -229,10 +233,11 @@ class SyncComprehensiveTest extends TestCase
         // Changer le statut en PREPARED via KDS
         $statusResponse = $this->actingAs($chef)
             ->withHeader('x-api-key', $this->apiKey())
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson("/api/admin/kds-order/change-status/{$order->id}", [
                 'status' => \App\Enums\OrderStatus::PREPARED,
             ]);
-        
+
         $this->assertTrue(in_array($statusResponse->status(), [200, 202, 400, 403, 422], true));
     }
 
@@ -357,10 +362,11 @@ class SyncComprehensiveTest extends TestCase
         ];
         $orderResponse = $this->actingAs($kioskUser)
             ->withHeader('x-api-key', $this->apiKey())
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/frontend/order', $this->payloadWithKioskQuote($kioskUser, $payload));
-        
+
         $this->assertTrue(in_array($orderResponse->status(), [200, 201]));
-        
+
         // 2. Récupérer l'order_id créé
         $order = Order::first();
         $this->assertNotNull($order);
@@ -377,6 +383,7 @@ class SyncComprehensiveTest extends TestCase
         // 5. Changer statut en PREPARING via KDS
         $this->actingAs($chef)
             ->withHeader('x-api-key', $this->apiKey())
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson("/api/admin/kds-order/change-status/{$orderId}", [
                 'status' => \App\Enums\OrderStatus::PREPARING,
             ]);

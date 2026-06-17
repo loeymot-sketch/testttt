@@ -21,6 +21,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
 use Laravel\Sanctum\Sanctum;
 use Smartisan\Settings\Facades\Settings;
 use Tests\TestCase;
@@ -241,7 +242,11 @@ class KioskThrottleKeysTest extends TestCase
     {
         Sanctum::actingAs($user, ['kiosk:order']);
 
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+        // DISTINCT uuid per call: this helper is invoked in loops to exhaust the rate-limit. A shared key would make the
+        // FROZEN idempotency middleware replay a cached 2xx, masking the throttle 429 each iteration is meant to drive toward.
         return $this->withHeader('x-api-key', (string) config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->withServerVariables([
                 'REMOTE_ADDR' => '127.0.0.1',
                 'HTTP_ACCEPT' => 'application/json',

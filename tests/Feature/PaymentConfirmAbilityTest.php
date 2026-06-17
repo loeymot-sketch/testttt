@@ -11,6 +11,7 @@ use App\Models\KioskMachine;
 use App\Models\Order;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class PaymentConfirmAbilityTest extends TestCase
@@ -42,12 +43,15 @@ class PaymentConfirmAbilityTest extends TestCase
 
         $token = $kioskUser->createToken('kiosk-without-order-ability', ['kiosk:read'])->plainTextToken;
 
-        $response = $this->withToken($token)->postJson('/api/frontend/order/'.$order->id.'/payment-confirm', [
-            'transaction_id' => 'FK-M06-NO-ABILITY',
-            'card_type' => 'visa',
-            'payment_method' => PaymentGateway::CARD,
-            'amount_cents' => 5000,
-        ]);
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+        $response = $this->withToken($token)
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
+            ->postJson('/api/frontend/order/'.$order->id.'/payment-confirm', [
+                'transaction_id' => 'FK-M06-NO-ABILITY',
+                'card_type' => 'visa',
+                'payment_method' => PaymentGateway::CARD,
+                'amount_cents' => 5000,
+            ]);
 
         $response->assertStatus(403);
         $this->assertSame(PaymentStatus::UNPAID, (int) Order::withoutGlobalScopes()->findOrFail($order->id)->payment_status);

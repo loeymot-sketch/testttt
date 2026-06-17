@@ -12,6 +12,7 @@ use App\Models\Order;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class PaymentConfirmCrossBranchTest extends TestCase
@@ -44,12 +45,15 @@ class PaymentConfirmCrossBranchTest extends TestCase
 
         $token = $kioskUser->createToken('kiosk', ['kiosk:order'])->plainTextToken;
 
-        $this->withToken($token)->postJson('/api/frontend/order/'.$foreignOrder->id.'/payment-confirm', [
-            'transaction_id' => 'FK-M06-CROSS-BRANCH',
-            'card_type' => 'visa',
-            'payment_method' => PaymentGateway::CARD,
-            'amount_cents' => (int) round($foreignOrder->fresh()->total * 100),
-        ])->assertStatus(403);
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+        $this->withToken($token)
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
+            ->postJson('/api/frontend/order/'.$foreignOrder->id.'/payment-confirm', [
+                'transaction_id' => 'FK-M06-CROSS-BRANCH',
+                'card_type' => 'visa',
+                'payment_method' => PaymentGateway::CARD,
+                'amount_cents' => (int) round($foreignOrder->fresh()->total * 100),
+            ])->assertStatus(403);
 
         $this->assertSame(PaymentStatus::UNPAID, (int) Order::withoutGlobalScopes()->findOrFail($foreignOrder->id)->payment_status);
     }
@@ -72,12 +76,14 @@ class PaymentConfirmCrossBranchTest extends TestCase
 
         $token = $kioskUser->createToken('kiosk', ['kiosk:order'])->plainTextToken;
 
-        $this->withToken($token)->postJson('/api/frontend/order/'.$order->id.'/payment-confirm', [
-            'transaction_id' => 'FK-M06-CASH-AS-CARD',
-            'card_type' => 'visa',
-            'payment_method' => PaymentGateway::CARD,
-            'amount_cents' => (int) round($order->fresh()->total * 100),
-        ])->assertStatus(422);
+        $this->withToken($token)
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
+            ->postJson('/api/frontend/order/'.$order->id.'/payment-confirm', [
+                'transaction_id' => 'FK-M06-CASH-AS-CARD',
+                'card_type' => 'visa',
+                'payment_method' => PaymentGateway::CARD,
+                'amount_cents' => (int) round($order->fresh()->total * 100),
+            ])->assertStatus(422);
 
         $fresh = Order::withoutGlobalScopes()->findOrFail($order->id);
         $this->assertSame(PaymentStatus::UNPAID, (int) $fresh->payment_status);
@@ -123,8 +129,15 @@ class PaymentConfirmCrossBranchTest extends TestCase
             'amount_cents' => 5000, // [AUDIT-F-002] matches order.total=50.00
         ];
 
-        $this->withToken($token)->postJson('/api/frontend/order/'.$firstOrder->id.'/payment-confirm', $payload)->assertOk();
-        $this->withToken($token)->postJson('/api/frontend/order/'.$secondOrder->id.'/payment-confirm', $payload)->assertStatus(409);
+        // [prod-finale 2026-06-17] DISTINCT idempotency keys per POST: a shared key would return a cached 2xx
+        // replay from the FROZEN middleware and MASK the duplicate-TPE-reference 409 this test asserts. Distinct
+        // keys let both POSTs reach the controller, where the SECOND hits the transaction-reuse guard → 409.
+        $this->withToken($token)
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
+            ->postJson('/api/frontend/order/'.$firstOrder->id.'/payment-confirm', $payload)->assertOk();
+        $this->withToken($token)
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
+            ->postJson('/api/frontend/order/'.$secondOrder->id.'/payment-confirm', $payload)->assertStatus(409);
 
         $this->assertSame(PaymentStatus::UNPAID, (int) Order::withoutGlobalScopes()->findOrFail($secondOrder->id)->payment_status);
     }
@@ -147,12 +160,14 @@ class PaymentConfirmCrossBranchTest extends TestCase
 
         $token = $kioskUser->createToken('kiosk', ['kiosk:order'])->plainTextToken;
 
-        $this->withToken($token)->postJson('/api/frontend/order/'.$order->id.'/payment-confirm', [
-            'transaction_id' => 'FK-M06-NON-PENDING',
-            'card_type' => 'visa',
-            'payment_method' => PaymentGateway::CARD,
-            'amount_cents' => (int) round($order->fresh()->total * 100),
-        ])->assertStatus(422);
+        $this->withToken($token)
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
+            ->postJson('/api/frontend/order/'.$order->id.'/payment-confirm', [
+                'transaction_id' => 'FK-M06-NON-PENDING',
+                'card_type' => 'visa',
+                'payment_method' => PaymentGateway::CARD,
+                'amount_cents' => (int) round($order->fresh()->total * 100),
+            ])->assertStatus(422);
 
         $fresh = Order::withoutGlobalScopes()->findOrFail($order->id);
         $this->assertSame(PaymentStatus::UNPAID, (int) $fresh->payment_status);
@@ -178,18 +193,25 @@ class PaymentConfirmCrossBranchTest extends TestCase
 
         $token = $kioskUser->createToken('kiosk', ['kiosk:order'])->plainTextToken;
 
-        $this->withToken($token)->postJson('/api/frontend/order/'.$order->id.'/payment-confirm', [
-            'transaction_id' => 'FK-M06-PAID-ORIGINAL',
-            'card_type' => 'visa',
-            'payment_method' => PaymentGateway::CARD,
-            'amount_cents' => (int) round($order->fresh()->total * 100),
-        ])->assertOk();
+        // [prod-finale 2026-06-17] DISTINCT idempotency keys per POST: the test re-confirms the SAME order with
+        // a DIFFERENT transaction reference and asserts a NON-replay 409. A shared key would return the cached
+        // 2xx replay from the FROZEN middleware and MASK the already-paid/different-TPE 409 under test.
+        $this->withToken($token)
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
+            ->postJson('/api/frontend/order/'.$order->id.'/payment-confirm', [
+                'transaction_id' => 'FK-M06-PAID-ORIGINAL',
+                'card_type' => 'visa',
+                'payment_method' => PaymentGateway::CARD,
+                'amount_cents' => (int) round($order->fresh()->total * 100),
+            ])->assertOk();
 
-        $this->withToken($token)->postJson('/api/frontend/order/'.$order->id.'/payment-confirm', [
-            'transaction_id' => 'FK-M06-PAID-DIFFERENT',
-            'card_type' => 'visa',
-            'payment_method' => PaymentGateway::CARD,
-            'amount_cents' => (int) round($order->fresh()->total * 100),
-        ])->assertStatus(409);
+        $this->withToken($token)
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
+            ->postJson('/api/frontend/order/'.$order->id.'/payment-confirm', [
+                'transaction_id' => 'FK-M06-PAID-DIFFERENT',
+                'card_type' => 'visa',
+                'payment_method' => PaymentGateway::CARD,
+                'amount_cents' => (int) round($order->fresh()->total * 100),
+            ])->assertStatus(409);
     }
 }

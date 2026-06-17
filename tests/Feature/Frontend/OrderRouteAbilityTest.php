@@ -16,6 +16,7 @@ use App\Models\Tax;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Laravel\Sanctum\Sanctum;
 use Smartisan\Settings\Facades\Settings;
 use Tests\TestCase;
@@ -61,7 +62,9 @@ class OrderRouteAbilityTest extends TestCase
         // so OrderRequest::authorize() refuses the request with 403.
         Sanctum::actingAs($context['user'], []);
 
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $response = $this->withHeader('x-api-key', 'test-api-key')
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/frontend/order', $this->orderPayload($context['item']));
 
         $response->assertStatus(403);
@@ -75,6 +78,7 @@ class OrderRouteAbilityTest extends TestCase
         Sanctum::actingAs($context['user'], ['kiosk:order']);
 
         $response = $this->withHeader('x-api-key', 'test-api-key')
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/frontend/order', $this->orderPayload($context['item']));
 
         // The request must clear OrderRequest::authorize(). It may still fail
@@ -94,6 +98,7 @@ class OrderRouteAbilityTest extends TestCase
         Sanctum::actingAs($context['user'], ['*']);
 
         $response = $this->withHeader('x-api-key', 'test-api-key')
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/frontend/order', $this->orderPayload($context['item']));
 
         $this->assertNotSame(403, $response->status(), 'Wildcard token must satisfy kiosk:order ability gate (backward compat). Body: '.$response->getContent());
@@ -131,6 +136,7 @@ class OrderRouteAbilityTest extends TestCase
         Sanctum::actingAs($context['user'], ['unrelated:scope']);
 
         $response = $this->withHeader('x-api-key', 'test-api-key')
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson(sprintf('/api/frontend/order/%d/payment-confirm', $orderId), [
                 'transaction_id' => 'TX-TEST-001',
             ]);

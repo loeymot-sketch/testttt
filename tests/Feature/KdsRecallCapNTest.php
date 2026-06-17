@@ -11,6 +11,7 @@ use App\Models\OrderStatusTransition;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 /**
@@ -45,8 +46,12 @@ class KdsRecallCapNTest extends TestCase
             'status' => OrderStatus::PREPARED,
         ]);
 
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+        // DISTINCT keys per recall POST: a shared key would replay recall #1's cached 2xx and the controller-level
+        // cap-N=1 409 this test asserts on recall #2 would never be reached.
         // Recall #1 — inside the 60s window → 200.
         $this->actingAs($chef, 'sanctum')
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/kds-order/recall/'.$order->id)
             ->assertOk();
 
@@ -58,6 +63,7 @@ class KdsRecallCapNTest extends TestCase
 
         // Recall #2 — must be refused as already-recalled (cap N=1).
         $this->actingAs($chef, 'sanctum')
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/kds-order/recall/'.$order->id)
             ->assertStatus(409);
 

@@ -33,6 +33,7 @@ use App\Models\User;
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class KitchenRecallEndpointSentinelTest extends TestCase
@@ -86,7 +87,9 @@ class KitchenRecallEndpointSentinelTest extends TestCase
         // Order bumped 30s ago — well inside the 60s window.
         $order = $this->preparedOrder($branch, Carbon::now()->subSeconds(30));
 
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson($this->endpoint($order));
 
         $response->assertOk();
@@ -123,6 +126,7 @@ class KitchenRecallEndpointSentinelTest extends TestCase
         $order = $this->preparedOrder($branch, Carbon::now()->subSeconds(90));
 
         $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson($this->endpoint($order));
 
         $response->assertStatus(422);
@@ -144,7 +148,8 @@ class KitchenRecallEndpointSentinelTest extends TestCase
         $order = $this->preparedOrder($branch);
 
         // No actingAs — guest. KDS endpoints sit behind auth middleware.
-        $response = $this->postJson($this->endpoint($order));
+        $response = $this->withHeader('X-Idempotency-Key', (string) Str::uuid())
+            ->postJson($this->endpoint($order));
 
         $this->assertTrue(
             in_array($response->status(), [401, 403, 302, 419], true),
@@ -182,6 +187,7 @@ class KitchenRecallEndpointSentinelTest extends TestCase
         $this->actingAs($user, 'sanctum');
 
         $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson($this->endpoint($order));
 
         $this->assertTrue(
@@ -215,6 +221,7 @@ class KitchenRecallEndpointSentinelTest extends TestCase
         $this->assertSame(OrderStatus::PREPARED, $statusBefore, 'pre-recall status must be PREPARED');
 
         $this->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson($this->endpoint($order))
             ->assertOk();
 
@@ -239,13 +246,17 @@ class KitchenRecallEndpointSentinelTest extends TestCase
 
         $order = $this->preparedOrder($branch, Carbon::now()->subSeconds(10));
 
+        // DISTINCT keys per recall POST: a shared key would replay the first recall's cached 2xx and the
+        // controller-level cap-N=1 409 asserted on the second recall would never be reached.
         // First recall — must succeed.
         $this->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson($this->endpoint($order))
             ->assertOk();
 
         // Second recall on the same order — must 409.
         $second = $this->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson($this->endpoint($order));
 
         $second->assertStatus(409);
@@ -275,6 +286,7 @@ class KitchenRecallEndpointSentinelTest extends TestCase
         ]);
 
         $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson($this->endpoint($order));
 
         $response->assertStatus(422);
@@ -305,6 +317,7 @@ class KitchenRecallEndpointSentinelTest extends TestCase
         $orderB = $this->preparedOrder($branchB, Carbon::now()->subSeconds(10));
 
         $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/kds-order/recall/' . $orderB->id);
 
         $this->assertTrue(

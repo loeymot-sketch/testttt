@@ -16,6 +16,7 @@ use App\Models\OrderQuote;
 use App\Models\Tax;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -29,7 +30,9 @@ class KioskQuoteTokenRequiredOnCommitTest extends TestCase
 
         Sanctum::actingAs($kioskUser, ['kiosk:order']);
 
-        $this->postJson('/api/frontend/order', $payload)
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+        $this->withHeader('X-Idempotency-Key', (string) Str::uuid())
+            ->postJson('/api/frontend/order', $payload)
             ->assertStatus(422)
             ->assertJsonValidationErrors(['quote_token', 'quote_signature']);
     }
@@ -41,7 +44,8 @@ class KioskQuoteTokenRequiredOnCommitTest extends TestCase
 
         Sanctum::actingAs($kioskUser, ['kiosk:order']);
 
-        $this->postJson('/api/frontend/order', $payload + [
+        $this->withHeader('X-Idempotency-Key', (string) Str::uuid())
+            ->postJson('/api/frontend/order', $payload + [
                 'quote_token' => $quote['quote_token'],
             ])
             ->assertStatus(422)
@@ -55,6 +59,7 @@ class KioskQuoteTokenRequiredOnCommitTest extends TestCase
         OrderQuote::where('quote_token', $quote['quote_token'])->update(['expires_at' => now()->subSecond()]);
 
         $this->actingAs($kioskUser, 'sanctum')
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/frontend/order', $payload + [
                 'quote_token' => $quote['quote_token'],
                 'quote_signature' => $quote['signature'],
@@ -68,6 +73,7 @@ class KioskQuoteTokenRequiredOnCommitTest extends TestCase
         $quote = $this->quote($kioskUser, $payload);
 
         $response = $this->actingAs($kioskUser, 'sanctum')
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/frontend/order', $payload + [
                 'quote_token' => $quote['quote_token'],
                 'quote_signature' => $quote['signature'],

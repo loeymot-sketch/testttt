@@ -17,6 +17,7 @@ use App\Models\Order;
 use App\Models\OrderStatusTransition;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Smartisan\Settings\Facades\Settings;
 use Tests\TestCase;
 
@@ -99,8 +100,10 @@ class CancelReasonEnforceTest extends TestCase
 
         $kioskToken = $this->kioskUser->createToken('kiosk-f004', ['kiosk:order'])->plainTextToken;
 
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $response = $this->withHeader('Authorization', 'Bearer ' . $kioskToken)
             ->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson("/api/frontend/order/change-status/{$order->id}", [
                 'status' => OrderStatus::CANCELED,
             ]);
@@ -125,6 +128,7 @@ class CancelReasonEnforceTest extends TestCase
 
         $response = $this->withHeader('Authorization', 'Bearer ' . $kioskToken)
             ->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson("/api/frontend/order/change-status/{$order->id}", [
                 'status' => OrderStatus::CANCELED,
                 'reason' => 'totally_made_up_code',
@@ -143,6 +147,7 @@ class CancelReasonEnforceTest extends TestCase
 
         $response = $this->withHeader('Authorization', 'Bearer ' . $kioskToken)
             ->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson("/api/frontend/order/change-status/{$order->id}", [
                 'status' => OrderStatus::CANCELED,
                 'reason' => OrderCancelReason::TPE_CANCEL_USER,
@@ -170,6 +175,7 @@ class CancelReasonEnforceTest extends TestCase
 
         $response = $this->actingAs($this->admin)
             ->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson("/api/admin/pos-order/change-status/{$order->id}", [
                 'status' => OrderStatus::CANCELED,
                 'reason' => 'Client désistement', // free-text, NOT in enum
@@ -194,6 +200,7 @@ class CancelReasonEnforceTest extends TestCase
 
         $response = $this->actingAs($this->admin)
             ->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson("/api/admin/pos-order/change-status/{$order->id}", [
                 'status' => OrderStatus::CANCELED,
             ]);
@@ -210,6 +217,7 @@ class CancelReasonEnforceTest extends TestCase
 
         $response = $this->actingAs($this->admin)
             ->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson("/api/admin/pos-order/change-status/{$order->id}", [
                 'status' => OrderStatus::ACCEPT,
             ]);

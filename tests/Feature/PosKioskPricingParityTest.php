@@ -21,6 +21,7 @@ use App\Models\Tax;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Tests\Feature\Concerns\HasPosQuoteBinding;
 use Tests\Feature\Pos\Traits\SeedsOpenCashDrawerSession;
 use Tests\TestCase;
@@ -192,7 +193,9 @@ class PosKioskPricingParityTest extends TestCase
             'items' => json_encode([$line]),
         ];
 
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos', $this->payloadWithPosQuote($this->posOperator, $payload));
 
         $response->assertCreated();
@@ -237,6 +240,7 @@ class PosKioskPricingParityTest extends TestCase
 
         $response = $this->actingAs($this->customer, 'sanctum')
             ->withHeader('x-api-key', (string) config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/frontend/order', $this->payloadWithKioskQuote($this->customer, $payload));
 
         $this->assertContains($response->status(), [200, 201], $response->getContent());

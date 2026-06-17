@@ -17,6 +17,7 @@ use App\Models\StockLevel;
 use App\Models\Tax;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Tests\Feature\Concerns\HasPosQuoteBinding;
 use Tests\TestCase;
 
@@ -38,8 +39,10 @@ class StockDecrementFrontendOrderServiceTest extends TestCase
             'reserved' => 0,
         ]);
 
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $response = $this->actingAs($kioskUser, 'sanctum')
             ->withHeader('x-api-key', 'test-api-key')
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/frontend/order', $this->payloadWithKioskQuote($kioskUser, $payload));
 
         $this->assertContains($response->status(), [200, 201], $response->getContent());

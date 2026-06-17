@@ -15,6 +15,7 @@ use App\Models\LoyaltyTransaction;
 use App\Models\Order;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Laravel\Sanctum\Sanctum;
 use Smartisan\Settings\Facades\Settings;
 use Tests\TestCase;
@@ -87,12 +88,17 @@ class KioskLoyaltyDoubleRedeemRefusedTest extends TestCase
     {
         Sanctum::actingAs($this->kioskUser, ['kiosk:order']);
 
-        $this->postJson('/api/frontend/loyalty/redeem', [
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+        // The /loyalty/redeem pre-debit and the /order commit are DISTINCT guarded routes, so each gets its own
+        // fresh key — they never collide as a "replay" of one another.
+        $this->withHeader('X-Idempotency-Key', (string) Str::uuid())
+            ->postJson('/api/frontend/loyalty/redeem', [
             'code' => $this->loyaltyCustomer->loyalty_code,
             'points' => 100,
         ])->assertOk();
 
-        $response = $this->postJson('/api/frontend/order', $this->orderPayload([
+        $response = $this->withHeader('X-Idempotency-Key', (string) Str::uuid())
+            ->postJson('/api/frontend/order', $this->orderPayload([
             'discount' => 1.00,
             'loyalty_code' => $this->loyaltyCustomer->loyalty_code,
         ]));
@@ -119,7 +125,8 @@ class KioskLoyaltyDoubleRedeemRefusedTest extends TestCase
     {
         Sanctum::actingAs($this->kioskUser, ['kiosk:order']);
 
-        $response = $this->postJson('/api/frontend/order', $this->orderPayload([
+        $response = $this->withHeader('X-Idempotency-Key', (string) Str::uuid())
+            ->postJson('/api/frontend/order', $this->orderPayload([
             'discount' => 1.00,
             'loyalty_code' => $this->loyaltyCustomer->loyalty_code,
         ]));
@@ -140,12 +147,14 @@ class KioskLoyaltyDoubleRedeemRefusedTest extends TestCase
     {
         Sanctum::actingAs($this->kioskUser, ['kiosk:order']);
 
-        $this->postJson('/api/frontend/loyalty/redeem', [
+        $this->withHeader('X-Idempotency-Key', (string) Str::uuid())
+            ->postJson('/api/frontend/loyalty/redeem', [
             'code' => $this->loyaltyCustomer->loyalty_code,
             'points' => 100,
         ])->assertOk();
 
-        $this->postJson('/api/frontend/order', $this->orderPayload([
+        $this->withHeader('X-Idempotency-Key', (string) Str::uuid())
+            ->postJson('/api/frontend/order', $this->orderPayload([
             'discount' => 0.50,
             'loyalty_code' => $this->loyaltyCustomer->loyalty_code,
         ]))->assertStatus(422);
@@ -199,7 +208,14 @@ class KioskLoyaltyDoubleRedeemRefusedTest extends TestCase
 
         $before = (int) $this->loyaltyCustomer->fresh()->loyalty_points;
 
-        $this->postJson('/api/frontend/loyalty/redeem', [
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+        // This guest has branch_id=0 and NO KioskMachine pivot, so the middleware resolves its branch scope from
+        // the payload `branch_id` (exactly as the live kiosk client posts it). The IDOR 403 then fires INSIDE the
+        // controller (non-kiosk, non-owner caller redeeming a FOREIGN code) — branch_id only scopes the
+        // idempotency key, it does NOT alter the authorization outcome under test.
+        $this->withHeader('X-Idempotency-Key', (string) Str::uuid())
+            ->postJson('/api/frontend/loyalty/redeem', [
+            'branch_id' => $this->branch->id,
             'code' => $this->loyaltyCustomer->loyalty_code, // FOREIGN code
             'points' => 100,
         ])->assertStatus(403);
@@ -227,7 +243,8 @@ class KioskLoyaltyDoubleRedeemRefusedTest extends TestCase
 
         $before = (int) $this->loyaltyCustomer->fresh()->loyalty_points;
 
-        $this->postJson('/api/frontend/loyalty/redeem', [
+        $this->withHeader('X-Idempotency-Key', (string) Str::uuid())
+            ->postJson('/api/frontend/loyalty/redeem', [
             'code' => $this->loyaltyCustomer->loyalty_code,
             'points' => 100,
         ])->assertStatus(422);

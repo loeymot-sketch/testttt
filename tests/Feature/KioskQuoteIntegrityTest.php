@@ -17,6 +17,7 @@ use App\Models\OrderQuote;
 use App\Models\Tax;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class KioskQuoteIntegrityTest extends TestCase
@@ -33,8 +34,10 @@ class KioskQuoteIntegrityTest extends TestCase
             ->assertOk()
             ->json('data');
 
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $response = $this->actingAs($kioskUser, 'sanctum')
             ->withHeader('x-api-key', 'test-api-key')
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/frontend/order', $payload + [
                 'quote_token' => $quote['quote_token'],
                 'quote_signature' => $quote['signature'],
@@ -76,6 +79,7 @@ class KioskQuoteIntegrityTest extends TestCase
 
         $this->actingAs($kioskUser, 'sanctum')
             ->withHeader('x-api-key', 'test-api-key')
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/frontend/order', $tamperedPayload + [
                 'quote_token' => $quote['quote_token'],
                 'quote_signature' => $quote['signature'],

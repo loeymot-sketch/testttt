@@ -10,6 +10,7 @@ use App\Models\FrontendOrder;
 use App\Models\KioskMachine;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -34,7 +35,9 @@ class KioskPaymentConfirmAmountTest extends TestCase
     {
         $order = $this->createKioskCardOrder(50.00);
 
-        $response = $this->postJson("/api/frontend/order/{$order->id}/payment-confirm", [
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+        $response = $this->withHeader('X-Idempotency-Key', (string) Str::uuid())
+            ->postJson("/api/frontend/order/{$order->id}/payment-confirm", [
             'transaction_id' => 'TX-FRAUD-' . uniqid(),
             'card_type'      => 'VISA',
             'payment_method' => PaymentGateway::CARD,
@@ -54,7 +57,8 @@ class KioskPaymentConfirmAmountTest extends TestCase
     {
         $order = $this->createKioskCardOrder(50.00);
 
-        $response = $this->postJson("/api/frontend/order/{$order->id}/payment-confirm", [
+        $response = $this->withHeader('X-Idempotency-Key', (string) Str::uuid())
+            ->postJson("/api/frontend/order/{$order->id}/payment-confirm", [
             'transaction_id' => 'TX-OVER-' . uniqid(),
             'card_type'      => 'VISA',
             'payment_method' => PaymentGateway::CARD,
@@ -69,7 +73,8 @@ class KioskPaymentConfirmAmountTest extends TestCase
     {
         $order = $this->createKioskCardOrder(50.00);
 
-        $response = $this->postJson("/api/frontend/order/{$order->id}/payment-confirm", [
+        $response = $this->withHeader('X-Idempotency-Key', (string) Str::uuid())
+            ->postJson("/api/frontend/order/{$order->id}/payment-confirm", [
             'transaction_id' => 'TX-OK-' . uniqid(),
             'card_type'      => 'VISA',
             'payment_method' => PaymentGateway::CARD,
@@ -95,7 +100,8 @@ class KioskPaymentConfirmAmountTest extends TestCase
         // total = 50.01€ stored, amount_cents = 5000 (1 cent diff) → tolérance OK
         $order = $this->createKioskCardOrder(50.01);
 
-        $response = $this->postJson("/api/frontend/order/{$order->id}/payment-confirm", [
+        $response = $this->withHeader('X-Idempotency-Key', (string) Str::uuid())
+            ->postJson("/api/frontend/order/{$order->id}/payment-confirm", [
             'transaction_id' => 'TX-CENT-' . uniqid(),
             'card_type'      => 'VISA',
             'payment_method' => PaymentGateway::CARD,
@@ -118,7 +124,8 @@ class KioskPaymentConfirmAmountTest extends TestCase
     {
         $order = $this->createKioskCardOrder(50.00);
 
-        $response = $this->postJson("/api/frontend/order/{$order->id}/payment-confirm", [
+        $response = $this->withHeader('X-Idempotency-Key', (string) Str::uuid())
+            ->postJson("/api/frontend/order/{$order->id}/payment-confirm", [
             'transaction_id' => 'TX-NOAMT-' . uniqid(),
             'card_type'      => 'VISA',
             'payment_method' => PaymentGateway::CARD,
@@ -138,7 +145,9 @@ class KioskPaymentConfirmAmountTest extends TestCase
     {
         foreach ([0, -1, -5000] as $invalid) {
             $order = $this->createKioskCardOrder(50.00);
-            $response = $this->postJson("/api/frontend/order/{$order->id}/payment-confirm", [
+            // Fresh key per iteration: each POST targets a distinct order and asserts its own 422.
+            $response = $this->withHeader('X-Idempotency-Key', (string) Str::uuid())
+                ->postJson("/api/frontend/order/{$order->id}/payment-confirm", [
                 'transaction_id' => 'TX-NEG-' . uniqid(),
                 'card_type'      => 'VISA',
                 'payment_method' => PaymentGateway::CARD,

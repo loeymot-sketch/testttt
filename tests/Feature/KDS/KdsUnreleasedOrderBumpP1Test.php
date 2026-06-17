@@ -12,6 +12,7 @@ use App\Models\Branch;
 use App\Models\Order;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 /**
@@ -51,7 +52,10 @@ class KdsUnreleasedOrderBumpP1Test extends TestCase
 
     private function bump(Order $order)
     {
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+        // bump() is called exactly once per test, so a fresh uuid here gives every POST its own distinct key.
         return $this->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/kds-order/change-status/' . $order->id, [
                 'status' => OrderStatus::PREPARING,
                 'expected_status' => OrderStatus::ACCEPT,
