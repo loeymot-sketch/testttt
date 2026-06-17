@@ -34,7 +34,8 @@
 .lab-copy:before, .lab-duplicate:before, .lab-add:before, .lab-add-line:before { content: "\e06c"; } /* → lab-add-circle */
 .lab-delete-line:before { content: "\e02c"; } /* → lab-delete */
 .lab-refresh:before, .lab-refresh-line:before, .lab-redo:before { content: "\e002"; } /* → lab-update */
-.lab-warning:before, .lab-error:before { content: "\e055"; } /* → lab-information */
+.lab-warning:before { content: "\e055"; } /* → lab-information (warning shares the info glyph; severity also carried by color) */
+.lab-error:before { content: "\e05e"; } /* → lab-close-circle-line (distinct X for blocker/error severity) */
 .lab-history:before { content: "\e004"; } /* → lab-time-slots */
 .lab-toggle-on:before, .lab-check:before, .lab-check-circle:before { content: "\e042"; } /* → lab-tick-circle */
 .lab-close-circle:before { content: "\e05e"; } /* → lab-close-circle-line */

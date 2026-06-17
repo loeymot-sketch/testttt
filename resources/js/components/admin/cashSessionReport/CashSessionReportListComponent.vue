@@ -245,8 +245,13 @@ export default {
             }
         },
         formatMoney(v) {
+            // [uiux-deep 2026-06-17] FR currency (was en-US toFixed "82.50" with no symbol).
             const n = Number(v || 0);
-            return n.toFixed(2);
+            try {
+                return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(n);
+            } catch (_e) {
+                return n.toFixed(2).replace('.', ',') + ' €';
+            }
         },
         varianceClass(v) {
             if (v === null || v === undefined) return '';

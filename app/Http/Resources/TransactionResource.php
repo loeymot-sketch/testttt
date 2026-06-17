@@ -22,10 +22,11 @@ class TransactionResource extends JsonResource
             'order_serial_no' => $this->order?->order_serial_no,
             'transaction_no'  => $this->transaction_no,
             'amount'          => AppLibrary::flatAmountFormat($this->amount),
+            'currency_amount' => AppLibrary::currencyAmountFormat($this->amount),
             'payment_method'  => strtoupper($this->payment_method),
             'type'            => $this->type,
             'sign'            => $this->sign,
-            'date'            => AppLibrary::datetime($this->created_at)
+            'date'            => AppLibrary::datetime($this->created_at, 'H:i, d-m-Y')
         ];
     }
 }

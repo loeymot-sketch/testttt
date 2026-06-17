@@ -193,9 +193,9 @@
                         <tr class="db-table-body-tr" v-for="salesReport in salesReports" :key="salesReport">
                             <td class="db-table-body-td">{{ salesReport.order_serial_no }}</td>
                             <td class="db-table-body-td">{{ salesReport.order_datetime }}</td>
-                            <td class="db-table-body-td">{{ salesReport.total_amount_price }}</td>
-                            <td class="db-table-body-td">{{ salesReport.discount_amount_price }}</td>
-                            <td class="db-table-body-td">{{ salesReport.delivery_charge_amount_price }}</td>
+                            <td class="db-table-body-td">{{ salesReport.total_currency_price }}</td>
+                            <td class="db-table-body-td">{{ salesReport.discount_currency_price }}</td>
+                            <td class="db-table-body-td">{{ salesReport.delivery_charge_currency_price }}</td>
                             <td class="db-table-body-td">
                                 <span v-if="salesReport.transaction">
                                     {{ salesReport.transaction }}
@@ -292,15 +292,15 @@ export default {
         const date = ref();
 
         const presetRanges = ref([
-            { label: 'Today', range: [new Date(), new Date()] },
-            { label: 'This month', range: [startOfMonth(new Date()), endOfMonth(new Date())] },
+            { label: "Aujourd'hui", range: [new Date(), new Date()] },
+            { label: 'Ce mois', range: [startOfMonth(new Date()), endOfMonth(new Date())] },
             {
-                label: 'Last month',
+                label: 'Mois dernier',
                 range: [startOfMonth(subMonths(new Date(), 1)), endOfMonth(subMonths(new Date(), 1))],
             },
-            { label: 'This year', range: [startOfYear(new Date()), endOfYear(new Date())] },
+            { label: 'Cette année', range: [startOfYear(new Date()), endOfYear(new Date())] },
             {
-                label: 'This year (slot)',
+                label: 'Cette année (créneau)',
                 range: [startOfYear(new Date()), endOfYear(new Date())],
                 slot: 'yearly',
             },

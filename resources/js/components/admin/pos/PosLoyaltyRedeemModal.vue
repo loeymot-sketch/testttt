@@ -310,7 +310,7 @@ export default {
                         : null;
                     const eur = Number(data.discount_eur) || 0;
                     this.successMessage = this.$t('pos.loyalty.redeem.success', {
-                        amount: `${eur.toFixed(2)} €`,
+                        amount: `${eur.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`,
                     });
                     this.lastResponse = data;
                     this.$emit('applied', data);

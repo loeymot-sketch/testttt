@@ -19,7 +19,7 @@ class SubscriberResource extends JsonResource
         return [
             "id"          => $this->id,
             "email"       => $this->email,
-            'date_time'   => AppLibrary::datetime($this->created_at),
+            'date_time'   => AppLibrary::datetime($this->created_at, 'H:i, d-m-Y'),
             'create_date' => AppLibrary::date($this->created_at),
             'update_date' => AppLibrary::date($this->updated_at)
         ];

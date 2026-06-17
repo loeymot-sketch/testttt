@@ -35,9 +35,9 @@ class KDSOrderDetailsResource extends JsonResource
             // `<time :datetime="order.updated_at">{{ formatTime(order.updated_at) }}</time>`
             // — without exposing updated_at the bumped-at cell is permanently empty.
             'updated_at'                          => $this->updated_at?->toIso8601String(),
-            'order_datetime'                      => AppLibrary::datetime($this->order_datetime),
+            'order_datetime'                      => AppLibrary::datetime($this->order_datetime, 'H:i, d-m-Y'),
             'order_date'                          => AppLibrary::date($this->order_datetime),
-            'order_time'                          => AppLibrary::time($this->order_datetime),
+            'order_time'                          => AppLibrary::time($this->order_datetime, 'H:i'),
             'delivery_date'                       => $this->is_advance_order == Ask::YES ? AppLibrary::increaseDate($this->order_datetime, 1) : AppLibrary::date($this->order_datetime),
             'delivery_time'                       => $this->is_advance_order == Ask::YES ? AppLibrary::deliveryTime($this->delivery_time) : AppLibrary::deliveryTimeCheck($this->delivery_time),
             'is_advance_order'                    => $this->is_advance_order,

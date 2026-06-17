@@ -5680,6 +5680,7 @@ input:checked + div svg {
 .db-list.single .db-list-item-title {
   width: 100%;
   max-width: 100%;
+  white-space: normal;
 }
 @media (min-width: 640px) {
 

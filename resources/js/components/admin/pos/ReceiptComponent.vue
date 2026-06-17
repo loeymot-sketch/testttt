@@ -513,7 +513,9 @@ export default {
             const decimal = Number(this.$store?.getters?.['setting/lists']?.site_digit_after_decimal_point ?? 2);
             const symbol = String(this.$store?.getters?.['setting/lists']?.site_default_currency_symbol ?? '€');
             const position = Number(this.$store?.getters?.['setting/lists']?.site_currency_position ?? 0);
-            const formatted = n.toFixed(Number.isFinite(decimal) ? decimal : 2);
+            // [uiux-deep 2026-06-17] FR grouping/decimal so the ticket addon line matches the rest (was en-US toFixed "4.25").
+            const d = Number.isFinite(decimal) ? decimal : 2;
+            const formatted = n.toLocaleString('fr-FR', { minimumFractionDigits: d, maximumFractionDigits: d });
             // 0 = LEFT (per currencyPositionEnum), 1 = RIGHT
             return position === 0 ? `${symbol}${formatted}` : `${formatted}${symbol}`;
         },

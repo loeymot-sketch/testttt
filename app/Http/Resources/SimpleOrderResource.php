@@ -34,7 +34,7 @@ class SimpleOrderResource extends JsonResource
             'id'                           => $this->id,
             'order_serial_no'              => $this->order_serial_no,
             'queue_number'                 => $this->queue_number,
-            'order_datetime'               => AppLibrary::datetime($this->order_datetime),
+            'order_datetime'               => AppLibrary::datetime($this->order_datetime, 'H:i, d-m-Y'),
             // [WT-D-R1-F4 2026-05-20] Raw numeric `total` for canonical FR EUR
             // rendering via the shared `formatPrice()` helper on admin surfaces
             // (PosOrderListComponent, tracker). Mirrors OrderDetailsResource
@@ -49,7 +49,9 @@ class SimpleOrderResource extends JsonResource
             "total_currency_price"         => AppLibrary::currencyAmountFormat($this->total),
             "total_amount_price"           => AppLibrary::flatAmountFormat($this->total),
             "discount_amount_price"        => AppLibrary::flatAmountFormat($this->discount),
+            "discount_currency_price"      => AppLibrary::currencyAmountFormat($this->discount),
             "delivery_charge_amount_price" => AppLibrary::flatAmountFormat($this->delivery_charge),
+            "delivery_charge_currency_price" => AppLibrary::currencyAmountFormat($this->delivery_charge),
             'payment_method'               => $this->payment_method,
             'payment_status'               => $this->payment_status,
             'transaction'                  => $this->transaction ? strtoupper($this->transaction?->payment_method) : null,

@@ -350,8 +350,15 @@ export default {
             }
         },
         formatPrice(value) {
-            if (value === null || value === undefined) return '';
-            return value;
+            // [uiux-deep 2026-06-17] FR currency render (was a passthrough that leaked en-US "4.25").
+            if (value === null || value === undefined || value === '') return '';
+            const n = Number(String(value).replace(',', '.'));
+            if (!Number.isFinite(n)) return value;
+            try {
+                return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(n);
+            } catch (_e) {
+                return n.toFixed(2).replace('.', ',') + ' €';
+            }
         },
         stepsForChannel(channelKey) {
             if (!Array.isArray(this.steps)) return [];

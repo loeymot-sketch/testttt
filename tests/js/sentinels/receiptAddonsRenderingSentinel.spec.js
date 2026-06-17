@@ -186,8 +186,9 @@ describe('G2-HEAL-03 / G5-F-002 P1 — Receipt addons rendering', () => {
             const html = wrapper.html();
             // line_total = 1.20 must appear; catalog_price = 3.00 must NOT.
             // Use the formatted currency strings (right-position, € suffix).
-            expect(html).toMatch(/\+1\.20\s*€/);
-            expect(html).toMatch(/\+1\.80\s*€/);
+            // [uiux-deep 2026-06-17] addon price now FR-formatted (comma) — was en-US toFixed "1.20".
+            expect(html).toMatch(/\+1,20\s*€/);
+            expect(html).toMatch(/\+1,80\s*€/);
             // 3.00 (catalog) should NEVER be rendered for these addon lines.
             // Note: the order total (11,00 €) is fine — we test the addon string
             // shape specifically.
@@ -206,8 +207,8 @@ describe('G2-HEAL-03 / G5-F-002 P1 — Receipt addons rendering', () => {
             expect(kitchenText).toContain('Coca-Cola');
             expect(kitchenText).toContain('Frites');
             // Kitchen prep tickets do NOT render prices
-            expect(kitchenText).not.toMatch(/1\.20\s*€/);
-            expect(kitchenText).not.toMatch(/€\s*1\.20/);
+            expect(kitchenText).not.toMatch(/1,20\s*€/);
+            expect(kitchenText).not.toMatch(/€\s*1,20/);
         });
 
         it('does not render addon block when item_addons is empty (no empty extras gap)', () => {

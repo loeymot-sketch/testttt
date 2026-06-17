@@ -45,7 +45,7 @@ class MessageResource extends JsonResource
                     "text"       => $history->text,
                     "image"      => $history->image,
                     "is_read"    => trans('ask.' . $history->is_read),
-                    "reply_at"   => AppLibrary::datetime($history->created_at)
+                    "reply_at"   => AppLibrary::datetime($history->created_at, 'H:i, d-m-Y')
                 ];
             }
         }

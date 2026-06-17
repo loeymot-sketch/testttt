@@ -29,8 +29,8 @@ class CouponResource extends JsonResource
             "currency_discount" => AppLibrary::currencyAmountFormat($this->discount),
 
             'discount_type'      => $this->discount_type === null ? 5 : $this->discount_type,
-            'convert_start_date' => AppLibrary::datetime($this->start_date),
-            'convert_end_date'   => AppLibrary::datetime($this->end_date),
+            'convert_start_date' => AppLibrary::datetime($this->start_date, 'd-m-Y'),
+            'convert_end_date'   => AppLibrary::datetime($this->end_date, 'd-m-Y'),
             'start_date'         => !blank($this->start_date) ? $this->start_date : "",
             'end_date'           => !blank($this->end_date) ? $this->end_date : "",
 

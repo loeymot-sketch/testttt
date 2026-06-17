@@ -7861,7 +7861,10 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
                 _this2.customerBalance = Number.isFinite(data.balance_after) ? data.balance_after : null;
                 eur = Number(data.discount_eur) || 0;
                 _this2.successMessage = _this2.$t('pos.loyalty.redeem.success', {
-                  amount: "".concat(eur.toFixed(2), " \u20AC")
+                  amount: "".concat(eur.toLocaleString('fr-FR', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                  }), " \u20AC")
                 });
                 _this2.lastResponse = data;
                 _this2.$emit('applied', data);
@@ -8882,7 +8885,12 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
       var decimal = Number((_this$$store$getters$ = (_this$$store2 = this.$store) === null || _this$$store2 === void 0 || (_this$$store2 = _this$$store2.getters) === null || _this$$store2 === void 0 || (_this$$store2 = _this$$store2['setting/lists']) === null || _this$$store2 === void 0 ? void 0 : _this$$store2.site_digit_after_decimal_point) !== null && _this$$store$getters$ !== void 0 ? _this$$store$getters$ : 2);
       var symbol = String((_this$$store$getters$2 = (_this$$store3 = this.$store) === null || _this$$store3 === void 0 || (_this$$store3 = _this$$store3.getters) === null || _this$$store3 === void 0 || (_this$$store3 = _this$$store3['setting/lists']) === null || _this$$store3 === void 0 ? void 0 : _this$$store3.site_default_currency_symbol) !== null && _this$$store$getters$2 !== void 0 ? _this$$store$getters$2 : '€');
       var position = Number((_this$$store$getters$3 = (_this$$store4 = this.$store) === null || _this$$store4 === void 0 || (_this$$store4 = _this$$store4.getters) === null || _this$$store4 === void 0 || (_this$$store4 = _this$$store4['setting/lists']) === null || _this$$store4 === void 0 ? void 0 : _this$$store4.site_currency_position) !== null && _this$$store$getters$3 !== void 0 ? _this$$store$getters$3 : 0);
-      var formatted = n.toFixed(Number.isFinite(decimal) ? decimal : 2);
+      // [uiux-deep 2026-06-17] FR grouping/decimal so the ticket addon line matches the rest (was en-US toFixed "4.25").
+      var d = Number.isFinite(decimal) ? decimal : 2;
+      var formatted = n.toLocaleString('fr-FR', {
+        minimumFractionDigits: d,
+        maximumFractionDigits: d
+      });
       // 0 = LEFT (per currencyPositionEnum), 1 = RIGHT
       return position === 0 ? "".concat(symbol).concat(formatted) : "".concat(formatted).concat(symbol);
     },

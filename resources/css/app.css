@@ -568,7 +568,7 @@ body { @apply text-base font-normal font-rubik scroll-smooth text-paragraph bg-w
     .db-list-item-title { @apply ltr:text-left rtl:text-right text-sm capitalize font-semibold whitespace-nowrap after:inline-block sm:after:hidden after:content-[':'] after:pl-1 text-heading }
     .db-list-item-text { @apply ltr:text-left rtl:text-right text-sm }
     
-    .db-list.single .db-list-item-title { @apply w-full max-w-full sm:max-w-[180px] }
+    .db-list.single .db-list-item-title { @apply w-full max-w-full sm:max-w-[180px] whitespace-normal }
     .db-list.single .db-list-item-text { @apply w-full }
 
     .db-list.multiple { @apply flex-row flex-wrap }    
