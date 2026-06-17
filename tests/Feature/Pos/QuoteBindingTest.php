@@ -16,6 +16,7 @@ use App\Models\OrderQuote;
 use App\Models\Tax;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Tests\Feature\Pos\Traits\SeedsOpenCashDrawerSession;
 use Tests\TestCase;
 
@@ -29,8 +30,13 @@ class QuoteBindingTest extends TestCase
         config(['app.api_key' => 'test-api-key']);
         [$operator, $payload] = $this->fixture();
 
+        // [prod-finale 2026-06-17] /api/admin/pos carries the idempotency middleware (routes/api.php:814) →
+        // the X-Idempotency-Key header is required (the live caisse UI sends it: PosComponent.vue stamps
+        // idempotency_key + usePosOfflineState posts it). Without it the request 422s BEFORE the quote check,
+        // masking the 401 this test asserts. Test-fixture fix only; product/middleware (FROZEN) unchanged.
         $this->actingAs($operator, 'sanctum')
             ->withHeader('x-api-key', 'test-api-key')
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos', $payload)
             ->assertStatus(401);
 
@@ -55,6 +61,7 @@ class QuoteBindingTest extends TestCase
 
         $response = $this->actingAs($operator, 'sanctum')
             ->withHeader('x-api-key', 'test-api-key')
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos', array_merge($payload, [
                 'quote_token' => $quote['quote_token'],
                 'quote_signature' => $quote['signature'],
@@ -96,6 +103,7 @@ class QuoteBindingTest extends TestCase
 
         $this->actingAs($otherOperator, 'sanctum')
             ->withHeader('x-api-key', 'test-api-key')
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos', array_merge($payload, [
                 'quote_token' => $quote['quote_token'],
                 'quote_signature' => $quote['signature'],
@@ -125,13 +133,19 @@ class QuoteBindingTest extends TestCase
             'pos_received_amount' => $quote['total_ttc'],
         ]);
 
+        // [prod-finale 2026-06-17] DISTINCT idempotency keys per POST: re-using one key would make the
+        // FROZEN idempotency middleware return a cached 2xx replay and MASK the quote-replay 409 this test
+        // asserts. Distinct keys let both requests reach the controller, where the SECOND hits the
+        // already-consumed-quote guard → 409 (the real behavior under test).
         $first = $this->actingAs($operator, 'sanctum')
             ->withHeader('x-api-key', 'test-api-key')
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos', $commitPayload);
         $this->assertContains($first->status(), [200, 201], $first->getContent());
 
         $this->actingAs($operator, 'sanctum')
             ->withHeader('x-api-key', 'test-api-key')
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos', $commitPayload)
             ->assertStatus(409);
 

@@ -108,7 +108,7 @@
                             </td>
                             <td class="db-table-body-td">
                                 <span :class="statusClass(order.order_type)">
-                                    {{ enums.orderTypeEnumArray[order.order_type] }}
+                                    {{ enums.orderTypeEnumArray[order.order_type] || '—' }}
                                 </span>
                             </td>
                             <td class="db-table-body-td">

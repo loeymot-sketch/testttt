@@ -16,6 +16,7 @@ use App\Models\Tax;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Tests\Feature\Concerns\HasPosQuoteBinding;
 use Tests\Feature\Pos\Traits\SeedsOpenCashDrawerSession;
 use Tests\TestCase;
@@ -109,7 +110,9 @@ class PosPricingSsotProofTest extends TestCase
             ]),
         ];
 
-        $response = $this->postJson('/api/admin/pos', $this->payloadWithPosQuote($posUser, $payload, $serverExpectedTotal));
+        // [prod-finale 2026-06-17] /api/admin/pos requires X-Idempotency-Key (frozen middleware, live UI sends it).
+        $response = $this->withHeader('X-Idempotency-Key', (string) Str::uuid())
+            ->postJson('/api/admin/pos', $this->payloadWithPosQuote($posUser, $payload, $serverExpectedTotal));
 
         $this->assertContains(
             $response->status(),
