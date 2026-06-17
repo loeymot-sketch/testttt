@@ -55,7 +55,13 @@ export default {
             if (! iso) return '';
             const d = new Date(iso);
             if (Number.isNaN(d.getTime())) return String(iso);
-            return d.toLocaleString();
+            // [prod-finale 2026-06-17] FR-locked + Paris-TZ pinned (was browser-default toLocaleString →
+            // en-US 12h on an en-US browser / wrong hour on a UTC browser). Read-side only, NF525-safe.
+            try {
+                return new Intl.DateTimeFormat('fr-FR', { dateStyle: 'short', timeStyle: 'short', hour12: false, timeZone: 'Europe/Paris' }).format(d);
+            } catch (_e) {
+                return d.toLocaleString('fr-FR');
+            }
         },
     },
     mounted() {

@@ -36,12 +36,15 @@ export default {
         fetchData() {
             this.$store.dispatch('dashboard/channelStatistics').then(res => {
                 this.stats = res.data.data;
+            }).catch(() => {
+                // [prod-finale 2026-06-17] keep last-good bars instead of silently empty on a failed fetch.
             });
         },
         getColor(name) {
             if(name === 'Web') return 'bg-blue-500';
             if(name === 'Kiosk/App') return 'bg-orange-500';
             if(name === 'POS') return 'bg-purple-500';
+            if(name === 'Livraison') return 'bg-emerald-500';
             return 'bg-gray-500';
         }
     }

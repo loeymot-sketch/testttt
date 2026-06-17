@@ -765,6 +765,8 @@
         "delivery_cash_mvt_drawer_close": "Drawer closed",
         "delivery_cash_mvt_adjustment": "Adjustment",
         "audit_event_user_login": "User login",
+        "audit_event_fiscal_orphan_backfilled": "Fiscal orphan regularized",
+        "audit_event_order_payment_status_change_blocked": "Payment status change blocked",
         "audit_event_user_logout": "User logout",
         "audit_event_cash_movement_recorded": "Cash movement recorded",
         "audit_event_cash_delivery_session_opened": "Delivery cash session opened",

@@ -932,6 +932,8 @@
         "delivery_cash_mvt_drawer_close": "Clôture caisse",
         "delivery_cash_mvt_adjustment": "Ajustement",
         "audit_event_user_login": "Connexion utilisateur",
+        "audit_event_fiscal_orphan_backfilled": "Commande orpheline régularisée",
+        "audit_event_order_payment_status_change_blocked": "Changement de statut de paiement bloqué",
         "audit_event_user_logout": "Déconnexion utilisateur",
         "audit_event_cash_movement_recorded": "Mouvement de caisse enregistré",
         "audit_event_cash_delivery_session_opened": "Ouverture caisse livreur",

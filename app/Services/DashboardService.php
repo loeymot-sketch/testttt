@@ -488,7 +488,8 @@ class DashboardService
                 return [
                     ['name' => 'Web', 'value' => 0],
                     ['name' => 'Kiosk/App', 'value' => 0],
-                    ['name' => 'POS', 'value' => 0]
+                    ['name' => 'POS', 'value' => 0],
+                    ['name' => 'Livraison', 'value' => 0]
                 ];
             }
 
@@ -519,30 +520,42 @@ class DashboardService
             //   - POS:   source=Source::POS
             //
             // No frontend change. No migration. Pure backend bucketing fix.
+            // [prod-finale 2026-06-17 P1] EXHAUSTIVE mutually-exclusive partition so the bars always
+            // sum to ~100%. The kiosk heal (WG-3) only fixed kiosk; POS/Web/delivery still keyed on the
+            // legacy `source` int, but real POS rows carry source_surface='pos' with source=1 (1343 rows)
+            // and delivery rows carry source_surface='delivery' with source=NULL — BOTH were silently
+            // dropped, collapsing the percentages. Fix: classify by positive surface marker (with legacy
+            // source as fallback) for kiosk/pos/delivery, and Web = the remainder, guaranteeing exhaustivity.
             $kioskCount = $orders->filter(function ($order) {
-                if ((string) ($order->source_surface ?? '') === 'kiosk') {
-                    return true;
-                }
-
-                return (int) $order->source === \App\Enums\Source::APP;
+                return (string) ($order->source_surface ?? '') === 'kiosk'
+                    || (int) $order->source === \App\Enums\Source::APP;
             })->count();
 
-            $webCount = $orders->filter(function ($order) {
-                // Exclude kiosk-tagged rows (they post source=WEB but are not
-                // browser-web channel orders).
+            $posCount = $orders->filter(function ($order) {
                 if ((string) ($order->source_surface ?? '') === 'kiosk') {
                     return false;
                 }
-
-                return (int) $order->source === \App\Enums\Source::WEB;
+                return (string) ($order->source_surface ?? '') === 'pos'
+                    || (int) $order->source === \App\Enums\Source::POS;
             })->count();
 
-            $posCount = $orders->where('source', \App\Enums\Source::POS)->count();
+            $deliveryCount = $orders->filter(function ($order) {
+                $surface = (string) ($order->source_surface ?? '');
+                if ($surface === 'kiosk' || $surface === 'pos') {
+                    return false;
+                }
+                return $surface === 'delivery'
+                    || (int) $order->order_type === \App\Enums\OrderType::DELIVERY;
+            })->count();
+
+            // Web = remainder (browser-web + any untagged legacy rows) → keeps the partition exhaustive.
+            $webCount = max(0, $total - $kioskCount - $posCount - $deliveryCount);
 
             return [
                 ['name' => 'Web', 'value' => round(($webCount / $total) * 100, 2)],
                 ['name' => 'Kiosk/App', 'value' => round(($kioskCount / $total) * 100, 2)],
-                ['name' => 'POS', 'value' => round(($posCount / $total) * 100, 2)]
+                ['name' => 'POS', 'value' => round(($posCount / $total) * 100, 2)],
+                ['name' => 'Livraison', 'value' => round(($deliveryCount / $total) * 100, 2)]
             ];
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
