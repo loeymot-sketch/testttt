@@ -213,7 +213,7 @@
                                 {{ textShortener(item.name, 40) }}
                             </td>
                             <td class="db-table-body-td">{{ item.category_name }}</td>
-                            <td class="db-table-body-td">{{ item.flat_price }}</td>
+                            <td class="db-table-body-td">{{ item.currency_price }}</td>
                             <td class="db-table-body-td">
                                 <!-- [MISSION FIX D4 2026-05-21] Status pill must reflect per-branch
                                      availability, not just items.status. Cross-surface parity with
@@ -250,7 +250,7 @@
                                             :aria-label="$t('label.configure_wizard')"
                                             data-testid="item-list-configure-wizard-button"
                                         >
-                                            <i class="lab lab-cog"></i>
+                                            <i class="lab lab-settings"></i>
                                             <span class="db-tooltip">{{ $t('label.configure_wizard') }}</span>
                                         </router-link>
                                     </span>
@@ -263,7 +263,7 @@
                                             @click.prevent="duplicate(item)"
                                             v-if="permissionChecker('items_create')"
                                         >
-                                            <i class="lab lab-copy"></i>
+                                            <i class="lab lab-add-circle"></i>
                                             <span class="db-tooltip">{{ $t('label.duplicate') }}</span>
                                         </button>
                                     </span>
@@ -800,9 +800,11 @@ export default {
 .catalog-control-plane__metric small {
     margin-top: 5px;
     color: #64748b;
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 800;
+    letter-spacing: -0.2px;
     text-transform: uppercase;
+    overflow-wrap: break-word;
 }
 
 .catalog-control-plane__metric--alert span {

@@ -64,8 +64,13 @@
    ============================================================================= */
 
 .pos-v5-operator-bar {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    /* [uiux-deep 2026-06-17] was `display:grid` with a non-shrinking `auto` actions track:
+       when the kiosk-cash pill + the action buttons appeared they widened that track and
+       overran the `minmax(0,1fr)` title, overlapping "Commande rapide". Flex-wrap lets the
+       actions cluster drop BELOW the brand when space is tight, so the title is never covered. */
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
     align-items: center;
     gap: var(--pos-v5-space-5);
     padding: var(--pos-v5-space-3) var(--pos-v5-space-5);
@@ -83,6 +88,7 @@
     align-items: center;
     gap: var(--pos-v5-space-3);
     min-width: 0;
+    flex: 1 1 320px; /* title keeps priority + a 320px min basis; actions wrap below when cramped */
 }
 
 .pos-v5-operator-bar__crown {
@@ -130,7 +136,7 @@
 
 .pos-v5-operator-bar__actions {
     display: flex;
-    flex-shrink: 0;
+    flex: 0 1 auto; /* shrinkable flex-item of the bar so it wraps below the brand instead of overrunning the title */
     flex-wrap: wrap;
     align-items: center;
     justify-content: flex-end;

@@ -392,7 +392,15 @@ export default {
                 return this.$t('label.kds_served_just_now');
             }
             const mins = Math.floor(diffSec / 60);
-            return this.$t('label.kds_served_ago', { mins });
+            // [uiux-deep 2026-06-17] roll minutes up to hours/days so a stale strip reads
+            // "il y a 6 h" / "il y a 2 j" instead of "il y a 8898 min".
+            if (mins < 60) {
+                return this.$t('label.kds_served_ago', { mins });
+            }
+            if (mins < 1440) {
+                return this.$t('label.kds_served_ago_hours', { hours: Math.floor(mins / 60) });
+            }
+            return this.$t('label.kds_served_ago_days', { days: Math.floor(mins / 1440) });
         },
     },
 };

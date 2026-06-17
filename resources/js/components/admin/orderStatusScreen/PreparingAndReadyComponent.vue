@@ -37,7 +37,12 @@
           {{ item.queue_number ? 'N°' + item.queue_number : item.token }}
         </li>
       </transition-group>
-      <p v-if="preparingItems.length === 0" class="text-center text-[#A0A3BD] text-[28px] mt-12">—</p>
+      <div v-if="preparingItems.length === 0" class="flex flex-col items-center justify-center text-center mt-24 select-none" role="status">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-20 h-20 mb-5 text-[#D1D5DB]" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+        </svg>
+        <p class="text-[#9CA3AF] text-[32px] font-bold">{{ $t('label.oss_empty_preparing') }}</p>
+      </div>
     </div>
   </div>
 
@@ -62,7 +67,12 @@
           {{ item.queue_number ? 'N°' + item.queue_number : item.token }}
         </li>
       </transition-group>
-      <p v-if="preparedItems.length === 0" class="text-center text-[#A0A3BD] text-[28px] mt-12">—</p>
+      <div v-if="preparedItems.length === 0" class="flex flex-col items-center justify-center text-center mt-24 select-none" role="status">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-20 h-20 mb-5 text-[#D1D5DB]" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="m9 12.75 2.25 2.25 4.5-4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+        </svg>
+        <p class="text-[#9CA3AF] text-[32px] font-bold">{{ $t('label.oss_empty_ready') }}</p>
+      </div>
     </div>
   </div>
 </template>

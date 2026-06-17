@@ -151,7 +151,7 @@
                                 <div v-else>{{ coupon.name.substring(0, 40) + ".." }}</div>
                             </td>
                             <td class="db-table-body-td">{{ coupon.code }}</td>
-                            <td class="db-table-body-td">{{ coupon.flat_discount }}</td>
+                            <td class="db-table-body-td">{{ coupon.discount_type === enums.taxTypeEnum.PERCENTAGE ? (parseFloat(coupon.discount).toLocaleString('fr-FR') + ' %') : coupon.currency_discount }}</td>
                             <td class="db-table-body-td">
                                 <span :class="taxTypeClass(coupon.discount_type)">{{
                                     enums.taxTypeEnumArray[coupon.discount_type]

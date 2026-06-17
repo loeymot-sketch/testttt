@@ -93,6 +93,17 @@ export default {
             ? currency + NBSP + formatted
             : formatted + NBSP + currency;
     },
+    humanizeMinutes(minutes) {
+        // [uiux-deep 2026-06-17] FR-friendly age. Raw minute counts ("8898 minutes" / "365 min")
+        // become "X min" (<1 h), "X h" (<1 j) or "X j[ Y h]" beyond. Display-only — callers still
+        // pass the backend-computed minute count, this only formats it.
+        const m = Math.max(0, Math.floor(Number(minutes) || 0));
+        if (m < 60) return `${m} min`;
+        if (m < 1440) return `${Math.floor(m / 60)} h`;
+        const j = Math.floor(m / 1440);
+        const h = Math.floor((m % 1440) / 60);
+        return h ? `${j} j ${h} h` : `${j} j`;
+    },
     logoutConfirmation: function () {
         return new VueSimpleAlert.confirm(
             "You will able to log in again using the kiosk machine!",

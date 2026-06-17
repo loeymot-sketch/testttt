@@ -552,8 +552,13 @@ textarea:focus-visible,
    ============================================================================= */
 
 .pos-v5-operator-bar {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    /* [uiux-deep 2026-06-17] was `display:grid` with a non-shrinking `auto` actions track:
+       when the kiosk-cash pill + the action buttons appeared they widened that track and
+       overran the `minmax(0,1fr)` title, overlapping "Commande rapide". Flex-wrap lets the
+       actions cluster drop BELOW the brand when space is tight, so the title is never covered. */
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
     align-items: center;
     gap: var(--pos-v5-space-5);
     padding: var(--pos-v5-space-3) var(--pos-v5-space-5);
@@ -571,6 +576,7 @@ textarea:focus-visible,
     align-items: center;
     gap: var(--pos-v5-space-3);
     min-width: 0;
+    flex: 1 1 320px; /* title keeps priority + a 320px min basis; actions wrap below when cramped */
 }
 
 .pos-v5-operator-bar__crown {
@@ -618,7 +624,7 @@ textarea:focus-visible,
 
 .pos-v5-operator-bar__actions {
     display: flex;
-    flex-shrink: 0;
+    flex: 0 1 auto; /* shrinkable flex-item of the bar so it wraps below the brand instead of overrunning the title */
     flex-wrap: wrap;
     align-items: center;
     justify-content: flex-end;
@@ -6268,6 +6274,9 @@ input:checked + div svg {
 .mt-2 {
   margin-top: 0.5rem;
 }
+.mt-24 {
+  margin-top: 6rem;
+}
 .mt-3 {
   margin-top: 0.75rem;
 }
@@ -6817,6 +6826,11 @@ input:checked + div svg {
 }
 .cursor-wait {
   cursor: wait;
+}
+.select-none {
+  -webkit-user-select: none;
+     -moz-user-select: none;
+          user-select: none;
 }
 .resize-none {
   resize: none;
@@ -7742,6 +7756,10 @@ input:checked + div svg {
   --tw-bg-opacity: 1;
   background-color: rgb(249 115 22 / var(--tw-bg-opacity, 1));
 }
+.bg-orange-600 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(234 88 12 / var(--tw-bg-opacity, 1));
+}
 .bg-pink-100 {
   --tw-bg-opacity: 1;
   background-color: rgb(252 231 243 / var(--tw-bg-opacity, 1));
@@ -8202,8 +8220,8 @@ input:checked + div svg {
 .text-\[26px\] {
   font-size: 26px;
 }
-.text-\[28px\] {
-  font-size: 28px;
+.text-\[32px\] {
+  font-size: 32px;
 }
 .text-\[40px\] {
   font-size: 40px;
@@ -8503,6 +8521,10 @@ input:checked + div svg {
   --tw-text-opacity: 1;
   color: rgb(153 27 27 / var(--tw-text-opacity, 1));
 }
+.text-\[\#9CA3AF\] {
+  --tw-text-opacity: 1;
+  color: rgb(156 163 175 / var(--tw-text-opacity, 1));
+}
 .text-\[\#9b2f2f\] {
   --tw-text-opacity: 1;
   color: rgb(155 47 47 / var(--tw-text-opacity, 1));
@@ -8518,6 +8540,10 @@ input:checked + div svg {
 .text-\[\#C25D1B\] {
   --tw-text-opacity: 1;
   color: rgb(194 93 27 / var(--tw-text-opacity, 1));
+}
+.text-\[\#D1D5DB\] {
+  --tw-text-opacity: 1;
+  color: rgb(209 213 219 / var(--tw-text-opacity, 1));
 }
 .text-\[\#E89806\] {
   --tw-text-opacity: 1;

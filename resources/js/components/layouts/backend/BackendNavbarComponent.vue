@@ -53,7 +53,7 @@
                         <div v-if="setting.site_language_switch === enums.activityEnum.ENABLE"
                             class="dropdown-group relative">
                             <button class="dropdown-btn flex items-center gap-2 h-9 px-3 rounded-lg bg-[#FFE8DD]">
-                                <img :src="language.image" alt="flag" class="w-4 h-4 rounded-full">
+                                <img :src="language.image" :alt="language.name || 'flag'" @error="$event.target.src='/images/item/thumb.png'" class="w-4 h-4 rounded-full">
                                 <span
                                     class="hidden md:block whitespace-nowrap text-xs font-medium capitalize text-heading">
                                     {{ language.name }}
@@ -63,7 +63,7 @@
                                 class="p-2 min-w-[180px] rounded-lg shadow-xl absolute top-14 ltr:right-0 rtl:left-0 z-10 border border-gray-200 bg-white transition-all duration-300 origin-top scale-y-0 dropdown-list">
                                 <li @click="changeLanguage(language.id, language.code)" v-for="language in languages"
                                     class="flex items-center gap-2 py-1.5 px-2.5 rounded-md cursor-pointer hover:bg-gray-100">
-                                    <img :src="language.image" alt="flag" class="w-4 h-4 rounded-full">
+                                    <img :src="language.image" :alt="language.name || 'flag'" @error="$event.target.src='/images/item/thumb.png'" class="w-4 h-4 rounded-full">
                                     <span class="text-heading capitalize text-sm">{{ language.name }}</span>
                                 </li>
                             </ul>
@@ -103,7 +103,7 @@
                     :aria-controls="profileMenuId"
                     @keydown.escape="closeProfileMenu"
                     @keydown.down.prevent="openProfileMenuAndFocusFirst">
-                    <img class="flex-shrink-0 w-9 h-9 object-cover rounded-lg" :src="authInfo.image" alt="avatar">
+                    <img class="flex-shrink-0 w-9 h-9 object-cover rounded-lg" :src="authInfo.image" :alt="authInfo.name || 'avatar'" @error="$event.target.src='/images/default/profile.png'">
                         <!-- [iter15-mega-fix A-009/A-012 round-7 2026-05-10] No JS chop ".."; CSS ellipsis + :title for full name on hover/SR -->
                         <h3 class="whitespace-nowrap text-sm capitalize text-left leading-[17px]">{{ $t('label.hello') }} <b
                             :title="authInfo.name"
@@ -121,7 +121,7 @@
                         <figure
                             class="relative z-10 w-[98px] h-[98px] border-2 border-dashed rounded-full inline-flex items-center justify-center border-white bg-gradient-to-t from-[#FF7A00] to-[#FF016C] before:absolute before:top-1/2 before:left-1/2 before:-translate-x-1/2 before:-translate-y-1/2 before:w-24 before:h-24 before:rounded-full before:-z-10 before:bg-white">
                             <img class="w-[90px] h-[90px] rounded-full shadow-avatar" :src="authInfo.image"
-                                alt="avatar">
+                                :alt="authInfo.name || 'avatar'" @error="$event.target.src='/images/default/profile.png'">
                         </figure>
 
                         <label for="imageProperty"

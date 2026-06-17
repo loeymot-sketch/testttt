@@ -53,9 +53,11 @@ describe('ItemListComponent — wizard button (T-WC-LIST-01)', () => {
             new RegExp("name:\\s*'admin\\.items\\.composer'\\s*,\\s*params:\\s*\\{\\s*id:\\s*item\\.id\\s*\\}"),
         );
 
-        // Visual sentinel: cog icon (lab-cog) marks the wizard / configuration concept
-        // and is the only icon present on this new control.
-        expect(source).toContain('lab-cog');
+        // Visual sentinel: a settings/cog icon marks the wizard / configuration concept.
+        // [uiux-deep 2026-06-17] was `lab-cog`, but that glyph is NOT defined in the lab
+        // icon font (public/themes/default/fonts/lab/lab.css) so it rendered as a blank
+        // button. Switched to `lab-settings` (an existing glyph) — pin the working icon.
+        expect(source).toContain('lab-settings');
 
         // Anchor the button to the actions block: the per-row wrapper span
         // immediately precedes the data-testid for the new button. The proximity

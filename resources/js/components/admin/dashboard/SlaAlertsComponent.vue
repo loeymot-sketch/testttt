@@ -23,7 +23,7 @@
                         <h5 class="font-semibold text-red-700">Ticket #{{ alert.queue_number }} ({{ alert.order_serial_no }})</h5>
                         <p class="text-sm text-red-600 font-medium mt-1">
                             <i class="lab lab-time w-4 h-4 mr-1"></i>
-                            En attente depuis {{ alert.time_preparing }} minutes
+                            En attente depuis {{ humanizeMinutes(alert.time_preparing) }}
                         </p>
                     </div>
                 </div>
@@ -33,6 +33,8 @@
 </template>
 
 <script>
+import appService from "../../../services/appService";
+
 export default {
     name: "SlaAlertsComponent",
     data() {
@@ -50,6 +52,9 @@ export default {
         clearInterval(this.timer);
     },
     methods: {
+        humanizeMinutes(minutes) {
+            return appService.humanizeMinutes(minutes);
+        },
         fetchData() {
             this.$store.dispatch('dashboard/slaAlerts').then(res => {
                 this.alerts = res.data.data;
