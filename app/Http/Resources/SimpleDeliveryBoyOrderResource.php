@@ -20,9 +20,9 @@ class SimpleDeliveryBoyOrderResource extends JsonResource
             'id'                             => $this->id,
             'order_serial_no'                => $this->order_serial_no,
             'order_type'                     => $this->order_type,
-            'order_datetime'                 => AppLibrary::datetime($this->order_datetime),
+            'order_datetime'                 => AppLibrary::datetime($this->order_datetime, 'H:i, d-m-Y'),
             'order_date'                     => AppLibrary::date($this->order_datetime),
-            'order_time'                     => AppLibrary::time($this->order_datetime),
+            'order_time'                     => AppLibrary::time($this->order_datetime, 'H:i'),
             'delivery_date'                  => $this->is_advance_order == Ask::YES ? AppLibrary::increaseDate(
                 $this->order_datetime,
                 1
