@@ -2114,6 +2114,7 @@
             "theme_hint": "Switch between light and dark display",
             "theme_aria": "Change display theme",
             "virtual_keyboard_label": "Virtual keyboard",
+            "vkeyb_shift": "Shift",
             "vkeyb_clear": "Clear all",
             "vkeyb_clear_short": "Clear",
             "vkeyb_space": "Space",

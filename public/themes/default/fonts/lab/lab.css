@@ -47,6 +47,7 @@
 .lab-category:before { content: "\e024"; } /* → lab-item-categories */
 .lab-monitor:before { content: "\e012"; } /* OSS quick-link → lab-pos-bold */
 .lab-kitchen:before { content: "\e022"; } /* KDS quick-link → lab-items */
+.lab-arrow-left:before { content: "\e069"; display: inline-block; transform: scaleX(-1); } /* mirror lab-arrow-right (font has no left codepoint) */
 
 .lab-view:before {
   content: "\e000";

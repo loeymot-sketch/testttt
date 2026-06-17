@@ -107,17 +107,17 @@
         <div class="report">
             <p style="margin: 0px 0px 8px 0px;font-size: 16px;font-weight: bold">{{ App\Libraries\AppLibrary::textShortener($company['company_name'] ?? 'Le Cayenne', 60) }}</p>
             <p>{{ App\Libraries\AppLibrary::textShortener($company['company_address'] ?? '', 60) }}</p>
-            <p  style="color: #ff006b;margin: 0px 0px 8px 0px;font-size: 16px;font-weight: bold;">{{ trans('all.label.sales_report', [], 'en') }}</p>
+            <p  style="color: #ff006b;margin: 0px 0px 8px 0px;font-size: 16px;font-weight: bold;">{{ trans('all.label.sales_report') }}</p>
             <table>
                 <thead>
                     <tr>
-                        <th>{{ trans('all.label.order_serial_no', [], 'en') }}</th>
-                        <th>{{ trans('all.label.date', [], 'en') }}</th>
-                        <th>{{ trans('all.label.payment_type', [], 'en') }}</th>
-                        <th>{{ trans('all.label.payment_status', [], 'en') }}</th>
-                        <th>{{ trans('all.label.discount', [], 'en') }}</th>
-                        <th>{{ trans('all.label.delivery_charge', [], 'en') }}</th>
-                        <th>{{ trans('all.label.total', [], 'en') }}</th>
+                        <th>{{ trans('all.label.order_serial_no') }}</th>
+                        <th>{{ trans('all.label.date') }}</th>
+                        <th>{{ trans('all.label.payment_type') }}</th>
+                        <th>{{ trans('all.label.payment_status') }}</th>
+                        <th>{{ trans('all.label.discount') }}</th>
+                        <th>{{ trans('all.label.delivery_charge') }}</th>
+                        <th>{{ trans('all.label.total') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -145,7 +145,7 @@
                         </tr>
                     @endforeach
                     <tr class="total">
-                        <td colspan="4">{{ trans('all.label.total', [], 'en') }}</td>
+                        <td colspan="4">{{ trans('all.label.total') }}</td>
                         <td>{{ App\Libraries\AppLibrary::reportCurrencyAmountFormat($total_discount) }}</td>
                         <td>{{ App\Libraries\AppLibrary::reportCurrencyAmountFormat($total_delivery_charge) }}</td>
                         <td>{{ App\Libraries\AppLibrary::reportCurrencyAmountFormat($total) }}</td>

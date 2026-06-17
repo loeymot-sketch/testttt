@@ -1891,6 +1891,7 @@
             "reduced_motion": "حركة مخفضة",
             "reduced_motion_hint": "تعطيل الرسوم المتحركة (WCAG 2.3.3)",
             "virtual_keyboard_label": "لوحة المفاتيح الافتراضية",
+            "vkeyb_shift": "تكبير",
             "vkeyb_clear": "مسح الكل",
             "vkeyb_clear_short": "مسح",
             "vkeyb_space": "مسافة",

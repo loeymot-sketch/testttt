@@ -34,7 +34,7 @@
                             {{ tax.code }}
                         </td>
                         <td class="db-table-body-td">
-                            {{ tax.tax_currency_rate }}
+                            {{ tax.tax_currency_rate }} %
                         </td>
                         <td class="db-table-body-td">
                             <span :class="statusClass(tax.status)">

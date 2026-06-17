@@ -401,7 +401,12 @@ class AppLibrary
 
     public static function reportCurrencyAmountFormat($amount): string
     {
-        return number_format($amount, env('CURRENCY_DECIMAL_POINT'), '.', ',');
+        // [prod-finale 2026-06-17 P2] FR money on the FR-locked report PDFs (sales/items/online_orders) —
+        // was en-US "1,234.50" (dot decimal, comma thousands, no symbol). Now "1 234,50 €" (NBSP thousands,
+        // comma decimal, € suffix), matching the EOD fiscal PDF (eod_synthesis.blade.php) which already
+        // renders € in DomPDF so the font supports the glyph. Display-only; values unchanged.
+        $decimals = (int) (env('CURRENCY_DECIMAL_POINT') ?? 2);
+        return number_format((float) $amount, $decimals, ',', "\u{00A0}") . "\u{00A0}€";
     }
 
     public static function textShortener($text, $number = 30)
