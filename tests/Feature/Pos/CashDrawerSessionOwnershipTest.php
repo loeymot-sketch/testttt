@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Services\Cash\CashDrawerService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 /**
@@ -80,7 +81,10 @@ class CashDrawerSessionOwnershipTest extends TestCase
 
         $this->actingAs($this->cashierB, 'sanctum');
 
+        // [prod-finale 2026-06-17] the cash-drawer session close route (routes/api.php:944-947) carries the
+        // same frozen idempotency middleware and requires X-Idempotency-Key (live UI sends it).
         $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson(
                 "/api/admin/pos/cash-drawer/sessions/{$session->id}/close",
                 ['closing_amount' => 0]
@@ -104,7 +108,10 @@ class CashDrawerSessionOwnershipTest extends TestCase
 
         $this->actingAs($this->cashierA, 'sanctum');
 
+        // [prod-finale 2026-06-17] the cash-drawer session close route (routes/api.php:944-947) carries the
+        // same frozen idempotency middleware and requires X-Idempotency-Key (live UI sends it).
         $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson(
                 "/api/admin/pos/cash-drawer/sessions/{$session->id}/close",
                 ['closing_amount' => 50.00]
@@ -128,7 +135,10 @@ class CashDrawerSessionOwnershipTest extends TestCase
 
         $this->actingAs($this->manager, 'sanctum');
 
+        // [prod-finale 2026-06-17] the cash-drawer session close route (routes/api.php:944-947) carries the
+        // same frozen idempotency middleware and requires X-Idempotency-Key (live UI sends it).
         $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson(
                 "/api/admin/pos/cash-drawer/sessions/{$session->id}/close",
                 ['closing_amount' => 75.00]

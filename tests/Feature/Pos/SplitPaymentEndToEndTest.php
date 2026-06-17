@@ -17,6 +17,7 @@ use App\Services\Cash\CashDrawerService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Tests\Feature\Concerns\HasPosQuoteBinding;
 use Tests\TestCase;
 
@@ -148,7 +149,9 @@ class SplitPaymentEndToEndTest extends TestCase
             ],
         ]);
 
+        // [prod-finale 2026-06-17] /api/admin/pos requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos', $this->payloadWithPosQuote($this->operator, $payload));
 
         $response->assertStatus(201);
@@ -168,7 +171,9 @@ class SplitPaymentEndToEndTest extends TestCase
 
         $payload = $this->basePayload(); // pas de payment_breakdown
 
+        // [prod-finale 2026-06-17] /api/admin/pos requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos', $this->payloadWithPosQuote($this->operator, $payload));
 
         $response->assertStatus(201);
@@ -189,7 +194,9 @@ class SplitPaymentEndToEndTest extends TestCase
             ],
         ]);
 
+        // [prod-finale 2026-06-17] /api/admin/pos requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos', $this->payloadWithPosQuote($this->operator, $payload));
 
         $response->assertStatus(422);
@@ -207,7 +214,9 @@ class SplitPaymentEndToEndTest extends TestCase
             ],
         ]);
 
+        // [prod-finale 2026-06-17] /api/admin/pos requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos', $this->payloadWithPosQuote($this->operator, $payload));
 
         $response->assertStatus(422);
@@ -226,7 +235,9 @@ class SplitPaymentEndToEndTest extends TestCase
             ],
         ]);
 
+        // [prod-finale 2026-06-17] /api/admin/pos requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $createResp = $this->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos', $this->payloadWithPosQuote($this->operator, $payload));
         $createResp->assertStatus(201);
         $orderId = $createResp->json('data.id');
@@ -257,7 +268,9 @@ class SplitPaymentEndToEndTest extends TestCase
             ],
         ]);
 
+        // [prod-finale 2026-06-17] /api/admin/pos requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos', $this->payloadWithPosQuote($this->operator, $payload));
 
         // Flag OFF : prepareForValidation strip le champ AVANT validation,

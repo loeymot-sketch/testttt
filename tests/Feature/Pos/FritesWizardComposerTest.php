@@ -19,6 +19,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Tests\Feature\Concerns\HasPosQuoteBinding;
 use Tests\TestCase;
 
@@ -201,7 +202,9 @@ class FritesWizardComposerTest extends TestCase
             'item_variations' => [['id' => $this->sauceKetchup->id, 'name' => 'Ketchup', 'price' => 0]],
         ]);
 
+        // [prod-finale 2026-06-17] /api/admin/pos requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos', $this->payloadWithPosQuote($this->operator, $payload));
 
         $response->assertStatus(201);
@@ -219,7 +222,9 @@ class FritesWizardComposerTest extends TestCase
             'item_extras'     => [['id' => $this->cheddarFondu->id, 'name' => 'Cheddar fondu', 'price' => 1.00]],
         ]);
 
+        // [prod-finale 2026-06-17] /api/admin/pos requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos', $this->payloadWithPosQuote($this->operator, $payload));
 
         $response->assertStatus(201);
@@ -237,7 +242,9 @@ class FritesWizardComposerTest extends TestCase
             'item_extras'     => [['id' => $this->sauceCurry->id, 'name' => 'Sauce Curry', 'price' => 0.50]],
         ]);
 
+        // [prod-finale 2026-06-17] /api/admin/pos requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos', $this->payloadWithPosQuote($this->operator, $payload));
 
         $response->assertStatus(201);

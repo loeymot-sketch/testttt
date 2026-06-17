@@ -17,6 +17,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Tests\Feature\Concerns\HasPosQuoteBinding;
 use Tests\TestCase;
 
@@ -129,7 +130,9 @@ class PosSimulationHardware4ScenariosTest extends TestCase
             'pos_received_amount' => 10.00,
         ]);
 
+        // [prod-finale 2026-06-17] /api/admin/pos requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos', $this->payloadWithPosQuote($this->operator, $payload));
 
         $response->assertStatus(201);
@@ -160,7 +163,9 @@ class PosSimulationHardware4ScenariosTest extends TestCase
             'terminal_id' => $terminal->id,
         ]);
 
+        // [prod-finale 2026-06-17] /api/admin/pos requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos', $this->payloadWithPosQuote($this->operator, $payload));
 
         $response->assertStatus(201);
@@ -188,7 +193,9 @@ class PosSimulationHardware4ScenariosTest extends TestCase
             'payment_breakdown' => $breakdown,
         ]);
 
+        // [prod-finale 2026-06-17] /api/admin/pos requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos', $this->payloadWithPosQuote($this->operator, $payload));
 
         $response->assertStatus(201);
@@ -234,7 +241,9 @@ class PosSimulationHardware4ScenariosTest extends TestCase
             'payment_breakdown' => $breakdown,
         ]);
 
+        // [prod-finale 2026-06-17] /api/admin/pos requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos', $this->payloadWithPosQuote($this->operator, $payload));
 
         $response->assertStatus(201);
@@ -254,7 +263,9 @@ class PosSimulationHardware4ScenariosTest extends TestCase
         // 1) POS operator creates a CASH order under simulation.
         $this->actingAs($this->operator, 'sanctum');
 
+        // [prod-finale 2026-06-17] /api/admin/pos requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos', $this->payloadWithPosQuote($this->operator, $this->basePayload()));
         $response->assertStatus(201);
         $orderId = (int) $response->json('data.id');
@@ -297,7 +308,9 @@ class PosSimulationHardware4ScenariosTest extends TestCase
 
         $payload = $this->basePayload();
 
+        // [prod-finale 2026-06-17] /api/admin/pos requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos', $this->payloadWithPosQuote($this->operator, $payload));
 
         $response->assertStatus(422);

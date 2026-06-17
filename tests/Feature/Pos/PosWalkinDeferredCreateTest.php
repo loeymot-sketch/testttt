@@ -17,6 +17,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Tests\Feature\Concerns\HasPosQuoteBinding;
 use Tests\TestCase;
 
@@ -109,7 +110,9 @@ class PosWalkinDeferredCreateTest extends TestCase
         Config::set('pos.walkin_route_to_counter', false);
         $this->actingAs($this->operator, 'sanctum');
 
+        // [prod-finale 2026-06-17] /api/admin/pos requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos', $this->payloadWithPosQuote($this->operator, $this->basePayload()));
 
         $response->assertStatus(201);
@@ -124,7 +127,9 @@ class PosWalkinDeferredCreateTest extends TestCase
         $this->actingAs($this->operator, 'sanctum');
 
         $payload = $this->basePayload(['defer_to_counter' => true]);
+        // [prod-finale 2026-06-17] /api/admin/pos requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos', $this->payloadWithPosQuote($this->operator, $payload));
 
         $response->assertStatus(201);
@@ -142,7 +147,9 @@ class PosWalkinDeferredCreateTest extends TestCase
         Config::set('pos.walkin_route_to_counter', true);
         $this->actingAs($this->operator, 'sanctum');
 
+        // [prod-finale 2026-06-17] /api/admin/pos requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos', $this->payloadWithPosQuote($this->operator, $this->basePayload()));
 
         $response->assertStatus(201);

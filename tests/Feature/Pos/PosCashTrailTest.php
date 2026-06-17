@@ -25,6 +25,7 @@ use App\Services\PaymentService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Laravel\Sanctum\Sanctum;
 use Tests\Feature\Concerns\HasPosQuoteBinding;
 use Tests\TestCase;
@@ -62,6 +63,13 @@ class PosCashTrailTest extends TestCase
         Config::set('split_payment.enabled', true);
         Config::set('split_payment.max_tranches', 12);
         Config::set('fiscal.audit_secret', 'test-fiscal-secret-' . str_repeat('a', 40));
+        // [prod-finale 2026-06-17] Pin simulation_hardware OFF so the NF525 cash-trail
+        // guard (CASH_NO_OPEN_SESSION) and cash_movement writes this suite asserts are
+        // actually exercised. The dev .env ships POS_SIMULATION_HARDWARE=true and there is
+        // no .env.testing override, so without this pin the guard is skipped (sibling
+        // PosSimulationHardware4ScenariosTest / PosWalkinDeferredCreateTest pin the flag
+        // explicitly too). Test-fixture config only; no assertion weakened.
+        Config::set('pos.simulation_hardware', false);
 
         $this->branch = Branch::factory()->create();
 
@@ -142,7 +150,9 @@ class PosCashTrailTest extends TestCase
 
         $payload = $this->basePayload(); // single-tender CASH, pas de breakdown
 
+        // [prod-finale 2026-06-17] /api/admin/pos requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos', $this->payloadWithPosQuote($this->operator, $payload));
 
         $response->assertStatus(201);
@@ -173,7 +183,9 @@ class PosCashTrailTest extends TestCase
         $orderCountBefore = Order::withoutGlobalScopes()->count();
         $movementCountBefore = CashMovement::count();
 
+        // [prod-finale 2026-06-17] /api/admin/pos requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos', $this->payloadWithPosQuote($this->operator, $payload));
 
         $response->assertStatus(422);
@@ -215,7 +227,9 @@ class PosCashTrailTest extends TestCase
             ],
         ]);
 
+        // [prod-finale 2026-06-17] /api/admin/pos requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos', $this->payloadWithPosQuote($this->operator, $payload));
 
         $response->assertStatus(201);
@@ -251,7 +265,9 @@ class PosCashTrailTest extends TestCase
 
         $orderCountBefore = Order::withoutGlobalScopes()->count();
 
+        // [prod-finale 2026-06-17] /api/admin/pos requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos', $this->payloadWithPosQuote($this->operator, $payload));
 
         $response->assertStatus(422);
