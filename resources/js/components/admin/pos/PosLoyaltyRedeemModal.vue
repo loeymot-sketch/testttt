@@ -110,7 +110,7 @@
                         data-testid="pos-loyalty-redeem-preview"
                     >
                         {{ $t('pos.loyalty.redeem.preview_discount') }} :
-                        <strong>−{{ previewDiscountEur.toFixed(2) }} €</strong>
+                        <strong>−{{ previewDiscountEur.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }} €</strong>
                     </p>
                 </div>
 

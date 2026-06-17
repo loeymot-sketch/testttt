@@ -27,7 +27,7 @@
                             </span>
                         </td>
                         <td class="db-table-body-td">
-                            {{ addon.total_flat_price }}
+                            {{ addon.total_currency_price }}
                         </td>
                         <td class="db-table-body-td">
                             <span :class="statusClass(addon.addon_item_status)">

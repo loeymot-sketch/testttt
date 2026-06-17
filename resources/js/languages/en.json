@@ -642,6 +642,7 @@
         "price": "Price",
         "start_date": "Start Date",
         "end_date": "End Date",
+        "error": "An error occurred.",
         "category": "Category",
         "catalog_pilot": "Catalog control plane",
         "catalog_subtitle": "Products, categories, offers and availability",

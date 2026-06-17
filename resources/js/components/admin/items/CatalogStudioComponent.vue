@@ -526,7 +526,7 @@ export default {
                         this.refreshData();
                     })
                     .catch((err) => {
-                        const msg = err?.response?.data?.message || this.$t("error.something_wrong");
+                        const msg = err?.response?.data?.message || this.$t("message.something_wrong");
                         alertService.error(msg);
                     })
                     .finally(() => {
@@ -546,7 +546,7 @@ export default {
                         this.refreshData();
                     })
                     .catch((err) => {
-                        const msg = err?.response?.data?.message || this.$t("error.something_wrong");
+                        const msg = err?.response?.data?.message || this.$t("message.something_wrong");
                         alertService.error(msg);
                     })
                     .finally(() => {
@@ -575,7 +575,7 @@ export default {
                 alertService.successFlip(null, this.$t("menu.item_categories"));
                 this.refreshData();
             }).catch((err) => {
-                const msg = err?.response?.data?.message || this.$t("error.something_wrong");
+                const msg = err?.response?.data?.message || this.$t("message.something_wrong");
                 alertService.error(msg);
             }).finally(() => {
                 this.loading.isActive = false;
@@ -601,7 +601,7 @@ export default {
             }).catch((err) => {
                 const errors = err?.response?.data?.errors;
                 const firstError = errors ? Object.values(errors).flat()[0] : null;
-                const msg = firstError || err?.response?.data?.message || this.$t("error.something_wrong");
+                const msg = firstError || err?.response?.data?.message || this.$t("message.something_wrong");
                 alertService.error(msg);
             }).finally(() => {
                 this.loading.isActive = false;

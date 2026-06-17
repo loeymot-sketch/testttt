@@ -104,7 +104,7 @@
                                 <div v-if="offer.name.length < 40">{{ offer.name }}</div>
                                 <div v-else>{{ offer.name.substring(0, 40) + ".." }}</div>
                             </td>
-                            <td class="db-table-body-td">{{ offer.currency_amount }}</td>
+                            <td class="db-table-body-td">{{ parseFloat(offer.amount).toLocaleString('fr-FR') }} %</td>
                             <td class="db-table-body-td">{{ offer.convert_start_date }}</td>
                             <td class="db-table-body-td">{{ offer.convert_end_date }}</td>
                             <td class="db-table-body-td">

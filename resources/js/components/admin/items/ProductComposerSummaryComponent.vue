@@ -34,7 +34,7 @@
                 </div>
                 <div class="rounded border border-slate-100 bg-slate-50 p-3">
                     <p class="text-xs font-semibold uppercase text-slate-500">Prix source</p>
-                    <p class="mt-1 text-sm font-semibold text-slate-800">{{ item.flat_price || item.currency_price || '-' }}</p>
+                    <p class="mt-1 text-sm font-semibold text-slate-800">{{ item.currency_price || item.flat_price || '-' }}</p>
                     <p class="mt-1 text-xs text-slate-500">Final: PricingService backend</p>
                 </div>
                 <div class="rounded border border-slate-100 bg-slate-50 p-3">
@@ -70,7 +70,7 @@
                         <div class="mt-3 flex flex-wrap gap-2">
                             <span v-for="choice in group.choices" :key="choice.id || choice.name"
                                 class="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-xs text-slate-700">
-                                {{ choice.name }} <span class="text-slate-400">{{ choice.flat_price || choice.currency_price || '' }}</span>
+                                {{ choice.name }} <span class="text-slate-400">{{ choice.currency_price || choice.flat_price || '' }}</span>
                             </span>
                         </div>
                     </article>
@@ -95,7 +95,7 @@
                         <div class="mt-3 flex flex-wrap gap-2">
                             <span v-for="extra in group.items" :key="extra.id || extra.name"
                                 class="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-xs text-slate-700">
-                                {{ extra.name }} <span class="text-slate-400">{{ extra.flat_price || extra.currency_price || '' }}</span>
+                                {{ extra.name }} <span class="text-slate-400">{{ extra.currency_price || extra.flat_price || '' }}</span>
                                 <span class="ml-1 text-slate-400">· {{ surfaces(extra.visible_on) }}</span>
                             </span>
                         </div>
@@ -119,7 +119,7 @@
             <div v-if="addons.length" class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
                 <article v-for="addon in addons" :key="addon.id" class="rounded border border-slate-100 p-3">
                     <p class="text-sm font-semibold text-slate-800">{{ addon.addon_item_name || '-' }}</p>
-                    <p class="mt-1 text-xs text-slate-500">{{ addon.total_flat_price || addon.addon_item_flat_price || '-' }}</p>
+                    <p class="mt-1 text-xs text-slate-500">{{ addon.total_currency_price || addon.addon_item_currency_price || '-' }}</p>
                     <p class="mt-2 text-xs text-slate-500">Variations liees: {{ addonVariationCount(addon) }}</p>
                 </article>
             </div>

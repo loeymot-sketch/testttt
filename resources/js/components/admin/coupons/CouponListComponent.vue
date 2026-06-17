@@ -185,7 +185,7 @@
                                         class="db-btn-icon"
                                         :data-action="'toggle-status'" :data-id="coupon.id"
                                         @click="toggleStatus(coupon)">
-                                        <i class="lab" :class="coupon.status === 5 ? 'lab-eye-off' : 'lab-eye'"></i>
+                                        <i class="lab" :class="coupon.status === 5 ? 'lab-tick-circle' : 'lab-close-circle'"></i>
                                     </button>
                                     <SmIconDeleteComponent @click="destroy(coupon.id)"
                                         v-if="permissionChecker('coupons_delete')" />

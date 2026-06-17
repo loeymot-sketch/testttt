@@ -206,18 +206,18 @@ export default {
         const date = ref();
 
         const presetRanges = ref([
-            { label: "Today", range: [new Date(), new Date()] },
-            { label: "This month", range: [startOfMonth(new Date()), endOfMonth(new Date())] },
+            { label: "Aujourd'hui", range: [new Date(), new Date()] },
+            { label: "Ce mois", range: [startOfMonth(new Date()), endOfMonth(new Date())] },
             {
-                label: "Last month",
+                label: "Mois dernier",
                 range: [
                     startOfMonth(subMonths(new Date(), 1)),
                     endOfMonth(subMonths(new Date(), 1)),
                 ],
             },
-            { label: "This year", range: [startOfYear(new Date()), endOfYear(new Date())] },
+            { label: "Cette année", range: [startOfYear(new Date()), endOfYear(new Date())] },
             {
-                label: "This year (slot)",
+                label: "Cette année (créneau)",
                 range: [startOfYear(new Date()), endOfYear(new Date())],
                 slot: "yearly",
             },

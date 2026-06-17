@@ -25,7 +25,7 @@
                             </span>
                             <span v-else class="text-slate-300 text-xs">—</span>
                         </td>
-                        <td class="db-table-body-td">{{ extra.flat_price }}</td>
+                        <td class="db-table-body-td">{{ extra.currency_price }}</td>
                         <td class="db-table-body-td">
                             <span v-if="!extra.visible_on" class="text-xs text-green-600 font-medium">Toutes</span>
                             <span v-else class="text-xs text-blue-600 font-medium">{{ extra.visible_on.join(', ') }}</span>

@@ -23,7 +23,6 @@ class OfferResource extends JsonResource
             'amount'             => $this->amount === null ? 0 : $this->amount,
             "flat_amount"        => AppLibrary::flatAmountFormat($this->amount),
             "convert_amount"     => AppLibrary::convertAmountFormat($this->amount),
-            "currency_amount"    => AppLibrary::currencyAmountFormat($this->amount),
             'status'             => $this->status,
             'image'              => $this->cover,
             'convert_start_date' => AppLibrary::datetime($this->start_date),
