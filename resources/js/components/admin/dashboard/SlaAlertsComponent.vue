@@ -22,7 +22,7 @@
                     <div>
                         <h5 class="font-semibold text-red-700">Ticket #{{ alert.queue_number }} ({{ alert.order_serial_no }})</h5>
                         <p class="text-sm text-red-600 font-medium mt-1">
-                            <i class="lab lab-time w-4 h-4 mr-1"></i>
+                            <i class="lab lab-time-slots w-4 h-4 mr-1"></i>
                             En attente depuis {{ humanizeMinutes(alert.time_preparing) }}
                         </p>
                     </div>

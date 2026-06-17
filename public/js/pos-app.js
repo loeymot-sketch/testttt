@@ -60039,7 +60039,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       key: alert.order_serial_no,
       "class": "flex items-center justify-between p-4 bg-red-50 border border-red-100 rounded-lg"
     }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h5", _hoisted_9, "Ticket #" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(alert.queue_number) + " (" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(alert.order_serial_no) + ")", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_10, [_cache[3] || (_cache[3] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
-      "class": "lab lab-time w-4 h-4 mr-1"
+      "class": "lab lab-time-slots w-4 h-4 mr-1"
     }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" En attente depuis " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.humanizeMinutes(alert.time_preparing)), 1 /* TEXT */)])])]);
   }), 128 /* KEYED_FRAGMENT */))]))])]);
 }

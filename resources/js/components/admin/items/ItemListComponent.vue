@@ -804,7 +804,13 @@ export default {
     font-weight: 800;
     letter-spacing: -0.2px;
     text-transform: uppercase;
-    overflow-wrap: break-word;
+    /* [uiux-deep 2026-06-17] keep the short labels (PRODUITS/CATÉGORIES/ACTIFS) on one clean line and
+       give only the longest (INDISPONIBLES) a graceful ellipsis instead of a hard clip — the parent
+       button already carries a :title with the full text for hover/SR. (Was `overflow-wrap:break-word`
+       which broke EVERY label mid-word — a regression caught in adversarial review.) */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .catalog-control-plane__metric--alert span {
