@@ -246,7 +246,12 @@ Route::prefix('auth')->middleware(['installed', 'apiKey', 'localization'])->name
 
 
 /* all routes must be singular word*/
-Route::prefix('profile')->name('profile.')->middleware(['installed', 'apiKey', 'auth:sanctum', 'localization'])->group(function () {
+// [abuse-2026-06-17 P1] block_kiosk_token_admin added here too — the /profile group was MISSED when
+// GOAL-J2-HEAL-02 hardened the two /api/admin/* groups (:274,:295). A kiosk:order token is bound to the
+// admin user, so without this a stolen/borne token could GET /api/profile (read admin PII) and PUT it
+// (rewrite the admin's email — no old-password proof) = account-takeover primitive. Same ability-aware,
+// additive, order-after-auth:sanctum defense; real admin/wildcard tokens are unaffected, kiosk never calls /profile.
+Route::prefix('profile')->name('profile.')->middleware(['installed', 'apiKey', 'auth:sanctum', 'block_kiosk_token_admin', 'localization'])->group(function () {
     Route::get('/', [ProfileController::class, 'profile']);
     Route::match(['put', 'patch'], '/', [ProfileController::class, 'update']);
     Route::match(['put', 'patch'], '/change-password', [ProfileController::class, 'changePassword']);

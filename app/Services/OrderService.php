@@ -1615,6 +1615,15 @@ class OrderService
                     'details'  => sprintf('Créée via QR Code Dine-in | Total: %s€ | %s', number_format($this->order->total, 2), $discountDetail),
                 ]);
 
+                // [abuse-2026-06-17 P2 — QR-table oversell] In-transaction stock decrement, mirroring
+                // posOrderStore:1066 and the kiosk path (FrontendOrderService). Without this the QR-table
+                // path created the order, then the POST-COMMIT OrderCreated listeners attempted the decrement
+                // and SWALLOWED StockUnavailableException (log + no-op) → the order stood while stock was NOT
+                // decremented = silent oversell. Decrementing IN-TX makes an oversell throw and roll back the
+                // whole QR order atomically (no ghost order, no oversell). Display/quota-neutral when stock
+                // is untracked (decrementForOrder is a no-op for items with no StockLevel).
+                app(\App\Services\Stock\StockService::class)->decrementForOrder($this->order, $this->order->idempotency_key);
+
                 // [Wave M / Heal Z2 P1 — 2026-05-19] OrderCreated::dispatch moved
                 // INSIDE the closure so DispatchableAfterCommit engages
                 // (transactionLevel()>0 → afterCommit). On rollback the
