@@ -257,11 +257,22 @@ class KioskFullFlowE2ETest extends TestCase
     private function postKioskOrder(User $user, array $payload, string $idempotencyKey)
     {
         Sanctum::actingAs($user, ['kiosk:order']);
-        $quote = $this
-            ->withHeader('x-api-key', '123456')
-            ->postJson('/api/frontend/order/quote', $payload)
-            ->assertOk()
-            ->json('data');
+
+        // [prod-finale 2026-06-17] Memoize the minted quote per (user, idempotency-key) so a SAME-user
+        // SAME-key REPLAY resends the IDENTICAL body (quote_token included). That mirrors the live kiosk
+        // offline-queue, which resends the stored body verbatim on retry — NOT a fresh quote. Re-minting a
+        // quote on replay would change the payload hash and make the FROZEN idempotency middleware return a
+        // 409 payload-conflict instead of replaying the cached 2xx (the bug this test was hitting). A
+        // DIFFERENT user/branch still mints its own quote (preserves the cross-branch isolation assertion).
+        $memoKey = $user->id . '|' . $idempotencyKey;
+        if (! isset($this->kioskQuoteMemo[$memoKey])) {
+            $this->kioskQuoteMemo[$memoKey] = $this
+                ->withHeader('x-api-key', '123456')
+                ->postJson('/api/frontend/order/quote', $payload)
+                ->assertOk()
+                ->json('data');
+        }
+        $quote = $this->kioskQuoteMemo[$memoKey];
 
         return $this
             ->withHeader('x-api-key', '123456')
@@ -271,6 +282,9 @@ class KioskFullFlowE2ETest extends TestCase
                 'quote_signature' => $quote['signature'],
             ]);
     }
+
+    /** @var array<string, array<string, mixed>> memoized kiosk quotes keyed by "userId|idempotencyKey" */
+    private array $kioskQuoteMemo = [];
 
     private function expectedTotalFor(int $branchId, int $userId, string $itemsJson): float
     {
