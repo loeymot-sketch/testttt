@@ -43,7 +43,7 @@
                 <div class="flex items-start justify-between gap-3">
                     <div>
                         <h3 class="pos-v5-floorplan-table__name">{{ table.name }}</h3>
-                        <p class="pos-v5-floorplan-table__seats">{{ table.size || 0 }} seats</p>
+                        <p class="pos-v5-floorplan-table__seats">{{ table.size || 0 }} {{ $t('label.seats') }}</p>
                     </div>
                     <span class="pos-v5-floorplan-table__status">
                         {{ statusLabel(table.occupancy_status) }}
@@ -84,6 +84,13 @@
                     </button>
                 </div>
             </button>
+            <!-- [ux-perfection 2026-06-18 caisse-16"] empty-state: a blank cream canvas with no guidance was a
+                 dead end for the cashier. V1 Le Cayenne is takeaway/kiosk, so 0 tables is the normal state. -->
+            <div v-if="tables.length === 0" class="pos-v5-floorplan-empty">
+                <span class="pos-v5-floorplan-empty__icon" aria-hidden="true">🍽️</span>
+                <p class="pos-v5-floorplan-empty__title">{{ $t('label.floorplan_empty_title') }}</p>
+                <p class="pos-v5-floorplan-empty__hint">{{ $t('label.floorplan_empty_hint') }}</p>
+            </div>
         </div>
     </section>
 </template>
@@ -390,6 +397,23 @@ export default {
     grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
     gap: var(--pos-v5-space-3);
 }
+
+/* [ux-perfection 2026-06-18 caisse-16"] floorplan empty-state — spans the full canvas + centers, so 0 tables
+   reads as an intentional state with guidance instead of a dead blank cream area. */
+.pos-v5-floorplan-empty {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 64px 24px;
+    min-height: 320px;
+    color: var(--pos-v5-ink-soft);
+}
+.pos-v5-floorplan-empty__icon { font-size: 56px; opacity: 0.5; margin-bottom: 12px; }
+.pos-v5-floorplan-empty__title { font-size: 18px; font-weight: 700; color: var(--pos-v5-ink); margin: 0 0 6px; }
+.pos-v5-floorplan-empty__hint { font-size: 14px; opacity: 0.8; max-width: 440px; margin: 0; }
 
 .pos-v5-floorplan-table {
     text-align: left;
