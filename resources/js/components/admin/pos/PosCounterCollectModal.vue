@@ -35,6 +35,7 @@
   <transition name="fade">
     <div
       v-if="visible"
+      ref="ccRoot"
       class="cc-modal-overlay"
       data-testid="pos-counter-collect-modal"
       @click.self="onCancel"
@@ -188,6 +189,7 @@ import PosV5Numpad from './v5/PosV5Numpad.vue';
 import posPaymentMethodEnum from '../../../enums/modules/posPaymentMethodEnum';
 import appService from '../../../services/appService';
 import alertService from '../../../services/alertService';
+import { trapFocus } from '../../../helpers/posA11y';
 
 /**
  * PosCounterCollectModal — Wave X X1 sibling counter-collect SSOT-flavored modal.
@@ -294,6 +296,28 @@ export default {
     },
   },
   watch: {
+    // [micro-ux 2026-06-18] Focus-trap lifecycle. Driven by `visible` so it
+    // covers EVERY close path uniformly (cancel / confirm / 409 / parent
+    // clears the order ref): when the overlay mounts, remember the caller's
+    // focus and trap Tab inside the dialog; when it unmounts, release the
+    // trap and restore focus to where the cashier came from. trapFocus is the
+    // shared helper (resources/js/helpers/posA11y.js).
+    visible: {
+      handler(isVisible) {
+        if (isVisible) {
+          this.$nextTick(() => {
+            this._returnFocusEl = document.activeElement;
+            this._releaseTrap = trapFocus(this.$refs.ccRoot);
+          });
+        } else {
+          this._releaseTrap?.();
+          this._releaseTrap = null;
+          const returnTo = this._returnFocusEl;
+          this._returnFocusEl = null;
+          this.$nextTick(() => returnTo?.focus?.());
+        }
+      },
+    },
     // Pre-fill the received input with the order total the moment the
     // modal mounts on a fresh order so a one-tap "Confirmer" suffices for
     // the canonical exact-change case (cashier's most common scenario).
@@ -335,6 +359,11 @@ export default {
   },
   beforeUnmount() {
     document.removeEventListener('keydown', this._onEsc);
+    // [micro-ux 2026-06-18] Release the focus trap if the component is torn
+    // down while still open (defensive — the visible watcher handles the
+    // normal close path).
+    this._releaseTrap?.();
+    this._releaseTrap = null;
   },
   methods: {
     setMode(modeId) {
@@ -813,6 +842,11 @@ export default {
 }
 @keyframes cc-spin {
   to { transform: rotate(360deg); }
+}
+/* [micro-ux 2026-06-18] Respect prefers-reduced-motion (WCAG 2.3.3) — the
+   submitting spinner stops animating for users who request reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+  .cc-spinner { animation: none; }
 }
 
 .fade-enter-active,

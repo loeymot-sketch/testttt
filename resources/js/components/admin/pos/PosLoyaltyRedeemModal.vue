@@ -172,6 +172,7 @@
  *   - Error / success bands carry role="alert" + role="status"
  */
 import axios from 'axios';
+import { trapFocus } from '../../../helpers/posA11y';
 
 export default {
     name: 'PosLoyaltyRedeemModal',
@@ -237,9 +238,29 @@ export default {
                             // ignore — jsdom / non-DOM env
                         }
                     }
+                    // [micro-ux 2026-06-18] Trap Tab inside the dialog + remember
+                    // the caller's focus so it can be restored on close. Mirrors
+                    // PosCounterCollectModal; trapFocus is the shared posA11y.js
+                    // helper. The existing overlay-scoped @keydown.esc stays
+                    // reliable because focus can no longer leave the overlay.
+                    this._returnFocusEl = document.activeElement;
+                    this._releaseTrap = trapFocus(this.$refs.overlayRef);
                 });
+            } else {
+                // [micro-ux 2026-06-18] Release the trap and restore focus on
+                // every close path (Esc / backdrop / cancel / applied).
+                this._releaseTrap?.();
+                this._releaseTrap = null;
+                const returnTo = this._returnFocusEl;
+                this._returnFocusEl = null;
+                this.$nextTick(() => returnTo?.focus?.());
             }
         },
+    },
+    beforeUnmount() {
+        // [micro-ux 2026-06-18] Release the focus trap if torn down while open.
+        this._releaseTrap?.();
+        this._releaseTrap = null;
     },
     methods: {
         emitClose() {

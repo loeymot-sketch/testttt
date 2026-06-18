@@ -81,7 +81,13 @@
     <ConnectionStatusBanner suppress-transient suppress-session-invalid />
     <LoadingComponent :props="loading" />
 
-    <div class="pos-v4-main md:w-[calc(100%-316px)] lg:w-[calc(100%-302px)] xl:w-[calc(100%-376px)]">
+    <!-- [micro-ux 2026-06-18] Menu width reservation = fixed cart width + right
+         offset (right-3 = 12px) + ~8px gap, per band, so the menu grid never
+         sits under the cart and its last product column stays fully visible.
+         Cart is md:340 / lg:360 / xl:400 (2xl inherits 400). A 2xl band is
+         added so ≥1536px no longer inherits the too-narrow xl reservation, and
+         min-w-0 lets the menu zone shrink cleanly instead of clipping. -->
+    <div class="pos-v4-main min-w-0 md:w-[calc(100%-360px)] lg:w-[calc(100%-380px)] xl:w-[calc(100%-420px)] 2xl:w-[calc(100%-420px)]">
         <header class="pos-v5-operator-bar pos-v4-operator-bar" role="banner">
             <div class="pos-v5-operator-bar__brand">
                 <div class="pos-v5-operator-bar__crown" aria-hidden="true">👑</div>
@@ -164,7 +170,10 @@
                     :title="$t('pos.tracker.customer_screen_hint')"
                 >
                     <template #icon>🖥️</template>
-                    <span class="hidden lg:inline">{{ $t('pos.tracker.customer_screen') }}</span>
+                    <!-- [micro-ux 2026-06-18] Secondary action — label only from xl
+                         so the lg band (e.g. 768px-tall 16") shows text on the 2-3
+                         primary actions and keeps secondary ones icon-only (no wrap). -->
+                    <span class="hidden xl:inline">{{ $t('pos.tracker.customer_screen') }}</span>
                 </PosV5Button>
                 <!-- [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19 wave-E-1] When V2
                      dine-in is enabled, render the floorplan link (legacy
@@ -233,7 +242,8 @@
                     @click="triggerNoSaleOpenDrawer"
                 >
                     <template #icon>💵</template>
-                    <span class="hidden lg:inline">{{ $t('pos.no_sale') }}</span>
+                    <!-- [micro-ux 2026-06-18] Secondary action — label from xl (see customer-screen note). -->
+                    <span class="hidden xl:inline">{{ $t('pos.no_sale') }}</span>
                 </PosV5Button>
                 <!--
                   [Sprint 1A 2026-05-16] Bouton "Caisse" — ouvre le dialog de
@@ -251,7 +261,8 @@
                     @click="openCashSessionDialog"
                 >
                     <template #icon>🏦</template>
-                    <span class="hidden lg:inline">{{ $t('label.cash_session_header_btn') }}</span>
+                    <!-- [micro-ux 2026-06-18] Secondary action — label from xl (see customer-screen note). -->
+                    <span class="hidden xl:inline">{{ $t('label.cash_session_header_btn') }}</span>
                 </PosV5Button>
             </nav>
         </header>

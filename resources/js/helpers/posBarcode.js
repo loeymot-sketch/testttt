@@ -15,6 +15,18 @@ export function createBarcodeDetector(onBarcode) {
     let lastKeyAt = 0;
 
     function handler(event) {
+        // [micro-ux 2026-06-18] Ignore keystrokes typed into a focused text
+        // field (search / numpad / refund-reason / loyalty-code) — only real
+        // scanner bursts arrive at <body> with no field focused. Resetting the
+        // buffer here means human typing is never mis-parsed as a barcode while
+        // genuine scans (no focused input) still work. Mirrors the focused-input
+        // guard in createFKeyShortcuts below.
+        const t = event.target;
+        if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) {
+            buffer = '';
+            return;
+        }
+
         const now = performance.now();
         const delta = now - lastKeyAt;
         lastKeyAt = now;

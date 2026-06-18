@@ -185,7 +185,7 @@ __webpack_require__.r(__webpack_exports__);
 
 var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
 // Module
-___CSS_LOADER_EXPORT___.push([module.id, "\n/* =============================================================================\n   POS Counter-Collect Modal — visual parity with PaymentComponent V5\n   ----------------------------------------------------------------------------- */\n.cc-modal-overlay[data-v-708e0b11] {\n  position: fixed;\n  inset: 0;\n  background: rgba(0, 0, 0, 0.55);\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  z-index: 10001;\n  padding: 16px;\n}\n.cc-modal[data-v-708e0b11] {\n  position: relative;\n  background: var(--pos-v5-surface, #fff);\n  border-radius: 12px;\n  width: 100%;\n  max-width: 520px;\n  max-height: 92vh;\n  overflow-y: auto;\n  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);\n  padding: 20px 24px 24px 24px;\n  font-family: var(--pos-v5-font-family, 'Rubik', system-ui, sans-serif);\n}\n.cc-modal-header[data-v-708e0b11] { margin-bottom: 14px;\n}\n.cc-modal-title-row[data-v-708e0b11] {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 12px;\n}\n.cc-modal-title[data-v-708e0b11] {\n  margin: 0;\n  font-size: 18px;\n  font-weight: 800;\n  color: var(--pos-v5-text, #1a1a1a);\n  text-transform: capitalize;\n}\n.cc-modal-close[data-v-708e0b11] {\n  background: transparent;\n  border: 0;\n  font-size: 18px;\n  width: 32px;\n  height: 32px;\n  border-radius: 8px;\n  cursor: pointer;\n  color: var(--pos-v5-muted, #555);\n}\n.cc-modal-close[data-v-708e0b11]:hover:not(:disabled) {\n  background: var(--pos-v5-surface-2, #f3f3f3);\n  color: var(--pos-v5-text, #1a1a1a);\n}\n.cc-modal-order-meta[data-v-708e0b11] {\n  margin: 6px 0 0 0;\n  display: flex;\n  align-items: baseline;\n  gap: 10px;\n  font-size: 13px;\n}\n.cc-modal-order-no[data-v-708e0b11] {\n  font-weight: 700;\n  color: var(--pos-v5-muted, #555);\n}\n.cc-modal-source[data-v-708e0b11] {\n  font-size: 11px;\n  text-transform: uppercase;\n  letter-spacing: 0.06em;\n  padding: 2px 8px;\n  border-radius: 999px;\n  background: var(--pos-v5-brand-red-soft, #ffeaea);\n  color: var(--pos-v5-brand-red, #cf3a3a);\n  font-weight: 600;\n}\n\n/* Hero total — mirror PaymentComponent V5 \".pos-v5-payment-total-card\" */\n.cc-hero-total[data-v-708e0b11] {\n  text-align: center;\n  padding: 14px 16px;\n  background: var(--pos-v5-surface-2, #faf6f1);\n  border: 1px solid var(--pos-v5-border, #eadfd2);\n  border-radius: 10px;\n  margin-bottom: 16px;\n}\n.cc-hero-label[data-v-708e0b11] {\n  margin: 0 0 4px 0;\n  font-size: 12px;\n  text-transform: uppercase;\n  letter-spacing: 0.08em;\n  color: var(--pos-v5-muted, #777);\n  font-weight: 600;\n}\n.cc-hero-value[data-v-708e0b11] {\n  margin: 0;\n  font-size: 40px;\n  line-height: 1.1;\n  font-weight: 800;\n  font-variant-numeric: tabular-nums;\n  color: var(--pos-v5-brand-red, #cf3a3a);\n  font-family: 'Rubik Mono One', 'JetBrains Mono', ui-monospace, monospace;\n}\n@media (max-width: 480px) {\n.cc-hero-value[data-v-708e0b11] { font-size: 32px;\n}\n}\n\n/* Mode picker — same look as Wave W */\n.cc-mode-section[data-v-708e0b11] { margin-bottom: 16px;\n}\n.cc-section-title[data-v-708e0b11] {\n  margin: 0 0 8px 0;\n  font-size: 13px;\n  font-weight: 700;\n  color: var(--pos-v5-text, #1a1a1a);\n  text-transform: uppercase;\n  letter-spacing: 0.05em;\n}\n.cc-mode-grid[data-v-708e0b11] {\n  display: grid;\n  grid-template-columns: repeat(2, 1fr);\n  gap: 10px;\n}\n.cc-mode-btn[data-v-708e0b11] {\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: center;\n  gap: 4px;\n  padding: 14px 10px;\n  border: 2px solid var(--pos-v5-border, #e0e0e0);\n  border-radius: 10px;\n  background: var(--pos-v5-surface-2, #fafafa);\n  cursor: pointer;\n  font-family: inherit;\n  transition: transform 80ms ease, border-color 120ms ease, background 120ms ease;\n  min-height: 84px;\n}\n/* [test-e2e fix A-002 round-1 2026-05-21] Separate :hover (subtle hint)\n   from .is-active (brand-red filled state) so a cashier never sees TWO\n   buttons highlighted simultaneously (hover residue + selected mode). */\n.cc-mode-btn[data-v-708e0b11]:hover:not(:disabled):not(.is-active) {\n  border-color: var(--pos-v5-border-strong, #d4d4d4);\n  background: var(--pos-v5-surface, #fff);\n}\n.cc-mode-btn.is-active[data-v-708e0b11] {\n  border-color: var(--pos-v5-brand-red, #cf3a3a);\n  background: var(--pos-v5-brand-red-soft, #ffeaea);\n  box-shadow: inset 0 0 0 1px var(--pos-v5-brand-red, #cf3a3a);\n}\n.cc-mode-btn[data-v-708e0b11]:active:not(:disabled) { transform: translateY(0);\n}\n.cc-mode-btn[data-v-708e0b11]:disabled { opacity: 0.55; cursor: not-allowed;\n}\n.cc-mode-icon[data-v-708e0b11] { font-size: 26px; line-height: 1;\n}\n.cc-mode-label[data-v-708e0b11] {\n  font-size: 14px;\n  font-weight: 700;\n  color: var(--pos-v5-text, #1a1a1a);\n}\n.cc-mode-sub[data-v-708e0b11] {\n  font-size: 10.5px;\n  color: var(--pos-v5-muted, #777);\n  text-align: center;\n}\n\n/* Cash sub-section */\n.cc-cash-section[data-v-708e0b11] { margin-bottom: 16px;\n}\n.cc-input-label[data-v-708e0b11] {\n  display: block;\n  font-size: 12px;\n  font-weight: 700;\n  text-transform: uppercase;\n  letter-spacing: 0.05em;\n  color: var(--pos-v5-muted, #555);\n  margin-bottom: 6px;\n}\n.cc-input[data-v-708e0b11] {\n  width: 100%;\n  padding: 12px 14px;\n  border: 1.5px solid var(--pos-v5-border, #e0e0e0);\n  border-radius: 8px;\n  font-size: 24px;\n  font-weight: 700;\n  text-align: right;\n  background: var(--pos-v5-surface, #fff);\n  margin-bottom: 10px;\n  color: var(--pos-v5-text, #1a1a1a);\n}\n.cc-input[data-v-708e0b11]:focus {\n  outline: none;\n  border-color: var(--pos-v5-brand-red, #cf3a3a);\n  box-shadow: 0 0 0 3px var(--pos-v5-brand-red-soft, #ffeaea);\n}\n.cc-tabular[data-v-708e0b11] { font-variant-numeric: tabular-nums;\n}\n.cc-change-row[data-v-708e0b11] {\n  margin-top: 12px;\n  padding: 10px 14px;\n  background: var(--pos-v5-success-soft, #e8f7ed);\n  border: 1px solid var(--pos-v5-success, #2c8c4a);\n  border-radius: 8px;\n  display: flex;\n  justify-content: space-between;\n  align-items: center;\n  color: var(--pos-v5-success-dark, #1f6437);\n  font-weight: 700;\n}\n.cc-change-label[data-v-708e0b11] { font-size: 13px;\n}\n.cc-change-value[data-v-708e0b11] { font-size: 18px;\n}\n.cc-cash-short[data-v-708e0b11] {\n  margin: 8px 0 0 0;\n  font-size: 12px;\n  color: var(--pos-v5-brand-red, #cf3a3a);\n  font-weight: 600;\n}\n\n/* Non-cash info */\n.cc-mode-info[data-v-708e0b11] {\n  margin-bottom: 16px;\n  padding: 12px 14px;\n  background: var(--pos-v5-surface-2, #faf6f1);\n  border: 1px dashed var(--pos-v5-border, #d9cfc0);\n  border-radius: 8px;\n}\n.cc-mode-info-text[data-v-708e0b11] {\n  margin: 0;\n  font-size: 13px;\n  color: var(--pos-v5-muted, #555);\n  line-height: 1.45;\n}\n\n/* Footer */\n.cc-modal-footer[data-v-708e0b11] {\n  display: flex;\n  justify-content: flex-end;\n  gap: 10px;\n  margin-top: 4px;\n}\n.cc-cancel-btn[data-v-708e0b11],\n.cc-confirm-btn[data-v-708e0b11] {\n  padding: 12px 20px;\n  border-radius: 8px;\n  font-weight: 700;\n  font-family: inherit;\n  cursor: pointer;\n  display: inline-flex;\n  align-items: center;\n  gap: 6px;\n}\n.cc-cancel-btn[data-v-708e0b11] {\n  background: transparent;\n  border: 1px solid var(--pos-v5-border, #ccc);\n  color: var(--pos-v5-text, #1a1a1a);\n}\n.cc-cancel-btn[data-v-708e0b11]:hover:not(:disabled) { background: var(--pos-v5-surface-2, #f3f3f3);\n}\n.cc-cancel-btn[data-v-708e0b11]:disabled { opacity: 0.5; cursor: not-allowed;\n}\n.cc-confirm-btn[data-v-708e0b11] {\n  background: var(--pos-v5-brand-red, #cf3a3a);\n  border: 2px solid var(--pos-v5-brand-red, #cf3a3a);\n  color: #fff;\n  box-shadow: 0 4px 12px rgba(207, 58, 58, 0.25);\n}\n.cc-confirm-btn[data-v-708e0b11]:hover:not(:disabled) {\n  background: var(--pos-v5-brand-red-dark, #b32f2f);\n  border-color: var(--pos-v5-brand-red-dark, #b32f2f);\n}\n.cc-confirm-btn[data-v-708e0b11]:disabled {\n  opacity: 0.55;\n  cursor: not-allowed;\n  box-shadow: none;\n}\n.cc-spinner[data-v-708e0b11] {\n  width: 14px;\n  height: 14px;\n  border: 2px solid rgba(255, 255, 255, 0.4);\n  border-top-color: #fff;\n  border-radius: 50%;\n  animation: cc-spin-708e0b11 700ms linear infinite;\n  display: inline-block;\n}\n@keyframes cc-spin-708e0b11 {\nto { transform: rotate(360deg);\n}\n}\n.fade-enter-active[data-v-708e0b11],\n.fade-leave-active[data-v-708e0b11] { transition: opacity 160ms ease;\n}\n.fade-enter-from[data-v-708e0b11],\n.fade-leave-to[data-v-708e0b11] { opacity: 0;\n}\n", ""]);
+___CSS_LOADER_EXPORT___.push([module.id, "\n/* =============================================================================\n   POS Counter-Collect Modal — visual parity with PaymentComponent V5\n   ----------------------------------------------------------------------------- */\n.cc-modal-overlay[data-v-708e0b11] {\n  position: fixed;\n  inset: 0;\n  background: rgba(0, 0, 0, 0.55);\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  z-index: 10001;\n  padding: 16px;\n}\n.cc-modal[data-v-708e0b11] {\n  position: relative;\n  background: var(--pos-v5-surface, #fff);\n  border-radius: 12px;\n  width: 100%;\n  max-width: 520px;\n  max-height: 92vh;\n  overflow-y: auto;\n  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);\n  padding: 20px 24px 24px 24px;\n  font-family: var(--pos-v5-font-family, 'Rubik', system-ui, sans-serif);\n}\n.cc-modal-header[data-v-708e0b11] { margin-bottom: 14px;\n}\n.cc-modal-title-row[data-v-708e0b11] {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 12px;\n}\n.cc-modal-title[data-v-708e0b11] {\n  margin: 0;\n  font-size: 18px;\n  font-weight: 800;\n  color: var(--pos-v5-text, #1a1a1a);\n  text-transform: capitalize;\n}\n.cc-modal-close[data-v-708e0b11] {\n  background: transparent;\n  border: 0;\n  font-size: 18px;\n  width: 32px;\n  height: 32px;\n  border-radius: 8px;\n  cursor: pointer;\n  color: var(--pos-v5-muted, #555);\n}\n.cc-modal-close[data-v-708e0b11]:hover:not(:disabled) {\n  background: var(--pos-v5-surface-2, #f3f3f3);\n  color: var(--pos-v5-text, #1a1a1a);\n}\n.cc-modal-order-meta[data-v-708e0b11] {\n  margin: 6px 0 0 0;\n  display: flex;\n  align-items: baseline;\n  gap: 10px;\n  font-size: 13px;\n}\n.cc-modal-order-no[data-v-708e0b11] {\n  font-weight: 700;\n  color: var(--pos-v5-muted, #555);\n}\n.cc-modal-source[data-v-708e0b11] {\n  font-size: 11px;\n  text-transform: uppercase;\n  letter-spacing: 0.06em;\n  padding: 2px 8px;\n  border-radius: 999px;\n  background: var(--pos-v5-brand-red-soft, #ffeaea);\n  color: var(--pos-v5-brand-red, #cf3a3a);\n  font-weight: 600;\n}\n\n/* Hero total — mirror PaymentComponent V5 \".pos-v5-payment-total-card\" */\n.cc-hero-total[data-v-708e0b11] {\n  text-align: center;\n  padding: 14px 16px;\n  background: var(--pos-v5-surface-2, #faf6f1);\n  border: 1px solid var(--pos-v5-border, #eadfd2);\n  border-radius: 10px;\n  margin-bottom: 16px;\n}\n.cc-hero-label[data-v-708e0b11] {\n  margin: 0 0 4px 0;\n  font-size: 12px;\n  text-transform: uppercase;\n  letter-spacing: 0.08em;\n  color: var(--pos-v5-muted, #777);\n  font-weight: 600;\n}\n.cc-hero-value[data-v-708e0b11] {\n  margin: 0;\n  font-size: 40px;\n  line-height: 1.1;\n  font-weight: 800;\n  font-variant-numeric: tabular-nums;\n  color: var(--pos-v5-brand-red, #cf3a3a);\n  font-family: 'Rubik Mono One', 'JetBrains Mono', ui-monospace, monospace;\n}\n@media (max-width: 480px) {\n.cc-hero-value[data-v-708e0b11] { font-size: 32px;\n}\n}\n\n/* Mode picker — same look as Wave W */\n.cc-mode-section[data-v-708e0b11] { margin-bottom: 16px;\n}\n.cc-section-title[data-v-708e0b11] {\n  margin: 0 0 8px 0;\n  font-size: 13px;\n  font-weight: 700;\n  color: var(--pos-v5-text, #1a1a1a);\n  text-transform: uppercase;\n  letter-spacing: 0.05em;\n}\n.cc-mode-grid[data-v-708e0b11] {\n  display: grid;\n  grid-template-columns: repeat(2, 1fr);\n  gap: 10px;\n}\n.cc-mode-btn[data-v-708e0b11] {\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: center;\n  gap: 4px;\n  padding: 14px 10px;\n  border: 2px solid var(--pos-v5-border, #e0e0e0);\n  border-radius: 10px;\n  background: var(--pos-v5-surface-2, #fafafa);\n  cursor: pointer;\n  font-family: inherit;\n  transition: transform 80ms ease, border-color 120ms ease, background 120ms ease;\n  min-height: 84px;\n}\n/* [test-e2e fix A-002 round-1 2026-05-21] Separate :hover (subtle hint)\n   from .is-active (brand-red filled state) so a cashier never sees TWO\n   buttons highlighted simultaneously (hover residue + selected mode). */\n.cc-mode-btn[data-v-708e0b11]:hover:not(:disabled):not(.is-active) {\n  border-color: var(--pos-v5-border-strong, #d4d4d4);\n  background: var(--pos-v5-surface, #fff);\n}\n.cc-mode-btn.is-active[data-v-708e0b11] {\n  border-color: var(--pos-v5-brand-red, #cf3a3a);\n  background: var(--pos-v5-brand-red-soft, #ffeaea);\n  box-shadow: inset 0 0 0 1px var(--pos-v5-brand-red, #cf3a3a);\n}\n.cc-mode-btn[data-v-708e0b11]:active:not(:disabled) { transform: translateY(0);\n}\n.cc-mode-btn[data-v-708e0b11]:disabled { opacity: 0.55; cursor: not-allowed;\n}\n.cc-mode-icon[data-v-708e0b11] { font-size: 26px; line-height: 1;\n}\n.cc-mode-label[data-v-708e0b11] {\n  font-size: 14px;\n  font-weight: 700;\n  color: var(--pos-v5-text, #1a1a1a);\n}\n.cc-mode-sub[data-v-708e0b11] {\n  font-size: 10.5px;\n  color: var(--pos-v5-muted, #777);\n  text-align: center;\n}\n\n/* Cash sub-section */\n.cc-cash-section[data-v-708e0b11] { margin-bottom: 16px;\n}\n.cc-input-label[data-v-708e0b11] {\n  display: block;\n  font-size: 12px;\n  font-weight: 700;\n  text-transform: uppercase;\n  letter-spacing: 0.05em;\n  color: var(--pos-v5-muted, #555);\n  margin-bottom: 6px;\n}\n.cc-input[data-v-708e0b11] {\n  width: 100%;\n  padding: 12px 14px;\n  border: 1.5px solid var(--pos-v5-border, #e0e0e0);\n  border-radius: 8px;\n  font-size: 24px;\n  font-weight: 700;\n  text-align: right;\n  background: var(--pos-v5-surface, #fff);\n  margin-bottom: 10px;\n  color: var(--pos-v5-text, #1a1a1a);\n}\n.cc-input[data-v-708e0b11]:focus {\n  outline: none;\n  border-color: var(--pos-v5-brand-red, #cf3a3a);\n  box-shadow: 0 0 0 3px var(--pos-v5-brand-red-soft, #ffeaea);\n}\n.cc-tabular[data-v-708e0b11] { font-variant-numeric: tabular-nums;\n}\n.cc-change-row[data-v-708e0b11] {\n  margin-top: 12px;\n  padding: 10px 14px;\n  background: var(--pos-v5-success-soft, #e8f7ed);\n  border: 1px solid var(--pos-v5-success, #2c8c4a);\n  border-radius: 8px;\n  display: flex;\n  justify-content: space-between;\n  align-items: center;\n  color: var(--pos-v5-success-dark, #1f6437);\n  font-weight: 700;\n}\n.cc-change-label[data-v-708e0b11] { font-size: 13px;\n}\n.cc-change-value[data-v-708e0b11] { font-size: 18px;\n}\n.cc-cash-short[data-v-708e0b11] {\n  margin: 8px 0 0 0;\n  font-size: 12px;\n  color: var(--pos-v5-brand-red, #cf3a3a);\n  font-weight: 600;\n}\n\n/* Non-cash info */\n.cc-mode-info[data-v-708e0b11] {\n  margin-bottom: 16px;\n  padding: 12px 14px;\n  background: var(--pos-v5-surface-2, #faf6f1);\n  border: 1px dashed var(--pos-v5-border, #d9cfc0);\n  border-radius: 8px;\n}\n.cc-mode-info-text[data-v-708e0b11] {\n  margin: 0;\n  font-size: 13px;\n  color: var(--pos-v5-muted, #555);\n  line-height: 1.45;\n}\n\n/* Footer */\n.cc-modal-footer[data-v-708e0b11] {\n  display: flex;\n  justify-content: flex-end;\n  gap: 10px;\n  margin-top: 4px;\n}\n.cc-cancel-btn[data-v-708e0b11],\n.cc-confirm-btn[data-v-708e0b11] {\n  padding: 12px 20px;\n  border-radius: 8px;\n  font-weight: 700;\n  font-family: inherit;\n  cursor: pointer;\n  display: inline-flex;\n  align-items: center;\n  gap: 6px;\n}\n.cc-cancel-btn[data-v-708e0b11] {\n  background: transparent;\n  border: 1px solid var(--pos-v5-border, #ccc);\n  color: var(--pos-v5-text, #1a1a1a);\n}\n.cc-cancel-btn[data-v-708e0b11]:hover:not(:disabled) { background: var(--pos-v5-surface-2, #f3f3f3);\n}\n.cc-cancel-btn[data-v-708e0b11]:disabled { opacity: 0.5; cursor: not-allowed;\n}\n.cc-confirm-btn[data-v-708e0b11] {\n  background: var(--pos-v5-brand-red, #cf3a3a);\n  border: 2px solid var(--pos-v5-brand-red, #cf3a3a);\n  color: #fff;\n  box-shadow: 0 4px 12px rgba(207, 58, 58, 0.25);\n}\n.cc-confirm-btn[data-v-708e0b11]:hover:not(:disabled) {\n  background: var(--pos-v5-brand-red-dark, #b32f2f);\n  border-color: var(--pos-v5-brand-red-dark, #b32f2f);\n}\n.cc-confirm-btn[data-v-708e0b11]:disabled {\n  opacity: 0.55;\n  cursor: not-allowed;\n  box-shadow: none;\n}\n.cc-spinner[data-v-708e0b11] {\n  width: 14px;\n  height: 14px;\n  border: 2px solid rgba(255, 255, 255, 0.4);\n  border-top-color: #fff;\n  border-radius: 50%;\n  animation: cc-spin-708e0b11 700ms linear infinite;\n  display: inline-block;\n}\n@keyframes cc-spin-708e0b11 {\nto { transform: rotate(360deg);\n}\n}\n/* [micro-ux 2026-06-18] Respect prefers-reduced-motion (WCAG 2.3.3) — the\n   submitting spinner stops animating for users who request reduced motion. */\n@media (prefers-reduced-motion: reduce) {\n.cc-spinner[data-v-708e0b11] { animation: none;\n}\n}\n.fade-enter-active[data-v-708e0b11],\n.fade-leave-active[data-v-708e0b11] { transition: opacity 160ms ease;\n}\n.fade-enter-from[data-v-708e0b11],\n.fade-leave-to[data-v-708e0b11] { opacity: 0;\n}\n", ""]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 
@@ -2072,6 +2072,19 @@ function createEmptyTemp() {
         });
       }
     },
+    // [micro-ux 2026-06-18] Escape-to-close for the item-variation wizard
+    // modal. The modal is always mounted and toggled via the `.active`
+    // class (not a v-if overlay), so the handler is guarded by the modal
+    // being active — a no-op otherwise. Mirrors PosCounterCollectModal's
+    // _onEsc arrow-property pattern (stable reference across add/remove).
+    _onWizardEsc: function _onWizardEsc(e) {
+      var _modalDiv$classList3;
+      if (e.key !== 'Escape') return;
+      var modalDiv = this.$refs.itemVariationModal;
+      if (modalDiv && (_modalDiv$classList3 = modalDiv.classList) !== null && _modalDiv$classList3 !== void 0 && _modalDiv$classList3.contains('active')) {
+        this.variationModalHide();
+      }
+    },
     bumpPricingToCatalog: function bumpPricingToCatalog() {
       if (!this.usePricedCartBase || !this.item) return;
       this.usePricedCartBase = false;
@@ -2643,7 +2656,9 @@ function createEmptyTemp() {
     }
   },
   mounted: function mounted() {
-    var _this1 = this;
+    var _this1 = this,
+      _document2,
+      _document2$addEventLi;
     this._posTileClickHandler = function (event) {
       return _this1.handleNativeTileClick(event);
     };
@@ -2667,13 +2682,21 @@ function createEmptyTemp() {
         _this1.addToCart();
       });
     }
+
+    // [micro-ux 2026-06-18] Document-level Escape handler for the wizard
+    // modal (mirror PosCounterCollectModal:333-338). Guarded inside
+    // _onWizardEsc by the modal's `.active` class so it is a no-op when
+    // the wizard is closed.
+    (_document2 = document) === null || _document2 === void 0 || (_document2$addEventLi = _document2.addEventListener) === null || _document2$addEventLi === void 0 || _document2$addEventLi.call(_document2, 'keydown', this._onWizardEsc);
   },
   beforeUnmount: function beforeUnmount() {
+    var _document4, _document4$removeEven;
     if (this._posTileClickHandler) {
-      var _document2, _document2$removeEven;
-      (_document2 = document) === null || _document2 === void 0 || (_document2$removeEven = _document2.removeEventListener) === null || _document2$removeEven === void 0 || _document2$removeEven.call(_document2, 'click', this._posTileClickHandler, true);
+      var _document3, _document3$removeEven;
+      (_document3 = document) === null || _document3 === void 0 || (_document3$removeEven = _document3.removeEventListener) === null || _document3$removeEven === void 0 || _document3$removeEven.call(_document3, 'click', this._posTileClickHandler, true);
       this._posTileClickHandler = null;
     }
+    (_document4 = document) === null || _document4 === void 0 || (_document4$removeEven = _document4.removeEventListener) === null || _document4$removeEven === void 0 || _document4$removeEven.call(_document4, 'keydown', this._onWizardEsc);
   }
 });
 
@@ -7298,10 +7321,12 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _enums_modules_posPaymentMethodEnum__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../../enums/modules/posPaymentMethodEnum */ "./resources/js/enums/modules/posPaymentMethodEnum.js");
 /* harmony import */ var _services_appService__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../../services/appService */ "./resources/js/services/appService.js");
 /* harmony import */ var _services_alertService__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../../../services/alertService */ "./resources/js/services/alertService.js");
+/* harmony import */ var _helpers_posA11y__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../../../helpers/posA11y */ "./resources/js/helpers/posA11y.js");
 function _regenerator() { /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE */ var e, t, r = "function" == typeof Symbol ? Symbol : {}, n = r.iterator || "@@iterator", o = r.toStringTag || "@@toStringTag"; function i(r, n, o, i) { var c = n && n.prototype instanceof Generator ? n : Generator, u = Object.create(c.prototype); return _regeneratorDefine2(u, "_invoke", function (r, n, o) { var i, c, u, f = 0, p = o || [], y = !1, G = { p: 0, n: 0, v: e, a: d, f: d.bind(e, 4), d: function d(t, r) { return i = t, c = 0, u = e, G.n = r, a; } }; function d(r, n) { for (c = r, u = n, t = 0; !y && f && !o && t < p.length; t++) { var o, i = p[t], d = G.p, l = i[2]; r > 3 ? (o = l === n) && (u = i[(c = i[4]) ? 5 : (c = 3, 3)], i[4] = i[5] = e) : i[0] <= d && ((o = r < 2 && d < i[1]) ? (c = 0, G.v = n, G.n = i[1]) : d < l && (o = r < 3 || i[0] > n || n > l) && (i[4] = r, i[5] = n, G.n = l, c = 0)); } if (o || r > 1) return a; throw y = !0, n; } return function (o, p, l) { if (f > 1) throw TypeError("Generator is already running"); for (y && 1 === p && d(p, l), c = p, u = l; (t = c < 2 ? e : u) || !y;) { i || (c ? c < 3 ? (c > 1 && (G.n = -1), d(c, u)) : G.n = u : G.v = u); try { if (f = 2, i) { if (c || (o = "next"), t = i[o]) { if (!(t = t.call(i, u))) throw TypeError("iterator result is not an object"); if (!t.done) return t; u = t.value, c < 2 && (c = 0); } else 1 === c && (t = i["return"]) && t.call(i), c < 2 && (u = TypeError("The iterator does not provide a '" + o + "' method"), c = 1); i = e; } else if ((t = (y = G.n < 0) ? u : r.call(n, G)) !== a) break; } catch (t) { i = e, c = 1, u = t; } finally { f = 1; } } return { value: t, done: y }; }; }(r, o, i), !0), u; } var a = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} t = Object.getPrototypeOf; var c = [][n] ? t(t([][n]())) : (_regeneratorDefine2(t = {}, n, function () { return this; }), t), u = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(c); function f(e) { return Object.setPrototypeOf ? Object.setPrototypeOf(e, GeneratorFunctionPrototype) : (e.__proto__ = GeneratorFunctionPrototype, _regeneratorDefine2(e, o, "GeneratorFunction")), e.prototype = Object.create(u), e; } return GeneratorFunction.prototype = GeneratorFunctionPrototype, _regeneratorDefine2(u, "constructor", GeneratorFunctionPrototype), _regeneratorDefine2(GeneratorFunctionPrototype, "constructor", GeneratorFunction), GeneratorFunction.displayName = "GeneratorFunction", _regeneratorDefine2(GeneratorFunctionPrototype, o, "GeneratorFunction"), _regeneratorDefine2(u), _regeneratorDefine2(u, o, "Generator"), _regeneratorDefine2(u, n, function () { return this; }), _regeneratorDefine2(u, "toString", function () { return "[object Generator]"; }), (_regenerator = function _regenerator() { return { w: i, m: f }; })(); }
 function _regeneratorDefine2(e, r, n, t) { var i = Object.defineProperty; try { i({}, "", {}); } catch (e) { i = 0; } _regeneratorDefine2 = function _regeneratorDefine(e, r, n, t) { function o(r, n) { _regeneratorDefine2(e, r, function (e) { return this._invoke(r, n, e); }); } r ? i ? i(e, r, { value: n, enumerable: !t, configurable: !t, writable: !t }) : e[r] = n : (o("next", 0), o("throw", 1), o("return", 2)); }, _regeneratorDefine2(e, r, n, t); }
 function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
 function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
+
 
 
 
@@ -7431,13 +7456,40 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
     }
   },
   watch: {
+    // [micro-ux 2026-06-18] Focus-trap lifecycle. Driven by `visible` so it
+    // covers EVERY close path uniformly (cancel / confirm / 409 / parent
+    // clears the order ref): when the overlay mounts, remember the caller's
+    // focus and trap Tab inside the dialog; when it unmounts, release the
+    // trap and restore focus to where the cashier came from. trapFocus is the
+    // shared helper (resources/js/helpers/posA11y.js).
+    visible: {
+      handler: function handler(isVisible) {
+        var _this = this;
+        if (isVisible) {
+          this.$nextTick(function () {
+            _this._returnFocusEl = document.activeElement;
+            _this._releaseTrap = (0,_helpers_posA11y__WEBPACK_IMPORTED_MODULE_5__.trapFocus)(_this.$refs.ccRoot);
+          });
+        } else {
+          var _this$_releaseTrap;
+          (_this$_releaseTrap = this._releaseTrap) === null || _this$_releaseTrap === void 0 || _this$_releaseTrap.call(this);
+          this._releaseTrap = null;
+          var returnTo = this._returnFocusEl;
+          this._returnFocusEl = null;
+          this.$nextTick(function () {
+            var _returnTo$focus;
+            return returnTo === null || returnTo === void 0 || (_returnTo$focus = returnTo.focus) === null || _returnTo$focus === void 0 ? void 0 : _returnTo$focus.call(returnTo);
+          });
+        }
+      }
+    },
     // Pre-fill the received input with the order total the moment the
     // modal mounts on a fresh order so a one-tap "Confirmer" suffices for
     // the canonical exact-change case (cashier's most common scenario).
     order: {
       immediate: true,
       handler: function handler(newOrder) {
-        var _this = this;
+        var _this2 = this;
         if (newOrder && newOrder.id) {
           // [GOAL-D2 2026-05-23] Pre-fill INPUT with FR decimal separator
           // so the cashier sees "8,50" instead of "8.50". Parser at
@@ -7452,9 +7504,9 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
           // input (receivedInput ref does not exist before selectedMode
           // is CASH AND the DOM updates). Mirrors L5.3-F-02 recommendation.
           this.$nextTick(function () {
-            if (_this.$refs.receivedInput) {
-              _this.$refs.receivedInput.focus();
-              _this.$refs.receivedInput.select();
+            if (_this2.$refs.receivedInput) {
+              _this2.$refs.receivedInput.focus();
+              _this2.$refs.receivedInput.select();
             }
           });
         }
@@ -7472,7 +7524,13 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
     document.addEventListener('keydown', this._onEsc);
   },
   beforeUnmount: function beforeUnmount() {
+    var _this$_releaseTrap2;
     document.removeEventListener('keydown', this._onEsc);
+    // [micro-ux 2026-06-18] Release the focus trap if the component is torn
+    // down while still open (defensive — the visible watcher handles the
+    // normal close path).
+    (_this$_releaseTrap2 = this._releaseTrap) === null || _this$_releaseTrap2 === void 0 || _this$_releaseTrap2.call(this);
+    this._releaseTrap = null;
   },
   methods: {
     setMode: function setMode(modeId) {
@@ -7560,13 +7618,13 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
       }
     },
     onConfirm: function onConfirm() {
-      var _this2 = this;
+      var _this3 = this;
       return _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee() {
         var modeMap, modeInt, orderId, total, received, _resp$data, _resp$data2, idempotencyKey, resp, orderLabel, cashMovementSkipped, _resp$data3, _resp$data4, skipMsg, _err$response, _err$response2, _err$response4, _err$response3, fallbackMsg, msg, _t;
         return _regenerator().w(function (_context) {
           while (1) switch (_context.p = _context.n) {
             case 0:
-              if (!(!_this2.order || _this2.submitting || !_this2.canConfirm)) {
+              if (!(!_this3.order || _this3.submitting || !_this3.canConfirm)) {
                 _context.n = 1;
                 break;
               }
@@ -7578,25 +7636,25 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
                 MOBILE: _enums_modules_posPaymentMethodEnum__WEBPACK_IMPORTED_MODULE_2__["default"].MOBILE_BANKING,
                 TICKET: _enums_modules_posPaymentMethodEnum__WEBPACK_IMPORTED_MODULE_2__["default"].TICKET_RESTAURANT
               };
-              modeInt = modeMap[_this2.selectedMode];
+              modeInt = modeMap[_this3.selectedMode];
               if (modeInt) {
                 _context.n = 2;
                 break;
               }
               return _context.a(2);
             case 2:
-              orderId = _this2.order.id;
-              total = _this2.orderTotal; // CASH path sends explicit received (backend enforces >= total).
+              orderId = _this3.order.id;
+              total = _this3.orderTotal; // CASH path sends explicit received (backend enforces >= total).
               // Non-CASH path sends null (backend allows null for non-cash modes).
-              received = _this2.selectedMode === 'CASH' ? _this2.cashReceivedNumber : null;
-              _this2.submitting = true;
+              received = _this3.selectedMode === 'CASH' ? _this3.cashReceivedNumber : null;
+              _this3.submitting = true;
               _context.p = 3;
-              idempotencyKey = _this2.buildIdempotencyKey(orderId, modeInt);
+              idempotencyKey = _this3.buildIdempotencyKey(orderId, modeInt);
               _context.n = 4;
               return axios__WEBPACK_IMPORTED_MODULE_0__["default"].post("admin/pos/counter-collect/".concat(orderId, "/confirm"), {
                 mode: modeInt,
                 received: received,
-                note: _this2.selectedMode === 'CASH' ? 'Encaissement borne au comptoir (SSOT modal)' : "Encaissement borne ".concat(_this2.selectedMode, " (SSOT modal)")
+                note: _this3.selectedMode === 'CASH' ? 'Encaissement borne au comptoir (SSOT modal)' : "Encaissement borne ".concat(_this3.selectedMode, " (SSOT modal)")
               }, {
                 headers: {
                   'X-Idempotency-Key': idempotencyKey
@@ -7606,7 +7664,7 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
               resp = _context.v;
               // Toast feedback per mode — mirror Wave W simulation copy so the
               // cashier perceives parity with the old picker.
-              orderLabel = _this2.order.queue_number || _this2.order.order_serial_no || orderId; // [TRAP-3 2026-06-04] Cash-trail gap surfacing. When a CASH collection
+              orderLabel = _this3.order.queue_number || _this3.order.order_serial_no || orderId; // [TRAP-3 2026-06-04] Cash-trail gap surfacing. When a CASH collection
               // succeeds with NO open drawer session, the backend flags
               // `cash_movement_skipped` on the response: the order is PAID but NO
               // cash_movement row was recorded, so end-of-day reconciliation will
@@ -7620,9 +7678,9 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
               }
               skipMsg = (resp === null || resp === void 0 || (_resp$data3 = resp.data) === null || _resp$data3 === void 0 || (_resp$data3 = _resp$data3.data) === null || _resp$data3 === void 0 ? void 0 : _resp$data3.cash_movement_skipped_message) || (resp === null || resp === void 0 || (_resp$data4 = resp.data) === null || _resp$data4 === void 0 ? void 0 : _resp$data4.cash_movement_skipped_message) || 'Aucune session caisse ouverte — mouvement non enregistré';
               _services_alertService__WEBPACK_IMPORTED_MODULE_4__["default"].warning("Commande ".concat(orderLabel, " encaiss\xE9e. ").concat(skipMsg, " (\xE0 r\xE9gulariser au fond de caisse)."));
-              _this2.$emit('confirmed', {
+              _this3.$emit('confirmed', {
                 orderId: orderId,
-                mode: _this2.selectedMode,
+                mode: _this3.selectedMode,
                 modeInt: modeInt,
                 received: received,
                 total: total,
@@ -7630,22 +7688,22 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
               });
               return _context.a(2);
             case 5:
-              if (_this2.selectedMode === 'CASH') {
-                _services_alertService__WEBPACK_IMPORTED_MODULE_4__["default"].success(_this2.$t('label.cash_drawer_opened_simulation', {
+              if (_this3.selectedMode === 'CASH') {
+                _services_alertService__WEBPACK_IMPORTED_MODULE_4__["default"].success(_this3.$t('label.cash_drawer_opened_simulation', {
                   order: orderLabel
                 }));
-              } else if (_this2.selectedMode === 'CARD') {
-                _services_alertService__WEBPACK_IMPORTED_MODULE_4__["default"].success(_this2.$t('label.tpe_validated_simulation', {
+              } else if (_this3.selectedMode === 'CARD') {
+                _services_alertService__WEBPACK_IMPORTED_MODULE_4__["default"].success(_this3.$t('label.tpe_validated_simulation', {
                   order: orderLabel
                 }));
               } else {
-                _services_alertService__WEBPACK_IMPORTED_MODULE_4__["default"].success(_this2.$t('label.encaisser_success', {
+                _services_alertService__WEBPACK_IMPORTED_MODULE_4__["default"].success(_this3.$t('label.encaisser_success', {
                   order: orderLabel
                 }));
               }
-              _this2.$emit('confirmed', {
+              _this3.$emit('confirmed', {
                 orderId: orderId,
-                mode: _this2.selectedMode,
+                mode: _this3.selectedMode,
                 modeInt: modeInt,
                 received: received,
                 total: total
@@ -7661,13 +7719,13 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
               }
               fallbackMsg = 'Cette commande a déjà été encaissée par un autre caissier.';
               _services_alertService__WEBPACK_IMPORTED_MODULE_4__["default"].error((_t === null || _t === void 0 || (_err$response3 = _t.response) === null || _err$response3 === void 0 || (_err$response3 = _err$response3.data) === null || _err$response3 === void 0 ? void 0 : _err$response3.message) || fallbackMsg);
-              _this2.submitting = false;
-              _this2.$emit('cancel');
+              _this3.submitting = false;
+              _this3.$emit('cancel');
               return _context.a(2);
             case 7:
-              msg = (_t === null || _t === void 0 || (_err$response4 = _t.response) === null || _err$response4 === void 0 || (_err$response4 = _err$response4.data) === null || _err$response4 === void 0 ? void 0 : _err$response4.message) || _this2.$t('label.encaisser_failed');
+              msg = (_t === null || _t === void 0 || (_err$response4 = _t.response) === null || _err$response4 === void 0 || (_err$response4 = _err$response4.data) === null || _err$response4 === void 0 ? void 0 : _err$response4.message) || _this3.$t('label.encaisser_failed');
               _services_alertService__WEBPACK_IMPORTED_MODULE_4__["default"].error(msg);
-              _this2.submitting = false;
+              _this3.submitting = false;
             case 8:
               return _context.a(2);
           }
@@ -7691,6 +7749,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
 /* harmony import */ var axios__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! axios */ "../../../node_modules/axios/lib/axios.js");
+/* harmony import */ var _helpers_posA11y__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../../../helpers/posA11y */ "./resources/js/helpers/posA11y.js");
 function _regenerator() { /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE */ var e, t, r = "function" == typeof Symbol ? Symbol : {}, n = r.iterator || "@@iterator", o = r.toStringTag || "@@toStringTag"; function i(r, n, o, i) { var c = n && n.prototype instanceof Generator ? n : Generator, u = Object.create(c.prototype); return _regeneratorDefine2(u, "_invoke", function (r, n, o) { var i, c, u, f = 0, p = o || [], y = !1, G = { p: 0, n: 0, v: e, a: d, f: d.bind(e, 4), d: function d(t, r) { return i = t, c = 0, u = e, G.n = r, a; } }; function d(r, n) { for (c = r, u = n, t = 0; !y && f && !o && t < p.length; t++) { var o, i = p[t], d = G.p, l = i[2]; r > 3 ? (o = l === n) && (u = i[(c = i[4]) ? 5 : (c = 3, 3)], i[4] = i[5] = e) : i[0] <= d && ((o = r < 2 && d < i[1]) ? (c = 0, G.v = n, G.n = i[1]) : d < l && (o = r < 3 || i[0] > n || n > l) && (i[4] = r, i[5] = n, G.n = l, c = 0)); } if (o || r > 1) return a; throw y = !0, n; } return function (o, p, l) { if (f > 1) throw TypeError("Generator is already running"); for (y && 1 === p && d(p, l), c = p, u = l; (t = c < 2 ? e : u) || !y;) { i || (c ? c < 3 ? (c > 1 && (G.n = -1), d(c, u)) : G.n = u : G.v = u); try { if (f = 2, i) { if (c || (o = "next"), t = i[o]) { if (!(t = t.call(i, u))) throw TypeError("iterator result is not an object"); if (!t.done) return t; u = t.value, c < 2 && (c = 0); } else 1 === c && (t = i["return"]) && t.call(i), c < 2 && (u = TypeError("The iterator does not provide a '" + o + "' method"), c = 1); i = e; } else if ((t = (y = G.n < 0) ? u : r.call(n, G)) !== a) break; } catch (t) { i = e, c = 1, u = t; } finally { f = 1; } } return { value: t, done: y }; }; }(r, o, i), !0), u; } var a = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} t = Object.getPrototypeOf; var c = [][n] ? t(t([][n]())) : (_regeneratorDefine2(t = {}, n, function () { return this; }), t), u = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(c); function f(e) { return Object.setPrototypeOf ? Object.setPrototypeOf(e, GeneratorFunctionPrototype) : (e.__proto__ = GeneratorFunctionPrototype, _regeneratorDefine2(e, o, "GeneratorFunction")), e.prototype = Object.create(u), e; } return GeneratorFunction.prototype = GeneratorFunctionPrototype, _regeneratorDefine2(u, "constructor", GeneratorFunctionPrototype), _regeneratorDefine2(GeneratorFunctionPrototype, "constructor", GeneratorFunction), GeneratorFunction.displayName = "GeneratorFunction", _regeneratorDefine2(GeneratorFunctionPrototype, o, "GeneratorFunction"), _regeneratorDefine2(u), _regeneratorDefine2(u, o, "Generator"), _regeneratorDefine2(u, n, function () { return this; }), _regeneratorDefine2(u, "toString", function () { return "[object Generator]"; }), (_regenerator = function _regenerator() { return { w: i, m: f }; })(); }
 function _regeneratorDefine2(e, r, n, t) { var i = Object.defineProperty; try { i({}, "", {}); } catch (e) { i = 0; } _regeneratorDefine2 = function _regeneratorDefine(e, r, n, t) { function o(r, n) { _regeneratorDefine2(e, r, function (e) { return this._invoke(r, n, e); }); } r ? i ? i(e, r, { value: n, enumerable: !t, configurable: !t, writable: !t }) : e[r] = n : (o("next", 0), o("throw", 1), o("return", 2)); }, _regeneratorDefine2(e, r, n, t); }
 function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
@@ -7727,6 +7786,7 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
  *   - Initial focus moved to loyalty code input on mount
  *   - Error / success bands carry role="alert" + role="status"
  */
+
 
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
   name: 'PosLoyaltyRedeemModal',
@@ -7793,9 +7853,34 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
               // ignore — jsdom / non-DOM env
             }
           }
+          // [micro-ux 2026-06-18] Trap Tab inside the dialog + remember
+          // the caller's focus so it can be restored on close. Mirrors
+          // PosCounterCollectModal; trapFocus is the shared posA11y.js
+          // helper. The existing overlay-scoped @keydown.esc stays
+          // reliable because focus can no longer leave the overlay.
+          _this._returnFocusEl = document.activeElement;
+          _this._releaseTrap = (0,_helpers_posA11y__WEBPACK_IMPORTED_MODULE_1__.trapFocus)(_this.$refs.overlayRef);
+        });
+      } else {
+        var _this$_releaseTrap;
+        // [micro-ux 2026-06-18] Release the trap and restore focus on
+        // every close path (Esc / backdrop / cancel / applied).
+        (_this$_releaseTrap = this._releaseTrap) === null || _this$_releaseTrap === void 0 || _this$_releaseTrap.call(this);
+        this._releaseTrap = null;
+        var returnTo = this._returnFocusEl;
+        this._returnFocusEl = null;
+        this.$nextTick(function () {
+          var _returnTo$focus;
+          return returnTo === null || returnTo === void 0 || (_returnTo$focus = returnTo.focus) === null || _returnTo$focus === void 0 ? void 0 : _returnTo$focus.call(returnTo);
         });
       }
     }
+  },
+  beforeUnmount: function beforeUnmount() {
+    var _this$_releaseTrap2;
+    // [micro-ux 2026-06-18] Release the focus trap if torn down while open.
+    (_this$_releaseTrap2 = this._releaseTrap) === null || _this$_releaseTrap2 === void 0 || _this$_releaseTrap2.call(this);
+    this._releaseTrap = null;
   },
   methods: {
     emitClose: function emitClose() {
@@ -12210,7 +12295,7 @@ var _hoisted_10 = {
 };
 var _hoisted_11 = ["aria-label"];
 var _hoisted_12 = {
-  "class": "pos-v4-main md:w-[calc(100%-316px)] lg:w-[calc(100%-302px)] xl:w-[calc(100%-376px)]"
+  "class": "pos-v4-main min-w-0 md:w-[calc(100%-360px)] lg:w-[calc(100%-380px)] xl:w-[calc(100%-420px)] 2xl:w-[calc(100%-420px)]"
 };
 var _hoisted_13 = {
   "class": "pos-v5-operator-bar pos-v4-operator-bar",
@@ -12237,7 +12322,7 @@ var _hoisted_20 = {
   "class": "hidden lg:inline"
 };
 var _hoisted_21 = {
-  "class": "hidden lg:inline"
+  "class": "hidden xl:inline"
 };
 var _hoisted_22 = {
   "class": "hidden lg:inline"
@@ -12246,10 +12331,10 @@ var _hoisted_23 = {
   "class": "hidden lg:inline"
 };
 var _hoisted_24 = {
-  "class": "hidden lg:inline"
+  "class": "hidden xl:inline"
 };
 var _hoisted_25 = {
-  "class": "hidden lg:inline"
+  "class": "hidden xl:inline"
 };
 var _hoisted_26 = {
   "class": "pos-shortcuts",
@@ -12843,7 +12928,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "suppress-session-invalid": ""
   }), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_LoadingComponent, {
     props: $data.loading
-  }, null, 8 /* PROPS */, ["props"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_12, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("header", _hoisted_13, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_14, [_cache[53] || (_cache[53] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+  }, null, 8 /* PROPS */, ["props"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [micro-ux 2026-06-18] Menu width reservation = fixed cart width + right\n         offset (right-3 = 12px) + ~8px gap, per band, so the menu grid never\n         sits under the cart and its last product column stays fully visible.\n         Cart is md:340 / lg:360 / xl:400 (2xl inherits 400). A 2xl band is\n         added so ≥1536px no longer inherits the too-narrow xl reservation, and\n         min-w-0 lets the menu zone shrink cleanly instead of clipping. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_12, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("header", _hoisted_13, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_14, [_cache[53] || (_cache[53] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
     "class": "pos-v5-operator-bar__crown",
     "aria-hidden": "true"
   }, "👑", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_15, [_cache[51] || (_cache[51] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", {
@@ -13939,6 +14024,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       var _$props$order, _$props$order2, _$props$order3;
       return [$options.visible ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
         key: 0,
+        ref: "ccRoot",
         "class": "cc-modal-overlay",
         "data-testid": "pos-counter-collect-modal",
         onClick: _cache[6] || (_cache[6] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function () {
@@ -14023,7 +14109,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
         onClick: _cache[5] || (_cache[5] = function () {
           return $options.onConfirm && $options.onConfirm.apply($options, arguments);
         })
-      }, [$data.submitting ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_31)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_32, "✓")), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.submitting ? _ctx.$t('label.processing') : _ctx.$t('button.confirm_and_print')), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_30)])], 8 /* PROPS */, _hoisted_1)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)];
+      }, [$data.submitting ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_31)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_32, "✓")), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.submitting ? _ctx.$t('label.processing') : _ctx.$t('button.confirm_and_print')), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_30)])], 8 /* PROPS */, _hoisted_1)], 512 /* NEED_PATCH */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)];
     }),
     _: 1 /* STABLE */
   })], 2112 /* STABLE_FRAGMENT, DEV_ROOT_FRAGMENT */);
@@ -16103,6 +16189,59 @@ var adminPriceMixin = {
 
 /***/ },
 
+/***/ "./resources/js/helpers/posA11y.js"
+/*!*****************************************!*\
+  !*** ./resources/js/helpers/posA11y.js ***!
+  \*****************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   announce: () => (/* binding */ announce),
+/* harmony export */   trapFocus: () => (/* binding */ trapFocus)
+/* harmony export */ });
+/**
+ * POS operator accessibility helpers (focus trap, screen reader announcements).
+ * [Phase-9 / T18] — garde-fous Vitest : `posA11y.spec.js`, `posComponentA11y.spec.js`.
+ */
+
+// Trap focus inside modal/drawer for POS modals
+function trapFocus(rootEl) {
+  if (!rootEl) return function () {};
+  var focusable = rootEl.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+  if (!focusable.length) return function () {};
+  var first = focusable[0];
+  var last = focusable[focusable.length - 1];
+  var handler = function handler(e) {
+    if (e.key !== 'Tab') return;
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  };
+  rootEl.addEventListener('keydown', handler);
+  return function () {
+    return rootEl.removeEventListener('keydown', handler);
+  };
+}
+function announce(msg) {
+  var priority = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'polite';
+  var live = document.getElementById('pos-a11y-live');
+  if (!live) return;
+  live.setAttribute('aria-live', priority);
+  live.textContent = '';
+  // Force re-read by SR
+  setTimeout(function () {
+    live.textContent = msg;
+  }, 50);
+}
+
+/***/ },
+
 /***/ "./resources/js/helpers/posBarcode.js"
 /*!********************************************!*\
   !*** ./resources/js/helpers/posBarcode.js ***!
@@ -16130,6 +16269,17 @@ function createBarcodeDetector(onBarcode) {
   var buffer = '';
   var lastKeyAt = 0;
   function handler(event) {
+    // [micro-ux 2026-06-18] Ignore keystrokes typed into a focused text
+    // field (search / numpad / refund-reason / loyalty-code) — only real
+    // scanner bursts arrive at <body> with no field focused. Resetting the
+    // buffer here means human typing is never mis-parsed as a barcode while
+    // genuine scans (no focused input) still work. Mirrors the focused-input
+    // guard in createFKeyShortcuts below.
+    var t = event.target;
+    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) {
+      buffer = '';
+      return;
+    }
     var now = performance.now();
     var delta = now - lastKeyAt;
     lastKeyAt = now;

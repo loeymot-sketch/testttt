@@ -934,6 +934,18 @@ export default {
                 this.$nextTick(() => returnFocusEl.focus());
             }
         },
+        // [micro-ux 2026-06-18] Escape-to-close for the item-variation wizard
+        // modal. The modal is always mounted and toggled via the `.active`
+        // class (not a v-if overlay), so the handler is guarded by the modal
+        // being active — a no-op otherwise. Mirrors PosCounterCollectModal's
+        // _onEsc arrow-property pattern (stable reference across add/remove).
+        _onWizardEsc(e) {
+            if (e.key !== 'Escape') return;
+            const modalDiv = this.$refs.itemVariationModal;
+            if (modalDiv && modalDiv.classList?.contains('active')) {
+                this.variationModalHide();
+            }
+        },
         bumpPricingToCatalog: function () {
             if (!this.usePricedCartBase || !this.item) return;
             this.usePricedCartBase = false;
@@ -1498,12 +1510,19 @@ export default {
                 this.addToCart();
             });
         }
+
+        // [micro-ux 2026-06-18] Document-level Escape handler for the wizard
+        // modal (mirror PosCounterCollectModal:333-338). Guarded inside
+        // _onWizardEsc by the modal's `.active` class so it is a no-op when
+        // the wizard is closed.
+        document?.addEventListener?.('keydown', this._onWizardEsc);
     },
     beforeUnmount() {
         if (this._posTileClickHandler) {
             document?.removeEventListener?.('click', this._posTileClickHandler, true);
             this._posTileClickHandler = null;
         }
+        document?.removeEventListener?.('keydown', this._onWizardEsc);
     },
 
 }

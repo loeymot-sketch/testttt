@@ -38,6 +38,7 @@
   <transition name="fade">
     <div
       v-if="visible"
+      ref="refundRoot"
       class="refund-modal-overlay"
       data-testid="pos-refund-modal-overlay"
       @click.self="onCancel"
@@ -192,6 +193,7 @@
 <script>
 import axios from 'axios';
 import alertService from '../../../services/alertService';
+import { trapFocus } from '../../../helpers/posA11y';
 
 /**
  * PosRefundModal — HEAL-4 / PROPOSAL-02 NF525 counter-entry refund modal.
@@ -278,6 +280,26 @@ export default {
     },
   },
   watch: {
+    // [micro-ux 2026-06-18] Focus-trap lifecycle (mirror PosCounterCollectModal).
+    // Driven by `visible` so it covers every close path uniformly (cancel /
+    // confirm / 409 already-refunded / parent clears the order ref). trapFocus
+    // is the shared posA11y.js helper.
+    visible: {
+      handler(isVisible) {
+        if (isVisible) {
+          this.$nextTick(() => {
+            this._returnFocusEl = document.activeElement;
+            this._releaseTrap = trapFocus(this.$refs.refundRoot);
+          });
+        } else {
+          this._releaseTrap?.();
+          this._releaseTrap = null;
+          const returnTo = this._returnFocusEl;
+          this._returnFocusEl = null;
+          this.$nextTick(() => returnTo?.focus?.());
+        }
+      },
+    },
     order: {
       immediate: true,
       handler(newOrder) {
@@ -296,6 +318,11 @@ export default {
         }
       },
     },
+  },
+  beforeUnmount() {
+    // [micro-ux 2026-06-18] Release the focus trap if torn down while open.
+    this._releaseTrap?.();
+    this._releaseTrap = null;
   },
   methods: {
     formatPrice(amount) {
@@ -640,6 +667,11 @@ export default {
 }
 @keyframes refund-spin {
   to { transform: rotate(360deg); }
+}
+/* [micro-ux 2026-06-18] Respect prefers-reduced-motion (WCAG 2.3.3) — the
+   submitting spinner stops animating for users who request reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+  .refund-spinner { animation: none; }
 }
 
 /* Modal enter/leave */
