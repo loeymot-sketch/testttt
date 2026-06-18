@@ -28,7 +28,14 @@
       {{ $t("label.preparing") }}
     </h3>
     <div class="content-wrapper p-3 overflow-hidden thin-scrolling h-full">
+      <!-- [micro-ux 2026-06-18] aria-live polite so a customer using a screen reader hears
+           when an order enters EN PRÉPARATION (mirrors the PRÊT column). aria-atomic=false
+           announces only the changed item, not the whole column, on each transition. -->
       <transition-group name="oss-slide" tag="ul"
+        role="status"
+        aria-live="polite"
+        aria-atomic="false"
+        :aria-label="$t('label.preparing')"
         :class="['oss-order-list', preparingItems.length > 8 ? 'oss-autoscroll' : '',
                  '[&_li]:mb-8 [&_li]:text-[56px] [&_li]:font-extrabold [&_li]:leading-[1.1] w-full text-center text-[#1F1F39] mb-20']">
         <li v-for="item in preparingItems" :key="item.id"
@@ -41,7 +48,8 @@
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-20 h-20 mb-5 text-[#D1D5DB]" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
         </svg>
-        <p class="text-[#9CA3AF] text-[32px] font-bold">{{ $t('label.oss_empty_preparing') }}</p>
+        <!-- [micro-ux 2026-06-18] #9CA3AF (2.54:1) -> #6B7280 (4.83:1) for AA on the white wall. -->
+        <p class="text-[#6B7280] text-[32px] font-bold">{{ $t('label.oss_empty_preparing') }}</p>
       </div>
     </div>
   </div>
@@ -71,7 +79,8 @@
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-20 h-20 mb-5 text-[#D1D5DB]" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" d="m9 12.75 2.25 2.25 4.5-4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
         </svg>
-        <p class="text-[#9CA3AF] text-[32px] font-bold">{{ $t('label.oss_empty_ready') }}</p>
+        <!-- [micro-ux 2026-06-18] #9CA3AF (2.54:1) -> #6B7280 (4.83:1) for AA on the white wall. -->
+        <p class="text-[#6B7280] text-[32px] font-bold">{{ $t('label.oss_empty_ready') }}</p>
       </div>
     </div>
   </div>

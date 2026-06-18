@@ -29,3 +29,12 @@ button:focus-visible,
     outline: 3px solid #1d4ed8;
     outline-offset: 2px;
 }
+
+/* [micro-ux 2026-06-18] Visible keyboard focus ring on admin links (dashboard
+   "Voir tout", quick-access chips, any <a>/role=link). Mirrors the button ring. */
+a:focus-visible,
+[role="link"]:focus-visible {
+    outline: 3px solid #1d4ed8;
+    outline-offset: 2px;
+    border-radius: 4px;
+}

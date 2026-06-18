@@ -84,5 +84,16 @@ CONFIRM-OK (do not change): main pay CTA 56px, product tiles, category pills alr
 
 **HEALABLE per-page UX work = DONE across all 3 systems.** Residual = owner-LOCK gates (frozen zones) + owner-DATA (currency position setting, test slugs) + 1 P3 edge. All recorded above for owner decision.
 
+---
+## DEEP MICRO-DETAIL PASS (round 2 — "détails cachés et indirects", owner 2026-06-18)
+4-lens adversarial workflow (interaction-states / micro-visual / a11y-depth / edge-resilience) over the NON-frozen source.
+
+### CAISSE deep pass — 19 verified heals (0 refuted), commit `076eb7250`
+P2: tracker router-links keyboard **:focus-visible** ring (was hover-only, keyboard-invisible) · Encaissement live-queue **aria-live** announcer + per-button accessible name (was N× identical "Encaisser") · POS search placeholder **AA contrast** #8A8278(3.79:1)→ink-soft · cart-item long name **overflow-wrap** (was clipping the price) · Encaissement **silent-fetch-fail** now error+Réessayer (was reassuring "✅ aucune commande" — cashier could miss pending cash).
+P3: Encaisser :active feedback · dead `<a href="#">`→`<span>` · tabular-nums tracker totals · ItemComponent #FFE8DD→token · ticket-customer ellipsis · count-chip aria-label · POS à-encaisser/prêtes aria-live · cart-extras + eyebrows **AA contrast**→ink · Pill role=status · TotalRow sign sr-only · PosOrderList + PosOrderShow surface fetch errors (was silent blank/empty).
+7 i18n keys added (fr+en, all resolve). Build green · Vitest 1994/0 · frozen 0. (Cool-grey hexes left — no clean warm-token match.)
+
+### KDS + OSS + Dashboard deep pass — in progress (workflow woo4g1ibb)
+
 ## Convergence
 A SYSTEM is done when every page passes 2 consecutive clean reads (0 open P1/P2) at its viewport, with all heals committed and frozen issues gated. Then next system.

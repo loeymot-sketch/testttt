@@ -1,5 +1,6 @@
 <template>
-    <LoadingComponent :props="loading" />
+    <!-- [micro-ux 2026-06-18] scoped non-fullscreen loader (was full-screen overlay). -->
+    <LoadingContentComponent :props="loading" />
     <div class="col-12 xl:col-6">
         <div class="db-card">
             <div class="db-card-header">
@@ -32,13 +33,13 @@
 
 <script>
 import axios from 'axios';
-import LoadingComponent from "../components/LoadingComponent";
+import LoadingContentComponent from "../components/LoadingContentComponent";
 
 /** @typedef {{ sequence_no?: number, status?: string, closed_at?: string|null, opened_at?: string|null }} ZReportRow */
 
 export default {
     name: 'LastZReportWidget',
-    components: { LoadingComponent },
+    components: { LoadingContentComponent },
     data() {
         return {
             loading: { isActive: false },

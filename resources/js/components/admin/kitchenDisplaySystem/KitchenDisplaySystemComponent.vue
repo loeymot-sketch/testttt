@@ -243,7 +243,9 @@
             <Swiper :dir="direction" :speed="1000" slidesPerView="auto" :spaceBetween="12" :loop="false"
               class="md:grid sm:grid-cols-2 lg:grid-cols-4  gap-y-2 md:w-fit lg:!w-full w-full">
               <SwiperSlide class="!w-fit">
+                <!-- [micro-ux 2026-06-18] aria-pressed reflects the active status filter for screen readers. -->
                 <button type="button" v-on:click="list()"
+                  :aria-pressed="!props.search.status ? 'true' : 'false'"
                   class="db-btn text-heading w-fit flex items-center justify-center gap-3 h-11 px-6 rounded-lg transition bg-white border border-[#D9DBE9] hover:text-[#4C1A96] hover:border-[#4C1A96] hover:bg-[#F8F1FF]"
                   :class="!props.search.status ? '!bg-[#4C1A96] !text-white !border-[#4C1A96]' : ''">
                   <span class="whitespace-nowrap text-sm font-medium">{{ $t("label.all_orders") }}</span>
@@ -251,6 +253,7 @@
               </SwiperSlide>
               <SwiperSlide class="!w-fit">
                 <button type="button" v-on:click="list(enums.orderStatusEnum.ACCEPT)"
+                  :aria-pressed="props.search.status === enums.orderStatusEnum.ACCEPT ? 'true' : 'false'"
                   :class="props.search.status === enums.orderStatusEnum.ACCEPT ? '!bg-[#4C1A96] !text-white !border-[#4C1A96]' : ''"
                   class="db-btn text-heading w-fit flex items-center justify-center gap-3 h-11 px-6 rounded-lg transition bg-white border border-[#D9DBE9] hover:text-[#4C1A96] hover:border-[#4C1A96] hover:bg-[#F8F1FF]">
                   <span class="whitespace-nowrap text-sm font-medium">{{ $t("label.confirmed") }}</span>
@@ -258,6 +261,7 @@
               </SwiperSlide>
               <SwiperSlide class="!w-fit">
                 <button type="button" v-on:click="list(enums.orderStatusEnum.PREPARING)"
+                  :aria-pressed="props.search.status === enums.orderStatusEnum.PREPARING ? 'true' : 'false'"
                   :class="props.search.status === enums.orderStatusEnum.PREPARING ? '!bg-[#4C1A96] !text-white !border-[#4C1A96]' : ''"
                   class="db-btn text-heading w-fit flex items-center justify-center gap-3 h-11 px-6 rounded-lg transition bg-white border border-[#D9DBE9] hover:text-[#4C1A96] hover:border-[#4C1A96] hover:bg-[#F8F1FF]">
                   <span class="whitespace-nowrap text-sm font-medium">{{ $t("label.preparing") }}</span>
@@ -265,6 +269,7 @@
               </SwiperSlide>
               <SwiperSlide class="!w-fit">
                 <button type="button" v-on:click="list(enums.orderStatusEnum.PREPARED)"
+                  :aria-pressed="props.search.status === enums.orderStatusEnum.PREPARED ? 'true' : 'false'"
                   :class="props.search.status === enums.orderStatusEnum.PREPARED ? '!bg-[#4C1A96] !text-white !border-[#4C1A96]' : ''"
                   class="db-btn text-heading w-fit flex items-center justify-center gap-3 h-11 px-6 rounded-lg transition bg-white border border-[#D9DBE9] hover:text-[#4C1A96] hover:border-[#4C1A96] hover:bg-[#F8F1FF]">
                   <span class="whitespace-nowrap text-sm font-medium">{{ $t("label.done") }}</span>
@@ -326,6 +331,13 @@
                   <div class="flex items-center gap-1 text-[#0084FF]">
                     <i class="lab lab-processing lab-font-size-16 text-[#0084FF]"></i>
                     <span :id="'order-' + dineinOrder.id + '-title'" class="text-sm font-normal">#{{ dineinOrder.order_serial_no }}</span>
+                    <!-- [micro-ux 2026-06-18] text/icon urgency chip (not color-only) when the order is late. -->
+                    <span v-if="kdsUrgencyChip(dineinOrder)"
+                      class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold leading-none"
+                      :class="kdsUrgencyChip(dineinOrder).critical ? 'bg-[#FEE2E2] text-[#991B1B]' : 'bg-[#FEF3C7] text-[#92400E]'"
+                      :title="kdsUrgencyChip(dineinOrder).label">
+                      <span aria-hidden="true">&#9888;</span>{{ kdsUrgencyChip(dineinOrder).label }} · {{ kdsUrgencyChip(dineinOrder).elapsed }}
+                    </span>
                     <span v-if="dineinOrder.queue_number" class="kds-source-pill kds-source-pill--queue">
                       N°{{ dineinOrder.queue_number }}
                     </span>
@@ -524,6 +536,13 @@
                   <div class="flex items-center gap-1 text-[#FF8C1A]">
                     <i class="lab lab-processing lab-font-size-16 text-[#FF8C1A]"></i>
                     <span :id="'order-' + onlineOrder.id + '-title'" class="text-sm font-normal">#{{ onlineOrder.order_serial_no }}</span>
+                    <!-- [micro-ux 2026-06-18] text/icon urgency chip (not color-only) when the order is late. -->
+                    <span v-if="kdsUrgencyChip(onlineOrder)"
+                      class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold leading-none"
+                      :class="kdsUrgencyChip(onlineOrder).critical ? 'bg-[#FEE2E2] text-[#991B1B]' : 'bg-[#FEF3C7] text-[#92400E]'"
+                      :title="kdsUrgencyChip(onlineOrder).label">
+                      <span aria-hidden="true">&#9888;</span>{{ kdsUrgencyChip(onlineOrder).label }} · {{ kdsUrgencyChip(onlineOrder).elapsed }}
+                    </span>
                     <span v-if="onlineOrder.queue_number" class="kds-source-pill kds-source-pill--queue">
                       N°{{ onlineOrder.queue_number }}
                     </span>
@@ -704,6 +723,13 @@
                   <div class="kds-card-header-meta text-[#2D1263]">
                     <i class="lab lab-processing lab-font-size-16 text-[#2D1263]"></i>
                     <span :id="'order-' + takeawayOrder.id + '-title'" class="text-sm font-normal">#{{ takeawayOrder.order_serial_no }}</span>
+                    <!-- [micro-ux 2026-06-18] text/icon urgency chip (not color-only) when the order is late. -->
+                    <span v-if="kdsUrgencyChip(takeawayOrder)"
+                      class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold leading-none"
+                      :class="kdsUrgencyChip(takeawayOrder).critical ? 'bg-[#FEE2E2] text-[#991B1B]' : 'bg-[#FEF3C7] text-[#92400E]'"
+                      :title="kdsUrgencyChip(takeawayOrder).label">
+                      <span aria-hidden="true">&#9888;</span>{{ kdsUrgencyChip(takeawayOrder).label }} · {{ kdsUrgencyChip(takeawayOrder).elapsed }}
+                    </span>
                     <span v-if="takeawayOrder.queue_number"
                       class="kds-source-pill kds-source-pill--queue">
                       N°{{ takeawayOrder.queue_number }}
@@ -890,6 +916,13 @@
                   <div class="kds-card-header-meta text-[#991B1B]">
                     <i class="lab lab-processing lab-font-size-16 text-[#991B1B]"></i>
                     <span :id="'order-' + kioskOrder.id + '-title'" class="text-sm font-normal">#{{ kioskOrder.order_serial_no }}</span>
+                    <!-- [micro-ux 2026-06-18] text/icon urgency chip (not color-only) when the order is late. -->
+                    <span v-if="kdsUrgencyChip(kioskOrder)"
+                      class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold leading-none"
+                      :class="kdsUrgencyChip(kioskOrder).critical ? 'bg-[#FEE2E2] text-[#991B1B]' : 'bg-[#FEF3C7] text-[#92400E]'"
+                      :title="kdsUrgencyChip(kioskOrder).label">
+                      <span aria-hidden="true">&#9888;</span>{{ kdsUrgencyChip(kioskOrder).label }} · {{ kdsUrgencyChip(kioskOrder).elapsed }}
+                    </span>
                     <span v-if="kioskOrder.queue_number"
                       class="kds-source-pill kds-source-pill--queue">
                       N°{{ kioskOrder.queue_number }}
@@ -1115,6 +1148,7 @@ import { kdsStatusPayload } from "../../../store/modules/kds";
 import {
   filterOrdersByStation,
   getKdsEscalationClass,
+  getKdsAgeBucket,
   kdsStationFilterStorageKey,
   parseOrderCreatedMs,
   shouldPlayKdsNewOrderSound,
@@ -1476,6 +1510,10 @@ export default {
       const newOrders = (newVal || []).filter((o) => o && !oldIds.has(o.id));
       if (newOrders.length > 0) {
         this.playKdsNewOrderSound();
+        // [micro-ux 2026-06-18] Also announce the new order to screen readers via the
+        // existing polite aria-live region (does NOT steal focus). Reuses the single
+        // kds-aria-live region — no second live region is added (a11y sentinel keeps 1).
+        this.announceNewOrders(newOrders);
       }
     },
   },
@@ -1808,6 +1846,25 @@ export default {
       void this.waitTick;
       const ms = parseOrderCreatedMs(order);
       return getKdsEscalationClass(ms, Date.now());
+    },
+    // [micro-ux 2026-06-18] Surface the existing escalation bucket as TEXT (not
+    // color alone). Returns null for fresh orders; for warning/critical returns
+    // a chip descriptor with the overdue label + elapsed minutes. Reuses
+    // getKdsAgeBucket — bucket thresholds are NOT changed. The red urgency was
+    // previously conveyed only by border tint (color-only = WCAG 1.4.1 risk).
+    kdsUrgencyChip(order) {
+      void this.waitTick;
+      const ms = parseOrderCreatedMs(order);
+      const now = Date.now();
+      const bucket = getKdsAgeBucket(ms, now);
+      if (bucket === 'fresh') return null;
+      const elapsedMin = Math.max(0, Math.floor((now - ms) / 60000));
+      return {
+        bucket,
+        critical: bucket === 'critical',
+        label: this.$t ? this.$t('label.kds_overdue') : 'Overdue',
+        elapsed: `${elapsedMin} min`,
+      };
     },
     kdsDisplayDateTime(value) {
       const raw = String(value || "").trim();
@@ -2458,6 +2515,26 @@ export default {
       }
       // Vue reactivity : briefly clear before setting so identical successive
       // transitions still trigger an aria-live announcement.
+      this.kdsAriaLiveMessage = '';
+      this.$nextTick(() => {
+        this.kdsAriaLiveMessage = label;
+      });
+    },
+    /**
+     * [micro-ux 2026-06-18] Announce newly-arrived orders via the polite
+     * aria-live region so screen-reader cooks hear an order landed (the
+     * chime alone is inaudible to them). Uses the newest order's serial.
+     * Reuses kdsAriaLiveMessage — no extra live region.
+     */
+    announceNewOrders(newOrders) {
+      const list = newOrders || [];
+      if (!list.length) return;
+      const newest = list[list.length - 1] || {};
+      const serial = newest.order_serial_no ?? newest.id ?? '';
+      if (serial === '' || serial === null || serial === undefined) return;
+      const label = this.$t
+        ? this.$t('label.kds_aria_live_new_order', { id: serial })
+        : `New order #${serial}`;
       this.kdsAriaLiveMessage = '';
       this.$nextTick(() => {
         this.kdsAriaLiveMessage = label;

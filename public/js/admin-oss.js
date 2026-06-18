@@ -604,7 +604,7 @@ var _hoisted_4 = {
   role: "status"
 };
 var _hoisted_5 = {
-  "class": "text-[#9CA3AF] text-[32px] font-bold"
+  "class": "text-[#6B7280] text-[32px] font-bold"
 };
 var _hoisted_6 = ["aria-label"];
 var _hoisted_7 = {
@@ -619,7 +619,7 @@ var _hoisted_9 = {
   role: "status"
 };
 var _hoisted_10 = {
-  "class": "text-[#9CA3AF] text-[32px] font-bold"
+  "class": "text-[#6B7280] text-[32px] font-bold"
 };
 function render(_ctx, _cache, $props, $setup, $data, $options) {
   var _component_LoadingContentComponent = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("LoadingContentComponent");
@@ -629,9 +629,13 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "class": "col-span-1 customer-screen db-card rounded-[10px] h-screen md:h-[calc(100dvh-117px)] overflow-hidden",
     role: "region",
     "aria-label": _ctx.$t('label.preparing')
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_2, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.preparing")), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_3, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(vue__WEBPACK_IMPORTED_MODULE_0__.TransitionGroup, {
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_2, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.preparing")), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_3, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [micro-ux 2026-06-18] aria-live polite so a customer using a screen reader hears\n           when an order enters EN PRÉPARATION (mirrors the PRÊT column). aria-atomic=false\n           announces only the changed item, not the whole column, on each transition. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(vue__WEBPACK_IMPORTED_MODULE_0__.TransitionGroup, {
     name: "oss-slide",
     tag: "ul",
+    role: "status",
+    "aria-live": "polite",
+    "aria-atomic": "false",
+    "aria-label": _ctx.$t('label.preparing'),
     "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(['oss-order-list', $data.preparingItems.length > 8 ? 'oss-autoscroll' : '', '[&_li]:mb-8 [&_li]:text-[56px] [&_li]:font-extrabold [&_li]:leading-[1.1] w-full text-center text-[#1F1F39] mb-20'])
   }, {
     "default": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
@@ -643,7 +647,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       }), 128 /* KEYED_FRAGMENT */))];
     }),
     _: 1 /* STABLE */
-  }, 8 /* PROPS */, ["class"]), $data.preparingItems.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_4, [_cache[0] || (_cache[0] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("svg", {
+  }, 8 /* PROPS */, ["aria-label", "class"]), $data.preparingItems.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_4, [_cache[0] || (_cache[0] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("svg", {
     xmlns: "http://www.w3.org/2000/svg",
     fill: "none",
     viewBox: "0 0 24 24",
@@ -655,7 +659,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "stroke-linecap": "round",
     "stroke-linejoin": "round",
     d: "M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
-  })], -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_5, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.oss_empty_preparing')), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])], 8 /* PROPS */, _hoisted_1), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Colonne PRÊT "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+  })], -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [micro-ux 2026-06-18] #9CA3AF (2.54:1) -> #6B7280 (4.83:1) for AA on the white wall. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_5, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.oss_empty_preparing')), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])], 8 /* PROPS */, _hoisted_1), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Colonne PRÊT "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
     "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["col-span-1 customer-screen db-card rounded-[10px] h-screen md:h-[calc(100dvh-117px)] overflow-hidden", $data.newReadyFlash ? 'oss-ready-flash' : '']),
     role: "region",
     "aria-label": _ctx.$t('label.ready')
@@ -688,7 +692,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "stroke-linecap": "round",
     "stroke-linejoin": "round",
     d: "m9 12.75 2.25 2.25 4.5-4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
-  })], -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_10, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.oss_empty_ready')), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])], 10 /* CLASS, PROPS */, _hoisted_6)], 64 /* STABLE_FRAGMENT */);
+  })], -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [micro-ux 2026-06-18] #9CA3AF (2.54:1) -> #6B7280 (4.83:1) for AA on the white wall. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_10, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.oss_empty_ready')), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])], 10 /* CLASS, PROPS */, _hoisted_6)], 64 /* STABLE_FRAGMENT */);
 }
 
 /***/ },

@@ -30,6 +30,16 @@ button:focus-visible,
     outline-offset: 2px;
 }
 
+/* [micro-ux 2026-06-18] Visible keyboard focus ring on admin links (dashboard
+   "Voir tout", quick-access chips, any <a>/role=link). Mirrors the button ring
+   above so link focus is no longer invisible for keyboard operators. */
+a:focus-visible,
+[role="link"]:focus-visible {
+    outline: 3px solid #1d4ed8;
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
 /*
  * [A11Y-KB-P1 heal 2026-05-29] Wave E A11Y-KB agent caught :
  * - POS search input.pos-v5-search-input__field had outline:none / no ring
@@ -7415,6 +7425,10 @@ input:checked + div svg {
   --tw-bg-opacity: 1;
   background-color: rgb(0 139 186 / var(--tw-bg-opacity, 1));
 }
+.bg-\[\#15803D\] {
+  --tw-bg-opacity: 1;
+  background-color: rgb(21 128 61 / var(--tw-bg-opacity, 1));
+}
 .bg-\[\#166534\] {
   --tw-bg-opacity: 1;
   background-color: rgb(22 101 52 / var(--tw-bg-opacity, 1));
@@ -7422,6 +7436,10 @@ input:checked + div svg {
 .bg-\[\#1AB759\] {
   --tw-bg-opacity: 1;
   background-color: rgb(26 183 89 / var(--tw-bg-opacity, 1));
+}
+.bg-\[\#1D4ED8\] {
+  --tw-bg-opacity: 1;
+  background-color: rgb(29 78 216 / var(--tw-bg-opacity, 1));
 }
 .bg-\[\#1ab759\] {
   --tw-bg-opacity: 1;
@@ -7542,6 +7560,14 @@ input:checked + div svg {
 .bg-\[\#FB4E4E\] {
   --tw-bg-opacity: 1;
   background-color: rgb(251 78 78 / var(--tw-bg-opacity, 1));
+}
+.bg-\[\#FEE2E2\] {
+  --tw-bg-opacity: 1;
+  background-color: rgb(254 226 226 / var(--tw-bg-opacity, 1));
+}
+.bg-\[\#FEF3C7\] {
+  --tw-bg-opacity: 1;
+  background-color: rgb(254 243 199 / var(--tw-bg-opacity, 1));
 }
 .bg-\[\#FF4F99\] {
   --tw-bg-opacity: 1;
@@ -7878,9 +7904,6 @@ input:checked + div svg {
 .bg-white\/95 {
   background-color: rgb(255 255 255 / 0.95);
 }
-.bg-gradient-to-br {
-  background-image: linear-gradient(to bottom right, var(--tw-gradient-stops));
-}
 .bg-gradient-to-t {
   background-image: linear-gradient(to top, var(--tw-gradient-stops));
 }
@@ -7892,32 +7915,8 @@ input:checked + div svg {
   --tw-gradient-to: rgb(255 122 0 / 0) var(--tw-gradient-to-position);
   --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
 }
-.from-blue-400 {
-  --tw-gradient-from: #60a5fa var(--tw-gradient-from-position);
-  --tw-gradient-to: rgb(96 165 250 / 0) var(--tw-gradient-to-position);
-  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
-}
-.from-green-400 {
-  --tw-gradient-from: #4ade80 var(--tw-gradient-from-position);
-  --tw-gradient-to: rgb(74 222 128 / 0) var(--tw-gradient-to-position);
-  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
-}
-.from-purple-400 {
-  --tw-gradient-from: #c084fc var(--tw-gradient-from-position);
-  --tw-gradient-to: rgb(192 132 252 / 0) var(--tw-gradient-to-position);
-  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
-}
 .to-\[\#FF016C\] {
   --tw-gradient-to: #FF016C var(--tw-gradient-to-position);
-}
-.to-blue-600 {
-  --tw-gradient-to: #2563eb var(--tw-gradient-to-position);
-}
-.to-green-600 {
-  --tw-gradient-to: #16a34a var(--tw-gradient-to-position);
-}
-.to-purple-600 {
-  --tw-gradient-to: #9333ea var(--tw-gradient-to-position);
 }
 .bg-cover {
   background-size: cover;
@@ -8318,6 +8317,10 @@ input:checked + div svg {
 .italic {
   font-style: italic;
 }
+.tabular-nums {
+  --tw-numeric-spacing: tabular-nums;
+  font-variant-numeric: var(--tw-ordinal) var(--tw-slashed-zero) var(--tw-numeric-figure) var(--tw-numeric-spacing) var(--tw-numeric-fraction);
+}
 .leading-10 {
   line-height: 2.5rem;
 }
@@ -8521,6 +8524,10 @@ input:checked + div svg {
   --tw-text-opacity: 1;
   color: rgb(102 117 110 / var(--tw-text-opacity, 1));
 }
+.text-\[\#6B7280\] {
+  --tw-text-opacity: 1;
+  color: rgb(107 114 128 / var(--tw-text-opacity, 1));
+}
 .text-\[\#6E7191\] {
   --tw-text-opacity: 1;
   color: rgb(110 113 145 / var(--tw-text-opacity, 1));
@@ -8541,13 +8548,13 @@ input:checked + div svg {
   --tw-text-opacity: 1;
   color: rgb(138 104 18 / var(--tw-text-opacity, 1));
 }
+.text-\[\#92400E\] {
+  --tw-text-opacity: 1;
+  color: rgb(146 64 14 / var(--tw-text-opacity, 1));
+}
 .text-\[\#991B1B\] {
   --tw-text-opacity: 1;
   color: rgb(153 27 27 / var(--tw-text-opacity, 1));
-}
-.text-\[\#9CA3AF\] {
-  --tw-text-opacity: 1;
-  color: rgb(156 163 175 / var(--tw-text-opacity, 1));
 }
 .text-\[\#9b2f2f\] {
   --tw-text-opacity: 1;

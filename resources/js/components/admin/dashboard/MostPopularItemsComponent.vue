@@ -1,5 +1,6 @@
 <template>
-    <LoadingComponent :props="loading" />
+    <!-- [micro-ux 2026-06-18] scoped non-fullscreen loader (was full-screen overlay). -->
+    <LoadingContentComponent :props="loading" />
     <div class="col-12 xl:col-6">
         <div class="db-card">
             <div class="db-card-header">
@@ -20,22 +21,27 @@
                         </div>
                     </li>
                 </ul>
+                <!-- [micro-ux 2026-06-18] explicit empty-state instead of a blank card. -->
+                <p v-if="!loading.isActive && popular_items.length === 0" class="text-sm text-gray-500 text-center py-6">
+                    {{ $t('label.no_data_available') }}
+                </p>
             </div>
         </div>
     </div>
 </template>
 
 <script>
-import LoadingComponent from "../components/LoadingComponent";
+import LoadingContentComponent from "../components/LoadingContentComponent";
 export default {
     name: "MostPopularItemsComponent",
-    components: { LoadingComponent },
+    components: { LoadingContentComponent },
     data() {
         return {
             loading: {
                 isActive: false,
             },
-            popular_items: {},
+            // [micro-ux 2026-06-18] init to [] (was {}) so .length works for the empty-state.
+            popular_items: [],
         };
     },
     mounted() {

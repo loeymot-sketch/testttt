@@ -30,6 +30,16 @@ button:focus-visible,
     outline-offset: 2px;
 }
 
+/* [micro-ux 2026-06-18] Visible keyboard focus ring on admin links (dashboard
+   "Voir tout", quick-access chips, any <a>/role=link). Mirrors the button ring
+   above so link focus is no longer invisible for keyboard operators. */
+a:focus-visible,
+[role="link"]:focus-visible {
+    outline: 3px solid #1d4ed8;
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
 /*
  * [A11Y-KB-P1 heal 2026-05-29] Wave E A11Y-KB agent caught :
  * - POS search input.pos-v5-search-input__field had outline:none / no ring

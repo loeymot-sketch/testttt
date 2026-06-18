@@ -37,7 +37,12 @@
                             </td>
                             <td class="px-4 py-4 text-gray-600">{{ log.time }}</td>
                         </tr>
-                        <tr v-if="auditLogs.length === 0">
+                        <!-- [micro-ux 2026-06-18] distinguish a failed fetch from a genuinely
+                             empty journal: error shows a neutral note, empty keeps its own wording. -->
+                        <tr v-if="auditLogs.length === 0 && failed">
+                            <td colspan="5" class="px-6 py-8 text-center text-gray-500">{{ $t('label.no_data_available') }}</td>
+                        </tr>
+                        <tr v-else-if="auditLogs.length === 0">
                             <td colspan="5" class="px-6 py-8 text-center text-gray-500">Aucun événement audité récent.</td>
                         </tr>
                     </tbody>
@@ -53,6 +58,8 @@ export default {
     data() {
         return {
             auditLogs: [],
+            // [micro-ux 2026-06-18] flag a failed fetch so empty != error in the table.
+            failed: false,
             timer: null
         }
     },
@@ -68,6 +75,13 @@ export default {
         fetchData() {
             this.$store.dispatch('dashboard/auditTrail').then(res => {
                 this.auditLogs = res.data.data;
+                this.failed = false;
+            }).catch(() => {
+                // [micro-ux 2026-06-18] keep last-good rows on a failed 30s poll (no unhandled
+                // rejection); flag the error only when there is nothing already rendered.
+                if (this.auditLogs.length === 0) {
+                    this.failed = true;
+                }
             });
         },
         // [I18N-DASH-P1-01 heal 2026-05-30] Translate NF525 audit action codes

@@ -774,6 +774,8 @@
         "kds_aria_live_preparing": "Commande #{id} en préparation",
         "kds_aria_live_ready": "Commande #{id} prête",
         "kds_aria_live_accepted": "Commande #{id} acceptée",
+        "kds_aria_live_new_order": "Nouvelle commande N°{id}",
+        "kds_overdue": "En retard",
         "kds_search_orders": "Rechercher une commande",
         "kds_type_dinein": "Sur place",
         "kds_type_delivery": "Livraison",
