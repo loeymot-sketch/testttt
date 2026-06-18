@@ -59,8 +59,15 @@ CONFIRM-OK (do not change): main pay CTA 56px, product tiles, category pills alr
 - [x] 9. `/admin/delivery-boy-cash-sessions` — CLEAN (FR money/24h dates, red ÉCART, accessible actions)
 
 **CAISSE @ 16" COMPLETE (9/9)** — heals on pages 1,2,4,6 (12 total) + G-FROZEN-WIZARD-MONEY owner-gate; pages 3,5,7,8,9 audited clean. Next system: BORNE @ 1080×1920 portrait.
-### BORNE @ 1080×1920 portrait
-- [ ] kiosk idle / menu / wizard / loyalty / payment / upsell (most frozen → owner-gate notes)
+### BORNE @ 1080×1920 portrait  (in progress)
+- [x] `/kiosk/idle` — `KioskIdleScreenComponent` (NON-frozen) **CLEAN/acceptable**: big 156px primary CTA in the standing-reach upper-middle zone, 15px min font, FR, on-brand Cayenne gradient, fits portrait, 0 raw keys. Lower emptiness is correct ergonomics (no CTAs at knee-level on a tall kiosk).
+- [~] `/kiosk/categories` (menu) — `KioskCategoriesComponent` non-frozen, but the cart-bar + offer banner render via frozen `KioskAppComponent` (§7). Findings:
+  - **G-CURRENCY-POSITION-KIOSK** (owner-gate): kiosk money renders € in en-US PREFIX position — cart bar "€0,00", offer "-€5,00" — vs FR suffix "0,00 €". The non-frozen helper `kioskFormatPrice.js` is correct (outputs "X,XX €" when position='right', and `getPriceOptionsFromStore` defaults empty→'right'), so the prefix comes from the FROZEN KioskApp cart/offer path (separate formatter) OR a runtime `lists.site_currency_position='left'`. Needs owner LOCK to fix the frozen render, or owner to set currency position = "après le montant" (right) in Settings. Verify root in KioskAppComponent cart-bar formatter when unlocked.
+  - **DATA (owner)**: test categories show raw slugs "WVAL3CG-CAT-1781387282" / "WVAL3CG-SUBCAT-1781387282" as names — e2e test artifacts; clean the test DB / they won't exist in prod. Not a code defect.
+  - minor: category-strip labels ~10px (small for ~1m standing read; icons carry the meaning). KioskApp-frozen.
+- [ ] wizard / loyalty / payment / upsell — KioskWizard/App/Upsell FROZEN §7 → audit + owner-gate only.
+
+**BORNE note**: the kiosk ordering surfaces (menu cart-bar, wizard, app, upsell) are largely FROZEN §7 ("design parfait" owner mandate), so borne "perfection" is mostly owner-gated by design. Non-frozen idle is clean. Owner-gates: G-FROZEN-WIZARD-MONEY (caisse popup), G-CURRENCY-POSITION-KIOSK, test-data slugs.
 ### KDS @ 1920×1080
 - [ ] `/admin/kitchen-display-system` (+ OSS `/admin/order-status-screen`)
 
