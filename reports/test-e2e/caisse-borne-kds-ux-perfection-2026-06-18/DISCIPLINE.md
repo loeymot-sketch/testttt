@@ -102,7 +102,18 @@ All 38 prior heals intact (0 regressions). P1: **POS menu overlapped/clipped the
 ### Cycle-4 convergence (KDS/Dashboard responsive @1366 + final completeness) — DEEP CONVERGENCE, commit `<pending>`
 All 46 prior heals intact (0 regressions). **0 new P1/P2** — only 4 P3 (trend 19→19→8→4-P3): error-toast crash on a failed status change (err.response undefined → looked like success) → safe optional-chaining (PosOrderShow + PosOrderList) · status-dropdown double-tap double-POST → in-flight guard · legacy-KDS grid 4-col@2xl (roomier 3-col at 1366) · legacy-KDS card header flex-wrap/min-w-0.
 
-## ✅ DEEP-UX CONVERGENCE REACHED — 50 micro-detail heals over 4 adversarial cycles (CAISSE 19 + KDS/Dash/OSS 19 + responsive/keyboard 8 + final 4), 0 regressions, cycle-4 = 0 new P1/P2. Build green · Vitest 1994/0 · frozen diff 0. Residual = the standing owner-gates (G-FROZEN-WIZARD-MONEY, G-CURRENCY-POSITION-KIOSK) + nothing else healable.
+## ✅ DEEP-UX CONVERGENCE REACHED — 50 micro-detail heals over 4 adversarial cycles (CAISSE 19 + KDS/Dash/OSS 19 + responsive/keyboard 8 + final 4), 0 regressions, cycle-4 = 0 new P1/P2. Build green · Vitest 1994/0 · frozen diff 0.
+
+## LIVE VISUAL + INTERACTION VERIFICATION (the source-level passes confirmed in the running app)
+- Dashboard "Suivi en direct" KPIs render **solid-dark** (white legible; was white-on-light 1.74:1) with real data; channel bars sum 100%.
+- POS cart (3 lines): **40px steppers live**, no name overflow, FR totals (2,70 €), prominent pay CTA.
+- **Refund modal keyboard flow end-to-end**: open → focus moves INTO modal (reason textarea, visible focus ring) → ESC closes → **focus restores to the Rembourser trigger**. NF525 irreversible-mirror warning + FR money/24h. The cycle-3 focus-trap/restore heal works live.
+
+## ✅ G-CURRENCY-POSITION-KIOSK — HEALED (commit `418c772f0`), was a non-frozen BUG not an owner-gate
+The kiosk "€0,00" / "-€5,00" (€-prefix en-US) was: (1) `SettingResource.php:41` hardcoding `?? 'left'` as the unset fallback (vs the seeder's RIGHT) + (2) `kioskFormatPrice.js` matching only the string `'right'` while the value is the numeric enum (LEFT=5/RIGHT=10). Fixed both → default FR RIGHT + numeric-aware. **VERIFIED LIVE: kiosk OFFRE "-5,00 €", cart "0,00 €", zero €-prefix.** POS unaffected. (Also fixes the admin currency-position select which expected the numeric enum.)
+
+## REMAINING = exactly ONE owner-gate (§10 human gate — requires owner LOCK, cannot touch without it)
+- **G-FROZEN-WIZARD-MONEY**: `public/js/pos-wizard.js` (FROZEN §7, owner "design parfait") `fmtPrice()` = `'€' + n.toFixed(2)` → "€0.90" en-US on the POS product-add wizard popup. Independent of the currency-position setting (hardcoded). Fix = route fmtPrice through an FR formatter — needs owner to unlock pos-wizard.js. **Everything else (51 heals) is converged + live-verified.**
 
 ## Convergence
 A SYSTEM is done when every page passes 2 consecutive clean reads (0 open P1/P2) at its viewport, with all heals committed and frozen issues gated. Then next system.
