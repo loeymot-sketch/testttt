@@ -196,8 +196,12 @@ export default {
 }
 
 /* === SIZES === */
-.pos-v5-qty--sm .pos-v5-qty__btn { width: 22px; height: 22px; font-size: 11px; }
-.pos-v5-qty--sm .pos-v5-qty__value { width: 24px; font-size: 12px; padding: 0 2px; }
+/* [ux-perfection 2026-06-18 P1 caisse-16"] The cart-line stepper is the single most-repeated cashier
+   gesture and the minus button IS the destructive remove-line trash — 22px was a sub-touch-floor mis-tap
+   hazard for a seated one-handed cashier at ~50cm. Raised to a real 40px target (qty column has ~178px
+   headroom at 1920, no cart-line overflow). 'sm' is used only by the POS cart line. */
+.pos-v5-qty--sm .pos-v5-qty__btn { width: 40px; height: 40px; font-size: 15px; }
+.pos-v5-qty--sm .pos-v5-qty__value { width: 34px; font-size: 15px; padding: 0 4px; }
 
 .pos-v5-qty--md .pos-v5-qty__btn { width: 28px; height: 28px; font-size: 13px; }
 .pos-v5-qty--md .pos-v5-qty__value { width: 36px; font-size: 14px; padding: 0 4px; }

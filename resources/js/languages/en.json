@@ -575,6 +575,7 @@
         "pos_shortcut_cash_title": "Kiosk to collect ({count})",
         "pos_shortcut_delivered_cta": "✓ Delivered",
         "pos_shortcut_cash_cta": "💳 Collect",
+        "pos_cart_empty": "No items. Select a product from the grid.",
         "pos_shortcut_view_more": "View more ({count}) →",
         "pos_shortcut_delivered_toast": "Order N°{order} marked Delivered",
         "scan_nfc_card": "Scan NFC card",

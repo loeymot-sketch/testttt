@@ -115,7 +115,7 @@
             <nav class="pos-v5-operator-bar__actions pos-v4-operator-actions" aria-label="Actions caisse">
                 <PosV5Button
                     v-if="kioskCashOrders.length > 0"
-                    variant="kiosk-cash"
+                    variant="ghost"
                     size="md"
                     data-testid="kiosk-cash-open"
                     :badge="kioskCashOrders.length"
@@ -854,7 +854,7 @@
 
             <div v-if="carts.length === 0" class="pos-v5-cart__empty">
                 <span class="pos-v5-cart__empty-icon" aria-hidden="true">🍽️</span>
-                <p>Aucun article. Sélectionnez un produit dans la grille.</p>
+                <p>{{ $t('label.pos_cart_empty') }}</p>
             </div>
         </div>
         <!--
@@ -4590,7 +4590,7 @@ export default {
   border-left: 4px solid var(--pos-v5-success, #2c8c4a);
 }
 .pos-shortcuts__panel--cash {
-  border-left: 4px solid var(--pos-v5-brand-red, #cf3a3a);
+  border-left: 4px solid var(--pos-v5-brand-red, #F4501E);
 }
 .pos-shortcuts__head {
   display: flex;
@@ -4615,7 +4615,9 @@ export default {
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  /* [ux-perfection 2026-06-18 caisse-16"] 8px inter-row dead-zone (was 4px) so 44px money/handoff CTAs on
+     adjacent borne-queue rows don't mis-tap on a rapidly-cleared list. */
+  gap: 8px;
 }
 .pos-shortcuts__item {
   display: grid;
@@ -4642,10 +4644,13 @@ export default {
   white-space: nowrap;
 }
 .pos-shortcuts__cta {
-  padding: 6px 12px;
+  /* [ux-perfection 2026-06-18 caisse-16"] borne-queue money/handoff CTA ('Encaisser' / 'Délivrer') raised
+     from ~36px to the 44px touch floor for the seated cashier; auto-track rows absorb the taller height. */
+  min-height: 44px;
+  padding: 10px 16px;
   border: 0;
   border-radius: 6px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   cursor: pointer;
   white-space: nowrap;
@@ -4666,7 +4671,7 @@ export default {
   background: var(--pos-v5-success-dark, #1f6437);
 }
 .pos-shortcuts__cta--cash {
-  background: var(--pos-v5-brand-red, #cf3a3a);
+  background: var(--pos-v5-brand-red, #F4501E);
   color: #fff;
 }
 .pos-shortcuts__cta--cash:hover:not(:disabled) {
@@ -4686,7 +4691,7 @@ export default {
   font-family: inherit;
 }
 .pos-shortcuts__more:hover {
-  color: var(--pos-v5-brand-red, #cf3a3a);
+  color: var(--pos-v5-brand-red, #F4501E);
 }
 
 /* [Q10 P-OWNER 2026-05-21] Empty-state + last-refresh subtleties.

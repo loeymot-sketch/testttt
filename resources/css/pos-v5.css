@@ -787,7 +787,9 @@
     align-items: center;
     justify-content: center;
     gap: var(--pos-v5-space-1);
-    min-height: 36px;
+    /* [ux-perfection 2026-06-18 caisse-16"] order-type segmented (Sur place / À emporter / Livraison) is an
+       every-checkout choice — raised from 36px to the 44px touch floor for the seated cashier. */
+    min-height: 44px;
     padding: var(--pos-v5-space-2) var(--pos-v5-space-3);
     background: transparent;
     border: 0;

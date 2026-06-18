@@ -7,7 +7,8 @@
       - Disponibilité : overlay rouge translucide centré "Indisponible"
       - Grille auto-fill responsive (s'adapte selon largeur cart panel/sidebar)
     -->
-    <div ref="itemsGrid" class="pos-v5-grid grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 mb-8 md:mb-0">
+    <!-- [ux-perfection 2026-06-18 caisse-16"] +2xl:grid-cols-5 → denser grid on the 1920px cashier screen (fewer scrolls = faster service); tiles stay wide enough that photo/name/price still read well. -->
+    <div ref="itemsGrid" class="pos-v5-grid grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 mb-8 md:mb-0">
         <!-- [iter15-mega-fix D-010 round-7 2026-05-10] aria-label must reflect tile state: when disabled (rupture), 'Ajouter' is misleading -->
         <button v-for="item in items" :key="item.id || item"
             type="button"

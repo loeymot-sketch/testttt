@@ -1,8 +1,8 @@
 {
-    "/js/pos-app.js": "/js/pos-app.js?id=9b60fef3519f55bd71736ec781fdeca9",
-    "/js/app.js": "/js/app.js?id=adfb5808b2ee6a45752c42b005168279",
+    "/js/pos-app.js": "/js/pos-app.js?id=da599b33ee9e3b63c4680f82e004fa2e",
+    "/js/app.js": "/js/app.js?id=46c88e3d86bf0faa21a6450afa86ce2b",
     "/js/manifest.js": "/js/manifest.js?id=6ef4009a40f250662227149f6928fc8e",
-    "/js/pos-shell.js": "/js/pos-shell.js?id=cdbcbe71e714abb362f2eacf3c50eb19",
+    "/js/pos-shell.js": "/js/pos-shell.js?id=690694a3c580cc028bb5c29ef11046a4",
     "/js/admin-shell.js": "/js/admin-shell.js?id=779d652719118a74805d46564b55597c",
     "/js/admin-reports.js": "/js/admin-reports.js?id=250af40c013150530753465efdb88668",
     "/js/admin-kds.js": "/js/admin-kds.js?id=f639d92cdc1aa392fefdb1d3fc59bda8",
@@ -11,6 +11,6 @@
     "/js/kiosk-wizard.js": "/js/kiosk-wizard.js?id=aba0f2f5c888995fe585dc7d516cdf73",
     "/js/kiosk-errors.js": "/js/kiosk-errors.js?id=4b9ed15b9e75ac48fa9fe59c59ba61cd",
     "/js/kiosk-wizard-step.js": "/js/kiosk-wizard-step.js?id=e6f470590238bb60442d7ddf8b0367cf",
-    "/css/app.css": "/css/app.css?id=55083dbee33bf08bb03b3c60781e6b0f",
+    "/css/app.css": "/css/app.css?id=fd8f362aefde45aa7f5d1f0de0eaf062",
     "/js/vendor.js": "/js/vendor.js?id=7508a7ad7aa90acd49e637bc551077e9"
 }

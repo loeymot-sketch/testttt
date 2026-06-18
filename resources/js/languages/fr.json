@@ -574,6 +574,7 @@
         "pos_shortcut_cash_title": "À encaisser borne ({count})",
         "pos_shortcut_delivered_cta": "✓ Livré",
         "pos_shortcut_cash_cta": "💳 Encaisser",
+        "pos_cart_empty": "Aucun article. Sélectionnez un produit dans la grille.",
         "pos_shortcut_view_more": "Voir plus ({count}) →",
         "pos_shortcut_delivered_toast": "Commande N°{order} marquée Livré",
         "pos_shortcut_ready_empty": "Aucune commande prête à livrer pour le moment.",
