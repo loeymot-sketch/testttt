@@ -227,7 +227,8 @@ class PosController extends AdminController
             ]);
         }
 
-        if ((int) $request->input('order_type', 0) === OrderType::DELIVERY && $request->filled('delivery_distance_km')) {
+        $isDelivery = (int) $request->input('order_type', 0) === OrderType::DELIVERY;
+        if ($isDelivery && $request->filled('delivery_distance_km')) {
             // [GOAL-COMPLEMENT-2026-05-18 Z-4 LIVREUR-Z4-ARCH-03 P0] DEL-5 wire-up.
             // POS quote endpoint must also resolve the per-branch fee config
             // when branch_id is in the payload. Mirrors OrderRequest:117 +
@@ -236,6 +237,22 @@ class PosController extends AdminController
             $branch = $branchId > 0 ? \App\Models\Branch::find($branchId) : null;
             $request->merge([
                 'delivery_charge' => $this->deliveryFeeService->fromDistanceKm($request->input('delivery_distance_km'), $branch),
+            ]);
+        } elseif ($request->has('delivery_charge')) {
+            // [abuse-heal 2026-06-18 engines-c2] NF525 delivery-fee tamper close —
+            // quote-side MIRROR of PosOrderRequest::prepareForValidation. The quote
+            // prices `delivery_charge` straight from the request (OrderQuoteService
+            // calculatePricing:232) and signs it into the intent_hash. Without
+            // distance there is no server-trusted basis for a fee, so neutralize
+            // it to DeliveryFeeService's null-distance answer (0.0) BEFORE the
+            // quote is priced+signed. This keeps the quote↔store transform
+            // symmetric (store applies the same neutralization) so a legit
+            // distance-less order produces a matching intent_hash, while an
+            // arbitrary client-typed fee can never be signed into the quote (or,
+            // by symmetry, the fiscal total). Also strips a stray delivery_charge
+            // smuggled onto a non-DELIVERY order.
+            $request->merge([
+                'delivery_charge' => $this->deliveryFeeService->fromDistanceKm(null),
             ]);
         }
     }

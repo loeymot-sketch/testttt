@@ -36,6 +36,32 @@ class PosOrderRequest extends FormRequest
                 'delivery_charge' => app(DeliveryFeeService::class)
                     ->fromDistanceKm($this->input('delivery_distance_km'), $branch),
             ]);
+        } elseif ($this->has('delivery_charge')) {
+            // [abuse-heal 2026-06-18 engines-c2] NF525 delivery-fee tamper close.
+            // The block above recomputes `delivery_charge` from distance ONLY when
+            // `delivery_distance_km` is filled. WITHOUT it, the client-sent
+            // `delivery_charge` was TRUSTED straight through to
+            // OrderService::posOrderStore -> PricingRequest::forPos(... delivery)
+            // (OrderService:838) -> it inflated the order total signed into the
+            // Z-report (NF525: amounts must be backend-computed).
+            //
+            // The web twin (OrderRequest:152-159) closes this by requiring BOTH
+            // delivery_charge + delivery_distance_km for delivery so the charge is
+            // ALWAYS recomputed. But the POS UI legitimately supports a manual,
+            // distance-less delivery fee (PosUITest), so mirroring "distance
+            // required" would break that flow. Instead we NEUTRALIZE: when no
+            // distance is available there is no server-trusted basis for a
+            // delivery fee, so we force the value to DeliveryFeeService's own
+            // null-distance answer (0.0). This also strips a stray delivery_charge
+            // smuggled onto a non-DELIVERY (e.g. TAKEAWAY) order. A real distance
+            // still routes through the recompute above. Cashier-entered manual
+            // fees must travel with a distance (or a future signed flat-fee
+            // config); an arbitrary typed amount can no longer reach the fiscal
+            // total.
+            $this->merge([
+                'delivery_charge' => app(DeliveryFeeService::class)
+                    ->fromDistanceKm(null),
+            ]);
         }
 
         // [F-SPLIT-PAYMENT-001] When the multi-tender feature flag is OFF,
