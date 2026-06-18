@@ -49,14 +49,16 @@ OWNER-GATE (frozen §7 — reported, NOT edited):
 
 CONFIRM-OK (do not change): main pay CTA 56px, product tiles, category pills already ≥ touch floor.
 
-- [ ] 2. `/admin/pos/floorplan` — floorplan
-- [ ] 3. `/admin/pos-orders` — Commandes caisse (list)
-- [ ] 4. `/admin/pos-orders/show/:id` — order detail
-- [ ] 5. `/admin/pos-orders-tracker` — tracker
-- [ ] 6. `/admin/encaissement` — encaissement
-- [ ] 7. `/admin/cash-overview` — cash overview
-- [ ] 8. `/admin/cash-sessions-report` — cash sessions report
-- [ ] 9. `/admin/delivery-boy-cash-sessions` — caisse livreur
+- [x] 2. `/admin/pos/floorplan` — empty-state + "places" FR (`9d0d8087a`)
+- [x] 3. `/admin/pos-orders` — CLEAN (FR headers/pills/money, accessible row actions)
+- [x] 4. `/admin/pos-orders/show/:id` — delivery time en-US 12h → FR 24h (`8aa5e8392`)
+- [x] 5. `/admin/pos-orders-tracker` — CLEAN (kanban + FR empty-states per column)
+- [x] 6. `/admin/encaissement` — enc-collect-btn 40→44px touch floor (verified live)
+- [x] 7. `/admin/cash-overview` — CLEAN (FR money/dates, reconciliation math 70+53,40=123,40, empty-state)
+- [x] 8. `/admin/cash-sessions-report` — CLEAN (FR day-grouped, FR money, status pills)
+- [x] 9. `/admin/delivery-boy-cash-sessions` — CLEAN (FR money/24h dates, red ÉCART, accessible actions)
+
+**CAISSE @ 16" COMPLETE (9/9)** — heals on pages 1,2,4,6 (12 total) + G-FROZEN-WIZARD-MONEY owner-gate; pages 3,5,7,8,9 audited clean. Next system: BORNE @ 1080×1920 portrait.
 ### BORNE @ 1080×1920 portrait
 - [ ] kiosk idle / menu / wizard / loyalty / payment / upsell (most frozen → owner-gate notes)
 ### KDS @ 1920×1080

@@ -286,6 +286,9 @@ export default {
     color: #fff;
     border: none;
     border-radius: var(--pos-v5-radius-md);
+    /* [ux-perfection 2026-06-18 caisse-16"] the primary cash-collection action — raised to the 44px touch
+       floor (was ~40px) for the seated cashier on the 16" touchscreen. */
+    min-height: 44px;
     padding: 0.5rem 1.1rem;
     font-weight: 800;
     cursor: pointer;
