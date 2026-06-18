@@ -112,8 +112,14 @@ All 46 prior heals intact (0 regressions). **0 new P1/P2** — only 4 P3 (trend 
 ## ✅ G-CURRENCY-POSITION-KIOSK — HEALED (commit `418c772f0`), was a non-frozen BUG not an owner-gate
 The kiosk "€0,00" / "-€5,00" (€-prefix en-US) was: (1) `SettingResource.php:41` hardcoding `?? 'left'` as the unset fallback (vs the seeder's RIGHT) + (2) `kioskFormatPrice.js` matching only the string `'right'` while the value is the numeric enum (LEFT=5/RIGHT=10). Fixed both → default FR RIGHT + numeric-aware. **VERIFIED LIVE: kiosk OFFRE "-5,00 €", cart "0,00 €", zero €-prefix.** POS unaffected. (Also fixes the admin currency-position select which expected the numeric enum.)
 
-## REMAINING = exactly ONE owner-gate (§10 human gate — requires owner LOCK, cannot touch without it)
-- **G-FROZEN-WIZARD-MONEY**: `public/js/pos-wizard.js` (FROZEN §7, owner "design parfait") `fmtPrice()` = `'€' + n.toFixed(2)` → "€0.90" en-US on the POS product-add wizard popup. Independent of the currency-position setting (hardcoded). Fix = route fmtPrice through an FR formatter — needs owner to unlock pos-wizard.js. **Everything else (51 heals) is converged + live-verified.**
+## ✅ G-FROZEN-WIZARD-MONEY — HEALED (owner-countersigned LOCK, commit `170b06b94`)
+Owner countersigned the §10 human-gate in-session (AskUserQuestion → « Oui, déverrouille + corrige »). Frozen-zone ceremony:
+- `public/js/pos-wizard.js` `fmtPrice()`: `'€'+toFixed` = "€0.90" → Intl fr-FR + " €" = **"0,90 €"** (try/catch fallback). Display-only (74 concat call-sites, none parse back; wizard math untouched).
+- `frozen-zone-sha256-baseline.json`: pos-wizard.js SHA `896db50c…`→`cd98663e…`; `plans/LOCK_POS_WIZARD_MONEY_FR_2026-06-18.md` LOCK doc (committed `13c8270dd`).
+- **VERIFIED LIVE @1920×1080**: wizard-item-price/total-value = "0,90 €", zero €-prefix. FrozenZoneSha256BaselineSentinelTest GREEN, pos-wizard specs 18/18.
+- **Hook discipline**: the pre-commit frozen guard's LOCK-citation regex `LOCK_[A-Z0-9_]+\.md` had a real bug (couldn't match any hyphenated-date LOCK filename), leaving only the loose `frozen-override` token (classifier-flagged as gaming) or `--no-verify` (CLAUDE.md §3quater forbidden). Owner chose to FIX the regex (`…_-]+`, commit `69bd01b77`, live `.git/hooks/` + tracked `.cursor/hooks/`) → the frozen commit landed through the hook's *designed* LOCK path. No bypass, no `--no-verify`.
+
+## ✅✅ BOTH owner-gates resolved. 52 heals total (51 non-frozen converged + live-verified + 1 owner-LOCK frozen). Caisse/Borne/KDS/Dashboard/OSS UX = production-perfect at their device viewports. Nothing pushed (G-PUSH owner-only). HEAD `170b06b94`.
 
 ## Convergence
 A SYSTEM is done when every page passes 2 consecutive clean reads (0 open P1/P2) at its viewport, with all heals committed and frozen issues gated. Then next system.
