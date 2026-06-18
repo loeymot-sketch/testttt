@@ -64,7 +64,10 @@ class OrderDetailsResource extends JsonResource
             'order_date' => AppLibrary::date($this->order_datetime),
             'order_time' => AppLibrary::time($this->order_datetime, 'H:i'),
             'delivery_date' => $this->is_advance_order == Ask::YES ? AppLibrary::increaseDate($this->order_datetime, 1) : AppLibrary::date($this->order_datetime),
-            'delivery_time' => AppLibrary::deliveryTime($this->delivery_time),
+            // [ux-perfection 2026-06-18 caisse-16"] Pin FR 24h: deliveryTime() falls back to env('TIME_FORMAT')
+            // ('h:i A' = en-US "09:12 PM") when no pattern is passed, which clashed with the FR 24h order_time
+            // ('H:i') right above and the rest of the FR-locked UI. Render-site pin (no global .env change).
+            'delivery_time' => AppLibrary::deliveryTime($this->delivery_time, 'H:i'),
             'payment_method' => $this->payment_method,
             'payment_status' => $this->payment_status,
             'payment_pending_counter' => (int) $this->payment_status === \App\Enums\PaymentStatus::PENDING_COUNTER,
