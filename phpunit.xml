@@ -81,5 +81,22 @@
              attempt to reuse them via assertProductionSafe(). -->
         <env name="FISCAL_AUDIT_SECRET" value="testing-fiscal-audit-secret-padding-48chars-ok"/>
         <env name="FISCAL_Z_REPORT_SECRET" value="testing-fiscal-zreport-secret-padding-48chars-ok"/>
+        <!-- [prod-finale 2026-06-17] Hermetic test env: pin the production-safe defaults that a developer's
+             local .env (POS_SIMULATION_HARDWARE=true, *_RATE_LIMIT=1000) would otherwise leak into the test
+             process, making production-guard + rate-limiter-cap sentinels false-red. Same pattern as the
+             PUSHER/LOGIN_LOCKOUT pins above. POS_SIMULATION_HARDWARE=false matches the prod boot guard (§8)
+             and lets the AppServiceProvider production-guard sentinels reach their intended assertion instead
+             of tripping on simulation_hardware first. Rate caps match config() defaults the sentinels assert.
+             IDEMPOTENCY_MIDDLEWARE_ENABLED is intentionally NOT pinned (left active via the dev .env) so the
+             replay/409 idempotency tests + the 124 header fixes stay load-bearing. The lone sentinel that
+             asserts the config DEFAULT is false when the env is unset now unsets the var itself (hermetic),
+             so it no longer depends on this file. -->
+        <env name="POS_SIMULATION_HARDWARE" value="false"/>
+        <env name="POS_RATE_LIMIT_QUOTE" value="120"/>
+        <env name="POS_RATE_LIMIT_ORDER_CREATE" value="60"/>
+        <env name="POS_RATE_LIMIT_ORDER_UPDATE" value="120"/>
+        <env name="KDS_RATE_LIMIT_BUMP" value="120"/>
+        <env name="ADMIN_MUTATION_RATE_LIMIT" value="60"/>
+        <env name="MENU_AVAILABILITY_RATE_LIMIT" value="60"/>
     </php>
 </phpunit>

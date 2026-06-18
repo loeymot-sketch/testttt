@@ -87,13 +87,29 @@ class IdempotencyMiddlewareProductionGuardSentinelTest extends TestCase
         // config/idempotency.php intentionally defaults to false for safe
         // dev/CI roll-out (per PLAN_P11 §2 header comment). The production
         // boot guard above is the production-time check.
-        $fresh = require base_path('config/idempotency.php');
+        // [prod-finale 2026-06-17] Make the "env unset" claim hermetic: the dev .env in a developer's
+        // worktree sets IDEMPOTENCY_MIDDLEWARE_ENABLED=true, which would leak into env() when we re-require
+        // the config and make this assert the wrong thing (or get a non-bool string). Temporarily UNSET the
+        // var so we genuinely exercise the env('...', false) default, then restore it. Does not weaken the
+        // assertion — it tests exactly what its name claims.
+        $original = getenv('IDEMPOTENCY_MIDDLEWARE_ENABLED');
+        putenv('IDEMPOTENCY_MIDDLEWARE_ENABLED');
+        unset($_ENV['IDEMPOTENCY_MIDDLEWARE_ENABLED'], $_SERVER['IDEMPOTENCY_MIDDLEWARE_ENABLED']);
+        try {
+            $fresh = require base_path('config/idempotency.php');
 
-        $this->assertArrayHasKey('enabled', $fresh);
-        $this->assertIsBool($fresh['enabled']);
-        $this->assertFalse(
-            $fresh['enabled'],
-            'config/idempotency.php must default enabled=false when IDEMPOTENCY_MIDDLEWARE_ENABLED is unset (production must explicitly opt-in via env var).'
-        );
+            $this->assertArrayHasKey('enabled', $fresh);
+            $this->assertIsBool($fresh['enabled']);
+            $this->assertFalse(
+                $fresh['enabled'],
+                'config/idempotency.php must default enabled=false when IDEMPOTENCY_MIDDLEWARE_ENABLED is unset (production must explicitly opt-in via env var).'
+            );
+        } finally {
+            if ($original !== false) {
+                putenv('IDEMPOTENCY_MIDDLEWARE_ENABLED=' . $original);
+                $_ENV['IDEMPOTENCY_MIDDLEWARE_ENABLED'] = $original;
+                $_SERVER['IDEMPOTENCY_MIDDLEWARE_ENABLED'] = $original;
+            }
+        }
     }
 }
