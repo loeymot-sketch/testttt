@@ -412,6 +412,10 @@ class OrderService
                     // fiscally-incorrect NF525 Z at 10% VAT (frozen F1 split). Mirrors
                     // posOrderStore's in-SSOT gate (~813). [round-4 bypass-hunt P0]
                     $this->assertDiscretionaryDiscountAllowed((float) $calculatedDiscount);
+                    // [prod-finale 2026-06-17 P3] Trap-safe consistency: this method has zero V1 callers today
+                    // (the live web path is FrontendOrderService::myOrderStore, which hydrates), but mirror the
+                    // sibling hydrate so a future wiring can't silently persist allergen-blind order_items.
+                    $itemsArray = OrderItemAllergenSnapshot::hydrate($itemsArray);
                     if (!blank($itemsArray)) {
                         OrderItem::insert($itemsArray);
                     }
@@ -536,6 +540,8 @@ class OrderService
                         }
                     }
 
+                    // [prod-finale 2026-06-17 P3] Trap-safe consistency (dead path; mirror the sibling hydrate).
+                    $itemsArray = OrderItemAllergenSnapshot::hydrate($itemsArray);
                     if (!blank($itemsArray)) {
                         OrderItem::insert($itemsArray);
                     }

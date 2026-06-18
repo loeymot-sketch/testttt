@@ -324,6 +324,14 @@
                                                 <span v-if="index + 1 < receiptAddonsFor(item).length"> · </span>
                                             </span>
                                         </p>
+                                        <!-- [prod-finale 2026-06-17 P2 food-safety] The POS "Imprimer ticket cuisine" paper ticket is an
+                                             offline chef surface — render the STRUCTURED allergen snapshot (the KDS ticket already does;
+                                             this POS receipt path was the twin gap, allergen-blind on paper). -->
+                                        <p v-if="Array.isArray(item.allergens_snapshot) && item.allergens_snapshot.length > 0"
+                                            class="text-[11px] leading-snug mt-1 font-bold text-red-700"
+                                            data-testid="receipt-allergens-kitchen">
+                                            &#9888; {{ $t('label.kds_allergens_badge') }}: {{ item.allergens_snapshot.join(' · ') }}
+                                        </p>
                                         <p v-if="kitchenInstructionText(item)"
                                             class="text-[11px] leading-snug mt-1 whitespace-pre-wrap border-l-2 border-gray-400 pl-2">
                                             <span class="font-semibold">{{ $t('label.instruction') }}:</span>
