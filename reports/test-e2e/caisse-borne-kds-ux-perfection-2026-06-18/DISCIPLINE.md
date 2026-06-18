@@ -68,8 +68,10 @@ CONFIRM-OK (do not change): main pay CTA 56px, product tiles, category pills alr
 - [ ] wizard / loyalty / payment / upsell — KioskWizard/App/Upsell FROZEN §7 → audit + owner-gate only.
 
 **BORNE note**: the kiosk ordering surfaces (menu cart-bar, wizard, app, upsell) are largely FROZEN §7 ("design parfait" owner mandate), so borne "perfection" is mostly owner-gated by design. Non-frozen idle is clean. Owner-gates: G-FROZEN-WIZARD-MONEY (caisse popup), G-CURRENCY-POSITION-KIOSK, test-data slugs.
-### KDS @ 1920×1080
-- [ ] `/admin/kitchen-display-system` (+ OSS `/admin/order-status-screen`)
+### KDS @ 1920×1080  (in progress)
+- [~] `/admin/kitchen-display-system` (`KitchenDisplaySystemComponent`, NON-frozen) — board EMPTY-state CLEAN: dome icon + "Aucune commande en cours" + "Les nouvelles commandes apparaîtront ici", FR local-bump info banner, "RÉCEMMENT SERVIES" pills with FR relative time ("il y a 1j"), 11px+ fonts, fits 1920×1080, 0 raw keys. (Per-lane allergen chips + items-board badge + print line already added in the prod-finale campaign.)
+  - **KDS-SYNC-403 (P3, load-race, WS-masked)**: the first `/api/admin/kds-order/sync?branch_id=0` poll on mount returns 403 (1 console error). Root: NOT a permission gap (admin has kitchen-display-system 3 ways) and KdsSyncController returns 200 for admin+branch_id=0 (its only 403 is the non-admin cross-branch path) → the mount poll fires before the Sanctum token is attached; the KDS then relies on the soketi WebSocket and does not re-poll (only 1 sync request in 6s). Masked while WS is up; the poll-fallback would be affected if WS degrades at that instant. Fix (when prioritised): defer/retry the first sync poll until auth is ready, or have the KDS send the operational branch (1) not 0. Non-frozen.
+  - TODO: re-audit with ACTIVE orders (card lanes, bump/recall buttons touch size, allergen chips live) + OSS `/admin/order-status-screen`.
 
 ## Convergence
 A SYSTEM is done when every page passes 2 consecutive clean reads (0 open P1/P2) at its viewport, with all heals committed and frozen issues gated. Then next system.
