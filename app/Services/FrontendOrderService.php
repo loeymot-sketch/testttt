@@ -460,6 +460,18 @@ class FrontendOrderService
                 }
 
                 // [PHASE 7] SECURISATION P0 COUPON / DISCOUNT (legacy path recalc; SSOT keeps totals from PricingService)
+                // [abuse-heal 2026-06-18 engines] Derive the order surface (kiosk vs web)
+                // from the order type — mirrors the source_surface derivation below
+                // (KIOSK/TAKEAWAY → kiosk, else web) — and thread it + the order's branch
+                // into resolveCouponById so a surface/branch-scoped coupon (e.g.
+                // surfaces=['kiosk']) can't be applied on the wrong channel (revenue leak).
+                $couponBranchId = (int) $this->frontendOrder->branch_id;
+                $couponSurface = in_array(
+                    (int) ($this->frontendOrder->order_type ?? 0),
+                    [\App\Enums\OrderType::KIOSK, \App\Enums\OrderType::TAKEAWAY],
+                    true
+                ) ? 'kiosk' : 'web';
+
                 $validatedCoupon = null;
                 if (!config('pricing.use_ssot_service', true)) {
                     $calculatedDiscount = 0;
@@ -467,7 +479,9 @@ class FrontendOrderService
                         $validatedCoupon = $this->couponService->resolveCouponById(
                             (int) $request->coupon_id,
                             (float) $realSubtotal,
-                            (int) Auth::id()
+                            (int) Auth::id(),
+                            $couponBranchId,
+                            $couponSurface
                         );
                         $calculatedDiscount = $this->couponService->calculateDiscountAmount(
                             $validatedCoupon,
@@ -478,7 +492,9 @@ class FrontendOrderService
                     $validatedCoupon = $this->couponService->resolveCouponById(
                         (int) $request->coupon_id,
                         (float) $realSubtotal,
-                        (int) Auth::id()
+                        (int) Auth::id(),
+                        $couponBranchId,
+                        $couponSurface
                     );
                 }
 
@@ -720,64 +736,102 @@ class FrontendOrderService
                     );
                     $cancelableThreshold = $isKioskOrder ? OrderStatus::PREPARING : OrderStatus::ACCEPT;
 
-                    if ($frontendOrder->status >= $cancelableThreshold) {
-                        throw new Exception(trans('all.message.order_accept'), 422);
-                    }
+                    // [abuse-heal 2026-06-18 engines] Lock the cancel mutation against a
+                    // concurrent double-CANCEL race. Mirrors OrderService::changeStatus
+                    // (re-fetch under lockForUpdate inside a DB::transaction, re-validate the
+                    // transition against the LOCKED status). Pre-fix, two concurrent CANCELs
+                    // both passed the stale in-memory status check and each ran
+                    // cashBack()/refundPoints() + save() + recordTransition() → double loyalty
+                    // refund (credit lands before the UNIQUE ledger insert) AND two
+                    // order_status_transitions rows (recordTransition has no idempotency
+                    // guard). With the lock, request B re-reads the committed CANCELED state
+                    // and early-returns a no-op.
+                    $oldStatus = null;
+                    DB::transaction(function () use ($frontendOrder, $request, $cancelableThreshold, &$oldStatus): void {
+                        $locked = FrontendOrder::query()
+                            ->whereKey($frontendOrder->id)
+                            ->lockForUpdate()
+                            ->firstOrFail();
 
-                    if ($frontendOrder->transaction) {
-                        app(PaymentService::class)->cashBack(
-                            $frontendOrder,
-                            'credit',
-                            'TXN-' . \Illuminate\Support\Str::random(12)
-                        );
-                    }
-                    app(LoyaltyService::class)->refundPoints($frontendOrder, 'kiosk');
-                    $oldStatus = $frontendOrder->status;
-                    // [AUDIT-F-004] Propagate caller-supplied reason into the transition row.
-                    // OrderStatusRequest enforces non-empty reason on terminal transitions
-                    // (kiosk: enum whitelist; admin/staff: free-text). Persisting NULL here
-                    // would silently break the ORDER_FLOW.md §49 audit invariant.
-                    $cancelReason = $request->input('reason');
-                    if (is_string($cancelReason)) {
-                        $cancelReason = trim($cancelReason);
-                        if ($cancelReason === '') {
-                            $cancelReason = null;
+                        // Idempotent: a concurrent request already cancelled. Sync the
+                        // route-bound model so the caller observes the persisted state and
+                        // the post-tx dispatch block short-circuits via $oldStatus === null.
+                        if ((int) $locked->status === (int) OrderStatus::CANCELED) {
+                            $frontendOrder->setRawAttributes($locked->getAttributes(), true);
+                            return;
                         }
-                    }
-                    if ($cancelReason !== null && $frontendOrder->isFillable('reason')) {
-                        $frontendOrder->reason = $cancelReason;
-                    }
-                    $frontendOrder->status = $request->status;
-                    $frontendOrder->save();
-                    OrderStateMachine::recordTransition(
-                        FrontendOrder::class,
-                        (int) $frontendOrder->id,
-                        (int) $oldStatus,
-                        (int) $request->status,
-                        Auth::check() ? (int) Auth::id() : null,
-                        $cancelReason
-                    );
-                    // [BUG-1 FIX] Notify KDS/OSS that order is cancelled so it disappears from screens.
-                    // Use OrderStatusChanged::dispatch (DispatchableAfterCommit) — not event(new …), which
-                    // bypasses the trait and can fire before DB commit.
-                    try {
-                        OrderStatusChanged::dispatch(
-                            $frontendOrder,
-                            $oldStatus,
-                            (int) $request->status
+
+                        // Re-validate the cancel window against the FRESH locked status — a
+                        // concurrent transition (e.g. to PREPARING) may have superseded the
+                        // pre-lock read.
+                        if ((int) $locked->status >= (int) $cancelableThreshold) {
+                            throw new Exception(trans('all.message.order_accept'), 422);
+                        }
+
+                        if ($locked->transaction) {
+                            app(PaymentService::class)->cashBack(
+                                $locked,
+                                'credit',
+                                'TXN-' . \Illuminate\Support\Str::random(12)
+                            );
+                        }
+                        app(LoyaltyService::class)->refundPoints($locked, 'kiosk');
+                        $oldStatus = (int) $locked->status;
+                        // [AUDIT-F-004] Propagate caller-supplied reason into the transition row.
+                        // OrderStatusRequest enforces non-empty reason on terminal transitions
+                        // (kiosk: enum whitelist; admin/staff: free-text). Persisting NULL here
+                        // would silently break the ORDER_FLOW.md §49 audit invariant.
+                        $cancelReason = $request->input('reason');
+                        if (is_string($cancelReason)) {
+                            $cancelReason = trim($cancelReason);
+                            if ($cancelReason === '') {
+                                $cancelReason = null;
+                            }
+                        }
+                        if ($cancelReason !== null && $locked->isFillable('reason')) {
+                            $locked->reason = $cancelReason;
+                        }
+                        $locked->status = $request->status;
+                        $locked->save();
+                        OrderStateMachine::recordTransition(
+                            FrontendOrder::class,
+                            (int) $locked->id,
+                            (int) $oldStatus,
+                            (int) $request->status,
+                            Auth::check() ? (int) Auth::id() : null,
+                            $cancelReason
                         );
-                    } catch (\Exception $e) {
-                        Log::warning('[FrontendOrder] OrderStatusChanged on cancel failed: ' . $e->getMessage());
-                    }
-                    SendOrderMail::dispatch(['order_id' => $frontendOrder->id, 'status' => $request->status]);
-                    SendOrderSms::dispatch(['order_id' => $frontendOrder->id, 'status' => $request->status]);
-                    SendOrderPush::dispatch(['order_id' => $frontendOrder->id, 'status' => $request->status]);
-                    // [F-01] Compensating release of branch-scoped stock counters on customer
-                    // self-cancel of a kiosk / takeaway order. Idempotent via released_qty.
-                    try {
-                        OrderCanceled::dispatch($frontendOrder); // allow: stock-release dispatch; OrderStateMachine::recordTransition already wrote the canonical state-transition audit row above.
-                    } catch (\Exception $e) {
-                        Log::warning('[FrontendOrder] OrderCanceled on cancel failed: ' . $e->getMessage()); // allow: warning only
+
+                        // Sync the locked, persisted attributes back onto the route-bound model
+                        // so the post-commit dispatches below read fresh state.
+                        $frontendOrder->setRawAttributes($locked->getAttributes(), true);
+                    });
+
+                    // Only fire the post-commit side-effects when THIS call performed the
+                    // cancel ($oldStatus set). A no-op replay leaves $oldStatus === null.
+                    if ($oldStatus !== null) {
+                        // [BUG-1 FIX] Notify KDS/OSS that order is cancelled so it disappears from screens.
+                        // Use OrderStatusChanged::dispatch (DispatchableAfterCommit) — not event(new …), which
+                        // bypasses the trait and can fire before DB commit.
+                        try {
+                            OrderStatusChanged::dispatch(
+                                $frontendOrder,
+                                $oldStatus,
+                                (int) $request->status
+                            );
+                        } catch (\Exception $e) {
+                            Log::warning('[FrontendOrder] OrderStatusChanged on cancel failed: ' . $e->getMessage());
+                        }
+                        SendOrderMail::dispatch(['order_id' => $frontendOrder->id, 'status' => $request->status]);
+                        SendOrderSms::dispatch(['order_id' => $frontendOrder->id, 'status' => $request->status]);
+                        SendOrderPush::dispatch(['order_id' => $frontendOrder->id, 'status' => $request->status]);
+                        // [F-01] Compensating release of branch-scoped stock counters on customer
+                        // self-cancel of a kiosk / takeaway order. Idempotent via released_qty.
+                        try {
+                            OrderCanceled::dispatch($frontendOrder); // allow: stock-release dispatch; OrderStateMachine::recordTransition already wrote the canonical state-transition audit row above.
+                        } catch (\Exception $e) {
+                            Log::warning('[FrontendOrder] OrderCanceled on cancel failed: ' . $e->getMessage()); // allow: warning only
+                        }
                     }
                 }
             } else {

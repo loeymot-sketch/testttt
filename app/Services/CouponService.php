@@ -436,10 +436,16 @@ class CouponService
 
         $limitPerUser = (int) ($coupon->limit_per_user ?? 0);
         if ($limitPerUser > 0) {
+            // [abuse-heal 2026-06-18 engines] lockForUpdate on the per-user redemption
+            // count. The order-create paths run this inside their DB::transaction, so the
+            // lock serializes two concurrent redemptions on the order_coupons rows —
+            // without it both requests read the same stale count and both pass a
+            // limit_per_user=1 coupon (confirmed race). Outside a transaction (the
+            // /coupon-checking read path) the lock is a harmless statement-scoped no-op.
             $orderedCouponCount = OrderCoupon::where([
                 'user_id' => $userId,
                 'coupon_id' => $coupon->id,
-            ])->count();
+            ])->lockForUpdate()->count();
 
             if ($orderedCouponCount >= $limitPerUser) {
                 throw new Exception(trans('all.message.coupon_limit_exceeded'), 422);
@@ -452,7 +458,11 @@ class CouponService
         // source-of-truth as limit_per_user above (single-box V1: same non-atomic semantics).
         $maxUsesGlobal = (int) ($coupon->max_uses_global ?? 0);
         if ($maxUsesGlobal > 0) {
-            $globalUsed = OrderCoupon::where('coupon_id', $coupon->id)->count();
+            // [abuse-heal 2026-06-18 engines] Same lockForUpdate guard for the global
+            // cap (the model comment above noted the "same non-atomic semantics").
+            // Serializes concurrent redemptions inside the order-create transaction;
+            // statement-scoped no-op on the lock-free read path.
+            $globalUsed = OrderCoupon::where('coupon_id', $coupon->id)->lockForUpdate()->count();
             if ($globalUsed >= $maxUsesGlobal) {
                 throw new Exception(trans('all.message.coupon_limit_exceeded'), 422);
             }

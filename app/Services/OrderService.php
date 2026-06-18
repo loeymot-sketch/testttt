@@ -552,7 +552,12 @@ class OrderService
                         $coupon = $this->couponService->resolveCouponById(
                             (int) $request->coupon_id,
                             (float) $realSubtotal,
-                            (int) Auth::id()
+                            (int) Auth::id(),
+                            // [abuse-heal 2026-06-18 engines] customer web order → 'web'
+                            // surface. Thread branch + surface so a coupon scoped to another
+                            // branch/surface (e.g. surfaces=['kiosk']) is rejected here.
+                            (int) $this->order->branch_id,
+                            'web'
                         );
                         $calculatedDiscount = $this->couponService->calculateDiscountAmount($coupon, (float) $realSubtotal);
                         // [GOAL-GOLIVE-VAT10 / F1-dormancy 2026-05-30] Coupon discount
@@ -1021,7 +1026,12 @@ class OrderService
                         $coupon = $this->couponService->resolveCouponById(
                             (int) $request->coupon_id,
                             (float) $realSubtotal,
-                            (int) ($request->customer_id ?? 0)
+                            (int) ($request->customer_id ?? 0),
+                            // [abuse-heal 2026-06-18 engines] thread branch + surface so a
+                            // coupon scoped to another branch/surface (e.g. surfaces=['kiosk'])
+                            // is rejected on POS instead of silently applied (revenue leak).
+                            (int) $this->order->branch_id,
+                            'pos'
                         );
                         $calculatedDiscount = $this->couponService->calculateDiscountAmount($coupon, (float) $realSubtotal);
                         // [GOAL-GOLIVE-VAT10 / F1-dormancy 2026-05-30] Coupon discount
@@ -1562,7 +1572,12 @@ class OrderService
                         $coupon = $this->couponService->resolveCouponById(
                             (int) $request->coupon_id,
                             (float) $realSubtotal,
-                            (int) ($request->customer_id ?? 0)
+                            (int) ($request->customer_id ?? 0),
+                            // [abuse-heal 2026-06-18 engines] QR dine-in table order is an
+                            // in-house counter surface → 'pos'. Pass branch + surface so a
+                            // coupon scoped elsewhere (e.g. surfaces=['kiosk']) is rejected.
+                            (int) $this->order->branch_id,
+                            'pos'
                         );
                         $calculatedDiscount = $this->couponService->calculateDiscountAmount($coupon, (float) $realSubtotal);
                         // [GOAL-GOLIVE-VAT10 / F1-dormancy 2026-05-30] Coupon discount

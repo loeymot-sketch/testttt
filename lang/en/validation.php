@@ -180,5 +180,7 @@ return [
     'attributes' => [],
 
     'items_cap_exceeded' => 'Maximum 50 items per order',
+    // [abuse-heal 2026-06-18 engines] per-line quantity ceiling
+    'item_quantity_cap_exceeded' => 'Maximum 9999 units per item',
 
 ];

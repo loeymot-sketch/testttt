@@ -68,6 +68,15 @@ class ValidJsonOrder implements Rule
                 return false;
             }
 
+            // [abuse-heal 2026-06-18 engines] Per-line quantity ceiling. Without an
+            // upper bound a forged line (quantity = 10^9) was accepted → absurd /
+            // integer-overflow-prone totals downstream. Cap at 9999 units per item
+            // (sibling of the 50-line DoS cap above).
+            if ((int)$item['quantity'] > 9999) {
+                $this->message = trans('validation.item_quantity_cap_exceeded');
+                return false;
+            }
+
             // [P2-2] instruction longueur max 500 caractères
             if (isset($item['instruction']) && is_string($item['instruction']) && strlen($item['instruction']) > 500) {
                 $this->message = "L'instruction de l'article à l'index {$index} dépasse 500 caractères.";
