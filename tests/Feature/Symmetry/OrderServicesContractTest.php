@@ -21,6 +21,7 @@ use App\Services\OrderService;
 use App\Services\PaymentService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Str;
 use Mockery;
 use Tests\TestCase;
 
@@ -161,12 +162,19 @@ class OrderServicesContractTest extends TestCase
         $audit->shouldReceive('write')->never();
         $this->app->instance(AuditLogService::class, $audit);
 
-        $this->actingAs($cashier, 'sanctum')->postJson('/api/admin/pos-order/change-status/'.$order->id, [
+        // [prod-finale 2026-06-17] change-status/* and change-payment-status/* are idempotency-guarded; these
+        // are two DISTINCT guarded routes, each needs its own X-Idempotency-Key to reach the controller where
+        // the no-op side-effect contract is asserted (frozen middleware; live UI sends it).
+        $this->actingAs($cashier, 'sanctum')
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
+            ->postJson('/api/admin/pos-order/change-status/'.$order->id, [
             'status' => OrderStatus::CANCELED,
             'reason' => 'contract noop',
         ])->assertSuccessful();
 
-        $this->actingAs($cashier, 'sanctum')->postJson('/api/admin/pos-order/change-payment-status/'.$order->id, [
+        $this->actingAs($cashier, 'sanctum')
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
+            ->postJson('/api/admin/pos-order/change-payment-status/'.$order->id, [
             'payment_status' => PaymentStatus::PAID,
         ])->assertSuccessful();
 
@@ -204,8 +212,12 @@ class OrderServicesContractTest extends TestCase
         $loyalty->shouldReceive('refundPoints')->never();
         $this->app->instance(LoyaltyService::class, $loyalty);
 
+        // [prod-finale 2026-06-17] frontend/order/change-status/* is idempotency-guarded; the header is needed
+        // to reach the controller where the no-op contract is asserted (frozen middleware; live UI sends it).
         $token = $kioskUser->createToken('kiosk', ['kiosk:order'])->plainTextToken;
-        $this->withToken($token)->postJson('/api/frontend/order/change-status/'.$order->id, [
+        $this->withToken($token)
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
+            ->postJson('/api/frontend/order/change-status/'.$order->id, [
             'status' => OrderStatus::CANCELED,
             // [AUDIT-F-004] reason whitelisted required on terminal transitions (kiosk path)
             'reason' => 'customer_request',
@@ -246,7 +258,12 @@ class OrderServicesContractTest extends TestCase
             'amount_cents' => 5000, // [AUDIT-F-002] matches order.total=50.00
         ];
 
+        // [prod-finale 2026-06-17] payment-confirm is idempotency-guarded. DISTINCT X-Idempotency-Key per POST:
+        // this test asserts the CONTROLLER's transaction_id-level idempotency (golden response + count()===1),
+        // so the SECOND POST below MUST reach the controller — reusing one key would make the frozen middleware
+        // replay the first 2xx from cache and never exercise the controller dedup under test.
         $this->withToken($token)
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/frontend/order/'.$order->id.'/payment-confirm', $payload)
             ->assertOk()
             ->assertJsonPath('status', true)
@@ -261,7 +278,10 @@ class OrderServicesContractTest extends TestCase
         $this->assertSame(OrderStatus::PREPARING, (int) $fresh->status);
         $this->assertSame('FK-M10-GOLDEN-TPE', $fresh->transaction_id);
 
+        // [prod-finale 2026-06-17] DISTINCT key (see note above) — this replay must reach the controller so the
+        // transaction_id dedup keeps row count at 1, not be short-circuited by the middleware's replay cache.
         $this->withToken($token)
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/frontend/order/'.$order->id.'/payment-confirm', $payload)
             ->assertOk()
             ->assertJsonPath('status', true)

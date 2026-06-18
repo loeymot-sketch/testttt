@@ -18,6 +18,7 @@ use App\Models\Tax;
 use App\Models\User;
 use App\Services\AddressService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Smartisan\Settings\Facades\Settings;
 use Tests\TestCase;
 
@@ -204,6 +205,8 @@ class DeliveryValidationTest extends TestCase
         $response = $this
             ->actingAs($userB, 'sanctum')
             ->withHeader('x-api-key', 'test-api-key')
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/frontend/order', $this->deliveryPayload($addressA->id));
 
         // 422 from the OrderRequest prepareForValidation gate (preferred — earlier
@@ -280,6 +283,8 @@ class DeliveryValidationTest extends TestCase
         $this
             ->actingAs($userWithoutPhone, 'sanctum')
             ->withHeader('x-api-key', 'test-api-key')
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/frontend/order', $this->deliveryPayload($address->id))
             ->assertStatus(422)
             ->assertJsonValidationErrors(['phone']);
@@ -307,6 +312,8 @@ class DeliveryValidationTest extends TestCase
         $this
             ->actingAs($userWithBadPhone, 'sanctum')
             ->withHeader('x-api-key', 'test-api-key')
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/frontend/order', $this->deliveryPayload($address->id))
             ->assertStatus(422)
             ->assertJsonValidationErrors(['phone']);
@@ -382,6 +389,8 @@ class DeliveryValidationTest extends TestCase
         return $this
             ->actingAs($this->customer, 'sanctum')
             ->withHeader('x-api-key', 'test-api-key')
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/frontend/order', $this->deliveryPayload($addressId));
     }
 

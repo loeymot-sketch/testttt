@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Services\PaymentService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Str;
 use Mockery;
 use Tests\TestCase;
 
@@ -59,13 +60,19 @@ class OrderStatusNoopSideEffectsSentinelTest extends TestCase
         $payment->shouldReceive('cashBack')->once()->andReturnNull();
         $this->app->instance(PaymentService::class, $payment);
 
+        // [prod-finale 2026-06-17] change-status/* is idempotency-guarded. DISTINCT X-Idempotency-Key per POST:
+        // the SECOND cancel MUST reach the controller so the controller-level no-op dedup (not the middleware
+        // replay cache) proves cashBack fires exactly ONCE. Reusing one key would make the frozen middleware
+        // replay the first 2xx and never exercise the controller — masking the very invariant under test.
         $this->actingAs($cashier, 'sanctum')
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos-order/change-status/' . $order->id, [
                 'status' => OrderStatus::CANCELED,
                 'reason' => 'sentinel duplicate cancel',
             ]);
 
         $this->actingAs($cashier, 'sanctum')
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos-order/change-status/' . $order->id, [
                 'status' => OrderStatus::CANCELED,
                 'reason' => 'sentinel duplicate cancel again',

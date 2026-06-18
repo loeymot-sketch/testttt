@@ -13,6 +13,7 @@ use App\Models\Tax;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Tests\Feature\Concerns\HasPosQuoteBinding;
 use Tests\Feature\Pos\Traits\SeedsOpenCashDrawerSession;
 use Tests\TestCase;
@@ -116,7 +117,9 @@ class PosOrderRequestNullableTotalTest extends TestCase
         $this->actingAs($this->operator, 'sanctum');
         $payload = $this->basePayload();
 
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos', $this->payloadWithPosQuote($this->operator, $payload));
 
         $response->assertStatus(201);
@@ -138,7 +141,9 @@ class PosOrderRequestNullableTotalTest extends TestCase
             'subtotal' => 0.10,
             'total'    => 1.00,
         ]);
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos', $this->payloadWithPosQuote($this->operator, $payload));
 
         $response->assertStatus(201);
@@ -157,7 +162,9 @@ class PosOrderRequestNullableTotalTest extends TestCase
         $payload = $this->basePayload([
             'pos_received_amount' => 5.00,
         ]);
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos', $this->payloadWithPosQuote($this->operator, $payload));
 
         $response->assertStatus(422);
@@ -167,7 +174,9 @@ class PosOrderRequestNullableTotalTest extends TestCase
     {
         $this->actingAs($this->operator, 'sanctum');
 
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos', $this->basePayload([
                 'subtotal' => -5.00,
             ]));
@@ -180,7 +189,9 @@ class PosOrderRequestNullableTotalTest extends TestCase
     {
         $this->actingAs($this->operator, 'sanctum');
 
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos', $this->basePayload([
                 'pos_received_amount' => -1.00,
             ]));

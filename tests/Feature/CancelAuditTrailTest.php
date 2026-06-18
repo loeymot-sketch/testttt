@@ -13,6 +13,7 @@ use App\Models\Transaction;
 use App\Models\User;
 use App\Services\Fiscal\AuditLogService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class CancelAuditTrailTest extends TestCase
@@ -41,6 +42,8 @@ class CancelAuditTrailTest extends TestCase
 
         $this->actingAs($cashier)
             ->withHeader('x-api-key', config('app.api_key'))
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos-order/change-status/' . $order->id, [
                 'status' => OrderStatus::CANCELED,
                 'reason' => 'customer requested cancellation',
@@ -81,8 +84,12 @@ class CancelAuditTrailTest extends TestCase
 
         $this->assertNull(app(AuditLogService::class)->verifyChain($branch->id));
 
+        // [prod-finale 2026-06-17] DISTINCT idempotency key from the first POST: reusing the same key would
+        // make the FROZEN middleware replay the cached 2xx and never reach the controller's
+        // already-canceled dedup guard — masking the assertion that cash_back / audit / action-log stay at 1.
         $this->actingAs($cashier)
             ->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos-order/change-status/' . $order->id, [
                 'status' => OrderStatus::CANCELED,
                 'reason' => 'duplicate cancellation request',
@@ -104,6 +111,8 @@ class CancelAuditTrailTest extends TestCase
 
         $this->actingAs($cashier)
             ->withHeader('x-api-key', config('app.api_key'))
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos-order/change-status/' . $order->id, [
                 'status' => OrderStatus::CANCELED,
             ])->assertStatus(422);

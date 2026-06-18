@@ -13,6 +13,7 @@ use App\Services\Fiscal\AuditLogService;
 use App\Services\LoyaltyService;
 use App\Services\PaymentService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Mockery;
 use Tests\TestCase;
 
@@ -68,15 +69,23 @@ class OrderStatusNoopSideEffectsTest extends TestCase
         $payment->shouldReceive('cashBack')->once()->andReturnNull();
         $this->app->instance(PaymentService::class, $payment);
 
-        $this->actingAs($cashier, 'sanctum')->postJson('/api/admin/pos-order/change-status/'.$order->id, [
-            'status' => OrderStatus::CANCELED,
-            'reason' => 'duplicate cancel guard',
-        ])->assertSuccessful();
+        // [prod-finale 2026-06-17] DISTINCT idempotency keys per POST: re-using one key would make the
+        // FROZEN idempotency middleware return a cached 2xx replay and the SECOND POST would never reach
+        // the controller — masking the controller-level duplicate-cancel dedup this test proves (cashBack
+        // invoked ONCE). Distinct keys let both requests hit the controller, where the 2nd no-ops.
+        $this->actingAs($cashier, 'sanctum')
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
+            ->postJson('/api/admin/pos-order/change-status/'.$order->id, [
+                'status' => OrderStatus::CANCELED,
+                'reason' => 'duplicate cancel guard',
+            ])->assertSuccessful();
 
-        $this->actingAs($cashier, 'sanctum')->postJson('/api/admin/pos-order/change-status/'.$order->id, [
-            'status' => OrderStatus::CANCELED,
-            'reason' => 'duplicate cancel guard again',
-        ])->assertSuccessful();
+        $this->actingAs($cashier, 'sanctum')
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
+            ->postJson('/api/admin/pos-order/change-status/'.$order->id, [
+                'status' => OrderStatus::CANCELED,
+                'reason' => 'duplicate cancel guard again',
+            ])->assertSuccessful();
 
         $payment->shouldHaveReceived('cashBack')->once();
     }

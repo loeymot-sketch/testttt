@@ -7,6 +7,7 @@ use Database\Factories\BranchFactory;
 use Database\Factories\ItemFactory;
 use Database\Factories\UserFactory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 /**
@@ -43,8 +44,10 @@ class OrderRequestNegativeTotalTest extends TestCase
             'items' => json_encode([['item_id' => $item->id, 'price' => 10, 'quantity' => 1]]),
         ];
 
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $response = $this->actingAs($user)
             ->withHeader('x-api-key', config('app.api_key', env('MIX_API_KEY', 'test-api-key')))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/frontend/order', $payload);
 
         $response->assertStatus(422);
@@ -71,8 +74,10 @@ class OrderRequestNegativeTotalTest extends TestCase
             'items' => json_encode([['item_id' => $item->id, 'price' => 10, 'quantity' => 1]]),
         ];
 
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $response = $this->actingAs($user)
             ->withHeader('x-api-key', config('app.api_key', env('MIX_API_KEY', 'test-api-key')))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/frontend/order', $payload);
 
         $response->assertStatus(422);
@@ -100,8 +105,10 @@ class OrderRequestNegativeTotalTest extends TestCase
             'items' => json_encode([['item_id' => $item->id, 'price' => 10, 'quantity' => 1]]),
         ];
 
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $response = $this->actingAs($user)
             ->withHeader('x-api-key', config('app.api_key', env('MIX_API_KEY', 'test-api-key')))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/frontend/order', $payload);
 
         $response->assertStatus(422);

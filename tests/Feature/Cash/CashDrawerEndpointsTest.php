@@ -8,6 +8,7 @@ use App\Models\CashMovement;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 /**
@@ -53,6 +54,8 @@ class CashDrawerEndpointsTest extends TestCase
     public function test_open_session_endpoint_creates_session(): void
     {
         $response = $this->actingAs($this->cashierA, 'sanctum')
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos/cash-drawer/sessions/open', [
                 'opening_amount' => 100.50,
             ]);
@@ -78,6 +81,8 @@ class CashDrawerEndpointsTest extends TestCase
         $noPerm->assignRole('Stuff');
 
         $this->actingAs($noPerm, 'sanctum')
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos/cash-drawer/sessions/open', ['opening_amount' => 50])
             ->assertStatus(403);
     }
@@ -85,21 +90,30 @@ class CashDrawerEndpointsTest extends TestCase
     public function test_open_session_endpoint_validates_opening_amount(): void
     {
         $this->actingAs($this->cashierA, 'sanctum')
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos/cash-drawer/sessions/open', ['opening_amount' => -1])
             ->assertStatus(422);
 
         $this->actingAs($this->cashierA, 'sanctum')
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos/cash-drawer/sessions/open', [])
             ->assertStatus(422);
     }
 
     public function test_open_session_endpoint_returns_409_if_already_open(): void
     {
+        // [prod-finale 2026-06-17] DISTINCT idempotency keys (fresh Str::uuid() per call): the 2nd open must
+        // reach the controller's already-open guard to return 409. A reused key would replay the cached 201
+        // of the 1st open and mask the conflict. Frozen middleware; live UI sends a fresh key per open.
         $this->actingAs($this->cashierA, 'sanctum')
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos/cash-drawer/sessions/open', ['opening_amount' => 100])
             ->assertCreated();
 
         $this->actingAs($this->cashierA, 'sanctum')
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos/cash-drawer/sessions/open', ['opening_amount' => 50])
             ->assertStatus(409);
     }
@@ -107,10 +121,14 @@ class CashDrawerEndpointsTest extends TestCase
     public function test_close_session_endpoint_marks_closed(): void
     {
         $session = $this->actingAs($this->cashierA, 'sanctum')
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos/cash-drawer/sessions/open', ['opening_amount' => 100])
             ->json('data');
 
         $response = $this->actingAs($this->cashierA, 'sanctum')
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson("/api/admin/pos/cash-drawer/sessions/{$session['id']}/close", [
                 'closing_amount' => 250.75,
             ]);
@@ -123,6 +141,8 @@ class CashDrawerEndpointsTest extends TestCase
     public function test_close_session_endpoint_404_unknown_session(): void
     {
         $this->actingAs($this->cashierA, 'sanctum')
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos/cash-drawer/sessions/99999/close', ['closing_amount' => 100])
             ->assertStatus(404);
     }
@@ -130,6 +150,8 @@ class CashDrawerEndpointsTest extends TestCase
     public function test_reconcile_session_endpoint_computes_variance(): void
     {
         $session = $this->actingAs($this->cashierA, 'sanctum')
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos/cash-drawer/sessions/open', ['opening_amount' => 100])
             ->json('data');
 
@@ -143,10 +165,14 @@ class CashDrawerEndpointsTest extends TestCase
         ]);
 
         $this->actingAs($this->cashierA, 'sanctum')
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson("/api/admin/pos/cash-drawer/sessions/{$session['id']}/close", ['closing_amount' => 130])
             ->assertOk();
 
         $reconcileResp = $this->actingAs($this->cashierA, 'sanctum')
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson("/api/admin/pos/cash-drawer/sessions/{$session['id']}/reconcile");
 
         $reconcileResp->assertOk();
@@ -158,6 +184,8 @@ class CashDrawerEndpointsTest extends TestCase
     public function test_current_endpoint_returns_open_session(): void
     {
         $this->actingAs($this->cashierA, 'sanctum')
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos/cash-drawer/sessions/open', ['opening_amount' => 100])
             ->assertCreated();
 
@@ -180,6 +208,8 @@ class CashDrawerEndpointsTest extends TestCase
     public function test_movements_endpoint_lists_session_movements(): void
     {
         $session = $this->actingAs($this->cashierA, 'sanctum')
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos/cash-drawer/sessions/open', ['opening_amount' => 50])
             ->json('data');
 
@@ -208,6 +238,8 @@ class CashDrawerEndpointsTest extends TestCase
     {
         // Cashier B opens a session on branch B
         $sessionB = $this->actingAs($this->cashierB, 'sanctum')
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos/cash-drawer/sessions/open', ['opening_amount' => 100])
             ->json('data');
 
@@ -215,6 +247,8 @@ class CashDrawerEndpointsTest extends TestCase
         // so they get 404 (info-leak protection: ne pas révéler l'existence du record
         // cross-branch). Cohérent avec le pattern existant dans BranchScopeTest.
         $this->actingAs($this->cashierA, 'sanctum')
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson("/api/admin/pos/cash-drawer/sessions/{$sessionB['id']}/close", ['closing_amount' => 100])
             ->assertStatus(404);
     }
@@ -222,6 +256,8 @@ class CashDrawerEndpointsTest extends TestCase
     public function test_branch_isolation_movements_hides_other_branch_session(): void
     {
         $sessionB = $this->actingAs($this->cashierB, 'sanctum')
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos/cash-drawer/sessions/open', ['opening_amount' => 100])
             ->json('data');
 
@@ -234,6 +270,8 @@ class CashDrawerEndpointsTest extends TestCase
     {
         // Cashier B has an open session on branch B
         $this->actingAs($this->cashierB, 'sanctum')
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos/cash-drawer/sessions/open', ['opening_amount' => 100])
             ->assertCreated();
 
@@ -266,6 +304,8 @@ class CashDrawerEndpointsTest extends TestCase
         $admin->givePermissionTo('pos');
 
         $response = $this->actingAs($admin, 'sanctum')
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos/cash-drawer/sessions/open', [
                 'opening_amount' => 75.5,
                 'branch_id'      => $this->branchA->id,
@@ -295,6 +335,8 @@ class CashDrawerEndpointsTest extends TestCase
         // Regression guard for the original bug: admin with no body branch_id
         // still cannot open (must explicitly choose a branch).
         $response = $this->actingAs($admin, 'sanctum')
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos/cash-drawer/sessions/open', [
                 'opening_amount' => 50.00,
             ]);
@@ -310,6 +352,8 @@ class CashDrawerEndpointsTest extends TestCase
         $admin->givePermissionTo('pos');
 
         $response = $this->actingAs($admin, 'sanctum')
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos/cash-drawer/sessions/open', [
                 'opening_amount' => 50.00,
                 'branch_id'      => 99999, // does not exist
@@ -327,6 +371,8 @@ class CashDrawerEndpointsTest extends TestCase
         // must be rejected. Existing behavior for body-less calls is preserved
         // separately by test_open_session_endpoint_creates_session above.
         $response = $this->actingAs($this->cashierA, 'sanctum')
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos/cash-drawer/sessions/open', [
                 'opening_amount' => 50.00,
                 'branch_id'      => $this->branchB->id,
@@ -341,6 +387,8 @@ class CashDrawerEndpointsTest extends TestCase
         // Defensive equality path: staff sending their own branch_id explicitly
         // should still succeed (back-compat for any future UI that forwards it).
         $response = $this->actingAs($this->cashierA, 'sanctum')
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos/cash-drawer/sessions/open', [
                 'opening_amount' => 50.00,
                 'branch_id'      => $this->branchA->id,
@@ -362,6 +410,8 @@ class CashDrawerEndpointsTest extends TestCase
 
         // Open against branch A.
         $opened = $this->actingAs($admin, 'sanctum')
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos/cash-drawer/sessions/open', [
                 'opening_amount' => 50.00,
                 'branch_id'      => $this->branchA->id,
@@ -387,6 +437,8 @@ class CashDrawerEndpointsTest extends TestCase
         // Branch-bound staff cannot leverage ?branch_id to peek at another
         // branch's drawer — the scope is hard-pinned to their auth branch.
         $this->actingAs($this->cashierB, 'sanctum')
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos/cash-drawer/sessions/open', [
                 'opening_amount' => 100.00,
             ])

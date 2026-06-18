@@ -7,6 +7,7 @@ use App\Enums\Status;
 use App\Models\Branch;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 /**
@@ -48,6 +49,8 @@ class DeliveryMinimumOrderTest extends TestCase
         ]);
 
         $response = $this->actingAs($user, 'sanctum')
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/frontend/order', $this->makeRequest($branch, 1.00));
 
         // We don't assert 200 (the full request likely fails on other unrelated
@@ -72,6 +75,8 @@ class DeliveryMinimumOrderTest extends TestCase
         ]);
 
         $response = $this->actingAs($user, 'sanctum')
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/frontend/order', $this->makeRequest($branch, 10.00));
 
         $errors = $response->json('errors.subtotal') ?? [];
@@ -93,6 +98,8 @@ class DeliveryMinimumOrderTest extends TestCase
         ]);
 
         $response = $this->actingAs($user, 'sanctum')
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/frontend/order', $this->makeRequest($branch, 15.00));
 
         $errors = $response->json('errors.subtotal') ?? [];

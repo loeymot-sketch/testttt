@@ -16,6 +16,7 @@ use App\Models\ItemCategory;
 use App\Models\Tax;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Smartisan\Settings\Facades\Settings;
 use Tests\TestCase;
 
@@ -138,6 +139,8 @@ class OrderRequestDeliveryFeeAuthorityTest extends TestCase
         return $this
             ->actingAs($this->customer, 'sanctum')
             ->withHeader('x-api-key', 'test-api-key')
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/frontend/order', $payload);
     }
 

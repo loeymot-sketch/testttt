@@ -22,6 +22,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 /**
@@ -457,6 +458,8 @@ class NF525ComplianceE2ETest extends TestCase
 
         $resp = $this->actingAs($this->admin, 'sanctum')
             ->withHeaders($this->apiHeaders())
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson("/api/admin/pos-order/{$parent->id}/refund-with-counter-entry", [
                 'reason' => 'NF525 E2E counter-entry refund test',
             ]);

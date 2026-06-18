@@ -17,6 +17,7 @@ use App\Enums\PosPaymentMethod;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentStatus;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Tests\Feature\Concerns\HasPosQuoteBinding;
 use Tests\Feature\Pos\Traits\SeedsOpenCashDrawerSession;
 
@@ -88,8 +89,10 @@ class PosOrderTaxTest extends TestCase
                 ['item_id' => $item->id, 'quantity' => 1, 'item_variations' => [], 'item_extras' => []]
             ]),
         ];
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $response = $this->actingAs($admin)
             ->withHeader('x-api-key', $this->apiKey())
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos', $this->payloadWithPosQuote($admin, $payload));
 
         $response->assertStatus(201);
@@ -159,8 +162,10 @@ class PosOrderTaxTest extends TestCase
                 ['item_id' => $item->id, 'quantity' => 1, 'item_variations' => [], 'item_extras' => []]
             ]),
         ];
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $response = $this->actingAs($admin)
             ->withHeader('x-api-key', $this->apiKey())
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos', $this->payloadWithPosQuote($admin, $payload));
         $response->assertStatus(201);
         $orderId = $response->json('data.id');
@@ -168,8 +173,12 @@ class PosOrderTaxTest extends TestCase
         // Maintenant tester avec un utilisateur sans rôle
         $user = \Database\Factories\UserFactory::new()->create(['branch_id' => $branch->id]);
 
+        // [prod-finale 2026-06-17] change-payment-status/* is idempotency-guarded (frozen middleware runs
+        // BEFORE the controller authz); the 403 is raised inside the controller, so the header is required
+        // to reach it — without it the request 422s on the missing key and masks the 403 under test.
         $response2 = $this->actingAs($user)
             ->withHeader('x-api-key', $this->apiKey())
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson("/api/admin/pos-order/change-payment-status/{$orderId}", [
                 'payment_status' => PaymentStatus::UNPAID,
             ]);

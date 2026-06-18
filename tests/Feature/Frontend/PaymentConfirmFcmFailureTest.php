@@ -13,6 +13,7 @@ use App\Models\Order;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 /**
@@ -71,15 +72,18 @@ class PaymentConfirmFcmFailureTest extends TestCase
 
         $token = $kioskUser->createToken('kiosk-order', ['kiosk:order'])->plainTextToken;
 
-        $response = $this->withToken($token)->postJson(
-            '/api/frontend/order/'.$order->id.'/payment-confirm',
-            [
-                'transaction_id' => 'FK-B001-FCM-TEST',
-                'card_type'      => 'visa',
-                'payment_method' => PaymentGateway::CARD,
-                'amount_cents'   => 5000,
-            ]
-        );
+        $response = $this->withToken($token)
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
+            ->postJson(
+                '/api/frontend/order/'.$order->id.'/payment-confirm',
+                [
+                    'transaction_id' => 'FK-B001-FCM-TEST',
+                    'card_type'      => 'visa',
+                    'payment_method' => PaymentGateway::CARD,
+                    'amount_cents'   => 5000,
+                ]
+            );
 
         // Contract: payment-confirm returns 200 once payment is committed,
         // regardless of post-commit side-effect health.

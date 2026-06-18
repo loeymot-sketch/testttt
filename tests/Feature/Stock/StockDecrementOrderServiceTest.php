@@ -17,6 +17,7 @@ use App\Models\User;
 use App\Services\Cash\CashDrawerService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Tests\Feature\Concerns\HasPosQuoteBinding;
 use Tests\TestCase;
 
@@ -39,7 +40,9 @@ class StockDecrementOrderServiceTest extends TestCase
         ]);
 
         $payload = $this->payload($branch, $customer, $item);
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $response = $this->actingAs($operator, 'sanctum')
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos', $this->payloadWithPosQuote($operator, $payload, 10.00));
 
         $this->assertContains($response->status(), [200, 201], $response->getContent());
@@ -61,7 +64,9 @@ class StockDecrementOrderServiceTest extends TestCase
         ]);
 
         $payload = $this->payload($branch, $customer, $item);
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $response = $this->actingAs($operator, 'sanctum')
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos', $this->payloadWithPosQuote($operator, $payload, 10.00));
 
         $this->assertSame(409, $response->status(), $response->getContent());

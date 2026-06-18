@@ -15,6 +15,7 @@ use App\Models\OrderQuote;
 use App\Models\Tax;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Tests\Feature\Pos\Traits\SeedsOpenCashDrawerSession;
 use Tests\TestCase;
 
@@ -69,8 +70,11 @@ class QuoteTamperTest extends TestCase
         $tampered['total'] = $first['total_ttc'];
         $tampered['pos_received_amount'] = $first['total_ttc'];
 
+        // [prod-finale 2026-06-17] the COMMIT route /api/admin/pos is idempotency-guarded (the quote POST above
+        // is not); the tampered-quote 401 is raised inside the controller, so the header is needed to reach it.
         $this->actingAs($operator, 'sanctum')
             ->withHeader('x-api-key', 'test-api-key')
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos', $tampered)
             ->assertStatus(401);
 
@@ -93,8 +97,11 @@ class QuoteTamperTest extends TestCase
         $payloadB['total'] = $first['total_ttc'];
         $payloadB['pos_received_amount'] = $first['total_ttc'];
 
+        // [prod-finale 2026-06-17] the COMMIT route /api/admin/pos is idempotency-guarded (the quote POST above
+        // is not); the cross-branch-quote 401 is raised inside the controller, so the header is needed to reach it.
         $this->actingAs($operatorB, 'sanctum')
             ->withHeader('x-api-key', 'test-api-key')
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos', $payloadB)
             ->assertStatus(401);
     }

@@ -10,6 +10,7 @@ use App\Models\Item;
 use App\Models\Tax;
 use App\Enums\TaxType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Tests\Feature\Concerns\HasPosQuoteBinding;
 use Tests\Feature\Pos\Traits\SeedsOpenCashDrawerSession;
 
@@ -85,10 +86,12 @@ class POSComprehensiveTest extends TestCase
             ]]),
         ];
 
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $response = $this->actingAs($admin, 'sanctum')
             ->withHeader('x-api-key', $this->apiKey())
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos', $this->payloadWithPosQuote($admin, $payload));
-        
+
         $response->assertStatus(201);
         
         // [Wave S-1 — 2026-05-20] Owner P-OWNER Wave S-1: a POS direct paid
@@ -158,12 +161,14 @@ class POSComprehensiveTest extends TestCase
             'order_datetime' => now(),
         ]);
         
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $response = $this->actingAs($admin)
             ->withHeader('x-api-key', $this->apiKey())
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson("/api/admin/pos-order/change-status/{$order->id}", [
                 'status' => \App\Enums\OrderStatus::PREPARING,
             ]);
-        
+
         $this->assertTrue(in_array($response->status(), [200, 400, 403, 422]));
     }
 
@@ -180,12 +185,14 @@ class POSComprehensiveTest extends TestCase
             'order_datetime' => now(),
         ]);
         
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $response = $this->actingAs($admin)
             ->withHeader('x-api-key', $this->apiKey())
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson("/api/admin/pos-order/change-payment-status/{$order->id}", [
                 'payment_status' => \App\Enums\PaymentStatus::PAID,
             ]);
-        
+
         $response->assertStatus(200);
     }
 

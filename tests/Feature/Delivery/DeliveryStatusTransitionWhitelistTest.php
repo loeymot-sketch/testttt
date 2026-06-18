@@ -9,6 +9,7 @@ use App\Models\Branch;
 use App\Models\Order;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -53,6 +54,8 @@ class DeliveryStatusTransitionWhitelistTest extends TestCase
 
         $resp = $this->actingAs($driver, 'sanctum')
             ->withHeader('x-api-key', config('app.api_key'))
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/frontend/delivery-boy-order/change-status/' . $order->id, [
                 'status' => OrderStatus::OUT_FOR_DELIVERY,
             ]);
@@ -78,6 +81,8 @@ class DeliveryStatusTransitionWhitelistTest extends TestCase
         // 99 is not in [8, 10, 13, 22] — request-layer whitelist must reject.
         $resp = $this->actingAs($driver, 'sanctum')
             ->withHeader('x-api-key', config('app.api_key'))
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/frontend/delivery-boy-order/change-status/' . $order->id, [
                 'status' => 99,
             ]);
@@ -102,6 +107,8 @@ class DeliveryStatusTransitionWhitelistTest extends TestCase
 
         $resp = $this->actingAs($driver, 'sanctum')
             ->withHeader('x-api-key', config('app.api_key'))
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/frontend/delivery-boy-order/change-status/' . $order->id, [
                 'status' => -1,
             ]);
@@ -128,6 +135,8 @@ class DeliveryStatusTransitionWhitelistTest extends TestCase
 
         $resp = $this->actingAs($driver, 'sanctum')
             ->withHeader('x-api-key', config('app.api_key'))
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/frontend/delivery-boy-order/change-status/' . $order->id, [
                 'status' => OrderStatus::OUT_FOR_DELIVERY,
             ]);

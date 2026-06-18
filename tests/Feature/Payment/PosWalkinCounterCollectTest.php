@@ -12,6 +12,7 @@ use App\Models\Order;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 /**
@@ -77,7 +78,9 @@ class PosWalkinCounterCollectTest extends TestCase
 
         $this->assertNull($order->fiscal_sequence_no, 'deferred POS order must NOT carry a fiscal seq before collection');
 
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $this->actingAs($operator, 'sanctum')
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson("/api/admin/pos/counter-collect/{$order->id}/confirm", [
                 'mode' => PosPaymentMethod::CARD,
             ])
@@ -122,7 +125,9 @@ class PosWalkinCounterCollectTest extends TestCase
 
         // Already-PAID short-circuits before the deferred guard; the key
         // invariant is it does NOT re-allocate / double-seal.
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $this->actingAs($operator, 'sanctum')
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson("/api/admin/pos/counter-collect/{$paid->id}/confirm", [
                 'mode' => PosPaymentMethod::CASH,
                 'received' => 9.00,
@@ -152,7 +157,11 @@ class PosWalkinCounterCollectTest extends TestCase
             'fiscal_sequence_no' => null,
         ]);
 
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI
+        // sends it). With the header the request reaches the controller's deferred-order guard (the real rejection
+        // under test); without it a bare 422 from the missing-header middleware would falsely satisfy the assertion.
         $res = $this->actingAs($operator, 'sanctum')
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson("/api/admin/pos/counter-collect/{$unpaid->id}/confirm", [
                 'mode' => PosPaymentMethod::CASH,
                 'received' => 9.00,

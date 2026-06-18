@@ -13,6 +13,7 @@ use App\Models\Tax;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Smartisan\Settings\Facades\Settings;
 use Tests\TestCase;
 
@@ -109,7 +110,9 @@ class PosDineInServerGateTest extends TestCase
 
         $this->actingAs($this->operator, 'sanctum');
 
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos', $this->dineInPayload());
 
         $response->assertStatus(422);
@@ -124,7 +127,9 @@ class PosDineInServerGateTest extends TestCase
         $this->actingAs($this->operator, 'sanctum');
 
         // No dining_table_id provided — must now be a validation error.
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos', $this->dineInPayload());
 
         $response->assertStatus(422);
@@ -140,7 +145,9 @@ class PosDineInServerGateTest extends TestCase
 
         $this->actingAs($this->operator, 'sanctum');
 
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos', $this->dineInPayload([
                 'order_type' => (string) OrderType::DINING_TABLE,
             ]));

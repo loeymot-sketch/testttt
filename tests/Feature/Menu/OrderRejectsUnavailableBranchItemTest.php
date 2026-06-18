@@ -16,6 +16,7 @@ use App\Models\KioskMachine;
 use App\Models\Tax;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Laravel\Sanctum\Sanctum;
 use Smartisan\Settings\Facades\Settings;
 use Tests\TestCase;
@@ -121,6 +122,8 @@ class OrderRejectsUnavailableBranchItemTest extends TestCase
 
         $response = $this
             ->withHeader('x-api-key', '123456')
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/frontend/order', $payload + [
                 'quote_token' => $quote['quote_token'],
                 'quote_signature' => $quote['signature'],

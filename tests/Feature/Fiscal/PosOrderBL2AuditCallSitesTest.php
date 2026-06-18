@@ -18,6 +18,7 @@ use App\Models\Order;
 use App\Models\Tax;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Smartisan\Settings\Facades\Settings;
 use Tests\Feature\Concerns\HasPosQuoteBinding;
 use Tests\TestCase;
@@ -129,6 +130,8 @@ class PosOrderBL2AuditCallSitesTest extends TestCase
 
         $this->actingAs($this->admin)
             ->withHeader('x-api-key', config('app.api_key'))
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos', $this->payloadWithPosQuote($this->admin, $payload))
             ->assertStatus(201);
 
@@ -155,6 +158,8 @@ class PosOrderBL2AuditCallSitesTest extends TestCase
 
         $this->actingAs($this->admin)
             ->withHeader('x-api-key', config('app.api_key'))
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson("/api/admin/pos-order/change-status/{$order->id}", [
                 'status' => OrderStatus::CANCELED,
                 'reason' => 'Client désistement',
@@ -182,6 +187,8 @@ class PosOrderBL2AuditCallSitesTest extends TestCase
 
         $this->actingAs($this->admin)
             ->withHeader('x-api-key', config('app.api_key'))
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson("/api/admin/pos-order/change-status/{$order->id}", [
                 'status' => OrderStatus::RETURNED,
                 'reason' => 'Produit retourné — non conforme',
@@ -209,6 +216,8 @@ class PosOrderBL2AuditCallSitesTest extends TestCase
 
         $this->actingAs($this->admin)
             ->withHeader('x-api-key', config('app.api_key'))
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson("/api/admin/pos-order/change-status/{$order->id}", [
                 'status' => OrderStatus::RETURNED,
             ])->assertStatus(422);
@@ -227,6 +236,8 @@ class PosOrderBL2AuditCallSitesTest extends TestCase
 
         $this->actingAs($this->admin)
             ->withHeader('x-api-key', config('app.api_key'))
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson("/api/admin/pos-order/change-payment-status/{$order->id}", [
                 'payment_status' => PaymentStatus::PAID,
             ])->assertStatus(200);
@@ -317,6 +328,8 @@ class PosOrderBL2AuditCallSitesTest extends TestCase
 
         $resp = $this->actingAs($this->admin)
             ->withHeader('x-api-key', config('app.api_key'))
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos', $this->payloadWithPosQuote($this->admin, $payload));
         $resp->assertStatus(201);
         return Order::findOrFail((int) $resp->json('data.id'));

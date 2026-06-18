@@ -18,6 +18,7 @@ use App\Models\Tax;
 use App\Models\User;
 use App\Services\Composer\ComposerProfileService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Laravel\Sanctum\Sanctum;
 use Smartisan\Settings\Facades\Settings;
 use Tests\TestCase;
@@ -261,6 +262,8 @@ class ProfilePublishMidCartRejectionTest extends TestCase
         Sanctum::actingAs($kioskUser, ['kiosk:order']);
         $response = $this
             ->withHeader('x-api-key', (string) config('app.api_key'))
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/frontend/order', $payload + $quote);
 
         $response->assertStatus(422);
@@ -320,6 +323,8 @@ class ProfilePublishMidCartRejectionTest extends TestCase
         Sanctum::actingAs($kioskUser, ['kiosk:order']);
         $response = $this
             ->withHeader('x-api-key', (string) config('app.api_key'))
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/frontend/order', $payload + $quote);
 
         $this->assertContains(

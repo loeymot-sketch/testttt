@@ -15,6 +15,7 @@ use App\Enums\TaxType;
 use App\Enums\DiscountType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 use Tests\Feature\Concerns\HasPosQuoteBinding;
 use Tests\Feature\Pos\Traits\SeedsOpenCashDrawerSession;
@@ -137,7 +138,10 @@ class PosDiscountTest extends TestCase
 
         $orderData = $this->payloadWithPosQuote($this->posOperator, $orderData);
 
-        $response = $this->withHeader('x-api-key', config('app.api_key'))->postJson('/api/admin/pos', $orderData);
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+        $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
+            ->postJson('/api/admin/pos', $orderData);
 
         $response->assertStatus(201);
 
@@ -246,7 +250,10 @@ class PosDiscountTest extends TestCase
 
         $orderData = $this->payloadWithPosQuote($this->posOperator, $orderData);
 
-        $response = $this->withHeader('x-api-key', config('app.api_key'))->postJson('/api/admin/pos', $orderData);
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+        $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
+            ->postJson('/api/admin/pos', $orderData);
 
         $response->assertStatus(201);
 

@@ -13,6 +13,7 @@ use App\Models\Tax;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 /**
@@ -155,7 +156,9 @@ class PosDiscountPermissionTest extends TestCase
         $operator = $this->makeOperatorWith(['pos-discount-unlimited']);
         $this->actingAs($operator, 'sanctum');
 
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos', $this->buildOrderPayload(1.00, null));
 
         $response->assertStatus(422);
@@ -167,7 +170,9 @@ class PosDiscountPermissionTest extends TestCase
         $operator = $this->makeOperatorWith([]); // no discount permission
         $this->actingAs($operator, 'sanctum');
 
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos', $this->buildOrderPayload(0.5, 'Test motif'));
 
         $response->assertStatus(422);
@@ -181,7 +186,9 @@ class PosDiscountPermissionTest extends TestCase
 
         $payload = $this->withSealedQuote($operator, $this->buildOrderPayload(0.5, 'Geste commercial'));
 
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos', $payload);
 
         $response->assertStatus(201);
@@ -192,7 +199,9 @@ class PosDiscountPermissionTest extends TestCase
         $operator = $this->makeOperatorWith(['pos-discount-up-to-10']);
         $this->actingAs($operator, 'sanctum');
 
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos', $this->buildOrderPayload(2.5, 'Trop généreux'));
 
         $response->assertStatus(422);
@@ -209,7 +218,9 @@ class PosDiscountPermissionTest extends TestCase
 
         $payload = $this->withSealedQuote($operator, $this->buildOrderPayload(2.5, 'Validé manager'));
 
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos', $payload);
 
         $response->assertStatus(201);
@@ -223,7 +234,9 @@ class PosDiscountPermissionTest extends TestCase
         ]);
         $this->actingAs($operator, 'sanctum');
 
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos', $this->buildOrderPayload(7.5, 'Trop haut'));
 
         $response->assertStatus(422);
@@ -237,7 +250,9 @@ class PosDiscountPermissionTest extends TestCase
 
         $payload = $this->withSealedQuote($operator, $this->buildOrderPayload(7.5, 'Validé owner'));
 
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos', $payload);
 
         $response->assertStatus(201);
@@ -250,7 +265,9 @@ class PosDiscountPermissionTest extends TestCase
 
         $payload = $this->withSealedQuote($operator, $this->buildOrderPayload(0.0, null));
 
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $response = $this->withHeader('x-api-key', config('app.api_key'))
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos', $payload);
 
         $response->assertStatus(201);

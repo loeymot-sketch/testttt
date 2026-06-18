@@ -10,6 +10,7 @@ use App\Models\Branch;
 use App\Models\Tax;
 use App\Enums\TaxType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Tests\Feature\Concerns\HasPosQuoteBinding;
 use Tests\Feature\Pos\Traits\SeedsOpenCashDrawerSession;
 
@@ -72,6 +73,8 @@ class AntiGravityFinalTest extends TestCase
 
         $orderResponse = $this->actingAs($admin, 'sanctum')
             ->withHeader('x-api-key', config('app.api_key'))
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos', $payload);
         echo "Order Status: " . $orderResponse->status() . "\n";
 

@@ -8,6 +8,7 @@ use App\Models\Order;
 use App\Models\User;
 use App\Services\Fiscal\AuditLogService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use RuntimeException;
 use Tests\TestCase;
 
@@ -44,6 +45,8 @@ class ReceiptPrintControllerTest extends TestCase
         $order = $this->makeOrder(0);
 
         $this->actingAs($this->operator, 'sanctum')
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson("/api/admin/pos/orders/{$order->id}/print-receipt")
             ->assertOk()
             ->assertJsonPath('order_id', $order->id)
@@ -57,6 +60,8 @@ class ReceiptPrintControllerTest extends TestCase
         $order = $this->makeOrder(1);
 
         $this->actingAs($this->operator, 'sanctum')
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson("/api/admin/pos/orders/{$order->id}/print-receipt")
             ->assertOk()
             ->assertJsonPath('receipt_print_count', 2)
@@ -69,6 +74,8 @@ class ReceiptPrintControllerTest extends TestCase
         $order = $this->makeOrder(0);
 
         $this->actingAs($this->operator, 'sanctum')
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson("/api/admin/pos/orders/{$order->id}/print-receipt")
             ->assertOk();
 
@@ -90,6 +97,8 @@ class ReceiptPrintControllerTest extends TestCase
         ]);
 
         $this->actingAs($this->operator, 'sanctum')
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson("/api/admin/pos/orders/{$foreignOrder->id}/print-receipt")
             ->assertNotFound();
     }
@@ -111,6 +120,8 @@ class ReceiptPrintControllerTest extends TestCase
         $order = $this->makeOrder(0);
 
         $this->actingAs($this->operator, 'sanctum')
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson("/api/admin/pos/orders/{$order->id}/print-receipt")
             ->assertOk();
 
@@ -139,6 +150,8 @@ class ReceiptPrintControllerTest extends TestCase
         $order = $this->makeOrder(1); // already printed once
 
         $this->actingAs($this->operator, 'sanctum')
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson("/api/admin/pos/orders/{$order->id}/print-receipt")
             ->assertOk();
 
@@ -163,7 +176,13 @@ class ReceiptPrintControllerTest extends TestCase
         $order = $this->makeOrder(0);
 
         for ($i = 0; $i < 3; $i++) {
+            // [prod-finale 2026-06-17] DISTINCT idempotency key per iteration (fresh Str::uuid() inside the
+            // loop): the 3 POSTs to the SAME order must each reach the controller to increment the print
+            // counter (print → reprint → reprint). A reused key would replay the cached 2xx and produce only
+            // ONE audit row, breaking the "1 print + 2 reprints" assertions below. Frozen middleware; live UI
+            // sends a fresh key per print.
             $this->actingAs($this->operator, 'sanctum')
+                ->withHeader('X-Idempotency-Key', (string) Str::uuid())
                 ->postJson("/api/admin/pos/orders/{$order->id}/print-receipt")
                 ->assertOk();
         }
@@ -201,6 +220,8 @@ class ReceiptPrintControllerTest extends TestCase
         });
 
         $response = $this->actingAs($this->operator, 'sanctum')
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson("/api/admin/pos/orders/{$order->id}/print-receipt");
 
         $response->assertOk()
@@ -237,6 +258,8 @@ class ReceiptPrintControllerTest extends TestCase
         $order = $this->makeOrder(0); // belongs to $this->branch (branch > 0)
 
         $this->actingAs($admin, 'sanctum')
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson("/api/admin/pos/orders/{$order->id}/print-receipt")
             ->assertOk()
             ->assertJsonPath('order_id', $order->id)

@@ -9,6 +9,7 @@ use App\Models\Address;
 use App\Models\Order;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 use Tests\Feature\Concerns\HasPosQuoteBinding;
 use Tests\Feature\Pos\Traits\SeedsOpenCashDrawerSession;
@@ -145,8 +146,11 @@ class PosPriorityApiTest extends TestCase
 
         $payload = $this->payloadWithPosQuote($admin, $payload);
 
+        // [prod-finale 2026-06-17] /api/admin/pos is idempotency-guarded; the foreign-address 422 is raised
+        // inside the controller, so the header is needed to reach it (frozen middleware; live UI sends it).
         $response = $this->actingAs($admin, 'sanctum')
             ->withHeader('x-api-key', $this->apiKey())
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos', $payload);
 
         $response->assertStatus(422);

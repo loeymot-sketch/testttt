@@ -14,6 +14,7 @@ use App\Models\Order;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -53,6 +54,8 @@ class DeliveryOrderContractTest extends TestCase
 
         $this->actingAs($deliveryBoy, 'sanctum')
             ->withHeader('x-api-key', config('app.api_key'))
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/frontend/delivery-boy-order/change-status/' . $order->id, [
                 'status' => OrderStatus::OUT_FOR_DELIVERY,
             ])
@@ -65,6 +68,8 @@ class DeliveryOrderContractTest extends TestCase
 
         $this->actingAs($deliveryBoy, 'sanctum')
             ->withHeader('x-api-key', config('app.api_key'))
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/frontend/delivery-boy-order/change-status/' . $order->id, [
                 'status' => OrderStatus::DELIVERED,
             ])
@@ -117,6 +122,8 @@ class DeliveryOrderContractTest extends TestCase
 
         $changeResponse = $this->actingAs($deliveryBoy, 'sanctum')
             ->withHeader('x-api-key', config('app.api_key'))
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/frontend/delivery-boy-order/change-status/' . $foreignOrder->id, [
                 'status' => OrderStatus::OUT_FOR_DELIVERY,
             ]);

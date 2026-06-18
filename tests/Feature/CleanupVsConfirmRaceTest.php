@@ -14,6 +14,7 @@ use App\Models\Order;
 use App\Models\Scopes\BranchScope;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class CleanupVsConfirmRaceTest extends TestCase
@@ -56,7 +57,10 @@ class CleanupVsConfirmRaceTest extends TestCase
 
         $token = $kioskUser->createToken('kiosk', ['kiosk:order'])->plainTextToken;
 
-        $this->withToken($token)->postJson('/api/frontend/order/'.$order->id.'/payment-confirm', [
+        $this->withToken($token)
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
+            ->postJson('/api/frontend/order/'.$order->id.'/payment-confirm', [
             'transaction_id' => 'FK-M06-LATE-TPE',
             'card_type' => 'visa',
             'payment_method' => PaymentGateway::CARD,

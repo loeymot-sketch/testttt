@@ -18,6 +18,7 @@ use App\Services\PaymentService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 /**
@@ -211,8 +212,12 @@ class PosCounterCollectRaceProtectionSentinelTest extends TestCase
         // session exists in the test env (legacy F-003 path log+return).
         // We assert "≤ 1" then re-assert "unchanged after B" below.
 
-        // Cashier B fires the race POST.
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI
+        // sends it). Cashier A won via a direct service call (NOT an HTTP POST), so this is the only HTTP request
+        // for this order — a fresh key reaches the controller, where the already-collected guard fires the 409
+        // (the race-loser outcome under test). Without the header a 422 would mask the 409.
         $response = $this->actingAs($cashierB, 'sanctum')
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson("/api/admin/pos/counter-collect/{$order->id}/confirm", [
                 'mode' => PosPaymentMethod::CASH,
                 'received' => 12.00,
@@ -277,7 +282,11 @@ class PosCounterCollectRaceProtectionSentinelTest extends TestCase
             'Cashier A wins'
         );
 
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI
+        // sends it). Cashier A won via a direct service call (NOT an HTTP POST), so a fresh key reaches the
+        // controller and the race loser gets the 409 / non-200 outcome under test.
         $response = $this->actingAs($cashierB, 'sanctum')
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson("/api/admin/pos/counter-collect/{$order->id}/confirm", [
                 'mode' => PosPaymentMethod::CASH,
                 'received' => 12.00,

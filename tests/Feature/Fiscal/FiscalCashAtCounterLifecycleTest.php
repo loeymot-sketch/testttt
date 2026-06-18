@@ -16,6 +16,7 @@ use App\Models\User;
 use App\Services\Fiscal\AuditLogService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class FiscalCashAtCounterLifecycleTest extends TestCase
@@ -54,6 +55,8 @@ class FiscalCashAtCounterLifecycleTest extends TestCase
         $this->assertNull($second->fiscal_sequence_no);
 
         $this->actingAs($this->operator, 'sanctum')
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson("/api/admin/pos/counter-collect/{$first->id}/confirm", [
                 'mode' => PosPaymentMethod::CASH,
                 'received' => 20,
@@ -67,12 +70,17 @@ class FiscalCashAtCounterLifecycleTest extends TestCase
         $this->assertSame(1, (int) $first->fiscal_sequence_no);
 
         $this->actingAs($this->operator, 'sanctum')
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson("/api/admin/pos/orders/{$first->id}/print-receipt")
             ->assertOk()
             ->assertJsonPath('receipt_print_count', 1)
             ->assertJsonPath('is_duplicata', false);
 
         $this->actingAs($this->operator, 'sanctum')
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            // Distinct key: the 2nd reprint must REACH the controller for the duplicata outcome (not an HTTP replay).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson("/api/admin/pos/orders/{$first->id}/print-receipt")
             ->assertOk()
             ->assertJsonPath('receipt_print_count', 2)
@@ -85,6 +93,8 @@ class FiscalCashAtCounterLifecycleTest extends TestCase
         );
 
         $this->actingAs($this->operator, 'sanctum')
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson("/api/admin/pos/counter-collect/{$second->id}/confirm", [
                 'mode' => PosPaymentMethod::CARD,
             ])
@@ -101,6 +111,8 @@ class FiscalCashAtCounterLifecycleTest extends TestCase
         $order = $this->pendingCounterOrder(['queue_number' => 'A9103']);
 
         $this->actingAs($this->operator, 'sanctum')
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson("/api/admin/pos/counter-collect/{$order->id}/confirm", [
                 'mode' => PosPaymentMethod::CASH,
                 'received' => 15,
@@ -109,6 +121,10 @@ class FiscalCashAtCounterLifecycleTest extends TestCase
             ->assertJsonPath('data.fiscal_sequence_no', 1);
 
         $this->actingAs($this->operator, 'sanctum')
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            // Distinct key: this asserts CONTROLLER-level idempotency (no 2nd sequence / no duplicate payment),
+            // so the 2nd confirm must REACH the controller — not be short-circuited by an HTTP replay of a cached 2xx.
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson("/api/admin/pos/counter-collect/{$order->id}/confirm", [
                 'mode' => PosPaymentMethod::CASH,
                 'received' => 15,
@@ -137,6 +153,8 @@ class FiscalCashAtCounterLifecycleTest extends TestCase
         $order = $this->pendingCounterOrder(['queue_number' => 'A9104']);
 
         $this->actingAs($this->operator, 'sanctum')
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson("/api/admin/pos/counter-collect/{$order->id}/cancel", [
                 'reason' => 'Client absent before counter payment',
             ])
@@ -153,6 +171,8 @@ class FiscalCashAtCounterLifecycleTest extends TestCase
         $this->assertSame(0, Transaction::query()->where('order_id', $order->id)->where('type', 'payment')->count());
 
         $this->actingAs($this->operator, 'sanctum')
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson("/api/admin/pos/counter-collect/{$order->id}/confirm", [
                 'mode' => PosPaymentMethod::CASH,
                 'received' => 15,

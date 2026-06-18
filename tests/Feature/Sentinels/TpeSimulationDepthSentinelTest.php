@@ -11,6 +11,7 @@ use App\Models\KioskMachine;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Str;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -55,7 +56,10 @@ class TpeSimulationDepthSentinelTest extends TestCase
 
         $order = $this->createKioskCardOrder(50.00);
 
-        $response = $this->postJson("/api/frontend/order/{$order->id}/payment-confirm", [
+        // [prod-finale 2026-06-17] payment-confirm is idempotency-guarded; the AMOUNT_ECHO_MISMATCH 422 is
+        // raised inside the controller, so the header is needed to reach it (frozen middleware; live UI sends it).
+        $response = $this->withHeader('X-Idempotency-Key', (string) Str::uuid())
+            ->postJson("/api/frontend/order/{$order->id}/payment-confirm", [
             'transaction_id' => 'TX-SIM-UNDER-' . uniqid(),
             'card_type'      => 'VISA',
             'payment_method' => PaymentGateway::CARD,
@@ -78,7 +82,10 @@ class TpeSimulationDepthSentinelTest extends TestCase
 
         $order = $this->createKioskCardOrder(50.00);
 
-        $response = $this->postJson("/api/frontend/order/{$order->id}/payment-confirm", [
+        // [prod-finale 2026-06-17] payment-confirm is idempotency-guarded; the AMOUNT_ECHO_MISMATCH 422 is
+        // raised inside the controller, so the header is needed to reach it (frozen middleware; live UI sends it).
+        $response = $this->withHeader('X-Idempotency-Key', (string) Str::uuid())
+            ->postJson("/api/frontend/order/{$order->id}/payment-confirm", [
             'transaction_id' => 'TX-SIM-OVER-' . uniqid(),
             'card_type'      => 'VISA',
             'payment_method' => PaymentGateway::CARD,
@@ -101,7 +108,10 @@ class TpeSimulationDepthSentinelTest extends TestCase
 
         $order = $this->createKioskCardOrder(50.00);
 
-        $response = $this->postJson("/api/frontend/order/{$order->id}/payment-confirm", [
+        // [prod-finale 2026-06-17] payment-confirm is idempotency-guarded; the header is needed to reach the
+        // controller (frozen middleware; live UI sends it). Happy path must NOT spuriously fire F-002.
+        $response = $this->withHeader('X-Idempotency-Key', (string) Str::uuid())
+            ->postJson("/api/frontend/order/{$order->id}/payment-confirm", [
             'transaction_id' => 'TX-SIM-OK-' . uniqid(),
             'card_type'      => 'VISA',
             'payment_method' => PaymentGateway::CARD,

@@ -15,6 +15,7 @@ use App\Models\OrderQuote;
 use App\Models\Tax;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Tests\Feature\Pos\Traits\SeedsOpenCashDrawerSession;
 use Tests\TestCase;
 
@@ -56,8 +57,11 @@ class QuoteExpirationTest extends TestCase
         OrderQuote::where('quote_token', $first['quote_token'])
             ->update(['expires_at' => now()->subSecond()]);
 
+        // [prod-finale 2026-06-17] the COMMIT route /api/admin/pos is idempotency-guarded (the quote POST above
+        // is not); the expired-quote 410 is raised inside the controller, so the header is needed to reach it.
         $this->actingAs($operator, 'sanctum')
             ->withHeader('x-api-key', 'test-api-key')
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos', $payload + [
                 'quote_token' => $first['quote_token'],
                 'quote_signature' => $first['signature'],

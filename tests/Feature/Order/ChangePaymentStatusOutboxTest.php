@@ -55,6 +55,8 @@ class ChangePaymentStatusOutboxTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->cashier, 'sanctum')
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos-order/change-payment-status/' . $order->id, [
                 'payment_status' => PaymentStatus::PAID,
             ]);
@@ -94,6 +96,8 @@ class ChangePaymentStatusOutboxTest extends TestCase
         ]);
 
         $this->actingAs($this->cashier, 'sanctum')
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos-order/change-payment-status/' . $order->id, [
                 'payment_status' => PaymentStatus::PAID,
             ])

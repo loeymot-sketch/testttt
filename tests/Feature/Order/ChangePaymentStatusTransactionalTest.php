@@ -15,6 +15,7 @@ use App\Models\User;
 use App\Services\Fiscal\AuditLogService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Str;
 use Mockery;
 use Tests\TestCase;
 
@@ -114,6 +115,9 @@ class ChangePaymentStatusTransactionalTest extends TestCase
         $this->app->instance(AuditLogService::class, $auditMock);
 
         $response = $this->actingAs($this->cashier, 'sanctum')
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            // The header lets the request REACH the service, where the mocked AuditLogService::write throws.
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos-order/change-payment-status/' . $order->id, [
                 'payment_status' => PaymentStatus::PAID,
             ]);
@@ -150,6 +154,8 @@ class ChangePaymentStatusTransactionalTest extends TestCase
         $order = $this->makeOrder();
 
         $response = $this->actingAs($this->cashier, 'sanctum')
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos-order/change-payment-status/' . $order->id, [
                 'payment_status' => PaymentStatus::PAID,
             ]);
@@ -173,6 +179,8 @@ class ChangePaymentStatusTransactionalTest extends TestCase
         $order = $this->makeOrder();
 
         $response = $this->actingAs($this->cashier, 'sanctum')
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos-order/change-payment-status/' . $order->id, [
                 'payment_status' => PaymentStatus::PAID,
             ]);

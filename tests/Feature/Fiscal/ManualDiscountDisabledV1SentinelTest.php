@@ -14,6 +14,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Tests\Feature\Concerns\HasPosQuoteBinding;
 use Tests\TestCase;
 
@@ -97,6 +98,8 @@ class ManualDiscountDisabledV1SentinelTest extends TestCase
 
         $payload = $this->payload(['discount' => 1.00, 'discount_reason' => 'remise client fidèle']);
         $this->withHeader('x-api-key', config('app.api_key'))
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos', $this->payloadWithPosQuote($this->operator, $payload))
             ->assertStatus(422);
     }
@@ -108,6 +111,8 @@ class ManualDiscountDisabledV1SentinelTest extends TestCase
         $this->actingAs($this->operator, 'sanctum');
 
         $this->withHeader('x-api-key', config('app.api_key'))
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos', $this->payloadWithPosQuote($this->operator, $this->payload(['discount' => 0])))
             ->assertStatus(201);
     }
@@ -129,6 +134,8 @@ class ManualDiscountDisabledV1SentinelTest extends TestCase
 
         $payload = $this->payload(['coupon_id' => $coupon->id]);
         $this->withHeader('x-api-key', config('app.api_key'))
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/admin/pos', $this->payloadWithPosQuote($this->operator, $payload))
             ->assertStatus(422);
     }

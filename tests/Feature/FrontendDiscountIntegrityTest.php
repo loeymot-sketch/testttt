@@ -15,6 +15,7 @@ use App\Models\OrderCoupon;
 use App\Enums\Status;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Smartisan\Settings\Facades\Settings;
 use Tests\TestCase;
 
@@ -122,6 +123,8 @@ class FrontendDiscountIntegrityTest extends TestCase
         $response = $this
             ->actingAs($this->orderUser, 'sanctum')
             ->withHeader('x-api-key', '123456')
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/frontend/order', $this->basePayload([
                 'coupon_id' => 999999,
             ]));
@@ -154,6 +157,8 @@ class FrontendDiscountIntegrityTest extends TestCase
         $response = $this
             ->actingAs($this->orderUser, 'sanctum')
             ->withHeader('x-api-key', '123456')
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/frontend/order', $this->basePayload([
                 'coupon_id' => $coupon->id,
             ]));
@@ -195,6 +200,8 @@ class FrontendDiscountIntegrityTest extends TestCase
         $response = $this
             ->actingAs($this->orderUser, 'sanctum')
             ->withHeader('x-api-key', '123456')
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/frontend/order', $this->basePayload([
                 'coupon_id' => $coupon->id,
                 'subtotal' => 999.00,
@@ -241,6 +248,8 @@ class FrontendDiscountIntegrityTest extends TestCase
         $response = $this
             ->actingAs($this->orderUser, 'sanctum')
             ->withHeader('x-api-key', '123456')
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/frontend/order', $this->basePayload([
                 'coupon_id' => $coupon->id,
                 'loyalty_code' => $this->loyaltyCustomer->loyalty_code,
@@ -264,6 +273,8 @@ class FrontendDiscountIntegrityTest extends TestCase
         $response = $this
             ->actingAs($this->orderUser, 'sanctum')
             ->withHeader('x-api-key', '123456')
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/frontend/order', $this->basePayload([
                 'loyalty_code' => $this->loyaltyCustomer->loyalty_code,
                 'discount' => 0.50,
@@ -318,6 +329,8 @@ class FrontendDiscountIntegrityTest extends TestCase
         $couponResponse = $this
             ->actingAs($this->orderUser, 'sanctum')
             ->withHeader('x-api-key', '123456')
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/frontend/order', $this->basePayload([
                 'coupon_id' => $coupon->id,
             ]));
@@ -350,6 +363,8 @@ class FrontendDiscountIntegrityTest extends TestCase
         $loyaltyResponse = $this
             ->actingAs($this->orderUser, 'sanctum')
             ->withHeader('x-api-key', '123456')
+            // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/frontend/order', $this->basePayload([
                 'loyalty_code' => $redeemer->loyalty_code,
                 'discount' => 5.00,

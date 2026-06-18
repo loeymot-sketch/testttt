@@ -19,6 +19,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class CounterDeferredPaymentLifecycleTest extends TestCase
@@ -39,7 +40,9 @@ class CounterDeferredPaymentLifecycleTest extends TestCase
         [$branch, $operator] = $this->branchOperator();
         $order = $this->pendingCounterOrder($branch, ['total' => 18.50]);
 
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $this->actingAs($operator, 'sanctum')
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson("/api/admin/pos/counter-collect/{$order->id}/confirm", [
                 'mode' => PosPaymentMethod::CASH,
                 'received' => 20,
@@ -74,7 +77,9 @@ class CounterDeferredPaymentLifecycleTest extends TestCase
         [$branch, $operator] = $this->branchOperator();
         $order = $this->pendingCounterOrder($branch);
 
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).
         $this->actingAs($operator, 'sanctum')
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson("/api/admin/pos/counter-collect/{$order->id}/cancel", [
                 'reason' => 'Client absent',
             ])
@@ -129,7 +134,11 @@ class CounterDeferredPaymentLifecycleTest extends TestCase
         $customer->assignRole('Customer');
         $order = $this->pendingCounterOrder($branch);
 
+        // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI
+        // sends it). The route's `abort_unless(...can('pos'), 403)` lives INSIDE the closure → it fires AFTER the
+        // idempotency middleware, so the header is needed to reach the permission check (else 422 masks the 403).
         $this->actingAs($customer, 'sanctum')
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
             ->postJson("/api/admin/pos/counter-collect/{$order->id}/confirm", [
                 'mode' => PosPaymentMethod::CASH,
                 'received' => 12,
