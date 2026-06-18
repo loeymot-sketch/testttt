@@ -73130,10 +73130,14 @@ function formatKioskPrice(value) {
   // If we have a direct currency symbol (from settings), use manual formatting
   if (options.currencySymbol) {
     var formatted = num.toFixed(digits).replace('.', ',');
-    if (options.position === 'right') {
-      return "".concat(formatted, " ").concat(options.currencySymbol);
-    }
-    return "".concat(options.currencySymbol).concat(formatted);
+    // [micro-ux 2026-06-18] position may be the string 'left'/'right' OR the NUMERIC CurrencyPosition
+    // enum (LEFT=5, RIGHT=10) the backend actually stores. The old `=== 'right'` only matched the literal
+    // string, so a numeric RIGHT (10) AND the SettingResource '?? left' fallback BOTH fell through to the
+    // €-PREFIX branch — the kiosk could never render the FR "0,00 €" suffix. Treat LEFT-only (5/'left') as
+    // prefix; everything else (incl. unset/right/10) is the FR suffix.
+    var pos = String(options.position).toLowerCase();
+    var isLeft = pos === 'left' || pos === '5';
+    return isLeft ? "".concat(options.currencySymbol).concat(formatted) : "".concat(formatted, " ").concat(options.currencySymbol);
   }
 
   // Use Intl for proper locale-aware formatting

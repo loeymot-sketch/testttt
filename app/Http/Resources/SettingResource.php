@@ -38,7 +38,11 @@ class SettingResource extends JsonResource
             'site_android_app_link'                => $this->info['site_android_app_link'] ?? '',
             'site_ios_app_link'                    => $this->info['site_ios_app_link'] ?? '',
             'site_copyright'                       => $this->info['site_copyright'] ?? '© ' . date('Y') . ' ' . config('app.name'),
-            'site_currency_position'               => $this->info['site_currency_position'] ?? 'left',
+            // [micro-ux 2026-06-18] FR-correct unset default: was the en-US string 'left' (€-prefix), which (a)
+            // doesn't match the numeric CurrencyPosition enum the admin select + kioskFormatPrice expect and
+            // (b) made the kiosk render "€0,00" instead of FR "0,00 €". Default to RIGHT (10), matching the
+            // SiteTableSeeder. POS unaffected (appService keys on LEFT=5).
+            'site_currency_position'               => $this->info['site_currency_position'] ?? \App\Enums\CurrencyPosition::RIGHT,
             'site_digit_after_decimal_point'       => $this->info['site_digit_after_decimal_point'] ?? 2,
             'site_default_currency_symbol'         => $this->info['site_default_currency_symbol'] ?? '€',
             'site_phone_verification'              => $this->info['site_phone_verification'] ?? 0,
