@@ -1,6 +1,15 @@
 <template>
     <LoadingComponent :props="loading" />
-    <div class="col-12">
+    <!-- [micro-ux 2026-06-18] failed load → explicit error + retry, not a blank order shell. -->
+    <div v-if="loadError" class="col-12">
+        <div class="db-card p-4 text-center">
+            <p class="text-base font-medium mb-3">{{ $t('message.something_wrong') }}</p>
+            <button type="button" class="db-btn py-2 text-white bg-primary" @click.prevent="loadOrder">
+                {{ $t('button.retry') }}
+            </button>
+        </div>
+    </div>
+    <div v-if="!loadError" class="col-12">
         <div class="db-card p-4">
             <div class="flex flex-wrap gap-y-5 items-end justify-between">
                 <div>
@@ -217,10 +226,12 @@
                                 {{ item.quantity }}</h3>
                             <img class="w-16 h-16 rounded-lg flex-shrink-0" :src="item.item_image" alt="thumbnail">
                             <div class="w-full">
-                                <a href="#"
-                                    class="text-sm font-medium capitalize transition text-heading hover:underline">
+                                <!-- [micro-ux 2026-06-18] was a dead <a href="#"> (no navigation) — the
+                                     item name is not a link, so render it as text (no false affordance). -->
+                                <span
+                                    class="text-sm font-medium capitalize transition text-heading">
                                     {{ item.item_name }}
-                                </a>
+                                </span>
                                 <p v-if="item.item_variations.length !== 0" class="capitalize text-xs mb-1.5">
                                     <span v-for="(variation, index) in item.item_variations">
                                         {{ variation.variation_name }}: {{ variation.name }}<span
@@ -253,7 +264,7 @@
             </div>
         </div>
     </div>
-    <div class="col-12 sm:col-6">
+    <div v-if="!loadError" class="col-12 sm:col-6">
         <div class="row">
             <div class="col-12">
                 <div class="db-card p-1">
@@ -439,6 +450,9 @@ export default {
             payment_status: null,
             order_status: null,
             delivery_boy: null,
+            // [micro-ux 2026-06-18] true when the order failed to load — renders an
+            // error + retry affordance instead of a blank order shell.
+            loadError: false,
             // [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19] Loyalty redeem modal flag.
             loyaltyRedeemOpen: false,
             // [WT-D-R1-02 2026-05-20] Brief CSS flash highlight (2s) after
@@ -452,20 +466,12 @@ export default {
         }
     },
     mounted() {
-        this.loading.isActive = true;
         this.$store.dispatch('deliveryBoy/lists', {
             order_column: 'id',
             order_type: 'asc',
             status: statusEnum.ACTIVE
         });
-        this.$store.dispatch('posOrder/show', this.$route.params.id).then(res => {
-            this.payment_status = res.data.data.payment_status;
-            this.order_status = res.data.data.status;
-            this.delivery_boy = res.data.data.delivery_boy ? res.data.data.delivery_boy.id : 0;
-            this.loading.isActive = false;
-        }).catch((error) => {
-            this.loading.isActive = false;
-        });
+        this.loadOrder();
     },
     computed: {
         order: function () {
@@ -620,6 +626,23 @@ export default {
         },
     },
     methods: {
+        // [micro-ux 2026-06-18] Order loader used by mounted() + the retry button.
+        // On failure flips loadError (renders the error/retry panel) + surfaces a
+        // toast matching the file's alertService pattern.
+        loadOrder: function () {
+            this.loading.isActive = true;
+            this.$store.dispatch('posOrder/show', this.$route.params.id).then(res => {
+                this.payment_status = res.data.data.payment_status;
+                this.order_status = res.data.data.status;
+                this.delivery_boy = res.data.data.delivery_boy ? res.data.data.delivery_boy.id : 0;
+                this.loadError = false;
+                this.loading.isActive = false;
+            }).catch((err) => {
+                this.loadError = true;
+                this.loading.isActive = false;
+                alertService.error(err?.response?.data?.message || this.$t('message.something_wrong'));
+            });
+        },
         // [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19] On successful redemption,
         // refresh the order so subtotal/discount/total + loyalty_customer_code
         // reflect the new state. Then close the modal.

@@ -355,6 +355,9 @@ export default {
                 this.loading.isActive = false;
             }).catch((err) => {
                 this.loading.isActive = false;
+                // [micro-ux 2026-06-18] surface a failed fetch (matches sibling methods)
+                // instead of a silent generic empty-state.
+                alertService.error(err?.response?.data?.message || this.$t('message.something_wrong'));
             });
         },
         destroy: function (id) {

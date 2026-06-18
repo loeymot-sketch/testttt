@@ -1206,6 +1206,17 @@ export default {
     color: var(--pos-tracker-primary);
 }
 
+/* [micro-ux 2026-06-18] Keyboard focus ring on the tracker nav links so a
+   cashier tabbing to Historique / Client / Retour gets a visible AA focus
+   target (was relying on UA default outline, often invisible on the warm bg). */
+.pos-tracker-history-link:focus-visible,
+.pos-tracker-customer-link:focus-visible,
+.pos-tracker-back-link:focus-visible {
+    outline: 3px solid var(--pos-v5-focus-color, #1A73E8);
+    outline-offset: 2px;
+    border-radius: var(--pos-v5-radius-sm);
+}
+
 .pos-tracker-rt-warn {
     margin-bottom: 12px;
     padding: 8px 14px;
@@ -1513,6 +1524,8 @@ export default {
     color: var(--pos-tracker-primary);
     flex-shrink: 0;
     min-width: 22px;
+    /* [micro-ux 2026-06-18] tabular figures so quantities align column-wise. */
+    font-variant-numeric: tabular-nums;
 }
 
 .pos-tracker-card-name {
@@ -1539,6 +1552,8 @@ export default {
     font-size: 14px;
     font-weight: 700;
     color: var(--pos-tracker-text);
+    /* [micro-ux 2026-06-18] tabular figures so order totals don't jitter. */
+    font-variant-numeric: tabular-nums;
 }
 
 .pos-tracker-card-actions {

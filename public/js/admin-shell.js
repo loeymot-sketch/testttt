@@ -257,7 +257,7 @@ __webpack_require__.r(__webpack_exports__);
 
 var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
 // Module
-___CSS_LOADER_EXPORT___.push([module.id, "\n.enc-card[data-v-22c45b59] {\n    border-radius: var(--pos-v5-radius-lg);\n    box-shadow: var(--pos-v5-shadow-md);\n    border: 1px solid var(--pos-v5-border);\n    background: var(--pos-v5-bg-panel);\n    overflow: hidden;\n}\n.enc-header[data-v-22c45b59] {\n    display: flex;\n    align-items: center;\n    justify-content: space-between;\n    background: linear-gradient(180deg, var(--pos-v5-brand-red-faint), var(--pos-v5-bg-panel) 80%);\n    border-bottom: 1px solid var(--pos-v5-border);\n    padding: var(--pos-v5-space-4) var(--pos-v5-space-5);\n}\n.db-card-title[data-v-22c45b59] {\n    font-family: var(--pos-v5-font-sans);\n    font-size: var(--pos-v5-text-h5);\n    font-weight: var(--pos-v5-weight-extrabold);\n    color: var(--pos-v5-ink);\n}\n.enc-subtitle[data-v-22c45b59] { color: var(--pos-v5-ink-soft); font-size: 0.85rem; margin-top: 0.15rem;\n}\n.enc-header-actions[data-v-22c45b59] { display: flex; align-items: center; gap: 0.75rem;\n}\n.enc-count-chip[data-v-22c45b59] {\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    min-width: 2.2rem;\n    height: 2.2rem;\n    border-radius: 9999px;\n    background: var(--pos-v5-brand-red);\n    color: #fff;\n    font-weight: 800;\n    font-variant-numeric: tabular-nums;\n}\n.enc-body[data-v-22c45b59] { padding: var(--pos-v5-space-5);\n}\n.enc-empty[data-v-22c45b59] { text-align: center; padding: 3rem 1rem; color: var(--pos-v5-ink-soft);\n}\n.enc-empty-icon[data-v-22c45b59] { font-size: 2.5rem;\n}\n.enc-empty-title[data-v-22c45b59] { margin-top: 0.75rem; font-size: 1.05rem; font-weight: 600;\n}\n.enc-grid[data-v-22c45b59] {\n    display: grid;\n    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));\n    gap: 1rem;\n}\n.enc-ticket[data-v-22c45b59] {\n    border: 1px solid var(--pos-v5-border);\n    border-radius: var(--pos-v5-radius-md);\n    background: #fff;\n    padding: 0.9rem 1rem;\n    display: flex;\n    flex-direction: column;\n    gap: 0.5rem;\n    box-shadow: var(--pos-v5-shadow-sm);\n}\n.enc-ticket-top[data-v-22c45b59] { display: flex; align-items: center; justify-content: space-between;\n}\n.enc-origin-badge[data-v-22c45b59] {\n    display: inline-flex;\n    align-items: center;\n    border-radius: 9999px;\n    padding: 0.12rem 0.55rem;\n    font-size: 0.74rem;\n    font-weight: 700;\n    border: 1px solid transparent;\n}\n.origin-borne[data-v-22c45b59] { background: #fff7ed; color: #9a3412; border-color: #fed7aa;\n}\n.origin-caisse[data-v-22c45b59] { background: #eff6ff; color: #1e40af; border-color: #bfdbfe;\n}\n.origin-online[data-v-22c45b59] { background: #f5f3ff; color: #5b21b6; border-color: #ddd6fe;\n}\n.enc-queue[data-v-22c45b59] {\n    font-weight: 800;\n    color: #9a3412;\n    font-variant-numeric: tabular-nums;\n}\n.enc-ticket-customer[data-v-22c45b59] { font-weight: 600; color: var(--pos-v5-ink);\n}\n.enc-ticket-items[data-v-22c45b59] { list-style: none; padding: 0; margin: 0; font-size: 0.82rem; color: var(--pos-v5-ink-soft);\n}\n.enc-ticket-items li[data-v-22c45b59] { line-height: 1.4;\n}\n.enc-more[data-v-22c45b59] { font-style: italic;\n}\n.enc-ticket-bottom[data-v-22c45b59] {\n    display: flex;\n    align-items: center;\n    justify-content: space-between;\n    margin-top: 0.4rem;\n    padding-top: 0.6rem;\n    border-top: 1px dashed var(--pos-v5-border);\n}\n.enc-amount[data-v-22c45b59] { font-weight: 800; font-size: 1.1rem; color: var(--pos-v5-ink); font-variant-numeric: tabular-nums;\n}\n.enc-collect-btn[data-v-22c45b59] {\n    background: var(--pos-v5-brand-red);\n    color: #fff;\n    border: none;\n    border-radius: var(--pos-v5-radius-md);\n    /* [ux-perfection 2026-06-18 caisse-16\"] the primary cash-collection action — raised to the 44px touch\n       floor (was ~40px) for the seated cashier on the 16\" touchscreen. */\n    min-height: 44px;\n    padding: 0.5rem 1.1rem;\n    font-weight: 800;\n    cursor: pointer;\n    transition: background var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);\n}\n.enc-collect-btn[data-v-22c45b59]:hover { background: var(--pos-v5-brand-red-dark);\n}\n[data-v-22c45b59] .db-btn.bg-primary {\n    background: var(--pos-v5-brand-red) !important;\n    border-radius: var(--pos-v5-radius-md);\n    font-weight: var(--pos-v5-weight-bold);\n}\n[data-v-22c45b59] .db-btn.bg-primary:hover { background: var(--pos-v5-brand-red-dark) !important;\n}\n", ""]);
+___CSS_LOADER_EXPORT___.push([module.id, "\n.enc-card[data-v-22c45b59] {\n    border-radius: var(--pos-v5-radius-lg);\n    box-shadow: var(--pos-v5-shadow-md);\n    border: 1px solid var(--pos-v5-border);\n    background: var(--pos-v5-bg-panel);\n    overflow: hidden;\n}\n.enc-header[data-v-22c45b59] {\n    display: flex;\n    align-items: center;\n    justify-content: space-between;\n    background: linear-gradient(180deg, var(--pos-v5-brand-red-faint), var(--pos-v5-bg-panel) 80%);\n    border-bottom: 1px solid var(--pos-v5-border);\n    padding: var(--pos-v5-space-4) var(--pos-v5-space-5);\n}\n.db-card-title[data-v-22c45b59] {\n    font-family: var(--pos-v5-font-sans);\n    font-size: var(--pos-v5-text-h5);\n    font-weight: var(--pos-v5-weight-extrabold);\n    color: var(--pos-v5-ink);\n}\n.enc-subtitle[data-v-22c45b59] { color: var(--pos-v5-ink-soft); font-size: 0.85rem; margin-top: 0.15rem;\n}\n.enc-header-actions[data-v-22c45b59] { display: flex; align-items: center; gap: 0.75rem;\n}\n.enc-count-chip[data-v-22c45b59] {\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    min-width: 2.2rem;\n    height: 2.2rem;\n    border-radius: 9999px;\n    background: var(--pos-v5-brand-red);\n    color: #fff;\n    font-weight: 800;\n    font-variant-numeric: tabular-nums;\n}\n.enc-body[data-v-22c45b59] { padding: var(--pos-v5-space-5);\n}\n.enc-empty[data-v-22c45b59] { text-align: center; padding: 3rem 1rem; color: var(--pos-v5-ink-soft);\n}\n.enc-empty-icon[data-v-22c45b59] { font-size: 2.5rem;\n}\n.enc-empty-title[data-v-22c45b59] { margin-top: 0.75rem; font-size: 1.05rem; font-weight: 600;\n}\n.enc-grid[data-v-22c45b59] {\n    display: grid;\n    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));\n    gap: 1rem;\n}\n.enc-ticket[data-v-22c45b59] {\n    border: 1px solid var(--pos-v5-border);\n    border-radius: var(--pos-v5-radius-md);\n    background: #fff;\n    padding: 0.9rem 1rem;\n    display: flex;\n    flex-direction: column;\n    gap: 0.5rem;\n    box-shadow: var(--pos-v5-shadow-sm);\n}\n.enc-ticket-top[data-v-22c45b59] { display: flex; align-items: center; justify-content: space-between;\n}\n.enc-origin-badge[data-v-22c45b59] {\n    display: inline-flex;\n    align-items: center;\n    border-radius: 9999px;\n    padding: 0.12rem 0.55rem;\n    font-size: 0.74rem;\n    font-weight: 700;\n    border: 1px solid transparent;\n}\n.origin-borne[data-v-22c45b59] { background: #fff7ed; color: #9a3412; border-color: #fed7aa;\n}\n.origin-caisse[data-v-22c45b59] { background: #eff6ff; color: #1e40af; border-color: #bfdbfe;\n}\n.origin-online[data-v-22c45b59] { background: #f5f3ff; color: #5b21b6; border-color: #ddd6fe;\n}\n.enc-queue[data-v-22c45b59] {\n    font-weight: 800;\n    color: #9a3412;\n    font-variant-numeric: tabular-nums;\n}\n/* [micro-ux 2026-06-18] self-contained sr-only so the aria-live announcer is\n   visually hidden but still read, regardless of global utility availability. */\n.sr-only[data-v-22c45b59] {\n    position: absolute;\n    width: 1px;\n    height: 1px;\n    padding: 0;\n    margin: -1px;\n    overflow: hidden;\n    clip: rect(0 0 0 0);\n    white-space: nowrap;\n    border: 0;\n}\n/* [micro-ux 2026-06-18] long customer name truncates instead of pushing the card. */\n.enc-ticket-customer[data-v-22c45b59] { font-weight: 600; color: var(--pos-v5-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;\n}\n.enc-ticket-items[data-v-22c45b59] { list-style: none; padding: 0; margin: 0; font-size: 0.82rem; color: var(--pos-v5-ink-soft);\n}\n.enc-ticket-items li[data-v-22c45b59] { line-height: 1.4;\n}\n.enc-more[data-v-22c45b59] { font-style: italic;\n}\n.enc-ticket-bottom[data-v-22c45b59] {\n    display: flex;\n    align-items: center;\n    justify-content: space-between;\n    margin-top: 0.4rem;\n    padding-top: 0.6rem;\n    border-top: 1px dashed var(--pos-v5-border);\n}\n.enc-amount[data-v-22c45b59] { font-weight: 800; font-size: 1.1rem; color: var(--pos-v5-ink); font-variant-numeric: tabular-nums;\n}\n.enc-collect-btn[data-v-22c45b59] {\n    background: var(--pos-v5-brand-red);\n    color: #fff;\n    border: none;\n    border-radius: var(--pos-v5-radius-md);\n    /* [ux-perfection 2026-06-18 caisse-16\"] the primary cash-collection action — raised to the 44px touch\n       floor (was ~40px) for the seated cashier on the 16\" touchscreen. */\n    min-height: 44px;\n    padding: 0.5rem 1.1rem;\n    font-weight: 800;\n    cursor: pointer;\n    /* [micro-ux 2026-06-18] include transform so the :active press reads as a\n       physical tap on the touchscreen. */\n    transition: background var(--pos-v5-duration-fast) var(--pos-v5-ease-standard),\n                transform var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);\n}\n.enc-collect-btn[data-v-22c45b59]:hover { background: var(--pos-v5-brand-red-dark);\n}\n.enc-collect-btn[data-v-22c45b59]:active { transform: translateY(1px);\n}\n[data-v-22c45b59] .db-btn.bg-primary {\n    background: var(--pos-v5-brand-red) !important;\n    border-radius: var(--pos-v5-radius-md);\n    font-weight: var(--pos-v5-weight-bold);\n}\n[data-v-22c45b59] .db-btn.bg-primary:hover { background: var(--pos-v5-brand-red-dark) !important;\n}\n", ""]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 
@@ -8372,7 +8372,11 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
       pollTimer: null,
       enums: {
         orderTypeEnum: _enums_modules_orderTypeEnum__WEBPACK_IMPORTED_MODULE_5__["default"]
-      }
+      },
+      // [micro-ux 2026-06-18] aria-live text (set only when the queue grows)
+      // + error flag for the initial/manual fetch empty-state.
+      queueAnnouncement: '',
+      fetchError: false
     };
   },
   mounted: function mounted() {
@@ -8400,11 +8404,25 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
       var _this2 = this;
       var silent = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
       if (!silent) this.loading.isActive = true;
+      var prevCount = this.orders.length;
       axios.get('admin/pos/counter-collect/pending').then(function (res) {
         var _res$data;
-        _this2.orders = ((_res$data = res.data) === null || _res$data === void 0 ? void 0 : _res$data.data) || [];
+        var next = ((_res$data = res.data) === null || _res$data === void 0 ? void 0 : _res$data.data) || [];
+        // [micro-ux 2026-06-18] Announce ONLY on growth (a new order arrived),
+        // not on every poll, so the screen reader isn't chatty.
+        if (next.length > prevCount) {
+          _this2.queueAnnouncement = _this2.$t('label.encaisser_queue_new_arrival', {
+            count: next.length
+          });
+        }
+        _this2.orders = next;
+        _this2.fetchError = false;
         _this2.loading.isActive = false;
       })["catch"](function () {
+        // [micro-ux 2026-06-18] Only flip the visible error flag on the
+        // initial/manual fetch — a background poll failure stays silent and
+        // keeps the last-good queue on screen.
+        if (!silent) _this2.fetchError = true;
         _this2.loading.isActive = false;
       });
     },
@@ -17225,7 +17243,11 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
       this.$store.dispatch('posOrder/lists', this.props.search).then(function (res) {
         _this.loading.isActive = false;
       })["catch"](function (err) {
+        var _err$response;
         _this.loading.isActive = false;
+        // [micro-ux 2026-06-18] surface a failed fetch (matches sibling methods)
+        // instead of a silent generic empty-state.
+        _services_alertService__WEBPACK_IMPORTED_MODULE_1__["default"].error((err === null || err === void 0 || (_err$response = err.response) === null || _err$response === void 0 || (_err$response = _err$response.data) === null || _err$response === void 0 ? void 0 : _err$response.message) || _this.$t('message.something_wrong'));
       });
     },
     destroy: function destroy(id) {
@@ -17492,6 +17514,9 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
       payment_status: null,
       order_status: null,
       delivery_boy: null,
+      // [micro-ux 2026-06-18] true when the order failed to load — renders an
+      // error + retry affordance instead of a blank order shell.
+      loadError: false,
       // [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19] Loyalty redeem modal flag.
       loyaltyRedeemOpen: false,
       // [WT-D-R1-02 2026-05-20] Brief CSS flash highlight (2s) after
@@ -17505,21 +17530,12 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
     };
   },
   mounted: function mounted() {
-    var _this = this;
-    this.loading.isActive = true;
     this.$store.dispatch('deliveryBoy/lists', {
       order_column: 'id',
       order_type: 'asc',
       status: _enums_modules_statusEnum__WEBPACK_IMPORTED_MODULE_13__["default"].ACTIVE
     });
-    this.$store.dispatch('posOrder/show', this.$route.params.id).then(function (res) {
-      _this.payment_status = res.data.data.payment_status;
-      _this.order_status = res.data.data.status;
-      _this.delivery_boy = res.data.data.delivery_boy ? res.data.data.delivery_boy.id : 0;
-      _this.loading.isActive = false;
-    })["catch"](function (error) {
-      _this.loading.isActive = false;
-    });
+    this.loadOrder();
   },
   computed: {
     order: function order() {
@@ -17660,6 +17676,25 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
     }
   },
   methods: {
+    // [micro-ux 2026-06-18] Order loader used by mounted() + the retry button.
+    // On failure flips loadError (renders the error/retry panel) + surfaces a
+    // toast matching the file's alertService pattern.
+    loadOrder: function loadOrder() {
+      var _this = this;
+      this.loading.isActive = true;
+      this.$store.dispatch('posOrder/show', this.$route.params.id).then(function (res) {
+        _this.payment_status = res.data.data.payment_status;
+        _this.order_status = res.data.data.status;
+        _this.delivery_boy = res.data.data.delivery_boy ? res.data.data.delivery_boy.id : 0;
+        _this.loadError = false;
+        _this.loading.isActive = false;
+      })["catch"](function (err) {
+        var _err$response;
+        _this.loadError = true;
+        _this.loading.isActive = false;
+        _services_alertService__WEBPACK_IMPORTED_MODULE_1__["default"].error((err === null || err === void 0 || (_err$response = err.response) === null || _err$response === void 0 || (_err$response = _err$response.data) === null || _err$response === void 0 ? void 0 : _err$response.message) || _this.$t('message.something_wrong'));
+      });
+    },
     // [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19] On successful redemption,
     // refresh the order so subtotal/discount/total + loyalty_customer_code
     // reflect the new state. Then close the modal.
@@ -17792,14 +17827,14 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
           });
           _services_alertService__WEBPACK_IMPORTED_MODULE_1__["default"].success(msg);
         })["catch"](function (err) {
-          var _err$response;
+          var _err$response2;
           _this6.loading.isActive = false;
-          _services_alertService__WEBPACK_IMPORTED_MODULE_1__["default"].error((err === null || err === void 0 || (_err$response = err.response) === null || _err$response === void 0 || (_err$response = _err$response.data) === null || _err$response === void 0 ? void 0 : _err$response.message) || _this6.$t('label.error'));
+          _services_alertService__WEBPACK_IMPORTED_MODULE_1__["default"].error((err === null || err === void 0 || (_err$response2 = err.response) === null || _err$response2 === void 0 || (_err$response2 = _err$response2.data) === null || _err$response2 === void 0 ? void 0 : _err$response2.message) || _this6.$t('label.error'));
         });
       } catch (err) {
-        var _err$response2;
+        var _err$response3;
         this.loading.isActive = false;
-        _services_alertService__WEBPACK_IMPORTED_MODULE_1__["default"].error((err === null || err === void 0 || (_err$response2 = err.response) === null || _err$response2 === void 0 || (_err$response2 = _err$response2.data) === null || _err$response2 === void 0 ? void 0 : _err$response2.message) || this.$t('label.error'));
+        _services_alertService__WEBPACK_IMPORTED_MODULE_1__["default"].error((err === null || err === void 0 || (_err$response3 = err.response) === null || _err$response3 === void 0 || (_err$response3 = _err$response3.data) === null || _err$response3 === void 0 ? void 0 : _err$response3.message) || this.$t('label.error'));
       }
     }
   }
@@ -39557,83 +39592,106 @@ var _hoisted_7 = {
 var _hoisted_8 = {
   "class": "enc-header-actions"
 };
-var _hoisted_9 = {
-  "class": "enc-count-chip"
-};
+var _hoisted_9 = ["aria-label"];
 var _hoisted_10 = {
-  "class": "enc-body"
+  "class": "sr-only",
+  "aria-live": "polite"
 };
 var _hoisted_11 = {
+  "class": "enc-body"
+};
+var _hoisted_12 = {
   key: 0,
   "class": "enc-empty"
 };
-var _hoisted_12 = {
+var _hoisted_13 = {
   "class": "enc-empty-title"
 };
-var _hoisted_13 = {
-  key: 1,
-  "class": "enc-grid"
-};
 var _hoisted_14 = {
-  "class": "enc-ticket-top"
+  "class": "enc-empty"
 };
 var _hoisted_15 = {
-  key: 0,
-  "class": "enc-queue"
+  "class": "enc-empty-title"
 };
 var _hoisted_16 = {
-  "class": "enc-ticket-customer"
+  key: 2,
+  "class": "enc-grid"
 };
 var _hoisted_17 = {
-  key: 0,
-  "class": "enc-ticket-items"
+  "class": "enc-ticket-top"
 };
 var _hoisted_18 = {
   key: 0,
-  "class": "enc-more"
+  "class": "enc-queue"
 };
 var _hoisted_19 = {
-  "class": "enc-ticket-bottom"
+  "class": "enc-ticket-customer"
 };
 var _hoisted_20 = {
+  key: 0,
+  "class": "enc-ticket-items"
+};
+var _hoisted_21 = {
+  key: 0,
+  "class": "enc-more"
+};
+var _hoisted_22 = {
+  "class": "enc-ticket-bottom"
+};
+var _hoisted_23 = {
   "class": "enc-amount"
 };
-var _hoisted_21 = ["onClick"];
+var _hoisted_24 = ["aria-label", "onClick"];
 function render(_ctx, _cache, $props, $setup, $data, $options) {
   var _component_LoadingComponent = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("LoadingComponent");
   var _component_BreadcrumbComponent = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("BreadcrumbComponent");
   var _component_PosCounterCollectModal = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveComponent)("PosCounterCollectModal");
   return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_LoadingComponent, {
     props: $data.loading
-  }, null, 8 /* PROPS */, ["props"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_1, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_BreadcrumbComponent)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_3, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_4, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_5, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_6, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('menu.encaissement')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_7, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.encaisser_queue_subtitle')), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_8, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_9, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.orders.length), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+  }, null, 8 /* PROPS */, ["props"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_1, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_BreadcrumbComponent)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_3, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_4, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_5, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_6, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('menu.encaissement')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_7, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.encaisser_queue_subtitle')), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_8, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [micro-ux 2026-06-18] count chip gets an accessible name so a\n                             screen reader announces \"N order(s) to collect\" not a bare number. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    "class": "enc-count-chip",
+    "aria-label": _ctx.$t('label.encaisser_queue_count', {
+      count: $data.orders.length
+    })
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.orders.length), 9 /* TEXT, PROPS */, _hoisted_9), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     "class": "db-btn py-2 text-white bg-primary",
     onClick: _cache[0] || (_cache[0] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function () {
       return $options.fetchPending && $options.fetchPending.apply($options, arguments);
     }, ["prevent"]))
-  }, [_cache[2] || (_cache[2] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+  }, [_cache[3] || (_cache[3] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
     "class": "lab lab-refresh-line lab-font-size-16"
-  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.refresh')), 1 /* TEXT */)])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_10, [$data.orders.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_11, [_cache[3] || (_cache[3] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.refresh')), 1 /* TEXT */)])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [micro-ux 2026-06-18] polite announcer — fires only when the queue GROWS\n                     so a cashier on this screen hears a newly-arrived order without watching it. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_10, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.queueAnnouncement), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_11, [$data.orders.length === 0 && !$data.fetchError ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_12, [_cache[4] || (_cache[4] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
     "class": "enc-empty-icon"
-  }, "✅", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_12, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.encaisser_queue_empty')), 1 /* TEXT */)])) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_13, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($data.orders, function (order) {
+  }, "✅", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_13, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.encaisser_queue_empty')), 1 /* TEXT */)])) : $data.fetchError && $data.orders.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+    key: 1
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [micro-ux 2026-06-18] surface a failed fetch instead of masquerading\n                         as the ✅ empty-state; offer an explicit retry. Gated on empty so a\n                         background-poll failure never clobbers the last-good queue. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_14, [_cache[5] || (_cache[5] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    "class": "enc-empty-icon"
+  }, "⚠️", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_15, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('message.something_wrong')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    "class": "enc-collect-btn mt-3",
+    onClick: _cache[1] || (_cache[1] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function () {
+      return $options.fetchPending && $options.fetchPending.apply($options, arguments);
+    }, ["prevent"]))
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.retry')), 1 /* TEXT */)])], 2112 /* STABLE_FRAGMENT, DEV_ROOT_FRAGMENT */)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_16, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($data.orders, function (order) {
     return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
       key: order.id,
       "class": "enc-ticket"
-    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_14, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_17, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
       "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["enc-origin-badge", $options.originBadge(order).cls])
-    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.originBadge(order).label), 3 /* TEXT, CLASS */), order.queue_number ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_15, "N°" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(order.queue_number), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_16, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.customerName(order)), 1 /* TEXT */), order.order_items && order.order_items.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("ul", _hoisted_17, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(order.order_items.slice(0, 4), function (it, idx) {
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.originBadge(order).label), 3 /* TEXT, CLASS */), order.queue_number ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_18, "N°" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(order.queue_number), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_19, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.customerName(order)), 1 /* TEXT */), order.order_items && order.order_items.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("ul", _hoisted_20, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(order.order_items.slice(0, 4), function (it, idx) {
       return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", {
         key: idx
       }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(it.quantity) + "× " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.itemName(it)), 1 /* TEXT */);
-    }), 128 /* KEYED_FRAGMENT */)), order.order_items.length > 4 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", _hoisted_18, " +" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(order.order_items.length - 4) + "… ", 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_19, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_20, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice($options.orderAmount(order))), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    }), 128 /* KEYED_FRAGMENT */)), order.order_items.length > 4 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", _hoisted_21, " +" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(order.order_items.length - 4) + "… ", 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_22, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_23, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice($options.orderAmount(order))), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [micro-ux 2026-06-18] per-button accessible name disambiguates the\n                                     repeated \"Encaisser\" buttons by queue/order number for screen readers. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
       "class": "enc-collect-btn",
+      "aria-label": _ctx.$t('label.encaisser') + ' N°' + (order.queue_number || order.id),
       onClick: (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
         return $options.openEncaissement(order);
       }, ["prevent"])
-    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.encaisser')), 9 /* TEXT, PROPS */, _hoisted_21)])]);
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.encaisser')), 9 /* TEXT, PROPS */, _hoisted_24)])]);
   }), 128 /* KEYED_FRAGMENT */))]))])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Shared counter-collect modal (cash / card / mobile / ticket).\n             It POSTs admin/pos/counter-collect/{id}/confirm itself; on @confirmed\n             we refresh the queue so the now-paid order leaves the list. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PosCounterCollectModal, {
     order: $data.encaisseOrder,
     onConfirmed: $options.onEncaisseConfirmed,
-    onCancel: _cache[1] || (_cache[1] = function ($event) {
+    onCancel: _cache[2] || (_cache[2] = function ($event) {
       return $data.encaisseOrder = null;
     })
   }, null, 8 /* PROPS */, ["order", "onConfirmed"])])], 64 /* STABLE_FRAGMENT */);
@@ -49521,43 +49579,45 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var vue__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! vue */ "../../../node_modules/vue/dist/vue.esm-bundler.js");
 
 var _hoisted_1 = {
+  key: 0,
   "class": "col-12"
 };
 var _hoisted_2 = {
-  "class": "db-card p-4"
+  "class": "db-card p-4 text-center"
 };
 var _hoisted_3 = {
-  "class": "flex flex-wrap gap-y-5 items-end justify-between"
+  "class": "text-base font-medium mb-3"
 };
 var _hoisted_4 = {
-  "class": "flex flex-wrap items-start gap-y-2 gap-x-6 mb-5"
+  key: 1,
+  "class": "col-12"
 };
 var _hoisted_5 = {
-  "class": "text-2xl font-medium"
+  "class": "db-card p-4"
 };
 var _hoisted_6 = {
-  "class": "text-heading"
+  "class": "flex flex-wrap gap-y-5 items-end justify-between"
 };
 var _hoisted_7 = {
-  "class": "flex items-center gap-2 mt-1.5"
+  "class": "flex flex-wrap items-start gap-y-2 gap-x-6 mb-5"
 };
 var _hoisted_8 = {
-  "class": "flex flex-col gap-2"
+  "class": "text-2xl font-medium"
 };
 var _hoisted_9 = {
-  "class": "flex items-center gap-2"
-};
-var _hoisted_10 = {
-  "class": "text-xs"
-};
-var _hoisted_11 = {
-  "class": "text-xs"
-};
-var _hoisted_12 = {
   "class": "text-heading"
 };
+var _hoisted_10 = {
+  "class": "flex items-center gap-2 mt-1.5"
+};
+var _hoisted_11 = {
+  "class": "flex flex-col gap-2"
+};
+var _hoisted_12 = {
+  "class": "flex items-center gap-2"
+};
 var _hoisted_13 = {
-  key: 0
+  "class": "text-xs"
 };
 var _hoisted_14 = {
   "class": "text-xs"
@@ -49566,171 +49626,171 @@ var _hoisted_15 = {
   "class": "text-heading"
 };
 var _hoisted_16 = {
-  "class": "text-xs"
+  key: 0
 };
 var _hoisted_17 = {
-  "class": "text-heading"
+  "class": "text-xs"
 };
 var _hoisted_18 = {
+  "class": "text-heading"
+};
+var _hoisted_19 = {
+  "class": "text-xs"
+};
+var _hoisted_20 = {
+  "class": "text-heading"
+};
+var _hoisted_21 = {
   key: 0,
   "class": "text-xs"
 };
-var _hoisted_19 = {
+var _hoisted_22 = {
   "class": "text-heading text-[10px] opacity-75 font-mono"
 };
-var _hoisted_20 = {
+var _hoisted_23 = {
   key: 1,
   "class": "text-xs"
 };
-var _hoisted_21 = {
+var _hoisted_24 = {
   "class": "text-heading"
 };
-var _hoisted_22 = {
+var _hoisted_25 = {
   key: 0,
   "class": "flex flex-wrap gap-3"
 };
-var _hoisted_23 = ["aria-label"];
-var _hoisted_24 = ["aria-label"];
-var _hoisted_25 = {
+var _hoisted_26 = ["aria-label"];
+var _hoisted_27 = ["aria-label"];
+var _hoisted_28 = {
   "class": "flex-1 text-start"
 };
-var _hoisted_26 = ["aria-label"];
-var _hoisted_27 = ["aria-selected", "onClick", "onKeydown", "data-testid"];
-var _hoisted_28 = {
+var _hoisted_29 = ["aria-label"];
+var _hoisted_30 = ["aria-selected", "onClick", "onKeydown", "data-testid"];
+var _hoisted_31 = {
   key: 0,
   "class": "driver-assigned-chip mt-1.5 inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-[#E6F8EE] text-[#1AB759] font-semibold",
   role: "status",
   "aria-live": "polite",
   "data-testid": "pos-driver-assigned-chip"
 };
-var _hoisted_29 = {
+var _hoisted_32 = {
   "class": "dropdown-group"
 };
-var _hoisted_30 = {
+var _hoisted_33 = {
   "class": "min-w-[97px] flex items-center gap-4 justify-start text-sm capitalize appearance-none pl-2 h-[38px] rounded border border-primary bg-white text-primary dropdown-btn"
 };
-var _hoisted_31 = {
-  "class": "flex-1 text-start"
-};
-var _hoisted_32 = {
-  "class": "p-2 rounded-lg shadow-xl absolute top-10 ltr:right-0 rtl:left-0 z-10 bg-white transition-all duration-300 origin-top scale-y-0 dropdown-list w-full"
-};
-var _hoisted_33 = ["onClick"];
 var _hoisted_34 = {
-  "class": "dropdown-group"
+  "class": "flex-1 text-start"
 };
 var _hoisted_35 = {
-  "class": "min-w-[150px] flex items-center justify-start text-sm capitalize appearance-none pl-2 h-[38px] rounded border border-primary bg-white text-primary dropdown-btn"
-};
-var _hoisted_36 = {
-  "class": "flex-1 text-start"
-};
-var _hoisted_37 = {
   "class": "p-2 rounded-lg shadow-xl absolute top-10 ltr:right-0 rtl:left-0 z-10 bg-white transition-all duration-300 origin-top scale-y-0 dropdown-list w-full"
 };
-var _hoisted_38 = ["onClick"];
+var _hoisted_36 = ["onClick"];
+var _hoisted_37 = {
+  "class": "dropdown-group"
+};
+var _hoisted_38 = {
+  "class": "min-w-[150px] flex items-center justify-start text-sm capitalize appearance-none pl-2 h-[38px] rounded border border-primary bg-white text-primary dropdown-btn"
+};
 var _hoisted_39 = {
+  "class": "flex-1 text-start"
+};
+var _hoisted_40 = {
+  "class": "p-2 rounded-lg shadow-xl absolute top-10 ltr:right-0 rtl:left-0 z-10 bg-white transition-all duration-300 origin-top scale-y-0 dropdown-list w-full"
+};
+var _hoisted_41 = ["onClick"];
+var _hoisted_42 = {
   type: "button",
   "class": "flex items-center justify-center gap-2 px-4 h-[38px] rounded shadow-db-card bg-primary"
 };
-var _hoisted_40 = {
+var _hoisted_43 = {
   "class": "text-sm capitalize text-white"
 };
-var _hoisted_41 = {
+var _hoisted_44 = {
   "class": "text-sm capitalize"
 };
-var _hoisted_42 = {
+var _hoisted_45 = {
   "class": "col-12 sm:col-6"
 };
-var _hoisted_43 = {
+var _hoisted_46 = {
   "class": "db-card"
 };
-var _hoisted_44 = {
+var _hoisted_47 = {
   "class": "db-card-header"
 };
-var _hoisted_45 = {
+var _hoisted_48 = {
   "class": "db-card-title"
 };
-var _hoisted_46 = {
+var _hoisted_49 = {
   "class": "db-card-body"
 };
-var _hoisted_47 = {
+var _hoisted_50 = {
   "class": "pl-3"
 };
-var _hoisted_48 = {
+var _hoisted_51 = {
   "class": "flex items-center gap-3 relative"
 };
-var _hoisted_49 = {
+var _hoisted_52 = {
   "class": "absolute top-5 -left-3 text-sm w-[26px] h-[26px] leading-[26px] text-center rounded-full text-white bg-heading"
 };
-var _hoisted_50 = ["src"];
-var _hoisted_51 = {
+var _hoisted_53 = ["src"];
+var _hoisted_54 = {
   "class": "w-full"
 };
-var _hoisted_52 = {
-  href: "#",
-  "class": "text-sm font-medium capitalize transition text-heading hover:underline"
-};
-var _hoisted_53 = {
-  key: 0,
-  "class": "capitalize text-xs mb-1.5"
-};
-var _hoisted_54 = {
-  key: 0
-};
 var _hoisted_55 = {
-  "class": "text-xs font-semibold"
+  "class": "text-sm font-medium capitalize transition text-heading"
 };
 var _hoisted_56 = {
   key: 0,
-  "class": "flex flex-col gap-1.5 mt-2"
+  "class": "capitalize text-xs mb-1.5"
 };
 var _hoisted_57 = {
+  key: 0
+};
+var _hoisted_58 = {
+  "class": "text-xs font-semibold"
+};
+var _hoisted_59 = {
+  key: 0,
+  "class": "flex flex-col gap-1.5 mt-2"
+};
+var _hoisted_60 = {
   key: 0,
   "class": "flex gap-1"
 };
-var _hoisted_58 = {
+var _hoisted_61 = {
   "class": "capitalize text-xs w-fit whitespace-nowrap"
 };
-var _hoisted_59 = {
+var _hoisted_62 = {
   "class": "text-xs"
 };
-var _hoisted_60 = {
+var _hoisted_63 = {
   key: 0
 };
-var _hoisted_61 = {
+var _hoisted_64 = {
   key: 1,
   "class": "flex gap-1"
 };
-var _hoisted_62 = {
+var _hoisted_65 = {
   "class": "capitalize text-xs w-fit whitespace-nowrap"
 };
-var _hoisted_63 = {
+var _hoisted_66 = {
   "class": "text-xs"
 };
-var _hoisted_64 = {
+var _hoisted_67 = {
+  key: 2,
   "class": "col-12 sm:col-6"
 };
-var _hoisted_65 = {
+var _hoisted_68 = {
   "class": "row"
 };
-var _hoisted_66 = {
+var _hoisted_69 = {
   "class": "col-12"
 };
-var _hoisted_67 = {
+var _hoisted_70 = {
   "class": "db-card p-1"
 };
-var _hoisted_68 = {
-  "class": "flex flex-col gap-2 p-3 border-b border-dashed border-[#EFF0F6]"
-};
-var _hoisted_69 = {
-  "class": "flex items-center justify-between text-heading"
-};
-var _hoisted_70 = {
-  "class": "text-sm leading-6 capitalize"
-};
 var _hoisted_71 = {
-  "class": "text-sm leading-6 capitalize"
+  "class": "flex flex-col gap-2 p-3 border-b border-dashed border-[#EFF0F6]"
 };
 var _hoisted_72 = {
   "class": "flex items-center justify-between text-heading"
@@ -49742,70 +49802,79 @@ var _hoisted_74 = {
   "class": "text-sm leading-6 capitalize"
 };
 var _hoisted_75 = {
-  key: 0,
   "class": "flex items-center justify-between text-heading"
 };
 var _hoisted_76 = {
   "class": "text-sm leading-6 capitalize"
 };
 var _hoisted_77 = {
-  "class": "text-sm leading-6 capitalize font-semibold text-[#1AB759]"
+  "class": "text-sm leading-6 capitalize"
 };
 var _hoisted_78 = {
-  "class": "flex items-center justify-between p-3"
+  key: 0,
+  "class": "flex items-center justify-between text-heading"
 };
 var _hoisted_79 = {
-  "class": "text-sm leading-6 font-bold capitalize"
+  "class": "text-sm leading-6 capitalize"
 };
 var _hoisted_80 = {
-  "class": "text-sm leading-6 font-bold capitalize"
+  "class": "text-sm leading-6 capitalize font-semibold text-[#1AB759]"
 };
 var _hoisted_81 = {
+  "class": "flex items-center justify-between p-3"
+};
+var _hoisted_82 = {
+  "class": "text-sm leading-6 font-bold capitalize"
+};
+var _hoisted_83 = {
+  "class": "text-sm leading-6 font-bold capitalize"
+};
+var _hoisted_84 = {
   key: 0,
   "class": "flex items-center justify-end p-3 pt-0"
 };
-var _hoisted_82 = {
+var _hoisted_85 = {
   "class": "col-12"
 };
-var _hoisted_83 = {
+var _hoisted_86 = {
   "class": "db-card"
 };
-var _hoisted_84 = {
+var _hoisted_87 = {
   "class": "db-card-header"
 };
-var _hoisted_85 = {
+var _hoisted_88 = {
   "class": "db-card-title"
 };
-var _hoisted_86 = {
+var _hoisted_89 = {
   "class": "db-card-body"
 };
-var _hoisted_87 = {
+var _hoisted_90 = {
   "class": "flex items-center gap-3 mb-4"
 };
-var _hoisted_88 = ["src"];
-var _hoisted_89 = {
+var _hoisted_91 = ["src"];
+var _hoisted_92 = {
   "class": "font-semibold text-sm capitalize text-[#374151]"
 };
-var _hoisted_90 = {
+var _hoisted_93 = {
   key: 0,
   "class": "flex items-center gap-2.5"
 };
-var _hoisted_91 = {
+var _hoisted_94 = {
   "class": "text-xs"
 };
-var _hoisted_92 = {
+var _hoisted_95 = {
   key: 1,
   "class": "flex items-center gap-2.5"
 };
-var _hoisted_93 = {
+var _hoisted_96 = {
   dir: "ltr",
   "class": "text-xs"
 };
-var _hoisted_94 = {
+var _hoisted_97 = {
   key: 0,
   "class": "flex items-start gap-3"
 };
-var _hoisted_95 = {
+var _hoisted_98 = {
   "class": "text-sm w-full max-w-[200px] leading-6 text-[#374151]"
 };
 function render(_ctx, _cache, $props, $setup, $data, $options) {
@@ -49818,13 +49887,19 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
   var _directive_print = (0,vue__WEBPACK_IMPORTED_MODULE_0__.resolveDirective)("print");
   return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_LoadingComponent, {
     props: $data.loading
-  }, null, 8 /* PROPS */, ["props"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_1, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_3, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_4, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_5, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.order_id')) + ": ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_6, " #" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.order.order_serial_no), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_7, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+  }, null, 8 /* PROPS */, ["props"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [micro-ux 2026-06-18] failed load → explicit error + retry, not a blank order shell. "), $data.loadError ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_1, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_3, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('message.something_wrong')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    type: "button",
+    "class": "db-btn py-2 text-white bg-primary",
+    onClick: _cache[0] || (_cache[0] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function () {
+      return $options.loadOrder && $options.loadOrder.apply($options, arguments);
+    }, ["prevent"]))
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.retry')), 1 /* TEXT */)])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), !$data.loadError ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_4, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_5, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_6, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_7, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_8, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.order_id')) + ": ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_9, " #" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.order.order_serial_no), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_10, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)('text-xs capitalize h-5 leading-5 px-2 rounded-3xl text-[#FB4E4E] bg-[#FFDADA]' + $options.statusClass($options.order.payment_status))
   }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.paymentStatusEnumArray[$options.order.payment_status]), 3 /* TEXT, CLASS */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)('text-xs capitalize px-2 rounded-3xl ' + $options.orderStatusClass($options.order.status))
-  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.orderStatusEnumArray[$options.order.status]), 3 /* TEXT, CLASS */)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("ul", _hoisted_8, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("li", _hoisted_9, [_cache[3] || (_cache[3] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.orderStatusEnumArray[$options.order.status]), 3 /* TEXT, CLASS */)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("ul", _hoisted_11, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("li", _hoisted_12, [_cache[4] || (_cache[4] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
     "class": "lab lab-calendar-line lab-font-size-16"
-  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_10, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.order.order_datetime), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("li", _hoisted_11, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.payment_type')) + ": ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_12, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.posPaymentMethodEnumArray[$options.order.pos_payment_method]) + " ", 1 /* TEXT */), $options.order.pos_payment_method !== $data.enums.posPaymentMethodEnum.CASH && $options.order.pos_payment_note ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_13, " (" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.order.pos_payment_note) + ")", 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("li", _hoisted_14, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.order_type')) + ": ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_15, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.orderTypeEnumArray[$options.order.order_type]), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("li", _hoisted_16, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.delivery_time')) + ": ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_17, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.order.delivery_date) + " " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.order.delivery_time), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [WT-D-R1-07 2026-05-20] Internal token reference\n                             (kiosk/online flows). Relabelled FR \"Référence\n                             interne\" to avoid collision with `order_serial_no`\n                             (the real \"N° commande\" displayed at top). Hidden\n                             entirely if the token visually duplicates the\n                             customer first word (defensive guard against\n                             noisy fixture-injected tokens that bleed into\n                             the customer name field). "), $options.displayedToken ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", _hoisted_18, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.order_token')) + ": ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_19, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.displayedToken), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.order.table_name ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", _hoisted_20, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.table_name")) + ": ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_21, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.order.table_name), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])]), $options.order.status !== $data.enums.orderStatusEnum.REJECTED && $options.order.status !== $data.enums.orderStatusEnum.CANCELED ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_22, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [WT-D-R1-09 / WT-D-R1-02 2026-05-20] Delivery-boy\n                         assignment dropdown — WCAG AA combobox+listbox\n                         pattern overlaid on existing dropdown-group hover\n                         behaviour. data-testid hooks added for E2E.\n                         A live-region chip is rendered below the button when\n                         a driver is assigned so the cashier sees confirmation\n                         without consulting the toast. "), $options.order.order_type === $data.enums.orderTypeEnum.DELIVERY ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_13, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.order.order_datetime), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("li", _hoisted_14, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.payment_type')) + ": ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_15, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.posPaymentMethodEnumArray[$options.order.pos_payment_method]) + " ", 1 /* TEXT */), $options.order.pos_payment_method !== $data.enums.posPaymentMethodEnum.CASH && $options.order.pos_payment_note ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_16, " (" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.order.pos_payment_note) + ")", 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("li", _hoisted_17, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.order_type')) + ": ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_18, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.orderTypeEnumArray[$options.order.order_type]), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("li", _hoisted_19, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.delivery_time')) + ": ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_20, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.order.delivery_date) + " " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.order.delivery_time), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [WT-D-R1-07 2026-05-20] Internal token reference\n                             (kiosk/online flows). Relabelled FR \"Référence\n                             interne\" to avoid collision with `order_serial_no`\n                             (the real \"N° commande\" displayed at top). Hidden\n                             entirely if the token visually duplicates the\n                             customer first word (defensive guard against\n                             noisy fixture-injected tokens that bleed into\n                             the customer name field). "), $options.displayedToken ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", _hoisted_21, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.order_token')) + ": ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_22, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.displayedToken), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.order.table_name ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", _hoisted_23, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.table_name")) + ": ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_24, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.order.table_name), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])]), $options.order.status !== $data.enums.orderStatusEnum.REJECTED && $options.order.status !== $data.enums.orderStatusEnum.CANCELED ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_25, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [WT-D-R1-09 / WT-D-R1-02 2026-05-20] Delivery-boy\n                         assignment dropdown — WCAG AA combobox+listbox\n                         pattern overlaid on existing dropdown-group hover\n                         behaviour. data-testid hooks added for E2E.\n                         A live-region chip is rendered below the button when\n                         a driver is assigned so the cashier sees confirmation\n                         without consulting the toast. "), $options.order.order_type === $data.enums.orderTypeEnum.DELIVERY ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
     key: 0,
     "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["dropdown-group", {
       'driver-assigned-flash': $data.driverFlashHighlight
@@ -49839,10 +49914,10 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "class": "min-w-[162px] flex items-center justify-start text-sm capitalize appearance-none pl-2 h-[38px] rounded border border-primary bg-white text-primary dropdown-btn",
     "aria-label": (_$options$order = $options.order) !== null && _$options$order !== void 0 && (_$options$order = _$options$order.delivery_boy) !== null && _$options$order !== void 0 && _$options$order.id ? _ctx.$t('label.driver_assigned') + ': ' + $options.order.delivery_boy.name : _ctx.$t('label.select_delivery_boy'),
     "data-testid": "pos-driver-assign-btn"
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_25, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)((_$options$order2 = $options.order) !== null && _$options$order2 !== void 0 && (_$options$order2 = _$options$order2.delivery_boy) !== null && _$options$order2 !== void 0 && _$options$order2.id ? (_$options$order3 = $options.order) === null || _$options$order3 === void 0 || (_$options$order3 = _$options$order3.delivery_boy) === null || _$options$order3 === void 0 ? void 0 : _$options$order3.name : _ctx.$t('label.select_delivery_boy')), 1 /* TEXT */), _cache[4] || (_cache[4] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_28, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)((_$options$order2 = $options.order) !== null && _$options$order2 !== void 0 && (_$options$order2 = _$options$order2.delivery_boy) !== null && _$options$order2 !== void 0 && _$options$order2.id ? (_$options$order3 = $options.order) === null || _$options$order3 === void 0 || (_$options$order3 = _$options$order3.delivery_boy) === null || _$options$order3 === void 0 ? void 0 : _$options$order3.name : _ctx.$t('label.select_delivery_boy')), 1 /* TEXT */), _cache[5] || (_cache[5] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
     "class": "lab lab-arrow-down-2 lab-font-size-17 mx-1",
     "aria-hidden": "true"
-  }, null, -1 /* CACHED */))], 8 /* PROPS */, _hoisted_24), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("ul", {
+  }, null, -1 /* CACHED */))], 8 /* PROPS */, _hoisted_27), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("ul", {
     role: "listbox",
     "aria-label": _ctx.$t('label.select_delivery_boy'),
     "class": "p-2 rounded-lg shadow-xl absolute top-10 ltr:right-0 rtl:left-0 z-10 bg-white transition-all duration-300 origin-top scale-y-0 dropdown-list w-full"
@@ -49865,13 +49940,13 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       "data-testid": 'pos-driver-option-' + deliveryBoy.id
     }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
       "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["text-heading capitalize text-sm", ((_$options$order5 = $options.order) === null || _$options$order5 === void 0 || (_$options$order5 = _$options$order5.delivery_boy) === null || _$options$order5 === void 0 ? void 0 : _$options$order5.id) === deliveryBoy.id ? 'text-primary' : ''])
-    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(deliveryBoy.name), 3 /* TEXT, CLASS */)], 40 /* PROPS, NEED_HYDRATION */, _hoisted_27);
-  }), 128 /* KEYED_FRAGMENT */))], 8 /* PROPS */, _hoisted_26), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Live-region success chip — visible UI confirmation\n                             that assignment landed (WT-D-R1-02 fix). "), (_$options$order6 = $options.order) !== null && _$options$order6 !== void 0 && (_$options$order6 = _$options$order6.delivery_boy) !== null && _$options$order6 !== void 0 && _$options$order6.id ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_28, [_cache[5] || (_cache[5] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(deliveryBoy.name), 3 /* TEXT, CLASS */)], 40 /* PROPS, NEED_HYDRATION */, _hoisted_30);
+  }), 128 /* KEYED_FRAGMENT */))], 8 /* PROPS */, _hoisted_29), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Live-region success chip — visible UI confirmation\n                             that assignment landed (WT-D-R1-02 fix). "), (_$options$order6 = $options.order) !== null && _$options$order6 !== void 0 && (_$options$order6 = _$options$order6.delivery_boy) !== null && _$options$order6 !== void 0 && _$options$order6.id ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_31, [_cache[6] || (_cache[6] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
     "class": "lab lab-tick-square lab-font-size-12",
     "aria-hidden": "true"
-  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.driver_assigned')) + ": " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.order.delivery_boy.name), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 10 /* CLASS, PROPS */, _hoisted_23)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_29, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", _hoisted_30, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_31, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.paymentStatusEnumArray[$options.order.payment_status]), 1 /* TEXT */), _cache[6] || (_cache[6] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.driver_assigned')) + ": " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.order.delivery_boy.name), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 10 /* CLASS, PROPS */, _hoisted_26)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_32, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", _hoisted_33, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_34, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.paymentStatusEnumArray[$options.order.payment_status]), 1 /* TEXT */), _cache[7] || (_cache[7] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
     "class": "lab lab-arrow-down-2 lab-font-size-17 mx-1"
-  }, null, -1 /* CACHED */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("ul", _hoisted_32, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.paymentStatusObject, function (paymentStatus) {
+  }, null, -1 /* CACHED */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("ul", _hoisted_35, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.paymentStatusObject, function (paymentStatus) {
     return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", {
       "class": "active flex items-center gap-2 py-1 px-2.5 rounded-md cursor-pointer hover:bg-gray-100",
       key: paymentStatus.value,
@@ -49880,10 +49955,10 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       }
     }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
       "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["text-heading capitalize text-sm", $options.order.payment_status === paymentStatus.value ? 'text-primary' : ''])
-    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(paymentStatus.name), 3 /* TEXT, CLASS */)], 8 /* PROPS */, _hoisted_33);
-  }), 128 /* KEYED_FRAGMENT */))])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_34, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", _hoisted_35, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_36, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.orderStatusEnumArray[$options.order.status]), 1 /* TEXT */), _cache[7] || (_cache[7] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(paymentStatus.name), 3 /* TEXT, CLASS */)], 8 /* PROPS */, _hoisted_36);
+  }), 128 /* KEYED_FRAGMENT */))])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_37, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", _hoisted_38, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_39, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.orderStatusEnumArray[$options.order.status]), 1 /* TEXT */), _cache[8] || (_cache[8] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
     "class": "lab lab-arrow-down-2 lab-font-size-17 mx-1"
-  }, null, -1 /* CACHED */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("ul", _hoisted_37, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.orderStatusObject, function (status) {
+  }, null, -1 /* CACHED */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("ul", _hoisted_40, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.orderStatusObject, function (status) {
     return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", {
       "class": "active flex items-center gap-2 py-1 px-2.5 rounded-md cursor-pointer hover:bg-gray-100",
       key: status.value,
@@ -49892,61 +49967,61 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       }
     }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
       "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["text-heading capitalize text-sm", $options.order.status === status.value ? 'text-primary' : ''])
-    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(status.name), 3 /* TEXT, CLASS */)], 8 /* PROPS */, _hoisted_38);
-  }), 128 /* KEYED_FRAGMENT */))])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)(((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", _hoisted_39, [_cache[8] || (_cache[8] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(status.name), 3 /* TEXT, CLASS */)], 8 /* PROPS */, _hoisted_41);
+  }), 128 /* KEYED_FRAGMENT */))])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)(((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", _hoisted_42, [_cache[9] || (_cache[9] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
     "class": "lab lab-printer-line lab-font-size-16 text-white"
-  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_40, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.print_invoice')), 1 /* TEXT */)])), [[_directive_print, $data.printObj]]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n                      [HEAL-4 / PROPOSAL-02 — V101-02 2026-05-26]\n                      POS Refund UI button — NF525 counter-entry refund CTA.\n                      Visible ONLY when:\n                        - order is PAID (payment_status === PAID)\n                        - order is NOT already a refund mirror (parent_order_id null/0)\n                        - current user holds `pos-refund` permission (Admin or Branch Manager)\n                      Opens PosRefundModal which POSTs to backend route\n                      /api/admin/pos-order/{id}/refund-with-counter-entry — service\n                      creates an immutable mirror order with full-negate totals +\n                      fresh fiscal_sequence_no, preserving the NF525 append-only chain.\n                      Backend triple-defense: UUID idempotency + UNIQUE(parent_order_id)\n                      + 409 MIRROR_ALREADY_EXISTS handler (PosOrderController:82-96).\n                    "), $options.canShowRefund ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_43, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.print_invoice')), 1 /* TEXT */)])), [[_directive_print, $data.printObj]]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n                      [HEAL-4 / PROPOSAL-02 — V101-02 2026-05-26]\n                      POS Refund UI button — NF525 counter-entry refund CTA.\n                      Visible ONLY when:\n                        - order is PAID (payment_status === PAID)\n                        - order is NOT already a refund mirror (parent_order_id null/0)\n                        - current user holds `pos-refund` permission (Admin or Branch Manager)\n                      Opens PosRefundModal which POSTs to backend route\n                      /api/admin/pos-order/{id}/refund-with-counter-entry — service\n                      creates an immutable mirror order with full-negate totals +\n                      fresh fiscal_sequence_no, preserving the NF525 append-only chain.\n                      Backend triple-defense: UUID idempotency + UNIQUE(parent_order_id)\n                      + 409 MIRROR_ALREADY_EXISTS handler (PosOrderController:82-96).\n                    "), $options.canShowRefund ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
     key: 1,
     type: "button",
     "class": "flex items-center justify-center gap-2 px-4 h-[38px] rounded shadow-db-card border-2 border-[#cf3a3a] bg-white text-[#cf3a3a] hover:bg-[#cf3a3a] hover:text-white transition",
     "data-testid": "pos-order-refund-open",
-    onClick: _cache[0] || (_cache[0] = function () {
+    onClick: _cache[1] || (_cache[1] = function () {
       return $options.openRefundModal && $options.openRefundModal.apply($options, arguments);
     })
-  }, [_cache[9] || (_cache[9] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+  }, [_cache[10] || (_cache[10] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "aria-hidden": "true"
-  }, "💸", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_41, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.refund.btn_open')), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_42, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_43, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_44, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_45, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.order_details')), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_46, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_47, [$options.orderItems.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+  }, "💸", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_44, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.refund.btn_open')), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_45, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_46, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_47, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_48, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.order_details')), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_49, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_50, [$options.orderItems.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
     key: 0
   }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.orderItems, function (item) {
     return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
       "class": "mb-3 pb-3 border-b last:mb-0 last:pb-0 last:border-b-0 border-gray-2",
       key: item
-    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_48, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_49, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.quantity), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("img", {
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_51, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_52, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.quantity), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("img", {
       "class": "w-16 h-16 rounded-lg flex-shrink-0",
       src: item.item_image,
       alt: "thumbnail"
-    }, null, 8 /* PROPS */, _hoisted_50), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_51, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("a", _hoisted_52, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.item_name), 1 /* TEXT */), item.item_variations.length !== 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_53, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(item.item_variations, function (variation, index) {
-      return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(variation.variation_name) + ": " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(variation.name), 1 /* TEXT */), index + 1 < item.item_variations.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_54, ", ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
-    }), 256 /* UNKEYED_FRAGMENT */))])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [WT-D-R1-F4 2026-05-20] Canonical FR EUR via shared `formatPrice()` — `item.total_price` shipped raw by OrderItemResource. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_55, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice(item.total_price)), 1 /* TEXT */)])]), item.item_extras.length > 0 || item.instruction !== '' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("ul", _hoisted_56, [item.item_extras.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", _hoisted_57, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_58, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.extras')) + ":", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_59, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(item.item_extras, function (extra, index) {
-      return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(extra.name), 1 /* TEXT */), index + 1 < item.item_extras.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_60, ", ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
-    }), 256 /* UNKEYED_FRAGMENT */))])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), item.instruction !== '' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", _hoisted_61, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_62, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.instruction')) + ":", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_63, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.instruction), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
-  }), 128 /* KEYED_FRAGMENT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_64, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_65, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_66, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_67, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("ul", _hoisted_68, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [WT-D-R1-F4 2026-05-20] Canonical FR EUR\n                             rendering via shared `formatPrice()` helper.\n                             `OrderDetailsResource` already ships raw numeric\n                             `subtotal` / `discount` / `delivery_charge` /\n                             `total` — we feed them through `formatPrice()` so\n                             every admin surface renders \"19,00 €\" instead of\n                             \"19.00€\" (glued, no space). "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("li", _hoisted_69, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_70, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.subtotal')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_71, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice($options.order.subtotal)), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("li", _hoisted_72, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_73, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.discount')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_74, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice($options.order.discount)), 1 /* TEXT */)]), $options.order.order_type === $data.enums.orderTypeEnum.DELIVERY ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", _hoisted_75, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_76, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.delivery_charge')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_77, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice($options.order.delivery_charge)), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_78, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h4", _hoisted_79, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.total')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h5", _hoisted_80, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice($options.order.total)), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19] V1 cashier\n                         loyalty redeem CTA. Visible only when the order is\n                         not yet paid AND not in a terminal state. Pressing\n                         it opens a Vue overlay (no frozen-zone touch).\n                         Permission gate `pos.redeem-loyalty` is enforced\n                         server-side by the FormRequest. "), $options.order.id && $options.canShowLoyaltyRedeem ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_81, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    }, null, 8 /* PROPS */, _hoisted_53), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_54, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [micro-ux 2026-06-18] was a dead <a href=\"#\"> (no navigation) — the\n                                     item name is not a link, so render it as text (no false affordance). "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_55, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.item_name), 1 /* TEXT */), item.item_variations.length !== 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_56, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(item.item_variations, function (variation, index) {
+      return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(variation.variation_name) + ": " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(variation.name), 1 /* TEXT */), index + 1 < item.item_variations.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_57, ", ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
+    }), 256 /* UNKEYED_FRAGMENT */))])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [WT-D-R1-F4 2026-05-20] Canonical FR EUR via shared `formatPrice()` — `item.total_price` shipped raw by OrderItemResource. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_58, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice(item.total_price)), 1 /* TEXT */)])]), item.item_extras.length > 0 || item.instruction !== '' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("ul", _hoisted_59, [item.item_extras.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", _hoisted_60, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_61, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.extras')) + ":", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_62, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(item.item_extras, function (extra, index) {
+      return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(extra.name), 1 /* TEXT */), index + 1 < item.item_extras.length ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_63, ", ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
+    }), 256 /* UNKEYED_FRAGMENT */))])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), item.instruction !== '' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", _hoisted_64, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_65, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.instruction')) + ":", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_66, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.instruction), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
+  }), 128 /* KEYED_FRAGMENT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])])])]), !$data.loadError ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_67, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_68, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_69, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_70, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("ul", _hoisted_71, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [WT-D-R1-F4 2026-05-20] Canonical FR EUR\n                             rendering via shared `formatPrice()` helper.\n                             `OrderDetailsResource` already ships raw numeric\n                             `subtotal` / `discount` / `delivery_charge` /\n                             `total` — we feed them through `formatPrice()` so\n                             every admin surface renders \"19,00 €\" instead of\n                             \"19.00€\" (glued, no space). "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("li", _hoisted_72, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_73, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.subtotal')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_74, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice($options.order.subtotal)), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("li", _hoisted_75, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_76, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.discount')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_77, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice($options.order.discount)), 1 /* TEXT */)]), $options.order.order_type === $data.enums.orderTypeEnum.DELIVERY ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", _hoisted_78, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_79, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.delivery_charge')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_80, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice($options.order.delivery_charge)), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_81, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h4", _hoisted_82, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.total')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h5", _hoisted_83, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.formatPrice($options.order.total)), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19] V1 cashier\n                         loyalty redeem CTA. Visible only when the order is\n                         not yet paid AND not in a terminal state. Pressing\n                         it opens a Vue overlay (no frozen-zone touch).\n                         Permission gate `pos.redeem-loyalty` is enforced\n                         server-side by the FormRequest. "), $options.order.id && $options.canShowLoyaltyRedeem ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_84, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     type: "button",
     "class": "text-xs px-3 py-1.5 rounded border border-primary text-primary hover:bg-primary hover:text-white transition",
     "data-testid": "pos-loyalty-redeem-open",
-    onClick: _cache[1] || (_cache[1] = function ($event) {
+    onClick: _cache[2] || (_cache[2] = function ($event) {
       return $data.loyaltyRedeemOpen = true;
     })
-  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.loyalty.redeem.title')), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_82, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_83, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_84, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_85, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.delivery_information')), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_86, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_87, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("img", {
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.loyalty.redeem.title')), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_85, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_86, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_87, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_88, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.delivery_information')), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_89, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_90, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("img", {
     "class": "w-8 rounded-full",
     src: $options.orderUser.image,
     alt: "avatar"
-  }, null, 8 /* PROPS */, _hoisted_88), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h4", _hoisted_89, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.isWalkIn ? 'Passager' : $options.textShortener($options.orderUser.name, 20)), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("ul", {
+  }, null, 8 /* PROPS */, _hoisted_91), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h4", _hoisted_92, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.isWalkIn ? 'Passager' : $options.textShortener($options.orderUser.name, 20)), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("ul", {
     "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["flex flex-col gap-3 py-4 border-[#EFF0F6]", $options.order.order_type === $data.enums.orderTypeEnum.DELIVERY ? 'mb-4 border-y' : 'border-t'])
-  }, [!$options.isWalkIn ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", _hoisted_90, [_cache[10] || (_cache[10] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+  }, [!$options.isWalkIn ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", _hoisted_93, [_cache[11] || (_cache[11] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
     "class": "lab lab-mail lab-font-size-14"
-  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_91, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.orderUser.email), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), !$options.isWalkIn && $options.orderUser.phone ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", _hoisted_92, [_cache[11] || (_cache[11] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_94, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.orderUser.email), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), !$options.isWalkIn && $options.orderUser.phone ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", _hoisted_95, [_cache[12] || (_cache[12] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
     "class": "lab lab-call-calling-linear lab-font-size-14"
-  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_93, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.orderUser.country_code + '' + $options.orderUser.phone), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 2 /* CLASS */), $options.order.order_type === $data.enums.orderTypeEnum.DELIVERY ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_94, [_cache[12] || (_cache[12] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_96, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.orderUser.country_code + '' + $options.orderUser.phone), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 2 /* CLASS */), $options.order.order_type === $data.enums.orderTypeEnum.DELIVERY ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_97, [_cache[13] || (_cache[13] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
     "class": "lab lab-location lab-font-size-20 leading-6 font-fill-black"
-  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_95, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.orderAddress.apartment ? $options.orderAddress.apartment + ', ' : '') + " " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.orderAddress.address), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PosOrderMapComponent, {
+  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_98, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.orderAddress.apartment ? $options.orderAddress.apartment + ', ' : '') + " " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.orderAddress.address), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PosOrderMapComponent, {
     orderAddress: $options.orderAddress
-  }, null, 8 /* PROPS */, ["orderAddress"])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])])])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PosOrderReceiptComponent, {
+  }, null, 8 /* PROPS */, ["orderAddress"])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])])])])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PosOrderReceiptComponent, {
     order: $options.order
   }, null, 8 /* PROPS */, ["order"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19] Cashier loyalty redeem\n         modal — separate Vue overlay outside the FROZEN pos-wizard.js.\n         Opens via the CTA above ; emits 'applied' to refresh order totals. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PosLoyaltyRedeemModal, {
     open: $data.loyaltyRedeemOpen,
     "order-id": $options.order.id,
-    onClose: _cache[2] || (_cache[2] = function ($event) {
+    onClose: _cache[3] || (_cache[3] = function ($event) {
       return $data.loyaltyRedeemOpen = false;
     }),
     onApplied: $options.onLoyaltyRedeemApplied

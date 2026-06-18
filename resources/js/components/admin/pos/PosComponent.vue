@@ -48,6 +48,15 @@
       aria-atomic="true"
       data-testid="pos-availability-live"
     >{{ availabilityAnnouncement }}</div>
+    <!-- [micro-ux 2026-06-18] polite announcer fired when the Prêts or
+         À encaisser shortcut lists GROW, so a cashier hears a new arrival
+         without watching the panels. The headings stay non-live. -->
+    <div
+      class="sr-only pos-v5-sr-only"
+      aria-live="polite"
+      aria-atomic="true"
+      data-testid="pos-queue-arrival-live"
+    >{{ queueArrivalAnnouncement }}</div>
     <!-- [iter15-mega-fix D-003 2026-05-10] Persistent visible chip listing
          currently ruptured items in the active branch. Driven by itemsRaw so
          it survives a page reload (the broadcast-only toast does not). -->
@@ -518,10 +527,12 @@
                 <h2 class="pos-v5-cart__title">Commande en cours</h2>
             </div>
             <div class="pos-v5-stack-3 mt-3">
+                <!-- [micro-ux 2026-06-18] role=status so the live cart-count pill is announced. -->
                 <PosV5Pill
                     v-if="totalItems() > 0"
                     variant="brand"
                     size="md"
+                    role="status"
                 >
                     {{ totalItems() }} {{ $t('label.items') }}
                 </PosV5Pill>
@@ -817,11 +828,12 @@
                                         setting.site_default_currency_symbol, setting.site_currency_position)
                                 }})
                             </span>
+                            <!-- [micro-ux 2026-06-18] bundled menu-extras text raised ink-muted→ink-soft (AA). -->
                             <ul v-if="bundled.menu_extras && bundled.menu_extras.length > 0" class="w-full m-0 p-0 list-none ml-3 mt-0.5">
                                 <li
                                     v-for="(extra, ei) in bundled.menu_extras"
                                     :key="'me-' + index + '-' + bi + '-' + ei"
-                                    class="text-[10px] leading-snug text-[var(--pos-v5-ink-muted)] flex items-center gap-1"
+                                    class="text-[10px] leading-snug text-[var(--pos-v5-ink-soft)] flex items-center gap-1"
                                 >
                                     <span class="text-[color:var(--pos-v5-success)] font-bold" aria-hidden="true">↳</span>
                                     <span>{{ extra }}</span>
@@ -1660,6 +1672,9 @@ export default {
             // updates the aria-live region on every broadcast so screen readers
             // announce rupture changes without requiring item-in-cart match.
             availabilityAnnouncement: '',
+            // [micro-ux 2026-06-18] polite announcer text for the Prêts /
+            // À encaisser shortcut lists — set only when either list grows.
+            queueArrivalAnnouncement: '',
             availabilityBannerDismissed: false,
             checkoutProps: {
                 form: {
@@ -4451,6 +4466,19 @@ export default {
             },
             deep: true,
             immediate: true
+        },
+        // [micro-ux 2026-06-18] Announce (polite) only when a shortcut list GROWS —
+        // a new ready order or a new kiosk-cash arrival. Not immediate (no announce
+        // on first hydrate); shrink/no-change stays silent.
+        "readyOrders.length"(next, prev) {
+            if (typeof prev === 'number' && next > prev) {
+                this.queueArrivalAnnouncement = this.$t('label.kds_new_arrival');
+            }
+        },
+        "kioskCashOrders.length"(next, prev) {
+            if (typeof prev === 'number' && next > prev) {
+                this.queueArrivalAnnouncement = this.$t('label.encaisser_queue_new_arrival', { count: next });
+            }
         }
     },
 }

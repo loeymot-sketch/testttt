@@ -233,7 +233,7 @@ __webpack_require__.r(__webpack_exports__);
 
 var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
 // Module
-___CSS_LOADER_EXPORT___.push([module.id, "\n/* =============================================================================\n   PosOrdersTrackerComponent — POS V5 Design Convergence (refonte 2026-05-02)\n   -----------------------------------------------------------------------------\n   Mission : CV1-POS-DESIGN-CONVERGENCE-001\n   Doc plan : §3.6\n   - Approche chirurgicale : on remappe les tokens scoped --pos-tracker-*\n     aux tokens V5 globaux. Tous les styles existants (excellents) prennent\n     automatiquement la palette warm V5 sans toucher la structure DOM.\n   - Bordure left colorée par status (Q4 plan : signal scan visuel rapide)\n   ============================================================================= */\n.pos-tracker-shell[data-v-551500c8] {\n    /* Remap scoped tokens → V5 globals */\n    --pos-tracker-bg: var(--pos-v5-bg-app);\n    --pos-tracker-card-bg: var(--pos-v5-bg-panel);\n    --pos-tracker-border: var(--pos-v5-border);\n    --pos-tracker-text: var(--pos-v5-ink);\n    --pos-tracker-muted: var(--pos-v5-ink-soft);\n    --pos-tracker-primary: var(--pos-v5-brand-red);\n    --pos-tracker-primary-soft: var(--pos-v5-brand-red-soft);\n    --pos-tracker-amber: var(--pos-v5-warning);\n    --pos-tracker-amber-soft: var(--pos-v5-warning-soft);\n    --pos-tracker-green: var(--pos-v5-success);\n    --pos-tracker-green-soft: var(--pos-v5-success-soft);\n    --pos-tracker-muted-soft: var(--pos-v5-bg-subtle);\n    /* [Wave T R1 F1 P0 2026-05-20] Blue tone for EN LIVRAISON lane.\n       Hardcoded blue (not V5 token) — V5 palette has no info/blue role.\n       Hue chosen high-contrast on white (≥4.5:1) and distinct from\n       primary-red / amber / green to keep cashier scan unambiguous. */\n    --pos-tracker-blue: #1d4ed8;\n    --pos-tracker-blue-soft: #dbeafe;\n\n    min-height: 100dvh;\n    background: var(--pos-tracker-bg);\n    padding: var(--pos-v5-space-4) var(--pos-v5-space-5) var(--pos-v5-space-6);\n    color: var(--pos-tracker-text);\n    font-family: var(--pos-v5-font-sans);\n}\n.pos-tracker-bar[data-v-551500c8] {\n    display: flex;\n    flex-wrap: wrap;\n    align-items: flex-end;\n    justify-content: space-between;\n    gap: var(--pos-v5-space-4) var(--pos-v5-space-6);\n    padding: var(--pos-v5-space-3) var(--pos-v5-space-5);\n    border-radius: var(--pos-v5-radius-lg);\n    background: var(--pos-tracker-card-bg);\n    border: 1px solid var(--pos-tracker-border);\n    border-left: 4px solid var(--pos-v5-brand-red);\n    box-shadow: var(--pos-v5-shadow-md);\n    margin-bottom: var(--pos-v5-space-4);\n}\n.pos-tracker-eyebrow[data-v-551500c8] {\n    font-size: 11px;\n    font-weight: 600;\n    letter-spacing: 0.08em;\n    color: var(--pos-tracker-muted);\n    text-transform: uppercase;\n    margin: 0 0 4px;\n}\n.pos-tracker-title[data-v-551500c8] {\n    font-size: 22px;\n    font-weight: 700;\n    color: var(--pos-tracker-text);\n    margin: 0 0 6px;\n    line-height: 1.1;\n}\n.pos-tracker-status-row[data-v-551500c8] {\n    display: flex;\n    align-items: center;\n    flex-wrap: wrap;\n    gap: 8px 16px;\n    font-size: 13px;\n    color: var(--pos-tracker-muted);\n}\n.pos-tracker-status-row strong[data-v-551500c8] {\n    color: var(--pos-tracker-text);\n    font-weight: 700;\n}\n.pos-tracker-status-pill[data-v-551500c8] {\n    display: inline-flex;\n    align-items: center;\n    gap: 6px;\n    padding: 4px 10px;\n    border-radius: 999px;\n    font-size: 12px;\n    font-weight: 600;\n    background: var(--pos-tracker-green-soft);\n    color: #166534;\n    border: 1px solid rgba(26, 183, 89, 0.25);\n}\n.pos-tracker-status-pill--ready[data-v-551500c8] {\n    animation: pos-tracker-soft-pulse-551500c8 2.4s ease-in-out infinite;\n}\n.pos-tracker-bar-right[data-v-551500c8] {\n    display: flex;\n    align-items: center;\n    gap: 10px;\n    flex-wrap: wrap;\n}\n.pos-tracker-search[data-v-551500c8] {\n    position: relative;\n    display: flex;\n    align-items: center;\n    background: #F7F7FC;\n    border: 1px solid var(--pos-tracker-border);\n    border-radius: 10px;\n    padding: 0 10px;\n    min-width: 200px;\n}\n.pos-tracker-search i[data-v-551500c8] {\n    color: var(--pos-tracker-muted);\n    font-size: 14px;\n}\n.pos-tracker-search input[data-v-551500c8] {\n    flex: 1;\n    border: 0;\n    background: transparent;\n    padding: 8px 6px;\n    font-size: 13px;\n    color: var(--pos-tracker-text);\n    outline: none;\n    min-width: 0;\n}\n.pos-tracker-search input[data-v-551500c8]::-moz-placeholder {\n    color: var(--pos-tracker-muted);\n}\n.pos-tracker-search input[data-v-551500c8]::placeholder {\n    color: var(--pos-tracker-muted);\n}\n.pos-tracker-search-clear[data-v-551500c8] {\n    background: transparent;\n    border: 0;\n    color: var(--pos-tracker-muted);\n    cursor: pointer;\n    font-size: 14px;\n    padding: 0 4px;\n}\n.pos-tracker-source-tabs[data-v-551500c8] {\n    display: inline-flex;\n    background: #F7F7FC;\n    border: 1px solid var(--pos-tracker-border);\n    border-radius: 10px;\n    padding: 3px;\n    gap: 2px;\n}\n.pos-tracker-source-tab[data-v-551500c8] {\n    background: transparent;\n    border: 0;\n    padding: 6px 10px;\n    border-radius: 7px;\n    font-size: 12px;\n    font-weight: 600;\n    color: var(--pos-tracker-muted);\n    cursor: pointer;\n    display: inline-flex;\n    align-items: center;\n    gap: 4px;\n    transition: background 0.15s ease, color 0.15s ease;\n}\n.pos-tracker-source-tab[data-v-551500c8]:hover {\n    background: rgba(176, 0, 77, 0.06);\n    color: var(--pos-tracker-text);\n}\n.pos-tracker-source-tab.is-active[data-v-551500c8] {\n    background: var(--pos-tracker-primary);\n    color: #fff;\n}\n.pos-tracker-source-tab-icon[data-v-551500c8] {\n    font-size: 14px;\n}\n.pos-tracker-history-link[data-v-551500c8],\n.pos-tracker-customer-link[data-v-551500c8],\n.pos-tracker-back-link[data-v-551500c8] {\n    display: inline-flex;\n    align-items: center;\n    gap: 6px;\n    padding: 8px 14px;\n    border-radius: 10px;\n    font-size: 13px;\n    font-weight: 600;\n    border: 1px solid var(--pos-tracker-border);\n    background: #fff;\n    color: var(--pos-tracker-text);\n    text-decoration: none;\n    transition: background 0.15s ease, border-color 0.15s ease;\n}\n.pos-tracker-history-link[data-v-551500c8]:hover,\n.pos-tracker-customer-link[data-v-551500c8]:hover,\n.pos-tracker-back-link[data-v-551500c8]:hover {\n    background: var(--pos-tracker-primary-soft);\n    border-color: var(--pos-tracker-primary);\n    color: var(--pos-tracker-primary);\n}\n.pos-tracker-rt-warn[data-v-551500c8] {\n    margin-bottom: 12px;\n    padding: 8px 14px;\n    border-radius: 10px;\n    background: #FEF3C7;\n    color: #92400E;\n    font-size: 13px;\n    font-weight: 600;\n    border: 1px solid rgba(217, 119, 6, 0.2);\n}\n.pos-tracker-grid[data-v-551500c8] {\n    display: grid;\n    /* [Wave T R1 F1 P0 2026-05-20] 5-column layout: À ENCAISSER / EN\n       PRÉPARATION / PRÊTS / EN LIVRAISON / LIVRÉS. Wave S-4 left the\n       grid at 4 cols; with the new on-the-way lane the cashier keeps\n       full caisse-to-delivered visibility on a single screen. Wide\n       breakpoints unchanged for laptops & vertical caisse displays. */\n    grid-template-columns: repeat(5, minmax(0, 1fr));\n    gap: 14px;\n    align-items: start;\n}\n@media (max-width: 1480px) {\n.pos-tracker-grid[data-v-551500c8] { grid-template-columns: repeat(3, minmax(0, 1fr));\n}\n}\n@media (max-width: 1100px) {\n.pos-tracker-grid[data-v-551500c8] { grid-template-columns: repeat(2, minmax(0, 1fr));\n}\n}\n@media (max-width: 720px) {\n.pos-tracker-grid[data-v-551500c8] { grid-template-columns: 1fr;\n}\n}\n.pos-tracker-col[data-v-551500c8] {\n    background: var(--pos-tracker-card-bg);\n    border: 1px solid var(--pos-tracker-border);\n    border-radius: 14px;\n    overflow: hidden;\n    display: flex;\n    flex-direction: column;\n    min-height: 280px;\n    max-height: calc(100dvh - 160px);\n}\n.pos-tracker-col-head[data-v-551500c8] {\n    display: flex;\n    align-items: center;\n    justify-content: space-between;\n    padding: 12px 14px;\n    border-bottom: 1px solid var(--pos-tracker-border);\n    flex-shrink: 0;\n}\n.pos-tracker-col-head h2[data-v-551500c8] {\n    font-size: 14px;\n    font-weight: 700;\n    color: var(--pos-tracker-text);\n    margin: 0;\n    display: inline-flex;\n    align-items: center;\n    gap: 8px;\n    text-transform: uppercase;\n    letter-spacing: 0.04em;\n}\n.pos-tracker-col-icon[data-v-551500c8] { font-size: 18px;\n}\n\n/* [Wave S-4 P-OWNER 2026-05-20] Lane subtitle (À encaisser semantic). */\n.pos-tracker-col-head-titles[data-v-551500c8] {\n    display: flex;\n    flex-direction: column;\n    gap: 2px;\n    min-width: 0;\n}\n.pos-tracker-col-subtitle[data-v-551500c8] {\n    margin: 0;\n    font-size: 11px;\n    font-weight: 600;\n    color: var(--pos-tracker-muted);\n    text-transform: none;\n    letter-spacing: 0;\n    line-height: 1.2;\n}\n\n/* [Wave S-4 P-OWNER 2026-05-20] Pulsing amber tint on the À encaisser\n * column when ≥1 cash-pending order is present — matches the existing\n * green pulse on PRÊTS À SERVIR for cross-lane visual consistency. */\n.pos-tracker-col--amber[data-v-551500c8] {\n    border-color: rgba(245, 158, 11, 0.4);\n    box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.10) inset;\n}\n.pos-tracker-col--amber.is-pulse[data-v-551500c8] {\n    animation: pos-tracker-col-amber-glow-551500c8 2.6s ease-in-out infinite;\n}\n@keyframes pos-tracker-col-amber-glow-551500c8 {\n0%, 100% { box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.12) inset;\n}\n50%      { box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.32) inset, 0 0 18px rgba(245, 158, 11, 0.18);\n}\n}\n.pos-tracker-col-count[data-v-551500c8] {\n    background: var(--pos-tracker-muted-soft);\n    color: var(--pos-tracker-text);\n    border-radius: 999px;\n    padding: 2px 10px;\n    font-size: 12px;\n    font-weight: 700;\n    min-width: 26px;\n    text-align: center;\n}\n.pos-tracker-col--amber .pos-tracker-col-count[data-v-551500c8] { background: var(--pos-tracker-amber-soft); color: var(--pos-tracker-amber);\n}\n.pos-tracker-col--primary .pos-tracker-col-count[data-v-551500c8] { background: var(--pos-tracker-primary-soft); color: var(--pos-tracker-primary);\n}\n.pos-tracker-col--green .pos-tracker-col-count[data-v-551500c8] { background: var(--pos-tracker-green-soft); color: #166534;\n}\n.pos-tracker-col--blue .pos-tracker-col-count[data-v-551500c8] { background: var(--pos-tracker-blue-soft); color: var(--pos-tracker-blue);\n}\n.pos-tracker-col--muted .pos-tracker-col-count[data-v-551500c8] { background: var(--pos-tracker-muted-soft); color: var(--pos-tracker-muted);\n}\n.pos-tracker-col--green[data-v-551500c8] {\n    border-color: rgba(26, 183, 89, 0.4);\n    box-shadow: 0 0 0 1px rgba(26, 183, 89, 0.12) inset;\n}\n.pos-tracker-col--green.is-pulse[data-v-551500c8] {\n    animation: pos-tracker-col-glow-551500c8 2.6s ease-in-out infinite;\n}\n@keyframes pos-tracker-col-glow-551500c8 {\n0%, 100% { box-shadow: 0 0 0 1px rgba(26, 183, 89, 0.12) inset;\n}\n50%      { box-shadow: 0 0 0 2px rgba(26, 183, 89, 0.32) inset, 0 0 18px rgba(26, 183, 89, 0.18);\n}\n}\n.pos-tracker-col-body[data-v-551500c8] {\n    padding: 10px;\n    overflow-y: auto;\n    overscroll-behavior: contain;\n}\n.pos-tracker-cards[data-v-551500c8] {\n    display: flex;\n    flex-direction: column;\n    gap: 10px;\n}\n.pos-tracker-col-empty[data-v-551500c8] {\n    flex: 1;\n    display: flex;\n    flex-direction: column;\n    align-items: center;\n    justify-content: center;\n    padding: 28px 16px;\n    color: var(--pos-tracker-muted);\n    font-size: 13px;\n    text-align: center;\n    gap: 8px;\n}\n.pos-tracker-col-empty-icon[data-v-551500c8] {\n    font-size: 28px;\n    opacity: 0.55;\n}\n.pos-tracker-card[data-v-551500c8] {\n    border: 1px solid var(--pos-tracker-border);\n    border-radius: 12px;\n    background: #fff;\n    padding: 10px 12px;\n    display: flex;\n    flex-direction: column;\n    gap: 8px;\n    transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;\n}\n.pos-tracker-card[data-v-551500c8]:hover {\n    box-shadow: 0 6px 16px rgba(31, 31, 57, 0.08);\n    transform: translateY(-1px);\n}\n\n/* Q4 plan : bordure left 4px par status — scan visuel rapide pour caissier */\n.pos-tracker-card--amber[data-v-551500c8] { border-left: 4px solid var(--pos-tracker-amber);\n}\n.pos-tracker-card--primary[data-v-551500c8] { border-left: 4px solid var(--pos-tracker-primary);\n}\n.pos-tracker-card--green[data-v-551500c8] { border-left: 4px solid var(--pos-tracker-green);\n}\n.pos-tracker-card--blue[data-v-551500c8] { border-left: 4px solid var(--pos-tracker-blue);\n}\n.pos-tracker-card--muted[data-v-551500c8] { border-left: 4px solid var(--pos-v5-border-strong); opacity: 0.85;\n}\n.pos-tracker-card.is-fresh[data-v-551500c8] { animation: pos-tracker-card-pop-551500c8 1.2s ease-out 1; border-color: var(--pos-tracker-green);\n}\n@keyframes pos-tracker-card-pop-551500c8 {\n0%   { transform: scale(0.96); box-shadow: 0 0 0 0 rgba(26, 183, 89, 0.45);\n}\n40%  { transform: scale(1.02); box-shadow: 0 0 0 8px rgba(26, 183, 89, 0.18);\n}\n100% { transform: scale(1);    box-shadow: 0 0 0 0 rgba(26, 183, 89, 0.0);\n}\n}\n.pos-tracker-card-head[data-v-551500c8] {\n    display: flex;\n    align-items: center;\n    justify-content: space-between;\n    gap: 8px;\n}\n.pos-tracker-card-num[data-v-551500c8] {\n    font-size: 17px;\n    font-weight: 800;\n    color: var(--pos-tracker-text);\n    letter-spacing: -0.01em;\n}\n.pos-tracker-card-source[data-v-551500c8] {\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    width: 26px;\n    height: 26px;\n    border-radius: 8px;\n    background: var(--pos-tracker-muted-soft);\n    font-size: 14px;\n}\n.pos-tracker-card-source--kiosk[data-v-551500c8] { background: #EEF2FF;\n}\n.pos-tracker-card-source--online[data-v-551500c8] { background: #ECFEFF;\n}\n\n/* [Wave S-4 P-OWNER 2026-05-20] Cash-pending bell badge — strong amber,\n * gentle pulse to keep cashier attention without being aggressive. */\n.pos-tracker-card-cash-badge[data-v-551500c8] {\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    width: 26px;\n    height: 26px;\n    border-radius: 8px;\n    background: var(--pos-tracker-amber-soft);\n    color: var(--pos-tracker-amber);\n    font-size: 14px;\n    border: 1px solid rgba(245, 158, 11, 0.35);\n    animation: pos-tracker-cash-bell-pulse-551500c8 2.2s ease-in-out infinite;\n}\n@keyframes pos-tracker-cash-bell-pulse-551500c8 {\n0%, 100% { transform: scale(1);\n}\n50%      { transform: scale(1.08);\n}\n}\n@media (prefers-reduced-motion: reduce) {\n.pos-tracker-card-cash-badge[data-v-551500c8] { animation: none;\n}\n}\n\n/* [Wave S-4 P-OWNER 2026-05-20] Cash-pending amount emphasis. */\n.pos-tracker-card-total--cash[data-v-551500c8] {\n    color: var(--pos-tracker-amber);\n    font-weight: 800;\n    display: inline-flex;\n    align-items: baseline;\n    gap: 6px;\n}\n.pos-tracker-card-total-prefix[data-v-551500c8] {\n    font-size: 11px;\n    font-weight: 700;\n    text-transform: uppercase;\n    letter-spacing: 0.04em;\n    color: var(--pos-tracker-muted);\n}\n.pos-tracker-card-time[data-v-551500c8] {\n    margin-left: auto;\n    font-size: 12px;\n    font-weight: 600;\n    color: var(--pos-tracker-muted);\n}\n.pos-tracker-card-customer[data-v-551500c8] {\n    font-size: 12px;\n    color: var(--pos-tracker-muted);\n    display: flex;\n    align-items: center;\n    gap: 6px;\n    overflow: hidden;\n    text-overflow: ellipsis;\n    white-space: nowrap;\n}\n.pos-tracker-card-customer span[data-v-551500c8] {\n    overflow: hidden;\n    text-overflow: ellipsis;\n    white-space: nowrap;\n}\n.pos-tracker-card-items[data-v-551500c8] {\n    list-style: none;\n    margin: 0;\n    padding: 0;\n    display: flex;\n    flex-direction: column;\n    gap: 3px;\n}\n.pos-tracker-card-items li[data-v-551500c8] {\n    display: flex;\n    gap: 6px;\n    font-size: 12px;\n    color: var(--pos-tracker-text);\n    line-height: 1.35;\n    overflow: hidden;\n    text-overflow: ellipsis;\n    white-space: nowrap;\n}\n.pos-tracker-card-qty[data-v-551500c8] {\n    font-weight: 700;\n    color: var(--pos-tracker-primary);\n    flex-shrink: 0;\n    min-width: 22px;\n}\n.pos-tracker-card-name[data-v-551500c8] {\n    overflow: hidden;\n    text-overflow: ellipsis;\n    white-space: nowrap;\n}\n.pos-tracker-card-more[data-v-551500c8] {\n    color: var(--pos-tracker-muted);\n    font-style: italic;\n    font-size: 11px;\n}\n.pos-tracker-card-foot[data-v-551500c8] {\n    display: flex;\n    align-items: center;\n    justify-content: space-between;\n    padding-top: 6px;\n    border-top: 1px dashed var(--pos-tracker-border);\n}\n.pos-tracker-card-total[data-v-551500c8] {\n    font-size: 14px;\n    font-weight: 700;\n    color: var(--pos-tracker-text);\n}\n.pos-tracker-card-actions[data-v-551500c8] {\n    display: inline-flex;\n    gap: 6px;\n}\n.pos-tracker-card-btn[data-v-551500c8] {\n    display: inline-flex;\n    align-items: center;\n    gap: 6px;\n    padding: 5px 10px;\n    border-radius: 8px;\n    border: 1px solid var(--pos-tracker-border);\n    background: #fff;\n    color: var(--pos-tracker-text);\n    font-size: 12px;\n    font-weight: 600;\n    cursor: pointer;\n    text-decoration: none;\n    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;\n}\n.pos-tracker-card-btn[data-v-551500c8]:hover {\n    background: var(--pos-tracker-primary-soft);\n    border-color: var(--pos-tracker-primary);\n    color: var(--pos-tracker-primary);\n}\n.pos-tracker-card-btn--primary[data-v-551500c8] {\n    background: var(--pos-tracker-green);\n    border-color: var(--pos-tracker-green);\n    color: #fff;\n}\n.pos-tracker-card-btn--primary[data-v-551500c8]:hover {\n    background: #15a151;\n    border-color: #15a151;\n    color: #fff;\n}\n.pos-tracker-card-btn--primary[data-v-551500c8]:disabled {\n    opacity: 0.6;\n    cursor: not-allowed;\n}\n\n/* [Wave S-4 P-OWNER 2026-05-20] Encaisser CTA — amber primary action.\n * Visually loud enough that the cashier can't miss it but stays within\n * the existing V5 design token palette (warning tone, not error). */\n.pos-tracker-card-btn--cash[data-v-551500c8] {\n    background: var(--pos-tracker-amber);\n    border-color: var(--pos-tracker-amber);\n    color: #fff;\n}\n.pos-tracker-card-btn--cash[data-v-551500c8]:hover {\n    background: #d97706;\n    border-color: #d97706;\n    color: #fff;\n}\n.pos-tracker-card-btn--cash[data-v-551500c8]:focus-visible {\n    outline: 2px solid #fbbf24;\n    outline-offset: 2px;\n}\n\n/* [POS-V4-CASHIER-OPS 2026-05-02] danger variant for cancel-order */\n.pos-tracker-card-btn--danger[data-v-551500c8] {\n    border-color: rgba(239, 68, 68, 0.4);\n    color: #b91c1c;\n    background: #fff;\n}\n.pos-tracker-card-btn--danger[data-v-551500c8]:hover {\n    background: #fee2e2;\n    border-color: #ef4444;\n    color: #991b1b;\n}\n.pos-tracker-card-btn--danger[data-v-551500c8]:disabled {\n    opacity: 0.5;\n    cursor: not-allowed;\n}\n\n/* [POS-V4-CASHIER-OPS 2026-05-02] cancel-with-reason inline dialog */\n.pos-tracker-cancel-overlay[data-v-551500c8] {\n    position: fixed;\n    inset: 0;\n    z-index: 2400;\n    background: rgba(15, 23, 42, 0.45);\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    padding: 24px;\n}\n.pos-tracker-cancel-card[data-v-551500c8] {\n    width: min(480px, 100%);\n    background: #fff;\n    border-radius: 16px;\n    box-shadow: 0 24px 48px rgba(15, 23, 42, 0.24);\n    display: flex;\n    flex-direction: column;\n    overflow: hidden;\n}\n.pos-tracker-cancel-head[data-v-551500c8] {\n    display: flex;\n    align-items: center;\n    justify-content: space-between;\n    padding: 16px 20px;\n    border-bottom: 1px solid var(--pos-tracker-border);\n}\n.pos-tracker-cancel-head h3[data-v-551500c8] {\n    margin: 0;\n    font-size: 16px;\n    font-weight: 700;\n    color: var(--pos-tracker-text);\n}\n.pos-tracker-cancel-close[data-v-551500c8] {\n    width: 32px;\n    height: 32px;\n    border-radius: 999px;\n    border: 1px solid var(--pos-tracker-border);\n    background: #fff;\n    color: var(--pos-tracker-muted);\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    cursor: pointer;\n    transition: background 0.15s ease, color 0.15s ease;\n}\n.pos-tracker-cancel-close[data-v-551500c8]:hover {\n    background: #fee2e2;\n    color: #b91c1c;\n}\n.pos-tracker-cancel-body[data-v-551500c8] {\n    padding: 16px 20px;\n    display: flex;\n    flex-direction: column;\n    gap: 10px;\n}\n.pos-tracker-cancel-target[data-v-551500c8] {\n    margin: 0 0 4px;\n    font-size: 13px;\n    color: var(--pos-tracker-muted);\n}\n.pos-tracker-cancel-target strong[data-v-551500c8] {\n    color: var(--pos-tracker-text);\n    font-weight: 700;\n}\n.pos-tracker-cancel-label[data-v-551500c8] {\n    font-size: 13px;\n    font-weight: 600;\n    color: var(--pos-tracker-text);\n}\n.pos-tracker-cancel-textarea[data-v-551500c8] {\n    width: 100%;\n    min-height: 84px;\n    padding: 10px 12px;\n    border: 1px solid var(--pos-tracker-border);\n    border-radius: 10px;\n    font-size: 14px;\n    color: var(--pos-tracker-text);\n    background: #f9fafb;\n    resize: vertical;\n    transition: border-color 0.15s ease, background 0.15s ease;\n}\n.pos-tracker-cancel-textarea[data-v-551500c8]:focus {\n    outline: none;\n    border-color: #ef4444;\n    background: #fff;\n}\n.pos-tracker-cancel-error[data-v-551500c8] {\n    margin: 0;\n    padding: 8px 10px;\n    background: #fee2e2;\n    border: 1px solid #fecaca;\n    border-radius: 8px;\n    color: #991b1b;\n    font-size: 12px;\n    font-weight: 600;\n}\n/*\n * [test-e2e/pos-kds-sync round-4 E-001 P0 2026-05-10]\n * Persistent error banner — visually distinct from a transient toast.\n * Stays inside the cancel dialog until the user dismisses or closes.\n * Solid red left-border + icon + bold copy = unmistakable failure signal.\n */\n.pos-tracker-cancel-error-banner[data-v-551500c8] {\n    display: flex;\n    align-items: flex-start;\n    gap: 10px;\n    margin: 12px 0 0 0;\n    padding: 12px 14px;\n    background: #fef2f2;\n    border: 1px solid #fecaca;\n    border-left: 4px solid #dc2626;\n    border-radius: 8px;\n    color: #991b1b;\n    font-size: 13px;\n    font-weight: 600;\n    line-height: 1.45;\n}\n.pos-tracker-cancel-error-icon[data-v-551500c8] {\n    flex-shrink: 0;\n    color: #dc2626;\n    font-size: 16px;\n    line-height: 1.45;\n}\n.pos-tracker-cancel-error-msg[data-v-551500c8] {\n    flex: 1;\n    word-break: break-word;\n}\n.pos-tracker-cancel-foot[data-v-551500c8] {\n    display: flex;\n    justify-content: flex-end;\n    gap: 8px;\n    padding: 12px 20px;\n    border-top: 1px solid var(--pos-tracker-border);\n    background: #f9fafb;\n}\n.pos-tracker-cancel-btn[data-v-551500c8] {\n    height: 38px;\n    padding: 0 18px;\n    border-radius: 10px;\n    border: 1px solid var(--pos-tracker-border);\n    font-size: 13px;\n    font-weight: 600;\n    cursor: pointer;\n    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;\n    display: inline-flex;\n    align-items: center;\n    gap: 8px;\n}\n.pos-tracker-cancel-btn--ghost[data-v-551500c8] {\n    background: #fff;\n    color: var(--pos-tracker-text);\n}\n.pos-tracker-cancel-btn--ghost[data-v-551500c8]:hover {\n    background: var(--pos-tracker-muted-soft);\n}\n.pos-tracker-cancel-btn--ghost[data-v-551500c8]:disabled {\n    opacity: 0.5;\n    cursor: not-allowed;\n}\n.pos-tracker-cancel-btn--danger[data-v-551500c8] {\n    background: #ef4444;\n    border-color: #ef4444;\n    color: #fff;\n}\n.pos-tracker-cancel-btn--danger[data-v-551500c8]:hover {\n    background: #dc2626;\n    border-color: #dc2626;\n}\n.pos-tracker-cancel-btn--danger[data-v-551500c8]:disabled {\n    opacity: 0.5;\n    cursor: not-allowed;\n}\n.pos-tracker-loading[data-v-551500c8] {\n    margin-top: 24px;\n    text-align: center;\n    color: var(--pos-tracker-muted);\n}\n.pos-tracker-spinner[data-v-551500c8] {\n    width: 36px;\n    height: 36px;\n    border-radius: 50%;\n    border: 3px solid var(--pos-tracker-border);\n    border-top-color: var(--pos-tracker-primary);\n    margin: 0 auto 10px;\n    animation: pos-tracker-spin-551500c8 0.9s linear infinite;\n}\n@keyframes pos-tracker-spin-551500c8 {\nto { transform: rotate(360deg);\n}\n}\n@keyframes pos-tracker-soft-pulse-551500c8 {\n0%, 100% { box-shadow: 0 0 0 0 rgba(26, 183, 89, 0);\n}\n50%      { box-shadow: 0 0 0 6px rgba(26, 183, 89, 0.18);\n}\n}\n\n/* Transition group animations for cards moving between columns */\n.pos-tracker-card-enter-active[data-v-551500c8],\n.pos-tracker-card-leave-active[data-v-551500c8] {\n    transition: opacity 0.25s ease, transform 0.25s ease;\n}\n.pos-tracker-card-enter-from[data-v-551500c8] { opacity: 0; transform: translateY(-6px);\n}\n.pos-tracker-card-leave-to[data-v-551500c8] { opacity: 0; transform: translateY(6px);\n}\n@media (prefers-reduced-motion: reduce) {\n.pos-tracker-status-pill--ready[data-v-551500c8],\n    .pos-tracker-col--green.is-pulse[data-v-551500c8],\n    .pos-tracker-card.is-fresh[data-v-551500c8] { animation: none;\n}\n}\n", ""]);
+___CSS_LOADER_EXPORT___.push([module.id, "\n/* =============================================================================\n   PosOrdersTrackerComponent — POS V5 Design Convergence (refonte 2026-05-02)\n   -----------------------------------------------------------------------------\n   Mission : CV1-POS-DESIGN-CONVERGENCE-001\n   Doc plan : §3.6\n   - Approche chirurgicale : on remappe les tokens scoped --pos-tracker-*\n     aux tokens V5 globaux. Tous les styles existants (excellents) prennent\n     automatiquement la palette warm V5 sans toucher la structure DOM.\n   - Bordure left colorée par status (Q4 plan : signal scan visuel rapide)\n   ============================================================================= */\n.pos-tracker-shell[data-v-551500c8] {\n    /* Remap scoped tokens → V5 globals */\n    --pos-tracker-bg: var(--pos-v5-bg-app);\n    --pos-tracker-card-bg: var(--pos-v5-bg-panel);\n    --pos-tracker-border: var(--pos-v5-border);\n    --pos-tracker-text: var(--pos-v5-ink);\n    --pos-tracker-muted: var(--pos-v5-ink-soft);\n    --pos-tracker-primary: var(--pos-v5-brand-red);\n    --pos-tracker-primary-soft: var(--pos-v5-brand-red-soft);\n    --pos-tracker-amber: var(--pos-v5-warning);\n    --pos-tracker-amber-soft: var(--pos-v5-warning-soft);\n    --pos-tracker-green: var(--pos-v5-success);\n    --pos-tracker-green-soft: var(--pos-v5-success-soft);\n    --pos-tracker-muted-soft: var(--pos-v5-bg-subtle);\n    /* [Wave T R1 F1 P0 2026-05-20] Blue tone for EN LIVRAISON lane.\n       Hardcoded blue (not V5 token) — V5 palette has no info/blue role.\n       Hue chosen high-contrast on white (≥4.5:1) and distinct from\n       primary-red / amber / green to keep cashier scan unambiguous. */\n    --pos-tracker-blue: #1d4ed8;\n    --pos-tracker-blue-soft: #dbeafe;\n\n    min-height: 100dvh;\n    background: var(--pos-tracker-bg);\n    padding: var(--pos-v5-space-4) var(--pos-v5-space-5) var(--pos-v5-space-6);\n    color: var(--pos-tracker-text);\n    font-family: var(--pos-v5-font-sans);\n}\n.pos-tracker-bar[data-v-551500c8] {\n    display: flex;\n    flex-wrap: wrap;\n    align-items: flex-end;\n    justify-content: space-between;\n    gap: var(--pos-v5-space-4) var(--pos-v5-space-6);\n    padding: var(--pos-v5-space-3) var(--pos-v5-space-5);\n    border-radius: var(--pos-v5-radius-lg);\n    background: var(--pos-tracker-card-bg);\n    border: 1px solid var(--pos-tracker-border);\n    border-left: 4px solid var(--pos-v5-brand-red);\n    box-shadow: var(--pos-v5-shadow-md);\n    margin-bottom: var(--pos-v5-space-4);\n}\n.pos-tracker-eyebrow[data-v-551500c8] {\n    font-size: 11px;\n    font-weight: 600;\n    letter-spacing: 0.08em;\n    color: var(--pos-tracker-muted);\n    text-transform: uppercase;\n    margin: 0 0 4px;\n}\n.pos-tracker-title[data-v-551500c8] {\n    font-size: 22px;\n    font-weight: 700;\n    color: var(--pos-tracker-text);\n    margin: 0 0 6px;\n    line-height: 1.1;\n}\n.pos-tracker-status-row[data-v-551500c8] {\n    display: flex;\n    align-items: center;\n    flex-wrap: wrap;\n    gap: 8px 16px;\n    font-size: 13px;\n    color: var(--pos-tracker-muted);\n}\n.pos-tracker-status-row strong[data-v-551500c8] {\n    color: var(--pos-tracker-text);\n    font-weight: 700;\n}\n.pos-tracker-status-pill[data-v-551500c8] {\n    display: inline-flex;\n    align-items: center;\n    gap: 6px;\n    padding: 4px 10px;\n    border-radius: 999px;\n    font-size: 12px;\n    font-weight: 600;\n    background: var(--pos-tracker-green-soft);\n    color: #166534;\n    border: 1px solid rgba(26, 183, 89, 0.25);\n}\n.pos-tracker-status-pill--ready[data-v-551500c8] {\n    animation: pos-tracker-soft-pulse-551500c8 2.4s ease-in-out infinite;\n}\n.pos-tracker-bar-right[data-v-551500c8] {\n    display: flex;\n    align-items: center;\n    gap: 10px;\n    flex-wrap: wrap;\n}\n.pos-tracker-search[data-v-551500c8] {\n    position: relative;\n    display: flex;\n    align-items: center;\n    background: #F7F7FC;\n    border: 1px solid var(--pos-tracker-border);\n    border-radius: 10px;\n    padding: 0 10px;\n    min-width: 200px;\n}\n.pos-tracker-search i[data-v-551500c8] {\n    color: var(--pos-tracker-muted);\n    font-size: 14px;\n}\n.pos-tracker-search input[data-v-551500c8] {\n    flex: 1;\n    border: 0;\n    background: transparent;\n    padding: 8px 6px;\n    font-size: 13px;\n    color: var(--pos-tracker-text);\n    outline: none;\n    min-width: 0;\n}\n.pos-tracker-search input[data-v-551500c8]::-moz-placeholder {\n    color: var(--pos-tracker-muted);\n}\n.pos-tracker-search input[data-v-551500c8]::placeholder {\n    color: var(--pos-tracker-muted);\n}\n.pos-tracker-search-clear[data-v-551500c8] {\n    background: transparent;\n    border: 0;\n    color: var(--pos-tracker-muted);\n    cursor: pointer;\n    font-size: 14px;\n    padding: 0 4px;\n}\n.pos-tracker-source-tabs[data-v-551500c8] {\n    display: inline-flex;\n    background: #F7F7FC;\n    border: 1px solid var(--pos-tracker-border);\n    border-radius: 10px;\n    padding: 3px;\n    gap: 2px;\n}\n.pos-tracker-source-tab[data-v-551500c8] {\n    background: transparent;\n    border: 0;\n    padding: 6px 10px;\n    border-radius: 7px;\n    font-size: 12px;\n    font-weight: 600;\n    color: var(--pos-tracker-muted);\n    cursor: pointer;\n    display: inline-flex;\n    align-items: center;\n    gap: 4px;\n    transition: background 0.15s ease, color 0.15s ease;\n}\n.pos-tracker-source-tab[data-v-551500c8]:hover {\n    background: rgba(176, 0, 77, 0.06);\n    color: var(--pos-tracker-text);\n}\n.pos-tracker-source-tab.is-active[data-v-551500c8] {\n    background: var(--pos-tracker-primary);\n    color: #fff;\n}\n.pos-tracker-source-tab-icon[data-v-551500c8] {\n    font-size: 14px;\n}\n.pos-tracker-history-link[data-v-551500c8],\n.pos-tracker-customer-link[data-v-551500c8],\n.pos-tracker-back-link[data-v-551500c8] {\n    display: inline-flex;\n    align-items: center;\n    gap: 6px;\n    padding: 8px 14px;\n    border-radius: 10px;\n    font-size: 13px;\n    font-weight: 600;\n    border: 1px solid var(--pos-tracker-border);\n    background: #fff;\n    color: var(--pos-tracker-text);\n    text-decoration: none;\n    transition: background 0.15s ease, border-color 0.15s ease;\n}\n.pos-tracker-history-link[data-v-551500c8]:hover,\n.pos-tracker-customer-link[data-v-551500c8]:hover,\n.pos-tracker-back-link[data-v-551500c8]:hover {\n    background: var(--pos-tracker-primary-soft);\n    border-color: var(--pos-tracker-primary);\n    color: var(--pos-tracker-primary);\n}\n\n/* [micro-ux 2026-06-18] Keyboard focus ring on the tracker nav links so a\n   cashier tabbing to Historique / Client / Retour gets a visible AA focus\n   target (was relying on UA default outline, often invisible on the warm bg). */\n.pos-tracker-history-link[data-v-551500c8]:focus-visible,\n.pos-tracker-customer-link[data-v-551500c8]:focus-visible,\n.pos-tracker-back-link[data-v-551500c8]:focus-visible {\n    outline: 3px solid var(--pos-v5-focus-color, #1A73E8);\n    outline-offset: 2px;\n    border-radius: var(--pos-v5-radius-sm);\n}\n.pos-tracker-rt-warn[data-v-551500c8] {\n    margin-bottom: 12px;\n    padding: 8px 14px;\n    border-radius: 10px;\n    background: #FEF3C7;\n    color: #92400E;\n    font-size: 13px;\n    font-weight: 600;\n    border: 1px solid rgba(217, 119, 6, 0.2);\n}\n.pos-tracker-grid[data-v-551500c8] {\n    display: grid;\n    /* [Wave T R1 F1 P0 2026-05-20] 5-column layout: À ENCAISSER / EN\n       PRÉPARATION / PRÊTS / EN LIVRAISON / LIVRÉS. Wave S-4 left the\n       grid at 4 cols; with the new on-the-way lane the cashier keeps\n       full caisse-to-delivered visibility on a single screen. Wide\n       breakpoints unchanged for laptops & vertical caisse displays. */\n    grid-template-columns: repeat(5, minmax(0, 1fr));\n    gap: 14px;\n    align-items: start;\n}\n@media (max-width: 1480px) {\n.pos-tracker-grid[data-v-551500c8] { grid-template-columns: repeat(3, minmax(0, 1fr));\n}\n}\n@media (max-width: 1100px) {\n.pos-tracker-grid[data-v-551500c8] { grid-template-columns: repeat(2, minmax(0, 1fr));\n}\n}\n@media (max-width: 720px) {\n.pos-tracker-grid[data-v-551500c8] { grid-template-columns: 1fr;\n}\n}\n.pos-tracker-col[data-v-551500c8] {\n    background: var(--pos-tracker-card-bg);\n    border: 1px solid var(--pos-tracker-border);\n    border-radius: 14px;\n    overflow: hidden;\n    display: flex;\n    flex-direction: column;\n    min-height: 280px;\n    max-height: calc(100dvh - 160px);\n}\n.pos-tracker-col-head[data-v-551500c8] {\n    display: flex;\n    align-items: center;\n    justify-content: space-between;\n    padding: 12px 14px;\n    border-bottom: 1px solid var(--pos-tracker-border);\n    flex-shrink: 0;\n}\n.pos-tracker-col-head h2[data-v-551500c8] {\n    font-size: 14px;\n    font-weight: 700;\n    color: var(--pos-tracker-text);\n    margin: 0;\n    display: inline-flex;\n    align-items: center;\n    gap: 8px;\n    text-transform: uppercase;\n    letter-spacing: 0.04em;\n}\n.pos-tracker-col-icon[data-v-551500c8] { font-size: 18px;\n}\n\n/* [Wave S-4 P-OWNER 2026-05-20] Lane subtitle (À encaisser semantic). */\n.pos-tracker-col-head-titles[data-v-551500c8] {\n    display: flex;\n    flex-direction: column;\n    gap: 2px;\n    min-width: 0;\n}\n.pos-tracker-col-subtitle[data-v-551500c8] {\n    margin: 0;\n    font-size: 11px;\n    font-weight: 600;\n    color: var(--pos-tracker-muted);\n    text-transform: none;\n    letter-spacing: 0;\n    line-height: 1.2;\n}\n\n/* [Wave S-4 P-OWNER 2026-05-20] Pulsing amber tint on the À encaisser\n * column when ≥1 cash-pending order is present — matches the existing\n * green pulse on PRÊTS À SERVIR for cross-lane visual consistency. */\n.pos-tracker-col--amber[data-v-551500c8] {\n    border-color: rgba(245, 158, 11, 0.4);\n    box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.10) inset;\n}\n.pos-tracker-col--amber.is-pulse[data-v-551500c8] {\n    animation: pos-tracker-col-amber-glow-551500c8 2.6s ease-in-out infinite;\n}\n@keyframes pos-tracker-col-amber-glow-551500c8 {\n0%, 100% { box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.12) inset;\n}\n50%      { box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.32) inset, 0 0 18px rgba(245, 158, 11, 0.18);\n}\n}\n.pos-tracker-col-count[data-v-551500c8] {\n    background: var(--pos-tracker-muted-soft);\n    color: var(--pos-tracker-text);\n    border-radius: 999px;\n    padding: 2px 10px;\n    font-size: 12px;\n    font-weight: 700;\n    min-width: 26px;\n    text-align: center;\n}\n.pos-tracker-col--amber .pos-tracker-col-count[data-v-551500c8] { background: var(--pos-tracker-amber-soft); color: var(--pos-tracker-amber);\n}\n.pos-tracker-col--primary .pos-tracker-col-count[data-v-551500c8] { background: var(--pos-tracker-primary-soft); color: var(--pos-tracker-primary);\n}\n.pos-tracker-col--green .pos-tracker-col-count[data-v-551500c8] { background: var(--pos-tracker-green-soft); color: #166534;\n}\n.pos-tracker-col--blue .pos-tracker-col-count[data-v-551500c8] { background: var(--pos-tracker-blue-soft); color: var(--pos-tracker-blue);\n}\n.pos-tracker-col--muted .pos-tracker-col-count[data-v-551500c8] { background: var(--pos-tracker-muted-soft); color: var(--pos-tracker-muted);\n}\n.pos-tracker-col--green[data-v-551500c8] {\n    border-color: rgba(26, 183, 89, 0.4);\n    box-shadow: 0 0 0 1px rgba(26, 183, 89, 0.12) inset;\n}\n.pos-tracker-col--green.is-pulse[data-v-551500c8] {\n    animation: pos-tracker-col-glow-551500c8 2.6s ease-in-out infinite;\n}\n@keyframes pos-tracker-col-glow-551500c8 {\n0%, 100% { box-shadow: 0 0 0 1px rgba(26, 183, 89, 0.12) inset;\n}\n50%      { box-shadow: 0 0 0 2px rgba(26, 183, 89, 0.32) inset, 0 0 18px rgba(26, 183, 89, 0.18);\n}\n}\n.pos-tracker-col-body[data-v-551500c8] {\n    padding: 10px;\n    overflow-y: auto;\n    overscroll-behavior: contain;\n}\n.pos-tracker-cards[data-v-551500c8] {\n    display: flex;\n    flex-direction: column;\n    gap: 10px;\n}\n.pos-tracker-col-empty[data-v-551500c8] {\n    flex: 1;\n    display: flex;\n    flex-direction: column;\n    align-items: center;\n    justify-content: center;\n    padding: 28px 16px;\n    color: var(--pos-tracker-muted);\n    font-size: 13px;\n    text-align: center;\n    gap: 8px;\n}\n.pos-tracker-col-empty-icon[data-v-551500c8] {\n    font-size: 28px;\n    opacity: 0.55;\n}\n.pos-tracker-card[data-v-551500c8] {\n    border: 1px solid var(--pos-tracker-border);\n    border-radius: 12px;\n    background: #fff;\n    padding: 10px 12px;\n    display: flex;\n    flex-direction: column;\n    gap: 8px;\n    transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;\n}\n.pos-tracker-card[data-v-551500c8]:hover {\n    box-shadow: 0 6px 16px rgba(31, 31, 57, 0.08);\n    transform: translateY(-1px);\n}\n\n/* Q4 plan : bordure left 4px par status — scan visuel rapide pour caissier */\n.pos-tracker-card--amber[data-v-551500c8] { border-left: 4px solid var(--pos-tracker-amber);\n}\n.pos-tracker-card--primary[data-v-551500c8] { border-left: 4px solid var(--pos-tracker-primary);\n}\n.pos-tracker-card--green[data-v-551500c8] { border-left: 4px solid var(--pos-tracker-green);\n}\n.pos-tracker-card--blue[data-v-551500c8] { border-left: 4px solid var(--pos-tracker-blue);\n}\n.pos-tracker-card--muted[data-v-551500c8] { border-left: 4px solid var(--pos-v5-border-strong); opacity: 0.85;\n}\n.pos-tracker-card.is-fresh[data-v-551500c8] { animation: pos-tracker-card-pop-551500c8 1.2s ease-out 1; border-color: var(--pos-tracker-green);\n}\n@keyframes pos-tracker-card-pop-551500c8 {\n0%   { transform: scale(0.96); box-shadow: 0 0 0 0 rgba(26, 183, 89, 0.45);\n}\n40%  { transform: scale(1.02); box-shadow: 0 0 0 8px rgba(26, 183, 89, 0.18);\n}\n100% { transform: scale(1);    box-shadow: 0 0 0 0 rgba(26, 183, 89, 0.0);\n}\n}\n.pos-tracker-card-head[data-v-551500c8] {\n    display: flex;\n    align-items: center;\n    justify-content: space-between;\n    gap: 8px;\n}\n.pos-tracker-card-num[data-v-551500c8] {\n    font-size: 17px;\n    font-weight: 800;\n    color: var(--pos-tracker-text);\n    letter-spacing: -0.01em;\n}\n.pos-tracker-card-source[data-v-551500c8] {\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    width: 26px;\n    height: 26px;\n    border-radius: 8px;\n    background: var(--pos-tracker-muted-soft);\n    font-size: 14px;\n}\n.pos-tracker-card-source--kiosk[data-v-551500c8] { background: #EEF2FF;\n}\n.pos-tracker-card-source--online[data-v-551500c8] { background: #ECFEFF;\n}\n\n/* [Wave S-4 P-OWNER 2026-05-20] Cash-pending bell badge — strong amber,\n * gentle pulse to keep cashier attention without being aggressive. */\n.pos-tracker-card-cash-badge[data-v-551500c8] {\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    width: 26px;\n    height: 26px;\n    border-radius: 8px;\n    background: var(--pos-tracker-amber-soft);\n    color: var(--pos-tracker-amber);\n    font-size: 14px;\n    border: 1px solid rgba(245, 158, 11, 0.35);\n    animation: pos-tracker-cash-bell-pulse-551500c8 2.2s ease-in-out infinite;\n}\n@keyframes pos-tracker-cash-bell-pulse-551500c8 {\n0%, 100% { transform: scale(1);\n}\n50%      { transform: scale(1.08);\n}\n}\n@media (prefers-reduced-motion: reduce) {\n.pos-tracker-card-cash-badge[data-v-551500c8] { animation: none;\n}\n}\n\n/* [Wave S-4 P-OWNER 2026-05-20] Cash-pending amount emphasis. */\n.pos-tracker-card-total--cash[data-v-551500c8] {\n    color: var(--pos-tracker-amber);\n    font-weight: 800;\n    display: inline-flex;\n    align-items: baseline;\n    gap: 6px;\n}\n.pos-tracker-card-total-prefix[data-v-551500c8] {\n    font-size: 11px;\n    font-weight: 700;\n    text-transform: uppercase;\n    letter-spacing: 0.04em;\n    color: var(--pos-tracker-muted);\n}\n.pos-tracker-card-time[data-v-551500c8] {\n    margin-left: auto;\n    font-size: 12px;\n    font-weight: 600;\n    color: var(--pos-tracker-muted);\n}\n.pos-tracker-card-customer[data-v-551500c8] {\n    font-size: 12px;\n    color: var(--pos-tracker-muted);\n    display: flex;\n    align-items: center;\n    gap: 6px;\n    overflow: hidden;\n    text-overflow: ellipsis;\n    white-space: nowrap;\n}\n.pos-tracker-card-customer span[data-v-551500c8] {\n    overflow: hidden;\n    text-overflow: ellipsis;\n    white-space: nowrap;\n}\n.pos-tracker-card-items[data-v-551500c8] {\n    list-style: none;\n    margin: 0;\n    padding: 0;\n    display: flex;\n    flex-direction: column;\n    gap: 3px;\n}\n.pos-tracker-card-items li[data-v-551500c8] {\n    display: flex;\n    gap: 6px;\n    font-size: 12px;\n    color: var(--pos-tracker-text);\n    line-height: 1.35;\n    overflow: hidden;\n    text-overflow: ellipsis;\n    white-space: nowrap;\n}\n.pos-tracker-card-qty[data-v-551500c8] {\n    font-weight: 700;\n    color: var(--pos-tracker-primary);\n    flex-shrink: 0;\n    min-width: 22px;\n    /* [micro-ux 2026-06-18] tabular figures so quantities align column-wise. */\n    font-variant-numeric: tabular-nums;\n}\n.pos-tracker-card-name[data-v-551500c8] {\n    overflow: hidden;\n    text-overflow: ellipsis;\n    white-space: nowrap;\n}\n.pos-tracker-card-more[data-v-551500c8] {\n    color: var(--pos-tracker-muted);\n    font-style: italic;\n    font-size: 11px;\n}\n.pos-tracker-card-foot[data-v-551500c8] {\n    display: flex;\n    align-items: center;\n    justify-content: space-between;\n    padding-top: 6px;\n    border-top: 1px dashed var(--pos-tracker-border);\n}\n.pos-tracker-card-total[data-v-551500c8] {\n    font-size: 14px;\n    font-weight: 700;\n    color: var(--pos-tracker-text);\n    /* [micro-ux 2026-06-18] tabular figures so order totals don't jitter. */\n    font-variant-numeric: tabular-nums;\n}\n.pos-tracker-card-actions[data-v-551500c8] {\n    display: inline-flex;\n    gap: 6px;\n}\n.pos-tracker-card-btn[data-v-551500c8] {\n    display: inline-flex;\n    align-items: center;\n    gap: 6px;\n    padding: 5px 10px;\n    border-radius: 8px;\n    border: 1px solid var(--pos-tracker-border);\n    background: #fff;\n    color: var(--pos-tracker-text);\n    font-size: 12px;\n    font-weight: 600;\n    cursor: pointer;\n    text-decoration: none;\n    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;\n}\n.pos-tracker-card-btn[data-v-551500c8]:hover {\n    background: var(--pos-tracker-primary-soft);\n    border-color: var(--pos-tracker-primary);\n    color: var(--pos-tracker-primary);\n}\n.pos-tracker-card-btn--primary[data-v-551500c8] {\n    background: var(--pos-tracker-green);\n    border-color: var(--pos-tracker-green);\n    color: #fff;\n}\n.pos-tracker-card-btn--primary[data-v-551500c8]:hover {\n    background: #15a151;\n    border-color: #15a151;\n    color: #fff;\n}\n.pos-tracker-card-btn--primary[data-v-551500c8]:disabled {\n    opacity: 0.6;\n    cursor: not-allowed;\n}\n\n/* [Wave S-4 P-OWNER 2026-05-20] Encaisser CTA — amber primary action.\n * Visually loud enough that the cashier can't miss it but stays within\n * the existing V5 design token palette (warning tone, not error). */\n.pos-tracker-card-btn--cash[data-v-551500c8] {\n    background: var(--pos-tracker-amber);\n    border-color: var(--pos-tracker-amber);\n    color: #fff;\n}\n.pos-tracker-card-btn--cash[data-v-551500c8]:hover {\n    background: #d97706;\n    border-color: #d97706;\n    color: #fff;\n}\n.pos-tracker-card-btn--cash[data-v-551500c8]:focus-visible {\n    outline: 2px solid #fbbf24;\n    outline-offset: 2px;\n}\n\n/* [POS-V4-CASHIER-OPS 2026-05-02] danger variant for cancel-order */\n.pos-tracker-card-btn--danger[data-v-551500c8] {\n    border-color: rgba(239, 68, 68, 0.4);\n    color: #b91c1c;\n    background: #fff;\n}\n.pos-tracker-card-btn--danger[data-v-551500c8]:hover {\n    background: #fee2e2;\n    border-color: #ef4444;\n    color: #991b1b;\n}\n.pos-tracker-card-btn--danger[data-v-551500c8]:disabled {\n    opacity: 0.5;\n    cursor: not-allowed;\n}\n\n/* [POS-V4-CASHIER-OPS 2026-05-02] cancel-with-reason inline dialog */\n.pos-tracker-cancel-overlay[data-v-551500c8] {\n    position: fixed;\n    inset: 0;\n    z-index: 2400;\n    background: rgba(15, 23, 42, 0.45);\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    padding: 24px;\n}\n.pos-tracker-cancel-card[data-v-551500c8] {\n    width: min(480px, 100%);\n    background: #fff;\n    border-radius: 16px;\n    box-shadow: 0 24px 48px rgba(15, 23, 42, 0.24);\n    display: flex;\n    flex-direction: column;\n    overflow: hidden;\n}\n.pos-tracker-cancel-head[data-v-551500c8] {\n    display: flex;\n    align-items: center;\n    justify-content: space-between;\n    padding: 16px 20px;\n    border-bottom: 1px solid var(--pos-tracker-border);\n}\n.pos-tracker-cancel-head h3[data-v-551500c8] {\n    margin: 0;\n    font-size: 16px;\n    font-weight: 700;\n    color: var(--pos-tracker-text);\n}\n.pos-tracker-cancel-close[data-v-551500c8] {\n    width: 32px;\n    height: 32px;\n    border-radius: 999px;\n    border: 1px solid var(--pos-tracker-border);\n    background: #fff;\n    color: var(--pos-tracker-muted);\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    cursor: pointer;\n    transition: background 0.15s ease, color 0.15s ease;\n}\n.pos-tracker-cancel-close[data-v-551500c8]:hover {\n    background: #fee2e2;\n    color: #b91c1c;\n}\n.pos-tracker-cancel-body[data-v-551500c8] {\n    padding: 16px 20px;\n    display: flex;\n    flex-direction: column;\n    gap: 10px;\n}\n.pos-tracker-cancel-target[data-v-551500c8] {\n    margin: 0 0 4px;\n    font-size: 13px;\n    color: var(--pos-tracker-muted);\n}\n.pos-tracker-cancel-target strong[data-v-551500c8] {\n    color: var(--pos-tracker-text);\n    font-weight: 700;\n}\n.pos-tracker-cancel-label[data-v-551500c8] {\n    font-size: 13px;\n    font-weight: 600;\n    color: var(--pos-tracker-text);\n}\n.pos-tracker-cancel-textarea[data-v-551500c8] {\n    width: 100%;\n    min-height: 84px;\n    padding: 10px 12px;\n    border: 1px solid var(--pos-tracker-border);\n    border-radius: 10px;\n    font-size: 14px;\n    color: var(--pos-tracker-text);\n    background: #f9fafb;\n    resize: vertical;\n    transition: border-color 0.15s ease, background 0.15s ease;\n}\n.pos-tracker-cancel-textarea[data-v-551500c8]:focus {\n    outline: none;\n    border-color: #ef4444;\n    background: #fff;\n}\n.pos-tracker-cancel-error[data-v-551500c8] {\n    margin: 0;\n    padding: 8px 10px;\n    background: #fee2e2;\n    border: 1px solid #fecaca;\n    border-radius: 8px;\n    color: #991b1b;\n    font-size: 12px;\n    font-weight: 600;\n}\n/*\n * [test-e2e/pos-kds-sync round-4 E-001 P0 2026-05-10]\n * Persistent error banner — visually distinct from a transient toast.\n * Stays inside the cancel dialog until the user dismisses or closes.\n * Solid red left-border + icon + bold copy = unmistakable failure signal.\n */\n.pos-tracker-cancel-error-banner[data-v-551500c8] {\n    display: flex;\n    align-items: flex-start;\n    gap: 10px;\n    margin: 12px 0 0 0;\n    padding: 12px 14px;\n    background: #fef2f2;\n    border: 1px solid #fecaca;\n    border-left: 4px solid #dc2626;\n    border-radius: 8px;\n    color: #991b1b;\n    font-size: 13px;\n    font-weight: 600;\n    line-height: 1.45;\n}\n.pos-tracker-cancel-error-icon[data-v-551500c8] {\n    flex-shrink: 0;\n    color: #dc2626;\n    font-size: 16px;\n    line-height: 1.45;\n}\n.pos-tracker-cancel-error-msg[data-v-551500c8] {\n    flex: 1;\n    word-break: break-word;\n}\n.pos-tracker-cancel-foot[data-v-551500c8] {\n    display: flex;\n    justify-content: flex-end;\n    gap: 8px;\n    padding: 12px 20px;\n    border-top: 1px solid var(--pos-tracker-border);\n    background: #f9fafb;\n}\n.pos-tracker-cancel-btn[data-v-551500c8] {\n    height: 38px;\n    padding: 0 18px;\n    border-radius: 10px;\n    border: 1px solid var(--pos-tracker-border);\n    font-size: 13px;\n    font-weight: 600;\n    cursor: pointer;\n    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;\n    display: inline-flex;\n    align-items: center;\n    gap: 8px;\n}\n.pos-tracker-cancel-btn--ghost[data-v-551500c8] {\n    background: #fff;\n    color: var(--pos-tracker-text);\n}\n.pos-tracker-cancel-btn--ghost[data-v-551500c8]:hover {\n    background: var(--pos-tracker-muted-soft);\n}\n.pos-tracker-cancel-btn--ghost[data-v-551500c8]:disabled {\n    opacity: 0.5;\n    cursor: not-allowed;\n}\n.pos-tracker-cancel-btn--danger[data-v-551500c8] {\n    background: #ef4444;\n    border-color: #ef4444;\n    color: #fff;\n}\n.pos-tracker-cancel-btn--danger[data-v-551500c8]:hover {\n    background: #dc2626;\n    border-color: #dc2626;\n}\n.pos-tracker-cancel-btn--danger[data-v-551500c8]:disabled {\n    opacity: 0.5;\n    cursor: not-allowed;\n}\n.pos-tracker-loading[data-v-551500c8] {\n    margin-top: 24px;\n    text-align: center;\n    color: var(--pos-tracker-muted);\n}\n.pos-tracker-spinner[data-v-551500c8] {\n    width: 36px;\n    height: 36px;\n    border-radius: 50%;\n    border: 3px solid var(--pos-tracker-border);\n    border-top-color: var(--pos-tracker-primary);\n    margin: 0 auto 10px;\n    animation: pos-tracker-spin-551500c8 0.9s linear infinite;\n}\n@keyframes pos-tracker-spin-551500c8 {\nto { transform: rotate(360deg);\n}\n}\n@keyframes pos-tracker-soft-pulse-551500c8 {\n0%, 100% { box-shadow: 0 0 0 0 rgba(26, 183, 89, 0);\n}\n50%      { box-shadow: 0 0 0 6px rgba(26, 183, 89, 0.18);\n}\n}\n\n/* Transition group animations for cards moving between columns */\n.pos-tracker-card-enter-active[data-v-551500c8],\n.pos-tracker-card-leave-active[data-v-551500c8] {\n    transition: opacity 0.25s ease, transform 0.25s ease;\n}\n.pos-tracker-card-enter-from[data-v-551500c8] { opacity: 0; transform: translateY(-6px);\n}\n.pos-tracker-card-leave-to[data-v-551500c8] { opacity: 0; transform: translateY(6px);\n}\n@media (prefers-reduced-motion: reduce) {\n.pos-tracker-status-pill--ready[data-v-551500c8],\n    .pos-tracker-col--green.is-pulse[data-v-551500c8],\n    .pos-tracker-card.is-fresh[data-v-551500c8] { animation: none;\n}\n}\n", ""]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 
@@ -473,7 +473,7 @@ __webpack_require__.r(__webpack_exports__);
 
 var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
 // Module
-___CSS_LOADER_EXPORT___.push([module.id, "\n.pos-v5-search-input[data-v-301210ee] {\n    display: flex;\n    align-items: center;\n    gap: var(--pos-v5-space-2);\n    height: 44px;\n    padding: 0 var(--pos-v5-space-3);\n    background: var(--pos-v5-bg-panel);\n    border: 1px solid var(--pos-v5-border);\n    border-radius: var(--pos-v5-radius-md);\n    box-shadow: var(--pos-v5-shadow-sm);\n    transition: border-color var(--pos-v5-duration-fast) var(--pos-v5-ease-standard),\n                box-shadow var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);\n}\n.pos-v5-search-input[data-v-301210ee]:focus-within {\n    border-color: var(--pos-v5-brand-red);\n    box-shadow: 0 0 0 3px var(--pos-v5-brand-red-soft);\n}\n.pos-v5-search-input__icon[data-v-301210ee] {\n    flex-shrink: 0;\n    color: var(--pos-v5-ink-soft);\n    font-size: 14px;\n    line-height: 1;\n}\n.pos-v5-search-input__field[data-v-301210ee] {\n    flex: 1;\n    min-width: 0;\n    height: 100%;\n    background: transparent;\n    border: 0;\n    outline: 0;\n    font-family: var(--pos-v5-font-sans);\n    font-size: var(--pos-v5-text-body);\n    color: var(--pos-v5-ink);\n}\n.pos-v5-search-input__field[data-v-301210ee]::-moz-placeholder {\n    color: var(--pos-v5-ink-muted);\n    font-weight: var(--pos-v5-weight-medium);\n}\n.pos-v5-search-input__field[data-v-301210ee]::placeholder {\n    color: var(--pos-v5-ink-muted);\n    font-weight: var(--pos-v5-weight-medium);\n}\n.pos-v5-search-input__field[data-v-301210ee]::-webkit-search-cancel-button {\n    -webkit-appearance: none;\n            appearance: none;\n}\n.pos-v5-search-input__kbd[data-v-301210ee] {\n    display: none;\n    padding: 2px var(--pos-v5-space-2);\n    border: 1px solid var(--pos-v5-border-strong);\n    border-radius: var(--pos-v5-radius-xs);\n    background: var(--pos-v5-bg-subtle);\n    font-family: var(--pos-v5-font-mono);\n    font-size: 10px;\n    font-weight: var(--pos-v5-weight-semibold);\n    color: var(--pos-v5-ink-soft);\n}\n@media (min-width: 1024px) {\n.pos-v5-search-input__kbd[data-v-301210ee] { display: inline-flex;\n}\n}\n.pos-v5-search-input__clear[data-v-301210ee] {\n    flex-shrink: 0;\n    width: 28px;\n    height: 28px;\n    border: 0;\n    border-radius: var(--pos-v5-radius-pill);\n    background: var(--pos-v5-bg-subtle);\n    color: var(--pos-v5-ink-soft);\n    cursor: pointer;\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    font-size: 12px;\n    transition: background var(--pos-v5-duration-fast) var(--pos-v5-ease-standard),\n                color var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);\n}\n.pos-v5-search-input__clear[data-v-301210ee]:hover {\n    background: var(--pos-v5-danger-soft);\n    color: var(--pos-v5-danger);\n}\n", ""]);
+___CSS_LOADER_EXPORT___.push([module.id, "\n.pos-v5-search-input[data-v-301210ee] {\n    display: flex;\n    align-items: center;\n    gap: var(--pos-v5-space-2);\n    height: 44px;\n    padding: 0 var(--pos-v5-space-3);\n    background: var(--pos-v5-bg-panel);\n    border: 1px solid var(--pos-v5-border);\n    border-radius: var(--pos-v5-radius-md);\n    box-shadow: var(--pos-v5-shadow-sm);\n    transition: border-color var(--pos-v5-duration-fast) var(--pos-v5-ease-standard),\n                box-shadow var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);\n}\n.pos-v5-search-input[data-v-301210ee]:focus-within {\n    border-color: var(--pos-v5-brand-red);\n    box-shadow: 0 0 0 3px var(--pos-v5-brand-red-soft);\n}\n.pos-v5-search-input__icon[data-v-301210ee] {\n    flex-shrink: 0;\n    color: var(--pos-v5-ink-soft);\n    font-size: 14px;\n    line-height: 1;\n}\n.pos-v5-search-input__field[data-v-301210ee] {\n    flex: 1;\n    min-width: 0;\n    height: 100%;\n    background: transparent;\n    border: 0;\n    outline: 0;\n    font-family: var(--pos-v5-font-sans);\n    font-size: var(--pos-v5-text-body);\n    color: var(--pos-v5-ink);\n}\n.pos-v5-search-input__field[data-v-301210ee]::-moz-placeholder {\n    /* [micro-ux 2026-06-18] ink-muted (#8A8278, 3.79:1) failed AA on the warm\n       search bg — raised to ink-soft (#5A5A5A) which passes. Color only. */\n    color: var(--pos-v5-ink-soft);\n    font-weight: var(--pos-v5-weight-medium);\n}\n.pos-v5-search-input__field[data-v-301210ee]::placeholder {\n    /* [micro-ux 2026-06-18] ink-muted (#8A8278, 3.79:1) failed AA on the warm\n       search bg — raised to ink-soft (#5A5A5A) which passes. Color only. */\n    color: var(--pos-v5-ink-soft);\n    font-weight: var(--pos-v5-weight-medium);\n}\n.pos-v5-search-input__field[data-v-301210ee]::-webkit-search-cancel-button {\n    -webkit-appearance: none;\n            appearance: none;\n}\n.pos-v5-search-input__kbd[data-v-301210ee] {\n    display: none;\n    padding: 2px var(--pos-v5-space-2);\n    border: 1px solid var(--pos-v5-border-strong);\n    border-radius: var(--pos-v5-radius-xs);\n    background: var(--pos-v5-bg-subtle);\n    font-family: var(--pos-v5-font-mono);\n    font-size: 10px;\n    font-weight: var(--pos-v5-weight-semibold);\n    color: var(--pos-v5-ink-soft);\n}\n@media (min-width: 1024px) {\n.pos-v5-search-input__kbd[data-v-301210ee] { display: inline-flex;\n}\n}\n.pos-v5-search-input__clear[data-v-301210ee] {\n    flex-shrink: 0;\n    width: 28px;\n    height: 28px;\n    border: 0;\n    border-radius: var(--pos-v5-radius-pill);\n    background: var(--pos-v5-bg-subtle);\n    color: var(--pos-v5-ink-soft);\n    cursor: pointer;\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    font-size: 12px;\n    transition: background var(--pos-v5-duration-fast) var(--pos-v5-ease-standard),\n                color var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);\n}\n.pos-v5-search-input__clear[data-v-301210ee]:hover {\n    background: var(--pos-v5-danger-soft);\n    color: var(--pos-v5-danger);\n}\n", ""]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 
@@ -521,7 +521,7 @@ __webpack_require__.r(__webpack_exports__);
 
 var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
 // Module
-___CSS_LOADER_EXPORT___.push([module.id, "\n.pos-v5-total-row[data-v-16cd6aff] {\n    display: flex;\n    align-items: center;\n    justify-content: space-between;\n    gap: var(--pos-v5-space-3);\n    padding: var(--pos-v5-space-2) 0;\n    font-family: var(--pos-v5-font-sans);\n    font-size: var(--pos-v5-text-body);\n    color: var(--pos-v5-ink);\n    line-height: var(--pos-v5-leading-tight);\n}\n.pos-v5-total-row__label[data-v-16cd6aff] {\n    font-weight: var(--pos-v5-weight-medium);\n    color: var(--pos-v5-ink-soft);\n}\n.pos-v5-total-row__value[data-v-16cd6aff] {\n    display: inline-flex;\n    align-items: center;\n    gap: 2px;\n    font-weight: var(--pos-v5-weight-bold);\n    color: var(--pos-v5-ink);\n}\n.pos-v5-total-row__sign[data-v-16cd6aff] {\n    font-weight: var(--pos-v5-weight-bold);\n    margin-right: 2px;\n    opacity: 0.85;\n}\n.pos-v5-total-row__amount[data-v-16cd6aff] {\n    font-feature-settings: \"tnum\";\n    font-variant-numeric: tabular-nums;\n}\n\n/* === TONES === */\n.pos-v5-total-row--muted .pos-v5-total-row__value[data-v-16cd6aff] {\n    color: var(--pos-v5-ink-soft);\n    font-weight: var(--pos-v5-weight-medium);\n}\n.pos-v5-total-row--info .pos-v5-total-row__value[data-v-16cd6aff] {\n    color: var(--pos-v5-info);\n}\n.pos-v5-total-row--success .pos-v5-total-row__value[data-v-16cd6aff] {\n    color: var(--pos-v5-success-dark);\n}\n.pos-v5-total-row--danger .pos-v5-total-row__value[data-v-16cd6aff] {\n    color: var(--pos-v5-danger);\n}\n.pos-v5-total-row--hero[data-v-16cd6aff] {\n    margin-top: var(--pos-v5-space-2);\n    padding: var(--pos-v5-space-3) var(--pos-v5-space-4);\n    background: linear-gradient(135deg, var(--pos-v5-brand-red-faint), var(--pos-v5-bg-panel));\n    border: 1px solid var(--pos-v5-brand-red-soft);\n    border-radius: var(--pos-v5-radius-md);\n}\n.pos-v5-total-row--hero .pos-v5-total-row__label[data-v-16cd6aff] {\n    font-size: var(--pos-v5-text-h6);\n    font-weight: var(--pos-v5-weight-extrabold);\n    color: var(--pos-v5-ink);\n    letter-spacing: var(--pos-v5-tracking-tight);\n    text-transform: none;\n}\n.pos-v5-total-row--hero .pos-v5-total-row__value[data-v-16cd6aff] {\n    font-size: var(--pos-v5-text-h3);\n    font-weight: var(--pos-v5-weight-black);\n    color: var(--pos-v5-brand-red);\n    letter-spacing: var(--pos-v5-tracking-tight);\n}\n", ""]);
+___CSS_LOADER_EXPORT___.push([module.id, "\n.pos-v5-total-row[data-v-16cd6aff] {\n    display: flex;\n    align-items: center;\n    justify-content: space-between;\n    gap: var(--pos-v5-space-3);\n    padding: var(--pos-v5-space-2) 0;\n    font-family: var(--pos-v5-font-sans);\n    font-size: var(--pos-v5-text-body);\n    color: var(--pos-v5-ink);\n    line-height: var(--pos-v5-leading-tight);\n}\n.pos-v5-total-row__label[data-v-16cd6aff] {\n    font-weight: var(--pos-v5-weight-medium);\n    color: var(--pos-v5-ink-soft);\n}\n.pos-v5-total-row__value[data-v-16cd6aff] {\n    display: inline-flex;\n    align-items: center;\n    gap: 2px;\n    font-weight: var(--pos-v5-weight-bold);\n    color: var(--pos-v5-ink);\n}\n.pos-v5-total-row__sign[data-v-16cd6aff] {\n    font-weight: var(--pos-v5-weight-bold);\n    margin-right: 2px;\n    opacity: 0.85;\n}\n\n/* [micro-ux 2026-06-18] self-contained sr-only for the spoken sign word. */\n.sr-only[data-v-16cd6aff] {\n    position: absolute;\n    width: 1px;\n    height: 1px;\n    padding: 0;\n    margin: -1px;\n    overflow: hidden;\n    clip: rect(0 0 0 0);\n    white-space: nowrap;\n    border: 0;\n}\n.pos-v5-total-row__amount[data-v-16cd6aff] {\n    font-feature-settings: \"tnum\";\n    font-variant-numeric: tabular-nums;\n}\n\n/* === TONES === */\n.pos-v5-total-row--muted .pos-v5-total-row__value[data-v-16cd6aff] {\n    color: var(--pos-v5-ink-soft);\n    font-weight: var(--pos-v5-weight-medium);\n}\n.pos-v5-total-row--info .pos-v5-total-row__value[data-v-16cd6aff] {\n    color: var(--pos-v5-info);\n}\n.pos-v5-total-row--success .pos-v5-total-row__value[data-v-16cd6aff] {\n    color: var(--pos-v5-success-dark);\n}\n.pos-v5-total-row--danger .pos-v5-total-row__value[data-v-16cd6aff] {\n    color: var(--pos-v5-danger);\n}\n.pos-v5-total-row--hero[data-v-16cd6aff] {\n    margin-top: var(--pos-v5-space-2);\n    padding: var(--pos-v5-space-3) var(--pos-v5-space-4);\n    background: linear-gradient(135deg, var(--pos-v5-brand-red-faint), var(--pos-v5-bg-panel));\n    border: 1px solid var(--pos-v5-brand-red-soft);\n    border-radius: var(--pos-v5-radius-md);\n}\n.pos-v5-total-row--hero .pos-v5-total-row__label[data-v-16cd6aff] {\n    font-size: var(--pos-v5-text-h6);\n    font-weight: var(--pos-v5-weight-extrabold);\n    color: var(--pos-v5-ink);\n    letter-spacing: var(--pos-v5-tracking-tight);\n    text-transform: none;\n}\n.pos-v5-total-row--hero .pos-v5-total-row__value[data-v-16cd6aff] {\n    font-size: var(--pos-v5-text-h3);\n    font-weight: var(--pos-v5-weight-black);\n    color: var(--pos-v5-brand-red);\n    letter-spacing: var(--pos-v5-tracking-tight);\n}\n", ""]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 
@@ -4083,6 +4083,9 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
       // updates the aria-live region on every broadcast so screen readers
       // announce rupture changes without requiring item-in-cart match.
       availabilityAnnouncement: '',
+      // [micro-ux 2026-06-18] polite announcer text for the Prêts /
+      // À encaisser shortcut lists — set only when either list grows.
+      queueArrivalAnnouncement: '',
       availabilityBannerDismissed: false,
       checkoutProps: {
         form: {
@@ -7258,6 +7261,21 @@ function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == 
       },
       deep: true,
       immediate: true
+    },
+    // [micro-ux 2026-06-18] Announce (polite) only when a shortcut list GROWS —
+    // a new ready order or a new kiosk-cash arrival. Not immediate (no announce
+    // on first hydrate); shrink/no-change stays silent.
+    "readyOrders.length": function readyOrdersLength(next, prev) {
+      if (typeof prev === 'number' && next > prev) {
+        this.queueArrivalAnnouncement = this.$t('label.kds_new_arrival');
+      }
+    },
+    "kioskCashOrders.length": function kioskCashOrdersLength(next, prev) {
+      if (typeof prev === 'number' && next > prev) {
+        this.queueArrivalAnnouncement = this.$t('label.encaisser_queue_new_arrival', {
+          count: next
+        });
+      }
     }
   }
 });
@@ -9914,6 +9932,12 @@ __webpack_require__.r(__webpack_exports__);
   computed: {
     rootClass: function rootClass() {
       return ["pos-v5-total-row", "pos-v5-total-row--".concat(this.tone)];
+    },
+    // [micro-ux 2026-06-18] spoken word for the +/- sign (screen-reader only).
+    signWord: function signWord() {
+      if (this.sign === "-") return this.$t("label.minus");
+      if (this.sign === "+") return this.$t("label.plus");
+      return "";
     }
   }
 });
@@ -11424,11 +11448,11 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.getAttributeTotalQuantity(itemAttribute.id)) + " / " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.getAttributeConfig(itemAttribute).maxSelect), 3 /* TEXT, CLASS */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), $options.hasAttributeSelectionError(itemAttribute) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_36, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(itemAttribute.name) + ": minimum " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.getAttributeConfig(itemAttribute).minSelect) + " requis. ", 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_37, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.getAttributeVariations(itemAttribute), function (variation) {
       return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
         key: variation.id
-      }, [!$options.isMultiAttribute(itemAttribute) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("label", {
+      }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [micro-ux 2026-06-18] selected-state fill #FFE8DD → --pos-v5-brand-red-soft\n                                         (exact token match). The cool greys (#F7F7FC/#EFF0F6/#6E7191/#D9DBE9) are\n                                         intentionally LEFT: no warm Cayenne token matches their hue cleanly. "), !$options.isMultiAttribute(itemAttribute) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("label", {
         key: 0,
         title: $options.modifierUnavailableReason(variation),
         "aria-disabled": $options.isModifierUnavailable(variation) ? 'true' : 'false',
-        "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)([$options.getVariationQuantity(variation.id) > 0 ? 'border-primary bg-[#FFE8DD]' : 'border-[#F7F7FC] bg-[#F7F7FC]', "w-full min-h-[60px] cursor-pointer py-2 px-3 gap-3 rounded-lg flex items-center border transition"]),
+        "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)([$options.getVariationQuantity(variation.id) > 0 ? 'border-primary bg-[var(--pos-v5-brand-red-soft)]' : 'border-[#F7F7FC] bg-[#F7F7FC]', "w-full min-h-[60px] cursor-pointer py-2 px-3 gap-3 rounded-lg flex items-center border transition"]),
         style: (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeStyle)($options.isModifierUnavailable(variation) ? 'opacity:.5;cursor:not-allowed;' : '')
       }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_39, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
         checked: $options.getVariationQuantity(variation.id) > 0,
@@ -12155,6 +12179,12 @@ var _hoisted_7 = {
   "data-testid": "pos-availability-live"
 };
 var _hoisted_8 = {
+  "class": "sr-only pos-v5-sr-only",
+  "aria-live": "polite",
+  "aria-atomic": "true",
+  "data-testid": "pos-queue-arrival-live"
+};
+var _hoisted_9 = {
   key: 1,
   role: "alert",
   "aria-live": "polite",
@@ -12175,33 +12205,30 @@ var _hoisted_8 = {
     "line-height": "1.3"
   }
 };
-var _hoisted_9 = {
+var _hoisted_10 = {
   "class": "pos-availability-banner__label"
 };
-var _hoisted_10 = ["aria-label"];
-var _hoisted_11 = {
+var _hoisted_11 = ["aria-label"];
+var _hoisted_12 = {
   "class": "pos-v4-main md:w-[calc(100%-316px)] lg:w-[calc(100%-302px)] xl:w-[calc(100%-376px)]"
 };
-var _hoisted_12 = {
+var _hoisted_13 = {
   "class": "pos-v5-operator-bar pos-v4-operator-bar",
   role: "banner"
 };
-var _hoisted_13 = {
+var _hoisted_14 = {
   "class": "pos-v5-operator-bar__brand"
 };
-var _hoisted_14 = {
+var _hoisted_15 = {
   "class": "pos-v5-operator-bar__identity min-w-0 flex-1"
 };
-var _hoisted_15 = {
+var _hoisted_16 = {
   "class": "pos-v5-operator-bar__live pos-v4-status-row"
 };
-var _hoisted_16 = ["title"];
-var _hoisted_17 = {
+var _hoisted_17 = ["title"];
+var _hoisted_18 = {
   "class": "pos-v5-operator-bar__actions pos-v4-operator-actions",
   "aria-label": "Actions caisse"
-};
-var _hoisted_18 = {
-  "class": "hidden lg:inline"
 };
 var _hoisted_19 = {
   "class": "hidden lg:inline"
@@ -12222,539 +12249,542 @@ var _hoisted_24 = {
   "class": "hidden lg:inline"
 };
 var _hoisted_25 = {
+  "class": "hidden lg:inline"
+};
+var _hoisted_26 = {
   "class": "pos-shortcuts",
   "data-testid": "pos-shortcuts"
 };
-var _hoisted_26 = ["aria-label"];
-var _hoisted_27 = {
+var _hoisted_27 = ["aria-label"];
+var _hoisted_28 = {
   "class": "pos-shortcuts__head"
 };
-var _hoisted_28 = {
+var _hoisted_29 = {
   "class": "pos-shortcuts__title"
 };
-var _hoisted_29 = {
+var _hoisted_30 = {
   key: 0,
   "class": "pos-shortcuts__list",
   role: "list"
 };
-var _hoisted_30 = ["data-testid"];
-var _hoisted_31 = {
+var _hoisted_31 = ["data-testid"];
+var _hoisted_32 = {
   "class": "pos-shortcuts__num"
 };
-var _hoisted_32 = {
+var _hoisted_33 = {
   "class": "pos-shortcuts__price"
 };
-var _hoisted_33 = ["disabled", "data-testid", "onClick"];
-var _hoisted_34 = {
+var _hoisted_34 = ["disabled", "data-testid", "onClick"];
+var _hoisted_35 = {
   "class": "pos-shortcuts__empty",
   "data-testid": "pos-shortcuts-ready-empty"
 };
-var _hoisted_35 = {
+var _hoisted_36 = {
   key: 3,
   "class": "pos-shortcuts__refresh",
   "data-testid": "pos-shortcuts-ready-refresh",
   "aria-live": "off"
 };
-var _hoisted_36 = ["aria-label"];
-var _hoisted_37 = {
+var _hoisted_37 = ["aria-label"];
+var _hoisted_38 = {
   "class": "pos-shortcuts__head"
 };
-var _hoisted_38 = {
+var _hoisted_39 = {
   "class": "pos-shortcuts__title"
 };
-var _hoisted_39 = {
+var _hoisted_40 = {
   key: 0,
   "class": "pos-shortcuts__list",
   role: "list"
 };
-var _hoisted_40 = ["data-testid"];
-var _hoisted_41 = {
+var _hoisted_41 = ["data-testid"];
+var _hoisted_42 = {
   "class": "pos-shortcuts__num"
 };
-var _hoisted_42 = {
+var _hoisted_43 = {
   "class": "pos-shortcuts__price"
 };
-var _hoisted_43 = ["disabled", "data-testid", "onClick"];
-var _hoisted_44 = {
+var _hoisted_44 = ["disabled", "data-testid", "onClick"];
+var _hoisted_45 = {
   "class": "pos-shortcuts__empty",
   "data-testid": "pos-shortcuts-cash-empty"
 };
-var _hoisted_45 = {
+var _hoisted_46 = {
   key: 3,
   "class": "pos-shortcuts__refresh",
   "data-testid": "pos-shortcuts-cash-refresh",
   "aria-live": "off"
 };
-var _hoisted_46 = {
+var _hoisted_47 = {
   key: 0,
   "class": "pos-v5-category-strip pos-menu-category-scroll pos-v4-category-strip",
   ref: "categoryScrollStrip",
   role: "tablist",
   "aria-label": "Catégories"
 };
-var _hoisted_47 = ["aria-selected", "aria-label", "title", "onClick"];
-var _hoisted_48 = {
+var _hoisted_48 = ["aria-selected", "aria-label", "title", "onClick"];
+var _hoisted_49 = {
   "class": "pos-v5-category__visual"
 };
-var _hoisted_49 = ["src", "alt"];
-var _hoisted_50 = {
+var _hoisted_50 = ["src", "alt"];
+var _hoisted_51 = {
   key: 1,
   "class": "pos-v5-category__visual-fallback",
   "aria-hidden": "true"
 };
-var _hoisted_51 = {
+var _hoisted_52 = {
   "class": "pos-v5-category__label"
 };
-var _hoisted_52 = ["aria-pressed", "title"];
-var _hoisted_53 = {
+var _hoisted_53 = ["aria-pressed", "title"];
+var _hoisted_54 = {
   "class": "pos-v5-category__visual"
 };
-var _hoisted_54 = {
+var _hoisted_55 = {
   "class": "pos-v5-category__visual-fallback",
   "aria-hidden": "true"
 };
-var _hoisted_55 = {
+var _hoisted_56 = {
   "class": "pos-v5-category__label"
 };
-var _hoisted_56 = ["aria-busy"];
-var _hoisted_57 = {
+var _hoisted_57 = ["aria-busy"];
+var _hoisted_58 = {
   key: 0,
   "class": "my-12"
 };
-var _hoisted_58 = {
+var _hoisted_59 = {
   "class": "max-w-[350px] mx-auto"
 };
-var _hoisted_59 = ["src"];
-var _hoisted_60 = {
+var _hoisted_60 = ["src"];
+var _hoisted_61 = {
   "class": "w-full mb-4 text-center text-black"
 };
-var _hoisted_61 = {
+var _hoisted_62 = {
   key: 1,
   "class": "my-12"
 };
-var _hoisted_62 = {
+var _hoisted_63 = {
   "class": "max-w-[250px] mx-auto"
 };
-var _hoisted_63 = ["src"];
-var _hoisted_64 = {
+var _hoisted_64 = ["src"];
+var _hoisted_65 = {
   "class": "w-full mb-4 text-center text-black"
 };
-var _hoisted_65 = ["aria-label"];
-var _hoisted_66 = {
+var _hoisted_66 = ["aria-label"];
+var _hoisted_67 = {
   "class": "md:hidden text-right p-3 pb-0"
 };
-var _hoisted_67 = ["aria-label"];
-var _hoisted_68 = {
+var _hoisted_68 = ["aria-label"];
+var _hoisted_69 = {
   "class": "pos-v5-cart__head pos-v4-cart-head flex-shrink-0"
 };
-var _hoisted_69 = {
+var _hoisted_70 = {
   "class": "pos-v5-stack-3 mt-3"
 };
-var _hoisted_70 = {
+var _hoisted_71 = {
   "class": "flex items-center w-full gap-2"
 };
-var _hoisted_71 = {
+var _hoisted_72 = {
   "class": "db-field flex-grow"
 };
-var _hoisted_72 = {
+var _hoisted_73 = {
   "class": "grid grid-cols-2 gap-2"
 };
-var _hoisted_73 = {
+var _hoisted_74 = {
   key: 0,
   "class": "mt-3"
 };
-var _hoisted_74 = {
+var _hoisted_75 = {
   key: 1,
   "class": "pos-v5-loyalty mt-3",
   role: "status"
 };
-var _hoisted_75 = {
+var _hoisted_76 = {
   key: 0
 };
-var _hoisted_76 = {
+var _hoisted_77 = {
   "class": "pos-v5-loyalty__points"
 };
-var _hoisted_77 = {
+var _hoisted_78 = {
   "class": "opacity-80 ml-1"
 };
-var _hoisted_78 = {
+var _hoisted_79 = {
   "class": "mt-3"
 };
-var _hoisted_79 = {
+var _hoisted_80 = {
   "class": "pos-v5-cart__eyebrow mb-2"
 };
-var _hoisted_80 = {
+var _hoisted_81 = {
   "class": "pos-v5-segmented",
   role: "radiogroup"
 };
-var _hoisted_81 = ["value"];
 var _hoisted_82 = ["value"];
 var _hoisted_83 = ["value"];
-var _hoisted_84 = {
+var _hoisted_84 = ["value"];
+var _hoisted_85 = {
   ref: "deliveryOrderDiv",
   id: "orderdelivery",
   "class": "h-auto hidden transition"
 };
-var _hoisted_85 = {
+var _hoisted_86 = {
   "class": "mt-3 flex flex-col gap-2"
 };
-var _hoisted_86 = {
-  "class": "flex gap-2"
-};
 var _hoisted_87 = {
-  "class": "flex-1"
+  "class": "flex gap-2"
 };
 var _hoisted_88 = {
   "class": "flex-1"
 };
 var _hoisted_89 = {
-  "class": "relative"
+  "class": "flex-1"
 };
 var _hoisted_90 = {
-  "class": "flex items-center gap-2"
+  "class": "relative"
 };
 var _hoisted_91 = {
-  "class": "relative flex-1"
+  "class": "flex items-center gap-2"
 };
 var _hoisted_92 = {
+  "class": "relative flex-1"
+};
+var _hoisted_93 = {
   key: 0,
   "class": "fa-solid fa-circle-check absolute right-3 top-1/2 -translate-y-1/2 text-green-500 text-sm"
 };
-var _hoisted_93 = {
+var _hoisted_94 = {
   key: 1,
   "class": "fa-solid fa-spinner fa-spin absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"
 };
-var _hoisted_94 = {
+var _hoisted_95 = {
   key: 0,
   "class": "absolute z-50 w-full mt-1 bg-white border border-[#D9DBE9] rounded-lg shadow-lg max-h-48 overflow-y-auto"
 };
-var _hoisted_95 = ["onMousedown"];
-var _hoisted_96 = {
+var _hoisted_96 = ["onMousedown"];
+var _hoisted_97 = {
   "class": "leading-tight"
 };
-var _hoisted_97 = {
+var _hoisted_98 = {
   key: 1,
   "class": "mt-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700",
   role: "alert"
 };
-var _hoisted_98 = {
+var _hoisted_99 = {
   key: 0,
   ref: "dineInDiv",
   id: "dine",
   "class": "h-auto hidden transition"
 };
-var _hoisted_99 = {
+var _hoisted_100 = {
   "class": "mt-3"
 };
-var _hoisted_100 = {
+var _hoisted_101 = {
   "class": "db-field flex-grow"
 };
-var _hoisted_101 = ["aria-label"];
-var _hoisted_102 = ["onClick", "title", "aria-label"];
-var _hoisted_103 = ["src", "alt"];
-var _hoisted_104 = {
+var _hoisted_102 = ["aria-label"];
+var _hoisted_103 = ["onClick", "title", "aria-label"];
+var _hoisted_104 = ["src", "alt"];
+var _hoisted_105 = {
   key: 1,
   "class": "pos-v5-cart-item__visual-fallback",
   "aria-hidden": "true"
 };
-var _hoisted_105 = {
+var _hoisted_106 = {
   "class": "pos-v5-cart-item__body"
 };
-var _hoisted_106 = {
+var _hoisted_107 = {
   "class": "pos-v5-cart-item__name"
 };
-var _hoisted_107 = ["onClick", "title", "aria-label"];
-var _hoisted_108 = {
-  key: 0,
-  "class": "pos-v5-cart-item__detail"
-};
+var _hoisted_108 = ["onClick", "title", "aria-label"];
 var _hoisted_109 = {
   key: 0,
   "class": "pos-v5-cart-item__detail"
 };
 var _hoisted_110 = {
-  key: 1,
+  key: 0,
   "class": "pos-v5-cart-item__detail"
 };
 var _hoisted_111 = {
+  key: 1,
+  "class": "pos-v5-cart-item__detail"
+};
+var _hoisted_112 = {
   key: 2,
   "class": "pos-v5-cart-item__bundled"
 };
-var _hoisted_112 = {
+var _hoisted_113 = {
   key: 0,
   "class": "pos-v5-tabular"
 };
-var _hoisted_113 = {
+var _hoisted_114 = {
   key: 1,
   "class": "w-full m-0 p-0 list-none ml-3 mt-0.5"
 };
-var _hoisted_114 = {
+var _hoisted_115 = {
   "class": "pos-v5-cart-item__price pos-v5-tabular"
 };
-var _hoisted_115 = {
+var _hoisted_116 = {
   "class": "pos-v5-cart-item__qty"
 };
-var _hoisted_116 = {
+var _hoisted_117 = {
   key: 0,
   "class": "pos-v5-cart__empty"
 };
-var _hoisted_117 = {
+var _hoisted_118 = {
   "class": "pos-v5-cart__foot pos-v4-cart-footer flex-shrink-0"
 };
-var _hoisted_118 = {
+var _hoisted_119 = {
   key: 0,
   "class": "flex h-9 mb-2"
 };
-var _hoisted_119 = {
+var _hoisted_120 = {
   "class": "dropdown-group"
 };
-var _hoisted_120 = {
+var _hoisted_121 = {
   type: "button",
   "class": "flex items-center justify-start w-[100px] h-full text-xs font-medium rounded-l-md appearance-none border pl-3 text-[var(--pos-v5-ink)] border-[var(--pos-v5-border)] bg-[var(--pos-v5-bg-subtle)] dropdown-btn"
 };
-var _hoisted_121 = {
+var _hoisted_122 = {
   key: 0,
   "class": "flex-1 text-start"
 };
-var _hoisted_122 = {
+var _hoisted_123 = {
   key: 1,
   "class": "flex-1 text-start"
 };
-var _hoisted_123 = {
+var _hoisted_124 = {
   "class": "p-2 rounded-lg shadow-xl absolute top-10 ltr:right-0 rtl:left-0 z-10 bg-white transition-all duration-300 origin-top scale-y-0 dropdown-list w-full"
 };
-var _hoisted_124 = ["onClick"];
-var _hoisted_125 = {
+var _hoisted_125 = ["onClick"];
+var _hoisted_126 = {
   "class": "text-[var(--pos-v5-ink)] capitalize text-sm"
 };
-var _hoisted_126 = ["placeholder"];
-var _hoisted_127 = ["disabled", "aria-disabled"];
-var _hoisted_128 = {
+var _hoisted_127 = ["placeholder"];
+var _hoisted_128 = ["disabled", "aria-disabled"];
+var _hoisted_129 = {
   key: 1,
   "class": "mb-3"
 };
-var _hoisted_129 = {
+var _hoisted_130 = {
   "for": "pos-discount-reason",
   "class": "flex items-center justify-between mb-1 text-[11px] font-bold uppercase tracking-wider text-[var(--pos-v5-ink-soft)]"
 };
-var _hoisted_130 = {
+var _hoisted_131 = {
   key: 0,
   "class": "ml-1 text-[10px] font-bold text-[var(--pos-v5-danger)] normal-case",
   "data-testid": "pos-discount-reason-required-flag"
 };
-var _hoisted_131 = {
+var _hoisted_132 = {
   "class": "text-[10px] font-medium text-[var(--pos-v5-ink-muted)] normal-case"
 };
-var _hoisted_132 = ["placeholder"];
-var _hoisted_133 = {
+var _hoisted_133 = ["placeholder"];
+var _hoisted_134 = {
   key: 0,
   "class": "mt-1 text-[11px] font-medium text-[var(--pos-v5-danger)]",
   role: "alert",
   "data-testid": "pos-discount-reason-invalid"
 };
-var _hoisted_134 = {
+var _hoisted_135 = {
   role: "status",
   "aria-live": "polite",
   "aria-atomic": "true",
   "class": "mb-3"
 };
-var _hoisted_135 = {
+var _hoisted_136 = {
   key: 2,
   "class": "flex flex-col gap-2"
 };
-var _hoisted_136 = {
+var _hoisted_137 = {
   id: "addCustomer",
   "class": "modal"
 };
-var _hoisted_137 = {
+var _hoisted_138 = {
   "class": "modal-dialog"
 };
-var _hoisted_138 = {
+var _hoisted_139 = {
   "class": "modal-header pb-3 border-b border-[#D9DBE9]"
 };
-var _hoisted_139 = {
+var _hoisted_140 = {
   "class": "capitalize font-medium"
 };
-var _hoisted_140 = ["aria-label"];
-var _hoisted_141 = {
+var _hoisted_141 = ["aria-label"];
+var _hoisted_142 = {
   "class": "modal-body"
 };
-var _hoisted_142 = {
+var _hoisted_143 = {
   "class": "row mb-3"
 };
-var _hoisted_143 = {
+var _hoisted_144 = {
   "class": "col-12 sm:col-6"
 };
-var _hoisted_144 = {
+var _hoisted_145 = {
   "class": "db-field-title required"
 };
-var _hoisted_145 = {
+var _hoisted_146 = {
   key: 0,
   "class": "db-field-alert"
 };
-var _hoisted_146 = {
+var _hoisted_147 = {
   "class": "col-12 sm:col-6"
 };
-var _hoisted_147 = {
+var _hoisted_148 = {
   "for": "phone",
   "class": "db-field-title"
 };
-var _hoisted_148 = {
+var _hoisted_149 = {
   "class": "w-fit flex-shrink-0 dropdown-group"
 };
-var _hoisted_149 = {
+var _hoisted_150 = {
   type: "button",
   "class": "flex items-center gap-1 dropdown-btn"
 };
-var _hoisted_150 = {
+var _hoisted_151 = {
   "class": "whitespace-nowrap flex-shrink-0 text-xs"
 };
-var _hoisted_151 = {
+var _hoisted_152 = {
   key: 0,
   "class": "db-field-alert"
-};
-var _hoisted_152 = {
-  "class": "col-12 sm:col-6"
 };
 var _hoisted_153 = {
-  "class": "db-field-title required"
+  "class": "col-12 sm:col-6"
 };
 var _hoisted_154 = {
+  "class": "db-field-title required"
+};
+var _hoisted_155 = {
   key: 0,
   "class": "db-field-alert"
 };
-var _hoisted_155 = {
+var _hoisted_156 = {
   "class": "col-12 sm:col-6"
 };
-var _hoisted_156 = {
+var _hoisted_157 = {
   "for": "password",
   "class": "db-field-title required"
 };
-var _hoisted_157 = {
+var _hoisted_158 = {
   key: 0,
   "class": "db-field-alert"
 };
-var _hoisted_158 = {
+var _hoisted_159 = {
   type: "submit",
   "class": "rounded-3xl text-base py-3 px-3 font-medium w-full text-white bg-primary"
 };
-var _hoisted_159 = {
+var _hoisted_160 = {
   key: 2,
   "class": "pos-v5-success-flash",
   "aria-hidden": "true"
 };
-var _hoisted_160 = {
+var _hoisted_161 = {
   "class": "text-base font-medium font-rubik text-white"
 };
-var _hoisted_161 = {
+var _hoisted_162 = {
   "class": "kiosk-cash-panel"
 };
-var _hoisted_162 = {
+var _hoisted_163 = {
   "class": "kiosk-cash-panel-header"
 };
-var _hoisted_163 = {
+var _hoisted_164 = {
   "class": "kiosk-cash-panel-header-actions"
 };
-var _hoisted_164 = ["aria-label"];
-var _hoisted_165 = {
+var _hoisted_165 = ["aria-label"];
+var _hoisted_166 = {
   "class": "kiosk-cash-panel-body"
 };
-var _hoisted_166 = {
+var _hoisted_167 = {
   key: 0,
   "class": "kiosk-cash-loading"
 };
-var _hoisted_167 = {
+var _hoisted_168 = {
   key: 1,
   "class": "kiosk-cash-empty"
 };
-var _hoisted_168 = {
+var _hoisted_169 = {
   "class": "kiosk-cash-order-head"
 };
-var _hoisted_169 = {
+var _hoisted_170 = {
   "class": "kiosk-cash-order-num"
 };
-var _hoisted_170 = {
+var _hoisted_171 = {
   "class": "kiosk-cash-order-head-actions"
 };
-var _hoisted_171 = ["aria-expanded", "data-testid", "onClick"];
-var _hoisted_172 = {
+var _hoisted_172 = ["aria-expanded", "data-testid", "onClick"];
+var _hoisted_173 = {
   "class": "kiosk-cash-order-total"
 };
-var _hoisted_173 = {
+var _hoisted_174 = {
   "class": "kiosk-cash-order-items"
 };
-var _hoisted_174 = {
+var _hoisted_175 = {
   key: 0,
   "class": "kiosk-cash-item-pill more"
 };
-var _hoisted_175 = ["data-testid"];
-var _hoisted_176 = {
+var _hoisted_176 = ["data-testid"];
+var _hoisted_177 = {
   "class": "kiosk-cash-order-detail-title"
 };
-var _hoisted_177 = {
-  key: 0,
-  "class": "kiosk-cash-order-detail-line"
-};
 var _hoisted_178 = {
-  key: 1,
+  key: 0,
   "class": "kiosk-cash-order-detail-line"
 };
 var _hoisted_179 = {
-  key: 2,
+  key: 1,
   "class": "kiosk-cash-order-detail-line"
 };
 var _hoisted_180 = {
-  key: 3,
+  key: 2,
   "class": "kiosk-cash-order-detail-line"
 };
 var _hoisted_181 = {
-  "class": "kiosk-cash-order-foot"
+  key: 3,
+  "class": "kiosk-cash-order-detail-line"
 };
 var _hoisted_182 = {
+  "class": "kiosk-cash-order-foot"
+};
+var _hoisted_183 = {
   "class": "kiosk-cash-order-time"
 };
-var _hoisted_183 = ["disabled", "data-testid", "onClick"];
-var _hoisted_184 = ["disabled", "onClick"];
-var _hoisted_185 = {
+var _hoisted_184 = ["disabled", "data-testid", "onClick"];
+var _hoisted_185 = ["disabled", "onClick"];
+var _hoisted_186 = {
   "class": "kiosk-cash-panel-footer"
 };
-var _hoisted_186 = {
+var _hoisted_187 = {
   "class": "pos-kiosk-cash-cancel-card"
 };
-var _hoisted_187 = {
+var _hoisted_188 = {
   "class": "pos-kiosk-cash-cancel-head"
 };
-var _hoisted_188 = {
+var _hoisted_189 = {
   id: "pos-kiosk-cash-cancel-title"
 };
-var _hoisted_189 = ["aria-label", "disabled"];
-var _hoisted_190 = {
+var _hoisted_190 = ["aria-label", "disabled"];
+var _hoisted_191 = {
   "class": "pos-kiosk-cash-cancel-body"
 };
-var _hoisted_191 = {
+var _hoisted_192 = {
   "class": "pos-kiosk-cash-cancel-warning",
   role: "alert"
 };
-var _hoisted_192 = {
+var _hoisted_193 = {
   key: 0,
   "class": "pos-kiosk-cash-cancel-target"
 };
-var _hoisted_193 = {
+var _hoisted_194 = {
   "for": "pos-kiosk-cash-cancel-reason",
   "class": "pos-kiosk-cash-cancel-label"
 };
-var _hoisted_194 = {
+var _hoisted_195 = {
   key: 1,
   "class": "pos-kiosk-cash-cancel-error",
   role: "alert",
   "aria-live": "assertive"
 };
-var _hoisted_195 = {
+var _hoisted_196 = {
   "class": "pos-kiosk-cash-cancel-foot"
 };
-var _hoisted_196 = ["disabled"];
-var _hoisted_197 = ["disabled", "aria-busy"];
-var _hoisted_198 = {
+var _hoisted_197 = ["disabled"];
+var _hoisted_198 = ["disabled", "aria-busy"];
+var _hoisted_199 = {
   key: 0,
   "class": "fa-solid fa-spinner fa-spin",
   "aria-hidden": "true"
@@ -12789,10 +12819,10 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     onClick: _cache[0] || (_cache[0] = function () {
       return $options.tryManualFlush && $options.tryManualFlush.apply($options, arguments);
     })
-  }, "Synchroniser", 8 /* PROPS */, _hoisted_5)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("a", _hoisted_6, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('a11y.skip_to_cart')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix D-003 2026-05-10] aria-live region now reflects the\n         latest availability change so screen readers announce rupture broadcasts\n         without depending on the item being in cart. data-testid lets E2E specs\n         identify it unambiguously in dom.html. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_7, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.availabilityAnnouncement), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix D-003 2026-05-10] Persistent visible chip listing\n         currently ruptured items in the active branch. Driven by itemsRaw so\n         it survives a page reload (the broadcast-only toast does not). "), $options.availabilityBannerVisible ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_8, [_cache[50] || (_cache[50] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+  }, "Synchroniser", 8 /* PROPS */, _hoisted_5)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("a", _hoisted_6, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('a11y.skip_to_cart')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix D-003 2026-05-10] aria-live region now reflects the\n         latest availability change so screen readers announce rupture broadcasts\n         without depending on the item being in cart. data-testid lets E2E specs\n         identify it unambiguously in dom.html. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_7, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.availabilityAnnouncement), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [micro-ux 2026-06-18] polite announcer fired when the Prêts or\n         À encaisser shortcut lists GROW, so a cashier hears a new arrival\n         without watching the panels. The headings stay non-live. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_8, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.queueArrivalAnnouncement), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [iter15-mega-fix D-003 2026-05-10] Persistent visible chip listing\n         currently ruptured items in the active branch. Driven by itemsRaw so\n         it survives a page reload (the broadcast-only toast does not). "), $options.availabilityBannerVisible ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_9, [_cache[50] || (_cache[50] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
     "class": "fa-solid fa-circle-exclamation",
     "aria-hidden": "true"
-  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_9, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.availabilityBannerLabel), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_10, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.availabilityBannerLabel), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     type: "button",
     "class": "pos-availability-banner__dismiss",
     "aria-label": _ctx.$t('button.close') || 'Fermer',
@@ -12808,19 +12838,19 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       "line-height": "1",
       "cursor": "pointer"
     }
-  }, "×", 8 /* PROPS */, _hoisted_10)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_ConnectionStatusBanner, {
+  }, "×", 8 /* PROPS */, _hoisted_11)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_ConnectionStatusBanner, {
     "suppress-transient": "",
     "suppress-session-invalid": ""
   }), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_LoadingComponent, {
     props: $data.loading
-  }, null, 8 /* PROPS */, ["props"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_11, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("header", _hoisted_12, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_13, [_cache[53] || (_cache[53] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+  }, null, 8 /* PROPS */, ["props"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_12, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("header", _hoisted_13, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_14, [_cache[53] || (_cache[53] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
     "class": "pos-v5-operator-bar__crown",
     "aria-hidden": "true"
-  }, "👑", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_14, [_cache[51] || (_cache[51] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", {
+  }, "👑", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_15, [_cache[51] || (_cache[51] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", {
     "class": "pos-v5-operator-bar__eyebrow pos-v4-eyebrow"
   }, "Caisse Le Cayenne", -1 /* CACHED */)), _cache[52] || (_cache[52] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h1", {
     "class": "pos-v5-operator-bar__title pos-v4-title"
-  }, "Commande rapide", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_15, [$data.checkoutProps.form.branch_id ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createBlock)(_component_PosV5StatChip, {
+  }, "Commande rapide", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_16, [$data.checkoutProps.form.branch_id ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createBlock)(_component_PosV5StatChip, {
     key: 0,
     label: _ctx.$t('label.branch'),
     value: "#".concat($data.checkoutProps.form.branch_id),
@@ -12842,7 +12872,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "class": "pos-queue-depth-badge",
     title: "".concat($setup.queueDepth, " commande(s) en attente de synchronisation"),
     "data-testid": "pos-queue-depth-badge"
-  }, "📦 " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($setup.queueDepth), 9 /* TEXT, PROPS */, _hoisted_16)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("nav", _hoisted_17, [$data.kioskCashOrders.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createBlock)(_component_PosV5Button, {
+  }, "📦 " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($setup.queueDepth), 9 /* TEXT, PROPS */, _hoisted_17)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("nav", _hoisted_18, [$data.kioskCashOrders.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createBlock)(_component_PosV5Button, {
     key: 0,
     variant: "ghost",
     size: "md",
@@ -12857,7 +12887,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       return _toConsumableArray(_cache[54] || (_cache[54] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)("🖥️", -1 /* CACHED */)]));
     }),
     "default": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
-      return [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_18, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.kiosk_counter_collect_short')), 1 /* TEXT */)];
+      return [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_19, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.kiosk_counter_collect_short')), 1 /* TEXT */)];
     }),
     _: 1 /* STABLE */
   }, 8 /* PROPS */, ["badge", "title"])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n                  [POS-V5] Bouton suivi commandes — variant tracker.\n                  Tone \"ready\" = halo vert pulsant dès qu'une commande passe à PREPARED.\n                  Aucun popup, aucun son — juste un signal visuel pour le caissier.\n                  [POS-V5 R2] Label visible dès lg (1024px) au lieu de xl (1280px) pour\n                  réduire le risque d'icônes orphelines sur écrans tablet/laptop courants.\n                "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PosV5Button, {
@@ -12876,7 +12906,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       return _toConsumableArray(_cache[55] || (_cache[55] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)("📋", -1 /* CACHED */)]));
     }),
     "default": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
-      return [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_19, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.tracker.button_label')), 1 /* TEXT */)];
+      return [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_20, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.tracker.button_label')), 1 /* TEXT */)];
     }),
     _: 1 /* STABLE */
   }, 8 /* PROPS */, ["tone", "badge", "title"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PosV5Button, {
@@ -12894,7 +12924,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       return _toConsumableArray(_cache[56] || (_cache[56] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)("🖥️", -1 /* CACHED */)]));
     }),
     "default": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
-      return [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_20, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.tracker.customer_screen')), 1 /* TEXT */)];
+      return [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_21, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.tracker.customer_screen')), 1 /* TEXT */)];
     }),
     _: 1 /* STABLE */
   }, 8 /* PROPS */, ["title"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [LOCK_POS_LOYALTY_REDEEM_UI 2026-05-19 wave-E-1] When V2\n                     dine-in is enabled, render the floorplan link (legacy\n                     V2 upgrade path). When V1 default (`pos.dine_in_enabled=\n                     false`) — the only V1 production mode — render the\n                     loyalty redeem CTA in the same slot. Mutually exclusive\n                     so the operator-bar layout stays stable (one button\n                     wide). "), $options.dineInEnabled ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createBlock)(_component_PosV5Button, {
@@ -12912,7 +12942,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       return _toConsumableArray(_cache[57] || (_cache[57] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)("🪑", -1 /* CACHED */)]));
     }),
     "default": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
-      return [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_21, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.floorplan')), 1 /* TEXT */)];
+      return [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_22, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.floorplan')), 1 /* TEXT */)];
     }),
     _: 1 /* STABLE */
   }, 8 /* PROPS */, ["title"])) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
@@ -12932,7 +12962,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       return _toConsumableArray(_cache[58] || (_cache[58] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)("🎁", -1 /* CACHED */)]));
     }),
     "default": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
-      return [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_22, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.loyalty.redeem.title')), 1 /* TEXT */)];
+      return [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_23, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.loyalty.redeem.title')), 1 /* TEXT */)];
     }),
     _: 1 /* STABLE */
   }, 8 /* PROPS */, ["disabled", "tone", "title", "aria-label", "onClick"])], 2112 /* STABLE_FRAGMENT, DEV_ROOT_FRAGMENT */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n                  [POS-V5] No-sale / open drawer — variant ghost neutral (pas de halo).\n                  Discoverable mais ne compete jamais avec paiement / tracker.\n                  Backend bridge kioskHardware.openDrawer() inchangé.\n                "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PosV5Button, {
@@ -12949,7 +12979,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       return _toConsumableArray(_cache[59] || (_cache[59] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)("💵", -1 /* CACHED */)]));
     }),
     "default": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
-      return [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_23, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.no_sale')), 1 /* TEXT */)];
+      return [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_24, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.no_sale')), 1 /* TEXT */)];
     }),
     _: 1 /* STABLE */
   }, 8 /* PROPS */, ["title", "disabled", "loading", "onClick"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n                  [Sprint 1A 2026-05-16] Bouton \"Caisse\" — ouvre le dialog de\n                  gestion de session caisse (fond de caisse, mouvements, clôture).\n                  Variant ghost + tone \"ready\" quand session active = halo subtil\n                  pour signaler au caissier qu'une session est ouverte.\n                "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PosV5Button, {
@@ -12965,10 +12995,10 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       return _toConsumableArray(_cache[60] || (_cache[60] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)("🏦", -1 /* CACHED */)]));
     }),
     "default": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
-      return [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_24, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.cash_session_header_btn')), 1 /* TEXT */)];
+      return [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_25, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.cash_session_header_btn')), 1 /* TEXT */)];
     }),
     _: 1 /* STABLE */
-  }, 8 /* PROPS */, ["tone", "title", "onClick"])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n          [Wave X X2 P-OWNER 2026-05-21] POS main-page shortcut notifications.\n          Owner verbatim: \"Caissier ne doit PAS naviguer vers /admin/pos-orders-\n          tracker pour valider commandes prêtes ou encaisser borne. Sur page\n          principale POS, 2 zones notifications compactes.\"\n          ──────────────────────────────────────────────────────────────────\n          - Left panel  : \"Prêt à livrer\" (status=PREPARED) ⇒ 1-click Livré\n          - Right panel : \"À encaisser borne\" (cash-pending kiosk) ⇒ 1-click Encaisser\n          Max 4 rows each + \"Voir plus\" link to tracker / panel for overflow.\n\n          [Q10 P-OWNER 2026-05-21] Always-render variant: previously the root\n          v-if hid both panels when both lists were empty. Cashier could not\n          distinguish a calm period from a WebSocket / polling outage. The\n          panels now always render. When their list is empty, a subtle copy\n          + \"Mis à jour il y a Xs\" timestamp signals \"polling is alive but\n          nothing pending\" — visible health beacon for the cashier.\n        "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_25, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Prêt à livrer (PREPARED kiosk / takeaway orders) "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("section", {
+  }, 8 /* PROPS */, ["tone", "title", "onClick"])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n          [Wave X X2 P-OWNER 2026-05-21] POS main-page shortcut notifications.\n          Owner verbatim: \"Caissier ne doit PAS naviguer vers /admin/pos-orders-\n          tracker pour valider commandes prêtes ou encaisser borne. Sur page\n          principale POS, 2 zones notifications compactes.\"\n          ──────────────────────────────────────────────────────────────────\n          - Left panel  : \"Prêt à livrer\" (status=PREPARED) ⇒ 1-click Livré\n          - Right panel : \"À encaisser borne\" (cash-pending kiosk) ⇒ 1-click Encaisser\n          Max 4 rows each + \"Voir plus\" link to tracker / panel for overflow.\n\n          [Q10 P-OWNER 2026-05-21] Always-render variant: previously the root\n          v-if hid both panels when both lists were empty. Cashier could not\n          distinguish a calm period from a WebSocket / polling outage. The\n          panels now always render. When their list is empty, a subtle copy\n          + \"Mis à jour il y a Xs\" timestamp signals \"polling is alive but\n          nothing pending\" — visible health beacon for the cashier.\n        "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_26, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Prêt à livrer (PREPARED kiosk / takeaway orders) "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("section", {
     "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["pos-shortcuts__panel pos-shortcuts__panel--ready", {
       'pos-shortcuts__panel--empty': $data.readyOrders.length === 0
     }]),
@@ -12976,17 +13006,17 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "aria-label": _ctx.$t('label.pos_shortcut_ready_title', {
       count: $data.readyOrders.length
     })
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("header", _hoisted_27, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h2", _hoisted_28, [_cache[61] || (_cache[61] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("header", _hoisted_28, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h2", _hoisted_29, [_cache[61] || (_cache[61] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "aria-hidden": "true"
   }, "🛎️", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.pos_shortcut_ready_title', {
     count: $data.readyOrders.length
-  })), 1 /* TEXT */)])]), $data.readyOrders.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("ul", _hoisted_29, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($data.readyOrders.slice(0, 4), function (o) {
+  })), 1 /* TEXT */)])]), $data.readyOrders.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("ul", _hoisted_30, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($data.readyOrders.slice(0, 4), function (o) {
     var _o$total;
     return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", {
       key: o.id,
       "class": "pos-shortcuts__item",
       "data-testid": "pos-shortcut-ready-".concat(o.id)
-    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_31, "N°" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(o.queue_number || o.order_serial_no || o.id), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_32, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatKioskPrice((_o$total = o.total) !== null && _o$total !== void 0 ? _o$total : o.order_amount)), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_32, "N°" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(o.queue_number || o.order_serial_no || o.id), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_33, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatKioskPrice((_o$total = o.total) !== null && _o$total !== void 0 ? _o$total : o.order_amount)), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
       type: "button",
       "class": "pos-shortcuts__cta pos-shortcuts__cta--ready",
       disabled: o._delivering,
@@ -12994,10 +13024,10 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       onClick: function onClick($event) {
         return $options.markDelivered(o);
       }
-    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(o._delivering ? '…' : _ctx.$t('label.pos_shortcut_delivered_cta')), 9 /* TEXT, PROPS */, _hoisted_33)], 8 /* PROPS */, _hoisted_30);
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(o._delivering ? '…' : _ctx.$t('label.pos_shortcut_delivered_cta')), 9 /* TEXT, PROPS */, _hoisted_34)], 8 /* PROPS */, _hoisted_31);
   }), 128 /* KEYED_FRAGMENT */))])) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
     key: 1
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [Q10] Subtle empty-state copy when no PREPARED kiosk/takeaway. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_34, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.pos_shortcut_ready_empty')), 1 /* TEXT */)], 2112 /* STABLE_FRAGMENT, DEV_ROOT_FRAGMENT */)), $data.readyOrders.length > 4 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createBlock)(_component_router_link, {
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [Q10] Subtle empty-state copy when no PREPARED kiosk/takeaway. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_35, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.pos_shortcut_ready_empty')), 1 /* TEXT */)], 2112 /* STABLE_FRAGMENT, DEV_ROOT_FRAGMENT */)), $data.readyOrders.length > 4 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createBlock)(_component_router_link, {
     key: 2,
     to: {
       name: 'admin.pos-orders.tracker'
@@ -13011,7 +13041,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       })), 1 /* TEXT */)];
     }),
     _: 1 /* STABLE */
-  })) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [Q10] Last-refresh timestamp — visible health signal. "), $options.readyLastRefreshLabel ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_35, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.readyLastRefreshLabel), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 10 /* CLASS, PROPS */, _hoisted_26), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" À encaisser borne (cash-pending kiosk orders) "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("section", {
+  })) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [Q10] Last-refresh timestamp — visible health signal. "), $options.readyLastRefreshLabel ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_36, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.readyLastRefreshLabel), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 10 /* CLASS, PROPS */, _hoisted_27), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" À encaisser borne (cash-pending kiosk orders) "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("section", {
     "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["pos-shortcuts__panel pos-shortcuts__panel--cash", {
       'pos-shortcuts__panel--empty': $data.kioskCashOrders.length === 0
     }]),
@@ -13019,17 +13049,17 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "aria-label": _ctx.$t('label.pos_shortcut_cash_title', {
       count: $data.kioskCashOrders.length
     })
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("header", _hoisted_37, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h2", _hoisted_38, [_cache[62] || (_cache[62] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("header", _hoisted_38, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h2", _hoisted_39, [_cache[62] || (_cache[62] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "aria-hidden": "true"
   }, "💰", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.pos_shortcut_cash_title', {
     count: $data.kioskCashOrders.length
-  })), 1 /* TEXT */)])]), $data.kioskCashOrders.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("ul", _hoisted_39, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($data.kioskCashOrders.slice(0, 4), function (o) {
+  })), 1 /* TEXT */)])]), $data.kioskCashOrders.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("ul", _hoisted_40, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($data.kioskCashOrders.slice(0, 4), function (o) {
     var _o$total2;
     return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", {
       key: o.id,
       "class": "pos-shortcuts__item",
       "data-testid": "pos-shortcut-cash-".concat(o.id)
-    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_41, "N°" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(o.queue_number || o.order_serial_no || o.id), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_42, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatKioskPrice((_o$total2 = o.total) !== null && _o$total2 !== void 0 ? _o$total2 : o.order_amount)), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_42, "N°" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(o.queue_number || o.order_serial_no || o.id), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_43, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatKioskPrice((_o$total2 = o.total) !== null && _o$total2 !== void 0 ? _o$total2 : o.order_amount)), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
       type: "button",
       "class": "pos-shortcuts__cta pos-shortcuts__cta--cash",
       disabled: o._collecting || o._canceling,
@@ -13037,10 +13067,10 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       onClick: function onClick($event) {
         return $options.openCounterCollect(o);
       }
-    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(o._collecting ? '…' : _ctx.$t('label.pos_shortcut_cash_cta')), 9 /* TEXT, PROPS */, _hoisted_43)], 8 /* PROPS */, _hoisted_40);
+    }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(o._collecting ? '…' : _ctx.$t('label.pos_shortcut_cash_cta')), 9 /* TEXT, PROPS */, _hoisted_44)], 8 /* PROPS */, _hoisted_41);
   }), 128 /* KEYED_FRAGMENT */))])) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
     key: 1
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [Q10] Subtle empty-state copy when no cash-pending kiosk. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_44, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.pos_shortcut_cash_empty')), 1 /* TEXT */)], 2112 /* STABLE_FRAGMENT, DEV_ROOT_FRAGMENT */)), $data.kioskCashOrders.length > 4 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [Q10] Subtle empty-state copy when no cash-pending kiosk. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_45, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.pos_shortcut_cash_empty')), 1 /* TEXT */)], 2112 /* STABLE_FRAGMENT, DEV_ROOT_FRAGMENT */)), $data.kioskCashOrders.length > 4 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
     key: 2,
     type: "button",
     "class": "pos-shortcuts__more",
@@ -13050,7 +13080,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     })
   }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.pos_shortcut_view_more', {
     count: $data.kioskCashOrders.length - 4
-  })), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [Q10] Last-refresh timestamp — visible health signal. "), $options.cashLastRefreshLabel ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_45, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.cashLastRefreshLabel), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 10 /* CLASS, PROPS */, _hoisted_36)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [POS-V5] Search V5 — input large unifié, soumission par Enter. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PosV5SearchInput, {
+  })), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [Q10] Last-refresh timestamp — visible health signal. "), $options.cashLastRefreshLabel ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_46, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.cashLastRefreshLabel), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 10 /* CLASS, PROPS */, _hoisted_37)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [POS-V5] Search V5 — input large unifié, soumission par Enter. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PosV5SearchInput, {
     "class": "pos-v4-search",
     "model-value": $data.props.search.name,
     placeholder: _ctx.$t('label.search_by_menu_item'),
@@ -13059,7 +13089,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     onInput: $options.onSearchInput,
     onSubmit: $options.search,
     onClear: $options.resetName
-  }, null, 8 /* PROPS */, ["model-value", "placeholder", "aria-label", "clear-aria-label", "onInput", "onSubmit", "onClear"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n          [POS-V5] Categories strip warm — pills avec photos rondes 56px\n          (mirror direct du stepper visual du wizard kiosk). L'active est marquée\n          par un anneau rouge brand 2px + ring soft 4px (mirror exact wizard).\n          [2026-05-18 F-4] First-page filter: by default, only featured\n          categories render. The trailing \"Toutes les catégories\" pill\n          toggles the strip to full view. Backend signals featured via\n          `category.featured === true` on the /admin/pos-category response.\n        "), $options.displayedCategories.length > 1 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("nav", _hoisted_46, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.displayedCategories, function (category, index) {
+  }, null, 8 /* PROPS */, ["model-value", "placeholder", "aria-label", "clear-aria-label", "onInput", "onSubmit", "onClear"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n          [POS-V5] Categories strip warm — pills avec photos rondes 56px\n          (mirror direct du stepper visual du wizard kiosk). L'active est marquée\n          par un anneau rouge brand 2px + ring soft 4px (mirror exact wizard).\n          [2026-05-18 F-4] First-page filter: by default, only featured\n          categories render. The trailing \"Toutes les catégories\" pill\n          toggles the strip to full view. Backend signals featured via\n          `category.featured === true` on the /admin/pos-category response.\n        "), $options.displayedCategories.length > 1 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("nav", _hoisted_47, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($options.displayedCategories, function (category, index) {
     return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
       key: category.id || index,
       type: "button",
@@ -13073,12 +13103,12 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       onClick: function onClick($event) {
         return index === 0 ? $options.allCategory() : $options.setCategory(category.id);
       }
-    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_48, [category.thumb ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("img", {
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_49, [category.thumb ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("img", {
       key: 0,
       src: category.thumb,
       alt: category.name || '',
       loading: "lazy"
-    }, null, 8 /* PROPS */, _hoisted_49)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_50, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)((category.name || '?').charAt(0).toUpperCase()), 1 /* TEXT */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [rush-100 WB-R1-02 heal 2026-05-13] aria-label + title above\n                         so \"Sandwich Cayenne\" vs \"Sandwich Classique\" stay distinguishable\n                         when the visible label truncates to \"Sandwich...\" in the pill. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_51, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(category.name), 1 /* TEXT */)], 10 /* CLASS, PROPS */, _hoisted_47);
+    }, null, 8 /* PROPS */, _hoisted_50)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_51, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)((category.name || '?').charAt(0).toUpperCase()), 1 /* TEXT */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [rush-100 WB-R1-02 heal 2026-05-13] aria-label + title above\n                         so \"Sandwich Cayenne\" vs \"Sandwich Classique\" stay distinguishable\n                         when the visible label truncates to \"Sandwich...\" in the pill. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_52, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(category.name), 1 /* TEXT */)], 10 /* CLASS, PROPS */, _hoisted_48);
   }), 128 /* KEYED_FRAGMENT */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [2026-05-18 F-4] Escape hatch: reveal all categories. Only\n                 shown when the backend marked some as non-featured (i.e.\n                 the allowlist is active). "), $options.hasNonFeaturedCategories ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
     key: 0,
     type: "button",
@@ -13091,7 +13121,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     onClick: _cache[4] || (_cache[4] = function () {
       return $options.toggleShowAllCategories && $options.toggleShowAllCategories.apply($options, arguments);
     })
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_53, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_54, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.showAllCategories ? '➖' : '➕'), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_55, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.showAllCategories ? 'Réduire' : 'Toutes'), 1 /* TEXT */)], 10 /* CLASS, PROPS */, _hoisted_52)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 512 /* NEED_PATCH */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_54, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_55, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.showAllCategories ? '➖' : '➕'), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_56, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.showAllCategories ? 'Réduire' : 'Toutes'), 1 /* TEXT */)], 10 /* CLASS, PROPS */, _hoisted_53)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 512 /* NEED_PATCH */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
     "aria-live": "polite",
     "aria-relevant": "additions",
     "aria-busy": $options.loadingItems ? 'true' : 'false',
@@ -13105,20 +13135,20 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     ref: "posItemComponent",
     items: $options.displayedItems,
     "drinks-catalog": $options.drinksCatalog
-  }, null, 8 /* PROPS */, ["items", "drinks-catalog"]), $options.items.length === 0 && !$data.props.search.name ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_57, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_58, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("img", {
+  }, null, 8 /* PROPS */, ["items", "drinks-catalog"]), $options.items.length === 0 && !$data.props.search.name ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_58, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_59, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("img", {
     "class": "w-full mb-8",
     src: $options.setting.image_order_not_found,
     alt: "image_order_not_found"
-  }, null, 8 /* PROPS */, _hoisted_59)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_60, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('message.no_data_available')), 1 /* TEXT */)])) : $options.items.length === 0 && $data.props.search.name ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_61, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_62, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("img", {
+  }, null, 8 /* PROPS */, _hoisted_60)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_61, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('message.no_data_available')), 1 /* TEXT */)])) : $options.items.length === 0 && $data.props.search.name ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_62, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_63, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("img", {
     "class": "w-full mb-8",
     src: $options.setting.item_not_found,
     alt: "item_not_found"
-  }, null, 8 /* PROPS */, _hoisted_63)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_64, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('message.no_items_found')), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 64 /* STABLE_FRAGMENT */))], 8 /* PROPS */, _hoisted_56)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n      [POS-V5] Cart panel \"ticket vivant\" — segments verticaux clairs, header\n      avec eyebrow rouge brand + titre Inter Black, customer select + add CTA,\n      shortcuts park/parked, loyalty badge optionnel, type de commande en\n      segmented control, items list en cards verticales, footer avec totals\n      + CTA principal \"Encaisser X €\" (montant intégré au bouton, Q3 plan).\n    "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("aside", {
+  }, null, 8 /* PROPS */, _hoisted_64)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_65, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('message.no_items_found')), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 64 /* STABLE_FRAGMENT */))], 8 /* PROPS */, _hoisted_57)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n      [POS-V5] Cart panel \"ticket vivant\" — segments verticaux clairs, header\n      avec eyebrow rouge brand + titre Inter Black, customer select + add CTA,\n      shortcuts park/parked, loyalty badge optionnel, type de commande en\n      segmented control, items list en cards verticales, footer avec totals\n      + CTA principal \"Encaisser X €\" (montant intégré au bouton, Q3 plan).\n    "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("aside", {
     id: "pos-cart",
     role: "region",
     "aria-label": _ctx.$t('a11y.cart_region'),
     "class": "db-pos-cartDiv pos-v4-cart-panel pos-v5-cart fixed top-0 ltr:right-0 rtl:left-0 w-full h-screen rounded-none z-50 md:z-10 md:top-[64px] ltr:md:right-3 rtl:md:left-3 md:w-[340px] lg:w-[360px] xl:w-[400px] md:h-[calc(100dvh-64px)] md:rounded-lg flex flex-col overflow-hidden bg-white"
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Mobile-only close button "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_66, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Mobile-only close button "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_67, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     type: "button",
     "class": "db-pos-cartCls pos-v5-modal__close",
     onClick: _cache[5] || (_cache[5] = function ($event) {
@@ -13127,22 +13157,23 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "aria-label": _ctx.$t('button.close')
   }, _toConsumableArray(_cache[63] || (_cache[63] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "aria-hidden": "true"
-  }, "✕", -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_67)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Cart header "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("header", _hoisted_68, [_cache[76] || (_cache[76] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+  }, "✕", -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_68)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Cart header "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("header", _hoisted_69, [_cache[76] || (_cache[76] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
     "class": "pos-v5-cart__head-titles"
   }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", {
     "class": "pos-v5-cart__eyebrow"
   }, "Ticket caisse"), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h2", {
     "class": "pos-v5-cart__title"
-  }, "Commande en cours")], -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_69, [$options.totalItems() > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createBlock)(_component_PosV5Pill, {
+  }, "Commande en cours")], -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_70, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [micro-ux 2026-06-18] role=status so the live cart-count pill is announced. "), $options.totalItems() > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createBlock)(_component_PosV5Pill, {
     key: 0,
     variant: "brand",
-    size: "md"
+    size: "md",
+    role: "status"
   }, {
     "default": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
       return [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.totalItems()) + " " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.items')), 1 /* TEXT */)];
     }),
     _: 1 /* STABLE */
-  })) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Customer selector + add CTA "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_70, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_71, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_vue_select, {
+  })) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Customer selector + add CTA "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_71, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_72, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_vue_select, {
     "class": "db-field-control text-sm rounded-lg appearance-none text-heading border-[#D9DBE9]",
     id: "customer",
     modelValue: $data.checkoutProps.form.customer_id,
@@ -13168,7 +13199,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       return _toConsumableArray(_cache[64] || (_cache[64] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)("+", -1 /* CACHED */)]));
     }),
     _: 1 /* STABLE */
-  }, 8 /* PROPS */, ["aria-label", "onClick"])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Park / Parked shortcuts "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_72, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PosV5Button, {
+  }, 8 /* PROPS */, ["aria-label", "onClick"])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Park / Parked shortcuts "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_73, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PosV5Button, {
     variant: "secondary",
     size: "md",
     disabled: $data.parkingInFlight,
@@ -13198,7 +13229,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       return [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.parked_orders_short')), 1 /* TEXT */)];
     }),
     _: 1 /* STABLE */
-  }, 8 /* PROPS */, ["badge", "title", "aria-label", "onClick"])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n              [POS-V5] Cancel last cart line — undo subtil, pas destructif.\n              \"Oops\" en un tap (cf. POS-V4-CASHIER-OPS 2026-05-02 doctrine).\n            "), $options.carts.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_73, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PosV5Button, {
+  }, 8 /* PROPS */, ["badge", "title", "aria-label", "onClick"])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n              [POS-V5] Cancel last cart line — undo subtil, pas destructif.\n              \"Oops\" en un tap (cf. POS-V4-CASHIER-OPS 2026-05-02 doctrine).\n            "), $options.carts.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_74, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PosV5Button, {
     variant: "ghost",
     size: "sm",
     block: "",
@@ -13212,12 +13243,12 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       return [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.cancel_last_line')), 1 /* TEXT */)];
     }),
     _: 1 /* STABLE */
-  }, 8 /* PROPS */, ["onClick"])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [POS-V5] Loyalty badge — warm gold/amber chaleureux. "), $data.selectedCustomerLoyalty.code ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_74, [_cache[69] || (_cache[69] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+  }, 8 /* PROPS */, ["onClick"])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [POS-V5] Loyalty badge — warm gold/amber chaleureux. "), $data.selectedCustomerLoyalty.code ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_75, [_cache[69] || (_cache[69] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "class": "pos-v5-loyalty__icon",
     "aria-hidden": "true"
-  }, "⭐", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, [$data.selectedCustomerLoyalty.loading ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_75, "...")) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+  }, "⭐", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, [$data.selectedCustomerLoyalty.loading ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_76, "...")) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
     key: 1
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_76, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)((_$data$selectedCustom = $data.selectedCustomerLoyalty.points) !== null && _$data$selectedCustom !== void 0 ? _$data$selectedCustom : 0), 1 /* TEXT */), _cache[68] || (_cache[68] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" pts fidélité ", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_77, "(" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.selectedCustomerLoyalty.code) + ")", 1 /* TEXT */)], 64 /* STABLE_FRAGMENT */))])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n              [POS-V5] Order type — segmented control V5 (mirror du wizard\n              \"Sur place / À emporter\" pattern). Le delivery inline form reste\n              identique pour ne pas casser la logique d'autocomplete d'adresse.\n            "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("fieldset", _hoisted_78, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("legend", _hoisted_79, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.select_order_type')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_80, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [POS-9.1.6] Dine-In gated by feature flag `pos.dine_in_enabled` (default false). "), $options.dineInEnabled ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("label", {
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_77, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)((_$data$selectedCustom = $data.selectedCustomerLoyalty.points) !== null && _$data$selectedCustom !== void 0 ? _$data$selectedCustom : 0), 1 /* TEXT */), _cache[68] || (_cache[68] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" pts fidélité ", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_78, "(" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.selectedCustomerLoyalty.code) + ")", 1 /* TEXT */)], 64 /* STABLE_FRAGMENT */))])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n              [POS-V5] Order type — segmented control V5 (mirror du wizard\n              \"Sur place / À emporter\" pattern). Le delivery inline form reste\n              identique pour ne pas casser la logique d'autocomplete d'adresse.\n            "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("fieldset", _hoisted_79, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("legend", _hoisted_80, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.select_order_type')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_81, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [POS-9.1.6] Dine-In gated by feature flag `pos.dine_in_enabled` (default false). "), $options.dineInEnabled ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("label", {
     key: 0,
     ref: "dineIn",
     "for": "dinein",
@@ -13237,7 +13268,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "onUpdate:modelValue": _cache[7] || (_cache[7] = function ($event) {
       return $data.checkoutProps.form.order_type = $event;
     })
-  }, null, 8 /* PROPS */, _hoisted_81), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelRadio, $data.checkoutProps.form.order_type]]), _cache[70] || (_cache[70] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+  }, null, 8 /* PROPS */, _hoisted_82), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelRadio, $data.checkoutProps.form.order_type]]), _cache[70] || (_cache[70] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "aria-hidden": "true"
   }, "🍽️", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.dine_in')), 1 /* TEXT */)], 2 /* CLASS */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", {
     ref: "takeAway",
@@ -13257,7 +13288,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "onUpdate:modelValue": _cache[9] || (_cache[9] = function ($event) {
       return $data.checkoutProps.form.order_type = $event;
     })
-  }, null, 8 /* PROPS */, _hoisted_82), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelRadio, $data.checkoutProps.form.order_type]]), _cache[71] || (_cache[71] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+  }, null, 8 /* PROPS */, _hoisted_83), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelRadio, $data.checkoutProps.form.order_type]]), _cache[71] || (_cache[71] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "aria-hidden": "true"
   }, "🥡", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.takeaway')), 1 /* TEXT */)], 2 /* CLASS */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", {
     ref: "deliveryOrderLabel",
@@ -13278,23 +13309,23 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "onUpdate:modelValue": _cache[11] || (_cache[11] = function ($event) {
       return $data.checkoutProps.form.order_type = $event;
     })
-  }, null, 8 /* PROPS */, _hoisted_83), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelRadio, $data.checkoutProps.form.order_type]]), _cache[72] || (_cache[72] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+  }, null, 8 /* PROPS */, _hoisted_84), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelRadio, $data.checkoutProps.form.order_type]]), _cache[72] || (_cache[72] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "aria-hidden": "true"
-  }, "🛵", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.delivery')), 1 /* TEXT */)], 2 /* CLASS */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [P4] Inline delivery form — no separate modal, no map tab "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_84, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_85, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Row 1: Nom + Téléphone "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_86, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_87, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
+  }, "🛵", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.delivery')), 1 /* TEXT */)], 2 /* CLASS */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [P4] Inline delivery form — no separate modal, no map tab "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_85, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_86, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Row 1: Nom + Téléphone "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_87, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_88, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
     type: "text",
     "onUpdate:modelValue": _cache[13] || (_cache[13] = function ($event) {
       return $data.deliveryInline.name = $event;
     }),
     placeholder: "Nom du client",
     "class": "w-full h-10 text-sm rounded-lg border px-3 text-heading border-[#D9DBE9] focus:border-primary focus:outline-none"
-  }, null, 512 /* NEED_PATCH */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.deliveryInline.name]])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_88, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
+  }, null, 512 /* NEED_PATCH */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.deliveryInline.name]])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_89, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
     type: "tel",
     "onUpdate:modelValue": _cache[14] || (_cache[14] = function ($event) {
       return $data.deliveryInline.phone = $event;
     }),
     placeholder: "Téléphone",
     "class": "w-full h-10 text-sm rounded-lg border px-3 text-heading border-[#D9DBE9] focus:border-primary focus:outline-none"
-  }, null, 512 /* NEED_PATCH */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.deliveryInline.phone]])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Row 2: Adresse autocomplete "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_89, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_90, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_91, [_cache[73] || (_cache[73] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+  }, null, 512 /* NEED_PATCH */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.deliveryInline.phone]])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Row 2: Adresse autocomplete "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_90, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_91, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_92, [_cache[73] || (_cache[73] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
     "class": "fa-solid fa-location-dot absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none"
   }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
     ref: "deliveryAddressInput",
@@ -13317,7 +13348,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     placeholder: "Adresse de livraison...",
     autocomplete: "off",
     "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["w-full h-10 text-sm rounded-lg border pl-8 pr-3 text-heading border-[#D9DBE9] focus:border-primary focus:outline-none", $data.deliveryInline.confirmed ? 'border-green-400 bg-green-50' : ''])
-  }, null, 34 /* CLASS, NEED_HYDRATION */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.deliveryInline.addressText]]), $data.deliveryInline.confirmed ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("i", _hoisted_92)) : $data.deliveryInline.loading ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("i", _hoisted_93)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), $data.deliveryInline.confirmed ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+  }, null, 34 /* CLASS, NEED_HYDRATION */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.deliveryInline.addressText]]), $data.deliveryInline.confirmed ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("i", _hoisted_93)) : $data.deliveryInline.loading ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("i", _hoisted_94)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), $data.deliveryInline.confirmed ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
     key: 0,
     onClick: _cache[21] || (_cache[21] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function () {
       return $options.resetDeliveryInline && $options.resetDeliveryInline.apply($options, arguments);
@@ -13327,7 +13358,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     title: "Effacer"
   }, _toConsumableArray(_cache[74] || (_cache[74] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
     "class": "fa-solid fa-xmark text-sm"
-  }, null, -1 /* CACHED */)])))) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Suggestions dropdown "), $data.deliveryInline.suggestions.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("ul", _hoisted_94, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($data.deliveryInline.suggestions, function (s, idx) {
+  }, null, -1 /* CACHED */)])))) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Suggestions dropdown "), $data.deliveryInline.suggestions.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("ul", _hoisted_95, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($data.deliveryInline.suggestions, function (s, idx) {
     return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", {
       key: s.place_id,
       onMousedown: (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
@@ -13336,8 +13367,8 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["flex items-start gap-2 px-3 py-2 cursor-pointer hover:bg-[#FFE8DD] text-sm text-heading transition", idx === $data.deliveryInline.activeIdx ? 'bg-[#FFE8DD]' : ''])
     }, [_cache[75] || (_cache[75] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
       "class": "fa-solid fa-location-dot text-primary mt-0.5 flex-shrink-0 text-xs"
-    }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_96, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(s.description), 1 /* TEXT */)], 42 /* CLASS, PROPS, NEED_HYDRATION */, _hoisted_95);
-  }), 128 /* KEYED_FRAGMENT */))])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $data.deliveryGeocodeError ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_97, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.deliveryGeocodeError), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])])], 512 /* NEED_PATCH */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [POS-9.1.6] Table selector gated by the same `pos.dine_in_enabled` flag "), $options.dineInEnabled ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_98, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_99, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_100, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_vue_select, {
+    }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_97, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(s.description), 1 /* TEXT */)], 42 /* CLASS, PROPS, NEED_HYDRATION */, _hoisted_96);
+  }), 128 /* KEYED_FRAGMENT */))])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $data.deliveryGeocodeError ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_98, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.deliveryGeocodeError), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])])], 512 /* NEED_PATCH */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [POS-9.1.6] Table selector gated by the same `pos.dine_in_enabled` flag "), $options.dineInEnabled ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_99, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_100, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_101, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_vue_select, {
     "class": "db-field-control text-sm rounded-lg appearance-none text-heading border-[#D9DBE9]",
     id: "diningtables",
     options: $options.diningtables,
@@ -13372,7 +13403,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       key: 0,
       src: cart.image,
       alt: cart.name
-    }, null, 8 /* PROPS */, _hoisted_103)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_104, "🍴"))], 8 /* PROPS */, _hoisted_102), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_105, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_106, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(cart.name), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    }, null, 8 /* PROPS */, _hoisted_104)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_105, "🍴"))], 8 /* PROPS */, _hoisted_103), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_106, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_107, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(cart.name), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
       type: "button",
       "class": "pos-v5-cart-item__edit",
       onClick: (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
@@ -13382,22 +13413,22 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       "aria-label": _ctx.$t('button.edit')
     }, _toConsumableArray(_cache[77] || (_cache[77] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
       "aria-hidden": "true"
-    }, "✎", -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_107)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Wizard cart_display: clean summary (Viandes, Crudités, Sauce, Suppléments) "), cart.cart_display && cart.cart_display.trim() ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_108, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(cart.cart_display), 1 /* TEXT */)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+    }, "✎", -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_108)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Wizard cart_display: clean summary (Viandes, Crudités, Sauce, Suppléments) "), cart.cart_display && cart.cart_display.trim() ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_109, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(cart.cart_display), 1 /* TEXT */)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
       key: 1
-    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Fallback for non-wizard products: variations + extras "), $options.formatCartVariationSummary(cart) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_109, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatCartVariationSummary(cart)), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.formatCartExtraSummary(cart) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_110, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.extras')) + ": " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatCartExtraSummary(cart)), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 64 /* STABLE_FRAGMENT */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Menu bundled + extras menu (formules) "), cart.pos_line_addons && cart.pos_line_addons.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_111, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(cart.pos_line_addons, function (bundled, bi) {
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Fallback for non-wizard products: variations + extras "), $options.formatCartVariationSummary(cart) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_110, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatCartVariationSummary(cart)), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.formatCartExtraSummary(cart) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_111, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.extras')) + ": " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatCartExtraSummary(cart)), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 64 /* STABLE_FRAGMENT */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Menu bundled + extras menu (formules) "), cart.pos_line_addons && cart.pos_line_addons.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_112, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(cart.pos_line_addons, function (bundled, bi) {
       return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
         key: 'b-' + index + '-' + bi,
         "class": "pos-v5-cart-item__bundled-line"
-      }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, "+ " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(bundled.name), 1 /* TEXT */), $options.bundledLineUnitTotal(bundled) > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_112, " (+" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.currencyFormat($options.bundledLineUnitTotal(bundled) * (parseInt(bundled.quantity, 10) || 1) * cart.quantity, $options.setting.site_digit_after_decimal_point, $options.setting.site_default_currency_symbol, $options.setting.site_currency_position)) + ") ", 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), bundled.menu_extras && bundled.menu_extras.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("ul", _hoisted_113, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(bundled.menu_extras, function (extra, ei) {
+      }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, "+ " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(bundled.name), 1 /* TEXT */), $options.bundledLineUnitTotal(bundled) > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_113, " (+" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.currencyFormat($options.bundledLineUnitTotal(bundled) * (parseInt(bundled.quantity, 10) || 1) * cart.quantity, $options.setting.site_digit_after_decimal_point, $options.setting.site_default_currency_symbol, $options.setting.site_currency_position)) + ") ", 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [micro-ux 2026-06-18] bundled menu-extras text raised ink-muted→ink-soft (AA). "), bundled.menu_extras && bundled.menu_extras.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("ul", _hoisted_114, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)(bundled.menu_extras, function (extra, ei) {
         return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", {
           key: 'me-' + index + '-' + bi + '-' + ei,
-          "class": "text-[10px] leading-snug text-[var(--pos-v5-ink-muted)] flex items-center gap-1"
+          "class": "text-[10px] leading-snug text-[var(--pos-v5-ink-soft)] flex items-center gap-1"
         }, [_cache[78] || (_cache[78] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
           "class": "text-[color:var(--pos-v5-success)] font-bold",
           "aria-hidden": "true"
         }, "↳", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(extra), 1 /* TEXT */)]);
       }), 128 /* KEYED_FRAGMENT */))])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
-    }), 128 /* KEYED_FRAGMENT */))])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_114, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.currencyFormat(cart.total, $options.setting.site_digit_after_decimal_point, $options.setting.site_default_currency_symbol, $options.setting.site_currency_position)), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_115, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PosV5QtyStepper, {
+    }), 128 /* KEYED_FRAGMENT */))])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_115, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.currencyFormat(cart.total, $options.setting.site_digit_after_decimal_point, $options.setting.site_default_currency_symbol, $options.setting.site_currency_position)), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_116, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PosV5QtyStepper, {
       size: "sm",
       "model-value": cart.quantity,
       "show-trash": cart.quantity === 1,
@@ -13421,12 +13452,12 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
         return $options.cartQuantityDecrement(index);
       }
     }, null, 8 /* PROPS */, ["model-value", "show-trash", "aria-label", "increment-aria-label", "decrement-aria-label", "remove-aria-label", "onIncrement", "onDecrement", "onRemove"])])]);
-  }), 128 /* KEYED_FRAGMENT */)), $options.carts.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_116, [_cache[79] || (_cache[79] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+  }), 128 /* KEYED_FRAGMENT */)), $options.carts.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_117, [_cache[79] || (_cache[79] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "class": "pos-v5-cart__empty-icon",
     "aria-hidden": "true"
-  }, "🍽️", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.pos_cart_empty')), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 8 /* PROPS */, _hoisted_101), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n          [POS-V5] Cart footer — discount block + totals (PosV5TotalRow) +\n          CTA principal \"Encaisser X €\" (Q3 plan : montant intégré au bouton).\n        "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("footer", _hoisted_117, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Discount block "), $options.carts.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_118, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_119, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", _hoisted_120, [$data.discountType === $data.discountTypeEnum.PERCENTAGE ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_121, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.percentage")), 1 /* TEXT */)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_122, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.fixed")), 1 /* TEXT */)), _cache[80] || (_cache[80] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+  }, "🍽️", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.pos_cart_empty')), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)], 8 /* PROPS */, _hoisted_102), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n          [POS-V5] Cart footer — discount block + totals (PosV5TotalRow) +\n          CTA principal \"Encaisser X €\" (Q3 plan : montant intégré au bouton).\n        "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("footer", _hoisted_118, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Discount block "), $options.carts.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_119, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_120, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", _hoisted_121, [$data.discountType === $data.discountTypeEnum.PERCENTAGE ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_122, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.percentage")), 1 /* TEXT */)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_123, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.fixed")), 1 /* TEXT */)), _cache[80] || (_cache[80] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
     "class": "lab lab-arrow-down-2 lab-font-size-17 mx-1"
-  }, null, -1 /* CACHED */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("ul", _hoisted_123, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)([{
+  }, null, -1 /* CACHED */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("ul", _hoisted_124, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)([{
     name: _ctx.$t('label.percentage'),
     value: $data.discountTypeEnum.PERCENTAGE
   }, {
@@ -13439,7 +13470,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       onClick: function onClick($event) {
         return $options.selectDiscount(option.value);
       }
-    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_125, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(option.name), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_124);
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_126, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(option.name), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_125);
   }), 128 /* KEYED_FRAGMENT */))])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
     onKeypress: _cache[23] || (_cache[23] = function ($event) {
       return $options.floatNumber($event);
@@ -13451,7 +13482,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     placeholder: _ctx.$t('label.add_discount'),
     "data-testid": "pos-discount-input",
     "class": "w-full h-full border-t border-b px-3 text-sm border-[var(--pos-v5-border)] focus:outline-none focus:border-[var(--pos-v5-brand-red)]"
-  }, null, 40 /* PROPS, NEED_HYDRATION */, _hoisted_126), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.discount]]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n                  [POS-V4-CASHIER-OPS 2026-05-02] Apply button disabled when a\n                  positive discount is set without a 3+ char reason. Backend\n                  enforces this (OrderService L2007-2011) — mirror client-side.\n                "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+  }, null, 40 /* PROPS, NEED_HYDRATION */, _hoisted_127), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.discount]]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n                  [POS-V4-CASHIER-OPS 2026-05-02] Apply button disabled when a\n                  positive discount is set without a 3+ char reason. Backend\n                  enforces this (OrderService L2007-2011) — mirror client-side.\n                "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     onClick: _cache[25] || (_cache[25] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function () {
       return $options.applyDiscount && $options.applyDiscount.apply($options, arguments);
     }, ["prevent"])),
@@ -13460,7 +13491,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "aria-disabled": !$options.isDiscountApplyable,
     "data-testid": "pos-discount-apply",
     "class": "flex-shrink-0 w-16 h-full text-xs font-bold uppercase rounded-r-md text-white bg-[var(--pos-v5-info)] disabled:opacity-50 disabled:cursor-not-allowed transition"
-  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.apply')), 9 /* TEXT, PROPS */, _hoisted_127)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.carts.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_128, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_129, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.reason')) + " ", 1 /* TEXT */), $options.discountReasonRequired ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_130, "(" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.reason_required_short')) + ")", 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_131, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(($data.discountReason || '').length) + "/255", 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.apply')), 9 /* TEXT, PROPS */, _hoisted_128)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $options.carts.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_129, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_130, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.reason')) + " ", 1 /* TEXT */), $options.discountReasonRequired ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_131, "(" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.reason_required_short')) + ")", 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_132, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(($data.discountReason || '').length) + "/255", 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
     id: "pos-discount-reason",
     "onUpdate:modelValue": _cache[26] || (_cache[26] = function ($event) {
       return $data.discountReason = $event;
@@ -13470,7 +13501,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     placeholder: _ctx.$t('pos.reason_required_placeholder'),
     "data-testid": "pos-discount-reason",
     "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(['w-full h-9 text-sm rounded-md border px-3 text-[var(--pos-v5-ink)] transition focus:outline-none focus:border-[var(--pos-v5-brand-red)]', $options.discountReasonInvalid ? 'border-[var(--pos-v5-danger)] bg-[var(--pos-v5-danger-soft)]' : 'border-[var(--pos-v5-border)]'])
-  }, null, 10 /* CLASS, PROPS */, _hoisted_132), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.discountReason]]), $options.discountReasonInvalid ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_133, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.reason_required_hint')), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Totals block "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_134, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PosV5TotalRow, {
+  }, null, 10 /* CLASS, PROPS */, _hoisted_133), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.discountReason]]), $options.discountReasonInvalid ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_134, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.reason_required_hint')), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Totals block "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_135, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PosV5TotalRow, {
     label: _ctx.$t('label.sub_total'),
     value: $options.subtotalDisplay
   }, null, 8 /* PROPS */, ["label", "value"]), $options.posDiscount ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createBlock)(_component_PosV5TotalRow, {
@@ -13493,7 +13524,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       'is-flashing': $data.totalFlashing
     }]),
     "data-testid": "pos-grand-total"
-  }, null, 8 /* PROPS */, ["label", "value", "class"])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Action CTAs "), $options.carts.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_135, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PosV5Button, {
+  }, null, 8 /* PROPS */, ["label", "value", "class"])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Action CTAs "), $options.carts.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_136, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PosV5Button, {
     variant: "primary-pay",
     size: "xl",
     block: "",
@@ -13522,27 +13553,27 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       return [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.cancel')), 1 /* TEXT */)];
     }),
     _: 1 /* STABLE */
-  }, 8 /* PROPS */, ["onClick"])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])], 8 /* PROPS */, _hoisted_65), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("====================================\n        ADD CUSTOMER MODAL PART START\n====================================="), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_136, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_137, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_138, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_139, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.add_customer')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+  }, 8 /* PROPS */, ["onClick"])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])], 8 /* PROPS */, _hoisted_66), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("====================================\n        ADD CUSTOMER MODAL PART START\n====================================="), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_137, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_138, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_139, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_140, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.add_customer')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     type: "button",
     onClick: _cache[27] || (_cache[27] = function () {
       return $options.resetCustomer && $options.resetCustomer.apply($options, arguments);
     }),
     "class": "modal-close fa-regular fa-circle-xmark",
     "aria-label": _ctx.$t('button.close')
-  }, null, 8 /* PROPS */, _hoisted_140)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_141, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("form", {
+  }, null, 8 /* PROPS */, _hoisted_141)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_142, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("form", {
     onSubmit: _cache[35] || (_cache[35] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function () {
       return $options.saveCustomer && $options.saveCustomer.apply($options, arguments);
     }, ["prevent"]))
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_142, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_143, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_144, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.name")), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_143, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_144, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_145, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.name")), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
     type: "text",
     "onUpdate:modelValue": _cache[28] || (_cache[28] = function ($event) {
       return $data.customerProps.form.name = $event;
     }),
     "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)([$data.errors.name ? 'invalid' : '', "w-full h-12 text-sm rounded-lg border px-4 text-heading border-[#D9DBE9]"]),
     id: "name"
-  }, null, 2 /* CLASS */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.customerProps.form.name]]), $data.errors.name ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("small", _hoisted_145, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.errors.name[0]), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_146, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_147, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.phone")), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+  }, null, 2 /* CLASS */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.customerProps.form.name]]), $data.errors.name ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("small", _hoisted_146, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.errors.name[0]), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_147, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_148, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.phone")), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
     "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)([$data.errors.phone ? 'invalid' : '', "w-full h-12 rounded-lg border px-4 flex items-center border-[#D9DBE9]"])
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_148, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", _hoisted_149, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.flag) + " ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_150, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.customerProps.form.country_code), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_149, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", _hoisted_150, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.flag) + " ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_151, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.customerProps.form.country_code), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
     type: "hidden",
     "onUpdate:modelValue": _cache[29] || (_cache[29] = function ($event) {
       return $data.customerProps.form.country_code = $event;
@@ -13557,14 +13588,14 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)([$data.errors.phone ? 'invalid' : '', "pl-2 text-sm w-full h-full"]),
     type: "text",
     id: "phone"
-  }, null, 34 /* CLASS, NEED_HYDRATION */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.customerProps.form.phone]])], 2 /* CLASS */), $data.errors.phone ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("small", _hoisted_151, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.errors.phone[0]), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_152, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_153, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.email")), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
+  }, null, 34 /* CLASS, NEED_HYDRATION */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.customerProps.form.phone]])], 2 /* CLASS */), $data.errors.phone ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("small", _hoisted_152, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.errors.phone[0]), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_153, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_154, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.email")), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
     type: "email",
     id: "email",
     "onUpdate:modelValue": _cache[32] || (_cache[32] = function ($event) {
       return $data.customerProps.form.email = $event;
     }),
     "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)([$data.errors.email ? 'invalid' : '', "w-full h-12 text-sm rounded-lg border px-4 text-heading border-[#D9DBE9]"])
-  }, null, 2 /* CLASS */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.customerProps.form.email]]), $data.errors.email ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("small", _hoisted_154, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.errors.email[0]), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_155, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_156, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.password")), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [W11 FIX] type=\"password\" to prevent shoulder-surfing on shared POS terminals "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
+  }, null, 2 /* CLASS */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.customerProps.form.email]]), $data.errors.email ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("small", _hoisted_155, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.errors.email[0]), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_156, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_157, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.password")), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [W11 FIX] type=\"password\" to prevent shoulder-surfing on shared POS terminals "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
     "onUpdate:modelValue": _cache[33] || (_cache[33] = function ($event) {
       return $data.customerProps.form.password = $event;
     }),
@@ -13572,12 +13603,12 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     type: "password",
     id: "password",
     autocomplete: "new-password"
-  }, null, 2 /* CLASS */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.customerProps.form.password]]), $data.errors.password ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("small", _hoisted_157, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.errors.password[0]), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
+  }, null, 2 /* CLASS */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.customerProps.form.password]]), $data.errors.password ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("small", _hoisted_158, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.errors.password[0]), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
     type: "hidden",
     "onUpdate:modelValue": _cache[34] || (_cache[34] = function ($event) {
       return $data.customerProps.form.password_confirmation = $event;
     })
-  }, null, 512 /* NEED_PATCH */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.customerProps.form.password_confirmation]])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", _hoisted_158, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.add_customer')), 1 /* TEXT */)], 32 /* NEED_HYDRATION */)])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("====================================\n          ADD CUSTOMER MODAL PART END\n    ====================================="), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("====================================\n      PAYMENT MODAL PART START\n  ====================================="), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_ParkedOrdersComponent, {
+  }, null, 512 /* NEED_PATCH */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.customerProps.form.password_confirmation]])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", _hoisted_159, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.add_customer')), 1 /* TEXT */)], 32 /* NEED_HYDRATION */)])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("====================================\n          ADD CUSTOMER MODAL PART END\n    ====================================="), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("====================================\n      PAYMENT MODAL PART START\n  ====================================="), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_ParkedOrdersComponent, {
     open: $data.showParkedOrders,
     onClose: _cache[36] || (_cache[36] = function ($event) {
       return $data.showParkedOrders = false;
@@ -13600,7 +13631,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "order-id": $data.currentLoyaltyOrder ? $data.currentLoyaltyOrder.id : null,
     onClose: $options.closeLoyaltyMainModal,
     onApplied: $options.onLoyaltyMainApplied
-  }, null, 8 /* PROPS */, ["open", "order-id", "onClose", "onApplied"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [POS-V5 WAVE 3] Overlay success flash après confirm payment (700ms) "), $data.successFlashing ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_159)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("====================================\n          PAYMENT MODAL PART END\n      ====================================="), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("====================================\n      ADDRESS MODAL PART START\n  ====================================="), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_CreateCustomerAddressComponent, {
+  }, null, 8 /* PROPS */, ["open", "order-id", "onClose", "onApplied"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [POS-V5 WAVE 3] Overlay success flash après confirm payment (700ms) "), $data.successFlashing ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_160)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("====================================\n          PAYMENT MODAL PART END\n      ====================================="), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("====================================\n      ADDRESS MODAL PART START\n  ====================================="), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_CreateCustomerAddressComponent, {
     props: $data.address
   }, null, 8 /* PROPS */, ["props"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("====================================\n          ADDRESS MODAL PART END\n      ====================================="), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     onClick: _cache[37] || (_cache[37] = function ($event) {
@@ -13610,7 +13641,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "class": "db-pos-cartBtn pos-v4-mobile-cart fixed md:hidden bottom-0 z-10 left-0 w-full h-14 py-4 text-center flex items-center justify-center shadow-xl-top gap-3 bg-primary"
   }, [_cache[83] || (_cache[83] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
     "class": "lab lab-bag-2 lab-font-size-13 text-white"
-  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_160, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.totalItems()) + " " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.items')) + " - " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(
+  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_161, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.totalItems()) + " " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.items')) + " - " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(
   // [BUG-A3 FIX] Include delivery_charge in mobile total (match cart panel)
   $options.currencyFormat($options.subtotal + $data.checkoutProps.form.delivery_charge - $options.posDiscount, $options.setting.site_digit_after_decimal_point, $options.setting.site_default_currency_symbol, $options.setting.site_currency_position)), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Panel commandes borne cash (ouvert depuis la barre du haut) "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(vue__WEBPACK_IMPORTED_MODULE_0__.Transition, {
     name: "slide-panel"
@@ -13622,7 +13653,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
         onClick: _cache[40] || (_cache[40] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
           return $data.showKioskCashPanel = false;
         }, ["self"]))
-      }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_161, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_162, [_cache[85] || (_cache[85] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", null, "🖥️ Commandes borne — à encaisser", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_163, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n                  [POS-V4-ORDERS-ACCESS 2026-05-02] Accès direct depuis la caisse vers\n                  la liste filtrée historique (status / date / N° / client) sans passer\n                  par le menu admin latéral.\n                "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_router_link, {
+      }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_162, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_163, [_cache[85] || (_cache[85] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", null, "🖥️ Commandes borne — à encaisser", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_164, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n                  [POS-V4-ORDERS-ACCESS 2026-05-02] Accès direct depuis la caisse vers\n                  la liste filtrée historique (status / date / N° / client) sans passer\n                  par le menu admin latéral.\n                "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_router_link, {
         to: {
           name: 'admin.pos-orders.list'
         },
@@ -13644,14 +13675,14 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
         onClick: _cache[38] || (_cache[38] = function ($event) {
           return $data.showKioskCashPanel = false;
         })
-      }, "✕", 8 /* PROPS */, _hoisted_164)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_165, [$data.kioskCashLoading ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_166, _toConsumableArray(_cache[86] || (_cache[86] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+      }, "✕", 8 /* PROPS */, _hoisted_165)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_166, [$data.kioskCashLoading ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_167, _toConsumableArray(_cache[86] || (_cache[86] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
         "class": "kiosk-cash-spinner"
-      }, null, -1 /* CACHED */)])))) : $data.kioskCashOrders.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_167, " Aucune commande borne en attente. ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($data.kioskCashOrders, function (order) {
+      }, null, -1 /* CACHED */)])))) : $data.kioskCashOrders.length === 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_168, " Aucune commande borne en attente. ")) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($data.kioskCashOrders, function (order) {
         var _order$total;
         return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
           key: order.id,
           "class": "kiosk-cash-order-card"
-        }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_168, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_169, "N° " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(order.queue_number || order.order_serial_no), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_170, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+        }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_169, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_170, "N° " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(order.queue_number || order.order_serial_no), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_171, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
           type: "button",
           "class": "kiosk-cash-expand-btn",
           "aria-expanded": $options.isKioskCashOrderExpanded(order.id) ? 'true' : 'false',
@@ -13663,12 +13694,12 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
           "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["fa-solid fa-chevron-down", {
             'kiosk-cash-expand-btn-rotated': $options.isKioskCashOrderExpanded(order.id)
           }])
-        }, null, 2 /* CLASS */)], 8 /* PROPS */, _hoisted_171), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_172, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatKioskPrice((_order$total = order.total) !== null && _order$total !== void 0 ? _order$total : order.order_amount)), 1 /* TEXT */)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_173, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)((order.order_items || []).slice(0, 3), function (item, i) {
+        }, null, 2 /* CLASS */)], 8 /* PROPS */, _hoisted_172), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_173, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatKioskPrice((_order$total = order.total) !== null && _order$total !== void 0 ? _order$total : order.order_amount)), 1 /* TEXT */)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_174, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)((order.order_items || []).slice(0, 3), function (item, i) {
           return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", {
             key: i,
             "class": "kiosk-cash-item-pill"
           }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.quantity) + "× " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.item_name || item.name), 1 /* TEXT */);
-        }), 128 /* KEYED_FRAGMENT */)), (order.order_items || []).length > 3 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_174, " +" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(order.order_items.length - 3) + " autres ", 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), $options.isKioskCashOrderExpanded(order.id) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
+        }), 128 /* KEYED_FRAGMENT */)), (order.order_items || []).length > 3 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_175, " +" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(order.order_items.length - 3) + " autres ", 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), $options.isKioskCashOrderExpanded(order.id) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
           key: 0,
           "class": "kiosk-cash-order-details",
           "data-testid": "kiosk-cash-details-".concat(order.id)
@@ -13676,12 +13707,12 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
           return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
             key: item.id || "".concat(order.id, "-").concat(itemIdx),
             "class": "kiosk-cash-order-detail-item"
-          }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_176, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.quantity) + "× " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.item_name || item.name), 1 /* TEXT */), Array.isArray(item.item_variations) && item.item_variations.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_177, [_cache[87] || (_cache[87] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("strong", null, "Variations:", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.item_variations.map(function (variation) {
+          }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_177, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.quantity) + "× " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.item_name || item.name), 1 /* TEXT */), Array.isArray(item.item_variations) && item.item_variations.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_178, [_cache[87] || (_cache[87] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("strong", null, "Variations:", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.item_variations.map(function (variation) {
             return "".concat(variation.variation_name || 'Option', ": ").concat(variation.name);
-          }).join(', ')), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), Array.isArray(item.item_extras) && item.item_extras.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_178, [_cache[88] || (_cache[88] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("strong", null, "Extras:", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.item_extras.map(function (extra) {
+          }).join(', ')), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), Array.isArray(item.item_extras) && item.item_extras.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_179, [_cache[88] || (_cache[88] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("strong", null, "Extras:", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.item_extras.map(function (extra) {
             return extra.name;
-          }).join(', ')), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), item.instruction ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_179, [_cache[89] || (_cache[89] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("strong", null, "Instructions:", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.instruction), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), Array.isArray(item.allergens_snapshot) && item.allergens_snapshot.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_180, [_cache[90] || (_cache[90] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("strong", null, "Allergenes:", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.allergens_snapshot.join(', ')), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
-        }), 128 /* KEYED_FRAGMENT */))], 8 /* PROPS */, _hoisted_175)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_181, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_182, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatKioskTime(order.created_at)), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n                  [POS-V4-ORDERS-ACCESS 2026-05-02] Lien direct vers le détail de la\n                  commande (lignes, statut, ticket fiscal) — accessible sans quitter\n                  l'écran caisse pour vérification ou réimpression.\n                "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_router_link, {
+          }).join(', ')), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), item.instruction ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_180, [_cache[89] || (_cache[89] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("strong", null, "Instructions:", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.instruction), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), Array.isArray(item.allergens_snapshot) && item.allergens_snapshot.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_181, [_cache[90] || (_cache[90] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("strong", null, "Allergenes:", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.allergens_snapshot.join(', ')), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]);
+        }), 128 /* KEYED_FRAGMENT */))], 8 /* PROPS */, _hoisted_176)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_182, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_183, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatKioskTime(order.created_at)), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n                  [POS-V4-ORDERS-ACCESS 2026-05-02] Lien direct vers le détail de la\n                  commande (lignes, statut, ticket fiscal) — accessible sans quitter\n                  l'écran caisse pour vérification ou réimpression.\n                "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_router_link, {
           to: {
             name: 'admin.pos-orders.show',
             params: {
@@ -13706,15 +13737,15 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
           onClick: function onClick($event) {
             return $options.openCounterCollect(order);
           }
-        }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(order._collecting ? '…' : '✓ Encaisser'), 9 /* TEXT, PROPS */, _hoisted_183), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+        }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(order._collecting ? '…' : '✓ Encaisser'), 9 /* TEXT, PROPS */, _hoisted_184), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
           "class": "kiosk-cash-cancel-btn",
           disabled: order._collecting || order._canceling,
           "data-testid": "kiosk-cash-cancel-open",
           onClick: function onClick($event) {
             return $options.openCancelKioskCashDialog(order);
           }
-        }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(order._canceling ? '…' : 'Annuler'), 9 /* TEXT, PROPS */, _hoisted_184)])]);
-      }), 128 /* KEYED_FRAGMENT */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_185, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+        }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(order._canceling ? '…' : 'Annuler'), 9 /* TEXT, PROPS */, _hoisted_185)])]);
+      }), 128 /* KEYED_FRAGMENT */))]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_186, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
         "class": "kiosk-cash-refresh-btn",
         onClick: _cache[39] || (_cache[39] = function () {
           return $options.loadKioskCashOrders && $options.loadKioskCashOrders.apply($options, arguments);
@@ -13735,7 +13766,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     onKeydown: _cache[46] || (_cache[46] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withKeys)(function () {
       return $options.closeCancelKioskCashDialog && $options.closeCancelKioskCashDialog.apply($options, arguments);
     }, ["esc"]))
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_186, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("header", _hoisted_187, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_188, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.cancel_kiosk_cash.title')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_187, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("header", _hoisted_188, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_189, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.cancel_kiosk_cash.title')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     type: "button",
     "class": "pos-kiosk-cash-cancel-close",
     "aria-label": _ctx.$t('button.close'),
@@ -13746,10 +13777,10 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
   }, _toConsumableArray(_cache[92] || (_cache[92] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
     "class": "fa-solid fa-xmark",
     "aria-hidden": "true"
-  }, null, -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_189)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_190, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_191, [_cache[93] || (_cache[93] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+  }, null, -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_190)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_191, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_192, [_cache[93] || (_cache[93] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
     "class": "fa-solid fa-triangle-exclamation",
     "aria-hidden": "true"
-  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.cancel_kiosk_cash.warning')), 1 /* TEXT */)]), $data.cancelKioskCashDialog.order ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_192, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("strong", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.cancelKioskCashDialog.order.queue_number ? 'N° ' + $data.cancelKioskCashDialog.order.queue_number : '#' + ($data.cancelKioskCashDialog.order.order_serial_no || $data.cancelKioskCashDialog.order.id)), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, " — " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatKioskPrice((_ref = (_$data$cancelKioskCas = $data.cancelKioskCashDialog.order.total) !== null && _$data$cancelKioskCas !== void 0 ? _$data$cancelKioskCas : $data.cancelKioskCashDialog.order.total_amount_price) !== null && _ref !== void 0 ? _ref : $data.cancelKioskCashDialog.order.order_amount)), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_193, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.cancel_kiosk_cash.reason_required')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("textarea", {
+  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.cancel_kiosk_cash.warning')), 1 /* TEXT */)]), $data.cancelKioskCashDialog.order ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("p", _hoisted_193, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("strong", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.cancelKioskCashDialog.order.queue_number ? 'N° ' + $data.cancelKioskCashDialog.order.queue_number : '#' + ($data.cancelKioskCashDialog.order.order_serial_no || $data.cancelKioskCashDialog.order.id)), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, " — " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatKioskPrice((_ref = (_$data$cancelKioskCas = $data.cancelKioskCashDialog.order.total) !== null && _$data$cancelKioskCas !== void 0 ? _$data$cancelKioskCas : $data.cancelKioskCashDialog.order.total_amount_price) !== null && _ref !== void 0 ? _ref : $data.cancelKioskCashDialog.order.order_amount)), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_194, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.cancel_kiosk_cash.reason_required')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("textarea", {
     id: "pos-kiosk-cash-cancel-reason",
     ref: "cancelKioskCashReasonInput",
     "onUpdate:modelValue": _cache[42] || (_cache[42] = function ($event) {
@@ -13759,10 +13790,10 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     maxlength: "700",
     "class": "pos-kiosk-cash-cancel-textarea",
     "data-testid": "kiosk-cash-cancel-reason"
-  }, null, 512 /* NEED_PATCH */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.cancelKioskCashDialog.reason]]), $data.cancelKioskCashDialog.error ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_194, [_cache[94] || (_cache[94] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+  }, null, 512 /* NEED_PATCH */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.cancelKioskCashDialog.reason]]), $data.cancelKioskCashDialog.error ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_195, [_cache[94] || (_cache[94] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
     "class": "fa-solid fa-circle-exclamation",
     "aria-hidden": "true"
-  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.cancelKioskCashDialog.error), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("footer", _hoisted_195, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+  }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.cancelKioskCashDialog.error), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("footer", _hoisted_196, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     type: "button",
     "class": "pos-kiosk-cash-cancel-btn pos-kiosk-cash-cancel-btn--ghost",
     disabled: $data.cancelKioskCashDialog.busy,
@@ -13770,7 +13801,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     onClick: _cache[43] || (_cache[43] = function () {
       return $options.closeCancelKioskCashDialog && $options.closeCancelKioskCashDialog.apply($options, arguments);
     })
-  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.cancel_kiosk_cash.back_btn')), 9 /* TEXT, PROPS */, _hoisted_196), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+  }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.cancel_kiosk_cash.back_btn')), 9 /* TEXT, PROPS */, _hoisted_197), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     type: "button",
     "class": "pos-kiosk-cash-cancel-btn pos-kiosk-cash-cancel-btn--danger",
     disabled: $data.cancelKioskCashDialog.busy,
@@ -13779,7 +13810,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     onClick: _cache[44] || (_cache[44] = function () {
       return $options.confirmCancelKioskCashOrder && $options.confirmCancelKioskCashOrder.apply($options, arguments);
     })
-  }, [$data.cancelKioskCashDialog.busy ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("i", _hoisted_198)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.cancel_kiosk_cash.confirm_btn')), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_197)])])], 32 /* NEED_HYDRATION */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n      [Wave X X1 P-OWNER 2026-05-21] Counter-collect SSOT modal — replaces\n      Wave W mode-picker (commit eb43fa180). Same 4-mode parity but with\n      hero total + V5 numpad for CASH received amount + rendu calc + visual\n      parity with PaymentComponent. Sibling pattern preserves\n      PaymentComponent.vue CLAUDE.md §7 frozen state (sentinel\n      paymentComponentEmitsJsdocList.spec.js unchanged).\n      Multi-tranche split deferred to V1.0.2 — see modal header comment for\n      the backend-extension rationale.\n    "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PosCounterCollectModal, {
+  }, [$data.cancelKioskCashDialog.busy ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("i", _hoisted_199)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.cancel_kiosk_cash.confirm_btn')), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_198)])])], 32 /* NEED_HYDRATION */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("\n      [Wave X X1 P-OWNER 2026-05-21] Counter-collect SSOT modal — replaces\n      Wave W mode-picker (commit eb43fa180). Same 4-mode parity but with\n      hero total + V5 numpad for CASH received amount + rendu calc + visual\n      parity with PaymentComponent. Sibling pattern preserves\n      PaymentComponent.vue CLAUDE.md §7 frozen state (sentinel\n      paymentComponentEmitsJsdocList.spec.js unchanged).\n      Multi-tranche split deferred to V1.0.2 — see modal header comment for\n      the backend-extension rationale.\n    "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_PosCounterCollectModal, {
     order: $data.counterCollectOrder,
     onConfirmed: $options.onCounterCollectConfirmed,
     onCancel: $options.onCounterCollectCancel
@@ -15610,16 +15641,20 @@ var _hoisted_2 = {
 };
 var _hoisted_3 = {
   key: 0,
+  "class": "sr-only"
+};
+var _hoisted_4 = {
+  key: 1,
   "class": "pos-v5-total-row__sign",
   "aria-hidden": "true"
 };
-var _hoisted_4 = {
+var _hoisted_5 = {
   "class": "pos-v5-total-row__amount pos-v5-tabular"
 };
 function render(_ctx, _cache, $props, $setup, $data, $options) {
   return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
     "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)($options.rootClass)
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_1, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($props.label), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_2, [$props.sign && $props.sign !== 'none' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_3, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($props.sign), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_4, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($props.value), 1 /* TEXT */)])], 2 /* CLASS */);
+  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_1, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($props.label), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [micro-ux 2026-06-18] the +/- glyph stays aria-hidden (decorative) but a\n           sr-only word ('plus'/'moins') makes the sign spoken, not silent. "), $props.sign && $props.sign !== 'none' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_3, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.signWord), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $props.sign && $props.sign !== 'none' ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_4, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($props.sign), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_5, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($props.value), 1 /* TEXT */)])], 2 /* CLASS */);
 }
 
 /***/ },

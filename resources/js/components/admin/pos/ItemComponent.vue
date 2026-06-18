@@ -132,10 +132,13 @@
 
                             <div class="space-y-2">
                                 <template v-for="variation in getAttributeVariations(itemAttribute)" :key="variation.id">
+                                    <!-- [micro-ux 2026-06-18] selected-state fill #FFE8DD → --pos-v5-brand-red-soft
+                                         (exact token match). The cool greys (#F7F7FC/#EFF0F6/#6E7191/#D9DBE9) are
+                                         intentionally LEFT: no warm Cayenne token matches their hue cleanly. -->
                                     <label v-if="!isMultiAttribute(itemAttribute)"
                                         :title="modifierUnavailableReason(variation)"
                                         :aria-disabled="isModifierUnavailable(variation) ? 'true' : 'false'"
-                                        :class="getVariationQuantity(variation.id) > 0 ? 'border-primary bg-[#FFE8DD]' : 'border-[#F7F7FC] bg-[#F7F7FC]'"
+                                        :class="getVariationQuantity(variation.id) > 0 ? 'border-primary bg-[var(--pos-v5-brand-red-soft)]' : 'border-[#F7F7FC] bg-[#F7F7FC]'"
                                         class="w-full min-h-[60px] cursor-pointer py-2 px-3 gap-3 rounded-lg flex items-center border transition"
                                         :style="isModifierUnavailable(variation) ? 'opacity:.5;cursor:not-allowed;' : ''">
                                         <div class="custom-radio sm flex-shrink-0">

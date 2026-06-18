@@ -684,11 +684,15 @@ textarea:focus-visible,
     color: var(--pos-v5-ink);
 }
 .pos-v5-search__input::-moz-placeholder {
-    color: var(--pos-v5-ink-muted);
+    /* [micro-ux 2026-06-18] AA fix — ink-muted (#8A8278, 3.79:1) → ink-soft
+       (#5A5A5A) so the search placeholder meets WCAG AA. Color only. */
+    color: var(--pos-v5-ink-soft);
     font-weight: var(--pos-v5-weight-medium);
 }
 .pos-v5-search__input::placeholder {
-    color: var(--pos-v5-ink-muted);
+    /* [micro-ux 2026-06-18] AA fix — ink-muted (#8A8278, 3.79:1) → ink-soft
+       (#5A5A5A) so the search placeholder meets WCAG AA. Color only. */
+    color: var(--pos-v5-ink-soft);
     font-weight: var(--pos-v5-weight-medium);
 }
 .pos-v5-search__input::-webkit-search-cancel-button {
@@ -1099,7 +1103,9 @@ textarea:focus-visible,
     font-weight: var(--pos-v5-weight-bold);
     letter-spacing: var(--pos-v5-tracking-caps);
     text-transform: uppercase;
-    color: var(--pos-v5-brand-red);
+    /* [micro-ux 2026-06-18] 11px brand-red eyebrow failed AA (3.49:1) — switched
+       to ink (#1A1A1A) which is safe at small sizes. CTA backgrounds untouched. */
+    color: var(--pos-v5-ink);
     line-height: 1;
 }
 
@@ -1212,11 +1218,19 @@ textarea:focus-visible,
     display: flex;
     align-items: center;
     gap: var(--pos-v5-space-2);
+    /* [micro-ux 2026-06-18] long product names wrap instead of overflowing/
+       clipping; min-width:0 lets the flex item shrink below content width. */
+    min-width: 0;
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 .pos-v5-cart-item__edit {
     width: 22px;
     height: 22px;
+    /* [micro-ux 2026-06-18] keep the inline edit affordance fixed-size next to a
+       wrapping name (don't let it be squeezed by overflow-wrap on the name). */
+    flex-shrink: 0;
     border: 0;
     border-radius: var(--pos-v5-radius-pill);
     background: transparent;
@@ -1238,6 +1252,8 @@ textarea:focus-visible,
     line-height: var(--pos-v5-leading-snug);
     color: var(--pos-v5-ink-soft);
     white-space: pre-line;
+    /* [micro-ux 2026-06-18] long modifier/variation text wraps cleanly. */
+    overflow-wrap: anywhere;
 }
 
 .pos-v5-cart-item__bundled {
@@ -1372,7 +1388,9 @@ textarea:focus-visible,
     font-weight: var(--pos-v5-weight-bold);
     letter-spacing: var(--pos-v5-tracking-caps);
     text-transform: uppercase;
-    color: var(--pos-v5-brand-red);
+    /* [micro-ux 2026-06-18] 11px brand-red eyebrow failed AA (3.49:1) — switched
+       to ink (#1A1A1A) which is safe at small sizes. CTA backgrounds untouched. */
+    color: var(--pos-v5-ink);
     line-height: 1;
 }
 .pos-v5-drawer__title {
@@ -7639,6 +7657,9 @@ input:checked + div svg {
 }
 .bg-\[var\(--pos-v5-bg-subtle\)\] {
   background-color: var(--pos-v5-bg-subtle);
+}
+.bg-\[var\(--pos-v5-brand-red-soft\)\] {
+  background-color: var(--pos-v5-brand-red-soft);
 }
 .bg-\[var\(--pos-v5-danger-soft\)\] {
   background-color: var(--pos-v5-danger-soft);

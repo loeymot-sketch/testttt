@@ -122,7 +122,9 @@ export default {
     color: var(--pos-v5-ink);
 }
 .pos-v5-search-input__field::placeholder {
-    color: var(--pos-v5-ink-muted);
+    /* [micro-ux 2026-06-18] ink-muted (#8A8278, 3.79:1) failed AA on the warm
+       search bg — raised to ink-soft (#5A5A5A) which passes. Color only. */
+    color: var(--pos-v5-ink-soft);
     font-weight: var(--pos-v5-weight-medium);
 }
 .pos-v5-search-input__field::-webkit-search-cancel-button {

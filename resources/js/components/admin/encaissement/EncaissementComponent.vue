@@ -12,7 +12,9 @@
                         <p class="enc-subtitle">{{ $t('label.encaisser_queue_subtitle') }}</p>
                     </div>
                     <div class="enc-header-actions">
-                        <span class="enc-count-chip">{{ orders.length }}</span>
+                        <!-- [micro-ux 2026-06-18] count chip gets an accessible name so a
+                             screen reader announces "N order(s) to collect" not a bare number. -->
+                        <span class="enc-count-chip" :aria-label="$t('label.encaisser_queue_count', { count: orders.length })">{{ orders.length }}</span>
                         <button class="db-btn py-2 text-white bg-primary" @click.prevent="fetchPending">
                             <i class="lab lab-refresh-line lab-font-size-16"></i>
                             <span>{{ $t('button.refresh') }}</span>
@@ -20,10 +22,25 @@
                     </div>
                 </div>
 
+                <!-- [micro-ux 2026-06-18] polite announcer — fires only when the queue GROWS
+                     so a cashier on this screen hears a newly-arrived order without watching it. -->
+                <div class="sr-only" aria-live="polite">{{ queueAnnouncement }}</div>
+
                 <div class="enc-body">
-                    <div v-if="orders.length === 0" class="enc-empty">
+                    <div v-if="orders.length === 0 && !fetchError" class="enc-empty">
                         <div class="enc-empty-icon">✅</div>
                         <p class="enc-empty-title">{{ $t('label.encaisser_queue_empty') }}</p>
+                    </div>
+
+                    <!-- [micro-ux 2026-06-18] surface a failed fetch instead of masquerading
+                         as the ✅ empty-state; offer an explicit retry. Gated on empty so a
+                         background-poll failure never clobbers the last-good queue. -->
+                    <div v-else-if="fetchError && orders.length === 0" class="enc-empty">
+                        <div class="enc-empty-icon">⚠️</div>
+                        <p class="enc-empty-title">{{ $t('message.something_wrong') }}</p>
+                        <button class="enc-collect-btn mt-3" @click.prevent="fetchPending">
+                            {{ $t('button.retry') }}
+                        </button>
                     </div>
 
                     <div v-else class="enc-grid">
@@ -45,7 +62,9 @@
                             </ul>
                             <div class="enc-ticket-bottom">
                                 <span class="enc-amount">{{ formatPrice(orderAmount(order)) }}</span>
-                                <button class="enc-collect-btn" @click.prevent="openEncaissement(order)">
+                                <!-- [micro-ux 2026-06-18] per-button accessible name disambiguates the
+                                     repeated "Encaisser" buttons by queue/order number for screen readers. -->
+                                <button class="enc-collect-btn" :aria-label="$t('label.encaisser') + ' N°' + (order.queue_number || order.id)" @click.prevent="openEncaissement(order)">
                                     {{ $t('label.encaisser') }}
                                 </button>
                             </div>
@@ -90,6 +109,10 @@ export default {
             encaisseOrder: null,
             pollTimer: null,
             enums: { orderTypeEnum },
+            // [micro-ux 2026-06-18] aria-live text (set only when the queue grows)
+            // + error flag for the initial/manual fetch empty-state.
+            queueAnnouncement: '',
+            fetchError: false,
         };
     },
     mounted() {
@@ -112,10 +135,22 @@ export default {
     methods: {
         fetchPending(silent = false) {
             if (!silent) this.loading.isActive = true;
+            const prevCount = this.orders.length;
             axios.get('admin/pos/counter-collect/pending').then((res) => {
-                this.orders = res.data?.data || [];
+                const next = res.data?.data || [];
+                // [micro-ux 2026-06-18] Announce ONLY on growth (a new order arrived),
+                // not on every poll, so the screen reader isn't chatty.
+                if (next.length > prevCount) {
+                    this.queueAnnouncement = this.$t('label.encaisser_queue_new_arrival', { count: next.length });
+                }
+                this.orders = next;
+                this.fetchError = false;
                 this.loading.isActive = false;
             }).catch(() => {
+                // [micro-ux 2026-06-18] Only flip the visible error flag on the
+                // initial/manual fetch — a background poll failure stays silent and
+                // keeps the last-good queue on screen.
+                if (!silent) this.fetchError = true;
                 this.loading.isActive = false;
             });
         },
@@ -268,7 +303,21 @@ export default {
     color: #9a3412;
     font-variant-numeric: tabular-nums;
 }
-.enc-ticket-customer { font-weight: 600; color: var(--pos-v5-ink); }
+/* [micro-ux 2026-06-18] self-contained sr-only so the aria-live announcer is
+   visually hidden but still read, regardless of global utility availability. */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+}
+/* [micro-ux 2026-06-18] long customer name truncates instead of pushing the card. */
+.enc-ticket-customer { font-weight: 600; color: var(--pos-v5-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .enc-ticket-items { list-style: none; padding: 0; margin: 0; font-size: 0.82rem; color: var(--pos-v5-ink-soft); }
 .enc-ticket-items li { line-height: 1.4; }
 .enc-more { font-style: italic; }
@@ -292,9 +341,13 @@ export default {
     padding: 0.5rem 1.1rem;
     font-weight: 800;
     cursor: pointer;
-    transition: background var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);
+    /* [micro-ux 2026-06-18] include transform so the :active press reads as a
+       physical tap on the touchscreen. */
+    transition: background var(--pos-v5-duration-fast) var(--pos-v5-ease-standard),
+                transform var(--pos-v5-duration-fast) var(--pos-v5-ease-standard);
 }
 .enc-collect-btn:hover { background: var(--pos-v5-brand-red-dark); }
+.enc-collect-btn:active { transform: translateY(1px); }
 :deep(.db-btn.bg-primary) {
     background: var(--pos-v5-brand-red) !important;
     border-radius: var(--pos-v5-radius-md);

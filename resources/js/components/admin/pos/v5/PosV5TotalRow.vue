@@ -2,6 +2,9 @@
   <div :class="rootClass">
     <span class="pos-v5-total-row__label">{{ label }}</span>
     <span class="pos-v5-total-row__value">
+      <!-- [micro-ux 2026-06-18] the +/- glyph stays aria-hidden (decorative) but a
+           sr-only word ('plus'/'moins') makes the sign spoken, not silent. -->
+      <span v-if="sign && sign !== 'none'" class="sr-only">{{ signWord }}</span>
       <span v-if="sign && sign !== 'none'" class="pos-v5-total-row__sign" aria-hidden="true">{{ sign }}</span>
       <span class="pos-v5-total-row__amount pos-v5-tabular">{{ value }}</span>
     </span>
@@ -45,6 +48,12 @@ export default {
                 `pos-v5-total-row--${this.tone}`,
             ];
         },
+        // [micro-ux 2026-06-18] spoken word for the +/- sign (screen-reader only).
+        signWord() {
+            if (this.sign === "-") return this.$t("label.minus");
+            if (this.sign === "+") return this.$t("label.plus");
+            return "";
+        },
     },
 };
 </script>
@@ -79,6 +88,19 @@ export default {
     font-weight: var(--pos-v5-weight-bold);
     margin-right: 2px;
     opacity: 0.85;
+}
+
+/* [micro-ux 2026-06-18] self-contained sr-only for the spoken sign word. */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
 }
 
 .pos-v5-total-row__amount {
