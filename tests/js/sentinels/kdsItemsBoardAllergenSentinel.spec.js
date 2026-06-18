@@ -35,4 +35,25 @@ describe('KDS items-board allergen warning (prod-finale P1 food-safety)', () => 
         // an accessible warning label, mirroring the card badge
         expect(block).toContain('label.kds_allergens_badge');
     });
+
+    // [prod-finale 2026-06-17 P2 food-safety] The printed paper kitchen ticket is an OFFLINE chef surface
+    // with no on-screen badge/modal fallback — it MUST carry the structured allergen snapshot. Lock the
+    // print path so a refactor can't drop it (cycle-5 finding).
+    it('the printed kitchen ticket renders the structured allergens_snapshot', () => {
+        const pStart = src.indexOf('printKitchenTicket(');
+        expect(pStart).toBeGreaterThan(-1);
+        const pEnd = src.indexOf("window.open(", pStart); // ticket HTML is assembled before the print window opens
+        expect(pEnd).toBeGreaterThan(pStart);
+        const printBlock = src.slice(pStart, pEnd);
+        expect(printBlock).toContain('item.allergens_snapshot');
+        expect(printBlock).toContain('sortedAllergens(item.allergens_snapshot)');
+        expect(printBlock).toMatch(/Array\.isArray\(item\.allergens_snapshot\)\s*&&\s*item\.allergens_snapshot\.length/);
+    });
+
+    // All 4 KDS card lanes (dine-in/online/takeaway/kiosk) + the items-board must each render the per-item
+    // allergen chip → 5 guarded allergens_snapshot template renders total (cycle-5 lane-parity heal).
+    it('every KDS card lane + the items-board renders a guarded per-item allergen chip (>=5 renders)', () => {
+        const renders = (src.match(/Array\.isArray\(\w+\.allergens_snapshot\)\s*&&\s*\w+\.allergens_snapshot\.length\s*>\s*0/g) || []);
+        expect(renders.length).toBeGreaterThanOrEqual(5);
+    });
 });

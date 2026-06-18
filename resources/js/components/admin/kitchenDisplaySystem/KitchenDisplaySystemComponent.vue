@@ -424,6 +424,14 @@
                             </span>
                           </p>
                         </div>
+                        <!-- [prod-finale 2026-06-17 P2] inline per-item allergen chip — parity with the kiosk lane (the order-level badge+modal already warn; this adds the at-a-glance per-line chip). -->
+                        <div v-if="Array.isArray(item.allergens_snapshot) && item.allergens_snapshot.length > 0" class="mt-2 flex flex-wrap gap-1">
+                          <span
+                            v-for="(allergen, allergenIdx) in item.allergens_snapshot"
+                            :key="`${item.id || iIdx}-allergen-${allergenIdx}`"
+                            class="rounded-full bg-[#FFF3E8] px-2 py-0.5 text-[11px] font-medium uppercase tracking-[0.02em] text-[#C25D1B]"
+                          >{{ allergen }}</span>
+                        </div>
                         <!-- [P3-1 FIX] Show instruction on dine-in cards -->
                         <div
                           v-if="item.instruction && item.instruction !== ''"
@@ -609,6 +617,14 @@
                             </span>
                           </p>
                         </div>
+                        <!-- [prod-finale 2026-06-17 P2] inline per-item allergen chip — parity with the kiosk lane (the order-level badge+modal already warn; this adds the at-a-glance per-line chip). -->
+                        <div v-if="Array.isArray(item.allergens_snapshot) && item.allergens_snapshot.length > 0" class="mt-2 flex flex-wrap gap-1">
+                          <span
+                            v-for="(allergen, allergenIdx) in item.allergens_snapshot"
+                            :key="`${item.id || iIdx}-allergen-${allergenIdx}`"
+                            class="rounded-full bg-[#FFF3E8] px-2 py-0.5 text-[11px] font-medium uppercase tracking-[0.02em] text-[#C25D1B]"
+                          >{{ allergen }}</span>
+                        </div>
                         <div
                           v-if="item.instruction && item.instruction !== ''"
                           :class="[kdsInstructionClass(item.instruction), 'kds-instruction', 'mt-1', 'text-xs', 'text-heading']"
@@ -781,6 +797,14 @@
                               {{ kdsAddonDisplayName(addon) }}<span v-if="Number(addon.quantity || 1) > 1"> ×{{ Number(addon.quantity || 1) }}</span><span v-if="index + 1 < item.item_addons.length">,&nbsp;</span>
                             </span>
                           </p>
+                        </div>
+                        <!-- [prod-finale 2026-06-17 P2] inline per-item allergen chip — parity with the kiosk lane (the order-level badge+modal already warn; this adds the at-a-glance per-line chip). -->
+                        <div v-if="Array.isArray(item.allergens_snapshot) && item.allergens_snapshot.length > 0" class="mt-2 flex flex-wrap gap-1">
+                          <span
+                            v-for="(allergen, allergenIdx) in item.allergens_snapshot"
+                            :key="`${item.id || iIdx}-allergen-${allergenIdx}`"
+                            class="rounded-full bg-[#FFF3E8] px-2 py-0.5 text-[11px] font-medium uppercase tracking-[0.02em] text-[#C25D1B]"
+                          >{{ allergen }}</span>
                         </div>
                         <!-- [P3-1 FIX] Show instruction on takeaway cards -->
                         <div
@@ -2257,6 +2281,14 @@ export default {
             return qty > 1 ? `${name} ×${qty}` : name;
           }).join(', ');
           lines.push(`<div style="font-size:12px;color:#444;margin-top:2px;">+ ${addons}</div>`);
+        }
+        // [prod-finale 2026-06-17 P2 food-safety] The printed paper kitchen ticket is an OFFLINE chef
+        // surface with no on-screen badge/modal fallback — it must carry the STRUCTURED allergen snapshot,
+        // not rely on a customer happening to type the allergen into the free-text instruction. Same red
+        // allergen style as the instruction-allergen highlight below.
+        if (Array.isArray(item.allergens_snapshot) && item.allergens_snapshot.length > 0) {
+          const allergens = e(this.sortedAllergens(item.allergens_snapshot).join(' · '));
+          lines.push(`<div style="font-size:11px;color:#7f1d1d;background:#fef2f2;border:1px solid #fecaca;padding:4px 6px;border-radius:4px;margin-top:3px;font-weight:700;white-space:pre-line;">&#9888; Allerg&egrave;nes: ${allergens}</div>`);
         }
         if (item.instruction) {
           const vis = kdsInstructionVisualClass(item.instruction);
