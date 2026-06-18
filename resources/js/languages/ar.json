@@ -975,6 +975,7 @@
         "pos_payment_method": "طريقة الدفع في نقاط البيع",
         "card": "بطاقة",
         "note": "ملاحظة",
+        "close": "إغلاق",
         "enter_card_last_4_digits": "أدخل آخر 4 أرقام من البطاقة",
         "enter_payment_note": "أدخل ملاحظة الدفع في نقاط البيع",
         "enter_transaction_id": "أدخل معرف المعاملة",

@@ -8,7 +8,8 @@
             <router-link v-else class="w-24" :to="{ name: 'frontend.home' }">
                 <img :src="setting.theme_logo" alt="logo">
             </router-link>
-            <button @click.prevent="handleSidebar" class="fa-solid fa-xmark xmark-btn close-db-menu"></button>
+            <!-- [prod-finale 2026-06-17 P3 a11y] icon-only sidebar close needs an accessible name. -->
+            <button @click.prevent="handleSidebar" class="fa-solid fa-xmark xmark-btn close-db-menu" :aria-label="$t('label.close')"></button>
         </div>
         <!--        {{ menus }}-->
         <nav class="db-sidebar-nav">

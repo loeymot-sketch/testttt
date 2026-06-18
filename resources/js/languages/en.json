@@ -1182,6 +1182,7 @@
         "pos_payment_method": "POS Payment Method",
         "card": "Card",
         "note": "Note",
+        "close": "Close",
         "enter_card_last_4_digits": "Enter last 4 digits of card",
         "enter_payment_note": "Enter payment note",
         "enter_transaction_id": "Enter Transaction ID",

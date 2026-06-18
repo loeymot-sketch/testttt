@@ -611,6 +611,7 @@
         "vat_intra": "TVA intra",
         "name": "Nom",
         "note": "Note",
+        "close": "Fermer",
         "email": "Email",
         "phone": "Téléphone",
         "address": "Adresse",
