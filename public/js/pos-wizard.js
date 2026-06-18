@@ -217,7 +217,17 @@
        ============================== */
     function fmtPrice(val) {
         var num = parseFloat(val) || 0;
-        return '€' + num.toFixed(2);
+        // [LOCK G-FROZEN-WIZARD-MONEY 2026-06-18 — owner-approved frozen-zone edit] FR money display: was
+        // en-US '€' + num.toFixed(2) = "€0.90" (€-prefix, dot decimal), clashing with the FR "0,90 €" used
+        // everywhere else in the app. Now Intl fr-FR (comma decimal + NBSP thousands) + " €" suffix =
+        // "0,90 €", matching appService.currencyFormat. DISPLAY-ONLY: callers concatenate this string for
+        // rendering and never parse it back (verified: 74 uses, all `+ fmtPrice`, no parseFloat(fmtPrice)).
+        // The wizard's pricing math is untouched (it operates on the raw numbers, not this string).
+        try {
+            return new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num) + ' €';
+        } catch (e) {
+            return num.toFixed(2).replace('.', ',') + ' €';
+        }
     }
 
     /**
