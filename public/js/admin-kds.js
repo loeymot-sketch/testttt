@@ -3851,7 +3851,7 @@ var _hoisted_77 = {
   "class": "py-2.5 px-3 w-full rounded-t-lg flex items-center justify-between bg-[#F0F8FF]"
 };
 var _hoisted_78 = {
-  "class": "flex items-center gap-1 text-[#0084FF]"
+  "class": "flex items-center gap-1 flex-wrap min-w-0 text-[#0084FF]"
 };
 var _hoisted_79 = ["id"];
 var _hoisted_80 = ["title"];
@@ -4587,8 +4587,8 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     }, ["prevent"])),
     "aria-label": _ctx.$t('button.close'),
     "class": "modal-close lab lab-close-circle-line transition invisible group-focus-within:visible"
-  }, null, 8 /* PROPS */, _hoisted_67)], 32 /* NEED_HYDRATION */)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
-    "class": "grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 gap-4",
+  }, null, 8 /* PROPS */, _hoisted_67)], 32 /* NEED_HYDRATION */)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [micro-ux 2026-06-18] legacy KDS grid: 4-up only at 2xl (≥1536) so 1280-1535 (a 1366 panel or 16\" @125% zoom) keeps roomier 3-col cards instead of ~234px squeezes. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    "class": "grid grid-cols-1 md:grid-cols-3 2xl:grid-cols-4 gap-4",
     onClick: _cache[24] || (_cache[24] = function ($event) {
       return $options.closeFilterSlide($event);
     })
@@ -4625,7 +4625,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
         return $options.openAllergensModal(dineinOrder);
       }, ["prevent", "stop"]),
       "aria-label": _ctx.$t('label.kds_allergens_badge_aria')
-    }, "⚠ " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_allergens_badge')), 9 /* TEXT, PROPS */, _hoisted_76)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_77, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_78, [_cache[32] || (_cache[32] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+    }, "⚠ " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.kds_allergens_badge')), 9 /* TEXT, PROPS */, _hoisted_76)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_77, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [micro-ux 2026-06-18] flex-wrap + min-w-0 so the serial / queue / urgency-chip cluster wraps within its column instead of colliding with the status badge on a narrow (1366) legacy card. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_78, [_cache[32] || (_cache[32] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
       "class": "lab lab-processing lab-font-size-16 text-[#0084FF]"
     }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
       id: 'order-' + dineinOrder.id + '-title',

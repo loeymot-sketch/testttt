@@ -707,6 +707,9 @@ export default {
             return appService.textShortener(text, number);
         },
         orderStatus: function (status) {
+            // [micro-ux 2026-06-18] in-flight guard: a fast 2nd tap during the request would double-POST the
+            // status change (only OrderStateMachine backstops it server-side); block it client-side.
+            if (this.loading.isActive) return;
             try {
                 this.loading.isActive = true;
                 this.$store.dispatch("posOrder/changeStatus", {
@@ -720,14 +723,18 @@ export default {
                     );
                 }).catch((err) => {
                     this.loading.isActive = false;
-                    alertService.error(err.response.data.message);
+                    // [micro-ux 2026-06-18] safe optional-chaining: a network failure (no err.response) used to
+                    // throw inside .catch → no toast → a FAILED status change looked like it succeeded.
+                    alertService.error(err?.response?.data?.message || this.$t('message.something_wrong'));
                 });
             } catch (err) {
                 this.loading.isActive = false;
-                alertService.error(err.response.data.message);
+                alertService.error(err?.response?.data?.message || this.$t('message.something_wrong'));
             }
         },
         changePaymentStatus: function (status) {
+            // [micro-ux 2026-06-18] in-flight guard (see orderStatus) — block a double-tap double-POST.
+            if (this.loading.isActive) return;
             try {
                 this.loading.isActive = true;
                 this.$store.dispatch("posOrder/changePaymentStatus", {
@@ -741,11 +748,11 @@ export default {
                     );
                 }).catch((err) => {
                     this.loading.isActive = false;
-                    alertService.error(err.response.data.message);
+                    alertService.error(err?.response?.data?.message || this.$t('message.something_wrong'));
                 });
             } catch (err) {
                 this.loading.isActive = false;
-                alertService.error(err.response.data.message);
+                alertService.error(err?.response?.data?.message || this.$t('message.something_wrong'));
             }
         },
         // [WT-D-R1-02 2026-05-20] Driver assignment now : (1) shows a

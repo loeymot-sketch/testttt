@@ -369,11 +369,11 @@ export default {
                         alertService.successFlip(null, this.$t('menu.pos_orders'));
                     }).catch((err) => {
                         this.loading.isActive = false;
-                        alertService.error(err.response.data.message);
+                        alertService.error(err?.response?.data?.message || this.$t('message.something_wrong'));
                     })
                 } catch (err) {
                     this.loading.isActive = false;
-                    alertService.error(err.response.data.message);
+                    alertService.error(err?.response?.data?.message || this.$t('message.something_wrong'));
                 }
             }).catch((err) => {
                 this.loading.isActive = false;
@@ -393,7 +393,7 @@ export default {
                 URL.revokeObjectURL(link.href);
             }).catch((err) => {
                 this.loading.isActive = false;
-                alertService.error(err.response.data.message);
+                alertService.error(err?.response?.data?.message || this.$t('message.something_wrong'));
             });
         },
     }

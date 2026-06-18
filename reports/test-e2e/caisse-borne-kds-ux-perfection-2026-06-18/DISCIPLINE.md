@@ -93,7 +93,16 @@ P2: tracker router-links keyboard **:focus-visible** ring (was hover-only, keybo
 P3: Encaisser :active feedback · dead `<a href="#">`→`<span>` · tabular-nums tracker totals · ItemComponent #FFE8DD→token · ticket-customer ellipsis · count-chip aria-label · POS à-encaisser/prêtes aria-live · cart-extras + eyebrows **AA contrast**→ink · Pill role=status · TotalRow sign sr-only · PosOrderList + PosOrderShow surface fetch errors (was silent blank/empty).
 7 i18n keys added (fr+en, all resolve). Build green · Vitest 1994/0 · frozen 0. (Cool-grey hexes left — no clean warm-token match.)
 
-### KDS + OSS + Dashboard deep pass — in progress (workflow woo4g1ibb)
+### KDS + OSS + Dashboard deep pass — 19 verified heals (0 refuted), commit `f7fa12a8b`
+P1: RealtimeReport failed-CA-fetch showed "0,00 €" = indistinguishable from zero sales → loaded/failed 3-state (—/value/"Donnée indisponible"). P2: KPI white-on-light-gradient (1.74:1) → solid dark (≥4.5:1) · dashboard-link focus-visible · loading-state flashes (fake 0 / green "optimal") · per-widget scoped loaders · FeaturedItems truncation · realtime/OSS-préparation/KDS-new-order aria-live · KDS legacy color-only urgency → "En retard" text chip · KDS filter aria-pressed · SLA missing .catch + error-as-healthy. P3: KPI tabular-nums · db-card token align · OSS empty contrast · SLA red→700 · AuditTrail .catch · MostPopular/Featured/TopCustomers empty-state. (+ label.no_data_available was missing in en.json → added.)
+
+### Cycle-3 convergence (responsive-stress + keyboard-flow) — 8 heals, commit `b38c22fe4`
+All 38 prior heals intact (0 regressions). P1: **POS menu overlapped/clipped the cart panel below ~1536px** → widened menu width-reservation per band + 2xl + min-w-0; **VERIFIED LIVE 30px clearance at BOTH 1366×768 AND 1920×1080**. P2: focus-trap + focus-restore on the 3 POS modals · barcode-scanner focused-input guard (phantom-lookup-while-typing) · ItemComponent modal ESC. P3: operator-bar labels lg→xl · ESC-via-trap · reduced-motion on 2 spinners.
+
+### Cycle-4 convergence (KDS/Dashboard responsive @1366 + final completeness) — DEEP CONVERGENCE, commit `<pending>`
+All 46 prior heals intact (0 regressions). **0 new P1/P2** — only 4 P3 (trend 19→19→8→4-P3): error-toast crash on a failed status change (err.response undefined → looked like success) → safe optional-chaining (PosOrderShow + PosOrderList) · status-dropdown double-tap double-POST → in-flight guard · legacy-KDS grid 4-col@2xl (roomier 3-col at 1366) · legacy-KDS card header flex-wrap/min-w-0.
+
+## ✅ DEEP-UX CONVERGENCE REACHED — 50 micro-detail heals over 4 adversarial cycles (CAISSE 19 + KDS/Dash/OSS 19 + responsive/keyboard 8 + final 4), 0 regressions, cycle-4 = 0 new P1/P2. Build green · Vitest 1994/0 · frozen diff 0. Residual = the standing owner-gates (G-FROZEN-WIZARD-MONEY, G-CURRENCY-POSITION-KIOSK) + nothing else healable.
 
 ## Convergence
 A SYSTEM is done when every page passes 2 consecutive clean reads (0 open P1/P2) at its viewport, with all heals committed and frozen issues gated. Then next system.

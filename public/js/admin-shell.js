@@ -17357,12 +17357,14 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
             _this2.loading.isActive = false;
             _services_alertService__WEBPACK_IMPORTED_MODULE_1__["default"].successFlip(null, _this2.$t('menu.pos_orders'));
           })["catch"](function (err) {
+            var _err$response2;
             _this2.loading.isActive = false;
-            _services_alertService__WEBPACK_IMPORTED_MODULE_1__["default"].error(err.response.data.message);
+            _services_alertService__WEBPACK_IMPORTED_MODULE_1__["default"].error((err === null || err === void 0 || (_err$response2 = err.response) === null || _err$response2 === void 0 || (_err$response2 = _err$response2.data) === null || _err$response2 === void 0 ? void 0 : _err$response2.message) || _this2.$t('message.something_wrong'));
           });
         } catch (err) {
+          var _err$response3;
           _this2.loading.isActive = false;
-          _services_alertService__WEBPACK_IMPORTED_MODULE_1__["default"].error(err.response.data.message);
+          _services_alertService__WEBPACK_IMPORTED_MODULE_1__["default"].error((err === null || err === void 0 || (_err$response3 = err.response) === null || _err$response3 === void 0 || (_err$response3 = _err$response3.data) === null || _err$response3 === void 0 ? void 0 : _err$response3.message) || _this2.$t('message.something_wrong'));
         }
       })["catch"](function (err) {
         _this2.loading.isActive = false;
@@ -17382,8 +17384,9 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
         link.click();
         URL.revokeObjectURL(link.href);
       })["catch"](function (err) {
+        var _err$response4;
         _this3.loading.isActive = false;
-        _services_alertService__WEBPACK_IMPORTED_MODULE_1__["default"].error(err.response.data.message);
+        _services_alertService__WEBPACK_IMPORTED_MODULE_1__["default"].error((err === null || err === void 0 || (_err$response4 = err.response) === null || _err$response4 === void 0 || (_err$response4 = _err$response4.data) === null || _err$response4 === void 0 ? void 0 : _err$response4.message) || _this3.$t('message.something_wrong'));
       });
     }
   }
@@ -17852,6 +17855,9 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
     },
     orderStatus: function orderStatus(status) {
       var _this4 = this;
+      // [micro-ux 2026-06-18] in-flight guard: a fast 2nd tap during the request would double-POST the
+      // status change (only OrderStateMachine backstops it server-side); block it client-side.
+      if (this.loading.isActive) return;
       try {
         this.loading.isActive = true;
         this.$store.dispatch("posOrder/changeStatus", {
@@ -17861,16 +17867,22 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
           _this4.loading.isActive = false;
           _services_alertService__WEBPACK_IMPORTED_MODULE_1__["default"].successFlip(1, _this4.$t("label.status"));
         })["catch"](function (err) {
+          var _err$response2;
           _this4.loading.isActive = false;
-          _services_alertService__WEBPACK_IMPORTED_MODULE_1__["default"].error(err.response.data.message);
+          // [micro-ux 2026-06-18] safe optional-chaining: a network failure (no err.response) used to
+          // throw inside .catch → no toast → a FAILED status change looked like it succeeded.
+          _services_alertService__WEBPACK_IMPORTED_MODULE_1__["default"].error((err === null || err === void 0 || (_err$response2 = err.response) === null || _err$response2 === void 0 || (_err$response2 = _err$response2.data) === null || _err$response2 === void 0 ? void 0 : _err$response2.message) || _this4.$t('message.something_wrong'));
         });
       } catch (err) {
+        var _err$response3;
         this.loading.isActive = false;
-        _services_alertService__WEBPACK_IMPORTED_MODULE_1__["default"].error(err.response.data.message);
+        _services_alertService__WEBPACK_IMPORTED_MODULE_1__["default"].error((err === null || err === void 0 || (_err$response3 = err.response) === null || _err$response3 === void 0 || (_err$response3 = _err$response3.data) === null || _err$response3 === void 0 ? void 0 : _err$response3.message) || this.$t('message.something_wrong'));
       }
     },
     changePaymentStatus: function changePaymentStatus(status) {
       var _this5 = this;
+      // [micro-ux 2026-06-18] in-flight guard (see orderStatus) — block a double-tap double-POST.
+      if (this.loading.isActive) return;
       try {
         this.loading.isActive = true;
         this.$store.dispatch("posOrder/changePaymentStatus", {
@@ -17880,12 +17892,14 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
           _this5.loading.isActive = false;
           _services_alertService__WEBPACK_IMPORTED_MODULE_1__["default"].successFlip(1, _this5.$t("label.payment_status"));
         })["catch"](function (err) {
+          var _err$response4;
           _this5.loading.isActive = false;
-          _services_alertService__WEBPACK_IMPORTED_MODULE_1__["default"].error(err.response.data.message);
+          _services_alertService__WEBPACK_IMPORTED_MODULE_1__["default"].error((err === null || err === void 0 || (_err$response4 = err.response) === null || _err$response4 === void 0 || (_err$response4 = _err$response4.data) === null || _err$response4 === void 0 ? void 0 : _err$response4.message) || _this5.$t('message.something_wrong'));
         });
       } catch (err) {
+        var _err$response5;
         this.loading.isActive = false;
-        _services_alertService__WEBPACK_IMPORTED_MODULE_1__["default"].error(err.response.data.message);
+        _services_alertService__WEBPACK_IMPORTED_MODULE_1__["default"].error((err === null || err === void 0 || (_err$response5 = err.response) === null || _err$response5 === void 0 || (_err$response5 = _err$response5.data) === null || _err$response5 === void 0 ? void 0 : _err$response5.message) || this.$t('message.something_wrong'));
       }
     },
     // [WT-D-R1-02 2026-05-20] Driver assignment now : (1) shows a
@@ -17922,14 +17936,14 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
           });
           _services_alertService__WEBPACK_IMPORTED_MODULE_1__["default"].success(msg);
         })["catch"](function (err) {
-          var _err$response2;
+          var _err$response6;
           _this6.loading.isActive = false;
-          _services_alertService__WEBPACK_IMPORTED_MODULE_1__["default"].error((err === null || err === void 0 || (_err$response2 = err.response) === null || _err$response2 === void 0 || (_err$response2 = _err$response2.data) === null || _err$response2 === void 0 ? void 0 : _err$response2.message) || _this6.$t('label.error'));
+          _services_alertService__WEBPACK_IMPORTED_MODULE_1__["default"].error((err === null || err === void 0 || (_err$response6 = err.response) === null || _err$response6 === void 0 || (_err$response6 = _err$response6.data) === null || _err$response6 === void 0 ? void 0 : _err$response6.message) || _this6.$t('label.error'));
         });
       } catch (err) {
-        var _err$response3;
+        var _err$response7;
         this.loading.isActive = false;
-        _services_alertService__WEBPACK_IMPORTED_MODULE_1__["default"].error((err === null || err === void 0 || (_err$response3 = err.response) === null || _err$response3 === void 0 || (_err$response3 = _err$response3.data) === null || _err$response3 === void 0 ? void 0 : _err$response3.message) || this.$t('label.error'));
+        _services_alertService__WEBPACK_IMPORTED_MODULE_1__["default"].error((err === null || err === void 0 || (_err$response7 = err.response) === null || _err$response7 === void 0 || (_err$response7 = _err$response7.data) === null || _err$response7 === void 0 ? void 0 : _err$response7.message) || this.$t('label.error'));
       }
     }
   }

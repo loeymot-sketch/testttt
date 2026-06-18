@@ -10577,6 +10577,10 @@ input[type="search"]::-webkit-search-results-decoration { display: none; }
     width: calc(100% - 420px);
   }
 
+  .\32xl\:grid-cols-4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
   .\32xl\:grid-cols-5 {
     grid-template-columns: repeat(5, minmax(0, 1fr));
   }

@@ -289,7 +289,8 @@
             </form>
           </div>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 gap-4" @click="closeFilterSlide($event)">
+        <!-- [micro-ux 2026-06-18] legacy KDS grid: 4-up only at 2xl (≥1536) so 1280-1535 (a 1366 panel or 16" @125% zoom) keeps roomier 3-col cards instead of ~234px squeezes. -->
+        <div class="grid grid-cols-1 md:grid-cols-3 2xl:grid-cols-4 gap-4" @click="closeFilterSlide($event)">
           <div class="db-card rounded-[10px] h-fit">
             <div class="p-3 pb-2" :class="filteredDineinOrders.length > 0 ? 'border-b border-[#D9DBE9] mb-2' : ''">
               <h3 class="text-lg font-semibold">{{ $t("label.dinein_orders") }}</h3>
@@ -328,7 +329,8 @@
                   :aria-label="$t('label.kds_allergens_badge_aria')"
                 >&#9888; {{ $t('label.kds_allergens_badge') }}</button>
                 <div class="py-2.5 px-3 w-full rounded-t-lg flex items-center justify-between bg-[#F0F8FF]">
-                  <div class="flex items-center gap-1 text-[#0084FF]">
+                  <!-- [micro-ux 2026-06-18] flex-wrap + min-w-0 so the serial / queue / urgency-chip cluster wraps within its column instead of colliding with the status badge on a narrow (1366) legacy card. -->
+                  <div class="flex items-center gap-1 flex-wrap min-w-0 text-[#0084FF]">
                     <i class="lab lab-processing lab-font-size-16 text-[#0084FF]"></i>
                     <span :id="'order-' + dineinOrder.id + '-title'" class="text-sm font-normal">#{{ dineinOrder.order_serial_no }}</span>
                     <!-- [micro-ux 2026-06-18] text/icon urgency chip (not color-only) when the order is late. -->
