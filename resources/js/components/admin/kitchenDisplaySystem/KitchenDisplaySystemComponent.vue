@@ -183,6 +183,18 @@
                   :class="[kdsInstructionClass(orderItem.instruction), 'kds-instruction', 'mt-1', 'text-xs', 'text-heading']"
                   style="white-space: pre-line"
                 >{{ orderItem.instruction }}</div>
+                <!-- [prod-finale 2026-06-17 P1 food-safety] The items-board ("Préparations") is the
+                     default-visible chef production column. Its backend is purpose-built to be allergen-aware
+                     (KitchenDisplaySystemOrderService splits merged lines by allergen-hash + KDSOrderItemsResource
+                     exposes allergens_snapshot) precisely so a chef never cooks an allergen item unwarned — but
+                     this template never rendered it, silently defeating the line-split. Surface the frozen
+                     snapshot inline (same data the allergens modal renders at :1054). -->
+                <div
+                  v-if="Array.isArray(orderItem.allergens_snapshot) && orderItem.allergens_snapshot.length > 0"
+                  class="kds-allergens-badge mt-1"
+                  role="img"
+                  :aria-label="$t('label.kds_allergens_badge_aria')"
+                >&#9888; {{ $t('label.kds_allergens_badge') }}: {{ sortedAllergens(orderItem.allergens_snapshot).join(' · ') }}</div>
               </div>
               <div
                 class="text-sm font-medium w-6 h-6 rounded-full bg-black text-white flex items-center justify-center">{{
