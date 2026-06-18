@@ -71,7 +71,18 @@ CONFIRM-OK (do not change): main pay CTA 56px, product tiles, category pills alr
 ### KDS @ 1920×1080  (in progress)
 - [~] `/admin/kitchen-display-system` (`KitchenDisplaySystemComponent`, NON-frozen) — board EMPTY-state CLEAN: dome icon + "Aucune commande en cours" + "Les nouvelles commandes apparaîtront ici", FR local-bump info banner, "RÉCEMMENT SERVIES" pills with FR relative time ("il y a 1j"), 11px+ fonts, fits 1920×1080, 0 raw keys. (Per-lane allergen chips + items-board badge + print line already added in the prod-finale campaign.)
   - **KDS-SYNC-403 (P3, load-race, WS-masked)**: the first `/api/admin/kds-order/sync?branch_id=0` poll on mount returns 403 (1 console error). Root: NOT a permission gap (admin has kitchen-display-system 3 ways) and KdsSyncController returns 200 for admin+branch_id=0 (its only 403 is the non-admin cross-branch path) → the mount poll fires before the Sanctum token is attached; the KDS then relies on the soketi WebSocket and does not re-poll (only 1 sync request in 6s). Masked while WS is up; the poll-fallback would be affected if WS degrades at that instant. Fix (when prioritised): defer/retry the first sync poll until auth is ready, or have the KDS send the operational branch (1) not 0. Non-frozen.
-  - TODO: re-audit with ACTIVE orders (card lanes, bump/recall buttons touch size, allergen chips live) + OSS `/admin/order-status-screen`.
+  - **ACTIVE-order board re-audit (3 orders injected on the e2e DB) = EXCELLENT/CLEAN**: huge order numbers (N°A0035 readable at distance), ATTENTE wait-timer, color-coded source badges (CAISSE/BORNE) + status (EN COURS/NOUVELLE), full customization detail (Choix/Sauce/+extras/Viandes), big "✓ Prêt" bump buttons (52×428px, well above touch floor), allergen chips render where allergens exist (prod-finale heal live), FR throughout, no en-US money, no raw keys.
+- [x] `/admin/order-status-screen` (OSS, customer pickup display) — **CLEAN/excellent**: huge ready order number (N°A0004) readable across the room, color-coded columns (magenta "En préparation" / green "Prêt"), FR empty-state ("Aucune commande en préparation"), high contrast, fits 1920×1080.
+
+**KDS+OSS @ 16" = validated** (board empty+active + OSS all clean & well-designed). Only open item: KDS-SYNC-403 (P3 edge, WS-masked — see above; server-side the controller returns 200 for admin, the service already auth-token-guards, so it's a subtle middleware/timing nuance, left documented not force-fixed).
+
+---
+## CAMPAIGN SUMMARY (all 3 systems audited per-page, per-viewport)
+- **CAISSE @ 1920×1080 — COMPLETE 9/9** : 12 non-frozen heals (touch targets 22→40 / →44px, delivery-time FR 24h, floorplan empty-state, grid density, palette fallback, i18n) + 1 owner-gate (G-FROZEN-WIZARD-MONEY).
+- **BORNE @ 1080×1920 portrait** : idle (non-frozen) clean; menu/cart/wizard/app/upsell FROZEN §7 → owner-gates (G-CURRENCY-POSITION-KIOSK + frozen money) + test-DATA slugs. Borne perfection is owner-gated by design ("design parfait" mandate).
+- **KDS @ 1920×1080 + OSS** : board (empty+active) + OSS all clean & well-designed; 1 P3 edge (KDS-SYNC-403, WS-masked).
+
+**HEALABLE per-page UX work = DONE across all 3 systems.** Residual = owner-LOCK gates (frozen zones) + owner-DATA (currency position setting, test slugs) + 1 P3 edge. All recorded above for owner decision.
 
 ## Convergence
 A SYSTEM is done when every page passes 2 consecutive clean reads (0 open P1/P2) at its viewport, with all heals committed and frozen issues gated. Then next system.
