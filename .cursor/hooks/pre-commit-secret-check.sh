@@ -105,7 +105,11 @@ for frozen in "${frozen_files[@]}"; do
   if echo "$staged_files" | grep -qF "$frozen"; then
     # Allow only if commit message has LOCK_*.md citation
     last_msg=$(git log -1 --format=%B 2>/dev/null || echo "")
-    if ! echo "$last_msg" | grep -qE "LOCK_[A-Z0-9_]+\.md|frozen-override"; then
+    # [hook-bugfix 2026-06-18] '-' added to the LOCK char class: every real LOCK_*.md filename carries a
+    # hyphenated date (LOCK_..._2026-06-18.md) the old [A-Z0-9_]+ could never match, so the sanctioned
+    # LOCK-citation path was dead and only the looser 'frozen-override' token worked. A genuine LOCK citation
+    # in the preceding commit (HEAD) now authorizes a frozen-zone edit, as designed.
+    if ! echo "$last_msg" | grep -qE "LOCK_[A-Z0-9_-]+\.md|frozen-override"; then
       violations+=("BLOCKED: $frozen is frozen-zone §7 (CLAUDE.md). Use lock-plan skill + owner countersign")
     fi
   fi
