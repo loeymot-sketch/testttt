@@ -224,6 +224,44 @@ class TaxInclusivePricesTest extends TestCase
         }
     }
 
+    public function test_pricing_service_ttc_mode_multi_rate_cumulative_tax_is_deterministic(): void
+    {
+        // [abuse-heal 2026-06-18 convergence-c2] An order mixing TWO different VAT rates
+        // (20% standard + 5.5% reduced food) must accumulate per-line-rounded tax
+        // deterministically — no cross-rate rounding drift, TTC line totals untouched.
+        // Characterization: locks the multi-rate arithmetic the single-rate tests never exercised.
+        config(['pricing.tax_inclusive_prices' => true]);
+
+        $tax55 = Tax::factory()->create([
+            'name'     => 'TVA 5.5%',
+            'code'     => 'TVA055',
+            'type'     => TaxType::PERCENTAGE,
+            'tax_rate' => 5.5,
+            'status'   => Status::ACTIVE,
+        ]);
+
+        $itemStd = $this->makeItem(3.00, $this->tax20); // 3.00 TTC @ 20%  → tax 0.50  (3 - 3/1.20)
+        $itemRed = $this->makeItem(5.00, $tax55);       // 5.00 TTC @ 5.5% → tax 0.26  (5 - 5/1.055 = 0.2607)
+
+        $req = PricingRequest::forPos(
+            1,
+            $this->branch->id,
+            [$this->line($itemStd->id, 1), $this->line($itemRed->id, 1)],
+            0,
+            0,
+            0.0,
+            0.0
+        );
+        $out = $this->service->calculateOrder($req, $this->couponService);
+
+        // TTC subtotal never inflated by tax (3 + 5).
+        $this->assertSame(8.00, $out->accumulatedSubtotal, 'TTC subtotal = 3 + 5, untouched by tax');
+        // Per-line extracted tax summed: 0.50 (20%) + 0.26 (5.5%) = 0.76 — deterministic, no drift.
+        $this->assertSame(0.76, $out->totalTax, 'Multi-rate tax = 0.50 + 0.26 = 0.76 (per-line rounded)');
+        // Customer pays exactly the sum of the TTC displays.
+        $this->assertSame(8.00, $out->total, 'Total = TTC subtotal (tax extracted, not added on top)');
+    }
+
     /* -----------------------------------------------------------------
      * Helpers (mirror PricingServiceTest patterns)
      * ---------------------------------------------------------------*/
