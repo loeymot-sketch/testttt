@@ -103,12 +103,20 @@ class ItemCategoryService
     {
         try {
             $validated = $request->validated();
-            $this->hierarchyService->validateParent(
-                isset($validated['parent_id']) ? (int) $validated['parent_id'] : null
-            );
 
             $itemCategory = null;
             DB::transaction(function () use (&$itemCategory, $request, $validated): void {
+                // [abuse-heal 2026-06-18] TOCTOU fix: validate parent/depth/cycle INSIDE the
+                // transaction and lock the parent row first, so a concurrent writer that re-parents
+                // the same parent serializes behind us and we re-validate against its pending change.
+                // Previously validateParent() ran OUTSIDE the txn with no lock -> two concurrent
+                // updates could each pass then both commit, creating depth > 2 / a cycle.
+                $parentId = isset($validated['parent_id']) ? (int) $validated['parent_id'] : null;
+                if ($parentId !== null) {
+                    ItemCategory::query()->whereKey($parentId)->lockForUpdate()->first();
+                }
+                $this->hierarchyService->validateParent($parentId);
+
                 $itemCategory = ItemCategory::create($validated + ['slug' => Str::slug($request->name)]);
                 if ($request->image) {
                     $itemCategory->addMediaFromRequest('image')->toMediaCollection('item-category');
@@ -134,12 +142,18 @@ class ItemCategoryService
     {
         try {
             $validated = $request->validated();
-            $this->hierarchyService->validateParent(
-                isset($validated['parent_id']) ? (int) $validated['parent_id'] : null,
-                (int) $itemCategory->id
-            );
 
             DB::transaction(function () use ($itemCategory, $request, $validated): void {
+                // [abuse-heal 2026-06-18] TOCTOU fix: validate parent/depth/cycle INSIDE the
+                // transaction and lock the parent row first (see store() for the full rationale).
+                // Previously this ran OUTSIDE the txn with no lock, leaving a concurrent-update
+                // race window that could commit depth > 2 / a cycle.
+                $parentId = isset($validated['parent_id']) ? (int) $validated['parent_id'] : null;
+                if ($parentId !== null) {
+                    ItemCategory::query()->whereKey($parentId)->lockForUpdate()->first();
+                }
+                $this->hierarchyService->validateParent($parentId, (int) $itemCategory->id);
+
                 $itemCategory->update($validated + ['slug' => Str::slug($request->name)]);
                 if ($request->image) {
                     $itemCategory->clearMediaCollection('item-category');

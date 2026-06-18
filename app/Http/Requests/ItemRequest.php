@@ -99,7 +99,55 @@ class ItemRequest extends FormRequest
         $validator->after(function (Validator $validator): void {
             $this->validateNestedModifierSurfaces($validator, 'variations');
             $this->validateNestedModifierSurfaces($validator, 'extras');
+            // [abuse-heal 2026-06-18] The `variations`/`extras` blobs were typed only as JSON and
+            // their nested objects fed ItemService::store/update -> createMany/create with ZERO
+            // per-object validation. A nested price of -5 (or null / non-numeric) persisted and
+            // then fed PricingService = wrong POS/Kiosk price. Mirror the canonical ItemVariation /
+            // ItemExtra rules (name required + IniAmount, i.e. numeric >= 0) per nested row so the
+            // WHOLE request 422s instead of silently storing a poisoned modifier.
+            $this->validateNestedModifierPrices($validator, 'variations');
+            $this->validateNestedModifierPrices($validator, 'extras');
         });
+    }
+
+    /**
+     * [abuse-heal 2026-06-18] Validate the price + name of every nested variation/extra object
+     * posted via the bulk `variations`/`extras` JSON blob. The dedicated POST /variation/{item}
+     * and POST /extra/{item} endpoints already enforce this via FormRequest + IniAmount; this
+     * closes the equivalent guard on the bulk item create/update path.
+     */
+    private function validateNestedModifierPrices(Validator $validator, string $field): void
+    {
+        $raw = $this->input($field);
+        if ($raw === null || $raw === '') {
+            return;
+        }
+
+        $rows = is_string($raw) ? json_decode($raw, true) : $raw;
+        if (! is_array($rows)) {
+            return;
+        }
+
+        foreach ($rows as $index => $row) {
+            if (! is_array($row)) {
+                $validator->errors()->add("{$field}.{$index}", 'Each modifier must be an object.');
+                continue;
+            }
+
+            // name — required non-empty string (matches ItemVariationRequest / ItemExtraRequest).
+            $name = $row['name'] ?? null;
+            if (! is_string($name) || trim($name) === '') {
+                $validator->errors()->add("{$field}.{$index}.name", 'The modifier name field is required.');
+            }
+
+            // price — required, numeric, and never negative (canonical IniAmount contract, >= 0).
+            $price = $row['price'] ?? null;
+            if (! is_numeric($price)) {
+                $validator->errors()->add("{$field}.{$index}.price", 'The modifier price must be a number.');
+            } elseif ((float) $price < 0) {
+                $validator->errors()->add("{$field}.{$index}.price", 'The modifier price must not be negative.');
+            }
+        }
     }
 
     private function validateNestedModifierSurfaces(Validator $validator, string $field): void
