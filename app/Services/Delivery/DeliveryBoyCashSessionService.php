@@ -2,6 +2,7 @@
 
 namespace App\Services\Delivery;
 
+use App\Exceptions\CashVarianceRequiresApprovalException;
 use App\Models\DeliveryBoyCashMovement;
 use App\Models\DeliveryBoyCashSession;
 use App\Models\User;
@@ -10,6 +11,7 @@ use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -167,9 +169,13 @@ class DeliveryBoyCashSessionService
         });
 
         if ($result['transitioned']) {
+            // [abuse-heal 2026-06-19 livreur FINDING-4] Capture the acting staff in the
+            // audit payload (closed_by_user_id is also persisted on the session) so a
+            // counter-initiated close of a driver's shift is traceable to WHO closed it.
             $this->writeAuditLog('cash.delivery.session.closed', $result['session'], [
-                'session_id'     => $result['session']->id,
-                'closing_amount' => (float) $result['session']->closing_amount,
+                'session_id'         => $result['session']->id,
+                'closing_amount'     => (float) $result['session']->closing_amount,
+                'closed_by_user_id'  => $result['session']->closed_by_user_id,
             ]);
         }
 
@@ -239,6 +245,56 @@ class DeliveryBoyCashSessionService
                 $trimmedReason = null;
             }
 
+            // [abuse-heal 2026-06-19 livreur FINDING-2] Variance gate — mirror of
+            // CashDrawerService::reconcileSession (the docblock above references this
+            // gap). Reuses the SAME config keys + CashVarianceRequiresApprovalException
+            // so the driver-cash discipline matches the POS drawer exactly: over the
+            // threshold a written reason AND the manager override permission are
+            // required (approval_required defaults true → active in V1). The admin
+            // controller already catches this exception (it expected the future gate).
+            $threshold = (float) Config::get('cash.variance_threshold_eur', 2.00);
+            $approvalRequired = (bool) Config::get('cash.variance_manager_approval_required', true);
+            $permission = (string) Config::get('cash.variance_override_permission', 'cash.reconcile.variance.override');
+            $maxReasonLength = (int) Config::get('cash.variance_reason_max_length', 255);
+
+            if (abs($variance) > $threshold) {
+                if ($trimmedReason === null) {
+                    throw new CashVarianceRequiresApprovalException(
+                        message: sprintf(
+                            'Cash variance %.2f€ exceeds threshold %.2f€ — variance_reason required',
+                            $variance,
+                            $threshold
+                        ),
+                        errorCode: CashVarianceRequiresApprovalException::CODE_REASON_REQUIRED,
+                        variance: $variance,
+                        threshold: $threshold,
+                    );
+                }
+
+                if (mb_strlen($trimmedReason) > $maxReasonLength) {
+                    throw new HttpException(
+                        422,
+                        sprintf('variance_reason exceeds %d characters', $maxReasonLength)
+                    );
+                }
+
+                if ($approvalRequired) {
+                    if ($actor === null || ! $this->actorCanOverrideVariance($actor, $permission)) {
+                        throw new CashVarianceRequiresApprovalException(
+                            message: sprintf(
+                                'Cash variance %.2f€ exceeds threshold %.2f€ — manager approval required (permission %s)',
+                                $variance,
+                                $threshold,
+                                $permission
+                            ),
+                            errorCode: CashVarianceRequiresApprovalException::CODE_MANAGER_APPROVAL,
+                            variance: $variance,
+                            threshold: $threshold,
+                        );
+                    }
+                }
+            }
+
             $session->expected_closing_amount = $expected;
             $session->variance                = $variance;
             if ($trimmedReason !== null) {
@@ -257,11 +313,15 @@ class DeliveryBoyCashSessionService
         });
 
         if ($result['transitioned']) {
+            // [abuse-heal 2026-06-19 livreur FINDING-4] Capture the reconciling staff
+            // in the audit payload (reconciled_by_user_id is also persisted on the
+            // session) so the counter reconcile of a driver's shift is traceable.
             $this->writeAuditLog('cash.delivery.session.reconciled', $result['session'], [
-                'session_id'      => $result['session']->id,
-                'expected'        => $result['expected'],
-                'variance'        => $result['variance'],
-                'variance_reason' => $result['session']->variance_reason,
+                'session_id'             => $result['session']->id,
+                'expected'               => $result['expected'],
+                'variance'               => $result['variance'],
+                'variance_reason'        => $result['session']->variance_reason,
+                'reconciled_by_user_id'  => $result['session']->reconciled_by_user_id,
             ], $actor?->id);
         }
 
@@ -394,6 +454,30 @@ class DeliveryBoyCashSessionService
             ->where('delivery_boy_id', $deliveryBoyId)
             ->where('status', DeliveryBoyCashSession::STATUS_OPEN)
             ->first();
+    }
+
+    /**
+     * [abuse-heal 2026-06-19 livreur FINDING-2] Resolve whether the actor holds the
+     * variance-override permission. Mirror of CashDrawerService::actorCanOverrideVariance
+     * (same Spatie permission, same fail-closed semantics) — kept local rather than
+     * cross-calling the frozen-adjacent drawer service.
+     */
+    private function actorCanOverrideVariance(User $actor, string $permission): bool
+    {
+        if (! method_exists($actor, 'can')) {
+            return false;
+        }
+        try {
+            return (bool) $actor->can($permission);
+        } catch (\Throwable $e) {
+            Log::warning('[V1.0.2 Sub-6.3] actorCanOverrideVariance threw', [
+                'user_id'    => $actor->id ?? null,
+                'permission' => $permission,
+                'error'      => $e->getMessage(),
+            ]);
+
+            return false;
+        }
     }
 
     /**

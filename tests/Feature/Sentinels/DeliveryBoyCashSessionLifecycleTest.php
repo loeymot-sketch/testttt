@@ -72,6 +72,28 @@ class DeliveryBoyCashSessionLifecycleTest extends TestCase
         return $user->fresh();
     }
 
+    /**
+     * [abuse-heal 2026-06-19 livreur FINDING-2] Branch Manager — holds the
+     * cash.reconcile.variance.override permission (seeded by seedSpatieRoles), so
+     * they can approve an over-threshold delivery-cash variance, exactly as in the
+     * POS drawer flow.
+     */
+    private function makeBranchManager(int $branchId): User
+    {
+        $user = User::forceCreate([
+            'name'              => 'Manager '.uniqid(),
+            'email'             => 'manager-'.uniqid().'@sentinel.test',
+            'username'          => 'manager_'.uniqid(),
+            'password'          => bcrypt('secret-passwd'),
+            'branch_id'         => $branchId,
+            'email_verified_at' => now(),
+            'status'            => 1,
+        ]);
+        $user->assignRole('Branch Manager');
+
+        return $user->fresh();
+    }
+
     public function test_lifecycle_open_collect_change_close_reconcile_variance_zero(): void
     {
         // 1. Open shift with 50€ float.
@@ -151,7 +173,14 @@ class DeliveryBoyCashSessionLifecycleTest extends TestCase
         );
         $this->service->closeSession($session->id, 65.00);
 
-        $result = $this->service->reconcileSession($session->id, 'tip retenu sur reçu');
+        // [abuse-heal 2026-06-19 livreur FINDING-2] +5€ is OVER the 2.00€ threshold,
+        // so the delivery reconcile now mirrors the POS drawer variance gate: a
+        // written reason AND a manager-grade actor are required. A Branch Manager
+        // (holds cash.reconcile.variance.override) approves — same as the drawer's
+        // CashVarianceGateTest::test_reconcile_above_threshold_with_reason_and_manager.
+        $manager = $this->makeBranchManager($this->branch->id);
+        $this->actingAs($manager);
+        $result = $this->service->reconcileSession($session->id, 'tip retenu sur reçu', $manager);
         $this->assertEqualsWithDelta(60.00, $result['expected'], 0.01);
         $this->assertEqualsWithDelta(5.00, $result['variance'], 0.01);
         $this->assertSame('tip retenu sur reçu', $result['session']->variance_reason);

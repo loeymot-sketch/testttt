@@ -2097,6 +2097,91 @@ class OrderService
     }
 
     /**
+     * [abuse-heal 2026-06-19 livreur FINDING-1] Reverse a driver-collected COD when
+     * the order is later RETURNED (the fiscal counter-entry / refund transition).
+     *
+     * The collect path (recordDeliveryCashEscrowPostCommit) recorded a
+     * TYPE_ORDER_COLLECT / IN movement into the driver's open session. Without a
+     * compensating entry the session keeps showing that cash as owed → false
+     * shortage (the driver looks like they pocketed the refunded cash). This records
+     * a TYPE_ADJUSTMENT / DIRECTION_OUT of the exact collected amount into the SAME
+     * session so Σ(movements) for that order nets to 0.
+     *
+     * Keyed off the ACTUAL recorded IN movement (not merely "COD + RETURNED"):
+     *   - if no order_collect IN movement exists for the order (e.g. delivered with
+     *     no open session), there is nothing to reverse → no-op;
+     *   - idempotent: a reversal is skipped if an adjustment OUT already exists for
+     *     that order in the session, so a repeated RETURNED never doubles it.
+     *
+     * Best-effort post-commit, mirroring the collect path: a failure here is logged
+     * but never cascades into a refund rollback (the RETURNED already committed).
+     */
+    private function reverseDeliveryCashCollectPostCommit(int $orderId, int $branchId): void
+    {
+        try {
+            $svc = app(\App\Services\Delivery\DeliveryBoyCashSessionService::class);
+
+            // Find the original collection IN movement(s) for this order. The order
+            // carries the session id, so we reverse into the exact session that
+            // received the cash (which may differ from the driver's current shift).
+            $collected = \App\Models\DeliveryBoyCashMovement::query()
+                ->withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
+                ->where('order_id', $orderId)
+                ->where('type', \App\Models\DeliveryBoyCashMovement::TYPE_ORDER_COLLECT)
+                ->where('direction', \App\Models\DeliveryBoyCashMovement::DIRECTION_IN)
+                ->get();
+
+            if ($collected->isEmpty()) {
+                return; // nothing was collected into a session — no reversal owed.
+            }
+
+            foreach ($collected->groupBy('delivery_boy_cash_session_id') as $sessionId => $rows) {
+                $sessionId = (int) $sessionId;
+
+                // Idempotency: skip if a reversal adjustment OUT already exists for
+                // this order in this session.
+                $alreadyReversed = \App\Models\DeliveryBoyCashMovement::query()
+                    ->withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
+                    ->where('order_id', $orderId)
+                    ->where('delivery_boy_cash_session_id', $sessionId)
+                    ->where('type', \App\Models\DeliveryBoyCashMovement::TYPE_ADJUSTMENT)
+                    ->where('direction', \App\Models\DeliveryBoyCashMovement::DIRECTION_OUT)
+                    ->exists();
+
+                if ($alreadyReversed) {
+                    continue;
+                }
+
+                $amount = round((float) $rows->sum(fn ($m) => (float) $m->amount), 2);
+                if ($amount <= 0) {
+                    continue;
+                }
+
+                // Non-strict: if the session is no longer OPEN (closed/reconciled),
+                // recordMovement degrades to a logged no-op rather than blocking the
+                // refund — the variance is then surfaced by the Z enrichment cross-check.
+                $svc->recordMovement(
+                    $sessionId,
+                    \App\Models\DeliveryBoyCashMovement::TYPE_ADJUSTMENT,
+                    $amount,
+                    \App\Models\DeliveryBoyCashMovement::DIRECTION_OUT,
+                    $orderId,
+                    'refund_reversal_for_order_' . $orderId,
+                    false,
+                );
+            }
+        } catch (\Throwable $reversalError) {
+            // Never let the reversal cascade into a refund rollback — the RETURNED
+            // transition already committed. Log for ops; Z enrichment cross-check
+            // surfaces any residual movement/audit drift end-of-day.
+            Log::error('[DeliveryBoy] cash-collect reversal on RETURNED failed (non-blocking): ' . $reversalError->getMessage(), [
+                'order_id'  => $orderId,
+                'branch_id' => $branchId,
+            ]);
+        }
+    }
+
+    /**
      * @throws Exception
      */
     public function changeStatus(Order $order, OrderStatusRequest $request, bool $auth = false): Order|array
@@ -2206,7 +2291,11 @@ class OrderService
                 // escrow meta out of the locked tx so it can be recorded post-commit —
                 // mirror of the driver-app path. Stays null for non-COD / non-delivery.
                 $cashEscrowMeta = null;
-                DB::transaction(function () use ($order, $request, $targetStatus, &$oldStatusForBroadcast, &$cashEscrowMeta) {
+                // [abuse-heal 2026-06-19 livreur FINDING-1] Threads the order id out of
+                // the locked tx when a DELIVERY order is RETURNED, so the driver's
+                // collected COD cash can be reversed post-commit. Null otherwise.
+                $cashReversalOrderId = null;
+                DB::transaction(function () use ($order, $request, $targetStatus, &$oldStatusForBroadcast, &$cashEscrowMeta, &$cashReversalOrderId) {
                     $locked = Order::query()->whereKey($order->id)->lockForUpdate()->firstOrFail();
 
                     // [AUDIT-FIX P0-2 / POS-9-H.1.1] Branch isolation: non-Admin staff can only modify orders of their branch.
@@ -2286,6 +2375,15 @@ class OrderService
                                     // best-effort audit; never block on audit failure
                                 }
                                 throw $sealedEx;
+                            }
+
+                            // [abuse-heal 2026-06-19 livreur FINDING-1] Flag a DELIVERY
+                            // RETURNED so the driver's collected COD cash is reversed
+                            // post-commit. Scoped to order_type === DELIVERY (the only
+                            // path with a driver cash session); the reversal itself is a
+                            // no-op when nothing was collected into a session.
+                            if ((int) $locked->order_type === (int) OrderType::DELIVERY) {
+                                $cashReversalOrderId = (int) $locked->id;
                             }
                         }
 
@@ -2389,6 +2487,13 @@ class OrderService
                 // order that just reached DELIVERED on this admin transition.
                 if (is_array($cashEscrowMeta)) {
                     $this->recordDeliveryCashEscrowPostCommit($cashEscrowMeta);
+                }
+
+                // [abuse-heal 2026-06-19 livreur FINDING-1] Reverse the driver's
+                // collected COD cash when a DELIVERY order was RETURNED, so the
+                // session reconciles to the real cash owed (no false shortage).
+                if ($cashReversalOrderId !== null) {
+                    $this->reverseDeliveryCashCollectPostCommit($cashReversalOrderId, (int) $order->branch_id);
                 }
 
                 SendOrderMail::dispatch(['order_id' => $order->id, 'status' => $targetStatus]);
