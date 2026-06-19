@@ -90,9 +90,15 @@ class OrderServicesContractTest extends TestCase
         $this->assertStringContainsString("\$query->where('branch_id', '=', (int) \$request);", $frontendService);
         $this->assertStringContainsString("(int) \$locked->branch_id !== (int) \$kioskMachine->branch_id", $frontendController);
 
+        // [abuse-heal 2026-06-19 deliv-admin-twin] Anchor on the use(...) PREFIX
+        // (no trailing ")") so the contract stays robust across additive by-ref
+        // captures — the admin path now also threads `&$cashEscrowMeta` to record
+        // the COD cash-collection post-commit, mirroring the prefix-robust anchors
+        // below (e.g. FrontendService `&$promoted`). The ordering assertion still
+        // proves the locked tx wraps and precedes the SendOrderMail dispatch.
         $this->assertSourceOrder(
             $orderService,
-            'DB::transaction(function () use ($order, $request, $targetStatus, &$oldStatusForBroadcast)',
+            'DB::transaction(function () use ($order, $request, $targetStatus, &$oldStatusForBroadcast',
             "SendOrderMail::dispatch(['order_id' => \$order->id, 'status' => \$targetStatus]);"
         );
         $this->assertStringContainsString('return app(PaymentService::class)->confirmCounterPayment(', $orderService);

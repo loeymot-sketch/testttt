@@ -1829,9 +1829,8 @@ class OrderService
             // charge risk). Both guards execute INSIDE the locked transaction
             // so the row read is the truth-of-record and the audit row commits
             // atomically with the status mutation.
-            $cashEscrowWritten = false;
             $cashEscrowMeta    = null;
-            DB::transaction(function () use (&$order, $oldStatus, $newStatus, &$cashEscrowWritten, &$cashEscrowMeta) {
+            DB::transaction(function () use (&$order, $oldStatus, $newStatus, &$cashEscrowMeta) {
                 $locked = Order::query()->whereKey($order->id)->lockForUpdate()->firstOrFail();
 
                 // Idempotent: if a concurrent caller already applied the
@@ -1849,102 +1848,12 @@ class OrderService
                     throw new Exception(trans('all.message.invalid_status_transition'), 422);
                 }
 
-                $transaction = Transaction::where('order_id', $locked->id)->first();
-                $wasUnpaidCash = (! $transaction)
-                    && (int) $locked->payment_status === (int) PaymentStatus::UNPAID;
-
-                if ($wasUnpaidCash) {
-                    // [P0-LIV-03] Guard payment_method against silent double-charge.
-                    // Only the recognised PaymentGateway constants (1..5) may
-                    // trigger the auto-flip to PAID. A corrupt / null / out-of-
-                    // range value is treated as a data-integrity failure and the
-                    // whole transition aborts (HttpException 422 so the caller
-                    // surfaces the actual problem instead of silently corrupting
-                    // financials).
-                    $pm = $locked->payment_method;
-                    $allowed = [
-                        \App\Enums\PaymentGateway::CASH_ON_DELIVERY,
-                        \App\Enums\PaymentGateway::E_WALLET,
-                        \App\Enums\PaymentGateway::PAYPAL,
-                        \App\Enums\PaymentGateway::CARD,
-                        \App\Enums\PaymentGateway::TICKET_RESTAURANT,
-                    ];
-                    if ($pm === null || ! is_numeric($pm) || ! in_array((int) $pm, $allowed, true)) {
-                        abort(422, 'Refusing to auto-mark order PAID: payment_method is missing or out of the allowed enum range.');
-                    }
-
-                    // [WH-2 bug_002 / 2026-05-19] Gate the payment_status →
-                    // PAID flip on the canonical legal anchor.
-                    //
-                    // BEFORE: $locked->payment_status flipped to PAID
-                    // UNCONDITIONALLY on every transition that hit
-                    // $wasUnpaidCash. On the canonical 2-step driver flow
-                    // (PREPARED→OFD then OFD→DELIVERED) the flip fired at
-                    // call 1 (OFD), so on call 2 (DELIVERED) the order was
-                    // already PAID, $wasUnpaidCash was false, and the
-                    // inner `if (CASH_ON_DELIVERY && DELIVERED)` block —
-                    // which contains the audit row capture — was skipped
-                    // entirely. Net: ZERO `delivery.cash_collected_escrow`
-                    // rows on the canonical 2-step flow, violating NF525.
-                    //
-                    // AFTER: for CASH_ON_DELIVERY we delay the PAID flip
-                    // until newStatus === DELIVERED. This is the
-                    // legally-correct anchor — cash is collected at the
-                    // doorstep, not at pickup — AND it ensures the audit
-                    // row capture downstream fires on the SAME locked
-                    // transaction that performs the flip, so the chain
-                    // gains exactly one row per cash delivery regardless
-                    // of single-jump or 2-step path.
-                    //
-                    // For non-COD methods (E_WALLET / PAYPAL / CARD /
-                    // TICKET_RESTAURANT) that somehow reached the driver
-                    // still UNPAID (an unusual but observed edge case —
-                    // e.g. card auth captured late), the prior flip-at-
-                    // OFD-or-DELIVERED behaviour is preserved verbatim.
-                    // Those flows never wrote an escrow row anyway.
-                    $isCod = ((int) $pm === (int) \App\Enums\PaymentGateway::CASH_ON_DELIVERY);
-                    $atDelivered = ((int) $newStatus === (int) OrderStatus::DELIVERED);
-
-                    if ($isCod) {
-                        if ($atDelivered) {
-                            $locked->payment_status = PaymentStatus::PAID;
-
-                            // [P0-LIV-02] Record the cash-collection event
-                            // for NF525. The escrow row is the audit-trail
-                            // anchor between "collected at doorstep" and
-                            // "deposited at branch".
-                            $cashEscrowWritten = true;
-                            $cashEscrowMeta = [
-                                'branch_id' => (int) $locked->branch_id,
-                                'order_id'  => (int) $locked->id,
-                                'driver_id' => Auth::check() ? (int) Auth::id() : null,
-                                'amount'    => round((float) $locked->total, 2),
-                                'serial'    => $locked->order_serial_no,
-                            ];
-                        }
-                        // CASH_ON_DELIVERY at OFD: leave payment_status =
-                        // UNPAID. The flip + audit row will fire on the
-                        // next call (OFD → DELIVERED), which re-enters
-                        // this branch with $wasUnpaidCash still true.
-                    } else {
-                        // Non-COD methods preserve the legacy flip semantics
-                        // (flip at OFD-or-DELIVERED, no escrow row).
-                        $locked->payment_status = PaymentStatus::PAID;
-                    }
-                }
-
-                // [GENIE Wave0 FISCAL-DELIV-COD-01 / -LATECARD-01 2026-06-16] NF525 exhaustivity, sibling
-                // of FISCAL-CPS-01. The COD-at-DELIVERED flip (:1872) and the non-COD late-card flip (:1894)
-                // above set payment_status=PAID but never allocated a fiscal sequence → off-book orphan
-                // excluded from every Z (ZReportService whereNotNull) and unreachable by the kiosk-only retry
-                // cron. Allocate here, INSIDE this locked tx so an alloc failure rolls the whole transition
-                // back (never an off-book PAID), idempotent on a pre-allocated (counter/kiosk) order. The
-                // G-DELIV-FISCAL heal lived only on heal/massive-2dot0; this branch never received it.
-                if ((int) $locked->payment_status === PaymentStatus::PAID
-                    && $locked->fiscal_sequence_no === null
-                ) {
-                    $locked->fiscal_sequence_no = app(FiscalSequenceService::class)->next((int) $locked->branch_id);
-                }
+                // [abuse-heal 2026-06-19 deliv-admin-twin] COD/late-card PAID flip +
+                // fiscal allocation, extracted to a SHARED method now also reused by
+                // the admin changeStatus twin. Behaviour-equivalent to the prior inline
+                // block (WH-2 bug_002 anchor logic + GENIE Wave0 FISCAL-DELIV-COD-01
+                // fiscal alloc) — returns the cash-escrow meta to record post-commit.
+                $cashEscrowMeta = $this->finalizeDeliveryPaymentInTx($locked, $newStatus);
 
                 $locked->status = $newStatus;
                 $locked->save();
@@ -1961,80 +1870,11 @@ class OrderService
                 $order = $locked;
             });
 
-            if ($cashEscrowWritten && is_array($cashEscrowMeta)) {
-                // [P0-LIV-02] Append AFTER the transaction commits so the chain
-                // tail is read against the persisted state. AuditLogService has
-                // its own Cache::lock + DB::transaction inside write() (see
-                // POS-9-H.2.2 / F-C3 doc-block), so calling it post-commit
-                // keeps the HMAC chain ordering deterministic.
-                try {
-                    app(AuditLogService::class)->write([
-                        'branch_id'   => $cashEscrowMeta['branch_id'],
-                        'user_id'     => $cashEscrowMeta['driver_id'],
-                        'action'      => 'delivery.cash_collected_escrow',
-                        'resource'    => 'order',
-                        'resource_id' => $cashEscrowMeta['order_id'],
-                        'payload'     => [
-                            'order_id'           => $cashEscrowMeta['order_id'],
-                            'order_serial_no'    => $cashEscrowMeta['serial'],
-                            'amount_collected'   => $cashEscrowMeta['amount'],
-                            'delivery_boy_id'    => $cashEscrowMeta['driver_id'],
-                            'payment_method'     => (int) \App\Enums\PaymentGateway::CASH_ON_DELIVERY,
-                            'collected_at'       => now()->toIso8601String(),
-                            'event'              => 'doorstep_cash_collection',
-                        ],
-                    ]);
-                } catch (\Throwable $auditError) {
-                    // Never let an audit write error cascade into a billing
-                    // rollback — NF525 chain breakage is surfaced via
-                    // verifyChain() + ops alerting, not via a customer-facing
-                    // 5xx mid-delivery. Log + continue.
-                    Log::warning('[DeliveryBoy] cash-collection audit_log write failed: ' . $auditError->getMessage(), [
-                        'order_id' => $cashEscrowMeta['order_id'],
-                    ]);
-                }
-
-                // [R2-P1-LIV-DELIVERED-HOOK 2026-05-28] Mirror cash-collection
-                // into DeliveryBoyCashSession when driver has an open shift.
-                // ZReportCashEnrichmentService:489 cross-checks audit_logs
-                // action='cash.delivery.movement.recorded' against
-                // delivery_boy_cash_movements rows; without this call the
-                // count_mismatch / movement_missing_audit_row drift surfaces
-                // on every COD DELIVERED. Best-effort (non-strict) — if no
-                // open shift, skip silently so DELIVERED stays unblocked.
-                try {
-                    if (! empty($cashEscrowMeta['driver_id'])) {
-                        $svc = app(\App\Services\Delivery\DeliveryBoyCashSessionService::class);
-                        $openSession = $svc->findOpenSessionForDeliveryBoy(
-                            (int) $cashEscrowMeta['branch_id'],
-                            (int) $cashEscrowMeta['driver_id'],
-                        );
-                        if ($openSession) {
-                            $svc->recordMovement(
-                                (int) $openSession->id,
-                                \App\Models\DeliveryBoyCashMovement::TYPE_ORDER_COLLECT,
-                                (float) $cashEscrowMeta['amount'],
-                                \App\Models\DeliveryBoyCashMovement::DIRECTION_IN,
-                                (int) $cashEscrowMeta['order_id'],
-                                null,
-                                false,
-                            );
-                        }
-                    }
-                } catch (\Throwable $movementError) {
-                    // [R3-RD-03 2026-05-28] Severity bumped warning→error per
-                    // RED-team dispute: 422 race (session closed between find
-                    // + recordMovement) silently drifts audit_logs vs
-                    // delivery_boy_cash_movements. ZReportCashEnrichmentService
-                    // cross-check surfaces it end-of-day; error log + payload
-                    // give ops earlier signal without blocking DELIVERED.
-                    Log::error('[DeliveryBoy] cash-session recordMovement drift (non-blocking): ' . $movementError->getMessage(), [
-                        'order_id'  => $cashEscrowMeta['order_id'],
-                        'driver_id' => $cashEscrowMeta['driver_id'],
-                        'branch_id' => $cashEscrowMeta['branch_id'],
-                        'amount'    => $cashEscrowMeta['amount'],
-                    ]);
-                }
+            // [abuse-heal 2026-06-19 deliv-admin-twin] COD cash-collection NF525 audit
+            // row + DeliveryBoyCashMovement, extracted to a SHARED post-commit method
+            // now also reused by the admin changeStatus twin. Best-effort inside.
+            if (is_array($cashEscrowMeta)) {
+                $this->recordDeliveryCashEscrowPostCommit($cashEscrowMeta);
             }
 
             // Dispatch notifications + broadcast AFTER the transaction has
@@ -2056,6 +1896,203 @@ class OrderService
         } catch (Exception $exception) {
             Log::info($exception->getMessage());
             throw new Exception(QueryExceptionLibrary::message($exception), 422);
+        }
+    }
+
+    /**
+     * [abuse-heal 2026-06-19 deliv-admin-twin] SHARED delivery-payment finalization,
+     * executed INSIDE a locked DB::transaction by BOTH the driver-app path
+     * (deliveryBoyOrderChangeStatus) and the admin path (changeStatus). Extracted
+     * verbatim from the driver path so that path stays behaviour-equivalent (its
+     * existing tests must remain green) while the admin twin gains the same
+     * NF525-correct semantics instead of leaving COD orders off-book.
+     *
+     * On the transition into the given $newStatus it:
+     *  - flips an UNPAID, untransacted order to PAID — for COD only AT DELIVERED
+     *    (the legal cash-collection anchor), for non-COD methods that somehow
+     *    reached the driver still UNPAID at OFD-or-DELIVERED (legacy late-card);
+     *  - allocates the next gap-free fiscal_sequence_no (idempotent — skipped if
+     *    already allocated) so a PAID order can never escape the Z; the alloc runs
+     *    in the caller's locked tx so an alloc failure rolls the whole transition
+     *    back (never an off-book PAID);
+     *  - returns the cash-collection escrow meta for COD-at-DELIVERED (consumed
+     *    post-commit by recordDeliveryCashEscrowPostCommit), or null otherwise.
+     *
+     * MUST be called only after the row is locked (lockForUpdate) and only for
+     * DELIVERY orders — the caller is responsible for that scoping.
+     *
+     * @param  Order  $locked     the row already fetched under lockForUpdate
+     * @param  int    $newStatus  the target status being applied in this tx
+     * @return array|null         escrow meta to record post-commit, or null
+     */
+    private function finalizeDeliveryPaymentInTx(Order $locked, int $newStatus): ?array
+    {
+        $cashEscrowMeta = null;
+
+        $transaction = Transaction::where('order_id', $locked->id)->first();
+        $wasUnpaidCash = (! $transaction)
+            && (int) $locked->payment_status === (int) PaymentStatus::UNPAID;
+
+        if ($wasUnpaidCash) {
+            // [P0-LIV-03] Guard payment_method against silent double-charge.
+            // Only the recognised PaymentGateway constants (1..5) may
+            // trigger the auto-flip to PAID. A corrupt / null / out-of-
+            // range value is treated as a data-integrity failure and the
+            // whole transition aborts (HttpException 422 so the caller
+            // surfaces the actual problem instead of silently corrupting
+            // financials).
+            $pm = $locked->payment_method;
+            $allowed = [
+                \App\Enums\PaymentGateway::CASH_ON_DELIVERY,
+                \App\Enums\PaymentGateway::E_WALLET,
+                \App\Enums\PaymentGateway::PAYPAL,
+                \App\Enums\PaymentGateway::CARD,
+                \App\Enums\PaymentGateway::TICKET_RESTAURANT,
+            ];
+            if ($pm === null || ! is_numeric($pm) || ! in_array((int) $pm, $allowed, true)) {
+                abort(422, 'Refusing to auto-mark order PAID: payment_method is missing or out of the allowed enum range.');
+            }
+
+            // [WH-2 bug_002 / 2026-05-19] For CASH_ON_DELIVERY we delay the
+            // PAID flip until newStatus === DELIVERED — the legally-correct
+            // anchor (cash collected at the doorstep, not at pickup) — so the
+            // escrow audit row downstream fires on the SAME locked transaction.
+            // Non-COD methods preserve the legacy flip-at-OFD-or-DELIVERED.
+            $isCod = ((int) $pm === (int) \App\Enums\PaymentGateway::CASH_ON_DELIVERY);
+            $atDelivered = ((int) $newStatus === (int) OrderStatus::DELIVERED);
+
+            if ($isCod) {
+                if ($atDelivered) {
+                    $locked->payment_status = PaymentStatus::PAID;
+
+                    // [P0-LIV-02] Record the cash-collection event for NF525.
+                    // The escrow row is the audit-trail anchor between
+                    // "collected at doorstep" and "deposited at branch".
+                    //
+                    // [abuse-heal 2026-06-19 deliv-admin-twin] The cash custodian is the
+                    // order's ASSIGNED delivery_boy_id (who physically holds the cash),
+                    // not the acting user. On the driver-app path these are guaranteed
+                    // identical (deliveryBoyOrderChangeStatus aborts 403 unless
+                    // delivery_boy_id === Auth::id()), so this is byte-equivalent there;
+                    // on the admin path the operator (admin) is NOT the cash holder, so
+                    // the escrow + DeliveryBoyCashMovement must be attributed to the
+                    // driver's session. Fallback to Auth::id() only for an unassigned order.
+                    $cashHolderId = (int) ($locked->delivery_boy_id ?? 0);
+                    if ($cashHolderId <= 0) {
+                        $cashHolderId = Auth::check() ? (int) Auth::id() : 0;
+                    }
+                    $cashEscrowMeta = [
+                        'branch_id' => (int) $locked->branch_id,
+                        'order_id'  => (int) $locked->id,
+                        'driver_id' => $cashHolderId > 0 ? $cashHolderId : null,
+                        'amount'    => round((float) $locked->total, 2),
+                        'serial'    => $locked->order_serial_no,
+                    ];
+                }
+                // CASH_ON_DELIVERY at OFD: leave payment_status = UNPAID. The
+                // flip + audit row will fire on the next call (OFD → DELIVERED).
+            } else {
+                // Non-COD methods preserve the legacy flip semantics
+                // (flip at OFD-or-DELIVERED, no escrow row).
+                $locked->payment_status = PaymentStatus::PAID;
+            }
+        }
+
+        // [GENIE Wave0 FISCAL-DELIV-COD-01 / -LATECARD-01 2026-06-16] NF525 exhaustivity,
+        // sibling of FISCAL-CPS-01. The PAID flip above must never leave the order off-book:
+        // allocate the fiscal sequence here, INSIDE the caller's locked tx so an alloc
+        // failure rolls the whole transition back, idempotent on a pre-allocated order.
+        if ((int) $locked->payment_status === PaymentStatus::PAID
+            && $locked->fiscal_sequence_no === null
+        ) {
+            $locked->fiscal_sequence_no = app(FiscalSequenceService::class)->next((int) $locked->branch_id);
+        }
+
+        return $cashEscrowMeta;
+    }
+
+    /**
+     * [abuse-heal 2026-06-19 deliv-admin-twin] SHARED post-commit recording of the
+     * COD cash-collection — NF525 audit row + DeliveryBoyCashMovement — called by
+     * BOTH the driver-app and admin paths AFTER their locked transaction commits,
+     * when finalizeDeliveryPaymentInTx returned escrow meta. Extracted verbatim from
+     * the driver path. Best-effort: an audit / cash-session failure is logged but
+     * never cascades into a billing rollback (the transition already committed).
+     */
+    private function recordDeliveryCashEscrowPostCommit(array $cashEscrowMeta): void
+    {
+        // [P0-LIV-02] Append AFTER the transaction commits so the chain
+        // tail is read against the persisted state. AuditLogService has
+        // its own Cache::lock + DB::transaction inside write() (see
+        // POS-9-H.2.2 / F-C3 doc-block), so calling it post-commit
+        // keeps the HMAC chain ordering deterministic.
+        try {
+            app(AuditLogService::class)->write([
+                'branch_id'   => $cashEscrowMeta['branch_id'],
+                'user_id'     => $cashEscrowMeta['driver_id'],
+                'action'      => 'delivery.cash_collected_escrow',
+                'resource'    => 'order',
+                'resource_id' => $cashEscrowMeta['order_id'],
+                'payload'     => [
+                    'order_id'           => $cashEscrowMeta['order_id'],
+                    'order_serial_no'    => $cashEscrowMeta['serial'],
+                    'amount_collected'   => $cashEscrowMeta['amount'],
+                    'delivery_boy_id'    => $cashEscrowMeta['driver_id'],
+                    'payment_method'     => (int) \App\Enums\PaymentGateway::CASH_ON_DELIVERY,
+                    'collected_at'       => now()->toIso8601String(),
+                    'event'              => 'doorstep_cash_collection',
+                ],
+            ]);
+        } catch (\Throwable $auditError) {
+            // Never let an audit write error cascade into a billing
+            // rollback — NF525 chain breakage is surfaced via
+            // verifyChain() + ops alerting, not via a customer-facing
+            // 5xx mid-delivery. Log + continue.
+            Log::warning('[DeliveryBoy] cash-collection audit_log write failed: ' . $auditError->getMessage(), [
+                'order_id' => $cashEscrowMeta['order_id'],
+            ]);
+        }
+
+        // [R2-P1-LIV-DELIVERED-HOOK 2026-05-28] Mirror cash-collection
+        // into DeliveryBoyCashSession when driver has an open shift.
+        // ZReportCashEnrichmentService:489 cross-checks audit_logs
+        // action='cash.delivery.movement.recorded' against
+        // delivery_boy_cash_movements rows; without this call the
+        // count_mismatch / movement_missing_audit_row drift surfaces
+        // on every COD DELIVERED. Best-effort (non-strict) — if no
+        // open shift, skip silently so DELIVERED stays unblocked.
+        try {
+            if (! empty($cashEscrowMeta['driver_id'])) {
+                $svc = app(\App\Services\Delivery\DeliveryBoyCashSessionService::class);
+                $openSession = $svc->findOpenSessionForDeliveryBoy(
+                    (int) $cashEscrowMeta['branch_id'],
+                    (int) $cashEscrowMeta['driver_id'],
+                );
+                if ($openSession) {
+                    $svc->recordMovement(
+                        (int) $openSession->id,
+                        \App\Models\DeliveryBoyCashMovement::TYPE_ORDER_COLLECT,
+                        (float) $cashEscrowMeta['amount'],
+                        \App\Models\DeliveryBoyCashMovement::DIRECTION_IN,
+                        (int) $cashEscrowMeta['order_id'],
+                        null,
+                        false,
+                    );
+                }
+            }
+        } catch (\Throwable $movementError) {
+            // [R3-RD-03 2026-05-28] Severity bumped warning→error per
+            // RED-team dispute: 422 race (session closed between find
+            // + recordMovement) silently drifts audit_logs vs
+            // delivery_boy_cash_movements. ZReportCashEnrichmentService
+            // cross-check surfaces it end-of-day; error log + payload
+            // give ops earlier signal without blocking DELIVERED.
+            Log::error('[DeliveryBoy] cash-session recordMovement drift (non-blocking): ' . $movementError->getMessage(), [
+                'order_id'  => $cashEscrowMeta['order_id'],
+                'driver_id' => $cashEscrowMeta['driver_id'],
+                'branch_id' => $cashEscrowMeta['branch_id'],
+                'amount'    => $cashEscrowMeta['amount'],
+            ]);
         }
     }
 
@@ -2165,7 +2202,11 @@ class OrderService
                 // OrderCanceled dispatches at lines 2049-2068 read fresh
                 // persisted state, not stale pre-lock attributes.
                 $oldStatusForBroadcast = null;
-                DB::transaction(function () use ($order, $request, $targetStatus, &$oldStatusForBroadcast) {
+                // [abuse-heal 2026-06-19 deliv-admin-twin] Threads the COD cash-collection
+                // escrow meta out of the locked tx so it can be recorded post-commit —
+                // mirror of the driver-app path. Stays null for non-COD / non-delivery.
+                $cashEscrowMeta = null;
+                DB::transaction(function () use ($order, $request, $targetStatus, &$oldStatusForBroadcast, &$cashEscrowMeta) {
                     $locked = Order::query()->whereKey($order->id)->lockForUpdate()->firstOrFail();
 
                     // [AUDIT-FIX P0-2 / POS-9-H.1.1] Branch isolation: non-Admin staff can only modify orders of their branch.
@@ -2194,6 +2235,21 @@ class OrderService
                     // originally-valid transition could write an illegal state-machine
                     // edge (e.g. CANCELED->DELIVERED, DELIVERED->OUT_FOR_DELIVERY).
                     if (!(new \App\Rules\ValidStatusTransition((int) $locked->status))->passes('status', $toStatus)) {
+                        throw new Exception(trans('all.message.invalid_status_transition'), 422);
+                    }
+
+                    // [abuse-heal 2026-06-19 deliv-admin-twin] ORPHAN guard — twin of the
+                    // driver-app assignment check. A DELIVERY order must never go
+                    // OUT_FOR_DELIVERY while unassigned (delivery_boy_id = NULL), i.e. "on
+                    // the road" with no driver. The driver-app path can only be reached by
+                    // the assigned driver; the admin path had no equivalent gate, so it let
+                    // an admin push a driverless delivery OFD (HTTP 200 observed). Scoped
+                    // STRICTLY to order_type === DELIVERY so TAKEAWAY / DINE_IN / POS are
+                    // untouched. 422 invalid-transition: a driver is required first.
+                    if ($toStatus === OrderStatus::OUT_FOR_DELIVERY
+                        && (int) $locked->order_type === (int) OrderType::DELIVERY
+                        && empty($locked->delivery_boy_id)
+                    ) {
                         throw new Exception(trans('all.message.invalid_status_transition'), 422);
                     }
 
@@ -2244,6 +2300,26 @@ class OrderService
                             );
                         }
                         app(LoyaltyService::class)->refundPoints($locked, 'pos');
+                    }
+
+                    // [abuse-heal 2026-06-19 deliv-admin-twin] DELIVERY finalization — twin
+                    // of the driver-app path, now SHARED. For a DELIVERY order this flips an
+                    // UNPAID COD order to PAID at DELIVERED (the legal cash anchor) and
+                    // allocates the gap-free fiscal_sequence_no INSIDE this locked tx, so an
+                    // admin-finalized COD delivery enters the Z instead of becoming an
+                    // off-book orphan (NF525 exhaustivity).
+                    //
+                    // Scoped STRICTLY to order_type === DELIVERY AND to the FORWARD delivery
+                    // anchors (OUT_FOR_DELIVERY / DELIVERED) — exactly the transitions the
+                    // driver-app path is ever invoked with. This deliberately EXCLUDES the
+                    // cancel-like edges (CANCELED / REJECTED / RETURNED): the shared method's
+                    // non-COD `else` branch would otherwise auto-flip an UNPAID late-card
+                    // delivery to PAID + allocate a sequence on cancel — a sale that never
+                    // happened. TAKEAWAY / DINE_IN / POS are excluded by the order_type fence.
+                    if ((int) $locked->order_type === (int) OrderType::DELIVERY
+                        && in_array($toStatus, [OrderStatus::OUT_FOR_DELIVERY, OrderStatus::DELIVERED], true)
+                    ) {
+                        $cashEscrowMeta = $this->finalizeDeliveryPaymentInTx($locked, $toStatus);
                     }
 
                     $oldStatusForBroadcast = $locked->status;
@@ -2305,6 +2381,14 @@ class OrderService
 
                 if ($oldStatusForBroadcast === null) {
                     return $order;
+                }
+
+                // [abuse-heal 2026-06-19 deliv-admin-twin] Record the COD cash-collection
+                // (NF525 audit row + DeliveryBoyCashMovement) AFTER commit, via the SHARED
+                // method also used by the driver-app path. Non-null only for a COD DELIVERY
+                // order that just reached DELIVERED on this admin transition.
+                if (is_array($cashEscrowMeta)) {
+                    $this->recordDeliveryCashEscrowPostCommit($cashEscrowMeta);
                 }
 
                 SendOrderMail::dispatch(['order_id' => $order->id, 'status' => $targetStatus]);
