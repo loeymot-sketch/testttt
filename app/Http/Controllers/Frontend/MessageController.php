@@ -58,6 +58,28 @@ class MessageController extends Controller
     public function store(MessageRequest $request): \Illuminate\Http\Response | MessageResource | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory
     {
         try {
+            // [abuse-heal 2026-06-19 msg-idor-store] WRITE-side twin of the
+            // read-side IDOR heal (index/show/destroy). The shared
+            // MessageService::store() is UN-scoped on both write paths, so on
+            // this customer self-thread surface ('auth:sanctum' only, no
+            // permission gate, no BranchScope on Message) we enforce
+            // object-level authz HERE — the service + the 'permission:messages'
+            // Admin\MessageController stay byte-identical.
+            if ($request->message_id) {
+                // Reply path: a customer may only append to their OWN thread.
+                // Message::find() is route-unbound + un-scoped, so check owner.
+                $message = Message::find($request->message_id);
+                abort_unless($message && (int) $message->user_id === (int) Auth::id(), 403);
+            } else {
+                // New-thread path: the service sets the owner from the
+                // client-supplied receiver_id, so force the thread owner to the
+                // authenticated customer — they can only open their OWN thread.
+                $request->merge([
+                    'user_id'     => Auth::id(),
+                    'receiver_id' => Auth::id(),
+                ]);
+            }
+
             return new MessageResource($this->messageService->store($request));
         } catch (Exception $exception) {
             return $this->jsonError($exception, 422);
