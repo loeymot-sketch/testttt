@@ -44631,6 +44631,16 @@ __webpack_require__.r(__webpack_exports__);
         // [prod-finale 2026-06-17] keep last-good bars instead of silently empty on a failed fetch.
       });
     },
+    formatPercent: function formatPercent(value) {
+      // [micro-ux 2026-06-19] FR display: en-US dot ("4.35%") → comma + NBSP before %
+      // ("4,35 %"). Backend already rounds to 2 decimals (DashboardService::channelStatistics);
+      // we only swap the separator and keep the exact precision the value carries (trailing
+      // zeros stay dropped, so "8.7" → "8,7 %"). Presentation-only, no computation change.
+      var NBSP = String.fromCharCode(0x00A0);
+      var n = Number(value);
+      var safe = Number.isFinite(n) ? n : 0;
+      return String(safe).replace('.', ',') + NBSP + '%';
+    },
     getColor: function getColor(name) {
       if (name === 'Web') return 'bg-blue-500';
       if (name === 'Kiosk/App') return 'bg-orange-500';
@@ -59081,7 +59091,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
   }, "Répartition par Canal (Aujourd'hui)", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_3, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($data.stats, function (stat, index) {
     return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
       key: index
-    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_4, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_5, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(stat.name), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_6, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(stat.value) + "%", 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_7, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_4, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_5, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(stat.name), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_6, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.formatPercent(stat.value)), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_7, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
       "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["h-2.5 rounded-full", $options.getColor(stat.name)]),
       style: (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeStyle)({
         width: stat.value + '%'
@@ -62384,10 +62394,10 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     to: {
       name: 'auth.forgetPassword'
     },
-    "class": "capitalize text-xs font-medium transition text-primary"
+    "class": "capitalize text-xs font-medium transition text-orange-700 underline"
   }, {
     "default": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
-      return [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.forget_password')), 1 /* TEXT */)];
+      return [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" [micro-ux 2026-06-19] text-primary #F4501E = 3.49:1 on white (WCAG AA fail).\n                             Reuse the in-project AA-safe brand-orange text token text-orange-700 #C2410C = 5.18:1 (PASS),\n                             same family as the dashboard text links; + underline for link affordance. "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.forget_password')), 1 /* TEXT */)];
     }),
     _: 1 /* STABLE */
   })]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", _hoisted_15, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.login')), 1 /* TEXT */), !$options.staffOnlyMode ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_16, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_17, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('message.have_account')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_router_link, {

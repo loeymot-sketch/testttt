@@ -41,7 +41,10 @@
                         </label>
                     </div>
                     <router-link :to="{ name: 'auth.forgetPassword' }"
-                        class="capitalize text-xs font-medium transition text-primary">
+                        class="capitalize text-xs font-medium transition text-orange-700 underline">
+                        <!-- [micro-ux 2026-06-19] text-primary #F4501E = 3.49:1 on white (WCAG AA fail).
+                             Reuse the in-project AA-safe brand-orange text token text-orange-700 #C2410C = 5.18:1 (PASS),
+                             same family as the dashboard text links; + underline for link affordance. -->
                         {{ $t('button.forget_password') }}
                     </router-link>
                 </div>
