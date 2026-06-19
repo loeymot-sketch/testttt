@@ -147,13 +147,12 @@ class Coupon extends Model implements HasMedia
             }
         }
 
-        // [logic-cleanup 2026-06-19 supervisor-audit] Quota global (max_uses_global) is enforced
-        // AUTHORITATIVELY by CouponService::validateCouponForOrder() via a live
-        // `OrderCoupon::where(coupon_id)->lockForUpdate()->count()` (COUPON-CAP-01 heal 2026-06-01).
-        // The previous check here compared `usage_count` — a column seeded to 0 and NEVER incremented
-        // anywhere (dead column), so it could never gate and gave a false sense of a second guard
-        // (SSOT violation). Removed: this method intentionally does NOT re-check the global cap; the
-        // single source of truth is the order_coupons count in the service (race-safe, real-time).
+        // Quota global
+        if (!is_null($this->max_uses_global) && (int) $this->max_uses_global > 0) {
+            if ((int) $this->usage_count >= (int) $this->max_uses_global) {
+                return false;
+            }
+        }
 
         return true;
     }
