@@ -145,23 +145,25 @@
      * @param {boolean} forceEmoji - [S24] Force emoji-only mode (for sauces, garnitures)
      */
     function renderOptionIcon(thumb, emoji, isMicro, forceEmoji) {
+        // [LOCK XSS 2026-06-19] thumb (API image URL) + emoji (API field for non-getEmoji callers,
+        // e.g. sauce.emoji/viande.emoji) flow into innerHTML here — escape both.
         // [S24 FIX] For sauces and garnitures, always use emoji/pictogram
         if (forceEmoji) {
             if (isMicro) {
-                return '<span class="option-icon-micro force-emoji">' + (emoji || '🥄') + '</span>';
+                return '<span class="option-icon-micro force-emoji">' + escapeHtml(emoji || '🥄') + '</span>';
             }
-            return '<span class="option-icon force-emoji">' + (emoji || '') + '</span>';
+            return '<span class="option-icon force-emoji">' + escapeHtml(emoji || '') + '</span>';
         }
         if (isMicro) {
             if (thumb && typeof thumb === 'string' && thumb.length > 0) {
-                return '<img src="' + thumb + '" alt="" class="option-img-micro" />';
+                return '<img src="' + escapeHtml(thumb) + '" alt="" class="option-img-micro" />';
             }
-            return '<span class="option-icon-micro">' + (emoji || '🥄') + '</span>';
+            return '<span class="option-icon-micro">' + escapeHtml(emoji || '🥄') + '</span>';
         }
         if (thumb && typeof thumb === 'string' && thumb.length > 0) {
-            return '<img src="' + thumb + '" alt="" class="option-img" />';
+            return '<img src="' + escapeHtml(thumb) + '" alt="" class="option-img" />';
         }
-        return '<span class="option-icon">' + (emoji || '') + '</span>';
+        return '<span class="option-icon">' + escapeHtml(emoji || '') + '</span>';
     }
 
     /* ==============================
@@ -228,6 +230,20 @@
         } catch (e) {
             return num.toFixed(2).replace('.', ',') + ' €';
         }
+    }
+
+    // [LOCK XSS 2026-06-19] HTML-escape any user/API-controlled string before it is concatenated
+    // into an innerHTML sink. Item/extra/variation/option names come from the items API (set via
+    // items_edit) and were interpolated RAW into the `h`/`html`/`newHtml` builders assigned to
+    // wizardEl.innerHTML — a name like `<img src=x onerror=...>` = stored XSS in the POS operator's
+    // session. Render-only: escaped text still displays identically; pricing/selection/math untouched.
+    // NOTE: never apply this to the print/ticket text path (buildTicketInstruction → textarea.value),
+    // which is plain-text and must stay literal.
+    function escapeHtml(s) {
+        if (s === null || s === undefined) return '';
+        return String(s)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     }
 
     /**
@@ -1067,10 +1083,10 @@
         if (lastItemData) {
             html += '<div class="wizard-item-header">';
             if (lastItemData.thumb) {
-                html += '<img src="' + lastItemData.thumb + '" alt="item" class="wizard-item-img">';
+                html += '<img src="' + escapeHtml(lastItemData.thumb) + '" alt="item" class="wizard-item-img">';
             }
             html += '<div class="wizard-item-info">';
-            html += '<h2>' + lastItemData.name + '</h2>';
+            html += '<h2>' + escapeHtml(lastItemData.name) + '</h2>';
             html += '<p class="wizard-item-price">' + fmtPrice(basePrice) + '</p>';
             html += '</div>';
             
@@ -1133,8 +1149,8 @@
         var step = steps[currentStep];
         html += '<div class="wizard-step active" data-step="' + currentStep + '">';
         html += '<div class="wizard-step-header">';
-        html += '<h3>' + step.label + '</h3>';
-        html += '<p>' + (step.subtitle || '') + '</p>';
+        html += '<h3>' + escapeHtml(step.label) + '</h3>';
+        html += '<p>' + escapeHtml(step.subtitle || '') + '</p>';
         html += '</div>';
 
         // [REFACTORED SPRINT 4] New combined steps + legacy steps
@@ -1201,8 +1217,8 @@
             var canAdd = total < max;
             h += '<div class="wizard-viande-row' + (count > 0 ? ' active' : '') + '">';
             h += '<div class="viande-info">';
-            h += '<span class="viande-emoji">' + viande.emoji + '</span>';
-            h += '<span class="viande-name">' + viande.name + '</span>';
+            h += '<span class="viande-emoji">' + escapeHtml(viande.emoji) + '</span>';
+            h += '<span class="viande-name">' + escapeHtml(viande.name) + '</span>';
             h += '</div>';
             h += '<div class="viande-controls">';
             h += '<button type="button" class="viande-btn minus' + (count <= 0 ? ' disabled' : '') + '" data-viande="' + viande.key + '" data-action="minus">−</button>';
@@ -1253,7 +1269,7 @@
             h += '<div class="wizard-option sauce-opt micro-opt' + sel + hiddenClass + '" data-type="sauce" data-id="' + sauce.id + '">';
             h += '<span class="check-mark"><i class="fa-solid fa-check"></i></span>';
             h += renderOptionIcon(sauce.thumb, sauce.emoji, true, true); // [S24 FIX] Force emoji for sauces
-            h += '<span class="option-name">' + sauce.name + '</span>';
+            h += '<span class="option-name">' + escapeHtml(sauce.name) + '</span>';
             h += priceLabel;
             h += '</div>';
         });
@@ -1350,7 +1366,7 @@
             h += '<div class="wizard-option sauce-opt' + sel + '" data-type="sauce_single" data-id="' + sauce.id + '">';
             h += '<span class="check-mark"><i class="fa-solid fa-check"></i></span>';
             h += renderOptionIcon(sauce.thumb, sauce.emoji, false, true); // [S24 FIX] Force emoji for sauces
-            h += '<span class="option-name">' + sauce.name + '</span>';
+            h += '<span class="option-name">' + escapeHtml(sauce.name) + '</span>';
             h += '<span class="option-price free">Inclus</span>';
             h += '</div>';
         });
@@ -1366,7 +1382,7 @@
             h += '<div class="wizard-option accomp' + sel + '" data-type="accompagnement" data-id="' + item.id + '">';
             h += '<span class="check-mark"><i class="fa-solid fa-check"></i></span>';
             h += renderOptionIcon(item.thumb, getEmoji(GARNITURE_EMOJIS, item.name), false, true); // [S24 FIX] Force emoji for garnitures
-            h += '<span class="option-name">' + item.name + '</span>';
+            h += '<span class="option-name">' + escapeHtml(item.name) + '</span>';
             h += '<span class="option-price free">Inclus</span>';
             h += '</div>';
         });
@@ -1382,7 +1398,7 @@
             h += '<div class="wizard-option garniture micro-opt' + sel + '" data-type="garniture" data-id="' + item.id + '">';
             h += '<span class="check-mark"><i class="fa-solid fa-check"></i></span>';
             h += renderOptionIcon(item.thumb, getEmoji(GARNITURE_EMOJIS, item.name), true, true); // [S24 FIX] Force emoji for garnitures
-            h += '<span class="option-name">' + item.name + '</span>';
+            h += '<span class="option-name">' + escapeHtml(item.name) + '</span>';
             h += '<span class="option-price">Inclus</span>';
             h += '</div>';
         });
@@ -1398,8 +1414,8 @@
             h += '<div class="wizard-option micro-opt' + sel + '" data-type="supplement" data-id="' + item.id + '">';
             h += '<span class="check-mark"><i class="fa-solid fa-check"></i></span>';
             h += renderOptionIcon(item.thumb, getEmoji(SUPPLEMENT_EMOJIS, item.name), true, true); // [S24 FIX] Force emoji for supplements
-            h += '<span class="option-name">' + item.name + '</span>';
-            h += '<span class="option-price paid">+' + item.currencyPrice + '</span>';
+            h += '<span class="option-name">' + escapeHtml(item.name) + '</span>';
+            h += '<span class="option-price paid">+' + escapeHtml(item.currencyPrice) + '</span>';
             h += '</div>';
         });
         h += '</div>';
@@ -1417,7 +1433,7 @@
         var selFull = selections.menuChoice === 'full' ? ' selected' : '';
         h += '<div class="menu-choice-card' + selFull + '" data-action="menu-choice" data-value="full">';
         h += '<div class="menu-card-icon">' + renderOptionIcon(step.menuComplet.thumb, '🍟🥤') + '</div>';
-        h += '<div class="menu-card-name">' + step.menuComplet.name + '</div>';
+        h += '<div class="menu-card-name">' + escapeHtml(step.menuComplet.name) + '</div>';
         h += '<div class="menu-card-price">+' + fmtPrice(step.menuComplet.price) + '</div>';
         h += '<div class="menu-card-desc">Frites + Boisson incluse</div>';
         h += '</div>';
@@ -1426,7 +1442,7 @@
         var selFrites = selections.menuChoice === 'frites' ? ' selected' : '';
         h += '<div class="menu-choice-card' + selFrites + '" data-action="menu-choice" data-value="frites">';
         h += '<div class="menu-card-icon">' + renderOptionIcon(step.fritesSeules.thumb, '🍟') + '</div>';
-        h += '<div class="menu-card-name">' + step.fritesSeules.name + '</div>';
+        h += '<div class="menu-card-name">' + escapeHtml(step.fritesSeules.name) + '</div>';
         h += '<div class="menu-card-price">+' + fmtPrice(step.fritesSeules.price) + '</div>';
         h += '<div class="menu-card-desc">Juste les frites</div>';
         h += '</div>';
@@ -1436,7 +1452,7 @@
             var selBoisson = selections.menuChoice === 'boisson' ? ' selected' : '';
             h += '<div class="menu-choice-card' + selBoisson + '" data-action="menu-choice" data-value="boisson">';
             h += '<div class="menu-card-icon">' + renderOptionIcon(step.boissonSeule.thumb, '🥤') + '</div>';
-            h += '<div class="menu-card-name">' + step.boissonSeule.name + '</div>';
+            h += '<div class="menu-card-name">' + escapeHtml(step.boissonSeule.name) + '</div>';
             h += '<div class="menu-card-price">+' + fmtPrice(step.boissonSeule.price) + '</div>';
             h += '<div class="menu-card-desc">Juste la boisson</div>';
             h += '</div>';
@@ -1527,11 +1543,11 @@
                 h += '<div class="wizard-option boisson-opt' + sel + '" data-action="boisson-choice" data-id="' + boisson.id + '">';
                 h += '<span class="check-mark"><i class="fa-solid fa-check"></i></span>';
                 if (boisson.thumb) {
-                    h += '<span class="option-icon has-img"><img src="' + boisson.thumb + '" alt="' + boisson.name + '"></span>';
+                    h += '<span class="option-icon has-img"><img src="' + escapeHtml(boisson.thumb) + '" alt="' + escapeHtml(boisson.name) + '"></span>';
                 } else {
                     h += '<span class="option-icon">' + getEmoji(ADDON_EMOJIS, boisson.name) + '</span>';
                 }
-                h += '<span class="option-name">' + boisson.name + '</span>';
+                h += '<span class="option-name">' + escapeHtml(boisson.name) + '</span>';
                 h += '<span class="option-price free">Incluse</span>';
                 h += '</div>';
             });
@@ -1575,7 +1591,7 @@
             h += '<div class="wizard-option sauce-opt' + sel + '" data-type="sauce_frite" data-id="' + sauce.id + '">';
             h += '<span class="check-mark"><i class="fa-solid fa-check"></i></span>';
             h += renderOptionIcon(sauce.thumb, sauce.emoji, false, true); // [S24 FIX] Force emoji for sauces
-            h += '<span class="option-name">' + sauce.name + '</span>';
+            h += '<span class="option-name">' + escapeHtml(sauce.name) + '</span>';
             h += priceLabel;
             h += '</div>';
         });
@@ -1598,8 +1614,8 @@
             var sel = selections.pain === pain.id ? ' selected' : '';
             h += '<div class="wizard-option pain-opt' + sel + '" data-type="pain" data-id="' + pain.id + '">';
             h += '<span class="check-mark"><i class="fa-solid fa-check"></i></span>';
-            h += '<span class="option-icon" style="font-size: 36px; margin-bottom: 8px;">' + pain.emoji + '</span>';
-            h += '<span class="option-name">' + pain.name + '</span>';
+            h += '<span class="option-icon" style="font-size: 36px; margin-bottom: 8px;">' + escapeHtml(pain.emoji) + '</span>';
+            h += '<span class="option-name">' + escapeHtml(pain.name) + '</span>';
             h += '<span class="option-price free">Inclus</span>';
             h += '</div>';
         });
@@ -1614,7 +1630,7 @@
 
         // LEFT: Viandes
         h += '<div class="wizard-col">';
-        h += '<h4>🥩 ' + step.label + '</h4>';
+        h += '<h4>🥩 ' + escapeHtml(step.label) + '</h4>';
         var total = selections.totalViandes || 0;
         var max = step.maxViandes;
         h += '<div class="wizard-viande-counter-header">';
@@ -1634,8 +1650,8 @@
             var hiddenClass = (hasMoreViandes && index >= viandeLimit) ? ' hidden-opt' : '';
             h += '<div class="wizard-viande-row' + (count > 0 ? ' active' : '') + hiddenClass + '">';
             h += '<div class="viande-info">';
-            h += '<span class="viande-emoji">' + viande.emoji + '</span>';
-            h += '<span class="viande-name">' + viande.name + '</span>';
+            h += '<span class="viande-emoji">' + escapeHtml(viande.emoji) + '</span>';
+            h += '<span class="viande-name">' + escapeHtml(viande.name) + '</span>';
             h += '</div>';
             h += '<div class="viande-controls">';
             h += '<button type="button" class="viande-btn minus' + (count <= 0 ? ' disabled' : '') + '" data-viande="' + viande.key + '" data-action="minus">−</button>';
@@ -1679,7 +1695,7 @@
             h += '<div class="wizard-option sauce-opt' + sel + '" data-type="sauce" data-id="' + sauce.id + '">';
             h += '<span class="check-mark"><i class="fa-solid fa-check"></i></span>';
             h += renderOptionIcon(sauce.thumb, sauce.emoji, false, true); // [S24 FIX] Force emoji for sauces
-            h += '<span class="option-name">' + sauce.name + '</span>';
+            h += '<span class="option-name">' + escapeHtml(sauce.name) + '</span>';
             h += priceLabel;
             h += '</div>';
         });
@@ -1707,8 +1723,8 @@
                     (selections.garnitures[cKey] !== false && selections.garnitures[g.id] !== false);
                 var stateClass = isIncluded ? ' included' : ' removed';
                 var emoji = getEmoji(GARNITURE_EMOJIS, g.name);
-                var label = isIncluded ? ('✓ ' + g.name) : ('✕ Sans ' + g.name);
-                h += '<button type="button" class="garniture-toggle-btn' + stateClass + '" data-type="garniture" data-id="' + g.id + '" data-name="' + g.name + '" data-emoji="' + emoji + '">';
+                var label = isIncluded ? ('✓ ' + escapeHtml(g.name)) : ('✕ Sans ' + escapeHtml(g.name));
+                h += '<button type="button" class="garniture-toggle-btn' + stateClass + '" data-type="garniture" data-id="' + g.id + '" data-name="' + escapeHtml(g.name) + '" data-emoji="' + escapeHtml(emoji) + '">';
                 h += emoji + ' ' + label;
                 h += '</button>';
             });
@@ -1726,7 +1742,7 @@
                 var sc = (selections.viandeSupplItems && selections.viandeSupplItems[key]) || 0;
                 var emoji = getEmoji(VIANDE_EMOJIS, variation.name);
                 h += '<div class="wizard-viande-suppl-row' + (sc > 0 ? ' active' : '') + '" data-suppl-id="' + key + '">';
-                h += '<div class="viande-info"><span class="viande-emoji">' + emoji + '</span><span class="viande-name">' + variation.name + '</span></div>';
+                h += '<div class="viande-info"><span class="viande-emoji">' + escapeHtml(emoji) + '</span><span class="viande-name">' + escapeHtml(variation.name) + '</span></div>';
                 h += '<div class="viande-controls">';
                 h += '<button type="button" class="viande-suppl-btn viande-btn minus' + (sc <= 0 ? ' disabled' : '') + '" data-viande-suppl="' + key + '" data-action="minus">−</button>';
                 h += '<span class="viande-suppl-count viande-count">' + sc + '</span>';
@@ -1748,8 +1764,8 @@
                 h += '<div class="wizard-option supplement-opt' + sel + '" data-type="supplement" data-id="' + s.id + '">';
                 h += '<span class="check-mark"><i class="fa-solid fa-check"></i></span>';
                 h += renderOptionIcon(s.thumb, emoji, false, true); // [S24 FIX] Force emoji for supplements
-                h += '<span class="option-name">' + s.name + '</span>';
-                h += '<span class="option-price">' + s.currencyPrice + '</span>';
+                h += '<span class="option-name">' + escapeHtml(s.name) + '</span>';
+                h += '<span class="option-price">' + escapeHtml(s.currencyPrice) + '</span>';
                 h += '</div>';
             });
             h += '</div>';
@@ -1788,7 +1804,7 @@
             h += '<div class="wizard-option sauce-opt' + sel + '" data-type="sauce" data-id="' + sauce.id + '">';
             h += '<span class="check-mark"><i class="fa-solid fa-check"></i></span>';
             h += renderOptionIcon(sauce.thumb, sauce.emoji, false, true); // [S24 FIX] Force emoji for sauces
-            h += '<span class="option-name">' + sauce.name + '</span>';
+            h += '<span class="option-name">' + escapeHtml(sauce.name) + '</span>';
             h += priceLabel;
             h += '</div>';
         });
@@ -1807,8 +1823,8 @@
                 (selections.garnitures[cKey] !== false && selections.garnitures[g.id] !== false);
             var stateClass = isIncluded ? ' included' : ' removed';
             var emoji = getEmoji(GARNITURE_EMOJIS, g.name);
-            var label = isIncluded ? ('✓ ' + g.name) : ('✕ Sans ' + g.name);
-            h += '<button type="button" class="garniture-toggle-btn' + stateClass + '" data-type="garniture" data-id="' + g.id + '" data-name="' + g.name + '" data-emoji="' + emoji + '">';
+            var label = isIncluded ? ('✓ ' + escapeHtml(g.name)) : ('✕ Sans ' + escapeHtml(g.name));
+            h += '<button type="button" class="garniture-toggle-btn' + stateClass + '" data-type="garniture" data-id="' + g.id + '" data-name="' + escapeHtml(g.name) + '" data-emoji="' + escapeHtml(emoji) + '">';
             h += emoji + ' ' + label;
             h += '</button>';
         });
@@ -1834,8 +1850,8 @@
                 h += '<div class="wizard-option supplement-opt' + sel + '" data-type="supplement" data-id="' + s.id + '">';
                 h += '<span class="check-mark"><i class="fa-solid fa-check"></i></span>';
                 h += renderOptionIcon(s.thumb, emoji);
-                h += '<span class="option-name">' + s.name + '</span>';
-                h += '<span class="option-price">' + s.currencyPrice + '</span>';
+                h += '<span class="option-name">' + escapeHtml(s.name) + '</span>';
+                h += '<span class="option-price">' + escapeHtml(s.currencyPrice) + '</span>';
                 h += '</div>';
             });
             h += '</div>';
@@ -1862,8 +1878,8 @@
             step.menuItems.forEach(function (addon) {
                 h += '<div class="wizard-menu-card' + (selections.individualAddons && selections.individualAddons[addon.id] ? ' selected' : '') + '" data-addon-id="' + addon.id + '">';
                 h += '<div class="menu-icon">' + (addon.name.toLowerCase().includes('frites') ? '🍟' : '🥤') + '</div>';
-                h += '<div class="menu-name">' + addon.name + '</div>';
-                h += '<div class="menu-price">' + addon.currencyPrice + '</div>';
+                h += '<div class="menu-name">' + escapeHtml(addon.name) + '</div>';
+                h += '<div class="menu-price">' + escapeHtml(addon.currencyPrice) + '</div>';
                 h += '</div>';
             });
 
@@ -1931,7 +1947,7 @@
                 h += '<div class="wizard-option sauce-frite-opt' + sel + '" data-type="sauce_frite" data-id="' + sauce.id + '">';
                 h += '<span class="check-mark"><i class="fa-solid fa-check"></i></span>';
                 h += renderOptionIcon(sauce.thumb, sauce.emoji, false, true); // [S24 FIX] Force emoji for sauces
-                h += '<span class="option-name">' + sauce.name + '</span>';
+                h += '<span class="option-name">' + escapeHtml(sauce.name) + '</span>';
                 h += priceLabel;
                 h += '</div>';
             });
@@ -1971,7 +1987,7 @@
             h += '<div class="wizard-option sauce-opt' + sel + '" data-type="sauce" data-id="' + sauce.id + '">';
             h += '<span class="check-mark"><i class="fa-solid fa-check"></i></span>';
             h += renderOptionIcon(sauce.thumb, sauce.emoji, false, true); // [S24 FIX] Force emoji for sauces
-            h += '<span class="option-name">' + sauce.name + '</span>';
+            h += '<span class="option-name">' + escapeHtml(sauce.name) + '</span>';
             h += priceLabel;
             h += '</div>';
         });
@@ -1988,7 +2004,7 @@
                 h += '<div class="wizard-option radio-opt' + sel + '" data-type="accompagnement" data-id="' + acc.id + '">';
                 h += '<span class="radio-mark"><i class="fa-solid fa-circle-dot"></i></span>';
                 h += renderOptionIcon(acc.thumb, emoji, false, true); // [S24 FIX] Force emoji for accompaniments
-                h += '<span class="option-name">' + acc.name + '</span>';
+                h += '<span class="option-name">' + escapeHtml(acc.name) + '</span>';
                 h += '<span class="option-price">Inclus</span>';
                 h += '</div>';
             });
@@ -2027,7 +2043,7 @@
             h += '<div class="wizard-option sauce-opt' + sel + '" data-type="sauce" data-id="' + sauce.id + '">';
             h += '<span class="check-mark"><i class="fa-solid fa-check"></i></span>';
             h += renderOptionIcon(sauce.thumb, sauce.emoji, false, true); // [S24 FIX] Force emoji for sauces
-            h += '<span class="option-name">' + sauce.name + '</span>';
+            h += '<span class="option-name">' + escapeHtml(sauce.name) + '</span>';
             h += priceLabel;
             h += '</div>';
         });
@@ -2045,8 +2061,8 @@
                 h += '<div class="wizard-option supplement-opt' + sel + '" data-type="supplement" data-id="' + s.id + '">';
                 h += '<span class="check-mark"><i class="fa-solid fa-check"></i></span>';
                 h += renderOptionIcon(s.thumb, emoji, false, true); // [S24 FIX] Force emoji for supplements
-                h += '<span class="option-name">' + s.name + '</span>';
-                h += '<span class="option-price">' + s.currencyPrice + '</span>';
+                h += '<span class="option-name">' + escapeHtml(s.name) + '</span>';
+                h += '<span class="option-price">' + escapeHtml(s.currencyPrice) + '</span>';
                 h += '</div>';
             });
             h += '</div>';
@@ -2077,7 +2093,7 @@
 
         h += '<div class="wizard-recap">';
         h += '<div class="wizard-ticket-head">';
-        h += '<div class="wizard-ticket-title">' + ((lastItemData && lastItemData.name) ? lastItemData.name : 'Votre commande') + '</div>';
+        h += '<div class="wizard-ticket-title">' + ((lastItemData && lastItemData.name) ? escapeHtml(lastItemData.name) : 'Votre commande') + '</div>';
         h += '<div class="wizard-ticket-subtitle">Résumé clair avant validation panier</div>';
         h += '</div>';
         h += '<div class="wizard-recap-section-title">Choix principaux</div>';
@@ -2093,7 +2109,7 @@
             if (painStep) {
                 var painItem = painStep.painItems.find(function (p) { return p.id === selections.pain; });
                 if (painItem) {
-                    h += '<div class="wizard-recap-row"><span class="label">' + painItem.emoji + ' Pain' + editBtn('pain') + '</span><span class="value">' + painItem.name + '</span></div>';
+                    h += '<div class="wizard-recap-row"><span class="label">' + escapeHtml(painItem.emoji) + ' Pain' + editBtn('pain') + '</span><span class="value">' + escapeHtml(painItem.name) + '</span></div>';
                 }
             }
         }
@@ -2112,7 +2128,7 @@
             if (viandeNames.length > 0) {
                 var viandeGoto = steps.find(function (s) { return s.type === 'viande_sauce'; }) ? 'viande_sauce' : 'viande';
                 h += '<div class="wizard-recap-row"><span class="label">🥩 Viandes' + editBtn(viandeGoto) + '</span><span class="value">' +
-                    viandeNames.join(', ') + '</span></div>';
+                    escapeHtml(viandeNames.join(', ')) + '</span></div>';
             }
         }
 
@@ -2145,7 +2161,7 @@
                 else if (steps.find(function (s) { return s.type === 'sauce_accompagnement'; })) sauceGoto = 'sauce_accompagnement';
                 else if (steps.find(function (s) { return s.type === 'sauce_supplements'; })) sauceGoto = 'sauce_supplements';
                 h += '<div class="wizard-recap-row"><span class="label">🥄 Sauce' + editBtn(sauceGoto) + '</span><span class="value">' +
-                    sauceNames.join(', ') + '</span></div>';
+                    escapeHtml(sauceNames.join(', ')) + '</span></div>';
             }
         }
 
@@ -2159,7 +2175,7 @@
                 });
                 if (sName) {
                     h += '<div class="wizard-recap-row"><span class="label">🥄 Sauce' + editBtn('sauce_single') + '</span><span class="value">' +
-                        sName + ' (inclus)</span></div>';
+                        escapeHtml(sName) + ' (inclus)</span></div>';
                 }
             }
         }
@@ -2176,7 +2192,7 @@
                 if (accName) {
                     var accGoto = steps.find(function (s) { return s.type === 'sauce_accompagnement'; }) ? 'sauce_accompagnement' : 'accompagnement';
                     h += '<div class="wizard-recap-row"><span class="label">🍟 Accompagnement' + editBtn(accGoto) + '</span><span class="value">' +
-                        accName + ' (inclus)</span></div>';
+                        escapeHtml(accName) + ' (inclus)</span></div>';
                 }
             }
         }
@@ -2207,10 +2223,10 @@
             if (steps.find(function (s) { return s.type === 'perso'; })) garnGoto = 'perso';
             else if (steps.find(function (s) { return s.type === 'sauce_garnitures'; })) garnGoto = 'sauce_garnitures';
             h += '<div class="wizard-recap-row"><span class="label">🥬 Crudités incluses' + editBtn(garnGoto) + '</span><span class="value">' +
-                (garnIncluded.length > 0 ? garnIncluded.join(', ') : 'Aucune') + '</span></div>';
+                (garnIncluded.length > 0 ? escapeHtml(garnIncluded.join(', ')) : 'Aucune') + '</span></div>';
             if (garnRemoved.length > 0) {
                 h += '<div class="wizard-recap-row"><span class="label">✕ Retirées</span><span class="value">' +
-                    garnRemoved.join(', ') + '</span></div>';
+                    escapeHtml(garnRemoved.join(', ')) + '</span></div>';
             }
         }
 
@@ -2237,7 +2253,7 @@
                 else if (steps.find(function (s) { return s.type === 'supplements_menu'; })) suppGoto = 'supplements_menu';
                 else if (steps.find(function (s) { return s.type === 'sauce_supplements'; })) suppGoto = 'sauce_supplements';
                 h += '<div class="wizard-recap-row"><span class="label">➕ Suppléments' + editBtn(suppGoto) + '</span><span class="value">' +
-                    suppNames.join(', ') + '</span></div>';
+                    escapeHtml(suppNames.join(', ')) + '</span></div>';
             }
         }
 
@@ -2262,7 +2278,7 @@
                 if (formuleLabel) {
                     addonTotal += formulePrice;
                     h += '<div class="wizard-recap-row"><span class="label">🍟 Formule' + editBtn('menu_choice') + '</span><span class="value">' +
-                        formuleLabel + ' <span style="color:#E93C3C;font-weight:700">+€' + formulePrice.toFixed(2) + '</span></span></div>';
+                        escapeHtml(formuleLabel) + ' <span style="color:#E93C3C;font-weight:700">+€' + formulePrice.toFixed(2) + '</span></span></div>';
                 }
                 // Frites upgrades — prices from POS_WIZARD_CONFIG
                 if (selections.fritesGrande) {
@@ -2284,7 +2300,7 @@
                     });
                     var menuGoto = steps.find(function (s) { return s.type === 'supplements_menu'; }) ? 'supplements_menu' : 'menu';
                     h += '<div class="wizard-recap-row"><span class="label">🍟 Menu' + editBtn(menuGoto) + '</span><span class="value">' +
-                        addonNames.join(' + ') + '</span></div>';
+                        escapeHtml(addonNames.join(' + ')) + '</span></div>';
                 } else if (selections.menuChoice === 'individual') {
                     var indNames = [];
                     menuItems.forEach(function (a) {
@@ -2296,7 +2312,7 @@
                     if (indNames.length > 0) {
                         var indGoto = steps.find(function (s) { return s.type === 'supplements_menu'; }) ? 'supplements_menu' : 'menu';
                         h += '<div class="wizard-recap-row"><span class="label">🍟 À la carte' + editBtn(indGoto) + '</span><span class="value">' +
-                            indNames.join(', ') + '</span></div>';
+                            escapeHtml(indNames.join(', ')) + '</span></div>';
                     }
                 }
             }
@@ -2327,7 +2343,7 @@
             if (sfNames.length > 0) {
                 var sfGoto = steps.find(function (s) { return s.type === 'supplements_menu'; }) ? 'supplements_menu' : 'menu';
                 h += '<div class="wizard-recap-row"><span class="label">🍟 Sauce frites' + editBtn(sfGoto) + '</span><span class="value">' +
-                    sfNames.join(', ') + '</span></div>';
+                    escapeHtml(sfNames.join(', ')) + '</span></div>';
             }
         }
 
@@ -2813,10 +2829,10 @@
         if (lastItemData) {
             h += '<div class="wizard-item-header">';
             if (lastItemData.thumb) {
-                h += '<img src="' + lastItemData.thumb + '" alt="item" class="wizard-item-img">';
+                h += '<img src="' + escapeHtml(lastItemData.thumb) + '" alt="item" class="wizard-item-img">';
             }
             h += '<div class="wizard-item-info">';
-            h += '<h2>' + lastItemData.name + '</h2>';
+            h += '<h2>' + escapeHtml(lastItemData.name) + '</h2>';
             h += '<p class="wizard-item-price">' + fmtPrice(basePrice) + '</p>';
             h += '</div>';
             // Qté inline à droite du nom
@@ -2846,7 +2862,7 @@
                     var emoji = variation.name.toLowerCase().includes('galette') ? '🫓' : '🥖';
                     h += '<button type="button" class="pain-btn' + sel + '" data-type="pain" data-id="' + variation.id + '">';
                     h += '<span class="pain-emoji">' + emoji + '</span>';
-                    h += variation.name;
+                    h += escapeHtml(variation.name);
                     h += '</button>';
                 });
                 h += '</div>';
@@ -2919,7 +2935,7 @@
                 var idx = selections.sauceOrder ? selections.sauceOrder.indexOf(key) : -1;
                 var badge = idx === 0 ? ' <span class="chip-free">✓</span>' : (idx > 0 ? ' <span class="chip-paid">+' + fmtPrice(SAUCE_EXTRA_PRICE) + '</span>' : '');
                 sh += '<button type="button" class="sauce-chip' + sel + '" data-type="sauce" data-id="' + key + '">';
-                sh += sauce.name + badge;
+                sh += escapeHtml(sauce.name) + badge;
                 sh += '</button>';
             });
             sh += '</div>';
@@ -2946,8 +2962,8 @@
                 sh += '<div class="wizard-option supplement-opt micro-opt' + sel + '" data-type="supplement" data-key="' + key + '">';
                 sh += '<span class="check-mark"><i class="fa-solid fa-check"></i></span>';
                 sh += '<span class="option-icon supplement-icon">' + emoji + '</span>';
-                sh += '<span class="option-name">' + sup.name + '</span>';
-                sh += '<span class="option-price paid">+' + price + '</span>';
+                sh += '<span class="option-name">' + escapeHtml(sup.name) + '</span>';
+                sh += '<span class="option-price paid">+' + escapeHtml(price) + '</span>';
                 sh += '</div>';
             });
             sh += '</div>';
@@ -2992,7 +3008,7 @@
                 h += '<div class="wizard-viande-row' + (count > 0 ? ' active' : '') + '">';
                 h += '<div class="viande-info">';
                 h += '<span class="viande-emoji">' + emoji + '</span>';
-                h += '<span class="viande-name">' + variation.name + '</span>';
+                h += '<span class="viande-name">' + escapeHtml(variation.name) + '</span>';
                 h += '</div>';
                 h += '<div class="viande-controls">';
                 h += '<button type="button" class="viande-btn minus' + (count <= 0 ? ' disabled' : '') + '" data-viande="' + key + '" data-action="minus">−</button>';
@@ -3021,7 +3037,7 @@
                 h += '<div class="wizard-viande-suppl-row' + (sc > 0 ? ' active' : '') + '" data-suppl-id="' + key + '">';
                 h += '<div class="viande-info">';
                 h += '<span class="viande-emoji">' + emoji + '</span>';
-                h += '<span class="viande-name">' + variation.name + '</span>';
+                h += '<span class="viande-name">' + escapeHtml(variation.name) + '</span>';
                 h += '</div>';
                 h += '<div class="viande-controls">';
                 h += '<button type="button" class="viande-suppl-btn viande-btn minus' + (sc <= 0 ? ' disabled' : '') + '" data-viande-suppl="' + key + '" data-action="minus">−</button>';
@@ -3051,7 +3067,7 @@
                         isIncluded = true;
                     }
                     var stateClass = isIncluded ? ' included' : ' removed';
-                    var label = isIncluded ? ('✓ ' + c.name) : ('✕ Sans ' + c.name);
+                    var label = isIncluded ? ('✓ ' + escapeHtml(c.name)) : ('✕ Sans ' + escapeHtml(c.name));
                     var emoji = getEmoji(GARNITURE_EMOJIS, c.name);
                     h += '<button type="button" class="garniture-toggle-btn' + stateClass + '" data-garniture="' + key + '">' + emoji + ' ' + label + '</button>';
                 });
@@ -3093,7 +3109,7 @@
                     h += '<div class="wizard-option radio-opt' + (isSelected ? ' selected' : '') + '" data-type="accompagnement" data-id="' + acc.id + '">';
                     h += '<span class="radio-mark"><i class="fa-solid fa-circle-dot"></i></span>';
                     h += '<span class="option-icon">' + emoji + '</span>';
-                    h += '<span class="option-name">' + acc.name + '</span>';
+                    h += '<span class="option-name">' + escapeHtml(acc.name) + '</span>';
                     h += '<span class="option-price">Inclus</span>';
                     h += '</div>';
                 });
@@ -3124,8 +3140,8 @@
                            addon.addon_item_name.toLowerCase().includes('frite') ? '🍟' : '🍟🥤';
                 h += '<div class="formule-card' + sel + '" data-action="menu-choice" data-value="' + value + '">';
                 h += '<span class="formule-icon">' + icon + '</span>';
-                h += '<span class="formule-name">' + addon.addon_item_name + '</span>';
-                h += '<span class="formule-price">+' + addon.addon_item_currency_price + '</span>';
+                h += '<span class="formule-name">' + escapeHtml(addon.addon_item_name) + '</span>';
+                h += '<span class="formule-price">+' + escapeHtml(addon.addon_item_currency_price) + '</span>';
                 h += '</div>';
             });
 
@@ -3174,7 +3190,7 @@
                     var sfIdx = selections.sauceFritesOrder ? selections.sauceFritesOrder.indexOf(key) : -1;
                     var badge = sfIdx === 0 ? ' <span class="chip-free">✓</span>' : (sfIdx > 0 ? ' <span class="chip-paid">+' + fmtPrice(SAUCE_EXTRA_PRICE) + '</span>' : '');
                     h += '<button type="button" class="sauce-chip' + sel + '" data-type="sauce_frite" data-id="' + key + '">';
-                    h += sauce.name + badge;
+                    h += escapeHtml(sauce.name) + badge;
                     h += '</button>';
                 });
                 h += '</div>';
@@ -3187,14 +3203,14 @@
         // === SECTION 7: COMMENTAIRE ===
         h += '<div class="wizard-section comment-section">';
         h += '<h4>📝 Instruction spéciale</h4>';
-        h += '<textarea class="wizard-comment-field" placeholder="Ex: Pas trop de sauce, sandwich pas trop sec...">' + (instructionText || '') + '</textarea>';
+        h += '<textarea class="wizard-comment-field" placeholder="Ex: Pas trop de sauce, sandwich pas trop sec...">' + escapeHtml(instructionText || '') + '</textarea>';
         h += '</div>';
 
         // === TICKET PREVIEW ===
         var ticket = buildTicketInstruction();
         h += '<div class="wizard-ticket-preview">';
         h += '<div class="ticket-label">Aperçu ticket</div>';
-        h += '<div class="ticket-content">' + (ticket || 'Aucune sélection') + '</div>';
+        h += '<div class="ticket-content">' + escapeHtml(ticket || 'Aucune sélection') + '</div>';
         h += '</div>';
 
         // === STICKY BOTTOM BAR ===
@@ -3336,7 +3352,7 @@
             // first UTF-16 code unit, leaving a lone surrogate for multi-unit emojis (🥬, 🧅, etc.)
             var emojiChars = Array.from(btn.textContent.trim());
             var emoji = emojiChars.length > 0 ? emojiChars[0] : '';
-            btn.innerHTML = emoji + ' ' + (isIncluded ? '✓ ' + displayName : '✕ Sans ' + displayName);
+            btn.innerHTML = emoji + ' ' + (isIncluded ? '✓ ' + escapeHtml(displayName) : '✕ Sans ' + escapeHtml(displayName));
         });
 
         // Update sauce badges
@@ -4993,10 +5009,10 @@
             btn.classList.remove('included', 'removed');
             if (isSelected) {
                 btn.classList.add('included');
-                btn.innerHTML = emoji + ' ✓ ' + name;
+                btn.innerHTML = emoji + ' ✓ ' + escapeHtml(name);
             } else {
                 btn.classList.add('removed');
-                btn.innerHTML = emoji + ' ✕ Sans ' + name;
+                btn.innerHTML = emoji + ' ✕ Sans ' + escapeHtml(name);
             }
         });
 
