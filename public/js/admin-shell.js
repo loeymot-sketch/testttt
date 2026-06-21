@@ -65347,12 +65347,14 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
   }, null, 8 /* PROPS */, ["props"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("section", _hoisted_1, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_3, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h2", _hoisted_4, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.props.search.name), 1 /* TEXT */), $data.props.search.name ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_5, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     type: "button",
     "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["lab lab-row-vertical lab-font-size-20 text-xl", $data.itemProps.design === $data.itemDesignEnum.LIST ? 'text-primary' : 'text-[#A0A3BD]']),
+    "aria-label": "Vue liste",
     onClick: _cache[0] || (_cache[0] = function ($event) {
       return $data.itemProps.design = $data.itemDesignEnum.LIST;
     })
   }, null, 2 /* CLASS */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     type: "button",
     "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["lab lab-element-3 lab-font-size-20 text-xl", $data.itemProps.design === $data.itemDesignEnum.GRID ? 'text-primary' : 'text-[#A0A3BD]']),
+    "aria-label": "Vue grille",
     onClick: _cache[1] || (_cache[1] = function ($event) {
       return $data.itemProps.design = $data.itemDesignEnum.GRID;
     })
@@ -65562,12 +65564,14 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
   }, null, -1 /* CACHED */))], 10 /* CLASS, PROPS */, _hoisted_12)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), Object.keys($data.category).length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_15, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h2", _hoisted_16, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.category.name), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_17, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     type: "button",
     "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["lab lab-row-vertical lab-font-size-20 text-xl", $data.itemProps.property.design === $data.enums.itemDesignEnum.LIST ? 'text-primary' : 'text-[#A0A3BD]']),
+    "aria-label": "Vue liste",
     onClick: _cache[2] || (_cache[2] = function ($event) {
       return $data.itemProps.property.design = $data.enums.itemDesignEnum.LIST;
     })
   }, null, 2 /* CLASS */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     type: "button",
     "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)(["lab lab-element-3 lab-font-size-20 text-xl", $data.itemProps.property.design === $data.enums.itemDesignEnum.GRID ? 'text-primary' : 'text-[#A0A3BD]']),
+    "aria-label": "Vue grille",
     onClick: _cache[3] || (_cache[3] = function ($event) {
       return $data.itemProps.property.design = $data.enums.itemDesignEnum.GRID;
     })

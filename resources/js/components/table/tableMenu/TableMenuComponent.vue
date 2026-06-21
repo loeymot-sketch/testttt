@@ -54,10 +54,10 @@
                     {{ category.name }}
                 </h2>
                 <div class="flex items-center gap-3">
-                    <button type="button" class="lab lab-row-vertical lab-font-size-20 text-xl"
+                    <button type="button" class="lab lab-row-vertical lab-font-size-20 text-xl" aria-label="Vue liste"
                         v-on:click="itemProps.property.design = enums.itemDesignEnum.LIST"
                         :class="itemProps.property.design === enums.itemDesignEnum.LIST ? 'text-primary' : 'text-[#A0A3BD]'"></button>
-                    <button type="button" class="lab lab-element-3 lab-font-size-20 text-xl"
+                    <button type="button" class="lab lab-element-3 lab-font-size-20 text-xl" aria-label="Vue grille"
                         v-on:click="itemProps.property.design = enums.itemDesignEnum.GRID"
                         :class="itemProps.property.design === enums.itemDesignEnum.GRID ? 'text-primary' : 'text-[#A0A3BD]'"></button>
                 </div>
