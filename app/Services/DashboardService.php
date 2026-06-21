@@ -551,6 +551,20 @@ class DashboardService
             // Web = remainder (browser-web + any untagged legacy rows) → keeps the partition exhaustive.
             $webCount = max(0, $total - $kioskCount - $posCount - $deliveryCount);
 
+            // [audit-360 W4] Zero-division guard. $total is a period order ->count() and is 0
+            // on a fresh install / quiet day / empty date-filter. `$x / $total` would throw
+            // DivisionByZeroError (PHP 8.2) — an Error, NOT caught by catch(Exception) below —
+            // 500ing the dashboard channel-statistics widget. Verified: 5/0 throws, and
+            // DivisionByZeroError is not a subclass of Exception.
+            if ($total <= 0) {
+                return [
+                    ['name' => 'Web', 'value' => 0],
+                    ['name' => 'Kiosk/App', 'value' => 0],
+                    ['name' => 'POS', 'value' => 0],
+                    ['name' => 'Livraison', 'value' => 0],
+                ];
+            }
+
             return [
                 ['name' => 'Web', 'value' => round(($webCount / $total) * 100, 2)],
                 ['name' => 'Kiosk/App', 'value' => round(($kioskCount / $total) * 100, 2)],

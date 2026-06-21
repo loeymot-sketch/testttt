@@ -104,3 +104,17 @@ Encore plus profond : surfaces settings/reports/item-show + 2 agents analyse sta
 **Classes EXHAUSTÉES (signal convergence, vérifié)** : en-US money non-frozen, null-glue (W1/W2 complet 0 traînard), `+''+` coercion, NaN-render, v-html XSS (tout via DOMPurify), date en-US (sauf les 2 Outbox corrigés), mistraduction i18n. **Déférés (vérifiés, raisons)** : 5 tickets opérateur taux-taxe (même pattern, enjeu moindre que le client), 2 écrans verify phone-glue (OTP local), cluster a11y ~18 boutons frontend web (priorité V2 mono-opérateur), **OWNER-GATE frozen** pos-wizard money en-US (3-4 sites §7) + PosV5TrancheRow, backend `DashboardService:555` zero-guard (potentiel 500).
 
 **Gates Wave 3 : Vitest 2007/0, frozen §7=0, build compilé.** **Leçon : l'audit le plus profond (console-warnings + driver les formulaires gateway) trouve des RAW-KEYS que 3 sweeps i18n statiques avaient ratés [pattern dynamique `$t("label."+x)`] ; et "abuse verification" = verify-before-accept attrape les erreurs des agents eux-mêmes (2 ici).**
+
+---
+
+## §7 — WAVE 4 (« Continue » : exhauster les classes déférées + 1 bug backend)
+| ID | Sév | Surface | Défaut | Fix + preuve |
+|---|---|---|---|---|
+| W4-1 | **P1-backend** | Dashboard channel-statistics | **`$x / $total` 500 si 0 commande** (DivisionByZeroError = Error, PAS catché par catch(Exception) ; vérifié PHP 8.2 : `5/0` throws + DivByZero ∉ Exception) | guard `$total<=0`→0% + **test sentinel 2/2 (no-divide + endpoint 200)** |
+| W4-2 | P2 | 6 tickets (taux taxe) | "5.50 %" point en-US (jumeaux du ticket client W3-5) | `.replace('.',',')` display-side → **classe taux-taxe ÉPUISÉE 7/7** |
+| W4-3 | P3 | GuestVerify + SignupVerify | `code + '' + phone` coercion no-op (glué sans séparateur) | `+ ' ' +` séparateur (classe `+''+` épuisée) |
+
+**Gates Wave 4 : Vitest 2007/0, Dashboard PHPUnit 41/0 (zero-guard + tous les tests channel existants), frozen §7=0.** **Leçon : « abuse verification » = vérifier le mécanisme du bug AVANT de fixer (j'ai confirmé `5/0` throws en 8.2 + que DivByZero échappe au catch(Exception)) → puis verrouiller par un test sentinel.**
+
+## §F — BILAN AUDIT 360° (4 vagues)
+**23 heals** (8 W1 + 7 W2 + 5 W3 + 3 W4), **tous NON-frozen, tous vérifiés** (live ou test). Classes systémiques ÉPUISÉES : contraste-AA, null-glue-phone (17), en-US-money(non-frozen), raw-i18n-keys (studio+gateways), datepicker-EN, dates-en-US, taux-taxe-décimal (7), `+''+`-coercion, zero-division-backend. **Gates finaux : Vitest 2007/0, PHPUnit (Dashboard 41/0 + sentinels), frozen §7=0.** PR #23. **OWNER-GATE restant** : `pos-wizard.js`/`PosV5TrancheRow` money en-US (frozen §7). **Déférés V2** : cluster a11y ~18 boutons frontend web (mono-opérateur), form-hints `text-gray-400` convention.

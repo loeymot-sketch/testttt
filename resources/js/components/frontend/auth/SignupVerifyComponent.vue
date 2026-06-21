@@ -8,7 +8,7 @@
             <form @submit.prevent="save">
                 <label class="text-sm first-letter:uppercase mb-1 text-heading">{{ $t('label.enter_the_code_sent_to') }}
                     <span class="font-medium">
-                        {{ props.form.code + '' + props.form.phone }}
+                        {{ props.form.code + ' ' + props.form.phone }}
                     </span>
                 </label>
                 <input :class="errors !== '' ? 'invalid' : ''" type="text" v-model="props.form.token"

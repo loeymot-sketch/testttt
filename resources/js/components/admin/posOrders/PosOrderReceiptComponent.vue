@@ -63,7 +63,7 @@
 
                                 <!-- Taxe si applicable -->
                                 <div class="flex items-center justify-between mt-0.5" v-if="item.tax_rate > 0">
-                                    <p class="text-[10px] leading-4 text-gray-500">{{ item.tax_name }} ({{ item.tax_currency_rate }} {{ item.tax_type }})</p>
+                                    <p class="text-[10px] leading-4 text-gray-500">{{ item.tax_name }} ({{ String(item.tax_currency_rate).replace('.', ',') }} {{ item.tax_type }})</p>
                                     <p class="text-[10px] leading-4 text-gray-500">{{ item.tax_currency_amount }}</p>
                                 </div>
                             </td>
