@@ -30101,6 +30101,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     props: $options.addButton
   }, null, 8 /* PROPS */, ["props"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_1, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_3, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_4, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.address")), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     "class": "modal-close fa-solid fa-xmark text-xl text-slate-400 hover:text-red-500",
+    "aria-label": "Fermer",
     onClick: _cache[1] || (_cache[1] = function () {
       return $options.reset && $options.reset.apply($options, arguments);
     })
@@ -32387,7 +32388,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ });
 /* harmony import */ var vue__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! vue */ "../../../node_modules/vue/dist/vue.esm-bundler.js");
 
-var _hoisted_1 = ["href"];
+var _hoisted_1 = ["href", "aria-label"];
 var _hoisted_2 = {
   "class": "db-tooltip"
 };
@@ -32395,7 +32396,8 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
   return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("a", {
     "class": "db-table-action qr-code",
     href: this.$props.link,
-    download: ""
+    download: "",
+    "aria-label": _ctx.$t('button.qr')
   }, [_cache[0] || (_cache[0] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
     "class": "fa fa-qrcode"
   }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_2, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("button.qr")), 1 /* TEXT */)], 8 /* PROPS */, _hoisted_1), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("sm warning modal-btn m-0.5")], 2112 /* STABLE_FRAGMENT, DEV_ROOT_FRAGMENT */);
@@ -32629,14 +32631,16 @@ function _iterableToArray(r) { if ("undefined" != typeof Symbol && null != r[Sym
 function _arrayWithoutHoles(r) { if (Array.isArray(r)) return _arrayLikeToArray(r); }
 function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
 
-var _hoisted_1 = {
-  type: "button",
-  "class": "absolute -top-2 -right-2 text-red-500"
-};
+var _hoisted_1 = ["aria-label", "title"];
 function render(_ctx, _cache, $props, $setup, $data, $options) {
-  return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", _hoisted_1, _toConsumableArray(_cache[0] || (_cache[0] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+  return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
+    type: "button",
+    "class": "absolute -top-2 -right-2 text-red-500",
+    "aria-label": _ctx.$t('button.delete'),
+    title: _ctx.$t('button.delete')
+  }, _toConsumableArray(_cache[0] || (_cache[0] = [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
     "class": "lab lab-close"
-  }, null, -1 /* CACHED */)])));
+  }, null, -1 /* CACHED */)])), 8 /* PROPS */, _hoisted_1);
 }
 
 /***/ },
@@ -37218,6 +37222,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     props: $options.addButton
   }, null, 8 /* PROPS */, ["props"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_1, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_3, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_4, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.address")), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     "class": "modal-close fa-solid fa-xmark text-xl text-slate-400 hover:text-red-500",
+    "aria-label": "Fermer",
     onClick: _cache[1] || (_cache[1] = function () {
       return $options.reset && $options.reset.apply($options, arguments);
     })
@@ -39465,6 +39470,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     props: $options.addButton
   }, null, 8 /* PROPS */, ["props"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_1, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_3, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_4, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.address")), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     "class": "modal-close fa-solid fa-xmark text-xl text-slate-400 hover:text-red-500",
+    "aria-label": "Fermer",
     onClick: _cache[1] || (_cache[1] = function () {
       return $options.reset && $options.reset.apply($options, arguments);
     })
@@ -42180,6 +42186,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     props: $data.loading
   }, null, 8 /* PROPS */, ["props"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_1, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_3, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_4, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("menu.items")), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     "class": "modal-close fa-solid fa-xmark text-xl text-slate-400 hover:text-red-500",
+    "aria-label": "Fermer",
     onClick: _cache[0] || (_cache[0] = function () {
       return $options.reset && $options.reset.apply($options, arguments);
     })
@@ -42507,6 +42514,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "class": "lab lab-add-circle-line"
   }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.addButton.title), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_1, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_3, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_4, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("menu.addons")), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     "class": "modal-close fa-solid fa-xmark text-xl text-slate-400 hover:text-red-500",
+    "aria-label": "Fermer",
     onClick: _cache[1] || (_cache[1] = function () {
       return $options.reset && $options.reset.apply($options, arguments);
     })
@@ -44497,6 +44505,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "class": "lab lab-add-circle-line"
   }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.addButton.title), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_1, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_3, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_4, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("menu.extras")), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     "class": "modal-close fa-solid fa-xmark text-xl text-slate-400 hover:text-red-500",
+    "aria-label": "Fermer",
     onClick: _cache[1] || (_cache[1] = function () {
       return $options.reset && $options.reset.apply($options, arguments);
     })
@@ -44888,6 +44897,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     props: $options.addButton
   }, null, 8 /* PROPS */, ["props"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_1, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_3, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_4, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("menu.variations")), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     "class": "modal-close fa-solid fa-xmark text-xl text-slate-400 hover:text-red-500",
+    "aria-label": "Fermer",
     onClick: _cache[0] || (_cache[0] = function () {
       return $options.reset && $options.reset.apply($options, arguments);
     })
@@ -46608,6 +46618,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "class": "lab lab-add-circle-line"
   }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.addButton.title), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_1, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_3, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_4, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("menu.items")), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     "class": "modal-close fa-solid fa-xmark text-xl text-slate-400 hover:text-red-500",
+    "aria-label": "Fermer",
     onClick: _cache[1] || (_cache[1] = function () {
       return $options.reset && $options.reset.apply($options, arguments);
     })
@@ -47164,6 +47175,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "class": "lab lab-map-navigate lab-font-size-24 text-white"
   }, null, -1 /* CACHED */)]))), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_1, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_3, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_4, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.address")), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     "class": "modal-close fa-solid fa-xmark text-xl text-slate-400 hover:text-red-500",
+    "aria-label": "Fermer",
     onClick: _cache[1] || (_cache[1] = function () {
       return $options.reset && $options.reset.apply($options, arguments);
     })
@@ -47255,6 +47267,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "class": "lab lab-close"
   }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_1, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.reject')), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_3, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_4, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_5, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.reason")), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     "class": "modal-close fa-solid fa-xmark text-xl text-slate-400 hover:text-red-500",
+    "aria-label": "Fermer",
     onClick: _cache[1] || (_cache[1] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function () {
       return $options.resetModal && $options.resetModal.apply($options, arguments);
     }, ["prevent"]))
@@ -49455,6 +49468,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "class": "lab lab-map-navigate lab-font-size-24 text-white"
   }, null, -1 /* CACHED */)]))), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_1, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_3, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_4, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.address")), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     "class": "modal-close fa-solid fa-xmark text-xl text-slate-400 hover:text-red-500",
+    "aria-label": "Fermer",
     onClick: _cache[1] || (_cache[1] = function () {
       return $options.reset && $options.reset.apply($options, arguments);
     })
@@ -51172,6 +51186,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     props: $options.addButton
   }, null, 8 /* PROPS */, ["props"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_1, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_3, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_4, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("menu.branches")), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     "class": "modal-close fa-solid fa-xmark text-xl text-slate-400 hover:text-red-500",
+    "aria-label": "Fermer",
     onClick: _cache[0] || (_cache[0] = function () {
       return $options.reset && $options.reset.apply($options, arguments);
     })
@@ -51283,6 +51298,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "class": "lab lab-save"
   }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("button.save")), 1 /* TEXT */)])])])])], 32 /* NEED_HYDRATION */)])])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_47, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_48, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_49, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_50, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.address")), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     "class": "modal-close fa-solid fa-xmark text-xl text-slate-400 hover:text-red-500",
+    "aria-label": "Fermer",
     onClick: _cache[16] || (_cache[16] = function () {
       return $options.mapReset && $options.mapReset.apply($options, arguments);
     })
@@ -52147,6 +52163,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     props: $options.addButton
   }, null, 8 /* PROPS */, ["props"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_1, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_3, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_4, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("menu.currencies")), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     "class": "modal-close fa-solid fa-xmark text-xl text-slate-400 hover:text-red-500",
+    "aria-label": "Fermer",
     onClick: _cache[0] || (_cache[0] = function () {
       return $options.reset && $options.reset.apply($options, arguments);
     })
@@ -52538,6 +52555,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     props: $options.addButton
   }, null, 8 /* PROPS */, ["props"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_1, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_3, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_4, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("menu.item_attributes")), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     "class": "modal-close fa-solid fa-xmark text-xl text-slate-400 hover:text-red-500",
+    "aria-label": "Fermer",
     onClick: _cache[0] || (_cache[0] = function () {
       return $options.reset && $options.reset.apply($options, arguments);
     })
@@ -52861,6 +52879,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     props: $data.loading
   }, null, 8 /* PROPS */, ["props"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_1, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_3, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_4, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("menu.item_categories")), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     "class": "modal-close fa-solid fa-xmark text-xl text-slate-400 hover:text-red-500",
+    "aria-label": "Fermer",
     onClick: _cache[0] || (_cache[0] = function () {
       return $options.reset && $options.reset.apply($options, arguments);
     })
@@ -53138,6 +53157,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     props: $options.addButton
   }, null, 8 /* PROPS */, ["props"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_1, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_3, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_4, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('menu.item_categories')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     "class": "modal-close fa-solid fa-xmark text-xl text-slate-400 hover:text-red-500",
+    "aria-label": "Fermer",
     onClick: _cache[0] || (_cache[0] = function () {
       return $options.reset && $options.reset.apply($options, arguments);
     })
@@ -53653,6 +53673,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     props: $options.addButton
   }, null, 8 /* PROPS */, ["props"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_1, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_3, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_4, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("menu.kiosk_machines")), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     "class": "modal-close fa-solid fa-xmark text-xl text-slate-400 hover:text-red-500",
+    "aria-label": "Fermer",
     onClick: _cache[0] || (_cache[0] = function () {
       return $options.reset && $options.reset.apply($options, arguments);
     })
@@ -54234,6 +54255,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     props: $options.addButton
   }, null, 8 /* PROPS */, ["props"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_1, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_3, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_4, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("menu.languages")), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     "class": "modal-close fa-solid fa-xmark text-xl text-slate-400 hover:text-red-500",
+    "aria-label": "Fermer",
     onClick: _cache[0] || (_cache[0] = function () {
       return $options.reset && $options.reset.apply($options, arguments);
     })
@@ -56492,6 +56514,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     props: $options.addButton
   }, null, 8 /* PROPS */, ["props"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_1, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_3, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_4, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("menu.pages")), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     "class": "modal-close fa-solid fa-xmark text-xl text-slate-400 hover:text-red-500",
+    "aria-label": "Fermer",
     onClick: _cache[0] || (_cache[0] = function () {
       return $options.reset && $options.reset.apply($options, arguments);
     })
@@ -57187,6 +57210,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     }])
   }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_32, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_33, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_34, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.isEditing ? _ctx.$t('button.edit') : _ctx.$t('button.add')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     "class": "modal-close fa-solid fa-xmark text-xl text-slate-400 hover:text-red-500",
+    "aria-label": "Fermer",
     onClick: _cache[1] || (_cache[1] = function () {
       return $options.closeModal && $options.closeModal.apply($options, arguments);
     }),
@@ -57366,6 +57390,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     props: $options.addButton
   }, null, 8 /* PROPS */, ["props"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_1, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_3, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_4, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('menu.role')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     "class": "modal-close fa-solid fa-xmark text-xl text-slate-400 hover:text-red-500",
+    "aria-label": "Fermer",
     onClick: _cache[0] || (_cache[0] = function () {
       return $options.reset && $options.reset.apply($options, arguments);
     })
@@ -58549,6 +58574,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     props: $options.addButton
   }, null, 8 /* PROPS */, ["props"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_1, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_3, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_4, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("menu.sliders")), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     "class": "modal-close fa-solid fa-xmark text-xl text-slate-400 hover:text-red-500",
+    "aria-label": "Fermer",
     onClick: _cache[0] || (_cache[0] = function () {
       return $options.reset && $options.reset.apply($options, arguments);
     })
@@ -59213,6 +59239,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     props: $options.addButton
   }, null, 8 /* PROPS */, ["props"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_1, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_3, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_4, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("menu.taxes")), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     "class": "modal-close fa-solid fa-xmark text-xl text-slate-400 hover:text-red-500",
+    "aria-label": "Fermer",
     onClick: _cache[0] || (_cache[0] = function () {
       return $options.reset && $options.reset.apply($options, arguments);
     })
@@ -59651,6 +59678,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     props: $options.addButton
   }, null, 8 /* PROPS */, ["props"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_1, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_3, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_4, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("menu.time_slots")), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     "class": "modal-close fa-solid fa-xmark text-xl text-slate-400 hover:text-red-500",
+    "aria-label": "Fermer",
     onClick: _cache[1] || (_cache[1] = function () {
       return $options.reset && $options.reset.apply($options, arguments);
     })
@@ -59900,6 +59928,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     props: $options.addButton
   }, null, 8 /* PROPS */, ["props"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_1, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_3, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_4, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('menu.analytics')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     "class": "modal-close fa-solid fa-xmark text-xl text-slate-400 hover:text-red-500",
+    "aria-label": "Fermer",
     onClick: _cache[0] || (_cache[0] = function () {
       return $options.reset && $options.reset.apply($options, arguments);
     })
@@ -60296,6 +60325,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     props: $options.addButton
   }, null, 8 /* PROPS */, ["props"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_1, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_3, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_4, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('menu.analytic_section')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     "class": "modal-close fa-solid fa-xmark text-xl text-slate-400 hover:text-red-500",
+    "aria-label": "Fermer",
     onClick: _cache[0] || (_cache[0] = function () {
       return $options.reset && $options.reset.apply($options, arguments);
     })
@@ -61318,6 +61348,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "class": "lab lab-close"
   }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_1, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("button.reject")), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_3, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_4, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_5, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.reason")), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     "class": "modal-close fa-solid fa-xmark text-xl text-slate-400 hover:text-red-500",
+    "aria-label": "Fermer",
     onClick: _cache[1] || (_cache[1] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function () {
       return $options.resetModal && $options.resetModal.apply($options, arguments);
     }, ["prevent"]))
@@ -62001,6 +62032,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     "class": "lab lab-add-circle-line"
   }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_1, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("button.add_token")), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_3, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_4, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_5, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.token")), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     "class": "modal-close fa-solid fa-xmark text-xl text-slate-400 hover:text-red-500",
+    "aria-label": "Fermer",
     onClick: _cache[1] || (_cache[1] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function () {
       return $options.resetModal && $options.resetModal.apply($options, arguments);
     }, ["prevent"]))
@@ -64228,6 +64260,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     }, null, 8 /* PROPS */, _hoisted_2), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_3, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_4, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_5, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($options.textShortener(item.name, 25)), 1 /* TEXT */), item.caution ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("button", {
       key: 0,
       "class": "product-card-list-info-btn info-btn flex items-start",
+      "aria-label": "Informations",
       "data-modal": "#item-info-modal",
       onClick: (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
         return $options.infoModalShow(item.name, item.caution);
@@ -64255,6 +64288,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       key: 0,
       type: "button",
       "class": "product-card-grid-info-btn info-btn flex items-start",
+      "aria-label": "Informations",
       "data-modal": "#item-info-modal",
       onClick: (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
         return $options.infoModalShow(item.name, item.caution);
@@ -64284,6 +64318,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     key: 0,
     type: "button",
     "class": "info-btn flex items-start",
+    "aria-label": "Informations",
     "data-modal": "#item-info-modal",
     onClick: _cache[1] || (_cache[1] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
       return $options.infoModalShow($data.item.name, $data.item.caution);
@@ -64299,7 +64334,8 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     onClick: _cache[3] || (_cache[3] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function () {
       return $options.quantityDecrement && $options.quantityDecrement.apply($options, arguments);
     }, ["prevent"])),
-    "class": "fa-solid fa-minus text-[10px] w-[18px] h-[18px] leading-4 text-center rounded-full border transition text-primary border-primary hover:bg-primary hover:text-white indec-minus"
+    "class": "fa-solid fa-minus text-[10px] w-[18px] h-[18px] leading-4 text-center rounded-full border transition text-primary border-primary hover:bg-primary hover:text-white indec-minus",
+    "aria-label": "Moins"
   }), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
     type: "number",
     onKeypress: _cache[4] || (_cache[4] = function ($event) {
@@ -64316,7 +64352,8 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     onClick: _cache[7] || (_cache[7] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function () {
       return $options.quantityIncrement && $options.quantityIncrement.apply($options, arguments);
     }, ["prevent"])),
-    "class": "fa-solid fa-plus text-[10px] w-[18px] h-[18px] leading4 text-center rounded-full border transition text-primary border-primary hover:bg-primary hover:text-white indec-plus"
+    "class": "fa-solid fa-plus text-[10px] w-[18px] h-[18px] leading4 text-center rounded-full border transition text-primary border-primary hover:bg-primary hover:text-white indec-plus",
+    "aria-label": "Plus"
   })])]), $data.item.itemAttributes.length > 1 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_46, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_47, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($data.item.itemAttributes, function (itemAttribute) {
     return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_48, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_49, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(itemAttribute.name), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_50, [_cache[16] || (_cache[16] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
       "class": "lab lab-arrow-down text-sm absolute top-1/2 ltr:right-2.5 rtl:left-2.5 -translate-y-1/2 lab-font-size-16"
@@ -64427,6 +64464,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
             }), 256 /* UNKEYED_FRAGMENT */))])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_82, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(addon.total_currency_price), 1 /* TEXT */)])], 8 /* PROPS */, _hoisted_76), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_83, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
               type: "button",
               "class": "info-btn",
+              "aria-label": "Informations",
               "data-modal": "#item-info-modal",
               onClick: (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
                 return $options.infoModalShow(addon.addon_item_name, addon.caution);
@@ -64437,7 +64475,8 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
               onClick: (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
                 return $options.addonQuantityDecrement(addon.id);
               }, ["prevent"]),
-              "class": "fa-solid fa-minus text-[8px] w-4 h-4 leading-3 text-center rounded-full border transition text-primary border-primary hover:bg-primary hover:text-white indec-minus"
+              "class": "fa-solid fa-minus text-[8px] w-4 h-4 leading-3 text-center rounded-full border transition text-primary border-primary hover:bg-primary hover:text-white indec-minus",
+              "aria-label": "Moins"
             }, null, 8 /* PROPS */, _hoisted_86), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
               onKeypress: _cache[8] || (_cache[8] = function ($event) {
                 return $options.onlyNumber($event);
@@ -64454,7 +64493,8 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
               onClick: (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
                 return $options.addonQuantityIncrement(addon.id);
               }, ["prevent"]),
-              "class": "fa-solid fa-plus text-[8px] w-4 h-4 leading-3 text-center rounded-full border transition text-primary border-primary hover:bg-primary hover:text-white indec-plus"
+              "class": "fa-solid fa-plus text-[8px] w-4 h-4 leading-3 text-center rounded-full border transition text-primary border-primary hover:bg-primary hover:text-white indec-plus",
+              "aria-label": "Plus"
             }, null, 8 /* PROPS */, _hoisted_88)])])])];
           }),
           _: 2 /* DYNAMIC */

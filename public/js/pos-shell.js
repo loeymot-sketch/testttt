@@ -10918,6 +10918,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     props: $data.loading
   }, null, 8 /* PROPS */, ["props"]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_1, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_3, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_4, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t("label.address")), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     "class": "modal-close fa-solid fa-xmark text-xl text-slate-400 hover:text-red-500",
+    "aria-label": "Fermer",
     onClick: _cache[0] || (_cache[0] = function () {
       return $options.reset && $options.reset.apply($options, arguments);
     })
@@ -11492,7 +11493,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     key: 0,
     type: "button",
     "class": "info-btn mt-0.5 flex items-start",
-    "aria-label": _ctx.$t('label.information'),
+    "aria-label": "Informations",
     title: _ctx.$t('label.information'),
     "data-modal": "#item-info-modal",
     onClick: _cache[1] || (_cache[1] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
@@ -11511,7 +11512,8 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     onClick: _cache[3] || (_cache[3] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function () {
       return $options.quantityDecrement && $options.quantityDecrement.apply($options, arguments);
     }, ["prevent"])),
-    "class": "fa-solid fa-minus text-[10px] w-[18px] h-[18px] leading-4 text-center rounded-full border transition text-primary border-primary hover:bg-primary hover:text-white indec-minus"
+    "class": "fa-solid fa-minus text-[10px] w-[18px] h-[18px] leading-4 text-center rounded-full border transition text-primary border-primary hover:bg-primary hover:text-white indec-minus",
+    "aria-label": "Moins"
   }), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
     type: "number",
     onKeypress: _cache[4] || (_cache[4] = function ($event) {
@@ -11528,7 +11530,8 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     onClick: _cache[7] || (_cache[7] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function () {
       return $options.quantityIncrement && $options.quantityIncrement.apply($options, arguments);
     }, ["prevent"])),
-    "class": "fa-solid fa-plus text-[10px] w-[18px] h-[18px] leading4 text-center rounded-full border transition text-primary border-primary hover:bg-primary hover:text-white indec-plus"
+    "class": "fa-solid fa-plus text-[10px] w-[18px] h-[18px] leading4 text-center rounded-full border transition text-primary border-primary hover:bg-primary hover:text-white indec-plus",
+    "aria-label": "Plus"
   })])]), $data.item.itemAttributes.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_33, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_34, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($data.item.itemAttributes, function (itemAttribute) {
     return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
       key: itemAttribute.id,
@@ -11607,7 +11610,8 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
         return $options.incrementExtra(extra);
       }, ["prevent"]),
       disabled: $options.isModifierUnavailable(extra),
-      "class": "fa-solid fa-plus text-[10px] w-[18px] h-[18px] leading-4 text-center rounded-full border transition text-primary border-primary hover:bg-primary hover:text-white indec-plus"
+      "class": "fa-solid fa-plus text-[10px] w-[18px] h-[18px] leading-4 text-center rounded-full border transition text-primary border-primary hover:bg-primary hover:text-white indec-plus",
+      "aria-label": "Plus"
     }, null, 8 /* PROPS */, _hoisted_70)])], 12 /* STYLE, PROPS */, _hoisted_61);
   }), 128 /* KEYED_FRAGMENT */))])])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), $data.item.addons.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_71, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h3", _hoisted_72, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.addons')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_73, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_Swiper, {
     speed: 280,
@@ -11639,7 +11643,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
             }), 256 /* UNKEYED_FRAGMENT */))])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_81, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(addon.total_currency_price), 1 /* TEXT */), $options.isAddonUnavailable(addon) ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("span", _hoisted_82, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('pos.item_86_d')), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)])], 12 /* STYLE, PROPS */, _hoisted_75), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_83, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
               type: "button",
               "class": "info-btn",
-              "aria-label": _ctx.$t('label.information'),
+              "aria-label": "Informations",
               title: _ctx.$t('label.information'),
               "data-modal": "#item-info-modal",
               onClick: (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
@@ -11651,7 +11655,8 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
               onClick: (0,vue__WEBPACK_IMPORTED_MODULE_0__.withModifiers)(function ($event) {
                 return $options.addonQuantityDecrement(addon.id);
               }, ["prevent"]),
-              "class": "fa-solid fa-minus text-[8px] w-4 h-4 leading-3 text-center rounded-full border transition text-primary border-primary hover:bg-primary hover:text-white indec-minus"
+              "class": "fa-solid fa-minus text-[8px] w-4 h-4 leading-3 text-center rounded-full border transition text-primary border-primary hover:bg-primary hover:text-white indec-minus",
+              "aria-label": "Moins"
             }, null, 8 /* PROPS */, _hoisted_86), (0,vue__WEBPACK_IMPORTED_MODULE_0__.withDirectives)((0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("input", {
               onKeypress: _cache[8] || (_cache[8] = function ($event) {
                 return $options.onlyNumber($event);
@@ -11670,7 +11675,8 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
                 return $options.addonQuantityIncrement(addon.id);
               }, ["prevent"]),
               disabled: $options.isAddonUnavailable(addon),
-              "class": "fa-solid fa-plus text-[8px] w-4 h-4 leading-3 text-center rounded-full border transition text-primary border-primary hover:bg-primary hover:text-white indec-plus"
+              "class": "fa-solid fa-plus text-[8px] w-4 h-4 leading-3 text-center rounded-full border transition text-primary border-primary hover:bg-primary hover:text-white indec-plus",
+              "aria-label": "Plus"
             }, null, 8 /* PROPS */, _hoisted_88)])])])];
           }),
           _: 2 /* DYNAMIC */

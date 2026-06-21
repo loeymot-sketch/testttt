@@ -69,12 +69,12 @@
                                     <div class="flex items-center indec-group">
                                         <button @click.prevent="quantityDecrement(index)"
                                             :class="cart.quantity === 1 ? 'fa-trash-can' : 'fa-minus'"
-                                            class="fa-solid text-[10px] w-[18px] h-[18px] leading-4 text-center rounded-full border transition text-primary border-primary hover:bg-primary hover:text-white indec-minus"></button>
+                                            class="fa-solid text-[10px] w-[18px] h-[18px] leading-4 text-center rounded-full border transition text-primary border-primary hover:bg-primary hover:text-white indec-minus" aria-label="Moins"></button>
                                         <input v-on:keypress="onlyNumber($event)" v-on:keyup="quantityUp(index, $event)"
                                             type="number" :value="cart.quantity"
                                             class="text-center w-7 text-xs font-semibold text-heading indec-value">
                                         <button @click.prevent="quantityIncrement(index)"
-                                            class="fa-solid fa-plus text-[10px] w-[18px] h-[18px] leading4 text-center rounded-full border transition text-primary border-primary hover:bg-primary hover:text-white indec-plus"></button>
+                                            class="fa-solid fa-plus text-[10px] w-[18px] h-[18px] leading4 text-center rounded-full border transition text-primary border-primary hover:bg-primary hover:text-white indec-plus" aria-label="Plus"></button>
                                     </div>
                                 </div>
                             </div>

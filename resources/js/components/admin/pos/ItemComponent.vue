@@ -79,7 +79,7 @@
                     <div class="flex-auto">
                         <div class="flex items-start gap-2 mb-1">
                             <h3 id="item-variation-modal-title" class="text-base font-bold capitalize text-[var(--pos-v5-ink)]">{{ item.name }}</h3>
-                            <button v-if="item.caution" type="button" class="info-btn mt-0.5 flex items-start"
+                            <button v-if="item.caution" type="button" class="info-btn mt-0.5 flex items-start" aria-label="Informations"
                                 :aria-label="$t('label.information')" :title="$t('label.information')"
                                 data-modal="#item-info-modal" @click.prevent="infoModalShow(item.name, item.caution)">
                                 <i class="lab lab-information font-fill-paragraph transition lab-font-size-16"></i>
@@ -100,12 +100,12 @@
                         {{ $t('label.quantity') }}:</h3>
                     <div class="flex items-center indec-group py-1 px-2 rounded-xl bg-[#F7F7FC]">
                         <button @click.prevent="quantityDecrement"
-                            class="fa-solid fa-minus text-[10px] w-[18px] h-[18px] leading-4 text-center rounded-full border transition text-primary border-primary hover:bg-primary hover:text-white indec-minus"></button>
+                            class="fa-solid fa-minus text-[10px] w-[18px] h-[18px] leading-4 text-center rounded-full border transition text-primary border-primary hover:bg-primary hover:text-white indec-minus" aria-label="Moins"></button>
                         <input type="number" v-on:keypress="onlyNumber($event)" v-on:keyup="quantityUp"
                             v-model="temp.quantity"
                             class="text-center w-7 text-xs font-semibold text-heading indec-value">
                         <button @click.prevent="quantityIncrement"
-                            class="fa-solid fa-plus text-[10px] w-[18px] h-[18px] leading4 text-center rounded-full border transition text-primary border-primary hover:bg-primary hover:text-white indec-plus"></button>
+                            class="fa-solid fa-plus text-[10px] w-[18px] h-[18px] leading4 text-center rounded-full border transition text-primary border-primary hover:bg-primary hover:text-white indec-plus" aria-label="Plus"></button>
                     </div>
                 </div>
                 <div class="mb-4" v-if="item.itemAttributes.length > 0">
@@ -222,7 +222,7 @@
                                 </span>
                                 <button @click.prevent="incrementExtra(extra)"
                                     :disabled="isModifierUnavailable(extra)"
-                                    class="fa-solid fa-plus text-[10px] w-[18px] h-[18px] leading-4 text-center rounded-full border transition text-primary border-primary hover:bg-primary hover:text-white indec-plus"></button>
+                                    class="fa-solid fa-plus text-[10px] w-[18px] h-[18px] leading-4 text-center rounded-full border transition text-primary border-primary hover:bg-primary hover:text-white indec-plus" aria-label="Plus"></button>
                             </div>
                         </div>
                     </div>
@@ -267,7 +267,7 @@
                                     </div>
                                     <div
                                         class="flex flex-col items-end justify-between h-full absolute top-0 ltr:right-0 rtl:left-0 z-10 p-2">
-                                        <button type="button" class="info-btn"
+                                        <button type="button" class="info-btn" aria-label="Informations"
                                             :aria-label="$t('label.information')" :title="$t('label.information')"
                                             data-modal="#item-info-modal"
                                             @click.prevent="infoModalShow(addon.addon_item_name, addon.caution)">
@@ -277,7 +277,7 @@
 
                                         <div class="flex items-center indec-group">
                                             <button @click.prevent="addonQuantityDecrement(addon.id)"
-                                                class="fa-solid fa-minus text-[8px] w-4 h-4 leading-3 text-center rounded-full border transition text-primary border-primary hover:bg-primary hover:text-white indec-minus"></button>
+                                                class="fa-solid fa-minus text-[8px] w-4 h-4 leading-3 text-center rounded-full border transition text-primary border-primary hover:bg-primary hover:text-white indec-minus" aria-label="Moins"></button>
                                             <input v-on:keypress="onlyNumber($event)"
                                                 v-on:keyup="addonQuantityUp(addon.id)" v-model="addonQuantity[addon.id]"
                                                 :disabled="isAddonUnavailable(addon)"
@@ -285,7 +285,7 @@
                                                 class="text-center w-5 text-xs font-semibold text-heading indec-value">
                                             <button @click.prevent="addonQuantityIncrement(addon.id)"
                                                 :disabled="isAddonUnavailable(addon)"
-                                                class="fa-solid fa-plus text-[8px] w-4 h-4 leading-3 text-center rounded-full border transition text-primary border-primary hover:bg-primary hover:text-white indec-plus"></button>
+                                                class="fa-solid fa-plus text-[8px] w-4 h-4 leading-3 text-center rounded-full border transition text-primary border-primary hover:bg-primary hover:text-white indec-plus" aria-label="Plus"></button>
                                         </div>
                                     </div>
                                 </div>
