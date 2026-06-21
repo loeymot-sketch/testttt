@@ -689,7 +689,7 @@
                     itemId: ad.addon_item_id || ad.item_addon_id,
                     name: ad.addon_item_name,
                     price: unitPrice,
-                    currencyPrice: '€' + unitPrice.toFixed(2),
+                    currencyPrice: fmtPrice(unitPrice), // [LOCK G-FROZEN-WIZARD-MONEY-MISSED 2026-06-22 owner-countersigned] was '€'+toFixed = "€5.00" en-US → FR "5,00 €" (display-only, bypassed the 2026-06-18 fmtPrice sweep)
                     thumb: (ad.addonItem && ad.addonItem.thumb) ? ad.addonItem.thumb : (ad.thumb || ad.cover || ''),
                     groupLabel: groupLabel.toLowerCase()
                 };
@@ -1870,7 +1870,7 @@
             h += '<div class="wizard-menu-card' + (selections.menuChoice === 'full' ? ' selected' : '') + '" data-menu="full">';
             h += '<div class="menu-icon">🍟🥤</div>';
             h += '<div class="menu-name">Menu Complet</div>';
-            h += '<div class="menu-price">+€' + menuPrice + '</div>';
+            h += '<div class="menu-price">+' + fmtPrice(menuPrice) + '</div>'; // [LOCK G-FROZEN-WIZARD-MONEY-MISSED 2026-06-22] was "+€3.00" en-US → FR "+3,00 €"
             h += '<div class="menu-desc">Frites + Boisson</div>';
             h += '</div>';
 
@@ -2278,7 +2278,7 @@
                 if (formuleLabel) {
                     addonTotal += formulePrice;
                     h += '<div class="wizard-recap-row"><span class="label">🍟 Formule' + editBtn('menu_choice') + '</span><span class="value">' +
-                        escapeHtml(formuleLabel) + ' <span style="color:#E93C3C;font-weight:700">+€' + formulePrice.toFixed(2) + '</span></span></div>';
+                        escapeHtml(formuleLabel) + ' <span style="color:#E93C3C;font-weight:700">+' + fmtPrice(formulePrice) + '</span></span></div>'; // [LOCK G-FROZEN-WIZARD-MONEY-MISSED 2026-06-22] was "+€3.00" en-US → FR "+3,00 €"
                 }
                 // Frites upgrades — prices from POS_WIZARD_CONFIG
                 if (selections.fritesGrande) {
@@ -2958,7 +2958,7 @@
                 var key = 'p_' + sup.id;
                 var sel = selections.supplements && selections.supplements[key] ? ' selected' : '';
                 var emoji = getEmoji(SUPPLEMENT_EMOJIS, sup.name);
-                var price = sup.currency_price || '€1.00';
+                var price = sup.currency_price || '1,00 €'; // [LOCK G-FROZEN-WIZARD-MONEY-MISSED 2026-06-22] FR fallback (was en-US '€1.00')
                 sh += '<div class="wizard-option supplement-opt micro-opt' + sel + '" data-type="supplement" data-key="' + key + '">';
                 sh += '<span class="check-mark"><i class="fa-solid fa-check"></i></span>';
                 sh += '<span class="option-icon supplement-icon">' + emoji + '</span>';
