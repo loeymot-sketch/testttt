@@ -40,6 +40,26 @@ class ReceiptPrintControllerTest extends TestCase
         $this->operator->assignRole('POS Operator');
     }
 
+    /**
+     * [abuse-heal 2026-06-20 W6r2 ABUSE-AUTHZ-POS-RECEIPT-01] A Chef (no `pos` permission) must be
+     * DENIED — pre-heal the controller had no gate, so any non-kiosk staff could mutate the receipt
+     * count and inject NF525 audit rows. The suite previously only ever acted as POS Operator/Admin.
+     */
+    public function test_chef_without_pos_permission_is_denied_403(): void
+    {
+        $order = $this->makeOrder(0);
+        $chef = User::factory()->create(['branch_id' => $this->branch->id]);
+        $chef->assignRole('Chef'); // does NOT hold `pos`
+        $this->assertFalse($chef->can('pos'));
+
+        $this->actingAs($chef, 'sanctum')
+            ->withHeader('X-Idempotency-Key', (string) Str::uuid())
+            ->postJson("/api/admin/pos/orders/{$order->id}/print-receipt")
+            ->assertStatus(403);
+
+        $this->assertSame(0, (int) $order->fresh()->receipt_print_count, 'Chef must not mutate the receipt count.');
+    }
+
     public function test_increment_first_call_returns_count_1_not_duplicata(): void
     {
         $order = $this->makeOrder(0);

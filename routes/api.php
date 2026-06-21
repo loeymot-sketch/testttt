@@ -1020,7 +1020,11 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
     Route::prefix('online-order')->name('onlineOrder.')->group(function () {
         Route::get('/', [OnlineOrderController::class, 'index']);
         Route::get('/show/{order}', [OnlineOrderController::class, 'show']);
-        Route::delete('/{order}', [OnlineOrderController::class, 'destroy']);
+        // [abuse-heal 2026-06-20 W6r3 ABUSE-R3-01] Removed dead route — OnlineOrderController has no
+        // destroy() (only index/show/export/pdf/changeStatus/changePaymentStatus/selectDeliveryBoy),
+        // so DELETE /{order} hard-500'd (BadMethodCallException) AND reached dispatch ungated (a
+        // Customer token got 500, not 403 — broken access control masked by the crash). Mirrors the
+        // NC-MSG-UPDATE-DEAD precedent. Phantom-route-action class; RouteActionMethodsExistSentinel guards it.
         Route::get('/export', [OnlineOrderController::class, 'export']);
         Route::get('/pdf', [OnlineOrderController::class, 'pdf']);
         // [V1.0.2-IDEMP-01] idempotency on online-order change-status — see L856 comment.
@@ -1034,7 +1038,8 @@ Route::prefix('admin')->name('admin.')->middleware(['installed', 'apiKey', 'auth
     Route::prefix('table-order')->name('tableOrder.')->group(function () {
         Route::get('/', [AdminTableOrderController::class, 'index']);
         Route::get('/show/{order}', [AdminTableOrderController::class, 'show']);
-        Route::delete('/{order}', [AdminTableOrderController::class, 'destroy']);
+        // [abuse-heal 2026-06-20 W6r3 phantom-route-action] Removed dead route — AdminTableOrderController
+        // has no destroy(), so DELETE /{order} hard-500'd. Mirrors the NC-MSG-UPDATE-DEAD precedent.
         Route::get('/export', [AdminTableOrderController::class, 'export']);
         // [V1.0.2-IDEMP-01] idempotency on table-order change-status — see L856 comment.
         Route::post('/change-status/{order}', [AdminTableOrderController::class, 'changeStatus'])
@@ -1368,7 +1373,9 @@ Route::prefix('frontend')->name('frontend.')->middleware(['installed', 'apiKey',
         Route::get('/', [FrontendMessageController::class, 'index']);
         Route::get('/show/{message}', [FrontendMessageController::class, 'show']);
         Route::post('/', [FrontendMessageController::class, 'store']);
-        Route::match(['put', 'patch'], '/{message}', [FrontendMessageController::class, 'update']);
+        // [abuse-heal 2026-06-20 W6r3 ABUSE-R3-02] Removed dead route — Frontend\MessageController has no
+        // update() (customers edit via store/destroy only), so PUT|PATCH /{message} hard-500'd for ANY
+        // authenticated Customer token. Frontend twin of the admin NC-MSG-UPDATE-DEAD removal (api.php:1147).
         Route::delete('/{message}', [FrontendMessageController::class, 'destroy']);
     });
 

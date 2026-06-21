@@ -30,6 +30,14 @@ class PosReceiptPrintController extends Controller
 {
     public function __construct(private readonly AuditLogService $audit)
     {
+        // [abuse-heal 2026-06-20 W6r2 ABUSE-AUTHZ-POS-RECEIPT-01] This controller was the SOLE
+        // endpoint in the `pos` route group with NO permission gate (it extends the base Controller,
+        // never calls parent::__construct, and registered no middleware), so any non-kiosk
+        // authenticated user — incl. Chef / Delivery Boy without `pos` — could POST print-receipt to
+        // mutate Order.receipt_print_count AND inject rows into the append-only HMAC-chained NF525
+        // audit_logs (inflating duplicata counts / polluting the fiscal trail). Mirror every sibling
+        // in the group (Floorplan/ParkedOrder/CashDrawer/CashDrawerSession/CustomerNfcLookup).
+        $this->middleware(['permission:pos'])->only('increment');
     }
 
     public function increment(Request $request, int $order): JsonResponse

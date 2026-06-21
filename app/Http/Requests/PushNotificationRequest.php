@@ -19,6 +19,27 @@ class PushNotificationRequest extends FormRequest
     }
 
     /**
+     * [abuse-heal 2026-06-20 W6r5 PUSH-CREATE-BRANCHID-FORGE-01] Sender-side tenant-routing clamp.
+     *
+     * branch_id was accepted as an arbitrary client-controlled value (rule = required|numeric), and
+     * PushNotificationService uses it to drive the FCM audience query (branch_id===0 => global
+     * fan-out, no branch filter). So a branch-scoped Branch Manager could forge branch_id=0 to
+     * GLOBAL-broadcast, or branch_id=<other> to inject notifications into another branch's staff.
+     * The round-2 single-user heal + the fan-out heal HONOR branch_id; this closes the create-time
+     * forge: a non-Admin sender (branch_id > 0) is clamped to their OWN branch — they can neither
+     * global-broadcast nor cross-target. Admin / org-wide sender (branch_id === 0) keeps full reach.
+     * V1 LOCAL is single-branch so this is V2/SaaS defense-in-depth (same class as the floorplan /
+     * single-user-xbranch heals). Mirrors the StockRupture authorizeWritableBranchScope precedent.
+     */
+    protected function prepareForValidation(): void
+    {
+        $user = $this->user();
+        if ($user !== null && (int) $user->branch_id !== 0) {
+            $this->merge(['branch_id' => (int) $user->branch_id]);
+        }
+    }
+
+    /**
      * Get the validation rules that apply to the request.
      *
      * @return array

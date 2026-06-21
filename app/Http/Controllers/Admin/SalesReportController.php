@@ -37,7 +37,12 @@ class SalesReportController extends AdminController
         // [REP-AUTHZ-01 heal 2026-06-01] Gate `overview` too — GET /admin/sales-report/overview
         // returns the revenue aggregate and was omitted from this ->only() list, leaving it
         // readable by any auth:sanctum staff without `sales-report`. Same consumer as index.
-        $this->middleware(['permission:sales-report'])->only('index', 'export', 'pdf', 'overview');
+        // [abuse-heal 2026-06-20 W5 REP-AUTHZ-OVERVIEW-01] The 2026-06-01 heal listed the literal
+        // 'overview', but Laravel binds ->only() middleware by the HANDLER METHOD NAME, and the
+        // route /overview is handled by salesReportOverview() — no method named 'overview' exists.
+        // So the gate never attached → any verified staff (Chef/POS/Waiter) could read branch
+        // revenue. Use the real method name. (The false-green sentinel is hardened in the same pass.)
+        $this->middleware(['permission:sales-report'])->only('index', 'export', 'pdf', 'salesReportOverview');
     }
 
     public function index(PaginateRequest $request): \Illuminate\Http\Response | \Illuminate\Http\Resources\Json\AnonymousResourceCollection | \Illuminate\Contracts\Foundation\Application | \Illuminate\Contracts\Routing\ResponseFactory

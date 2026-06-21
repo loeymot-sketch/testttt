@@ -74,6 +74,20 @@ class FloorplanController extends AdminController
         abort_unless($requestUser !== null && $authId !== null, 401);
         abort_unless((int) $requestUser->id === (int) $authId, 403);
 
-        return [(int) $authId, (int) $requestUser->branch_id];
+        // [abuse-heal 2026-06-20 W1b W1B-FLOORPLAN-02] Branch-isolation parity with
+        // ParkedOrderController::resolveOperatorContext (P0-POS-04). The floorplan is a
+        // per-branch cashier workflow; an Admin (branch_id=0) would resolve to (authId, 0) and
+        // silently no-op every floorplan query/mutation against branch_id=0 (empty view, no
+        // assign/transfer/free). Mirror the parked-order guard so the failure is explicit (403)
+        // and V2-safe rather than a silent cross-context no-op. Admins operate the register from
+        // a branch login (Branch Manager / POS Operator, branch_id > 0).
+        $branchId = (int) $requestUser->branch_id;
+        abort_unless(
+            $branchId > 0,
+            403,
+            'Floorplan requires a branch-scoped user (branch_id > 0). Admins must operate POS from a branch login.'
+        );
+
+        return [(int) $authId, $branchId];
     }
 }

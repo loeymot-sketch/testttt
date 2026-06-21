@@ -15,7 +15,11 @@ class NotificationController extends AdminController
     {
         parent::__construct();
         $this->notificationService = $notificationService;
-        $this->middleware(['permission:settings'])->only('update');
+        // [abuse-heal 2026-06-20 W5 W5-SET-NOTIF-INDEX-01] Gate index too — GET /admin/setting/notification
+        // returns the FCM legacy server key + Firebase service-account JSON (an arbitrary-push primitive),
+        // readable by any non-settings staff (POS/Chef). Missed sibling of the Mail SET-02 secret-index heal
+        // (Mail/SmsGateway/PaymentGateway/KioskSetup/LoyaltySetup all use ->only('index','update')).
+        $this->middleware(['permission:settings'])->only('index', 'update');
     }
 
     public function index(

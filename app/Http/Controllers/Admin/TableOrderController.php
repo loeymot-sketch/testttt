@@ -23,13 +23,19 @@ class TableOrderController extends AdminController
     {
         parent::__construct();
         $this->orderService = $order;
+        // [abuse-heal 2026-06-20 W6 PHANTOM-GATE-TABLEORDER-01] The last entry named 'selectDeliveryBoy'
+        // — a PHANTOM method (it exists on OnlineOrderController, not here; clear copy-paste). Laravel
+        // binds ->only() middleware by the HANDLER METHOD NAME, so a name that isn't a real method gates
+        // nothing AND silently omits the real write handler `tokenCreate` (which then ran ungated: any
+        // admin-area user without permission:table-orders could overwrite an order's token, live 200).
+        // Exact sibling of the SalesReport 'overview' false-green class. Use the real handler name.
         $this->middleware(['permission:table-orders'])->only(
             'index',
             'show',
             'export',
             'changeStatus',
             'changePaymentStatus',
-            'selectDeliveryBoy'
+            'tokenCreate'
         );
     }
 

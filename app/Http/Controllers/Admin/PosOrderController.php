@@ -313,6 +313,24 @@ class PosOrderController extends AdminController
         Order $order,
         OrderStatusRequest $request
     ): \Illuminate\Http\Response|OrderDetailsResource|\Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\Routing\ResponseFactory {
+        // [abuse-heal 2026-06-20 W1b POS-REFUND-BYPASS-01] RETURNED is the refund transition
+        // (OrderService::changeStatus issues a full cashBack + loyalty refund on it). The frozen
+        // OrderStateMachine gates the pre-delivery RETURN edges (ACCEPT/PREPARING/PREPARED→RETURNED)
+        // on 'pos-refund', but the DELIVERED→RETURNED edge is UNCONDITIONAL — so a POS Operator
+        // without pos-refund could issue a full cash refund through this endpoint, defeating the
+        // deliberate mass-refund-vector mitigation that /refund-with-counter-entry enforces (L58).
+        // Mirror that gate here (controller layer, non-frozen): the abort sits BEFORE the try/catch
+        // so the 403 reaches the client intact (the generic catch would downgrade it to 422).
+        // Owner-LOCK followup G-REFUND-GATE: consolidate into OrderStateMachine DELIVERED case for
+        // single-source consistency with the other RETURN edges.
+        if ((int) $request->input('status') === \App\Enums\OrderStatus::RETURNED) {
+            abort_unless(
+                \Illuminate\Support\Facades\Auth::user()?->can('pos-refund') ?? false,
+                403,
+                'Insufficient permission to issue refund.'
+            );
+        }
+
         try {
             return new OrderDetailsResource($this->orderService->changeStatus($order, $request));
         } catch (Exception $exception) {

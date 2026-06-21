@@ -2,7 +2,9 @@
 
 namespace Tests\Feature\Admin;
 
+use App\Http\Controllers\Admin\LicenseController;
 use App\Http\Controllers\Admin\MessageController;
+use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Admin\SalesReportController;
 use Tests\TestCase;
 
@@ -29,10 +31,14 @@ class MgmtReadAuthzGateSentinelTest extends TestCase
 {
     public function test_sales_report_overview_is_gated_by_sales_report_permission(): void
     {
+        // [abuse-heal 2026-06-20 W5 REP-AUTHZ-OVERVIEW-01] Use the REAL handler method name.
+        // The route /overview is handled by salesReportOverview(); the prior 'overview' literal
+        // both mis-bound the gate AND made this sentinel false-green (it only string-matched the
+        // ->only() array). assertMethodGated now also asserts the method exists on the controller.
         $this->assertMethodGated(
             $this->app->make(SalesReportController::class),
             'permission:sales-report',
-            'overview',
+            'salesReportOverview',
             'SalesReportController'
         );
     }
@@ -47,8 +53,41 @@ class MgmtReadAuthzGateSentinelTest extends TestCase
         );
     }
 
+    /** [W5 W5-SET-NOTIF-INDEX-01] FCM push credentials (server key + service-account JSON). */
+    public function test_notification_index_is_gated_by_settings_permission(): void
+    {
+        $this->assertMethodGated(
+            $this->app->make(NotificationController::class),
+            'permission:settings',
+            'index',
+            'NotificationController'
+        );
+    }
+
+    /** [W5 W5-SET-LICENSE-INDEX-02] license_key == MIX_API_KEY == the global x-api-key. */
+    public function test_license_index_is_gated_by_settings_permission(): void
+    {
+        $this->assertMethodGated(
+            $this->app->make(LicenseController::class),
+            'permission:settings',
+            'index',
+            'LicenseController'
+        );
+    }
+
     private function assertMethodGated(object $controller, string $permission, string $method, string $name): void
     {
+        // [abuse-heal 2026-06-20 W5 REP-AUTHZ-OVERVIEW-01] Close the false-green blind spot: a
+        // ->only() entry naming a NON-EXISTENT method (e.g. 'overview' vs the real
+        // 'salesReportOverview') string-matches here but never binds the middleware in Laravel
+        // (it binds by handler method name). Assert the gated name is a real controller method.
+        $this->assertContains(
+            $method,
+            get_class_methods($controller),
+            "{$name}::{$method} does not exist — a ->only(['{$method}']) gate would silently never "
+            . 'attach (Laravel binds controller middleware by the route handler method name).'
+        );
+
         $middleware = $controller->getMiddleware();
         $gatedHere = false;
 

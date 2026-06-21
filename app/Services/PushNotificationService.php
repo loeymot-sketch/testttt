@@ -101,12 +101,22 @@ class PushNotificationService
                     $fcmWebDeviceToken    = $webQuery->pluck('web_token')->toArray();
                     $fcmMobileDeviceToken = $mobileQuery->pluck('device_token')->toArray();
                 } else {
-                    $fcmWebDeviceToken    = User::where(['id' => $pushNotification->user_id])->whereNotNull(
-                        'web_token'
-                    )->pluck('web_token')->toArray();
-                    $fcmMobileDeviceToken = User::where(['id' => $pushNotification->user_id])->whereNotNull(
-                        'device_token'
-                    )->pluck('device_token')->toArray();
+                    // [abuse-heal 2026-06-20 W6r2 PUSH-SINGLEUSER-XBRANCH-01] Branch-scope the
+                    // single-user fan-out too. The global (:87) and role (:97) branches already
+                    // apply branch_id when $pushBranchId !== 0, but this single-user branch did not,
+                    // so a push for branch A targeting a user_id living in branch B reached that
+                    // victim's device tokens (cross-branch notification injection). V1 LOCAL is
+                    // single-branch so this is not V1-reachable — V2/SaaS defense-in-depth; the
+                    // false-green sentinel that claimed "single-user path already isolated" is
+                    // corrected alongside this heal.
+                    $webQuery    = User::where('id', $pushNotification->user_id)->whereNotNull('web_token');
+                    $mobileQuery = User::where('id', $pushNotification->user_id)->whereNotNull('device_token');
+                    if ($pushBranchId !== 0) {
+                        $webQuery->where('branch_id', $pushBranchId);
+                        $mobileQuery->where('branch_id', $pushBranchId);
+                    }
+                    $fcmWebDeviceToken    = $webQuery->pluck('web_token')->toArray();
+                    $fcmMobileDeviceToken = $mobileQuery->pluck('device_token')->toArray();
                 }
             }
 
