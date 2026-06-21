@@ -68,7 +68,7 @@
                         <p class="text-sm text-blue-700 font-medium">{{ $t('label.loyalty_preview') }}</p>
                         <p class="text-xs text-blue-600 mt-1">
                             10€ d'achat = {{ form.loyalty_points_per_euro * 10 }} pts
-                            → {{ (form.loyalty_points_per_euro * 10 / form.loyalty_points_for_1_euro_discount).toFixed(2) }}€ de réduction
+                            → {{ (form.loyalty_points_per_euro * 10 / form.loyalty_points_for_1_euro_discount).toFixed(2).replace('.', ',') }}&nbsp;€ de réduction
                         </p>
                     </div>
                 </fieldset>

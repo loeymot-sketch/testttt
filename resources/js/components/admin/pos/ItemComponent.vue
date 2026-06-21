@@ -80,6 +80,7 @@
                         <div class="flex items-start gap-2 mb-1">
                             <h3 id="item-variation-modal-title" class="text-base font-bold capitalize text-[var(--pos-v5-ink)]">{{ item.name }}</h3>
                             <button v-if="item.caution" type="button" class="info-btn mt-0.5 flex items-start"
+                                :aria-label="$t('label.information')" :title="$t('label.information')"
                                 data-modal="#item-info-modal" @click.prevent="infoModalShow(item.name, item.caution)">
                                 <i class="lab lab-information font-fill-paragraph transition lab-font-size-16"></i>
                             </button>
@@ -90,6 +91,7 @@
                     </div>
                 </div>
                 <button class="modal-close lab-close-circle-line font-fill-danger lab-font-size-24"
+                    aria-label="Fermer" :title="$t('button.close') || 'Fermer'"
                     @click.prevent="variationModalHide"></button>
             </div>
             <div class="modal-body pos-v4-item-wizard-scroll flex-1 min-h-0 overflow-y-auto overscroll-contain">
@@ -265,7 +267,9 @@
                                     </div>
                                     <div
                                         class="flex flex-col items-end justify-between h-full absolute top-0 ltr:right-0 rtl:left-0 z-10 p-2">
-                                        <button type="button" class="info-btn" data-modal="#item-info-modal"
+                                        <button type="button" class="info-btn"
+                                            :aria-label="$t('label.information')" :title="$t('label.information')"
+                                            data-modal="#item-info-modal"
                                             @click.prevent="infoModalShow(addon.addon_item_name, addon.caution)">
                                             <i
                                                 class="lab lab-information font-fill-paragraph transition lab-font-size-16"></i>

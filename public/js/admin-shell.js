@@ -54827,7 +54827,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     max: "10000"
   }, null, 2 /* CLASS */), [[vue__WEBPACK_IMPORTED_MODULE_0__.vModelText, $data.form.loyalty_min_redeem_points, void 0, {
     number: true
-  }]]), $data.errors.loyalty_min_redeem_points ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("small", _hoisted_18, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.errors.loyalty_min_redeem_points[0]), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_19, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.loyalty_min_redeem_points_hint')), 1 /* TEXT */)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Live preview "), $data.form.loyalty_points_per_euro > 0 && $data.form.loyalty_points_for_1_euro_discount > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_20, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_21, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.loyalty_preview')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_22, " 10€ d'achat = " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.form.loyalty_points_per_euro * 10) + " pts → " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(($data.form.loyalty_points_per_euro * 10 / $data.form.loyalty_points_for_1_euro_discount).toFixed(2)) + "€ de réduction ", 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", _hoisted_23, [_cache[4] || (_cache[4] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+  }]]), $data.errors.loyalty_min_redeem_points ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("small", _hoisted_18, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.errors.loyalty_min_redeem_points[0]), 1 /* TEXT */)) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_19, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.loyalty_min_redeem_points_hint')), 1 /* TEXT */)])]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Live preview "), $data.form.loyalty_points_per_euro > 0 && $data.form.loyalty_points_for_1_euro_discount > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_20, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_21, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('label.loyalty_preview')), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_22, " 10€ d'achat = " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($data.form.loyalty_points_per_euro * 10) + " pts → " + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(($data.form.loyalty_points_per_euro * 10 / $data.form.loyalty_points_for_1_euro_discount).toFixed(2).replace('.', ',')) + " € de réduction ", 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", _hoisted_23, [_cache[4] || (_cache[4] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
     "class": "lab lab-save"
   }, null, -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(_ctx.$t('button.save')), 1 /* TEXT */)])], 32 /* NEED_HYDRATION */)])])], 64 /* STABLE_FRAGMENT */);
 }
@@ -57009,8 +57009,8 @@ var _hoisted_26 = {
 var _hoisted_27 = {
   "class": "flex justify-start items-center gap-1.5"
 };
-var _hoisted_28 = ["onClick"];
-var _hoisted_29 = ["onClick"];
+var _hoisted_28 = ["aria-label", "title", "onClick"];
+var _hoisted_29 = ["aria-label", "title", "onClick"];
 var _hoisted_30 = {
   key: 1
 };
@@ -57154,6 +57154,8 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     }, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(terminal.status === 1 ? _ctx.$t('label.active') : _ctx.$t('label.archived')), 3 /* TEXT, CLASS */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("td", _hoisted_26, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_27, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
       type: "button",
       "class": "db-btn-outline sm primary m-0.5",
+      "aria-label": _ctx.$t('button.edit'),
+      title: _ctx.$t('button.edit'),
       onClick: function onClick($event) {
         return $options.openEdit(terminal);
       }
@@ -57163,6 +57165,8 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       key: 0,
       type: "button",
       "class": "db-btn-outline sm danger m-0.5",
+      "aria-label": _ctx.$t('button.delete'),
+      title: _ctx.$t('button.delete'),
       onClick: function onClick($event) {
         return $options.destroy(terminal.id);
       }

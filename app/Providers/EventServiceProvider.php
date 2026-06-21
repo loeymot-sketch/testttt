@@ -295,8 +295,14 @@ class EventServiceProvider extends ServiceProvider
             PersistCouponChangedToOutbox::class,
         ],
         // [Wave 5G R9 heal 2026-05-17] Admin Settings mutations -> outbox fan-out.
-        // POS/Kiosk listening on `private-branch.{id}` receive a SettingsUpdated
-        // broadcast and refresh their `frontend/setting` payload live.
+        // The SettingsUpdated broadcast is PRODUCED on `private-branch.{id}` and the server-side
+        // /frontend/setting cache is forgotten (ForgetFrontendSettingsCache) so the NEXT fetch is
+        // fresh. [abuse-heal 2026-06-20 W7-newlens SYNC-CONSUMER-02] NOTE: no SPA surface currently
+        // SUBSCRIBES to SettingsUpdated (it is absent from eventContract.js BROADCAST_MAP and the
+        // PosComponent/KioskApp onEvents arrays), so an already-open POS/Kiosk tab refreshes its
+        // settings on the next reload/navigation, NOT live. Wiring a live re-fetch consumer is a
+        // V1.0.2 enhancement (config-propagation only; no per-transaction / money / NF525 impact —
+        // all pricing stays backend SSOT). The producer/outbox side below is correct and complete.
         SettingsUpdated::class => [
             PersistSettingsUpdatedToOutbox::class,
             // [GENIE B8 2026-06-16] forget the cached /frontend/setting payload on any settings save.

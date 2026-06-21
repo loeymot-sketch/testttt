@@ -44,10 +44,12 @@
                         <td class="db-table-body-td">
                             <div class="flex justify-start items-center gap-1.5">
                                 <button type="button" class="db-btn-outline sm primary m-0.5"
+                                        :aria-label="$t('button.edit')" :title="$t('button.edit')"
                                         @click="openEdit(terminal)">
                                     <i class="lab lab-edit"></i>
                                 </button>
                                 <button type="button" class="db-btn-outline sm danger m-0.5"
+                                        :aria-label="$t('button.delete')" :title="$t('button.delete')"
                                         @click="destroy(terminal.id)" v-if="terminal.status === 1">
                                     <i class="lab lab-delete"></i>
                                 </button>

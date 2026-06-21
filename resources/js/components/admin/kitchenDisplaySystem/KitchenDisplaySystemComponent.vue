@@ -156,7 +156,7 @@
                 <p v-if="Array.isArray(orderItem.item_variations) && orderItem.item_variations.length > 0"
                   class="text-xs font-normal font-client capitalize text-[#6E7191]">
                   <span v-for="(variation, index) in orderItem.item_variations" :key="index" class="text-heading">
-                    {{ variation.variation_name }}: {{ variation.name }}<span
+                    {{ variation.attribute_name || variation.variation_name }}: {{ variation.name || variation.variation_name }}<span
                       v-if="index + 1 < orderItem.item_variations.length">,&nbsp;</span>
                   </span>
                 </p>
@@ -416,7 +416,7 @@
                         <p v-if="Array.isArray(item.item_variations) && item.item_variations.length > 0"
                           class="text-xs font-normal font-client capitalize text-[#6E7191]">
                           <span v-for="(variation, index) in item.item_variations" :key="index" class="text-heading">
-                            {{ variation.variation_name }}: {{ variation.name }}<span
+                            {{ variation.attribute_name || variation.variation_name }}: {{ variation.name || variation.variation_name }}<span
                               v-if="index + 1 < item.item_variations.length">,&nbsp;</span>
                           </span>
                         </p>
@@ -616,7 +616,7 @@
                         <p v-if="Array.isArray(item.item_variations) && item.item_variations.length > 0"
                           class="text-xs font-normal font-client capitalize text-[#6E7191]">
                           <span v-for="(variation, index) in item.item_variations" :key="index" class="text-heading">
-                            {{ variation.variation_name }}: {{ variation.name }}<span
+                            {{ variation.attribute_name || variation.variation_name }}: {{ variation.name || variation.variation_name }}<span
                               v-if="index + 1 < item.item_variations.length">,&nbsp;</span>
                           </span>
                         </p>
@@ -804,7 +804,7 @@
                         <p v-if="Array.isArray(item.item_variations) && item.item_variations.length > 0"
                           class="text-xs font-normal font-client capitalize text-[#6E7191]">
                           <span v-for="(variation, index) in item.item_variations" :key="index" class="text-heading">
-                            {{ variation.variation_name }}: {{ variation.name }}<span
+                            {{ variation.attribute_name || variation.variation_name }}: {{ variation.name || variation.variation_name }}<span
                               v-if="index + 1 < item.item_variations.length">,&nbsp;</span>
                           </span>
                         </p>
@@ -989,7 +989,7 @@
                         <p v-if="Array.isArray(item.item_variations) && item.item_variations.length > 0"
                           class="text-xs font-normal font-client capitalize text-[#6E7191]">
                           <span v-for="(variation, index) in item.item_variations" :key="index" class="text-heading">
-                            {{ variation.variation_name }}: {{ variation.name }}<span
+                            {{ variation.attribute_name || variation.variation_name }}: {{ variation.name || variation.variation_name }}<span
                               v-if="index + 1 < item.item_variations.length">,&nbsp;</span>
                           </span>
                         </p>
@@ -2326,7 +2326,11 @@ export default {
         lines.push(`<strong style="font-size:15px;">${item.quantity}× ${e(item.item_name)}</strong>`);
 
         if (Array.isArray(item.item_variations) && item.item_variations.length > 0) {
-          const vars = item.item_variations.map(v => `${e(v.variation_name)}: ${e(v.name)}`).join(' | ');
+          // [abuse-heal 2026-06-19 kds-legacy-variation XS-1] snapshot-aware: composition_snapshot.lines
+          // carry the choice in `variation_name` (group in `attribute_name`, no `name`), the legacy column
+          // carries the choice in `name` (group in `variation_name`). Mirror kdsCustomization.variationLabel
+          // so the chef ticket never loses the choice value on the rollback-only legacy layout.
+          const vars = item.item_variations.map(v => `${e(v.attribute_name || v.variation_name)}: ${e(v.name || v.variation_name)}`).join(' | ');
           lines.push(`<div style="font-size:12px;color:#444;margin-top:2px;">${vars}</div>`);
         }
         if (Array.isArray(item.item_extras) && item.item_extras.length > 0) {
