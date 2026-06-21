@@ -82,6 +82,80 @@ class QrTableOrderGuardAbuseTest extends TestCase
     }
 
     /**
+     * ABUSE 3 [W1b W1B-DINEIN-01] — an out-of-enum order_type (e.g. 3, 99) must be
+     * rejected (422), not created (201). order_type was ['required','numeric'] only, and
+     * the V1 dine-in killswitch matches DINING_TABLE===20, so any other numeric value slipped
+     * past every gate onto a real dining table while dine-in is OFF in V1, with a type no
+     * downstream consumer (KDS station, OSS whereIn, reports) recognises.
+     */
+    public function test_table_order_with_out_of_enum_order_type_is_rejected(): void
+    {
+        Settings::group('pos')->set('pos_dine_in_enabled', true); // isolate the enum gate
+
+        $branch = BranchFactory::new()->create();
+        $customer = UserFactory::new()->create(['branch_id' => $branch->id]);
+        $table = DiningTable::factory()->create(['branch_id' => $branch->id, 'status' => Status::ACTIVE]);
+        $category = ItemCategoryFactory::new()->create();
+        $item = ItemFactory::new()->create(['item_category_id' => $category->id, 'price' => 12.00]);
+
+        foreach ([3, 7, 99, 0] as $bogusType) {
+            $payload = $this->tablePayload($branch->id, $customer->id, $table->id, $item->id, [
+                'order_type' => $bogusType,
+            ]);
+            $this->postTableOrder($payload)
+                ->assertStatus(422)
+                ->assertJsonValidationErrors(['order_type']);
+        }
+
+        $this->assertSame(
+            0,
+            FrontendOrder::whereIn('order_type', [3, 7, 99, 0])->count(),
+            'No order may be created with an out-of-enum order_type.'
+        );
+
+        // Control: the valid DINING_TABLE type still passes the enum gate (201).
+        $ok = $this->tablePayload($branch->id, $customer->id, $table->id, $item->id);
+        $this->postTableOrder($ok)->assertStatus(201);
+    }
+
+    /**
+     * ABUSE 4 [W6r2 TABLE-DELIV-CHARGE-TAMPER-01] — a client-supplied delivery_charge on this
+     * unauthenticated QR table endpoint must be NEUTRALIZED to 0 (backend-computed amounts only,
+     * NF525 §8). Pre-heal a TAKEAWAY POST with delivery_charge=100 persisted total=112 and that
+     * tampered total was signed into the Z when counter-paid. The THIRD twin of the kiosk/POS
+     * delivery_charge heals (OrderRequest / PosOrderRequest), missed by the first pass.
+     */
+    public function test_table_order_client_delivery_charge_is_neutralized(): void
+    {
+        Settings::group('pos')->set('pos_dine_in_enabled', true);
+
+        $branch = BranchFactory::new()->create();
+        $customer = UserFactory::new()->create(['branch_id' => $branch->id]);
+        $table = DiningTable::factory()->create(['branch_id' => $branch->id, 'status' => Status::ACTIVE]);
+        $category = ItemCategoryFactory::new()->create();
+        $item = ItemFactory::new()->create(['item_category_id' => $category->id, 'price' => 12.00]);
+
+        // TAKEAWAY (bypasses the dine-in killswitch) + a phantom 100€ delivery fee.
+        $payload = $this->tablePayload($branch->id, $customer->id, $table->id, $item->id, [
+            'order_type'      => OrderType::TAKEAWAY,
+            'delivery_charge' => 100.00,
+            'subtotal'        => 12.00,
+            'total'           => 112.00,
+        ]);
+
+        $resp = $this->postTableOrder($payload)->assertStatus(201);
+        $orderId = (int) $resp->json('data.id');
+
+        $order = FrontendOrder::withoutGlobalScopes()->findOrFail($orderId);
+        $this->assertSame(
+            0.0,
+            (float) $order->delivery_charge,
+            'Client delivery_charge must be neutralized to 0 on the QR table surface.'
+        );
+        $this->assertSame(12.0, (float) $order->total, 'Total must be backend-computed (no phantom fee).');
+    }
+
+    /**
      * ABUSE 1 — non-existent table id must be rejected (422), not created (201).
      * Mirrors the existence-enforcement gap: dining_table_id was numeric-only.
      */

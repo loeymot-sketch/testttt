@@ -218,6 +218,22 @@ class PosController extends AdminController
     {
         $surface = $request->is('api/frontend/*') ? 'kiosk' : (string) $request->input('surface', 'pos');
         if ($surface !== 'pos') {
+            // [abuse-heal 2026-06-19 kiosk-twin] Quote-side delivery-fee neutralize for the
+            // kiosk/web surface — symmetric twin of OrderRequest:129 (store side). This method
+            // otherwise early-returns for non-pos surfaces, so the kiosk/web quote previously
+            // priced+signed a phantom client delivery_charge on a NON-delivery (TAKEAWAY/DINING)
+            // order; after the store-side heal that mismatch produced a 401 intent error. Strip
+            // the client fee here too (unless it is a real DELIVERY carrying a distance, which
+            // the OrderRequest saved-address/legacy recompute owns) so the quote and order agree
+            // and no phantom fee is signed into the NF525 Z. fromDistanceKm(null) == 0.0.
+            $isDeliveryWithDistance = (int) $request->input('order_type', 0) === OrderType::DELIVERY
+                && $request->filled('delivery_distance_km');
+            if (! $isDeliveryWithDistance && $request->has('delivery_charge')) {
+                $request->merge([
+                    'delivery_charge' => $this->deliveryFeeService->fromDistanceKm(null),
+                ]);
+            }
+
             return;
         }
 

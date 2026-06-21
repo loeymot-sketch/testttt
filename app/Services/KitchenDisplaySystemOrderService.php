@@ -239,6 +239,14 @@ class KitchenDisplaySystemOrderService
                     OrderStatus::DELIVERED,
                 ])
                 ->whereBetween('updated_at', [$todayStart, $tomorrowStart]);
+            // [abuse-heal 2026-06-20 W6 KDS-ABUSE-03] SSOT board-release filter — TWIN of list():81,
+            // orderItems():524 and KdsSyncService::sync():118. historyToday() was the remaining KDS
+            // read path still filtering by STATUS only. An UNPAID order advanced to PREPARED+ via
+            // OrderService::changeStatus (OrderStateMachine is payment-blind) is hidden from the live
+            // board (list()) yet leaked its full payload — incl. customer address/phone via
+            // KDSOrderDetailsResource — into the history view. Keep "visible == released" identical
+            // across every read path.
+            KitchenReleaseRule::applyBoardReleaseFilter($query);
 
             // [Mirror list() L83-85] Admin branch_id=0 sees all; branch staff scoped.
             if ($userBranchId > 0) {
@@ -516,6 +524,12 @@ class KitchenDisplaySystemOrderService
             // without waiting for chef to click "Start Preparing"
             $query = Order::with('orderItems')
                 ->whereIn('status', KitchenReleaseRule::itemBoardStatuses());
+            // [abuse-heal 2026-06-20 W3W4 KDS-ABUSE-01] SSOT board-release filter — TWIN of list():81.
+            // Without it the cook items board surfaced line items from UNPAID/unreleased orders
+            // (chef prepares food before payment confirmed). The unreleased-bump P1 heal patched
+            // list()+changeStatus() but left this sibling read endpoint with the status filter only.
+            // Keep "visible on the board == released == bumpable" identical across all read paths.
+            KitchenReleaseRule::applyBoardReleaseFilter($query);
 
             // Admin bypass: branch_id=0 sees all branches
             if ($userBranchId > 0) {

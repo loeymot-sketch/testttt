@@ -185,6 +185,14 @@ class PosOrderBL2AuditCallSitesTest extends TestCase
         $order->status = OrderStatus::DELIVERED;
         $order->save();
 
+        // [W1b POS-REFUND-BYPASS-01 heal] change-status → RETURNED is the refund transition,
+        // now gated on 'pos-refund' (a real Admin holds it; the minimal test seed does not map
+        // the role → permission). Grant it under the sanctum guard used by all seeded roles.
+        $this->admin->givePermissionTo(
+            \Spatie\Permission\Models\Permission::firstOrCreate(['name' => 'pos-refund', 'guard_name' => 'sanctum'])
+        );
+        app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+
         $this->actingAs($this->admin)
             ->withHeader('x-api-key', config('app.api_key'))
             // [prod-finale 2026-06-17] idempotency-guarded route requires X-Idempotency-Key (frozen middleware; live UI sends it).

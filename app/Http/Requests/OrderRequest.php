@@ -126,6 +126,22 @@ class OrderRequest extends FormRequest
                 'delivery_charge' => app(DeliveryFeeService::class)
                     ->fromDistanceKm($this->input('delivery_distance_km'), $branch),
             ]);
+        } elseif ($this->has('delivery_charge')) {
+            // [abuse-heal 2026-06-19 kiosk-twin] NF525 delivery-fee tamper close —
+            // SYMMETRIC TWIN of PosOrderRequest:39-65 (G-POS-DELIVERY-MANUAL-FEE, f610e9ae3).
+            // The branches above recompute delivery_charge from distance ONLY for a
+            // DELIVERY order that carries a distance. Without this branch a client-sent
+            // delivery_charge on a NON-delivery order (TAKEAWAY/DINING/kiosk pickup) — or a
+            // delivery order with no distance basis — flowed untouched into the FrontendOrder
+            // total and the signed NF525 Z (FrontendOrderService:527-529 -> ZReportService:663).
+            // A real delivery ALWAYS carries distance (rules() requires it) and hits the
+            // recompute above; any other client-typed delivery_charge is neutralized to
+            // DeliveryFeeService's null-distance answer (0.0) so it can never reach the fiscal
+            // total. Backend-computed amounts only (CLAUDE.md §8).
+            $this->merge([
+                'delivery_charge' => app(DeliveryFeeService::class)
+                    ->fromDistanceKm(null),
+            ]);
         }
     }
 

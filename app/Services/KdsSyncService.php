@@ -15,6 +15,7 @@
 namespace App\Services;
 
 use App\Enums\Ask;
+use App\Domain\Kds\KitchenReleaseRule;
 use App\Enums\OrderStatus;
 use App\Http\Resources\KDSOrderDetailsResource;
 use App\Models\Order;
@@ -108,6 +109,13 @@ class KdsSyncService
                           ->whereNotIn('status', [OrderStatus::DELIVERED, OrderStatus::CANCELED]);
                     });
                 });
+
+            // [abuse-heal 2026-06-20 W3W4 KDS-ABUSE-02] SSOT board-release filter — TWIN of
+            // KitchenDisplaySystemOrderService::list():81. The WS-down polling fallback must be
+            // functionally equivalent to list() ("visible == bumpable"); without it sync() leaked
+            // UNPAID/unreleased orders (incl. customer phone) into the orders[] delta payload that
+            // a direct /sync consumer (or a frontend refactor rendering sync.orders) would paint.
+            KitchenReleaseRule::applyBoardReleaseFilter($ordersQuery);
 
             if ($branchId > 0) {
                 $ordersQuery->where('branch_id', $branchId);

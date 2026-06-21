@@ -4,6 +4,7 @@ namespace App\Listeners;
 
 use App\Enums\OrderStatus;
 use App\Enums\OrderType;
+use App\Enums\PaymentStatus;
 use App\Events\OrderStatusChanged;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -34,6 +35,17 @@ class AwardLoyaltyPointsOnDelivery
             return;
         }
 
+        // [abuse-heal 2026-06-19 loyalty-refund] ONLINE-REFUND-LOYALTY-01. Never award
+        // points on a refunded/returned order. An Admin terminal-state override
+        // (OrderStateMachine RETURNED->DELIVERED) can re-fire this listener on a fully
+        // refunded sale; without this guard the customer keeps value-bearing points on a
+        // refund (the matching clawback won't re-run because PaymentService::cashBack's
+        // idempotency short-circuits RefundCreated). Mirrors the CANCELED guard above.
+        $currentPaymentStatus = (int) ($order->payment_status ?? 0);
+        if ($currentStatus === OrderStatus::RETURNED || $currentPaymentStatus === PaymentStatus::REFUNDED) {
+            return;
+        }
+
         $isKiosk = in_array((int) ($order->order_type ?? 0), [OrderType::KIOSK, OrderType::TAKEAWAY], true);
 
         if ($isKiosk) {
@@ -53,6 +65,11 @@ class AwardLoyaltyPointsOnDelivery
             ->where('id', $order->id)
             ->whereNull('loyalty_points_awarded')
             ->where('status', '!=', OrderStatus::CANCELED)
+            // [abuse-heal 2026-06-19 loyalty-refund] Mirror the bail above into the atomic
+            // claim so a concurrent refund landing between the guard and the claim cannot
+            // award points on a returned/refunded order.
+            ->where('status', '!=', OrderStatus::RETURNED)
+            ->where('payment_status', '!=', PaymentStatus::REFUNDED)
             ->update(['loyalty_points_awarded' => -1]);
 
         if ($updated === 0) {

@@ -89,6 +89,44 @@ class ItemRequestTest extends TestCase
         $this->assertArrayHasKey('extras.0.visible_on', $errors);
     }
 
+    /**
+     * [abuse-heal 2026-06-20 W5 CAT-MOD-PRICE-CAP-01] The bulk nested-modifier price guard rejected
+     * negatives but NOT out-of-range magnitudes — a 13+ digit price persisted into the catalog +
+     * the frozen PricingService and overflowed order_quotes.subtotal (SQLSTATE 22003) at quote time.
+     * The dedicated /variation,/extra endpoints already cap this via IniAmount; the bulk path now does too.
+     */
+    public function test_rejects_out_of_range_nested_modifier_price(): void
+    {
+        $this->seed(AllergensSeeder::class);
+        $category = ItemCategory::factory()->create();
+        $tax = Tax::factory()->create();
+
+        $payload = $this->validPayload($category->id, $tax->id, [
+            'extras' => json_encode([
+                ['name' => 'Huge Extra', 'price' => 9999999999999.00, 'status' => 1, 'visible_on' => 'kiosk'],
+            ]),
+        ]);
+
+        $request = ItemRequest::create('/api/admin/item', 'POST', $payload);
+        $validator = Validator::make($payload, $request->rules());
+        $request->withValidator($validator);
+
+        $this->assertTrue($validator->fails());
+        $this->assertArrayHasKey('extras.0.price', $validator->errors()->toArray());
+
+        // Control: an in-range price passes the magnitude cap (no extras.0.price error).
+        $okPayload = $this->validPayload($category->id, $tax->id, [
+            'extras' => json_encode([
+                ['name' => 'Normal Extra', 'price' => 1.5, 'status' => 1, 'visible_on' => 'kiosk'],
+            ]),
+        ]);
+        $okRequest = ItemRequest::create('/api/admin/item', 'POST', $okPayload);
+        $okValidator = Validator::make($okPayload, $okRequest->rules());
+        $okRequest->withValidator($okValidator);
+        $okValidator->fails(); // run the validation
+        $this->assertArrayNotHasKey('extras.0.price', $okValidator->errors()->toArray());
+    }
+
     public function test_accepts_valid_nested_modifier_surface_contract(): void
     {
         $this->seed(AllergensSeeder::class);

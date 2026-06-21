@@ -146,6 +146,13 @@ class ItemRequest extends FormRequest
                 $validator->errors()->add("{$field}.{$index}.price", 'The modifier price must be a number.');
             } elseif ((float) $price < 0) {
                 $validator->errors()->add("{$field}.{$index}.price", 'The modifier price must not be negative.');
+            } elseif (! (new \App\Rules\IniAmount(true))->passes("{$field}.{$index}.price", (string) $price)) {
+                // [abuse-heal 2026-06-20 W5 CAT-MOD-PRICE-CAP-01] Magnitude/format cap — the other half of
+                // the IniAmount contract this guard claims to mirror but only implemented for negatives.
+                // Without it a 13+ digit price (e.g. 9999999999999) persisted into the catalog AND the frozen
+                // PricingService, then overflowed order_quotes.subtotal (SQLSTATE 22003 + raw-SQL leak) for any
+                // cart containing the item. Reuse the canonical IniAmount rule (allow 0, like ItemVariation).
+                $validator->errors()->add("{$field}.{$index}.price", 'The modifier price exceeds the allowed amount.');
             }
         }
     }
