@@ -1,0 +1,66 @@
+# RAPPORT — AUDIT 360° VISUEL (chaque pixel) — Le Cayenne V1 — 2026-06-21
+
+> Owner `/goal` : audit 360° couvrant chaque pixel, test réel visuel (Playwright live :8766),
+> agents adversaires critique-first + dispute, raisonnement max-complexe, rapport en tableau,
+> correction en boucle test-e2e jusqu'à validé. Rig :8766 sert le code du worktree (mes bundles).
+
+## §1 — STRUCTURE COMPOSÉE (inventaire des surfaces auditées)
+Capture live Playwright @ 1366×768, multimodal (Read sur chaque PNG). Login admin@lecayenne.fr.
+
+| # | Surface | Route | Verdict capture (moi) | Notes / points faibles candidats |
+|---|---|---|---|---|
+| 1 | Login admin | /login | ✅ propre | branding OK, FR OK ; 31 console-401 = **artefact session périmée** (créds autofill confirment état antérieur ; logout-401 corrobore) |
+| 2 | Dashboard | /admin/dashboard | ✅ propre | money FR (37 719,92 €), KPI OK ; "Suivi en direct=0 aujourd'hui" à vérifier (rig-data probable) |
+| 3 | POS Caisse (FROZEN) | /admin/pos | ✅ propre | modal ouvre-caisse, money FR ; tabs catégories tronqués ("Bols Gourm…") |
+| 4 | KDS | /admin/kitchen-display-system | ✅ propre | bannière poll-admin 60s correcte, empty-state SVG, "il y a 1j/4j" OK ; serials ZWIN=rig-data |
+| 5 | OSS mur public | /admin/order-status-screen | ✅ propre | 2 colonnes, empty-states ; **en-têtes couleur texte incohérentes** (blanc/magenta vs sombre/vert) → contraste à vérifier |
+| 6 | Catalogue articles | /admin/items | ✅ propre | money FR, 46 produits ; labels stat tronqués ("CATÉGO…") ; **icônes action a11y à vérifier** ; wval3cg=rig |
+| 7 | Kiosk borne (auto-connect) | /kiosk/idle→login | ⚠️ état erreur | **dark-theme vs mandat light** + **copy auth brut "Identifiants invalides" sur borne publique** (créds rig périmées) |
+| 8 | Stock | /admin/stock/rupture | ✅ propre | heal STOCK-GRID tient (noms pleins), EN STOCK, sync note |
+| 9 | Fidélité (settings) | /admin/settings/loyalty-setup | ✅ propre | **heal i18n VÉRIFIÉ LIVE** : "0,10 € de réduction" (FR) |
+| 10 | TPE (settings) | /admin/settings/payment-terminals | ✅ propre | **heal a11y VÉRIFIÉ LIVE** : boutons "Modifier"/"Supprimer" nommés ; money FR |
+| 11 | Rapport ventes | /admin/sales-report | ✅ propre | money+dates FR, badges Payé/Non Payé ; **count 2784 vs dashboard 2778** à investiguer |
+| 12 | Commandes caisse | /admin/pos-orders | ✅ propre | table standard, FR |
+| 13 | Encaissement | /admin/encaissement | ✅ propre | grille cartes (87 en attente), FR, boutons Encaisser |
+
+Surfaces différées (frozen + très auditées / créds rig) : Kiosk MENU wizard (frozen §7), POS wizard interne (frozen §7).
+
+## §2 — FINDINGS ADVERSAIRES (4 critics parallèles — Round 1)
+4 agents critique-first (POS · KDS/OSS · Dashboard/Reports/Catalogue · Settings/Auth/Kiosk), verify-before-report. **Net : 0 P0, 1 P1, 5 P2 (3 fixables + 2 FROZEN), 3 P3.** Cœur SOLIDE (nombreux faux-leads réfutés avec preuve).
+
+| ID | Sév | Surface | file:line | Finding | Statut |
+|---|---|---|---|---|---|
+| F1 | **P1** | Kiosk borne | KioskLoginComponent.vue:125-129 | Erreur auth brute "Identifiants invalides ou compte bloqué" affichée au **client public** (backend message gagne sur le fallback) | ✅ **HEALED+vérifié live** (copy publique "reconnexion automatique") |
+| F2 | P2 | KDS | KdsV2Grid.vue:574 (+548) | empty-sub `#9CA3AF` = **2,43:1 FAIL AA** (jumeau d'un fix OSS raté) | ✅ **HEALED** `#6B7280` 4,83:1 (vérifié live) |
+| F3 | P2 | Kiosk borne | KioskLoginComponent.vue:148+ | **Theme DARK** viole le mandat kiosk light-mode (seule île dark restante) | ✅ **HEALED+vérifié live** (re-skin light complet) |
+| F4 | P2 | Dashboard↔Report | OrderService.php:3062 | "Total Commandes" = populations ≠ (report inclut les miroirs de remboursement, dashboard non) → écart 6 inexpliqué (revenu OK) | ✅ **HEALED** count `whereNull('parent_order_id')` (aligné dashboard) |
+| F5 | P3 | Fidélité | LoyaltySetupComponent.vue:70 | "10€" collé en-US (résidu de mon propre heal) | ✅ **HEALED+vérifié live** "10 €" |
+| F6 | P2 | POS wizard | public/js/pos-wizard.js:692 | money en-US `€3.00` addon (raté par LOCK G-FROZEN-WIZARD-MONEY) | ⛔ **FROZEN §7 → owner-gate** (étendre le LOCK) |
+| F7 | P2 | POS wizard | public/js/pos-wizard.js:2281 | recap "Formule" `+€3.00` en-US | ⛔ **FROZEN §7 → owner-gate** (même LOCK) |
+| F8 | P3 | POS cash modal | PosCashDrawerSessionDialog.vue:60,175 | aria-label FR hardcodé "Incréments rapides" (correct FR, V2-seed) | ⏸️ déféré (non-défaut, pas d'impact V1) |
+| F9 | P3 | KDS legacy | KitchenDisplaySystemComponent.vue (8 strings) | strings FR hardcodés sur le chemin legacy `?v2=0` (non rendu en V2) | ⏸️ déféré (chemin legacy) |
+| — | — | OSS en-têtes | — | contraste blanc/magenta 7,11:1 + sombre/vert 6,06:1 | ✅ **RÉFUTÉ** (les deux passent AA — ma suspicion fausse) |
+| — | — | Dashboard "0 aujourd'hui" | — | 0 commande aujourd'hui (Paris TZ) | ✅ **RÉFUTÉ** (correct — 0 réelle) |
+| — | — | items icônes action | — | eye/edit/dup/trash | ✅ **RÉFUTÉ** (toutes ont aria-label) |
+| — | — | login forgot-pwd contraste | — | text-orange-700 5,18:1 | ✅ **RÉFUTÉ** (déjà healed AA) |
+
+## §3 — CORRECTIONS (boucle test-e2e — Round 1)
+**5 heals appliqués (1 P1, 3 P2, 1 P3), tous NON-frozen** + rebuild (`npm run development` exit 0, bundles admin-kds/admin-shell/kiosk-shell) :
+- F1+F3 kiosk : `KioskLoginComponent.vue` — fallback public + re-skin light complet (canvas/card/texte/input/erreur/footer/hover off-brand→brand). Vérifié live (light + "reconnexion automatique").
+- F2 KDS : `KdsV2Grid.vue` `#9CA3AF`→`#6B7280`. Vérifié live.
+- F4 count : `OrderService.php` total_orders `whereNull('parent_order_id')`. Sales-report PHPUnit 7/7.
+- F5 loyalty : "10 €". Vérifié live.
+- **Gates : Vitest 2007/0, sales-report PHPUnit 7/7, frozen §7 diff = 0** (tous heals non-frozen).
+
+### §3bis — Round 2 + Round 3 (boucle convergence)
+- **Round 2a (refute-heals)** : 5/5 heals **VERIFIED-CLEAN**, 0 régression, 0 nouveau P0/P1. Le count-fix F4 est même **ratifié par un test existant `TotalOrdersCountSemanticsTest`** (lancé vert + 4 sentinels).
+- **Round 2b (sweep systémique jumeau)** : classes **money en-US / raw-i18n / icon-a11y = CLEAN repo-wide** (réfutées avec preuve : 208 clés i18n vérifiées, tous les `toFixed` sont des fallbacks catch derrière `Intl fr-FR`). Classe **contraste** = 2 jumeaux trouvés → **A1 (P2)** CashOverview order_id + **A2 (P3)** PosOrderReceipt taxe, healés `#9CA3AF→#6B7280`.
+- **Round 3 (census repo-wide contraste)** : 15 `text-gray-400` recensés → 1 dernier jumeau **A3 (P3)** PaymentTerminals empty-state, healé. Reste = hints (convention), icônes décoratives, statut-inactif (exempts). **Classe contraste data-text/empty-state ÉPUISÉE.**
+
+**Cash-overview "4€ vs 8€"** = **RÉFUTÉ** (verify-before-report) : GRAND TOTAL filtre par date de paiement, la réconciliation suit la session tiroir — scopes différents, math interne cohérente (50+8=58). Pas un bug.
+
+## §4 — VERDICT FINAL ✅ CONVERGÉ
+**Cœur visuel SOLIDE.** Audit 360° sur 14 surfaces live (chaque pixel, multimodal) + 6 agents adversaires (4 critics R1 + 2 R2) critique-first/dispute. **0 P0.** **8 heals appliqués+vérifiés** (1 P1 kiosk-error-public, 5 P2 [KDS+kiosk-theme+dashboard-count+cashoverview], 2 P3 [loyalty+receipt+payment-empty]), **tous NON-frozen**. Classes systémiques (contraste/money/i18n/a11y) **épuisées repo-wide**. **Gates : Vitest 2007/0, sales-report PHPUnit 7/7, frozen §7 diff = 0.** Nombreux faux-leads réfutés (OSS-contraste, 0-aujourd'hui, icon-a11y, en-US-money, cash-4vs8) = preuve d'un cœur sain.
+- **OWNER-GATE (frozen)** : F6/F7 = `pos-wizard.js` money en-US `€3.00`/`+€3.00` (2 sites ratés par le LOCK `G-FROZEN-WIZARD-MONEY`) → étendre le LOCK.
+- **Déférés (P3, non-défauts)** : convention form-hints `text-gray-400` (repo-wide, owner-decision strict-AA), KDS legacy strings (chemin `?v2=0`), pos aria-hardcodé (FR correct).
+- **Ship** : les bundles rebuild (`kiosk-shell`/`admin-shell`/`admin-kds`/`admin-reports`) doivent être déployés pour que les heals atteignent les surfaces.

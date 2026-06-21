@@ -3059,7 +3059,14 @@ class OrderService
             // agrees with the dashboard (scopeRealizedRevenue) and the signed Z. total_orders stays
             // the placed-volume count.
             $paidOrders = $orders->filter(fn ($o) => \App\Models\Order::isRealizedRevenueRow($o));
-            $salesReportArray['total_orders'] = $orders->count();
+            // [audit-360 2026-06-21 P2] Count REAL placed orders only — exclude refund
+            // counter-entry mirrors (parent_order_id set), matching the dashboard headline
+            // (DashboardService::orderQuery()->whereNull('parent_order_id')->count()). Both
+            // cards are titled "Total Commandes"; this one previously INCLUDED the refund
+            // mirrors while the dashboard excluded them, so an owner reconciling the two
+            // screens saw an unexplained N-order gap. Money figures keep the net realized set
+            // (WITH negative mirrors) so refunds still net to ~0 — count-only change.
+            $salesReportArray['total_orders'] = $orders->whereNull('parent_order_id')->count();
             $salesReportArray['total_earnings'] = AppLibrary::currencyAmountFormat($paidOrders->sum('total'));
             $salesReportArray['total_discounts'] = AppLibrary::currencyAmountFormat($paidOrders->sum('discount'));
             $salesReportArray['total_delivery_charges'] = AppLibrary::currencyAmountFormat($paidOrders->sum('delivery_charge'));

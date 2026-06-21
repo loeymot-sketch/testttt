@@ -545,7 +545,7 @@ export default {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    color: #9CA3AF;
+    color: #6B7280; /* [audit-360 2026-06-21] AA: #9CA3AF 2.43:1 -> #6B7280 4.83:1 on white empty panel (sibling of the OSS empty-state fix) */
     padding: 32px;
 }
 .kds-v2__empty-illustration {
@@ -571,7 +571,7 @@ export default {
 .kds-v2__empty-sub {
     margin-top: 8px;
     font-size: 16px;
-    color: #9CA3AF;
+    color: #6B7280; /* [audit-360 2026-06-21] AA: #9CA3AF 2.43:1 -> #6B7280 4.83:1 on white empty panel (sibling of the OSS empty-state fix) */
 }
 
 .sr-only {

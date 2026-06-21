@@ -304,7 +304,7 @@
                                     <td class="px-3 py-2 whitespace-nowrap">{{ formatTime(tx.created_at) }}</td>
                                     <td class="px-3 py-2">
                                         <span v-if="tx.queue_number">N°{{ tx.queue_number }}</span>
-                                        <span v-else class="text-gray-400">#{{ tx.order_id }}</span>
+                                        <span v-else class="text-gray-500">#{{ tx.order_id }}</span><!-- [audit-360 R2 A1] text-gray-400 #9CA3AF 2.43:1 -> text-gray-500 #6B7280 4.83:1 AA (order_id is the row's only id) -->
                                     </td>
                                     <td class="px-3 py-2">
                                         <span

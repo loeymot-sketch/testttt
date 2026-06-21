@@ -122,11 +122,15 @@ export default {
         if (status === 429) {
           msg = this.$t('kiosk.login_screen.err_rate_limited');
         } else {
-          msg = err?.response?.data?.errors?.validation
-            || err?.response?.data?.errors?.username?.[0]
-            || err?.response?.data?.errors?.password?.[0]
-            || err?.response?.data?.message
-            || this.$t('kiosk.login_screen.err_login_failed');
+          // [audit-360 2026-06-21 P1] PUBLIC borne: never echo the backend auth
+          // copy ("Identifiants invalides ou compte bloqué") to a customer — it
+          // is a staff/infra concern, meaningless and alarming on a public
+          // screen. Auto-connect carries no on-screen credentials, so field/
+          // validation errors are not customer-actionable. Always show the
+          // localized public-safe message for non-429 failures. (429 keeps its
+          // own localized message above.) The backend string stays correct for
+          // the admin LoginController; only the borne suppresses it.
+          msg = this.$t('kiosk.login_screen.err_login_failed');
         }
         this.error = msg;
         this.retryAttempts += 1;
@@ -145,17 +149,22 @@ export default {
 </script>
 
 <style scoped>
+/* [audit-360 2026-06-21 P2] Re-skinned dark -> LIGHT. The borne mandate is
+   light-mode 100% (CONSTITUTION §3bis; kiosk-fallback.css forces light on the
+   app/idle). This auto-connect screen was the lone hardcoded-dark island —
+   now aligned to the light palette (#FFFFFF canvas, #1A1A1A text, #F4501E accent). */
 .kiosk-login-screen {
   min-height: 100vh;
-  background: linear-gradient(160deg, #0f0f1a 0%, #1a1a2e 100%);
+  background: linear-gradient(160deg, #FFF4EE 0%, #FFFFFF 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 2rem;
 }
 .kiosk-login-card {
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.1);
+  background: #FFFFFF;
+  border: 1px solid #F0E2DA;
+  box-shadow: 0 10px 40px rgba(26,26,26,0.08);
   border-radius: 24px;
   padding: 3rem 2.5rem;
   width: 100%;
@@ -176,12 +185,12 @@ export default {
   margin: 0;
   font-size: 1.6rem;
   font-weight: 800;
-  color: #fff;
+  color: #1A1A1A;
 }
 .kiosk-login-sub {
   margin: 0;
   font-size: 0.9rem;
-  color: rgba(255,255,255,0.4);
+  color: #6B7280;
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
@@ -203,8 +212,8 @@ export default {
   width: 22px;
   height: 22px;
   border-radius: 999px;
-  background: rgba(255,255,255,0.14);
-  color: rgba(255,255,255,0.72);
+  background: #F3F4F6;
+  color: #6B7280;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -212,7 +221,7 @@ export default {
 }
 .kiosk-login-status-text {
   margin: 0;
-  color: rgba(255,255,255,0.78);
+  color: #374151;
   text-align: center;
   font-size: 1rem;
   font-weight: 600;
@@ -225,46 +234,46 @@ export default {
 .kiosk-login-label {
   font-size: 0.85rem;
   font-weight: 600;
-  color: rgba(255,255,255,0.55);
+  color: #6B7280;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 .kiosk-login-input {
-  background: rgba(255,255,255,0.07);
-  border: 1px solid rgba(255,255,255,0.14);
+  background: #F9FAFB;
+  border: 1px solid #E5E7EB;
   border-radius: 12px;
-  color: #fff;
+  color: #1A1A1A;
   font-size: 1rem;
   padding: 0.85rem 1rem;
   outline: none;
   transition: border-color 0.2s;
 }
 .kiosk-login-input:focus { border-color: #f4501e; }
-.kiosk-login-input::placeholder { color: rgba(255,255,255,0.25); }
+.kiosk-login-input::placeholder { color: #9CA3AF; }
 .kiosk-login-input:disabled { opacity: 0.5; }
 .kiosk-login-hint {
   margin: 0;
   font-size: 0.78rem;
   line-height: 1.35;
-  color: rgba(255,255,255,0.38);
+  color: #6B7280;
 }
 .kiosk-login-hint-center {
   text-align: center;
 }
-.kiosk-login-hint strong { color: rgba(255,255,255,0.55); font-weight: 600; }
+.kiosk-login-hint strong { color: #374151; font-weight: 600; }
 .kiosk-login-devhint {
   margin: 0;
   font-size: 0.74rem;
   line-height: 1.4;
-  color: rgba(255,255,255,0.32);
+  color: #6B7280;
   text-align: center;
 }
 .kiosk-login-devhint code {
   font-size: 0.85em;
   padding: 0.1em 0.35em;
   border-radius: 4px;
-  background: rgba(255,255,255,0.08);
-  color: rgba(255,255,255,0.65);
+  background: #F3F4F6;
+  color: #374151;
 }
 .kiosk-login-error {
   margin: 0;
@@ -272,7 +281,7 @@ export default {
   border: 1px solid rgba(244,80,30,0.3);
   border-radius: 10px;
   padding: 0.7rem 1rem;
-  color: #ff6b7a;
+  color: #B91C1C;
   font-size: 0.9rem;
   text-align: center;
 }
@@ -291,12 +300,12 @@ export default {
   justify-content: center;
   min-height: 52px;
 }
-.kiosk-login-btn:hover:not(:disabled) { background: #c0001a; }
+.kiosk-login-btn:hover:not(:disabled) { background: #D63E15; } /* [audit-360] off-brand red #c0001a -> brand-orange-dark */
 .kiosk-login-btn:disabled { opacity: 0.45; cursor: default; }
 .kiosk-login-secondary-btn {
   background: transparent;
-  color: rgba(255,255,255,0.82);
-  border: 1px solid rgba(255,255,255,0.16);
+  color: #374151;
+  border: 1px solid #D1D5DB;
   border-radius: 50px;
   padding: 0.95rem 1rem;
   font-size: 0.96rem;
@@ -315,7 +324,7 @@ export default {
 .kiosk-login-footer {
   text-align: center;
   font-size: 0.78rem;
-  color: rgba(255,255,255,0.22);
+  color: #6B7280; /* [audit-360] was rgba(255,255,255,0.22) — invisible on the new light canvas */
   margin: 0;
 }
 .fade-enter-active, .fade-leave-active { transition: opacity 0.25s; }

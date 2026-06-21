@@ -59,7 +59,7 @@
                 </tbody>
                 <tbody v-else>
                     <tr>
-                        <td colspan="8" class="db-table-body-td text-center text-gray-400 py-6">
+                        <td colspan="8" class="db-table-body-td text-center text-gray-500 py-6"><!-- [audit-360 R3] empty-state text-gray-400 2.43:1 -> text-gray-500 4.83:1 AA (sibling of OSS/KDS/CashOverview empty-state class) -->
                             {{ $t("label.no_data") }}
                         </td>
                     </tr>
