@@ -1,8 +1,11 @@
-# LOCK (DRAFT — awaiting owner countersign) — POS Wizard money FR: 3 missed call-sites
+# LOCK (APPLIED) — POS Wizard money FR: 4 missed call-sites
 
-> **Status 2026-06-22 : DRAFT, NOT yet applied.** Requires explicit owner countersign
-> (CLAUDE.md §7 frozen-zone + §10 human-gate), exactly as the 2026-06-18 LOCK was granted.
-> The frozen-zone SHA256 baseline must be updated alongside (per the baseline update_rule).
+> **Status 2026-06-22 : APPLIED.** Owner countersign GRANTED in-session (AskUserQuestion
+> "Frozen wizard" → « Oui, déverrouille + corrige »). Frozen-zone touch of pos-wizard.js
+> authorized (CLAUDE.md §7 + §10), mirroring the 2026-06-18 grant. 4 sites routed through
+> the FR `fmtPrice()` (692 addon, 1873 menu, 2281 formule recap, 2961 fallback). SHA256
+> baseline updated `cc167dff…` → `00c23901…`. Verified: JS parses, FrozenZoneSha256Baseline
+> sentinel GREEN, pos-wizard Vitest 23/23 GREEN.
 
 - **Frozen-zone target**: `public/js/pos-wizard.js` (CLAUDE.md §7 — POS Vanilla JS wizard, owner "design parfait")
 - **Severity**: P2 — en-US money on the FR-locked caisse popup (siblings of the 2026-06-18 fix)
