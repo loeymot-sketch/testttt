@@ -63,8 +63,12 @@ final class KioskMenuService
         $branchId = (int) $branch->id;
 
         // -- Catégories actives visibles sur le canal kiosk ----------------
+        // [audit-360 W2] Mirror POS (PosCategoryController:119): exclude categories
+        // with ZERO items so the borne never lands on / lists an empty "0 produit"
+        // category (a customer opening the kiosk default-selected an empty category).
         $categories = ItemCategory::query()
             ->where('status', Status::ACTIVE)
+            ->whereHas('items')
             ->get();
 
         $visibleCategories = $categories

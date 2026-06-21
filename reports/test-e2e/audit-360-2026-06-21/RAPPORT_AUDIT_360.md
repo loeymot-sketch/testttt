@@ -64,3 +64,24 @@ Surfaces différées (frozen + très auditées / créds rig) : Kiosk MENU wizard
 - **OWNER-GATE (frozen)** : F6/F7 = `pos-wizard.js` money en-US `€3.00`/`+€3.00` (2 sites ratés par le LOCK `G-FROZEN-WIZARD-MONEY`) → étendre le LOCK.
 - **Déférés (P3, non-défauts)** : convention form-hints `text-gray-400` (repo-wide, owner-decision strict-AA), KDS legacy strings (chemin `?v2=0`), pos aria-hardcodé (FR correct).
 - **Ship** : les bundles rebuild (`kiosk-shell`/`admin-shell`/`admin-kds`/`admin-reports`) doivent être déployés pour que les heals atteignent les surfaces.
+
+---
+
+## §5 — WAVE 2 (audit PLUS PROFOND : parcours kiosk complet + formulaires + breadth admin)
+Owner a re-lancé le goal → audit plus profond/large. Surfaces neuves capturées live : **kiosk idle→menu→catégorie→wizard composition** (enfin atteint, créds borne réalignées), studio catalogue, formulaire item-create, offres, employés, cash-overview. **+ 7 heals (tous NON-frozen), tous live-vérifiés**, + sweep systémique (3 agents adversaires).
+
+| ID | Sév | Surface | file:line | Finding | Statut |
+|---|---|---|---|---|---|
+| W2-1 | **P2** | Catalogue studio | fr/en.json (`studio.product_composer_button`) | clé i18n MANQUANTE → **92 warnings intlify** par rendu | ✅ HEALED (clé ajoutée 5 locales) — **studio 92→0 warnings vérifié live** |
+| W2-2 | P3 | Catalogue studio | `studio.category_studio_button` | clé manquante (sibling) | ✅ HEALED (5 locales) |
+| W2-3 | **P2** | TOUS formulaires (×13) | fr.json `label.no` = **"N°"** | mistraduction "No"→"N°" (symbole numéro) → chaque radio Oui/**N°** | ✅ HEALED "Non" (1 clé → **13 forms**) — vérifié live item-create |
+| W2-4 | **P2** | 17 composants (×2 tickets NF525) | `X.country_code + '' + phone` | **classe null-glue** : country_code nul → "**null**"+phone affiché (employés, clients, livreurs, admins, chefs, serveurs, tickets) | ✅ HEALED `(x \|\| '')` **17 composants, 0 restant** — vérifié live employés |
+| W2-5 | P2 | Kiosk wizard (FROZEN comp.) | `kiosk.wizard.generic.step_fallback` | clé manquante → **raw-key** dans le recap client si step_label absent (4 sites) | ✅ HEALED (clé locale ajoutée, composant frozen NON touché) |
+| W2-6 | **P2** | Kiosk borne | `KioskMenuService.php:66` | pas de `whereHas('items')` (POS l'a) → borne **défaut sur catégorie VIDE "0 produit"** (incl. vraie "Tacos Signature", pas que rig) | ✅ HEALED `whereHas('items')` — **vérifié live cat=32(vide)→cat=10(Boissons 8 produits)** |
+| W2-7 | — | i18n parité | de/bn/ar.json | clés studio ajoutées pour passer `studioFrontendI18nParity` | ✅ (test caught my fr-only addition → corrigé) |
+| — | déféré | admin product-wizard | `admin.product_wizard.*` (13 clés) | composant **non-routé/orphelin** (0 impact live) | ⏸️ déféré (à ajouter au câblage) |
+| — | déféré | GuestVerify/SignupVerify | `code + '' + phone` | OTP local (non-nullable) — anti-pattern cosmétique | ⏸️ déféré |
+
+**Sweeps systémiques (3 agents adversaires)** : (a) i18n-completeness → 6 clés manquantes + 9 dynamic-siblings recensées (live fixées, orphelines déférées) ; (b) refute-heals → mes 4 heals CORRECTS mais **null-glue INCOMPLET** (3/17 → tous corrigés) ; (c) N°-class → **épuisée** (pas d'autre mistraduction yes/no). **Verify-before-report** a réfuté : OSS-contraste, 0-aujourd'hui, cash-4vs8, icon-a11y.
+
+**Gates Wave 2 : Vitest 2007/0** (1 régression parité attrapée+corrigée — preuve que le test-fortress marche), frozen §7=0, PHP lint OK, build compilé. **Leçon : la lentille jumeau-systémique a re-frappé — j'avais corrigé 3/17 du null-glue ; l'agent adversaire a forcé la classe complète.**

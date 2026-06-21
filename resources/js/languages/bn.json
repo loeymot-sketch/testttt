@@ -1686,6 +1686,8 @@
         "subtitle": "ক্যাটাগরি, পণ্য, উইজার্ড এবং স্টক",
         "all_categories": "সব ক্যাটাগরি",
         "category_wizard_button": "ক্যাটাগরির উইজার্ড",
+        "product_composer_button": "পণ্য কম্পোজ করুন",
+        "category_studio_button": "উইজার্ড স্টুডিও — লাইভ প্রিভিউ",
         "category_wizard_hint": "এই উইজার্ড এই ক্যাটাগরির সমস্ত পণ্যের জন্য প্রযোজ্য।",
         "products_count": "{n} পণ্য",
         "advanced_settings": "উন্নত সেটিংস",

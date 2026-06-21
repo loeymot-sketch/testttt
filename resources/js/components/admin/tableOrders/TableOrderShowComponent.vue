@@ -243,7 +243,7 @@
                             <li class="flex items-center gap-2.5" v-if="orderUser.phone">
                                 <i class="lab lab-call-calling-linear lab-font-size-14"></i>
                                 <span dir="ltr" class="text-xs">{{
-                                    orderUser.country_code + "" + orderUser.phone
+                                    (orderUser.country_code || '') + orderUser.phone
                                     }}</span>
                             </li>
                         </ul>

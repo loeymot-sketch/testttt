@@ -86,7 +86,7 @@
                                     {{ $t("label.phone") }}
                                 </span>
                                 <span class="db-list-item-text w-full sm:w-1/2">
-                                    {{ employee.phone ? employee.country_code + '' + employee.phone : '' }}
+                                    {{ employee.phone ? (employee.country_code || '') + employee.phone : '' }}
                                 </span>
                             </div>
                         </div>

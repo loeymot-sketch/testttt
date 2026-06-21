@@ -1686,6 +1686,8 @@
         "subtitle": "Kategorien, Produkte, Wizards und Lager",
         "all_categories": "Alle Kategorien",
         "category_wizard_button": "Kategorie-Assistent",
+        "product_composer_button": "Produkt zusammenstellen",
+        "category_studio_button": "Wizard-Studio – Live-Vorschau",
         "category_wizard_hint": "Dieser Assistent gilt für ALLE Produkte dieser Kategorie.",
         "products_count": "{n} Produkte",
         "advanced_settings": "Erweiterte Einstellungen",

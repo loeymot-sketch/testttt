@@ -1943,6 +1943,7 @@
         },
         "wizard": {
             "loading_product": "Loading product…",
+            "generic": { "step_fallback": "Step" },
             "product_not_found": "Product not found.",
             "product_load_error": "Unable to load product.",
             "pricing_preview_offline": "Price refreshed locally. Total verified at payment.",
@@ -2196,6 +2197,8 @@
         "subtitle": "Catégories, articles, parcours et stock",
         "all_categories": "Toutes les catégories",
         "category_wizard_button": "Category wizard",
+        "product_composer_button": "Compose product",
+        "category_studio_button": "Wizard Studio — live preview",
         "category_wizard_hint": "This wizard applies to ALL products in this category.",
         "products_count": "{n} articles",
         "advanced_settings": "Advanced settings",
