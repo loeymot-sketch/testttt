@@ -96,7 +96,16 @@ class KioskMachineLoginController extends Controller
             $lockedKiosk = KioskMachine::withoutGlobalScope(\App\Models\Scopes\BranchScope::class)
                 ->lockForUpdate()
                 ->find($kioskMachine->id);
-            $user         = User::find($lockedKiosk->user_id);
+
+            // [audit-360 W5] Concurrent-delete race: the machine row (or its linked user) can be
+            // hard-deleted between the pre-auth read (above) and this locked re-read inside the txn.
+            // Without this guard, `$lockedKiosk->user_id` (read on null) then `$user->tokens()`
+            // (method on null) is a fatal 500. Abort 409 → txn rolls back; the borne's auto-retry
+            // (with the public-safe message) handles it gracefully.
+            $user = $lockedKiosk ? User::find($lockedKiosk->user_id) : null;
+            if (!$lockedKiosk || !$user) {
+                abort(409, 'Borne indisponible, nouvelle tentative en cours.');
+            }
 
             // Revoke all existing kiosk tokens for this user to allow clean re-login
             $user->tokens()->where('name', 'kiosk-token')->delete();

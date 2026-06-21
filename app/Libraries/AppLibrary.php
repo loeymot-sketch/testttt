@@ -21,7 +21,7 @@ class AppLibrary
     public static function date($date, $pattern = null): string
     {
         if (!$pattern) {
-            $pattern = env('DATE_FORMAT');
+            $pattern = env('DATE_FORMAT', 'd-m-Y');
         }
         return Carbon::parse($date)->format($pattern);
     }
@@ -29,7 +29,7 @@ class AppLibrary
     public static function time($time, $pattern = null): string
     {
         if (!$pattern) {
-            $pattern = env('TIME_FORMAT');
+            $pattern = env('TIME_FORMAT', 'h:i A');
         }
         return Carbon::parse($time)->format($pattern);
     }
@@ -37,7 +37,7 @@ class AppLibrary
     public static function datetime($dateTime, $pattern = null): string
     {
         if (!$pattern) {
-            $pattern = env('TIME_FORMAT') . ', ' . env('DATE_FORMAT');
+            $pattern = env('TIME_FORMAT', 'h:i A') . ', ' . env('DATE_FORMAT', 'd-m-Y');
         }
         return Carbon::parse($dateTime)->format($pattern);
     }
@@ -45,7 +45,7 @@ class AppLibrary
     public static function increaseDate($dateTime, $days, $pattern = null): string
     {
         if (!$pattern) {
-            $pattern = env('DATE_FORMAT');
+            $pattern = env('DATE_FORMAT', 'd-m-Y');
         }
         return Carbon::parse($dateTime)->addDays($days)->format($pattern);
     }
@@ -53,7 +53,7 @@ class AppLibrary
     public static function deliveryTime($dateTime, $pattern = null): string
     {
         if (!$pattern) {
-            $pattern = env('TIME_FORMAT');
+            $pattern = env('TIME_FORMAT', 'h:i A');
         }
         $explode = explode('-', $dateTime);
         if (count($explode) == 2) {
@@ -305,12 +305,17 @@ class AppLibrary
 
     public static function flatAmountFormat($amount): string
     {
-        return number_format($amount, env('CURRENCY_DECIMAL_POINT'), '.', '');
+        // [audit-360 W5] env('CURRENCY_DECIMAL_POINT') is null at runtime after
+        // `php artisan config:cache` (prod) → number_format($amount, null) rounds to
+        // INTEGER ("12.50"→"13"). Default to 2 decimals, mirroring :289. Display-only
+        // (PricingService SSOT math untouched); fed by ~31 resources (item/order/coupon/tax).
+        return number_format($amount, (int) (env('CURRENCY_DECIMAL_POINT') ?? 2), '.', '');
     }
 
     public static function convertAmountFormat($amount): float
     {
-        return (float)number_format($amount, env('CURRENCY_DECIMAL_POINT'), '.', '');
+        // [audit-360 W5] Same undefaulted-env rounding bug as flatAmountFormat (see above).
+        return (float)number_format($amount, (int) (env('CURRENCY_DECIMAL_POINT') ?? 2), '.', '');
     }
 
     public static function fcmDataBind($request)

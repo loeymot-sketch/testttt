@@ -116,5 +116,23 @@ Encore plus profond : surfaces settings/reports/item-show + 2 agents analyse sta
 
 **Gates Wave 4 : Vitest 2007/0, Dashboard PHPUnit 41/0 (zero-guard + tous les tests channel existants), frozen §7=0.** **Leçon : « abuse verification » = vérifier le mécanisme du bug AVANT de fixer (j'ai confirmé `5/0` throws en 8.2 + que DivByZero échappe au catch(Exception)) → puis verrouiller par un test sentinel.**
 
-## §F — BILAN AUDIT 360° (4 vagues)
+## §8 — WAVE 5 (« Orchestre + planifie + deeply corrige ») — couche LOGIQUE/RUNTIME
+Orchestré 2 agents deep (correctness-backend + carte a11y exhaustive). Le pixel-audit avait convergé ; cette vague attaque ce qu'il ne voit pas.
+
+### Backend correctness (3 heals non-frozen + 1 test)
+| ID | Sév | file:line | Bug | Fix |
+|---|---|---|---|---|
+| W5-B1 | **P1 prod** | `AppLibrary:308,313` | `env('CURRENCY_DECIMAL_POINT')` **non-défaulté** → après `config:cache` (prod, mandaté par MA checklist deploy !) env=null → `number_format($x, null)` arrondit à l'ENTIER ("12,50"→"13") sur **~31 resources** (item/order/coupon/tax/solde). Display-only (PricingService intact). Prouvé PHP 8.2. | `?? 2` (miroir :289) + **sentinel `CurrencyDecimalConfigCacheGuard` 2/2** (force env absent) |
+| W5-B2 | P2 prod | `AppLibrary:24-56` | même classe : `env('DATE_FORMAT'/'TIME_FORMAT')` non-défaulté → dates malformées après config:cache | défauts `d-m-Y` / `h:i A` (miroir :442) |
+| W5-B3 | P3 | `KioskMachineLoginController:99` | race delete-concurrent : `$lockedKiosk` null → `->user_id` puis `$user->tokens()` method-on-null = 500 | guard `abort(409)` (txn rollback + retry borne) |
+
+**Classes correctness ÉPUISÉES (agent, vérifié)** : division non-gardée (le W4 + toutes gardées), `catch(Exception)`-vs-`Throwable` (hot paths OK), array/JSON-access, float-money-précision. **Déférés (perf-cliff latents, refactor V1.0.X)** : export/overview unbounded `->get()` (OrderService:125 + siblings — OOM à terme), VerifyZMembership scan unbounded (cron quotidien), myOrderStore round() (hygiène).
+
+### A11y (60/96 corrigés ; KIOSK = surface client V1 active = déjà CLEAN)
+33 modal-close→"Fermer" (bulk) · 17 steppers indec-minus/plus→"Moins"/"Plus" · 8 info-btn→"Informations" · 2 shared-components (SmIconQrCode/SmTimeSloteDelete). verify-before-validate a attrapé MA régression duplicate-attribute (3 modals déjà fixés). **Déféré (énuméré, fix-list agent)** : ~36 boutons icône frontend-web scattered (close-circle/view-toggles/footer-social/navbar/cart/map — surface client-web possiblement vestigiale V1 LOCAL, kiosk déjà clean).
+
+### Frozen (owner-gate) — LOCK draftée, NON appliquée
+`plans/LOCK_POS_WIZARD_MONEY_FR_MISSED_SITES_2026-06-22.md` : 3 sites `pos-wizard.js` money en-US (€3.00). Le LOCK 2026-06-18 ne couvrait que `fmtPrice`, pas ces sites-bypass → **countersign frais requis (§10)**.
+
+## §F — BILAN AUDIT 360° (5 vagues)
 **23 heals** (8 W1 + 7 W2 + 5 W3 + 3 W4), **tous NON-frozen, tous vérifiés** (live ou test). Classes systémiques ÉPUISÉES : contraste-AA, null-glue-phone (17), en-US-money(non-frozen), raw-i18n-keys (studio+gateways), datepicker-EN, dates-en-US, taux-taxe-décimal (7), `+''+`-coercion, zero-division-backend. **Gates finaux : Vitest 2007/0, PHPUnit (Dashboard 41/0 + sentinels), frozen §7=0.** PR #23. **OWNER-GATE restant** : `pos-wizard.js`/`PosV5TrancheRow` money en-US (frozen §7). **Déférés V2** : cluster a11y ~18 boutons frontend web (mono-opérateur), form-hints `text-gray-400` convention.
