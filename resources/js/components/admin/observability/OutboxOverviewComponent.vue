@@ -336,7 +336,7 @@ export default {
     },
     computed: {
         generatedAtHuman() {
-            return this.generatedAt ? new Date(this.generatedAt).toLocaleString() : null;
+            return this.generatedAt ? new Date(this.generatedAt).toLocaleString('fr-FR', { timeZone: 'Europe/Paris', hour12: false }) : null;
         },
     },
     mounted() {
@@ -393,7 +393,8 @@ export default {
         formatTimestamp(value) {
             if (!value) return '—';
             try {
-                return new Date(value).toLocaleString();
+                // [audit-360 W3] FR locale + Paris TZ (was toLocaleString() → en-US "6/21/2026, 2:30 PM")
+                return new Date(value).toLocaleString('fr-FR', { timeZone: 'Europe/Paris', hour12: false });
             } catch (e) {
                 return String(value);
             }

@@ -1091,19 +1091,19 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
   setup: function setup() {
     var date = (0,vue__WEBPACK_IMPORTED_MODULE_16__.ref)();
     var presetRanges = (0,vue__WEBPACK_IMPORTED_MODULE_16__.ref)([{
-      label: 'Today',
+      label: "Aujourd'hui",
       range: [new Date(), new Date()]
     }, {
-      label: 'This month',
+      label: 'Ce mois',
       range: [(0,date_fns__WEBPACK_IMPORTED_MODULE_19__["default"])(new Date()), (0,date_fns__WEBPACK_IMPORTED_MODULE_17__["default"])(new Date())]
     }, {
-      label: 'Last month',
+      label: 'Mois dernier',
       range: [(0,date_fns__WEBPACK_IMPORTED_MODULE_19__["default"])((0,date_fns__WEBPACK_IMPORTED_MODULE_21__["default"])(new Date(), 1)), (0,date_fns__WEBPACK_IMPORTED_MODULE_17__["default"])((0,date_fns__WEBPACK_IMPORTED_MODULE_21__["default"])(new Date(), 1))]
     }, {
-      label: 'This year',
+      label: 'Cette année',
       range: [(0,date_fns__WEBPACK_IMPORTED_MODULE_20__["default"])(new Date()), (0,date_fns__WEBPACK_IMPORTED_MODULE_18__["default"])(new Date())]
     }, {
-      label: 'This year (slot)',
+      label: 'Cette année (créneau)',
       range: [(0,date_fns__WEBPACK_IMPORTED_MODULE_20__["default"])(new Date()), (0,date_fns__WEBPACK_IMPORTED_MODULE_18__["default"])(new Date())],
       slot: 'yearly'
     }]);

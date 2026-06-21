@@ -85,3 +85,22 @@ Owner a re-lancé le goal → audit plus profond/large. Surfaces neuves capturé
 **Sweeps systémiques (3 agents adversaires)** : (a) i18n-completeness → 6 clés manquantes + 9 dynamic-siblings recensées (live fixées, orphelines déférées) ; (b) refute-heals → mes 4 heals CORRECTS mais **null-glue INCOMPLET** (3/17 → tous corrigés) ; (c) N°-class → **épuisée** (pas d'autre mistraduction yes/no). **Verify-before-report** a réfuté : OSS-contraste, 0-aujourd'hui, cash-4vs8, icon-a11y.
 
 **Gates Wave 2 : Vitest 2007/0** (1 régression parité attrapée+corrigée — preuve que le test-fortress marche), frozen §7=0, PHP lint OK, build compilé. **Leçon : la lentille jumeau-systémique a re-frappé — j'avais corrigé 3/17 du null-glue ; l'agent adversaire a forcé la classe complète.**
+
+---
+
+## §6 — WAVE 3 (owner re-goal : « abuse les vérifications et l'analyse AVANT de valider »)
+Encore plus profond : surfaces settings/reports/item-show + 2 agents analyse statique + **verify-before-accept renforcé** (a attrapé 2 ERREURS des agents). Méthode console-warning = détecteur rapide de clés manquantes.
+
+| ID | Sév | Surface | Défaut | Fix + preuve |
+|---|---|---|---|---|
+| W3-1 | **P2** | Passerelle paiement | **clés i18n manquantes rendues RAW** : "LABEL.PAYPAL_APP_ID"… (13 warnings) | 11 clés fr+en → **0 warnings + labels FR vérifié live** |
+| W3-2 | **P2** | Passerelle SMS | 28 warnings, raw keys (Twilio/Nexmo/MSG91/Telesign…) | 28 clés fr+en (classe `$t("label."+option)` épuisée) |
+| W3-3 | **P1** | Rapport articles + Abonnés | **presets datepicker en ANGLAIS** ("Today/This month/Last month/This year") en UI FR | traduits FR (jumeau : 10/12 déjà FR, ces 2 ratés) |
+| W3-4 | P2 | Outbox observability | `toLocaleString()` sans locale → date **en-US "6/21/2026 2:30 PM"** | `'fr-FR'`+Paris TZ (2 sites) |
+| W3-5 | P2 | **Ticket client** (fiscal) | taux taxe **"5.50 %"** (point en-US) | `.replace('.',',')` display-side → "5,50 %" (résous PAS via flatAmountFormat car exports le veulent en `.`) |
+
+**Verify-before-accept a RÉFUTÉ 2 erreurs des agents adversaires** (preuve d'« abuser la vérification ») : (a) l'agent a prétendu `label.no="N°"` = « scratch-copy only / faux-positif » → FAUX, c'était mon fix W2 `6e25fad7a` déjà appliqué (il lisait l'état post-fix) ; (b) l'agent a proposé de corriger `flatAmountFormat` → RISQUÉ (alimente les exports CSV/Excel qui veulent `.` + le formulaire d'édition taxe) → corrigé display-side à la place.
+
+**Classes EXHAUSTÉES (signal convergence, vérifié)** : en-US money non-frozen, null-glue (W1/W2 complet 0 traînard), `+''+` coercion, NaN-render, v-html XSS (tout via DOMPurify), date en-US (sauf les 2 Outbox corrigés), mistraduction i18n. **Déférés (vérifiés, raisons)** : 5 tickets opérateur taux-taxe (même pattern, enjeu moindre que le client), 2 écrans verify phone-glue (OTP local), cluster a11y ~18 boutons frontend web (priorité V2 mono-opérateur), **OWNER-GATE frozen** pos-wizard money en-US (3-4 sites §7) + PosV5TrancheRow, backend `DashboardService:555` zero-guard (potentiel 500).
+
+**Gates Wave 3 : Vitest 2007/0, frozen §7=0, build compilé.** **Leçon : l'audit le plus profond (console-warnings + driver les formulaires gateway) trouve des RAW-KEYS que 3 sweeps i18n statiques avaient ratés [pattern dynamique `$t("label."+x)`] ; et "abuse verification" = verify-before-accept attrape les erreurs des agents eux-mêmes (2 ici).**

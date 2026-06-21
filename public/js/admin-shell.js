@@ -13900,7 +13900,10 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
   },
   computed: {
     generatedAtHuman: function generatedAtHuman() {
-      return this.generatedAt ? new Date(this.generatedAt).toLocaleString() : null;
+      return this.generatedAt ? new Date(this.generatedAt).toLocaleString('fr-FR', {
+        timeZone: 'Europe/Paris',
+        hour12: false
+      }) : null;
     }
   },
   mounted: function mounted() {
@@ -14010,7 +14013,11 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
     formatTimestamp: function formatTimestamp(value) {
       if (!value) return '—';
       try {
-        return new Date(value).toLocaleString();
+        // [audit-360 W3] FR locale + Paris TZ (was toLocaleString() → en-US "6/21/2026, 2:30 PM")
+        return new Date(value).toLocaleString('fr-FR', {
+          timeZone: 'Europe/Paris',
+          hour12: false
+        });
       } catch (e) {
         return String(value);
       }
@@ -25565,19 +25572,19 @@ __webpack_require__.r(__webpack_exports__);
   setup: function setup() {
     var date = (0,vue__WEBPACK_IMPORTED_MODULE_17__.ref)();
     var presetRanges = (0,vue__WEBPACK_IMPORTED_MODULE_17__.ref)([{
-      label: 'Today',
+      label: "Aujourd'hui",
       range: [new Date(), new Date()]
     }, {
-      label: 'This month',
+      label: 'Ce mois',
       range: [(0,date_fns__WEBPACK_IMPORTED_MODULE_20__["default"])(new Date()), (0,date_fns__WEBPACK_IMPORTED_MODULE_18__["default"])(new Date())]
     }, {
-      label: 'Last month',
+      label: 'Mois dernier',
       range: [(0,date_fns__WEBPACK_IMPORTED_MODULE_20__["default"])((0,date_fns__WEBPACK_IMPORTED_MODULE_22__["default"])(new Date(), 1)), (0,date_fns__WEBPACK_IMPORTED_MODULE_18__["default"])((0,date_fns__WEBPACK_IMPORTED_MODULE_22__["default"])(new Date(), 1))]
     }, {
-      label: 'This year',
+      label: 'Cette année',
       range: [(0,date_fns__WEBPACK_IMPORTED_MODULE_21__["default"])(new Date()), (0,date_fns__WEBPACK_IMPORTED_MODULE_19__["default"])(new Date())]
     }, {
-      label: 'This year (slot)',
+      label: 'Cette année (créneau)',
       range: [(0,date_fns__WEBPACK_IMPORTED_MODULE_21__["default"])(new Date()), (0,date_fns__WEBPACK_IMPORTED_MODULE_19__["default"])(new Date())],
       slot: 'yearly'
     }]);

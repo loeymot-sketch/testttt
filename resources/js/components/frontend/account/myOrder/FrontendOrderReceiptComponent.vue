@@ -74,7 +74,7 @@
 
                                 <div class="flex items-center justify-between" v-if="item.tax_rate > 0">
                                     <p class="text-xs leading-5 font-normal text-heading">{{ item.tax_name }}
-                                        ({{ item.tax_currency_rate }} {{ item.tax_type }})</p>
+                                        ({{ String(item.tax_currency_rate).replace('.', ',') }} {{ item.tax_type }})</p><!-- [audit-360 W3] FR decimal on customer receipt tax rate: "5.50 %"→"5,50 %" (display-side; tax_currency_rate stays '.' for the edit-form/exports) -->
                                     <p class="text-xs leading-5 font-normal text-heading">
                                         {{ item.tax_currency_amount }}
                                     </p>
