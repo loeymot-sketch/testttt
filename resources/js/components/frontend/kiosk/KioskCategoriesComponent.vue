@@ -209,7 +209,7 @@
                       :data-testid="`kiosk-product-allergens-${product.id}`"
                     />
                     <p v-if="product.description" class="kiosk-product-desc">
-                      {{ truncate(product.description, 68) }}
+                      {{ truncate(product.description, 92) }}
                     </p>
                     <span
                       class="kiosk-product-price"
@@ -687,7 +687,13 @@ export default {
 
     truncate(text, max) {
       if (!text) return '';
-      return text.length > max ? text.slice(0, max) + '...' : text;
+      if (text.length <= max) return text;
+      // [owner 2026-06-22 qualité grande-chaîne] coupe au DERNIER mot entier (jamais en
+      // plein milieu d'un mot) + ellipsis « … » propre.
+      const slice = text.slice(0, max);
+      const lastSpace = slice.lastIndexOf(' ');
+      const cut = lastSpace > max * 0.6 ? slice.slice(0, lastSpace) : slice;
+      return cut.replace(/[\s·,;:.-]+$/, '') + '…';
     },
 
     sanitizeItemName(name) {
@@ -1242,7 +1248,13 @@ export default {
   max-width: calc(100% - 58px);
   font-size: 14px;
   color: var(--kiosk-text-muted);
-  line-height: 1.35;
+  line-height: 1.38;
+  /* [owner 2026-06-22 qualité grande-chaîne] 2 lignes propres max, hauteurs de cartes
+     régulières, jamais de coupe en plein mot (la troncature JS coupe déjà au mot). */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .kiosk-product-price {
