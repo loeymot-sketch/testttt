@@ -15,7 +15,7 @@ use Illuminate\Database\Seeder;
  *  - repères qualité (« maison », « mariné », « croustillant », « généreux », « fondant »),
  *  - JAMAIS répéter le nom du produit dans la description (ex. un « Bowl Poulet crispy » ne
  *    redit pas « Poulet crispy » — la valeur est déjà dans le nom),
- *  - ≤ ~108 caractères (la carte affiche 2 lignes propres),
+ *  - ≤ ~88 caractères (la carte affiche 2 lignes propres, sans troncature),
  *  - français correct, voix de marque cohérente.
  *
  * Clé = nom canonique de l'item (stable en V1 LOCAL Le Cayenne). Idempotent : ré-exécutable.
@@ -31,7 +31,7 @@ class LeCayenneMenuDescriptionsSeeder extends Seeder
             'Big Cayenne'      => 'Version XL : 2 viandes, cheddar, œuf, jambon, sauce Cayenne maison et crudités.',
 
             // — Galettes —
-            'Galette Normale'  => 'Galette croustillante garnie à votre goût, avec la sauce maison de votre choix.',
+            'Galette Normale'  => 'Galette dorée et croustillante, garnie à votre goût et sauce maison au choix.',
             'Galette Cayenne'  => 'Galette croustillante, sauce Cayenne maison incluse et crudités fraîches.',
 
             // — Sandwichs Classiques —
@@ -39,11 +39,11 @@ class LeCayenneMenuDescriptionsSeeder extends Seeder
             'Big Classique'      => 'Version XL : pain faluche, 2 viandes, cheddar, œuf, jambon, sauce et crudités.',
 
             // — Burgers —
-            'Chicken Burger' => 'Poulet crispy bien doré, crudités fraîches et sauce au choix, pain brioché moelleux.',
-            'Big Chicken'    => 'Poulet crispy, cheddar, jambon et œuf, sauce au choix, dans un pain brioché. Le gourmand.',
+            'Chicken Burger' => 'Filet pané croustillant et doré, crudités fraîches et sauce, pain brioché moelleux.',
+            'Big Chicken'    => 'Version XL : filet pané croustillant, cheddar, jambon, œuf et sauce, pain brioché.',
 
             // — Tacos —
-            'Tacos'     => 'Viande au choix, frites maison et sauce fromagère onctueuse, gratiné à souhait.',
+            'Tacos'     => 'Viande au choix, frites maison et sauce fromagère onctueuse, le tout gratiné à souhait.',
             'Big Tacos' => 'Double viande, frites maison et sauce fromagère onctueuse, gratiné. Grande faim assurée.',
 
             // — Bols Frites (le poulet est déjà dans le nom : on ne le répète pas) —
