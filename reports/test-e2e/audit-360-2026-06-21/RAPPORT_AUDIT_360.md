@@ -131,8 +131,13 @@ Orchestré 2 agents deep (correctness-backend + carte a11y exhaustive). Le pixel
 ### A11y (60/96 corrigés ; KIOSK = surface client V1 active = déjà CLEAN)
 33 modal-close→"Fermer" (bulk) · 17 steppers indec-minus/plus→"Moins"/"Plus" · 8 info-btn→"Informations" · 2 shared-components (SmIconQrCode/SmTimeSloteDelete). verify-before-validate a attrapé MA régression duplicate-attribute (3 modals déjà fixés). **Déféré (énuméré, fix-list agent)** : ~36 boutons icône frontend-web scattered (close-circle/view-toggles/footer-social/navbar/cart/map — surface client-web possiblement vestigiale V1 LOCAL, kiosk déjà clean).
 
-### Frozen (owner-gate) — LOCK draftée, NON appliquée
-`plans/LOCK_POS_WIZARD_MONEY_FR_MISSED_SITES_2026-06-22.md` : 3 sites `pos-wizard.js` money en-US (€3.00). Le LOCK 2026-06-18 ne couvrait que `fmtPrice`, pas ces sites-bypass → **countersign frais requis (§10)**.
+### Frozen (owner-gate) — APPLIQUÉE (countersign accordé)
+`plans/LOCK_POS_WIZARD_MONEY_FR_MISSED_SITES_2026-06-22.md` : **4 sites** `pos-wizard.js` money en-US (€3.00 → 3,00 €) → `fmtPrice`. Owner countersign accordé (AskUserQuestion). Appliqué via **cérémonie 2-commits** (le hook pre-commit autorise un edit frozen quand HEAD cite `LOCK_*.md` — **sans `--no-verify`**), SHA256 baseline màj, frozen-sentinel + pos-wizard Vitest 23/23 verts.
+
+### §9 — WAVE 6 (« le tout, max raisonning, deeply corrige »)
+- **Perf hot-path FIXÉ** : `salesReportOverview` agrégeait en PHP (`->get()->filter()->sum()` = TOUS les orders chargés à chaque page-load rapport, sans date) → **réécrit en SQL** via `Order::scopeRealizedRevenue` (prouvé byte-équivalent du prédicat `isRealizedRevenueRow`, verrouillé par `SalesReportNetTotalSentinelTest` net=100≠180). 70 tests revenue/dashboard verts = totaux inchangés, travail déplacé en DB.
+- **A11y 70/96** (le bulk multi-ligne a créé des duplicate-attribute → reverté propre ; restant ~21 = surface client-web scattered + faux-positifs déjà-labellés multi-ligne).
+- **Perf cold-path DÉFÉRÉ (max-reasoning, pas rushé)** : exports `->get('*')` (latent OOM, cold-path user-clic) + `VerifyZMembership` Z-scan (cron quotidien, **fiscal-adjacent** → refactor risqué). Le hot-path (le vrai coût récurrent) est fait ; les cold-path latents ne valent pas le risque sur du code export/fiscal pour V1 mono-restaurant.
 
 ## §F — BILAN AUDIT 360° (5 vagues)
 **23 heals** (8 W1 + 7 W2 + 5 W3 + 3 W4), **tous NON-frozen, tous vérifiés** (live ou test). Classes systémiques ÉPUISÉES : contraste-AA, null-glue-phone (17), en-US-money(non-frozen), raw-i18n-keys (studio+gateways), datepicker-EN, dates-en-US, taux-taxe-décimal (7), `+''+`-coercion, zero-division-backend. **Gates finaux : Vitest 2007/0, PHPUnit (Dashboard 41/0 + sentinels), frozen §7=0.** PR #23. **OWNER-GATE restant** : `pos-wizard.js`/`PosV5TrancheRow` money en-US (frozen §7). **Déférés V2** : cluster a11y ~18 boutons frontend web (mono-opérateur), form-hints `text-gray-400` convention.
